@@ -157,32 +157,41 @@
                             <field name="archived" />
                         </group>
                     </group>
-                    <group string="金额概览" colspan="2">
-                        <field name="tax_id" />
-                        <field name="visible_contract_amount" readonly="1" />
-                        <field name="amount_untaxed" readonly="1" />
-                        <field name="amount_tax" readonly="1" />
-                        <field name="amount_total" readonly="1" />
-                        <field name="line_amount_total" readonly="1" />
-                        <field name="amount_change" readonly="1" />
-                        <field name="amount_final" readonly="1" />
-                        <field name="settlement_amount" readonly="1" />
-                        <field name="invoice_amount" readonly="1" />
-                        <field name="uninvoiced_amount" readonly="1" />
-                        <field name="received_amount" readonly="1" />
-                        <field name="unreceived_amount" readonly="1" />
-                        <field name="visible_invoice_amount" />
-                        <field name="visible_received_amount" />
-                        <field name="visible_unreceived_amount" />
-                        <field name="visible_unreceived_rate" />
-                        <field name="contract_unreceived_amount" readonly="1" />
-                        <field name="contract_unreceived_rate" readonly="1" />
-                        <field name="paid_amount" readonly="1" />
-                        <field name="unpaid_amount" readonly="1" />
-                        <field name="historical_confirmed_paid_amount" readonly="1" />
-                        <field name="historical_amount_pending_confirmation" readonly="1" />
-                        <field name="new_system_flow_paid_amount" readonly="1" />
-                        <field name="cumulative_paid_amount" readonly="1" />
+                    <group name="sc_contract_amount_original" string="原始合同金额" col="4" data-sc-anchor="contract-amount-original">
+                        <field name="amount_untaxed" string="未税金额" readonly="1"/>
+                        <field name="amount_tax" string="税额" readonly="1"/>
+                        <field name="amount_total" string="含税金额" readonly="1"/>
+                        <field name="line_amount_total" string="合同明细合计" readonly="1"/>
+                        <field name="tax_id" string="税率"/>
+                        <field name="visible_contract_amount" string="合同金额" readonly="1"/>
+                    </group>
+                    <group name="sc_contract_amount_change" string="合同变更" col="4" data-sc-anchor="contract-amount-change">
+                        <field name="amount_change" string="累计变更金额" readonly="1"/>
+                    </group>
+                    <group name="sc_contract_amount_final" string="最终合同价" col="4" data-sc-anchor="contract-amount-final">
+                        <field name="amount_final" string="最终合同价" readonly="1"/>
+                    </group>
+                    <group name="sc_contract_amount_settlement" string="合同结算" col="4" data-sc-anchor="contract-amount-settlement">
+                        <field name="settlement_amount" string="已结算" readonly="1"/>
+                        <field name="settlement_balance" string="未结算" readonly="1"/>
+                    </group>
+                    <group name="sc_contract_amount_fulfillment" string="资金履约" col="4" data-sc-anchor="contract-amount-fulfillment">
+                        <field name="invoice_amount" string="累计开票" readonly="1" invisible="type == 'in'"/>
+                        <field name="uninvoiced_amount" string="未开票" readonly="1" invisible="type == 'in'"/>
+                        <field name="received_amount" string="累计收款" readonly="1" invisible="type == 'in'"/>
+                        <field name="unreceived_amount" string="未收款" readonly="1" invisible="type == 'in'"/>
+                        <field name="paid_amount" string="累计付款" readonly="1" invisible="type == 'out'"/>
+                        <field name="unpaid_amount" string="未付款" readonly="1" invisible="type == 'out'"/>
+                        <field name="historical_confirmed_paid_amount" string="历史已确认付款" readonly="1"/>
+                        <field name="historical_amount_pending_confirmation" string="历史待确认付款" readonly="1"/>
+                        <field name="new_system_flow_paid_amount" string="新系统流付款" readonly="1"/>
+                        <field name="cumulative_paid_amount" string="累计付款" readonly="1"/>
+                        <field name="visible_invoice_amount" string="可见开票金额" invisible="type == 'in'"/>
+                        <field name="visible_received_amount" string="可见收款金额" invisible="type == 'in'"/>
+                        <field name="visible_unreceived_amount" string="可见未收款金额" invisible="type == 'in'"/>
+                        <field name="visible_unreceived_rate" string="可见未收款比例" invisible="type == 'in'"/>
+                        <field name="contract_unreceived_amount" string="合同未收款金额" readonly="1" invisible="type == 'in'"/>
+                        <field name="contract_unreceived_rate" string="合同未收款比例" readonly="1" invisible="type == 'in'"/>
                     </group>
                     <group string="审批信息" colspan="2">
                         <field name="approval_info" />
