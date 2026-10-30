@@ -1967,6 +1967,11 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-E/run.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.frontend.contract_form_presentation.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "PC-02 综合合同原生表单身份带四视口验收探针：只读复用受管 candidate 运行时和契约回执，按 CONTRACT_FORM_ENTRY 分别验收收入/支出合同。需要隔离候选环境，因此不由本地离线 lane 派发；登记为按需浏览器验收探针。"
+    },
     "verify.frontend.contract_prompt_action_presentation.browser": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
