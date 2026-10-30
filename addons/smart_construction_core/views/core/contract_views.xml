@@ -261,12 +261,14 @@
                     <field name="contract_id" invisible="1" />
                     <field name="type" readonly="1" invisible="1" />
                     <field name="currency_id" invisible="1" />
-                    <group name="sc_income_contract_identity" string="身份与基本资料" col="4" data-sc-anchor="income-contract-identity">
+                    <group name="sc_income_contract_identity" string="合同身份" col="4" data-sc-anchor="income-contract-identity">
                         <group>
-                            <field name="business_category_id" />
-                            <field name="subject" />
-                            <field name="project_id" required="1" />
-                            <field name="partner_id" string="发包人" required="1" />
+                            <field name="subject" string="合同名称"/>
+                            <field name="name" string="平台合同编号" readonly="1"/>
+                            <field name="document_status" string="单据状态" readonly="1"/>
+                            <field name="business_category_id" string="业务分类"/>
+                            <field name="project_id" string="关联项目" required="1"/>
+                            <field name="partner_id" string="发包人" required="1"/>
                             <field name="date_contract" />
                         </group>
                         <group>
@@ -315,7 +317,8 @@
                             <group>
                                 <field name="amount_tax" readonly="1" />
                                 <field name="amount_total" readonly="1" />
-                                <field name="amount_final" readonly="1" />
+                                <field name="amount_change" string="累计变更金额" readonly="1" />
+                                <field name="amount_final" string="最终合同价" readonly="1" />
                             </group>
                         </group>
                     </group>
@@ -331,7 +334,8 @@
                         </group>
                     </group>
                     <group name="sc_income_contract_execution" string="履约信息" col="4" data-sc-anchor="income-contract-execution" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
-                        <field name="settlement_amount" readonly="1" />
+                        <field name="settlement_amount" string="已结算" readonly="1" />
+                        <field name="settlement_balance" string="未结算" readonly="1" />
                         <field name="invoice_amount" readonly="1" />
                         <field name="uninvoiced_amount" readonly="1" />
                         <field name="received_amount" readonly="1" />
@@ -342,8 +346,6 @@
                         <field name="visible_unreceived_rate" />
                     </group>
                     <group name="sc_income_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="income-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_config_admin">
-                        <field name="name" readonly="1" />
-                        <field name="document_status" readonly="1" />
                         <field name="company_id" readonly="1" />
                         <field name="entry_user_id" readonly="1" />
                         <field name="entry_user_text" readonly="1" />
@@ -378,12 +380,14 @@
                     <field name="type" readonly="1" invisible="1" />
                     <field name="currency_id" invisible="1" />
                     <field name="is_locked" invisible="1" />
-                    <group name="sc_expense_contract_identity" string="身份与基本资料" col="4" data-sc-anchor="expense-contract-identity">
+                    <group name="sc_expense_contract_identity" string="合同身份" col="4" data-sc-anchor="expense-contract-identity">
                         <group>
-                            <field name="business_category_id" options="{'no_create': True}" />
-                            <field name="subject" />
-                            <field name="project_id" required="1" />
-                            <field name="partner_id" string="供应商/分包方" required="1" />
+                            <field name="subject" string="合同名称"/>
+                            <field name="name" string="平台合同编号" readonly="1"/>
+                            <field name="document_status" string="单据状态" readonly="1"/>
+                            <field name="business_category_id" string="业务分类" options="{'no_create': True}"/>
+                            <field name="project_id" string="关联项目" required="1"/>
+                            <field name="partner_id" string="供应商/分包方" required="1"/>
                             <field name="date_contract" />
                         </group>
                         <group>
@@ -433,7 +437,8 @@
                             <group>
                                 <field name="amount_tax" readonly="1" />
                                 <field name="amount_total" readonly="1" />
-                                <field name="amount_final" readonly="1" />
+                                <field name="amount_change" string="累计变更金额" readonly="1" />
+                                <field name="amount_final" string="最终合同价" readonly="1" />
                             </group>
                         </group>
                     </group>
@@ -448,7 +453,8 @@
                         </group>
                     </group>
                     <group name="sc_expense_contract_execution" string="履约信息" col="4" data-sc-anchor="expense-contract-execution" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
-                        <field name="settlement_amount" readonly="1" />
+                        <field name="settlement_amount" string="已结算" readonly="1" />
+                        <field name="settlement_balance" string="未结算" readonly="1" />
                         <field name="paid_amount" readonly="1" />
                         <field name="unpaid_amount" readonly="1" />
                         <field name="historical_confirmed_paid_amount" readonly="1" />
@@ -457,8 +463,6 @@
                         <field name="cumulative_paid_amount" readonly="1" />
                     </group>
                     <group name="sc_expense_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="expense-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_config_admin">
-                        <field name="name" readonly="1" />
-                        <field name="document_status" />
                         <field name="company_id" readonly="1" />
                         <field name="approval_info" />
                         <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
