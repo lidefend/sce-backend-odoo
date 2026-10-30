@@ -56,3 +56,8 @@
 - 暂停：通用条件子树保留策略与组装器修改。
 - 独立诊断：`docs/ops/iterations/page-convergence-01/contract-field-fact-diagnosis.md`。
 - 恢复配置驱动收敛：四卡视觉、六组基本信息、计划责任、责任协作、四视口；配置不生成业务事实。
+
+## 方向固定（platform-driven productization）
+
+- 方向记录：`docs/ops/iterations/page-convergence-01/platform-driven-productization-charter.md`。
+- 后续迭代以真实业务页面为中心、以现有配置能力为首选、以用户实际体验为验收终点。
