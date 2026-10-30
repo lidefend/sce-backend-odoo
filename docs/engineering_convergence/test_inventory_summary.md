@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1622`
+- Total assets: `1625`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `224`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1173`
+- PR dedupe candidates: `1176`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 611 |
 | contract | 412 |
-| unit | 309 |
+| unit | 312 |
 | odoo_integration | 146 |
 | security | 50 |
 | e2e | 49 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1392 |
+| pr_candidate | 1395 |
 | integration_candidate | 174 |
 | release_candidate | 47 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1173 |
+| deduplicate_before_required | 1176 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 173 |
 | keep_release_only | 47 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1394 |
+| <5m | 1397 |
 | 10-30m | 175 |
 | 30-60m | 49 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 611 |
 | platform owner | 412 |
-| test owner | 310 |
+| test owner | 313 |
 | backend owner | 146 |
 | security owner | 50 |
 | qa owner | 49 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1404 |
+| scripts/verify | 1407 |
 | scripts/ops | 111 |
 | frontend/apps/web/scripts | 48 |
 | scripts/ci | 33 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-800856cc | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
 | T-ASSET-e9de3f62 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-95bca637 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| ... | ... | 1093 more | ... |
+| ... | ... | 1096 more | ... |
 
 ## Dedupe Hotspots
 
