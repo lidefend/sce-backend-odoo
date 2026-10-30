@@ -111,3 +111,16 @@
 - 交付：`p3-overview-cards-design.md`、`p3-overview-cards-implementation.md` +
   `.runtime/page-convergence-01/p3/` 证据。
 - 下一步 P4：责任矩阵与协作区域。
+
+## P4 责任矩阵与协作区域（完成）
+
+- 实施：仅一处布局声明——协作资料组 `col="4"` → `col="2"`（项目标签/协作者各半宽）；
+  责任矩阵保持 `col="1"` 整行、三列可编辑树不变。
+- 验证：四视口无横向溢出、控制台错误 0；责任矩阵空态、关注者动态计数 20、
+  附件/评论/活动由现有协作组件完整呈现；契约实测 `协作资料 columns=2 / span=12`。
+- 边界：未改 ACL/record rule/业务数据/人员关系/组装器/解析器/结果 B；未新增 CSS/Vue/协议。
+- 有数据时的责任矩阵列层级（岗位可识别、责任人强调、说明换行）与协作者/关注者填充态待 P6
+  用真实数据最终验收。
+- 交付：`p4-responsibility-design.md`、`p4-collaboration-design.md`、
+  `p4-collaboration-implementation.md` + `.runtime/page-convergence-01/p4/` 证据。
+- 下一步 P5：阶段要求只读前端呈现最终验收。

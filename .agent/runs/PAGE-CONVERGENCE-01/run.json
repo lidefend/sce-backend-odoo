@@ -38,5 +38,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "P3 四张概览卡片专业化收敛完成（语义 token + scoped 样式，四视口通过）。下一步 P4：责任矩阵与协作区域；另单列跟进 P1-R7 页头 nolabel 只读 facts 标签重复。"
+  "next_exact_step": "P4 责任矩阵与协作区域完成（协作资料 col 4→2，四视口通过）。下一步 P5：阶段要求只读前端呈现最终验收（Tree Action 路由与真实点击）；另单列跟进 P1-R7 页头 nolabel 只读 facts 标签重复。"
 }
