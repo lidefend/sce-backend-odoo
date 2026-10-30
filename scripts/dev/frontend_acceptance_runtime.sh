@@ -293,17 +293,75 @@ preflight() {
   echo "[acceptance.runtime.preflight] volumes db=$DB_DATA redis=$REDIS_DATA odoo=$ODOO_DATA"
 }
 
+# Profile-aware standard preview identity. The shared local carrier keeps its
+# historical 5180 static preview and 18082 backend; the isolated candidate
+# carrier uses the profile-resolved frontend/backend ports and database.
+standard_profile_is_candidate() {
+  [[ "${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" == candidate ]]
+}
+
+standard_preview_url() {
+  if standard_profile_is_candidate; then
+    echo "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT:-5178}"
+  else
+    echo "http://127.0.0.1:5180"
+  fi
+}
+
+standard_api_url() {
+  if standard_profile_is_candidate; then
+    echo "${VITE_API_PROXY_TARGET:-http://127.0.0.1:18088}"
+  else
+    echo "http://127.0.0.1:18082"
+  fi
+}
+
+standard_expected_db() {
+  if standard_profile_is_candidate; then
+    echo "sc_frontend_acceptance_candidate"
+  else
+    echo "sc_frontend_acceptance"
+  fi
+}
+
+standard_profile_name() {
+  if standard_profile_is_candidate; then
+    echo "candidate"
+  else
+    echo "local"
+  fi
+}
+
+# Fail closed unless the served backend revision, database identity and the
+# profile-scoped preview contract all match the candidate being accepted.
+candidate_identity_guard() {
+  standard_profile_is_candidate || return 0
+  local expected_sha served_sha served_db
+  expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  served_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+  [[ "$served_sha" == "$expected_sha" ]] || {
+    echo "DENY: candidate served revision $served_sha != expected $expected_sha" >&2
+    return 2
+  }
+  served_db="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" DB_NAME)"
+  [[ "$served_db" == "$(standard_expected_db)" ]] || {
+    echo "DENY: candidate backend database $served_db != $(standard_expected_db)" >&2
+    return 2
+  }
+  return 0
+}
+
 # Exact existing standard-preview adapter inputs; checked before profile loading.
 validate_standard_list_surface_inputs() {
   local key
   for key in SC_ACCEPTANCE_RUNTIME_PROFILE SC_ACCEPTANCE_PROFILE; do
-    [[ -z "${!key:-}" || "${!key}" == local ]] || { echo "DENY: standard list requires local profile" >&2; return 2; }
+    [[ -z "${!key:-}" || "${!key}" == local || "${!key}" == candidate ]] || { echo "DENY: standard list requires local or candidate profile" >&2; return 2; }
   done
   for key in SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL SC_ACCEPTANCE_API_URL; do
-    [[ -z "${!key:-}" || "${!key}" == http://127.0.0.1:5180 ]] || { echo "DENY: standard list preview URL mismatch" >&2; return 2; }
+    [[ -z "${!key:-}" || "${!key}" == "$(standard_preview_url)" ]] || { echo "DENY: standard list preview URL mismatch" >&2; return 2; }
   done
   for key in SC_ACCEPTANCE_DATABASE DB_NAME E2E_DB DB FRONTEND_ACCEPTANCE_DB; do
-    [[ -z "${!key:-}" || "${!key}" == sc_frontend_acceptance ]] || { echo "DENY: standard list database mismatch" >&2; return 2; }
+    [[ -z "${!key:-}" || "${!key}" == "$(standard_expected_db)" ]] || { echo "DENY: standard list database mismatch" >&2; return 2; }
   done
   [[ -z "${E2E_LOGIN:-}" || "$E2E_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
   [[ -z "${SC_ACCEPTANCE_LOGIN:-}" || "$SC_ACCEPTANCE_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
@@ -407,7 +465,8 @@ PYPROBE
         node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
         ;;
       standard-contract-prerequisite)
-        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -430,13 +489,14 @@ p.parent.mkdir(parents=True, exist_ok=True)
 p.write_text(json.dumps(body, ensure_ascii=False, indent=2) + '\n')
 PYRESOLUTION
         ACCEPTANCE_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" python3 "$ROOT_DIR/scripts/ops/dev_acceptance_release_probe.py" \
-          --contract-only --base-url http://127.0.0.1:5180 --db-name sc_frontend_acceptance --expected-sha "$expected_sha" \
+          --contract-only --base-url "$(standard_preview_url)" --db-name "$(standard_expected_db)" --expected-sha "$expected_sha" \
           --contract-declaration config/acceptance/backend_contract_instance_v1.json \
           --record-resolution artifacts/backend/acceptance_record_identity.json \
           --output artifacts/backend/dev_acceptance_release_probe.json
         ;;
       standard-presentation-browser)
-        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: presentation requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -461,9 +521,9 @@ target['route'] = f"/r/project.project/{project['record_id']}?action_id={project
 print(json.dumps([target], separators=(',', ':')))
 PYPRESENTATION
 )"
-        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
-          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
-          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+        SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
+          FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
+          SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
           SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
           SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_config_admin SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_config_admin \
           E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" PRODUCT_PAGE_HEADER_TARGETS_JSON="$targets_json" \
@@ -471,23 +531,25 @@ PYPRESENTATION
           node "$ROOT_DIR/scripts/verify/frontend_product_page_header_browser.mjs"
         ;;
       standard-relation-roundtrip-browser)
-        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
-        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
-          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
-          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+        SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
+          FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
+          SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
           SC_ACCEPTANCE_EXPECTED_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
           SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}" SC_ACCEPTANCE_ROLE= E2E_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}" \
           ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json RELATION_RESOLUTION_KEY="${RELATION_RESOLUTION_KEY:-project}" RELATION_FIELD="${RELATION_FIELD:-}" RELATION_IDENTITY_SOURCE=resolution \
           node "$ROOT_DIR/scripts/verify/record_relation_roundtrip_acceptance.js"
         ;;
       standard-list-surface-browser)
-        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
         [[ -z "$standard_list_requested_password" || "$standard_list_requested_password" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]] || { echo "DENY: standard list fixture password mismatch" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
-        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
-          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
-          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+        SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
+          FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
+          SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
           SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_ROLE= SC_ACCEPTANCE_LOGIN=fixture_role_finance \
           E2E_LOGIN=fixture_role_finance E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" SC_ACCEPTANCE_BOOTSTRAP_SECRET= \
           node "$ROOT_DIR/scripts/verify/frontend_list_surface_structure_browser.mjs"
