@@ -7,12 +7,23 @@
   "goal": ".agent/goals/PC02-CONTRACT-DETAIL-PRODUCTIZATION.yaml",
   "record": "docs/ops/iterations/contract-detail-productization-01/pc-02-batch-record.md",
   "scope": [
-    "scripts/dev/frontend_acceptance_runtime.sh",
-    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-    "scripts/verify/frontend_contract_form_presentation_browser.mjs",
+    ".agent/active-runs.json",
     ".agent/goals/PC02-CONTRACT-DETAIL-PRODUCTIZATION.yaml",
     ".agent/runs/PC02-CONTRACT-DETAIL-PRODUCTIZATION/run.json",
-    "docs/ops/iterations/contract-detail-productization-01/pc-02-batch-record.md"
+    "addons/smart_construction_core/views/core/contract_views.xml",
+    "addons/smart_construction_core/views/core/general_contract_views.xml",
+    "config/acceptance/frontend_presentation_targets.v1.json",
+    "config/frontend/acceptance_tool_matrix_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/contract-detail-productization-01/",
+    "make/frontend.mk",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "scripts/verify/frontend_contract_form_presentation_browser.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -32,7 +43,10 @@
         "config/frontend/acceptance_environments_v1.json",
         "config/acceptance/backend_contract_instance_v1.json"
       ],
-      "kind": "runtime"
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/candidate-acceptance/candidate-runtime-identity.json"
+      }
     }
   },
   "blockers": [],
