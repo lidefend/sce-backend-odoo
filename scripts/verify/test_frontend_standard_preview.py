@@ -1502,8 +1502,8 @@ class StandardListSurfaceAdapterTest(unittest.TestCase):
         import subprocess
         source = Path('scripts/dev/frontend_acceptance_runtime.sh').read_text()
         self.assertNotIn('\nload_profile\n', source.split('# Exact existing standard-preview adapter inputs;', 1)[0])
-        helper = source.split('# Exact existing standard-preview adapter inputs;', 1)[1].split('# End standard list input validation.', 1)[0]
-        helper = helper[helper.index('validate_standard_list_surface_inputs()'):]
+        helper = source.split('standard_profile_name() {', 1)[1].split('# End standard list input validation.', 1)[0]
+        helper = 'standard_profile_name() {\n' + helper
         dispatch = source.split('command="${1:-preflight}"', 1)[1].split('  standard-list-lowcode)', 1)[0]
         mocks = r'''
 set -euo pipefail
