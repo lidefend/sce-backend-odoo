@@ -296,12 +296,24 @@ preflight() {
 # Profile-aware standard preview identity. The shared local carrier keeps its
 # historical 5180 static preview and 18082 backend; the isolated candidate
 # carrier uses the profile-resolved frontend/backend ports and database.
+standard_profile_name() {
+  local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
+  case "$profile" in
+    local|candidate) echo "$profile" ;;
+    *) echo "DENY: unknown acceptance runtime profile: $profile" >&2; return 2 ;;
+  esac
+}
+
 standard_profile_is_candidate() {
-  [[ "${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" == candidate ]]
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  [[ "$profile" == candidate ]]
 }
 
 standard_preview_url() {
-  if standard_profile_is_candidate; then
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  if [[ "$profile" == candidate ]]; then
     echo "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT:-5178}"
   else
     echo "http://127.0.0.1:5180"
@@ -309,7 +321,9 @@ standard_preview_url() {
 }
 
 standard_api_url() {
-  if standard_profile_is_candidate; then
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  if [[ "$profile" == candidate ]]; then
     echo "${VITE_API_PROXY_TARGET:-http://127.0.0.1:18088}"
   else
     echo "http://127.0.0.1:18082"
@@ -317,18 +331,12 @@ standard_api_url() {
 }
 
 standard_expected_db() {
-  if standard_profile_is_candidate; then
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  if [[ "$profile" == candidate ]]; then
     echo "sc_frontend_acceptance_candidate"
   else
     echo "sc_frontend_acceptance"
-  fi
-}
-
-standard_profile_name() {
-  if standard_profile_is_candidate; then
-    echo "candidate"
-  else
-    echo "local"
   fi
 }
 
@@ -348,6 +356,31 @@ candidate_identity_guard() {
     echo "DENY: candidate backend database $served_db != $(standard_expected_db)" >&2
     return 2
   }
+  [[ "$served_db" != "sc_frontend_acceptance" ]] || {
+    echo "DENY: candidate backend must not target the shared acceptance database" >&2
+    return 2
+  }
+  [[ "${COMPOSE_PROJECT_NAME:-}" != "sc-fe-r2-p1-01" ]] || {
+    echo "DENY: candidate must not target the shared acceptance compose project" >&2
+    return 2
+  }
+  return 0
+}
+
+# Candidate-only: live database namespace UUID must equal the recorded runtime
+# identity receipt, so a rebuilt candidate database cannot be silently accepted.
+candidate_db_uuid_guard() {
+  standard_profile_is_candidate || return 0
+  local receipt expected_ns actual_ns
+  receipt="${CANDIDATE_RUNTIME_IDENTITY_RECEIPT:-.runtime/candidate-acceptance/candidate-runtime-identity.json}"
+  [[ -f "$receipt" ]] || { echo "DENY: candidate runtime identity receipt missing: $receipt" >&2; return 2; }
+  expected_ns="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["namespace_id"])' "$receipt" 2>/dev/null)" || {
+    echo "DENY: candidate runtime identity receipt is unreadable" >&2; return 2; }
+  actual_ns="$(docker exec "${COMPOSE_PROJECT_NAME}-db-1" psql -U "$DB_USER" -d "$DB_NAME" -Atc \
+    "select namespace_id from sc_platform_namespace where database_name = '$DB_NAME' order by id limit 1" 2>/dev/null)" || {
+    echo "DENY: unable to read candidate database namespace identity" >&2; return 2; }
+  [[ "$actual_ns" == "$expected_ns" ]] || {
+    echo "DENY: candidate DB UUID mismatch expected=$expected_ns actual=$actual_ns" >&2; return 2; }
   return 0
 }
 
@@ -467,6 +500,7 @@ PYPROBE
       standard-contract-prerequisite)
         [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
+        candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -497,6 +531,7 @@ PYRESOLUTION
       standard-presentation-browser)
         [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
+        candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: presentation requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -533,6 +568,7 @@ PYPRESENTATION
       standard-relation-roundtrip-browser)
         [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
+        candidate_db_uuid_guard
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
           FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
@@ -545,6 +581,7 @@ PYPRESENTATION
       standard-list-surface-browser)
         [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
+        candidate_db_uuid_guard
         [[ -z "$standard_list_requested_password" || "$standard_list_requested_password" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]] || { echo "DENY: standard list fixture password mismatch" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
