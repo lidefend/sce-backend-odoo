@@ -55,6 +55,23 @@ class PrIntegrationAdmissionTest(unittest.TestCase):
                 self.binding.validate_manifest(registry, plan, manifest_path, head)
             self.assertIn("missing required suite", str(ctx.exception))
 
+    def test_governance_tools_do_not_require_browser_evidence(self):
+        registry = self.binding.load_registry(self.binding.DEFAULT_REGISTRY)
+        head = "a" * 40
+        plan = self.binding.build_plan(
+            registry, ["scripts/ops/local_quick_evidence.py"], "b" * 40, head
+        )
+        self.assertNotIn("daily_runtime_entry", plan["required_evidence_suites"])
+        self.assertNotIn("path_namespace_identity", plan["required_evidence_suites"])
+
+    def test_real_runtime_script_still_requires_runtime_evidence(self):
+        registry = self.binding.load_registry(self.binding.DEFAULT_REGISTRY)
+        head = "a" * 40
+        plan = self.binding.build_plan(
+            registry, ["scripts/dev/frontend_acceptance_runtime.sh"], "b" * 40, head
+        )
+        self.assertIn("path_namespace_identity", plan["required_evidence_suites"])
+
 
 if __name__ == "__main__":
     unittest.main()
