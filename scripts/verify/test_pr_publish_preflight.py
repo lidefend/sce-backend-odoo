@@ -48,6 +48,13 @@ class PrPublishPreflightTest(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("does not match EXPECTED_HEAD", proc.stdout + proc.stderr)
 
+    def test_pr_create_cannot_bypass_publish_preflight(self):
+        makefile = (ROOT / "make" / "codex.mk").read_text(encoding="utf-8")
+        import re
+        m = re.search(r"^pr\.create:\s*(.*)$", makefile, re.MULTILINE)
+        self.assertIsNotNone(m)
+        self.assertIn("pr.publish.preflight", m.group(1))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -285,7 +285,7 @@ EXPECTED_HEAD ?=
 
 export PR PR_MERGE_METHOD PR_MERGE_SUBJECT PR_MERGE_BODY EXPECTED_HEAD
 
-pr.create: guard.prod.forbid
+pr.create: guard.prod.forbid pr.publish.preflight
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	if ! echo "$$branch" | grep -qE "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)"; then \
 	  echo "❌ pr.create only allowed on $(CODEX_ALLOWED_WRITE_BRANCH_PREFIXES) (current=$$branch)"; exit 2; \
