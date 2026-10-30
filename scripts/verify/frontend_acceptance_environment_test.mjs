@@ -13,6 +13,12 @@ import { acquireAcceptanceLease, reserveDynamicPort, startOwnedProcess } from '.
 
 const SHA = 'a'.repeat(40);
 const localEnv = { SC_ACCEPTANCE_PROFILE: 'local', SC_ACCEPTANCE_FIXTURE_PASSWORD: 'local-secret' };
+for (const [key, value] of Object.entries({
+  SC_ENTRY_NAMESPACE: 'acceptance',
+  SC_ENTRY_AUDIENCE: 'tenant',
+  SC_ENTRY_SHARED_SECRET: 'sc-acceptance-entry-local-v1',
+  SC_ENTRY_ROUTE_VERSION: 'acceptance-route-v1',
+})) process.env[key] = value;
 const local = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit', env: localEnv });
 assert.equal(local.database, 'sc_frontend_acceptance');
 assert.equal(local.operation, 'readonly');
@@ -22,10 +28,18 @@ assert(!JSON.stringify(redactedEnvironmentEvidence(local)).includes('local-secre
 const localRelation = resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', env: { ...localEnv, SC_ACCEPTANCE_EXPECTED_SHA: SHA } });
 assert.equal(localRelation.target.identityPath, '/api/runtime-version');
 assert.equal(localRelation.target.identityRequired, true);
-assert.equal((await verifyServedIdentity(localRelation, SHA, async url => {
+let localHeaders = null;
+assert.equal((await verifyServedIdentity(localRelation, SHA, async (url, options = {}) => {
   assert.equal(url, `${localRelation.apiUrl}/api/runtime-version`);
-  return { ok: true, json: async () => ({ git_sha: SHA, database: localRelation.database, environment: 'dev' }) };
+  localHeaders = options.headers || null;
+  return { ok: true, json: async () => ({ git_sha: SHA, database: localRelation.database, environment: 'dev', namespace_id: 'acceptance' }) };
 })).skipped, false);
+assert.deepEqual(localHeaders, {
+  'x-sc-namespace': 'acceptance',
+  'x-sc-audience': 'tenant',
+  'x-sc-entry-secret': 'sc-acceptance-entry-local-v1',
+  'x-sc-route-version': 'acceptance-route-v1',
+});
 await assert.rejects(() => verifyServedIdentity(localRelation, SHA, async () => ({
   ok: true, json: async () => ({ git_sha: SHA, database: 'wrong_database', environment: 'dev' }),
 })), /served database/);

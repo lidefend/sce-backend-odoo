@@ -279,7 +279,7 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
 }
 
 function externalIdentityHeaders(environment) {
-  if (environment.profile !== 'candidate') return null;
+  if (!['local', 'candidate'].includes(environment.profile)) return null;
   const headers = {
     'x-sc-namespace': text(process.env.SC_ENTRY_NAMESPACE),
     'x-sc-audience': text(process.env.SC_ENTRY_AUDIENCE),
