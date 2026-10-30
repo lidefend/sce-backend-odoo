@@ -150,4 +150,5 @@
   `native_form_structure_responsibility.unit` 失败为独立历史问题。
 - 交付：`page-convergence-01a-final-acceptance.md`、`page-convergence-01a-closeout.md` +
   `.runtime/page-convergence-01/p6/` 证据。
-- 候选冻结：`78c943790`，待独立 PR 复审；不自动合并、不部署。
+- 候选冻结：`6caa17d34`（含 P6 验收文档；P1–P5 产品代码止于 `78c943790`），待独立 PR 复审；
+  不自动合并、不部署。

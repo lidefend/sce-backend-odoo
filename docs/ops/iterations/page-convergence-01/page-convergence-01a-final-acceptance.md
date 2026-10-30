@@ -6,7 +6,8 @@
 ## 一、运行身份
 
 - 分支：`feature/page-convergence-01`
-- 候选 HEAD：`78c943790f8c3ce3031d49eaf75e474e7ffcef43`（P1–P5 连续提交）
+- 候选 HEAD：`6caa17d34`（含 P6 验收文档；P1–P5 产品代码止于
+  `78c943790f8c3ce3031d49eaf75e474e7ffcef43`）
 - 数据库：`sc_dev_demo`（本地受管开发库）
 - DB UUID：`551b2b2e-cba4-11f1-82d4-2ae01a997ff0`
 - Odoo 服务：工作树挂载 `/mnt/source-addons`，进程 `2026-10-30T10:17:06Z` 重启

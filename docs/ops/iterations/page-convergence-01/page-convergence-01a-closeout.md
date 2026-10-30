@@ -12,7 +12,7 @@
 ## 候选身份
 
 - 分支：`feature/page-convergence-01`
-- HEAD：`78c943790f8c3ce3031d49eaf75e474e7ffcef43`
+- HEAD：`6caa17d34`（含 P6 验收文档；P1–P5 产品代码止于 `78c943790`）
 
 ## 待独立复审事项
 
