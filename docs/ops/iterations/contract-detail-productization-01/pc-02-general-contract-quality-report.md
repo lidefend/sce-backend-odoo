@@ -48,7 +48,7 @@
 
 ## 6. 运行时验收（已完成）
 
-候选 `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1`，candidate 隔离环境
+候选 `07105ab451d99158a088c9fc609df3d4e1a7997f`，candidate 隔离环境
 `sc-fe-candidate-770` / `sc_frontend_acceptance_candidate`，namespace
 `ns_0af74d2911bf`。
 

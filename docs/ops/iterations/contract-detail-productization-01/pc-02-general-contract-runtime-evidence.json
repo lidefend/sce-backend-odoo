@@ -1,7 +1,7 @@
 {
   "schema": "pc02.general_contract.runtime_evidence.v1",
-  "candidate_sha": "71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1",
-  "served_revision": "71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1",
+  "candidate_sha": "07105ab451d99158a088c9fc609df3d4e1a7997f",
+  "served_revision": "07105ab451d99158a088c9fc609df3d4e1a7997f",
   "profile": "candidate",
   "compose_project": "sc-fe-candidate-770",
   "database": "sc_frontend_acceptance_candidate",

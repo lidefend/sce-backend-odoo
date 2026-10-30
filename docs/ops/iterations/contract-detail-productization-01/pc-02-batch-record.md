@@ -35,7 +35,7 @@ Product target: `sc.general.contract` via the released contract-center entry
 
 ## Runtime acceptance (TASK-03.5)
 
-Frozen candidate `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1` on the candidate
+Frozen candidate `07105ab451d99158a088c9fc609df3d4e1a7997f` on the candidate
 profile (`sc-fe-candidate-770` / `sc_frontend_acceptance_candidate`).
 
 - Income `contract` (`fe_general_contract_a`, GC2600001): PASS, 4 viewports, no
@@ -49,8 +49,10 @@ screenshots under `.runtime/final-acceptance/contract-form-presentation/`.
 
 The earlier income evidence at `142efc0ea` is preserved under
 `.runtime/final-acceptance/contract-form-presentation/legacy-142efc0ea/`; the
-final frozen candidate re-collected both directions at one HEAD because the
-candidate identity changed when the P4 output-path separation was committed.
+final frozen candidate re-collected both directions at `07105ab45` because the
+browser probe was hardened to assert business surface instead of inline pixel
+geometry (a decrease-only vendor-coupling guard), and the new acceptance target
+was registered in the verification lane baseline.
 
 Exclusions: no amount compute, ACL, record rule, approval, navigation or business
 data changes. No push, merge, or deployment.

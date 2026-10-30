@@ -5,8 +5,8 @@
 ## 1. 冻结候选
 
 - Branch: `feature/contract-detail-productization-01`
-- Candidate HEAD: `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1`
-- served_revision: `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1`
+- Candidate HEAD: `07105ab451d99158a088c9fc609df3d4e1a7997f`
+- served_revision: `07105ab451d99158a088c9fc609df3d4e1a7997f`
 - profile: `candidate`
 - compose project: `sc-fe-candidate-770`
 - database: `sc_frontend_acceptance_candidate`
