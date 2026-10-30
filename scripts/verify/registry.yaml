@@ -51,8 +51,8 @@ entries:
   owner: platform-team
   date: '2026-10-25'
   reason: governed runtime readback entry verify.backend.contract_fact_readback.runtime;
-    head/tree/db identity bound and the report is bound into ORM receipts via
-    record --readback + readback_closure_blockers for reuse closure
+    head/tree/db identity bound and the report is bound into ORM receipts via record
+    --readback + readback_closure_blockers for reuse closure
 - script: backend_contract_lifecycle_migration_rehearsal_prepare.py
   status: orphan
   owner: platform-team
@@ -1175,6 +1175,13 @@ entries:
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_baseline_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: Governed execution through verify.test.baseline; reproducible test baseline
+    authority.
+  wire_or_retire: file-consumed
 - script: test_business_entry_matrix_incremental.py
   status: active
   owner: platform-team
@@ -1270,6 +1277,12 @@ entries:
   date: '2026-08-13'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_evidence_paths.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-30'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_finance_position_audit_partition_guard.py
   status: active
   owner: platform-team
@@ -1284,7 +1297,8 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-24'
-  reason: 'Executed by verify.daily_dev.acceptance.formal_surface.unit in make/dev.mk; reconciles the historical orphan registration'
+  reason: Executed by verify.daily_dev.acceptance.formal_surface.unit in make/dev.mk;
+    reconciles the historical orphan registration
 - script: test_formal_entry_metadata_audit.py
   status: orphan
   owner: platform-team
@@ -1491,6 +1505,12 @@ entries:
   date: '2026-09-15'
   reason: 'Governed unittest module invocation in: verify.local.dev.layout_authority.unit,
     verify.local.development_lifecycle.unit, verify.validation.delivery.unit'
+- script: test_local_test_runner.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: Governed execution through verify.local.development_lifecycle.unit; reproducible
+    test baseline authority.
 - script: test_login_envelope_consumption_guard.py
   status: active
   owner: platform-team
@@ -1551,6 +1571,18 @@ entries:
   owner: platform-team
   date: '2026-10-01'
   reason: 'Governed unittest module invocation in: verify.frontend.playwright_vendor_coupling.guard'
+- script: test_pr_integration_admission.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-30'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_pr_publish_preflight.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-30'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_product_customer_runtime_decoupling_guard.py
   status: active
   owner: platform-team
@@ -1610,6 +1642,12 @@ entries:
   date: '2026-07-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_test_baseline_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: Governed execution through verify.test.baseline; reproducible test baseline
+    authority.
 - script: test_test_coverage_registry_audit.py
   status: active
   owner: platform-team
@@ -1780,19 +1818,3 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_local_test_runner.py
-  status: active
-  owner: platform-team
-  date: '2026-10-26'
-  reason: 'Governed execution through verify.local.development_lifecycle.unit; reproducible test baseline authority.'
-- script: test_test_baseline_contract.py
-  status: active
-  owner: platform-team
-  date: '2026-10-26'
-  reason: 'Governed execution through verify.test.baseline; reproducible test baseline authority.'
-- script: test_baseline_contract.py
-  status: active
-  owner: platform-team
-  date: '2026-10-26'
-  reason: 'Governed execution through verify.test.baseline; reproducible test baseline authority.'
-  wire_or_retire: file-consumed
