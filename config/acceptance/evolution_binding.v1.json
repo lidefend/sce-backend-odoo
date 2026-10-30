@@ -312,6 +312,7 @@
       "id": "offline-delivery-governance",
       "paths": [
         "scripts/ops/agent_run_context.py",
+    "scripts/ops/local_quick_evidence.py",
         "scripts/ops/evidence_scope.py",
         "scripts/ops/test_evidence_scope.py",
         "scripts/ops/validation_delivery_plan.py",

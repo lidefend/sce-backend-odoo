@@ -272,7 +272,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
+.PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -285,10 +285,18 @@ EXPECTED_HEAD ?=
 
 export PR PR_MERGE_METHOD PR_MERGE_SUBJECT PR_MERGE_BODY EXPECTED_HEAD
 
-pr.create: guard.prod.forbid
+pr.create: guard.prod.forbid pr.publish.preflight
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	if ! echo "$$branch" | grep -qE "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)"; then \
 	  echo "❌ pr.create only allowed on $(CODEX_ALLOWED_WRITE_BRANCH_PREFIXES) (current=$$branch)"; exit 2; \
+	fi; \
+	local_head="$$(git rev-parse HEAD)"; \
+	if [ -n "$(EXPECTED_HEAD)" ] && [ "$$local_head" != "$(EXPECTED_HEAD)" ]; then \
+	  echo "❌ pr.create: local HEAD does not match EXPECTED_HEAD"; exit 11; \
+	fi; \
+	remote_head="$$(git ls-remote origin "refs/heads/$$branch" 2>/dev/null | awk '{print $$1}')"; \
+	if [ -n "$$remote_head" ] && [ "$$remote_head" != "$$local_head" ]; then \
+	  echo "❌ pr.create: remote branch HEAD $$remote_head does not match local HEAD $$local_head"; exit 12; \
 	fi; \
 	if [ -z "$(PR_TITLE)" ]; then \
 	  echo "❌ PR_TITLE is required"; exit 2; \
@@ -299,7 +307,7 @@ pr.create: guard.prod.forbid
 	case "$(PR_DRAFT)" in 0) draft_arg="" ;; 1) draft_arg="--draft" ;; \
 	  *) echo "❌ PR_DRAFT must be 0 or 1"; exit 2 ;; \
 	esac; \
-	echo "[pr.create] base=$(PR_BASE) head=$$branch title=$(PR_TITLE) body=$(PR_BODY_FILE) draft=$(PR_DRAFT)"; \
+	echo "[pr.create] base=$(PR_BASE) head=$$branch local=$$local_head remote=$${remote_head:-none} title=$(PR_TITLE) body=$(PR_BODY_FILE) draft=$(PR_DRAFT)"; \
 	gh pr create --base "$(PR_BASE)" --head "$$branch" --title "$(PR_TITLE)" --body-file "$(PR_BODY_FILE)" $$draft_arg
 
 pr.update: guard.prod.forbid
@@ -376,7 +384,25 @@ pr.ready: guard.prod.forbid
 	gh pr ready "$$PR"; \
 	'
 
-pr.push: guard.prod.forbid
+pr.publish.preflight: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	EXPECTED="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$EXPECTED" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.publish.preflight: EXPECTED_HEAD must be a full 40-character commit SHA"; exit 7; \
+	fi; \
+	if [ "$$(git rev-parse HEAD)" != "$$EXPECTED" ]; then \
+	  echo "[DENY] pr.publish.preflight: local HEAD does not match EXPECTED_HEAD"; exit 11; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "[DENY] pr.publish.preflight: working tree must be clean"; exit 12; \
+	fi; \
+	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
+	'
+	@python3 scripts/ops/local_quick_evidence.py verify --expected-head "$(EXPECTED_HEAD)"
+	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --require-ready
+
+pr.push: guard.prod.forbid pr.publish.preflight
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
 # Temporary outage lane. The default is read-only; origin is never rewritten.
