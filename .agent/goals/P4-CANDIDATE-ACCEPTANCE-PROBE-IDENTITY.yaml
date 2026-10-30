@@ -1,0 +1,38 @@
+schema_version: 1
+goal:
+  id: P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY
+  status: active
+  title: Complete candidate lane for list surface and relation roundtrip identity probes
+  objective: >-
+    Fix two P4 candidate-lane gaps: inject the isolated entry identity headers into
+    the external candidate identity probe and verify the served namespace, and make
+    the standard list surface Makefile recipe profile-aware for candidate 5178/18088
+    while keeping local 5180/18082 unchanged and failing closed on unknown profiles.
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend acceptance runtime carrier and verification tooling
+  module: frontend acceptance harness
+  standard_vs_user_specific: verification governance; no product semantics
+  why_here: >-
+    The candidate profile resolves correctly, but downstream identity probes and the
+    list surface Makefile recipe still assumed the shared carrier.
+  why_not_elsewhere:
+    - Not P0-P3: no product contract, view, ACL or business semantics change.
+    - Not PC-02 product branch: the P4 carrier fix must land on its own branch.
+  scope:
+    - scripts/verify/lib/frontend_acceptance_environment.mjs
+    - scripts/verify/frontend_acceptance_environment_test.mjs
+    - make/frontend.mk
+    - scripts/verify/test_frontend_standard_preview.py
+    - .agent/goals/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY.yaml
+    - .agent/runs/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY/run.json
+    - docs/ops/iterations/p4_candidate_acceptance_probe_identity.md
+  exclusions:
+    - product code, contract views, ACL, record rules, approvals
+    - authoritative navigation
+    - push, merge, deploy until the run is independently reviewed
+  acceptance:
+    - candidate identity probe carries the isolated entry headers and verifies namespace
+    - local identity probe behavior unchanged
+    - candidate list surface resolves 5178/18088/sc_frontend_acceptance_candidate
+    - local list surface resolves 5180/18082/sc_frontend_acceptance
+    - unknown profile fails closed

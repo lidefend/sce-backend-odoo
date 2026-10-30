@@ -1605,3 +1605,18 @@ else:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(receipt['DB_NAME'], 'sc_frontend_acceptance')
         self.assertEqual(receipt['BASE_URL'], 'http://127.0.0.1:5180')
+
+    def test_candidate_profile_resolves_candidate_preview_and_api(self):
+        result, receipt = self.invoke_make({'SC_ACCEPTANCE_RUNTIME_PROFILE':'candidate'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIsNotNone(receipt)
+        for key in ['ACCEPTANCE_BASE_URL', 'BASE_URL', 'SC_ACCEPTANCE_FRONTEND_URL']:
+            self.assertEqual(receipt[key], 'http://127.0.0.1:5178')
+        for key in ['DB_NAME', 'DB', 'E2E_DB', 'SC_ACCEPTANCE_DATABASE']:
+            self.assertEqual(receipt[key], 'sc_frontend_acceptance_candidate')
+
+    def test_unknown_profile_fails_closed_before_dispatch(self):
+        result, receipt = self.invoke_make({'SC_ACCEPTANCE_RUNTIME_PROFILE':'production'})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('DENY standard list surface profile', result.stderr)
+        self.assertIsNone(receipt)
