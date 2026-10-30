@@ -398,7 +398,7 @@ pr.publish.preflight: guard.prod.forbid
 	  echo "[DENY] pr.publish.preflight: working tree must be clean"; exit 12; \
 	fi; \
 	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
-	'; \
+	'
 	@python3 scripts/ops/local_quick_evidence.py verify --expected-head "$(EXPECTED_HEAD)"
 	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --require-ready
 
