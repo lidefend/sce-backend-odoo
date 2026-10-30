@@ -163,25 +163,33 @@
                     <group name="sc_project_submission_readiness" string="办理前检查" col="1" data-sc-anchor="project-submission-readiness" invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft'">
                         <field name="submission_readiness_display" readonly="1" nolabel="1"/>
                     </group>
-                    <group name="sc_project_information_basic" string="基本信息" col="4" data-sc-anchor="project-basic">
+                    <group name="sc_project_information_identity" string="项目身份" col="4" data-sc-anchor="project-identity">
                         <field name="name" string="项目名称"/>
                         <field name="project_code" readonly="1" invisible="id == False" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="phase_key" invisible="1" groups="smart_construction_core.group_sc_cap_project_read" />
+                    </group>
+                    <group name="sc_project_information_entity" string="业务主体与项目属性" col="4" data-sc-anchor="project-entity">
                         <field name="partner_id" widget="res_partner_many2one" context="{'res_partner_search_mode': 'customer'}" options="{'always_reload': True}" />
                         <field name="project_type_id" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="project_category_id" invisible="1" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="operation_strategy" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="company_id" readonly="1"/>
+                    </group>
+                    <group name="sc_project_information_contact" string="联系信息与合同关联" col="4" data-sc-anchor="project-contact">
                         <field name="location" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="owner_contact" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="contract_no" groups="smart_construction_core.group_sc_cap_project_read" />
-                        <field name="company_id" readonly="1"/>
-                        <field name="phase_key" invisible="1" groups="smart_construction_core.group_sc_cap_project_read" />
                     </group>
-                    <group name="sc_project_information_plan" string="计划与责任" col="4" data-sc-anchor="project-plan-responsibility">
+                    <group name="sc_project_information_arrangement" string="项目安排日期" col="4" data-sc-anchor="project-arrangement">
                         <field name="initiation_date" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="date_start" string="项目周期" widget="daterange" options="{&quot;end_date_field&quot;: &quot;date&quot;, &quot;always_range&quot;: &quot;1&quot;}" required="date_start or date" />
                         <field name="date" invisible="1" required="date_start"/>
+                    </group>
+                    <group name="sc_project_information_schedule" string="计划开竣工日期" col="4" data-sc-anchor="project-schedule">
                         <field name="start_date" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="end_date" groups="smart_construction_core.group_sc_cap_project_read" />
+                    </group>
+                    <group name="sc_project_information_responsible" string="责任信息" col="4" data-sc-anchor="project-responsible">
                         <field name="user_id" string="项目负责人" widget="many2one_avatar_user" domain="[('share', '=', False)]" readonly="not active" options="{'no_quick_create': True}" />
                         <field name="manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="cost_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
