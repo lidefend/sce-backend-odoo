@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import os
 import unittest
 from pathlib import Path
 
@@ -32,6 +34,26 @@ class EvidencePathTest(unittest.TestCase):
         self.assertEqual(main_path, pc02_path)
         self.assertNotIn(".git/worktrees", str(main_path))
         self.assertIn("codex/evidence", str(main_path))
+
+    def test_receipt_written_from_one_worktree_is_readable_from_another(self):
+        head = "1" * 40
+        main = WORKSPACE / "sce-backend-odoo"
+        pc02 = WORKSPACE / "sce-backend-odoo-pc02"
+        if not (main / ".git").exists() or not pc02.exists():
+            self.skipTest("additional worktrees not present")
+        path = self.module.evidence_path(main, head)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"suite": "quick", "head": head, "tree": "2" * 40, "coverage": {}}
+        # atomic temp-then-replace, matching the real writer
+        tmp = path.with_name(f".{head}.tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+        try:
+            other = self.module.evidence_path(pc02, head)
+            self.assertEqual(path, other)
+            self.assertEqual(json.loads(other.read_text(encoding="utf-8"))["head"], head)
+        finally:
+            path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
