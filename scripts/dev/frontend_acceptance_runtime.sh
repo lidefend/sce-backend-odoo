@@ -602,7 +602,7 @@ PYCONTRACTFORM
           SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
           SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_config_admin SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_config_admin \
           E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" CONTRACT_FORM_PRESENTATION_TARGET="$target_json" \
-          CONTRACT_FORM_PRESENTATION_OUTPUT=.runtime/final-acceptance/contract-form-presentation/summary.json \
+          CONTRACT_FORM_PRESENTATION_OUTPUT=.runtime/final-acceptance/contract-form-presentation/${CONTRACT_FORM_ENTRY}/summary.json \
           node "$ROOT_DIR/scripts/verify/frontend_contract_form_presentation_browser.mjs"
         ;;
       standard-relation-roundtrip-browser)

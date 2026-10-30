@@ -146,6 +146,11 @@ def resolve_targets(authority):
             "smart_construction_acceptance_fixture.fe_general_contract_a",
             declared_action_xmlid=CONTRACT_ACTION_XMLID,
         ),
+        "general_contract_expense": target(
+            CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_general_contract_b",
+            declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        ),
         "construction_contract": target(
             CONSTRUCTION_CONTRACT_MENU_XMLID,
             "smart_construction_acceptance_fixture.fe_contract_a",
