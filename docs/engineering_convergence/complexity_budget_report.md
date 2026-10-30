@@ -61,7 +61,7 @@ Generated from repository source files. This report is informational during the 
 | 1798 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1752 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1749 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
@@ -80,7 +80,7 @@ Generated from repository source files. This report is informational during the 
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1522 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 775 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 777 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 604 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -127,12 +127,12 @@ Generated from repository source files. This report is informational during the 
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
+| 1158 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
 | 1149 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1147 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
-| 1146 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1138 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1133 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
@@ -287,7 +287,7 @@ Generated from repository source files. This report is informational during the 
 | 1798 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1752 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1749 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |

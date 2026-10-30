@@ -359,7 +359,8 @@
     {
       "id": "frontend-acceptance-carrier-lifecycle",
       "paths": [
-        "scripts/dev/frontend_acceptance_carrier*"
+        "scripts/dev/frontend_acceptance_carrier*",
+        "scripts/dev/frontend_acceptance_runtime.sh"
       ],
       "suites": [
         "governance_static",
@@ -497,6 +498,15 @@
       "suites": [
         "backend_contract",
         "daily_runtime_entry"
+      ]
+    },
+    {
+      "id": "acceptance-fixture-infrastructure",
+      "paths": [
+        "addons/smart_construction_acceptance_fixture/**"
+      ],
+      "suites": [
+        "backend_contract"
       ]
     },
     {
