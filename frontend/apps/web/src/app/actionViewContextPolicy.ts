@@ -7,6 +7,25 @@
  * writable entry.
  */
 
+function pythonSingleQuotedStringToJson(text: string): string {
+  return text.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (_match, inner: string) => {
+    const value = inner
+      .replace(/\\'/g, "'")
+      .replace(/\\"/g, '"')
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\\\/g, '\\');
+    return JSON.stringify(value);
+  });
+}
+
+/**
+ * The route ``context_raw`` carries an Odoo/Python dict literal
+ * (``{'create': False}``), not JSON.  ``parseContractContextRaw`` is JSON-only
+ * and therefore cannot consume it; this is the single Python/JSON parser for
+ * the action route context and returns ``null`` (never a silent ``{}``) when a
+ * non-empty literal is malformed.
+ */
 export function parseOdooDictLiteral(raw: unknown): Record<string, unknown> | null {
   const text = String(raw || '').trim();
   if (!text) return {};
@@ -15,7 +34,7 @@ export function parseOdooDictLiteral(raw: unknown): Record<string, unknown> | nu
       .replace(/\bNone\b/g, 'null')
       .replace(/\bTrue\b/g, 'true')
       .replace(/\bFalse\b/g, 'false');
-    json = json.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"');
+    json = pythonSingleQuotedStringToJson(json);
     const parsed = JSON.parse(json);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;

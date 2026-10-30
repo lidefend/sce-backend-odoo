@@ -10,8 +10,12 @@ assert.strictEqual(contextOperationAllowed('{"create": false}', 'create'), false
 assert.strictEqual(contextOperationAllowed("{'create': 0}", 'create'), false);
 assert.strictEqual(contextOperationAllowed("{'create': 'false'}", 'create'), false);
 assert.strictEqual(contextOperationAllowed("{'create': 'False'}", 'create'), false);
-// quoted strings with an escaped single quote
-assert.strictEqual(contextOperationAllowed(String.raw`{'note': 'it\'s ok', 'create': False}`, 'create'), false);
+// quoted strings with an escaped single quote: verify the parsed value, not only the boolean
+const escapedQuoteContext = String.raw`{'note': 'it\'s ok', 'create': False}`;
+const escapedQuoteParsed = parseOdooDictLiteral(escapedQuoteContext);
+assert.strictEqual(escapedQuoteParsed?.note, "it's ok");
+assert.strictEqual(escapedQuoteParsed?.create, false);
+assert.strictEqual(contextOperationAllowed(escapedQuoteContext, 'create'), false);
 // nested context: top-level operation flag is authoritative, nested value does not affect it
 assert.strictEqual(contextOperationAllowed("{'context': {'create': False}}", 'create'), true);
 // malformed context fails closed (must not render a declared read-only operation)

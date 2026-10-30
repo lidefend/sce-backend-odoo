@@ -31,5 +31,6 @@
 - 工作树干净；`git diff --check` 干净。
 - 分支差异仅属于 PAGE-CONVERGENCE-01A（产品代码 + 分阶段证据文档；另含分支早前
   TASK-05.1 契约水合修复与 B3 只读 Action 后端）。
-- PR 发布与合并必须走受管 `make pr.push.gitee` / `make gitee.ci.pr.create` 入口，
-  绑定精确 HEAD，不自动合并、不部署。
+- 发布已通过 GitHub 受管流程完成：`make pr.push`（推送 `feature/page-convergence-01` 到
+  origin）→ `make pr.create PR_DRAFT=1`（创建 Draft PR #781）。合并必须绑定精确 HEAD 并经
+  GitHub 受保护 PR 流程，不自动合并、不部署。
