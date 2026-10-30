@@ -39,3 +39,13 @@
 - 回归测试：`addons/smart_core/tests/test_ui_contract_v2_boundaries.py`
   `PYTHONDONTWRITEBYTECODE=1 python3 .../test_ui_contract_v2_boundaries.py` → 159 tests OK。
 - 待运行时验证：local.dev 升级 smart_core + 候选前端，确认阶段状态与合同卡片恢复。
+
+## TASK-05.1 运行时验证（通过）
+
+- 候选前端 127.0.0.1:5176 绑定提交 `397a3b4da`；本地后端已加载修复。
+- 探针（pm1，project 21）结果：`status=200`、`tokenKey=true`、`hasLifecycle=true`、
+  `lifecycleValue=in_progress`；`mainData` 从 0 个关键依赖字段恢复，`start_date`、
+  `manager_id`、`user_id`、`project_type_id` 均已水合。
+- 遗留（进入 TASK-05.2 处理）：`owner_id`（仅存在于概览身份头块，不在标准布局水合闭包）、
+  `sc_overview_contract_count`、`sc_project_contract_entry_available` 对 pm1 仍缺失，
+  需在四卡收敛时按其权限与空态一并处理。
