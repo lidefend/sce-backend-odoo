@@ -400,7 +400,7 @@ pr.publish.preflight: guard.prod.forbid
 	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
 	'
 	@python3 scripts/ops/local_quick_evidence.py verify --expected-head "$(EXPECTED_HEAD)"
-	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --require-ready
+	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --stage merge --require-ready
 
 pr.push: guard.prod.forbid pr.publish.preflight
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
