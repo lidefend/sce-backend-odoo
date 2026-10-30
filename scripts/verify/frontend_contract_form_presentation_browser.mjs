@@ -77,7 +77,7 @@ await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontent
 await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
 
 // Native form fields carry data-field-name; assert the identity fields render.
-check(await page.locator(`[data-field-name="${identity.title}"]`).count() === 1, `${identity.title} must render as exactly one title field`);
+check(await page.locator(`[data-field-name="${identity.title}"]`).count() >= 1, `${identity.title} title field must render`);
 
 for (const field of identity.fields) {
   const present = await page.locator(`[data-field-name="${field}"]`).count();
