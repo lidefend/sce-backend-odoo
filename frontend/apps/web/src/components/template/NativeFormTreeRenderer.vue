@@ -654,7 +654,9 @@ function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>):
     }
     if (childType === 'button' || childType === 'widget') return true;
     if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer', 'h1', 'h2', 'h3', 'div', 'span'].includes(childType)) {
-      if (hasRenderableDescendant(child, seen)) return true;
+      // A nested container that carries visible static text is real content,
+      // not an empty shell (e.g. a permission empty state rendered as text).
+      if (nodeText(child) || containerTitle(child) || hasRenderableDescendant(child, seen)) return true;
     }
   }
   return false;
@@ -1599,4 +1601,44 @@ function emitNativeAction(node: NativeFormLayoutNode) {
 .native-form-tree.native-form-tree .sc-project-next__title { font-weight: var(--sc-product-text-weight-semibold); }
 .native-form-tree.native-form-tree .sc-project-cards { gap: var(--sc-space-sm); }
 .native-form-tree.native-form-tree .sc-project-cards__title { font-weight: var(--sc-product-text-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-space-xs);
+  padding: var(--sc-space-md);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-panel);
+}
+.native-form-tree.native-form-tree .sc-project-card__title {
+  font: var(--sc-font-body-small);
+  font-weight: var(--sc-product-text-weight-semibold);
+  color: var(--sc-app-text-secondary);
+}
+.native-form-tree.native-form-tree .sc-project-card__metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-space-xs);
+}
+.native-form-tree.native-form-tree .sc-project-card__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sc-space-xs);
+}
+.native-form-tree.native-form-tree .sc-project-card__value {
+  font: var(--sc-font-title-large);
+  font-weight: var(--sc-product-text-weight-bold);
+  line-height: 1;
+}
+.native-form-tree.native-form-tree .sc-project-card__unit {
+  font: var(--sc-font-body-small);
+  color: var(--sc-app-text-secondary);
+}
+.native-form-tree.native-form-tree .sc-project-card__empty {
+  font: var(--sc-font-body-small);
+  color: var(--sc-app-text-secondary);
+}
+.native-form-tree.native-form-tree .sc-project-card__action {
+  margin-top: auto;
+}
 </style>

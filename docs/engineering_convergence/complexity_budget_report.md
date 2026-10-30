@@ -68,11 +68,11 @@ Generated from repository source files. This report is informational during the 
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1650 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1644 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1625 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1607 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
-| 1602 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1554 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
@@ -295,11 +295,11 @@ Generated from repository source files. This report is informational during the 
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1650 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1644 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1625 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1607 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
-| 1602 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1554 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |

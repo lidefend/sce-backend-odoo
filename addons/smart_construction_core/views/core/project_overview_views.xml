@@ -90,48 +90,47 @@
                             <div class="sc-project-cards__title">项目当前状态（概览）</div>
                             <div class="row g-2">
                                 <div class="col-12 col-md-6 col-lg-3">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <div class="fw-bold">合同</div>
+                                    <div class="sc-project-card h-100">
+                                        <div class="sc-project-card__title">合同</div>
+                                        <div class="sc-project-card__metric">
+                                            <div class="sc-project-card__empty" invisible="sc_project_contract_entry_available">当前账号的发布范围未提供项目合同列表入口</div>
                                             <div invisible="not sc_project_contract_entry_available">
-                                                <div class="text-muted" invisible="sc_overview_contract_count != 0">
-                                                    尚未建立合同
-                                                </div>
-                                                <div class="text-muted" invisible="sc_overview_contract_count == 0">
-                                                    已有 <field name="sc_overview_contract_count" readonly="1" nolabel="1"/> 份合同
+                                                <div class="sc-project-card__empty" invisible="sc_overview_contract_count != 0">尚未建立合同</div>
+                                                <div class="sc-project-card__value-row" invisible="sc_overview_contract_count == 0">
+                                                    <span class="sc-project-card__value"><field name="sc_overview_contract_count" readonly="1" nolabel="1"/></span>
+                                                    <span class="sc-project-card__unit">份</span>
                                                 </div>
                                             </div>
-                                            <field name="sc_project_contract_entry_available" invisible="1"/>
-                                            <button type="object" name="action_open_project_contracts" string="查看合同" groups="smart_construction_core.group_sc_cap_contract_read" invisible="not sc_project_contract_entry_available" class="btn btn-link px-0" />
-                                            <div class="text-muted" invisible="sc_project_contract_entry_available">当前账号的发布范围未提供项目合同列表入口</div>
                                         </div>
+                                        <field name="sc_project_contract_entry_available" invisible="1"/>
+                                        <button type="object" name="action_open_project_contracts" string="查看合同" groups="smart_construction_core.group_sc_cap_contract_read" invisible="not sc_project_contract_entry_available" class="btn btn-link px-0 sc-project-card__action" />
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6 col-lg-3">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <div class="fw-bold">成本</div>
-                                            <div class="text-muted">数据暂不可用</div>
-                                            <button type="action" name="%(smart_construction_core.action_project_cost_ledger_my)d" string="查看成本" class="btn btn-link px-0" />
+                                    <div class="sc-project-card h-100">
+                                        <div class="sc-project-card__title">成本</div>
+                                        <div class="sc-project-card__metric">
+                                            <div class="sc-project-card__empty">数据暂不可用</div>
                                         </div>
+                                        <button type="action" name="%(smart_construction_core.action_project_cost_ledger_my)d" string="查看成本" class="btn btn-link px-0 sc-project-card__action" />
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6 col-lg-3">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <div class="fw-bold">财务</div>
-                                            <div class="text-muted">数据暂不可用</div>
-                                            <button type="action" name="%(smart_construction_core.action_payment_request_my)d" string="查看财务" class="btn btn-link px-0" />
+                                    <div class="sc-project-card h-100">
+                                        <div class="sc-project-card__title">财务</div>
+                                        <div class="sc-project-card__metric">
+                                            <div class="sc-project-card__empty">数据暂不可用</div>
                                         </div>
+                                        <button type="action" name="%(smart_construction_core.action_payment_request_my)d" string="查看财务" class="btn btn-link px-0 sc-project-card__action" />
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6 col-lg-3">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <div class="fw-bold">项目任务</div>
-                                            <div class="text-muted">数据暂不可用</div>
-                                            <button type="object" name="action_view_my_tasks" string="查看任务" class="btn btn-link px-0" />
+                                    <div class="sc-project-card h-100">
+                                        <div class="sc-project-card__title">项目任务</div>
+                                        <div class="sc-project-card__metric">
+                                            <div class="sc-project-card__empty">数据暂不可用</div>
                                         </div>
+                                        <button type="object" name="action_view_my_tasks" string="查看任务" class="btn btn-link px-0 sc-project-card__action" />
                                     </div>
                                 </div>
                             </div>
