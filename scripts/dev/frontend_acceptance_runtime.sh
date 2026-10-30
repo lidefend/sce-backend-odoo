@@ -256,8 +256,10 @@ remove_recoverable_frontend_listener() {
 preflight() {
   local db_container="${COMPOSE_PROJECT_NAME}-db-1"
   local redis_container="${COMPOSE_PROJECT_NAME}-redis-1"
-  [[ "$DB_NAME" == "sc_frontend_acceptance" ]] || { echo "[acceptance.runtime] DENY database=$DB_NAME" >&2; exit 2; }
-  [[ "$ODOO_DBFILTER" == '^sc_frontend_acceptance$' ]] || { echo "[acceptance.runtime] DENY dbfilter=$ODOO_DBFILTER" >&2; exit 2; }
+  local expected_db
+  expected_db="$(python3 "$PROFILE_RESOLVER" --profile "$PROFILE" --get DB_NAME 2>/dev/null || echo sc_frontend_acceptance)"
+  [[ "$DB_NAME" == "$expected_db" ]] || { echo "[acceptance.runtime] DENY database=$DB_NAME expected=$expected_db" >&2; exit 2; }
+  [[ "$ODOO_DBFILTER" == "^${DB_NAME}$" ]] || { echo "[acceptance.runtime] DENY dbfilter=$ODOO_DBFILTER expected=^${DB_NAME}$" >&2; exit 2; }
   [[ "$DB_DATA" != "$REDIS_DATA" && "$DB_DATA" != "$ODOO_DATA" && "$REDIS_DATA" != "$ODOO_DATA" ]] || {
     echo "[acceptance.runtime] DENY volume identities overlap" >&2; exit 2;
   }
@@ -284,7 +286,7 @@ preflight() {
     echo "[acceptance.runtime] DENY credential authority is attached to a non-profile filestore" >&2; exit 2;
   }
   docker exec "$db_container" psql -U "$DB_USER" -d postgres -Atc \
-    "select 1 from pg_database where datname = 'sc_frontend_acceptance'" | grep -qx 1 || {
+    "select 1 from pg_database where datname = '$DB_NAME'" | grep -qx 1 || {
       echo "[acceptance.runtime] DENY managed database is absent" >&2; exit 2;
     }
   echo "[acceptance.runtime.preflight] PASS profile=$PROFILE project=$COMPOSE_PROJECT_NAME db=$DB_NAME dbfilter=$ODOO_DBFILTER"
