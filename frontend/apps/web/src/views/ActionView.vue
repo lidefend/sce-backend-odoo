@@ -1511,6 +1511,32 @@ const {
   showMoreContractActions,
 });
 
+function parseOdooDictLiteral(raw: unknown): Record<string, unknown> {
+  const text = String(raw || '').trim();
+  if (!text) return {};
+  try {
+    let json = text
+      .replace(/\bNone\b/g, 'null')
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false');
+    json = json.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"');
+    const parsed = JSON.parse(json);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function routeContextOperationAllowed(operation: string): boolean {
+  const context = parseOdooDictLiteral(routeQueryMap.value.context_raw);
+  if (!(operation in context)) return true;
+  const value = context[operation];
+  if (value === false || value === 0 || value === '0' || value === 'false' || value === 'False') return false;
+  return true;
+}
+
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
   const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
   if (capabilities) return capabilities.create;
@@ -1529,13 +1555,13 @@ function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean 
   return resolveCollectionWriteAuthority({ modelRights: globalStatus?.modelRights });
 }
 
-const canEditRecord = computed(() => resolveWriteRight(actionContract.value));
+const canEditRecord = computed(() => resolveWriteRight(actionContract.value) && routeContextOperationAllowed('edit'));
 
 const canCreateRecord = computed(() => {
   const targetModel = (resolvedModelRef.value || model.value || '').trim();
   if (!targetModel || !actionId.value) return false;
   if (status.value === 'loading') return false;
-  return resolveCreateRight(actionContract.value);
+  return resolveCreateRight(actionContract.value) && routeContextOperationAllowed('create');
 });
 const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');
