@@ -21,7 +21,10 @@
 
 ## 待补齐
 
-- 有合同只读权限账号场景的合同数量展示（结果 B 冻结，暂不验证真实计数）。
-- B3 浏览器真实点击回放（后端 action 已验证，前端点击证据待补）。
-- 截图文件名中的记录标识需要改为本地 id=21。
+- TASK-01 合同数量正向场景：`NOT_VERIFIABLE_WITH_EXISTING_AUTHORIZED_IDENTITIES`（本地
+  `pm1/ct1/sc_contract_read` 的 `sc_project_contract_entry_available` 均为 false；后端
+  `sc_overview_contract_count=4` 计算正常）。环境覆盖限制，非产品缺陷。
+- B3 前端点击：已真实点击，目标模型/阶段过滤/禁用/返回均正确，无向导；但只读 item 树
+  未完整渲染（前端路由到 `/f/.../new` 并返回 400），需进一步确认前端 act_window 树视图呈现。
+- 截图已重命名 `project-10` → `project-21`，SHA256 前后一致。
 
