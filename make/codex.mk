@@ -272,7 +272,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
+.PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -376,7 +376,25 @@ pr.ready: guard.prod.forbid
 	gh pr ready "$$PR"; \
 	'
 
-pr.push: guard.prod.forbid
+pr.publish.preflight: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	EXPECTED="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$EXPECTED" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.publish.preflight: EXPECTED_HEAD must be a full 40-character commit SHA"; exit 7; \
+	fi; \
+	if [ "$$(git rev-parse HEAD)" != "$$EXPECTED" ]; then \
+	  echo "[DENY] pr.publish.preflight: local HEAD does not match EXPECTED_HEAD"; exit 11; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "[DENY] pr.publish.preflight: working tree must be clean"; exit 12; \
+	fi; \
+	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
+	'; \
+	@python3 scripts/ops/local_quick_evidence.py verify --expected-head "$(EXPECTED_HEAD)"
+	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --require-ready
+
+pr.push: guard.prod.forbid pr.publish.preflight
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
 # Temporary outage lane. The default is read-only; origin is never rewritten.
