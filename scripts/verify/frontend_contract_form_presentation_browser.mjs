@@ -75,6 +75,7 @@ await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_0
 
 await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
 await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
+await page.locator(`[data-field-name="${identity.title}"]`).first().waitFor({ state: 'visible', timeout: 45_000 });
 
 // Native form fields carry data-field-name; assert the identity fields render.
 check(await page.locator(`[data-field-name="${identity.title}"]`).count() >= 1, `${identity.title} title field must render`);
