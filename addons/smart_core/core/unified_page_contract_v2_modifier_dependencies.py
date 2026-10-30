@@ -158,6 +158,20 @@ def collect_fact_hydration_fields(contract_v2: Any) -> list[str]:
             return ""
         return str(descriptor.get("name") or descriptor.get("fieldCode") or "").strip()
 
+    def scan(descriptor: Any) -> None:
+        name = fact_name(descriptor)
+        if name and name not in names:
+            names.append(name)
+        if not isinstance(descriptor, dict):
+            return
+        subview = descriptor.get("subview")
+        if not isinstance(subview, dict):
+            return
+        for field_descriptor in subview.get("fields") or []:
+            name = fact_name(field_descriptor)
+            if name and name not in names:
+                names.append(name)
+
     def visit(node: Any) -> None:
         if isinstance(node, list):
             for item in node:
@@ -165,13 +179,9 @@ def collect_fact_hydration_fields(contract_v2: Any) -> list[str]:
             return
         if not isinstance(node, dict):
             return
-        name = fact_name(node.get("fieldInfo"))
-        if name and name not in names:
-            names.append(name)
+        scan(node.get("fieldInfo"))
         for widget in node.get("widgetList") or []:
-            name = fact_name(widget.get("fieldDescriptor") if isinstance(widget, dict) else None)
-            if name and name not in names:
-                names.append(name)
+            scan(widget.get("fieldDescriptor") if isinstance(widget, dict) else None)
         for child in node.get("children") or []:
             visit(child)
 
