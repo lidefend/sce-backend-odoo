@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4978`
+- Scanned files: `4981`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -123,7 +123,7 @@ Generated from repository source files. This report is informational during the 
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
-| 1204 | Python source | `scripts/ops/local_quick_evidence.py` |
+| 1207 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
