@@ -524,6 +524,18 @@ class TestGlobAndPlan(unittest.TestCase):
                          "isolated-acceptance-entry-identity")
         self.assertIn("list_surface_structure", plan["required_suites"])
 
+    def test_acceptance_fixture_and_carrier_runtime_skip_runtime_evidence(self):
+        for path in (
+            "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+            "scripts/dev/frontend_acceptance_runtime.sh",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertNotIn("list_surface_structure", plan["required_suites"], path)
+            self.assertNotIn("relation_roundtrip", plan["required_suites"], path)
+            merge = guard.plan_for_stage(self.registry, plan, "merge")
+            self.assertEqual(merge["required_evidence_suites"], [], path)
+
     def test_exact_governance_tools_do_not_require_runtime(self):
         paths = ['scripts/ops/agent_run_context.py', 'scripts/ops/evidence_scope.py',
                  'scripts/ops/test_evidence_scope.py', 'scripts/ops/validation_delivery_plan.py',
