@@ -52,6 +52,11 @@ PROJECT_MENU_XMLID = "smart_construction_core.menu_sc_project_project"
 PROJECT_ACTION_XMLID = "smart_construction_core.action_sc_project_list"
 CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_p1_daily_contract"
 CONTRACT_ACTION_XMLID = "smart_construction_core.action_sc_general_contract"
+# construction.contract (项目合同) is a distinct model from sc.general.contract
+# (综合合同); both are "contracts" in the business domain but they expose
+# different forms/actions, so each gets its own resolved target.
+CONSTRUCTION_CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_project_contract_overview"
+CONSTRUCTION_CONTRACT_ACTION_XMLID = "smart_construction_core.action_project_contract_overview"
 SETTLEMENT_MENU_XMLID = "smart_construction_core.menu_sc_p1_expense_settlement"
 SETTLEMENT_ACTION_XMLID = "smart_construction_core.action_sc_settlement_order_expense"
 PAYMENT_REQUEST_MENU_XMLID = "smart_construction_core.menu_sc_user_payment_apply"
@@ -91,6 +96,11 @@ def resolve_targets(authority):
             CONTRACT_MENU_XMLID,
             "smart_construction_acceptance_fixture.fe_general_contract_a",
             declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        ),
+        "construction_contract": target(
+            CONSTRUCTION_CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_contract_a",
+            declared_action_xmlid=CONSTRUCTION_CONTRACT_ACTION_XMLID,
         ),
         "general_contract_carrier": target(
             CONTRACT_MENU_XMLID,
