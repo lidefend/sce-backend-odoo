@@ -13,13 +13,26 @@ function check(value, message) { if (!value) throw new Error(message); }
 
 check(target && typeof target.route === 'string' && target.route.startsWith('/'), 'target route is required');
 check(
-  ['construction.contract', 'construction.contract.income', 'construction.contract.expense'].includes(target.model),
+  ['construction.contract', 'construction.contract.income', 'construction.contract.expense', 'sc.general.contract'].includes(target.model),
   'target model must be a construction contract model',
 );
 check(acceptance.login && acceptance.password, 'governed acceptance credentials are required');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 
-const identityFields = ['subject', 'name', 'type', 'document_status', 'business_category_id'];
+const identityByModel = {
+  'sc.general.contract': {
+    title: 'contract_name',
+    fields: ['contract_name', 'contract_no', 'contract_direction', 'contract_type', 'name'],
+    status: ['state', 'validation_status'],
+  },
+  'construction.contract': {
+    title: 'subject',
+    fields: ['subject', 'name', 'type', 'document_status', 'business_category_id'],
+    status: ['state', 'document_status', 'validation_status'],
+  },
+};
+const identity = identityByModel[target.model];
+check(identity, `no identity assertion declared for model ${target.model}`);
 const viewports = [
   { key: '1440', width: 1440, height: 900 },
   { key: '1024', width: 1024, height: 800 },
@@ -64,17 +77,17 @@ await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontent
 await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
 
 // Native form fields carry data-field-name; assert the identity fields render.
-check(await page.locator('[data-field-name="subject"]').count() === 1, 'subject must render as exactly one title field');
+check(await page.locator(`[data-field-name="${identity.title}"]`).count() === 1, `${identity.title} must render as exactly one title field`);
 
-for (const field of ['name', 'type', 'document_status', 'business_category_id']) {
+for (const field of identity.fields) {
   const present = await page.locator(`[data-field-name="${field}"]`).count();
   check(present >= 1, `identity field ${field} is missing from the rendered form`);
 }
 
 // state (lifecycle) and document_status/validation_status are distinct fields.
 check(await page.locator('[data-field-name="state"]').count() >= 1, 'state lifecycle statusbar is missing');
-const distinctStatusFields = await page.locator('[data-field-name="state"], [data-field-name="document_status"], [data-field-name="validation_status"]').count();
-check(distinctStatusFields >= 3, 'state/document_status/validation_status must remain distinct field nodes');
+const distinctStatusFields = await page.locator(identity.status.map((f) => `[data-field-name="${f}"]`).join(', ')).count();
+check(distinctStatusFields >= identity.status.length, `${identity.status.join('/')} must remain distinct field nodes`);
 
 for (const vp of viewports) {
   await page.setViewportSize({ width: vp.width, height: vp.height });
@@ -82,7 +95,7 @@ for (const vp of viewports) {
   const geometry = await page.evaluate(() => {
     const doc = document.documentElement;
     const body = document.body;
-    const title = document.querySelector('[data-field-name="subject"]');
+    const title = document.querySelector(`[data-field-name="${identity.title}"]`);
     return {
       scrollWidth: Math.max(doc.scrollWidth, body ? body.scrollWidth : 0),
       clientWidth: doc.clientWidth,

@@ -585,7 +585,7 @@ assert resolution['schema'] == 'acceptance.record_identity_resolution.v1'
 assert resolution['expected_sha'] == os.environ['EXPECTED_SHA']
 entry = os.environ['CONTRACT_FORM_ENTRY']
 resolved = resolution['targets'][entry]
-assert resolved['model'] in ('construction.contract', 'construction.contract.income', 'construction.contract.expense')
+assert resolved['model'] in ('construction.contract', 'construction.contract.income', 'construction.contract.expense', 'sc.general.contract')
 for key in ('record_id', 'action_id', 'menu_id'):
     assert type(resolved[key]) is int and resolved[key] > 0
 target = {
