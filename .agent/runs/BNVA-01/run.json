@@ -28,5 +28,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "execute BNVA-001 read-only Odoo view API capability audit"
+  "next_exact_step": "execute BNVA-004..007 unified Native View Canonical AST design"
 }
