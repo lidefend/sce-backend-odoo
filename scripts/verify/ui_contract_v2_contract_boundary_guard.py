@@ -29,6 +29,7 @@ ALLOWED_SOURCE_PROJECTION_WRITERS = {
     "_inject_collaboration_contract",
     "_inject_standard_submit_header_button",
     "_inject_record_business_category_context",
+    "_enrich_native_form_composition",
 }
 
 FINAL_CONTRACT_KEYS = {

@@ -648,6 +648,19 @@ export interface ContractV2Snapshot {
   formStructureContract?: ContractV2FormStructureContract;
   searchContract?: ContractV2Dictionary;
   workflowContract?: ContractV2Dictionary;
+  fieldOwnership?: ContractV2FieldOwnership;
+  pageComposition?: ContractV2PageComposition;
+}
+
+export interface ContractV2FieldOwnership {
+  [fieldRef: string]: { ownerSlotRef: string; ownerGroupRef?: string };
+}
+
+export interface ContractV2PageComposition {
+  class: string;
+  diagnostics?: unknown[];
+  schemaVersion?: string;
+  permissionSemanticsPreserved?: boolean;
 }
 
 export interface ContractV2UnsupportedFeature {
