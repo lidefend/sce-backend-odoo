@@ -2583,8 +2583,9 @@ function decodePageComposition(value: unknown, issues: DecodeIssue[]): ContractV
   const className = asString(row.class);
   if (!className) {
     issues.push({ path: '$.pageComposition.class', message: 'is required' });
+    return undefined;
   }
-  const out: ContractV2PageComposition = { class: className || 'unclassified_historical' };
+  const out: ContractV2PageComposition = { class: className };
   if (row.diagnostics !== undefined) {
     if (!Array.isArray(row.diagnostics)) {
       issues.push({ path: '$.pageComposition.diagnostics', message: 'must be an array' });
