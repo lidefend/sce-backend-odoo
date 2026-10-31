@@ -51,6 +51,15 @@
 - 5 个技术字段（active、can_review、display_name、message_needaction、write_date）
   显式登记为 technical
 
+## 实施结果
+
+- top-level fieldOwnership：33 → 38。
+- 5 个业务字段已获得归属，落在 `primary_facts / other_facts` 兜底组。
+- 5 个技术字段正确排除（TECHNICAL_FIELD_CODES）。
+- pageComposition 仍为 formal，diagnostics=0。
+- 精确语义映射（reject_reason→approval_remarks 等）留作后续细化；当前先保证
+  业务字段不再“无归属”。
+
 ## 边界
 
 只改 P1 声明（view_orchestration / form structure config），不改 P0 机制、
