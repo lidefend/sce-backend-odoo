@@ -28,6 +28,8 @@
       "kind": "runtime"
     }
   },
-  "blockers": [],
-  "next_exact_step": "run governed browser verification for View 1776 formal shadow contraction"
+  "blockers": [
+    "652/944 runtime DOM verification needs a fixture identity that can open action 652"
+  ],
+  "next_exact_step": "reconcile overlap count 43 vs documented 79, then verify 652/944 with a working fixture route"
 }
