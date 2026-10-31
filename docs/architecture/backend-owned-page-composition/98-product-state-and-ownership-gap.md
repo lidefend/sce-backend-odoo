@@ -31,6 +31,26 @@
 1. 为 5 个业务字段补齐 fieldOwnership（P1 声明层）。
 2. 将 5 个技术字段显式登记为 technical，避免被当作缺失业务归属误报。
 
+## 根因（已定位）
+
+5 个业务字段均在 `project_overview_views.xml` 中，但放置方式未被归属推导覆盖：
+
+- `validation_status`：`invisible="1"`
+- `reject_reason`：`invisible="not reject_reason" readonly="1"`
+- `sc_overview_contract_count`：卡片 `<div>` 内只读统计
+- `source_created_at` / `source_created_by`：`readonly="1"` 来源审计字段
+
+归属推导只覆盖落入候选列表的可见/常规字段，故这 5 个字段无 slot/group。
+
+## 修复路径
+
+- `reject_reason` → collaboration / approval_remarks
+- `sc_overview_contract_count` → overview
+- `validation_status` → amount_progress / status_dates
+- `source_created_at` / `source_created_by` → details_source / provenance
+- 5 个技术字段（active、can_review、display_name、message_needaction、write_date）
+  显式登记为 technical
+
 ## 边界
 
 只改 P1 声明（view_orchestration / form structure config），不改 P0 机制、
