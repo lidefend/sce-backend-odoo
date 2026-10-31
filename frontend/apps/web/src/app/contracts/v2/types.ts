@@ -177,6 +177,7 @@ export interface ContractV2FormStructureContract {
   fieldLabels?: Record<string, string>;
   slots: ContractV2FormStructureSlot[];
   fieldRoles: Record<string, ContractV2FormStructureRole>;
+  fieldOwnership?: ContractV2FieldOwnership;
   /** Declared page regions that are not Odoo view elements. */
   surfaces?: ContractV2FormStructureSurface[];
   sourceAuthority: ContractV2FormStructureSourceAuthority;

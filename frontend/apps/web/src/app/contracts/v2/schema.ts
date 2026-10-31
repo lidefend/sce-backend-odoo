@@ -1651,7 +1651,7 @@ function decodeFormStructureContract(
   rejectUnknownKeys(raw, [
     'source', 'structureVersion', 'model', 'viewType', 'mode', 'presentationMode',
     'structureSource', 'structureAuthority', 'columns',
-    'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles',
+    'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles', 'fieldOwnership',
     'surfaces', 'sourceAuthority',
   ], path, issues);
   if (raw.source !== 'ui.contract.v2.form_structure_contract') {
@@ -1750,6 +1750,7 @@ function decodeFormStructureContract(
     raw.sourceAuthority, `${path}.sourceAuthority`, issues,
   );
   if (!sourceAuthority) return undefined;
+  const fieldOwnership = decodeFieldOwnership(raw.fieldOwnership, issues);
   return {
     source: 'ui.contract.v2.form_structure_contract',
     structureVersion: structureVersion === '1.1' ? '1.1' : '1.0',
@@ -1777,6 +1778,7 @@ function decodeFormStructureContract(
       : {}),
     slots,
     fieldRoles,
+    ...(fieldOwnership ? { fieldOwnership } : {}),
     ...(() => {
       const surfaces = decodeFormStructureSurfaces(raw.surfaces, `${path}.surfaces`, issues);
       return surfaces === undefined ? {} : { surfaces };
