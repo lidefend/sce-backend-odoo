@@ -291,6 +291,12 @@ def build_native_form_structure_contract(
             return "audit"
         return "context"
 
+    def field_role(occurrence: NativeFieldOccurrence, group_native_name: str) -> str:
+        field_type = str(occurrence.field_metadata.get("type") or "").strip()
+        if field_type == "many2one":
+            return "relation"
+        return group_role(group_native_name)
+
     def field_label(code: str) -> str:
         return labels.get(code) or str(code)
 
@@ -331,7 +337,7 @@ def build_native_form_structure_contract(
                     continue
                 seen_fields.add(code)
                 field_refs.append(code)
-                role = group_role(group.native_name)
+                role = field_role(occurrence, group.native_name)
                 field_roles[code] = {
                     "role": role,
                     "slot": slot_identity,
