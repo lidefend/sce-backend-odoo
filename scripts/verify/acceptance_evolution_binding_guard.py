@@ -472,6 +472,21 @@ def _min_count(contract: dict | None, key: str, default: int = 1) -> int:
     return int(((contract or {}).get("min_counts") or {}).get(key, default))
 
 
+def _relation_min_count_contract(contract: dict | None, data: dict) -> dict:
+    """Resolve model-specific relation roundtrip minimums without lowering the
+    project baseline or defaulting an unknown model to a weaker threshold."""
+    model = str(((data.get("identity") or {}).get("model") or "")).strip()
+    _require(bool(model), "relation roundtrip model identity is missing")
+    if model == "project.project":
+        return {"min_counts": ((contract or {}).get("min_counts") or {})}
+    per_model = (((contract or {}).get("model_min_counts") or {}).get(model))
+    _require(
+        isinstance(per_model, dict) and per_model,
+        f"no relation roundtrip min_counts declared for model {model}",
+    )
+    return {"min_counts": per_model}
+
+
 def _adapter_entry_verify(data: dict, head: str, contract: dict | None = None) -> dict:
     _require(str(data.get("status", "")).upper() == "PASS", "entry verify status is not PASS")
     _require(
@@ -653,6 +668,7 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     visible_control_fields = data.get("visible_relation_control_fields") or []
     contract_render_comparison = data.get("contract_render_comparison")
     comparison_summary = data.get("contract_render_comparison_summary")
+    min_contract = _relation_min_count_contract(contract, data)
     _require(isinstance(openable, list), "relation roundtrip declared_openable must be an array")
     _require(isinstance(controls, list), "relation roundtrip controls must be an array")
     _require(isinstance(attempts, list), "relation roundtrip attempts must be an array")
@@ -689,11 +705,11 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
         "relation roundtrip not-visible openable fields must be an array",
     )
     _require(
-        declared_entries >= _min_count(contract, "declared_entry_count"),
+        declared_entries >= _min_count(min_contract, "declared_entry_count"),
         f"relation roundtrip declared entries={declared_entries} is below the declared minimum",
     )
     _require(
-        len(openable) >= _min_count(contract, "declared_openable"),
+        len(openable) >= _min_count(min_contract, "declared_openable"),
         f"relation roundtrip openable entries={len(openable)} is below the declared minimum",
     )
     openable_fields = [str(row.get("field") or "") for row in openable if isinstance(row, dict)]
@@ -716,11 +732,11 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
         "relation populated, empty and non-visible fields do not partition the contract",
     )
     _require(
-        len(contract_openable_fields) >= _min_count(contract, "contract_openable_entries"),
+        len(contract_openable_fields) >= _min_count(min_contract, "contract_openable_entries"),
         "relation roundtrip contract openable surface is below the declared minimum",
     )
     _require(
-        len(visible_openable_fields) >= _min_count(contract, "visible_openable_entries"),
+        len(visible_openable_fields) >= _min_count(min_contract, "visible_openable_entries"),
         "relation roundtrip visible openable surface is below the declared minimum",
     )
     _require(
