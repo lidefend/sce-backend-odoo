@@ -49,6 +49,14 @@ overlap 收敛为 43，属正向收敛，非门控隐藏。后续按 43 追踪�
 （无 action 上下文）仍为 legacy-form-section。该变化需归入 652/944 双入口
 追踪独立核查，不改变本批次 590/1776 的 shadow 收缩结论。
 
+根因线索：PC-01 在
+`addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml`
+注册了 `business_config_contract_project_overview_form_structure_v1`（绑定
+Action 590，identity_fields = name/project_code/user_id/manager_id/owner_id，
+priority 700）。该声明使项目标准表单入口解析到 formal overview（View 1776），
+因此 `/f/project.project/1` 从 legacy 变为 formal。Action 652 的后台入口是否仍
+绑定 View 944，需在双入口追踪中继续核对。
+
 ## 待办
 
 - 枚举 79 与 43 的 overlap 口径差异来源。
