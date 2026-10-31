@@ -23,6 +23,7 @@ import type {
   ContractV2DeliveryProfile,
   ContractV2DispatchMode,
   ContractV2FieldGroups,
+  ContractV2FieldOwnership,
   ContractV2FormStructureConfiguredSection,
   ContractV2FormStructureContract,
   ContractV2FormStructureAuthority,
@@ -43,6 +44,7 @@ import type {
   ContractV2Lifecycle,
   ContractV2Meta,
   ContractV2PageRenderMode,
+  ContractV2PageComposition,
   ContractV2PageInfo,
   ContractV2CachePolicy,
   ContractV2CanonicalFormSemanticRole,
@@ -2542,6 +2544,59 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
   return out;
 }
 
+function decodeFieldOwnership(value: unknown, issues: DecodeIssue[]): ContractV2FieldOwnership | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.fieldOwnership', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const out: ContractV2FieldOwnership = {};
+  for (const [fieldRef, rawEntry] of Object.entries(row)) {
+    if (!isRecord(rawEntry)) {
+      issues.push({ path: `$.fieldOwnership.${fieldRef}`, message: 'must be an object' });
+      continue;
+    }
+    const entry = rawEntry as ContractV2Dictionary;
+    const ownerSlotRef = asString(entry.ownerSlotRef);
+    if (!ownerSlotRef) {
+      issues.push({ path: `$.fieldOwnership.${fieldRef}.ownerSlotRef`, message: 'is required' });
+      continue;
+    }
+    const decoded: ContractV2FieldOwnership[string] = { ownerSlotRef };
+    const ownerGroupRef = asString(entry.ownerGroupRef);
+    if (ownerGroupRef) decoded.ownerGroupRef = ownerGroupRef;
+    out[fieldRef] = decoded;
+  }
+  return out;
+}
+
+function decodePageComposition(value: unknown, issues: DecodeIssue[]): ContractV2PageComposition | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.pageComposition', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const className = asString(row.class);
+  if (!className) {
+    issues.push({ path: '$.pageComposition.class', message: 'is required' });
+  }
+  const out: ContractV2PageComposition = { class: className || 'unclassified_historical' };
+  if (row.diagnostics !== undefined) {
+    if (!Array.isArray(row.diagnostics)) {
+      issues.push({ path: '$.pageComposition.diagnostics', message: 'must be an array' });
+    } else {
+      out.diagnostics = row.diagnostics as unknown[];
+    }
+  }
+  const schemaVersion = optionalStringField(row, 'schemaVersion', '$.pageComposition', issues);
+  if (schemaVersion) out.schemaVersion = schemaVersion;
+  const permissionSemanticsPreserved = optionalBooleanField(row, 'permissionSemanticsPreserved', '$.pageComposition', issues);
+  if (permissionSemanticsPreserved !== undefined) out.permissionSemanticsPreserved = permissionSemanticsPreserved;
+  return out;
+}
+
 function validateDeliveryIdentity(
   pageInfo: ContractV2PageInfo,
   runtimeContract: ContractV2RuntimeContract,
@@ -2567,7 +2622,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const issues: DecodeIssue[] = [];
   rejectUnknownKeys(root, [
     'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
-    'formStructureContract', 'searchContract', 'workflowContract', 'meta',
+    'formStructureContract', 'searchContract', 'workflowContract', 'fieldOwnership', 'pageComposition', 'meta',
   ], '$', issues);
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
@@ -2584,6 +2639,8 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   );
   const searchContract = decodeSearchContract(root.searchContract, issues);
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
+  const fieldOwnership = decodeFieldOwnership(root.fieldOwnership, issues);
+  const pageComposition = decodePageComposition(root.pageComposition, issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (!issues.length) projectNodeComponents({layoutContract, statusContract, dataContract});
@@ -2601,5 +2658,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     ...(formStructureContract ? { formStructureContract } : {}),
     ...(searchContract ? { searchContract } : {}),
     ...(workflowContract ? { workflowContract } : {}),
+    ...(fieldOwnership ? { fieldOwnership } : {}),
+    ...(pageComposition ? { pageComposition } : {}),
   };
 }
