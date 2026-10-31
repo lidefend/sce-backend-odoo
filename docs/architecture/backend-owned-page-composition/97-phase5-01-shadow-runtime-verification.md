@@ -57,6 +57,15 @@ priority 700）。该声明使项目标准表单入口解析到 formal overview�
 因此 `/f/project.project/1` 从 legacy 变为 formal。Action 652 的后台入口是否仍
 绑定 View 944，需在双入口追踪中继续核对。
 
+652/944 运行时复核最终结论（BLOCKED）：`fixture_role_system_admin`（拥有
+Smart Core Admin / group 15）经
+`/r/project.project/1?action_id=652&menu_id=397` 与
+`/r/project.project/1?action_id=652&view_id=944` 均被前端
+`NAVIGATION_AUTHORITY_DENIED` 拒绝，且 system_admin 的 released navigation
+不含“系统管理（内部）→项目管理（后台）”入口。候选 fixture 没有能实际到达
+Action 652 的运行时身份，且本批次禁止创建用户/修改权限，故 View 944 运行时
+DOM 复核保持 NOT_VERIFIED；代码层面 formal 门控只对 formal 生效，944 不受影响。
+
 ## 待办
 
 - 枚举 79 与 43 的 overlap 口径差异来源。
