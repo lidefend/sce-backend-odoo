@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "BNVA-01",
+  "branch": "feature/pc01-phase5-shadow-contraction",
+  "baseline_sha": "be0da9942b18e6b5bbedf4646705ca472834dab1",
+  "status": "active",
+  "goal": ".agent/goals/BNVA-01.yaml",
+  "record": "docs/architecture/backend-owned-page-composition/100-bnva-01-charter.md",
+  "scope": [
+    "docs/architecture/backend-owned-page-composition/100-bnva-01-charter.md",
+    ".agent/goals/BNVA-01.yaml",
+    ".agent/runs/BNVA-01/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing Odoo runtime introspection via governed read-only tools"
+  },
+  "checks": {
+    "bnva_001_odoo_view_api_audit": {
+      "target": "readonly_odoo_view_api_capability_audit",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/base.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/contract_Parser.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "execute BNVA-001 read-only Odoo view API capability audit"
+}

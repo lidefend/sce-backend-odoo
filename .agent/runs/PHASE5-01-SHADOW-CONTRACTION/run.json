@@ -3,7 +3,7 @@
   "id": "PHASE5-01-SHADOW-CONTRACTION",
   "branch": "feature/pc01-phase5-shadow-contraction",
   "baseline_sha": "795f9fc10ed8fca2d7e8444cf92fa5e391609fb0",
-  "status": "active",
+  "status": "superseded",
   "goal": ".agent/goals/PHASE5-01-SHADOW-CONTRACTION.yaml",
   "record": "docs/architecture/backend-owned-page-composition/96-phase5-01-shadow-contraction-arrangement.md",
   "scope": [
@@ -31,5 +31,5 @@
   "blockers": [
     "652/944 runtime DOM verification needs a fixture identity that can open action 652"
   ],
-  "next_exact_step": "reconcile overlap count 43 vs documented 79, then verify 652/944 with a working fixture route"
+  "next_exact_step": "superseded by BNVA-01 (backend native view authority optimization); core shadow-contraction and 33->38 ownership work is complete"
 }
