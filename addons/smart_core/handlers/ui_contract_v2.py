@@ -73,7 +73,7 @@ from .ui_contract_v2_constants import (
 )
 from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
-from ..core.form_structure_authority import resolve_form_structure_governance
+from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v5-field-ownership"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v6-technical-field-exclusion"
 
 
 def _node_validation_snapshot_ready(source):
@@ -3941,6 +3941,16 @@ class UiContractV2Handler(BaseIntentHandler):
             return str(name or "").strip()
 
         common_fields = [name for name in fields.keys() if isinstance(name, str) and name.strip()]
+        form_view_spec = (ui_data.get("views") or {}).get("form") if isinstance(ui_data.get("views"), dict) else {}
+        raw_view_fields = []
+        for row in (form_view_spec.get("fields") if isinstance(form_view_spec.get("fields"), list) else []):
+            if isinstance(row, dict):
+                name = str(row.get("name") or row.get("field") or row.get("field_name") or "").strip()
+            else:
+                name = str(row or "").strip()
+            if name and name not in TECHNICAL_FIELD_CODES and name not in raw_view_fields:
+                raw_view_fields.append(name)
+        common_fields = list(dict.fromkeys(common_fields + raw_view_fields))
         profile = {
             "common_fields": common_fields,
             "detail_fields": [],

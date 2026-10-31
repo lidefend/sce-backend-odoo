@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import ui_contract_v2_projection as _projection
+from ..core.form_structure_authority import TECHNICAL_FIELD_CODES
 from .ui_contract_v2_constants import (
     BUSINESS_FORM_STRUCTURE_HISTORY_LABEL_TOKENS,
     BUSINESS_FORM_STRUCTURE_HISTORY_NAME_PREFIXES,
@@ -280,7 +281,7 @@ def build_form_structure_contract(
     business_common_fields = [
         name
         for name in common_fields
-        if name not in set(history_check_fields)
+        if name not in set(history_check_fields) and name not in TECHNICAL_FIELD_CODES
     ]
 
     declared_identity = (governance or {}).get("identity_fields")
