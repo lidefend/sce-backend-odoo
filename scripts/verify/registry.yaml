@@ -986,6 +986,24 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: page_composition_evidence_collector.py
+  status: active
+  owner: platform-team
+  date: '2026-10-31'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: page_composition_evidence_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-31'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: page_composition_integrity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-31'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: page_pattern_reference_ledger_guard.py
   status: active
   owner: platform-team
@@ -1549,6 +1567,24 @@ entries:
   status: orphan
   owner: platform-team
   date: '2026-08-16'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_page_composition_evidence_contract.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-31'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_page_composition_integrity_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-31'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_page_composition_integrity_guard_rules.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-31'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_page_pattern_reference_ledger_guard.py
