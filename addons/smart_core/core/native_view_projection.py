@@ -232,7 +232,6 @@ def derive_native_field_ownership(
 
     ownership: dict[str, dict[str, str]] = {}
     seen: set[str] = set()
-    identity_set = set(str(item).strip() for item in identity_fields if str(item).strip())
     for occurrence in native_view.fields:
         code = occurrence.field_code
         if code in TECHNICAL_FIELD_CODES:
@@ -250,8 +249,6 @@ def derive_native_field_ownership(
             "ownerSlotRef": f"slot:{owner_slot}",
             "ownerGroupRef": f"group:{owner_group}",
         }
-        if code in identity_set:
-            entry["role"] = "identity"
         ownership[f"field:{code}"] = entry
     return ownership
 
@@ -281,6 +278,18 @@ def build_native_form_structure_contract(
 
     labels = {str(k): str(v) for k, v in (field_labels or {}).items()}
     identity_set = set(str(item).strip() for item in identity_fields if str(item).strip())
+
+    def group_role(native_name: str) -> str:
+        lowered = native_name.lower()
+        if "collaboration" in lowered or "approval" in lowered:
+            return "activity"
+        if "trace" in lowered or "source" in lowered:
+            return "audit"
+        if "readiness" in lowered or "summary" in lowered:
+            return "summary"
+        if "responsibility" in lowered and "responsible" not in lowered:
+            return "audit"
+        return "context"
 
     def field_label(code: str) -> str:
         return labels.get(code) or str(code)
@@ -320,7 +329,7 @@ def build_native_form_structure_contract(
                     continue
                 seen_fields.add(code)
                 field_refs.append(code)
-                role = "identity" if code in identity_set else "fact"
+                role = group_role(group.native_name)
                 field_roles[code] = {
                     "role": role,
                     "slot": slot_identity,
@@ -330,7 +339,7 @@ def build_native_form_structure_contract(
                 {
                     "name": group_identity,
                     "title": group.native_string or group_identity,
-                    "role": "identity" if any(code in identity_set for code in field_refs) else "fact",
+                    "role": group_role(group.native_name),
                     "fieldRefs": field_refs,
                     "fieldLabels": {code: field_label(code) for code in field_refs},
                 }
@@ -347,7 +356,7 @@ def build_native_form_structure_contract(
                 continue
             seen_fields.add(code)
             field_roles[code] = {
-                "role": "identity" if code in identity_set else "fact",
+                "role": "context",
                 "slot": slot_identity,
                 "group": slot_identity,
             }

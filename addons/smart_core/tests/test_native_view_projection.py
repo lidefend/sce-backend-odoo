@@ -117,7 +117,7 @@ class TestNativeViewProjection(unittest.TestCase):
             ownership["field:name"]["ownerGroupRef"],
             "group:sc_project_information_identity",
         )
-        self.assertEqual(ownership["field:name"]["role"], "identity")
+        self.assertNotIn("role", ownership["field:name"])
         # project_code is in the same identity group
         self.assertEqual(
             ownership["field:project_code"]["ownerGroupRef"],
@@ -144,7 +144,7 @@ class TestNativeViewProjection(unittest.TestCase):
             group for group in slot["groups"] if group["name"] == "sc_project_information_identity"
         )
         self.assertIn("name", identity_group["fieldRefs"])
-        self.assertEqual(contract["fieldRoles"]["name"]["role"], "identity")
+        self.assertEqual(contract["fieldRoles"]["name"]["role"], "context")
         self.assertEqual(
             contract["fieldOwnership"]["field:name"]["ownerGroupRef"],
             "group:sc_project_information_identity",
