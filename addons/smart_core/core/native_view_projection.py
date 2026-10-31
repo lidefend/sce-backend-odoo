@@ -20,7 +20,9 @@ from typing import Any
 
 from lxml import etree
 
-_STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page", "div"})
+from .form_structure_authority import TECHNICAL_FIELD_CODES
+
+_STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
 
 
 @dataclass
@@ -230,6 +232,8 @@ def derive_native_field_ownership(
     identity_set = set(str(item).strip() for item in identity_fields if str(item).strip())
     for occurrence in native_view.fields:
         code = occurrence.field_code
+        if code in TECHNICAL_FIELD_CODES:
+            continue
         if code in seen:
             continue
         seen.add(code)

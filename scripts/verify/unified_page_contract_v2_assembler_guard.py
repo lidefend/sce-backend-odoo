@@ -35,6 +35,9 @@ ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.p
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
     ASSEMBLED_CACHE_MODULE,
+    "addons/smart_core/core/form_structure_authority.py",
+    "addons/smart_core/core/native_view_projection.py",
+    "addons/smart_core/handlers/ui_contract_v2_form_structure.py",
     "addons/smart_core/core/native_modifier_comparison.py",
     "addons/smart_core/core/native_modifier_context.py",
     "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
@@ -73,7 +76,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "4ef5cc5b26b36a8c4cc2c4a0d3a869e6ebf9ca817dd9a9fc569ae48dbadf2e45"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "7124b39d2999e9a43624d5ef243ef9878b7e2fc842eabbac6c1ddc17976244ac"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
