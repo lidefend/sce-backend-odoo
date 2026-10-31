@@ -325,6 +325,8 @@ def build_native_form_structure_contract(
             field_refs: list[str] = []
             for occurrence in group_fields:
                 code = occurrence.field_code
+                if code in TECHNICAL_FIELD_CODES:
+                    continue
                 if code in seen_fields:
                     continue
                 seen_fields.add(code)
@@ -352,6 +354,8 @@ def build_native_form_structure_contract(
         ]
         for occurrence in sheet_fields:
             code = occurrence.field_code
+            if code in TECHNICAL_FIELD_CODES:
+                continue
             if code in seen_fields:
                 continue
             seen_fields.add(code)
