@@ -25,6 +25,10 @@ assert.equal(local.operation, 'readonly');
 assert(Object.isFrozen(local.target));
 assert(!JSON.stringify(redactedEnvironmentEvidence(local)).includes('local-secret'));
 
+const projectWorkspaceAudit = resolveAcceptanceEnvironment({ tool: 'project-workspace-dom-audit', operation: 'readonly', env: localEnv });
+assert.equal(projectWorkspaceAudit.database, 'sc_frontend_acceptance');
+assert.equal(projectWorkspaceAudit.operation, 'readonly');
+
 const localRelation = resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', env: { ...localEnv, SC_ACCEPTANCE_EXPECTED_SHA: SHA } });
 assert.equal(localRelation.target.identityPath, '/api/runtime-version');
 assert.equal(localRelation.target.identityRequired, true);
