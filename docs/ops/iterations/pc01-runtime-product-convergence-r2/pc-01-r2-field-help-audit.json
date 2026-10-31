@@ -1,0 +1,9 @@
+{
+  "schema": "pc01.field_help_audit.v1",
+  "served_sha": "b7a5b987b62b8c1b6f9dca2cbe52119cd6206669",
+  "help_trigger_count": 4,
+  "all_trigger_text": "?",
+  "source_selector": "data-field-help-trigger",
+  "finding": "四个 data-field-help-trigger 均渲染为 ?，是 FormSection.vue 的字段帮助触发按钮",
+  "pending": "每个 trigger 的字段归属、help 内容与点击交互结果需增强采集后确认"
+}
