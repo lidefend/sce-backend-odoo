@@ -1,0 +1,29 @@
+{
+  "schema": "pc01.identity_projection_map.v1",
+  "served_sha": "b7a5b987b62b8c1b6f9dca2cbe52119cd6206669",
+  "duplicates": {
+    "user_id": {
+      "dom_count": 2,
+      "containers_inferred": [
+        "project_overview header summary (你是：user_id)",
+        "responsibility group (责任信息)"
+      ]
+    },
+    "manager_id": {
+      "dom_count": 2,
+      "containers_inferred": [
+        "project_overview header summary (项目经理 manager_id)",
+        "responsibility group (责任信息)"
+      ]
+    },
+    "project_code": {
+      "dom_count": 2,
+      "containers_inferred": [
+        "project_overview header summary (项目编号 project_code)",
+        "identity/responsibility surface"
+      ]
+    }
+  },
+  "target": "身份摘要只突出一次项目编号与当前用户角色；责任信息完整保留四类责任字段",
+  "pending": "两个重复节点的精确父容器 DOM selector 需增强采集后确认"
+}

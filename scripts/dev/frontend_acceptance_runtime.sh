@@ -420,7 +420,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -604,6 +604,40 @@ PYCONTRACTFORM
           E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" CONTRACT_FORM_PRESENTATION_TARGET="$target_json" \
           CONTRACT_FORM_PRESENTATION_OUTPUT=.runtime/final-acceptance/contract-form-presentation/${CONTRACT_FORM_ENTRY}/summary.json \
           node "$ROOT_DIR/scripts/verify/frontend_contract_form_presentation_browser.mjs"
+        ;;
+      standard-project-workspace-dom)
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
+        candidate_db_uuid_guard
+        [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: project workspace DOM audit requires frozen candidate" >&2; exit 2; }
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        target_json="$(EXPECTED_SHA="$expected_sha" python3 - <<'PYPROJECTDOM'
+import json, os
+from pathlib import Path
+resolution = json.loads(Path('artifacts/backend/acceptance_record_identity.json').read_text())
+assert resolution['schema'] == 'acceptance.record_identity_resolution.v1'
+assert resolution['expected_sha'] == os.environ['EXPECTED_SHA']
+resolved = resolution['targets']['project']
+assert resolved['model'] == 'project.project'
+for key in ('record_id', 'action_id', 'menu_id'):
+    assert type(resolved[key]) is int and resolved[key] > 0
+target = {
+    'model': resolved['model'],
+    'route': f"/r/{resolved['model']}/{resolved['record_id']}?action_id={resolved['action_id']}&menu_id={resolved['menu_id']}",
+    'record_xmlid': resolved['record_xmlid'],
+}
+print(json.dumps(target, separators=(',', ':')))
+PYPROJECTDOM
+)"
+        SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
+          FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
+          SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
+          SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
+          SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_config_admin SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_config_admin \
+          E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" PROJECT_WORKSPACE_TARGET="$target_json" \
+          PROJECT_WORKSPACE_OUTPUT=.runtime/final-acceptance/project-workspace-dom/summary.json \
+          node "$ROOT_DIR/scripts/verify/frontend_project_workspace_dom_audit.mjs"
         ;;
       standard-relation-roundtrip-browser)
         [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2

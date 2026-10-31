@@ -1972,6 +1972,11 @@
       "owner": "platform-team",
       "reason": "PC-02 综合合同原生表单身份带四视口验收探针：只读复用受管 candidate 运行时和契约回执，按 CONTRACT_FORM_ENTRY 分别验收收入/支出合同。需要隔离候选环境，因此不由本地离线 lane 派发；登记为按需浏览器验收探针。"
     },
+    "verify.frontend.project_workspace_dom.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "PC-01 项目工作空间 DOM 与四视口审计探针：只读复用受管 candidate/local 运行时与契约回执，解析 project.project 真实记录、Action、Menu，采集身份、状态、协作区几何与 390px 布局。需要隔离候选环境，登记为按需浏览器验收探针。"
+    },
     "verify.frontend.contract_prompt_action_presentation.browser": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

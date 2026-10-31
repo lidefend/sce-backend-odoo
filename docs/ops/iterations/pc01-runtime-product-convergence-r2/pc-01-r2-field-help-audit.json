@@ -1,0 +1,15 @@
+{
+  "schema": "pc01.field_help_audit.v1",
+  "served_sha": "b7a5b987b62b8c1b6f9dca2cbe52119cd6206669",
+  "help_trigger_count": 4,
+  "all_trigger_text": "?",
+  "source_selector": "data-field-help-trigger",
+  "triggers": [
+    {"aria_label": "项目状态", "text": "?"},
+    {"aria_label": "经营方式", "text": "?"},
+    {"aria_label": "描述", "text": "?"},
+    {"aria_label": "分析账户", "text": "?"}
+  ],
+  "finding": "四个 data-field-help-trigger 均渲染为 ?，是 FormSection.vue 的字段帮助触发按钮；其中 aria-label=项目状态 正是项目状态卡旁的问号",
+  "pending": "每个 trigger 的 help 内容与点击交互结果需确认；若无有效帮助内容则收敛"
+}
