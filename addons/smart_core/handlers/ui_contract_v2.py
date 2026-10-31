@@ -73,6 +73,7 @@ from .ui_contract_v2_constants import (
 )
 from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
+from ..core.form_structure_authority import resolve_form_structure_governance
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -662,10 +663,16 @@ class UiContractV2Handler(BaseIntentHandler):
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
         ui_params = self._ui_contract_params(params)
+        entry_action_id, _ = parse_positive_int(
+            params.get("action_id") or params.get("actionId") or ui_params.get("action_id"),
+            allow_empty=True,
+        )
         native_form_source = self._uses_native_form_source(ui_params)
         runtime_source_type = "native_form_projection" if native_form_source else "ui.contract"
         projection_context = dict(getattr(self.env, "context", {}) or {})
         projection_context["contract_projection_readonly"] = True
+        if entry_action_id:
+            projection_context["contract_action_id"] = entry_action_id
         projection_context.update(authenticated_projection_locale(self.env, params))
         try:
             projection_env, projection_su_env = build_projection_environments(self.env, self.su_env, params, projection_context)
@@ -843,6 +850,11 @@ class UiContractV2Handler(BaseIntentHandler):
                         projection_env,
                         projection_su_env,
                         base_ui_params or ui_params,
+                    )
+                    self._enrich_native_form_composition(
+                        ui_data,
+                        projection_su_env,
+                        action_id=int((base_ui_params or ui_params).get("action_id") or 0),
                     )
                 except FormConfigurationError:
                     raise
@@ -2602,6 +2614,9 @@ class UiContractV2Handler(BaseIntentHandler):
                 governance=form_structure_governance,
                 navigation_title=str(source_contract.get("title") or "").strip(),
             )
+            form_structure = source_contract.get("form_structure_contract")
+            if isinstance(form_structure, dict) and isinstance(form_structure.get("fieldOwnership"), dict):
+                source_contract["field_ownership"] = form_structure["fieldOwnership"]
             if attachment_field:
                 collaboration = source_contract.get("collaboration") if isinstance(source_contract.get("collaboration"), dict) else {}
                 attachments = collaboration.get("attachments") if isinstance(collaboration.get("attachments"), dict) else {}
@@ -3864,6 +3879,92 @@ class UiContractV2Handler(BaseIntentHandler):
             or ui_params.get("resId")
         )
         return not view_type and bool(record_id or render_profile in {"create", "edit", "readonly"})
+
+    def _enrich_native_form_composition(
+        self,
+        ui_data: dict[str, Any],
+        su_env,
+        *,
+        action_id: int = 0,
+    ) -> None:
+        if not isinstance(ui_data, dict):
+            return
+        model = str(ui_data.get("model") or "").strip()
+        if not model:
+            return
+        view_ids = ui_data.get("view_ids_by_type") if isinstance(ui_data.get("view_ids_by_type"), dict) else {}
+        try:
+            view_id = int(ui_data.get("view_id") or view_ids.get("form") or 0)
+        except (TypeError, ValueError):
+            view_id = 0
+        fields = ui_data.get("fields") if isinstance(ui_data.get("fields"), dict) else {}
+        if not fields:
+            return
+        try:
+            configs = su_env["ui.business.config.contract"]._effective_view_orchestration_contracts(
+                model, view_type="form", action_id=action_id, view_id=view_id,
+            )
+        except Exception:
+            _logger.debug("native form composition enrichment skipped (config lookup) model=%s", model, exc_info=True)
+            return
+        if not configs:
+            return
+        source_contract = {
+            "views": {
+                "form": (ui_data.get("views") or {}).get("form")
+                if isinstance(ui_data.get("views"), dict)
+                else {}
+            },
+            "governance": ui_data.get("governance") if isinstance(ui_data.get("governance"), dict) else {},
+            "source_trace": ui_data.get("source_trace") if isinstance(ui_data.get("source_trace"), dict) else {},
+        }
+        try:
+            governance = resolve_form_structure_governance(source_contract, configs, view_type="form")
+        except Exception:
+            _logger.debug("native form composition enrichment skipped (governance) model=%s", model, exc_info=True)
+            return
+        if not isinstance(governance, dict) or not governance:
+            return
+        if str(governance.get("form_structure_authority") or "").strip() == "native_authority":
+            return
+
+        def field_type(name):
+            row = fields.get(name)
+            if isinstance(row, dict):
+                return str(row.get("type") or row.get("ttype") or "").strip()
+            return ""
+
+        def field_label(name):
+            row = fields.get(name)
+            if isinstance(row, dict):
+                return str(row.get("string") or row.get("label") or name).strip()
+            return str(name or "").strip()
+
+        common_fields = [name for name in fields.keys() if isinstance(name, str) and name.strip()]
+        profile = {
+            "common_fields": common_fields,
+            "detail_fields": [],
+            "amount_fields": [],
+            "date_fields": [],
+            "status_field": "",
+            "note_field": "",
+            "attachment_field": "",
+            "field_labels": {name: field_label(name) for name in common_fields},
+        }
+        form_structure = _form_structure.build_form_structure_contract(
+            self,
+            model=model,
+            profile=profile,
+            field_type=field_type,
+            unique=lambda items: list(dict.fromkeys(items)),
+            field_label=field_label,
+            governance=governance,
+            navigation_title=str(ui_data.get("title") or "").strip(),
+        )
+        ui_data["form_structure_contract"] = form_structure
+        ownership = form_structure.get("fieldOwnership")
+        if isinstance(ownership, dict):
+            ui_data["field_ownership"] = ownership
 
     @staticmethod
     def _dispatch_native_form_source(env, su_env, ui_params: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:

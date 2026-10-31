@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import Any
 import json
-
-
 def resolve_form_structure_governance(source_contract: dict[str, Any], configs, *, view_type: str) -> dict[str, Any]:
     if view_type != "form":
         return {}
@@ -40,6 +38,7 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
         or ""
     ).strip()
     field_names: list[str] = []
+    identity_fields: list[str] = []
     field_labels: dict[str, str] = {}
     field_semantic_roles: dict[str, str] = {}
     section_semantic_roles: dict[str, str] = {}
@@ -127,6 +126,10 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
             label = str(row.get("string") or row.get("label") or "").strip() if isinstance(row, dict) else ""
             if name and label:
                 field_labels[name] = label
+        for name in (form_spec.get("identity_fields") if isinstance(form_spec.get("identity_fields"), list) else []):
+            name = str(name or "").strip()
+            if name and name not in identity_fields:
+                identity_fields.append(name)
         semantic_anchors = (
             form_spec.get("semantic_anchors")
             if isinstance(form_spec.get("semantic_anchors"), list)
@@ -225,6 +228,7 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
             "form_structure_authority": "native_authority",
             "form_presentation_mode": "workspace",
             "field_names": [],
+            "identity_fields": [],
             "field_labels": {},
             "field_semantic_roles": {},
             "section_semantic_roles": {},
@@ -251,6 +255,7 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
         "form_structure_authority": form_structure_authority,
         "form_presentation_mode": ("task" if form_presentation_mode == "task" or form_structure_authority == "entry_semantic_surface" else "workspace"),
         "field_names": field_names,
+        "identity_fields": identity_fields,
         "field_labels": field_labels,
         "field_semantic_roles": field_semantic_roles,
         "section_semantic_roles": section_semantic_roles,

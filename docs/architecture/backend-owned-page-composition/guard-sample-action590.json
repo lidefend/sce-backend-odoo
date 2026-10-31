@@ -1,0 +1,39 @@
+{
+  "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+  "contract_version": "2.2.0",
+  "page": {
+    "model": "project.project",
+    "action_id": 590,
+    "view_id": 1776,
+    "pageComposition": {
+      "class": "unclassified_historical",
+      "diagnostics": [
+        {
+          "code": "PAGE_COMPOSITION_FIELD_OWNERSHIP_MISSING",
+          "severity": "warning",
+          "validationRule": "V10",
+          "legacyCompatible": false
+        }
+      ],
+      "schemaVersion": "2.2.0",
+      "permissionSemanticsPreserved": true
+    },
+    "formStructureContract": {
+      "slots": []
+    },
+    "fieldGroups": {
+      "groups": []
+    },
+    "fieldOwnership": {}
+  },
+  "evidence": {
+    "slot_field_refs_parsed": false,
+    "legacy_fallback_sources": [
+      "useRecordFormFieldSchemas.ts:buildLegacyLayoutNodes fallbackFieldNames"
+    ],
+    "permission_evidence": [],
+    "version_compatibility_evidence": [],
+    "historical_node_identity_evidence": []
+  }
+}
+

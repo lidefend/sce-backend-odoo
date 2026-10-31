@@ -1,0 +1,199 @@
+{
+  "guard_version": "1.1.0",
+  "contract_version": "2.2.0",
+  "execution_timestamp": "2026-10-31T13:47:17.903329+00:00",
+  "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+  "overall_status": "FAIL",
+  "page_classification": "formal",
+  "page_classification_summary": {
+    "formal": 1
+  },
+  "rule_results": [
+    {
+      "rule_id": "PC-001",
+      "status": "PASS",
+      "reason": "business composition and layout topology declared",
+      "evidence": "slots+containerTree",
+      "scope": {},
+      "remediation_hint": "declare business composition (slots) and layout topology (containerTree) in backend contract"
+    },
+    {
+      "rule_id": "PC-002",
+      "status": "PASS",
+      "reason": "identity fields bound to identity group",
+      "evidence": "group:identity",
+      "scope": {},
+      "remediation_hint": "declare identity slot and bind identity fields via fieldOwnership.ownerSlotRef"
+    },
+    {
+      "rule_id": "PC-003",
+      "status": "PASS",
+      "reason": "business fields bound to slot and group",
+      "evidence": "slots+groups",
+      "scope": {},
+      "remediation_hint": "declare business section slots and bind fields to slot + group"
+    },
+    {
+      "rule_id": "PC-004",
+      "status": "PASS",
+      "reason": "unique and valid primary ownership",
+      "evidence": "fieldOwnership",
+      "scope": {},
+      "remediation_hint": "provide one valid primary ownership record per field; remove duplicate keys"
+    },
+    {
+      "rule_id": "PC-005",
+      "status": "NOT_VERIFIED",
+      "reason": "projection semantics incomplete",
+      "evidence": "slots.fieldRefs",
+      "scope": {
+        "fields": [
+          "lifecycle_state slot role schema not provided",
+          "partner_id slot role schema not provided",
+          "name slot role schema not provided"
+        ]
+      },
+      "remediation_hint": "declare auxiliary projections through slot roles; fix fieldRefs types and ref prefixes"
+    },
+    {
+      "rule_id": "PC-006",
+      "status": "PASS",
+      "reason": "class=formal",
+      "evidence": "pageComposition.class",
+      "scope": {},
+      "remediation_hint": "keep classification within the four allowed page classes"
+    },
+    {
+      "rule_id": "PC-007",
+      "status": "FAIL",
+      "reason": "formal page consumes legacy fallback at runtime",
+      "evidence": "legacy_fallback_sources",
+      "scope": {
+        "sources": [
+          {
+            "evidence_id": "pc007-590-runtime-dom",
+            "evidence_type": "RUNTIME_OBSERVATION",
+            "source_type": "browser_dom_snapshot",
+            "collection_method": "auto_verify",
+            "collected_at": "2026-10-31T00:00:00+00:00",
+            "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+            "model": "project.project",
+            "action_id": 590,
+            "view_id": 1776,
+            "contract_version": "2.2.0",
+            "applies_to_rule": "PC-007",
+            "source_location": "/tmp/dom-obs-590.json",
+            "content_digest": "3042f610220d7c8bcf7943f5545dcffd9573170a7b6c6b5f8836a486e42899d9",
+            "coverage": [
+              "runtime_dom_observation",
+              "shadow_legacy_present",
+              "primary_official_standard_form"
+            ],
+            "verification_status": "VERIFIED",
+            "evidence_grade": "RUNTIME_VERIFIED",
+            "collector_version": "1.0.0"
+          }
+        ]
+      },
+      "remediation_hint": "prove runtime fallback consumption; source existence is not runtime proof"
+    },
+    {
+      "rule_id": "PC-008",
+      "status": "NOT_VERIFIED",
+      "reason": "verified permission evidence missing; declaration alone is not proof",
+      "evidence": "permission_evidence",
+      "scope": {},
+      "remediation_hint": "provide independent server permission tests covering authorized and unauthorized paths"
+    },
+    {
+      "rule_id": "PC-009",
+      "status": "NOT_VERIFIED",
+      "reason": "old-consumer regression evidence missing",
+      "evidence": "version_compatibility_evidence",
+      "scope": {},
+      "remediation_hint": "provide real old-consumer regression test evidence"
+    },
+    {
+      "rule_id": "PC-010",
+      "status": "NOT_VERIFIED",
+      "reason": "historical node identity mapping evidence missing",
+      "evidence": "historical_node_identity_evidence",
+      "scope": {},
+      "remediation_hint": "provide traceable before/after historical node identity mapping"
+    },
+    {
+      "rule_id": "PC-011",
+      "status": "NOT_VERIFIED",
+      "reason": "slots<->container mapping not evidenced",
+      "evidence": "slot_container_mapping",
+      "scope": {},
+      "remediation_hint": "provide containerTree integrity and slots<->container mapping evidence"
+    }
+  ],
+  "summary": {
+    "PC-001": "PASS",
+    "PC-002": "PASS",
+    "PC-003": "PASS",
+    "PC-004": "PASS",
+    "PC-005": "NOT_VERIFIED",
+    "PC-006": "PASS",
+    "PC-007": "FAIL",
+    "PC-008": "NOT_VERIFIED",
+    "PC-009": "NOT_VERIFIED",
+    "PC-010": "NOT_VERIFIED",
+    "PC-011": "NOT_VERIFIED"
+  },
+  "evidence_trust": {
+    "legacy_fallback_sources": {
+      "trusted": 2,
+      "total": 2,
+      "untrusted": 0
+    },
+    "permission_evidence": {
+      "trusted": 0,
+      "total": 0,
+      "untrusted": 0
+    },
+    "version_compatibility_evidence": {
+      "trusted": 1,
+      "total": 1,
+      "untrusted": 0
+    },
+    "historical_node_identity_evidence": {
+      "trusted": 2,
+      "total": 2,
+      "untrusted": 0
+    }
+  },
+  "evidence_summary": {
+    "legacy_fallback_sources": {
+      "total": 2,
+      "trusted": 2,
+      "sufficient": 1,
+      "verified_insufficient": 1,
+      "untrusted": 0
+    },
+    "permission_evidence": {
+      "total": 0,
+      "trusted": 0,
+      "sufficient": 0,
+      "verified_insufficient": 0,
+      "untrusted": 0
+    },
+    "version_compatibility_evidence": {
+      "total": 1,
+      "trusted": 1,
+      "sufficient": 0,
+      "verified_insufficient": 1,
+      "untrusted": 0
+    },
+    "historical_node_identity_evidence": {
+      "total": 2,
+      "trusted": 2,
+      "sufficient": 0,
+      "verified_insufficient": 2,
+      "untrusted": 0
+    }
+  },
+  "parse_diagnostics": {}
+}

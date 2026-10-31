@@ -1,0 +1,11 @@
+{
+  "schema": "runtime_evidence_matrix.v1",
+  "pages": [
+    {"model": "project.project", "action_id": 590, "view_id": 1776, "entry": "RUNTIME_VERIFIED", "contract": "RUNTIME_VERIFIED", "consumer": "RUNTIME_VERIFIED", "fallback": "NOT_VERIFIED", "permission": "NOT_VERIFIED", "history": "NOT_VERIFIED"},
+    {"model": "project.project", "action_id": 652, "view_id": 944, "entry": "RUNTIME_VERIFIED", "contract": "RUNTIME_VERIFIED", "consumer": "RUNTIME_VERIFIED", "fallback": "NOT_VERIFIED", "permission": "NOT_VERIFIED", "history": "NOT_VERIFIED"},
+    {"model": "payment.request", "action_id": 649, "view_id": 1773, "entry": "SOURCE_VERIFIED", "contract": "RUNTIME_VERIFIED", "consumer": "STATIC_CHAIN_VERIFIED", "fallback": "NOT_VERIFIED", "permission": "NOT_VERIFIED", "history": "NOT_VERIFIED"},
+    {"model": "sc.payment.execution", "action_id": 709, "view_id": 1658, "entry": "SOURCE_VERIFIED", "contract": "RUNTIME_VERIFIED", "consumer": "STATIC_CHAIN_VERIFIED", "fallback": "NOT_VERIFIED", "permission": "NOT_VERIFIED", "history": "NOT_VERIFIED"},
+    {"model": "sc.receipt.income", "action_id": 708, "view_id": 1655, "entry": "SOURCE_VERIFIED", "contract": "NOT_VERIFIED", "consumer": "STATIC_CHAIN_VERIFIED", "fallback": "NOT_VERIFIED", "permission": "NOT_VERIFIED", "history": "NOT_VERIFIED"}
+  ]
+}
+

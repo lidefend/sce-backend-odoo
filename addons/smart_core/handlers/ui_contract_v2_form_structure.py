@@ -128,6 +128,21 @@ def build_form_structure_contract(
             out["formColumns"] = form_columns
         return out
 
+    def derive_field_ownership(roles: dict[str, Any]) -> dict[str, dict[str, str]]:
+        ownership: dict[str, dict[str, str]] = {}
+        for name, info in (roles or {}).items():
+            if not isinstance(info, dict):
+                continue
+            slot = str(info.get("slot") or "").strip()
+            group = str(info.get("group") or "").strip()
+            if not slot:
+                continue
+            owner: dict[str, str] = {"ownerSlotRef": "slot:%s" % slot}
+            if group:
+                owner["ownerGroupRef"] = "group:%s" % group
+            ownership["field:%s" % name] = owner
+        return ownership
+
     if (governance or {}).get("form_structure_authority") == "native_authority":
         return {
             "source": "ui.contract.v2.form_structure_contract",
@@ -140,7 +155,7 @@ def build_form_structure_contract(
             "objectProfile": {"model": model, "kind": "business_form",
                               "factAuthority": "business_object_model_and_view"},
             "navigation": {"title": navigation_title or "业务办理"},
-            "slots": [], "fieldRoles": {},
+            "slots": [], "fieldRoles": {}, "fieldOwnership": {},
             "surfaces": handler._form_structure_surfaces(model=model),
             "sourceAuthority": {
                 "kind": handler.SOURCE_KIND,
@@ -228,6 +243,7 @@ def build_form_structure_contract(
                     "groups": group_rows,
                 }],
                 "fieldRoles": configured_roles,
+                "fieldOwnership": derive_field_ownership(configured_roles),
                 "surfaces": handler._form_structure_surfaces(model=model),
                 "sourceAuthority": {
                     "kind": handler.SOURCE_KIND,
@@ -267,10 +283,13 @@ def build_form_structure_contract(
         if name not in set(history_check_fields)
     ]
 
-    identity_fields = claim_slot_fields([
-        "name", "document_no", "invoice_no", "invoice_code",
-        "subject", "type", "source_kind", "direction", "category_id", "contract_type_id",
-    ])
+    declared_identity = (governance or {}).get("identity_fields")
+    identity_fields = claim_slot_fields(
+        declared_identity if isinstance(declared_identity, list) else [
+            "name", "document_no", "invoice_no", "invoice_code",
+            "subject", "type", "source_kind", "direction", "category_id", "contract_type_id",
+        ]
+    )
     source_fields_candidates = fields_for([
         "entry_user_id", "entry_user_text", "entry_time", "handler_name",
         "creator_name", "created_time", "archived",
@@ -452,6 +471,7 @@ def build_form_structure_contract(
         "sourceSectionTitles": source_section_titles,
         "slots": slots,
         "fieldRoles": field_roles,
+        "fieldOwnership": derive_field_ownership(field_roles),
         "surfaces": handler._form_structure_surfaces(
             model=model,
             capabilities=profile.get("capabilities"),

@@ -1,0 +1,233 @@
+{
+  "collector_version": "1.0.0",
+  "collected_at": "2026-10-31T10:42:57.895723+00:00",
+  "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+  "contract_version": "2.2.0",
+  "target_page": {
+    "model": "project.project",
+    "action_id": 590,
+    "view_id": 1776
+  },
+  "items": [
+    {
+      "evidence_id": "pc007-590-runtime-dom",
+      "evidence_type": "RUNTIME_OBSERVATION",
+      "source_type": "browser_dom_snapshot",
+      "collection_method": "auto_verify",
+      "collected_at": "2026-10-31T00:00:00+00:00",
+      "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+      "model": "project.project",
+      "action_id": 590,
+      "view_id": 1776,
+      "contract_version": "2.2.0",
+      "applies_to_rule": "PC-007",
+      "source_location": "/tmp/dom-obs-590.json",
+      "content_digest": "3042f610220d7c8bcf7943f5545dcffd9573170a7b6c6b5f8836a486e42899d9",
+      "coverage": [
+        "runtime_dom_observation",
+        "shadow_legacy_present",
+        "primary_official_standard_form"
+      ],
+      "verification_status": "VERIFIED",
+      "evidence_grade": "RUNTIME_VERIFIED",
+      "collector_version": "1.0.0"
+    },
+    {
+      "evidence_id": "pc007-590-legacy-native",
+      "evidence_type": "SOURCE_STATIC",
+      "source_type": "source_file",
+      "collection_method": "auto_verify",
+      "collected_at": "2026-10-31T00:00:00+00:00",
+      "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+      "model": "project.project",
+      "action_id": 590,
+      "view_id": 1776,
+      "contract_version": "2.2.0",
+      "applies_to_rule": "PC-007",
+      "source_location": "/home/lidefend/workspace/sce-backend-odoo-pc01/frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+      "content_digest": "5b8160387b1bb4e5d571d815e2550fad121466cbcd6dd65516f96a09199d5db8",
+      "verification_status": "VERIFIED",
+      "evidence_grade": "SOURCE_VERIFIED",
+      "collector_version": "1.0.0"
+    },
+    {
+      "evidence_id": "pc009-590-v2-client",
+      "evidence_type": "SOURCE_STATIC",
+      "source_type": "source_file",
+      "collection_method": "auto_verify",
+      "collected_at": "2026-10-31T00:00:00+00:00",
+      "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+      "model": "project.project",
+      "action_id": 590,
+      "view_id": 1776,
+      "contract_version": "2.2.0",
+      "applies_to_rule": "PC-009",
+      "source_location": "/home/lidefend/workspace/sce-backend-odoo-pc01/frontend/apps/web/src/app/contracts/v2/client.ts",
+      "content_digest": "f1e9e9d5735e01e02c1fee5f11417d01b45abb5e7f2cf082a45cc19b6262b808",
+      "verification_status": "VERIFIED",
+      "evidence_grade": "SOURCE_VERIFIED",
+      "collector_version": "1.0.0"
+    },
+    {
+      "evidence_id": "pc010-590-before",
+      "evidence_type": "HISTORICAL_REFERENCE",
+      "source_type": "git_snapshot",
+      "collection_method": "auto_verify",
+      "collected_at": "2026-10-31T00:00:00+00:00",
+      "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+      "model": "project.project",
+      "action_id": 590,
+      "view_id": 1776,
+      "contract_version": "2.2.0",
+      "applies_to_rule": "PC-010",
+      "source_location": "/tmp/tmp.GPzC1tNNIN/before.xml",
+      "content_digest": "7c785d4571aa397daa347b443bffc9282b6a3fe0ce03c40f16a9cb9a81b05d92",
+      "coverage": [
+        "identity_projection_source_evolution"
+      ],
+      "verification_status": "VERIFIED",
+      "evidence_grade": "SOURCE_VERIFIED",
+      "collector_version": "1.0.0"
+    },
+    {
+      "evidence_id": "pc010-590-after",
+      "evidence_type": "HISTORICAL_REFERENCE",
+      "source_type": "git_snapshot",
+      "collection_method": "auto_verify",
+      "collected_at": "2026-10-31T00:00:00+00:00",
+      "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+      "model": "project.project",
+      "action_id": 590,
+      "view_id": 1776,
+      "contract_version": "2.2.0",
+      "applies_to_rule": "PC-010",
+      "source_location": "/tmp/tmp.GPzC1tNNIN/after.xml",
+      "content_digest": "e23a2ad0ed4e5a24acab050613a2e810bcc33094190a520270d15634d8dd7b50",
+      "coverage": [
+        "identity_projection_source_evolution"
+      ],
+      "verification_status": "VERIFIED",
+      "evidence_grade": "SOURCE_VERIFIED",
+      "collector_version": "1.0.0"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "VERIFIED": 5,
+    "UNVERIFIED": 0,
+    "SCOPE_MISMATCH": 0,
+    "STALE": 0,
+    "INVALID": 0
+  },
+  "untrusted": [],
+  "guard_evidence": {
+    "legacy_fallback_sources": [
+      {
+        "evidence_id": "pc007-590-runtime-dom",
+        "evidence_type": "RUNTIME_OBSERVATION",
+        "source_type": "browser_dom_snapshot",
+        "collection_method": "auto_verify",
+        "collected_at": "2026-10-31T00:00:00+00:00",
+        "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+        "model": "project.project",
+        "action_id": 590,
+        "view_id": 1776,
+        "contract_version": "2.2.0",
+        "applies_to_rule": "PC-007",
+        "source_location": "/tmp/dom-obs-590.json",
+        "content_digest": "3042f610220d7c8bcf7943f5545dcffd9573170a7b6c6b5f8836a486e42899d9",
+        "coverage": [
+          "runtime_dom_observation",
+          "shadow_legacy_present",
+          "primary_official_standard_form"
+        ],
+        "verification_status": "VERIFIED",
+        "evidence_grade": "RUNTIME_VERIFIED",
+        "collector_version": "1.0.0"
+      },
+      {
+        "evidence_id": "pc007-590-legacy-native",
+        "evidence_type": "SOURCE_STATIC",
+        "source_type": "source_file",
+        "collection_method": "auto_verify",
+        "collected_at": "2026-10-31T00:00:00+00:00",
+        "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+        "model": "project.project",
+        "action_id": 590,
+        "view_id": 1776,
+        "contract_version": "2.2.0",
+        "applies_to_rule": "PC-007",
+        "source_location": "/home/lidefend/workspace/sce-backend-odoo-pc01/frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "content_digest": "5b8160387b1bb4e5d571d815e2550fad121466cbcd6dd65516f96a09199d5db8",
+        "verification_status": "VERIFIED",
+        "evidence_grade": "SOURCE_VERIFIED",
+        "collector_version": "1.0.0"
+      }
+    ],
+    "permission_evidence": [],
+    "version_compatibility_evidence": [
+      {
+        "evidence_id": "pc009-590-v2-client",
+        "evidence_type": "SOURCE_STATIC",
+        "source_type": "source_file",
+        "collection_method": "auto_verify",
+        "collected_at": "2026-10-31T00:00:00+00:00",
+        "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+        "model": "project.project",
+        "action_id": 590,
+        "view_id": 1776,
+        "contract_version": "2.2.0",
+        "applies_to_rule": "PC-009",
+        "source_location": "/home/lidefend/workspace/sce-backend-odoo-pc01/frontend/apps/web/src/app/contracts/v2/client.ts",
+        "content_digest": "f1e9e9d5735e01e02c1fee5f11417d01b45abb5e7f2cf082a45cc19b6262b808",
+        "verification_status": "VERIFIED",
+        "evidence_grade": "SOURCE_VERIFIED",
+        "collector_version": "1.0.0"
+      }
+    ],
+    "historical_node_identity_evidence": [
+      {
+        "evidence_id": "pc010-590-before",
+        "evidence_type": "HISTORICAL_REFERENCE",
+        "source_type": "git_snapshot",
+        "collection_method": "auto_verify",
+        "collected_at": "2026-10-31T00:00:00+00:00",
+        "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+        "model": "project.project",
+        "action_id": 590,
+        "view_id": 1776,
+        "contract_version": "2.2.0",
+        "applies_to_rule": "PC-010",
+        "source_location": "/tmp/tmp.GPzC1tNNIN/before.xml",
+        "content_digest": "7c785d4571aa397daa347b443bffc9282b6a3fe0ce03c40f16a9cb9a81b05d92",
+        "coverage": [
+          "identity_projection_source_evolution"
+        ],
+        "verification_status": "VERIFIED",
+        "evidence_grade": "SOURCE_VERIFIED",
+        "collector_version": "1.0.0"
+      },
+      {
+        "evidence_id": "pc010-590-after",
+        "evidence_type": "HISTORICAL_REFERENCE",
+        "source_type": "git_snapshot",
+        "collection_method": "auto_verify",
+        "collected_at": "2026-10-31T00:00:00+00:00",
+        "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+        "model": "project.project",
+        "action_id": 590,
+        "view_id": 1776,
+        "contract_version": "2.2.0",
+        "applies_to_rule": "PC-010",
+        "source_location": "/tmp/tmp.GPzC1tNNIN/after.xml",
+        "content_digest": "e23a2ad0ed4e5a24acab050613a2e810bcc33094190a520270d15634d8dd7b50",
+        "coverage": [
+          "identity_projection_source_evolution"
+        ],
+        "verification_status": "VERIFIED",
+        "evidence_grade": "SOURCE_VERIFIED",
+        "collector_version": "1.0.0"
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "legacy_page_inventory.v1",
+  "coverage": "partial_known_samples",
+  "pages": [
+    {"model": "project.project", "action_id": 590, "view_id": 1776, "class": "unclassified_historical", "fallback_evidence": "source_level", "runtime_consumed": "NOT_VERIFIED"},
+    {"model": "project.project", "action_id": 652, "view_id": 944, "class": "unclassified_historical", "fallback_evidence": "source_level", "runtime_consumed": "NOT_VERIFIED"},
+    {"model": "payment.request", "action_id": 649, "view_id": 1773, "class": "unclassified_historical", "fallback_evidence": "not_verified", "runtime_consumed": "NOT_VERIFIED"},
+    {"model": "sc.payment.execution", "action_id": 709, "view_id": 1658, "class": "unclassified_historical", "fallback_evidence": "not_verified", "runtime_consumed": "NOT_VERIFIED"},
+    {"model": "sc.receipt.income", "action_id": 708, "view_id": 1655, "class": "unclassified_historical", "fallback_evidence": "not_verified", "runtime_consumed": "NOT_VERIFIED"}
+  ],
+  "summary": {
+    "formal": 0,
+    "legacy_compatible": 0,
+    "unclassified_historical": 5,
+    "incomplete": 0,
+    "not_verified_runtime_consumption": 5,
+    "migration_candidates": 0
+  }
+}
+

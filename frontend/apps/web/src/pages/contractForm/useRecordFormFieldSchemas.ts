@@ -103,6 +103,12 @@ export function useRecordFormFieldSchemas(context: {
     // changes (e.g. a many2one selection must reflect its label in the input;
     // otherwise the rendered control keeps the stale pre-change value).
     void Object.keys(context.formData).map((key)=>context.formData[key]);
+    const pageClass = String((context.v2ContractStore.value as any)?.snapshot?.pageComposition?.class || '').trim();
+    if (pageClass === 'formal') {
+      // Formal pages render from the native container tree; legacy layout nodes
+      // must not produce a second visible field projection.
+      return [];
+    }
     return buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}});
   });
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
