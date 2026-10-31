@@ -1,0 +1,21 @@
+{
+  "schema": "pc01.collaboration_geometry.v1",
+  "served_sha": "b7a5b987b62b8c1b6f9dca2cbe52119cd6206669",
+  "help_triggers": {
+    "count": 4,
+    "texts": ["?", "?", "?", "?"],
+    "source_selector": "data-field-help-trigger"
+  },
+  "contract_form_collaboration_selectors": {
+    "followerNodes": 0,
+    "attachmentNodes": 0,
+    "timelineNodes": 0
+  },
+  "viewports": [
+    {"key": "1440", "scrollWidth": 1440, "clientWidth": 1440, "horizontalOverflow": false},
+    {"key": "1024", "scrollWidth": 1024, "clientWidth": 1024, "horizontalOverflow": false},
+    {"key": "768", "scrollWidth": 768, "clientWidth": 768, "horizontalOverflow": false},
+    {"key": "390", "scrollWidth": 390, "clientWidth": 390, "horizontalOverflow": false}
+  ],
+  "finding": "项目工作空间协作区不使用 PC-02 合同表单的 Professional* 组件；关注者/附件/时间线选择器未命中，需针对项目工作空间实际组件补充选择器。四个 help-trigger 均渲染为 ?，确认项目说明上方独立问号来自字段帮助触发器。"
+}

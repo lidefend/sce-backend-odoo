@@ -1,0 +1,21 @@
+{
+  "schema": "pc01.project_identity_audit.v1",
+  "served_sha": "b7a5b987b62b8c1b6f9dca2cbe52119cd6206669",
+  "database": "sc_frontend_acceptance_candidate",
+  "route": "/r/project.project/1?action_id=590&menu_id=382",
+  "identity_field_dom_counts": {
+    "name": 1,
+    "project_code": 2,
+    "owner_id": 1,
+    "manager_id": 2,
+    "user_id": 2,
+    "cost_manager_id": 1,
+    "doc_manager_id": 1
+  },
+  "status_field_dom_counts": {
+    "lifecycle_state": 1,
+    "sc_approval_state": 1,
+    "last_update_status": 0
+  },
+  "finding": "user_id 与 manager_id 各出现 2 次，确认身份重复；project_code 也出现 2 次。last_update_status 未以 data-field-name 渲染，说明其走 status_with_color 状态组件。"
+}
