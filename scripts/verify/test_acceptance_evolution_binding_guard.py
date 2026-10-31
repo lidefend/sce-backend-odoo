@@ -182,6 +182,7 @@ def _relation(head: str = HEAD) -> dict:
     return {
         "schema": "record-relation-roundtrip-acceptance.v1",
         "status": "pass",
+        "identity": {"model": "project.project"},
         "expected_sha": head,
         "served_revision": head,
         "failures": [],
@@ -701,6 +702,12 @@ class TestAdapters(unittest.TestCase):
 
     def test_relation_roundtrip_adapter(self):
         relation_contract = {
+            "min_counts": {
+                "contract_openable_entries": 4,
+                "declared_entry_count": 13,
+                "declared_openable": 3,
+                "visible_openable_entries": 3,
+            },
             "allowed_non_blocking_difference_kinds": [
                 "CONTRACT_LABEL_RENDER_DIFF",
                 "CONTRACT_READONLY_MISMATCH",
@@ -786,6 +793,40 @@ class TestAdapters(unittest.TestCase):
         broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
         with self.assertRaisesRegex(guard.BindingError, "not declared in policy"):
             guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+
+    def test_relation_roundtrip_model_specific_min_counts(self):
+        contract = {
+            "min_counts": {
+                "contract_openable_entries": 7,
+                "declared_entry_count": 13,
+                "declared_openable": 3,
+                "visible_openable_entries": 6,
+            },
+            "model_min_counts": {
+                "sc.general.contract": {
+                    "contract_openable_entries": 4,
+                    "declared_entry_count": 8,
+                    "declared_openable": 3,
+                    "visible_openable_entries": 3,
+                }
+            },
+        }
+        self.assertEqual(
+            guard._relation_min_count_contract(contract, {"identity": {"model": "project.project"}})[
+                "min_counts"
+            ]["declared_entry_count"],
+            13,
+        )
+        self.assertEqual(
+            guard._relation_min_count_contract(contract, {"identity": {"model": "sc.general.contract"}})[
+                "min_counts"
+            ]["declared_entry_count"],
+            8,
+        )
+        with self.assertRaisesRegex(guard.BindingError, "model identity is missing"):
+            guard._relation_min_count_contract(contract, {})
+        with self.assertRaisesRegex(guard.BindingError, "no relation roundtrip min_counts declared"):
+            guard._relation_min_count_contract(contract, {"identity": {"model": "unknown.model"}})
 
 
 class TestManifest(unittest.TestCase):

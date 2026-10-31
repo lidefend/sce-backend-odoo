@@ -1,0 +1,61 @@
+{
+  "schema": "pc02.general_contract.runtime_evidence.v1",
+  "candidate_sha": "07105ab451d99158a088c9fc609df3d4e1a7997f",
+  "served_revision": "07105ab451d99158a088c9fc609df3d4e1a7997f",
+  "profile": "candidate",
+  "compose_project": "sc-fe-candidate-770",
+  "database": "sc_frontend_acceptance_candidate",
+  "namespace_id": "ns_0af74d2911bf",
+  "backend_base_url": "http://127.0.0.1:18088",
+  "frontend_base_url": "http://127.0.0.1:5178",
+  "login": "fixture_role_config_admin",
+  "frontend_dist": {
+    "index_sha256": "758f9c6ed0beaefabe533790eaac5d11be587318208c3caef77103dd2e9fcea0",
+    "entry": "/assets/index--nfgoUet.js",
+    "entry_sha256": "2a1fca1df7c7cbbdba379b8cc0313c9292bdf313e00ed15b6669d89d5d692355",
+    "dist_sha256": "1d12db2f191e6946cbf0ae7684749f7e748f2f49d6385ad0462f9bfe9e81443d"
+  },
+  "directions": {
+    "income": {
+      "entry": "contract",
+      "model": "sc.general.contract",
+      "record_xmlid": "smart_construction_acceptance_fixture.fe_general_contract_a",
+      "record_identity": "GC2600001",
+      "route": "/r/sc.general.contract/2?action_id=758&menu_id=663",
+      "passed": true,
+      "console_errors": 0,
+      "pageerrors": 0,
+      "http_5xx": 0,
+      "horizontal_overflow_viewports": [],
+      "viewports": ["1440", "1024", "768", "390"],
+      "summary": ".runtime/final-acceptance/contract-form-presentation/contract/summary.json"
+    },
+    "expense": {
+      "entry": "general_contract_expense",
+      "model": "sc.general.contract",
+      "record_xmlid": "smart_construction_acceptance_fixture.fe_general_contract_b",
+      "record_identity": "GC2600002",
+      "route": "/r/sc.general.contract/3?action_id=758&menu_id=663",
+      "passed": true,
+      "console_errors": 0,
+      "pageerrors": 0,
+      "http_5xx": 0,
+      "horizontal_overflow_viewports": [],
+      "viewports": ["1440", "1024", "768", "390"],
+      "summary": ".runtime/final-acceptance/contract-form-presentation/general_contract_expense/summary.json"
+    }
+  },
+  "not_verified_boundaries": [
+    "change amount aggregation",
+    "settlement over final amount",
+    "historical vs new-system payment boundary"
+  ],
+  "unmodified": [
+    "amount computes",
+    "ACL",
+    "record rules",
+    "approval logic",
+    "authoritative_navigation.json",
+    "business data"
+  ]
+}

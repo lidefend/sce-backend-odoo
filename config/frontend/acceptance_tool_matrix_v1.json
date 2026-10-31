@@ -44,7 +44,17 @@
       "profiles": [
         "local",
         "test",
-        "daily"
+        "daily",
+        "candidate"
+      ],
+      "operations": [
+        "readonly"
+      ]
+    },
+    "native-form-presentation": {
+      "profiles": [
+        "local",
+        "candidate"
       ],
       "operations": [
         "readonly"

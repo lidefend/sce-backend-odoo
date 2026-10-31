@@ -299,6 +299,14 @@
           "declared_entry_count": 13,
           "declared_openable": 3,
           "visible_openable_entries": 6
+        },
+        "model_min_counts": {
+          "sc.general.contract": {
+            "contract_openable_entries": 4,
+            "declared_entry_count": 8,
+            "declared_openable": 3,
+            "visible_openable_entries": 3
+          }
         }
       },
       "stages": [

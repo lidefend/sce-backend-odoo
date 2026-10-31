@@ -43,6 +43,51 @@ def target(menu_xmlid, record_xmlid, *, declared_action_xmlid="", expect=None):
     return resolved
 
 
+def wrapper_target(menu_xmlid, contract_xmlid, model, *, declared_action_xmlid=""):
+    """Resolve a professional-contract wrapper (income/expense) by its delegated base contract.
+
+    The income/expense wrapper records are created by the fixture and carry no
+    stable XMLID; their stable identity is the delegated base construction.contract
+    record. The resolved model is the wrapper action's res_model, and the record
+    identity stays the base contract's platform number so a rebuild that renumbers
+    the wrapper cannot leave the lane bound to a stale wrapper id.
+    """
+    menu = env.ref(menu_xmlid)
+    action = menu.action
+    action_xmlid = str(action.get_external_id().get(action.id, "") or "").strip()
+    if declared_action_xmlid and action_xmlid != declared_action_xmlid:
+        raise AssertionError(
+            "declared action mismatch for %s: expected %s, resolved %s"
+            % (menu_xmlid, declared_action_xmlid, action_xmlid or int(action.id))
+        )
+    if action.res_model != model:
+        raise AssertionError(
+            "wrapper model mismatch for %s: expected %s, resolved %s"
+            % (menu_xmlid, model, action.res_model)
+        )
+    base = env.ref(contract_xmlid)
+    wrapper = env[model].sudo().search([("contract_id", "=", base.id)], limit=1)
+    if not wrapper:
+        raise AssertionError("%s wrapper missing for %s" % (model, contract_xmlid))
+    expected_type = "out" if model.endswith(".income") else "in"
+    if base.type != expected_type:
+        raise AssertionError(
+            "contract direction mismatch for %s: %s must be type %s"
+            % (contract_xmlid, base.name, expected_type)
+        )
+    return {
+        "menu_id": int(menu.id),
+        "menu_xmlid": menu_xmlid,
+        "action_id": int(action.id),
+        "action_xmlid": action_xmlid,
+        "model": action.res_model,
+        "record_id": int(wrapper.id),
+        "record_xmlid": contract_xmlid,
+        "record_identity": str(base.name or "").strip(),
+        "display_name": str(base.display_name),
+    }
+
+
 # Browser matrix targets must be the *released* navigation entry of the role that
 # owns the surface; the publication projection removes legacy menus, and a route
 # missing from a role's released navigation is denied with NAVIGATION_AUTHORITY_DENIED.
@@ -52,6 +97,15 @@ PROJECT_MENU_XMLID = "smart_construction_core.menu_sc_project_project"
 PROJECT_ACTION_XMLID = "smart_construction_core.action_sc_project_list"
 CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_p1_daily_contract"
 CONTRACT_ACTION_XMLID = "smart_construction_core.action_sc_general_contract"
+# construction.contract (项目合同) is a distinct model from sc.general.contract
+# (综合合同); both are "contracts" in the business domain but they expose
+# different forms/actions, so each gets its own resolved target.
+CONSTRUCTION_CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_project_contract_overview"
+CONSTRUCTION_CONTRACT_ACTION_XMLID = "smart_construction_core.action_project_contract_overview"
+INCOME_CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_p1_income_contract"
+INCOME_CONTRACT_ACTION_XMLID = "smart_construction_core.action_construction_contract_income"
+EXPENSE_CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_p1_expense_contract"
+EXPENSE_CONTRACT_ACTION_XMLID = "smart_construction_core.action_construction_contract_expense"
 SETTLEMENT_MENU_XMLID = "smart_construction_core.menu_sc_p1_expense_settlement"
 SETTLEMENT_ACTION_XMLID = "smart_construction_core.action_sc_settlement_order_expense"
 PAYMENT_REQUEST_MENU_XMLID = "smart_construction_core.menu_sc_user_payment_apply"
@@ -91,6 +145,28 @@ def resolve_targets(authority):
             CONTRACT_MENU_XMLID,
             "smart_construction_acceptance_fixture.fe_general_contract_a",
             declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        ),
+        "general_contract_expense": target(
+            CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_general_contract_b",
+            declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        ),
+        "construction_contract": target(
+            CONSTRUCTION_CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_contract_a",
+            declared_action_xmlid=CONSTRUCTION_CONTRACT_ACTION_XMLID,
+        ),
+        "construction_contract_income": wrapper_target(
+            INCOME_CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_pfl035_income_contract",
+            "construction.contract.income",
+            declared_action_xmlid=INCOME_CONTRACT_ACTION_XMLID,
+        ),
+        "construction_contract_expense": wrapper_target(
+            EXPENSE_CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_contract_a",
+            "construction.contract.expense",
+            declared_action_xmlid=EXPENSE_CONTRACT_ACTION_XMLID,
         ),
         "general_contract_carrier": target(
             CONTRACT_MENU_XMLID,

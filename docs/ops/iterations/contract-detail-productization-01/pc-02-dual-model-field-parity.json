@@ -1,0 +1,36 @@
+{
+  "schema": "pc02_dual_model_field_parity.v1",
+  "audit_mode": "read_only_code_fact",
+  "base_model": "construction.contract",
+  "income_model": "construction.contract.income",
+  "expense_model": "construction.contract.expense",
+  "inheritance": {
+    "income": {"_inherits": {"construction.contract": "contract_id"}, "_inherit": "construction.contract.professional.mixin", "contract_type": "out"},
+    "expense": {"_inherits": {"construction.contract": "contract_id"}, "_inherit": "construction.contract.professional.mixin", "contract_type": "in"}
+  },
+  "identity_fields": ["subject", "name", "type", "state", "document_status", "validation_status", "business_category_id", "partner_id", "project_id"],
+  "amount_fields": ["amount_untaxed", "amount_tax", "amount_total", "line_amount_total", "amount_change", "amount_final", "settlement_amount", "settlement_balance", "invoice_amount", "uninvoiced_amount", "received_amount", "unreceived_amount", "paid_amount", "unpaid_amount", "historical_confirmed_paid_amount", "historical_amount_pending_confirmation", "new_system_flow_paid_amount", "cumulative_paid_amount"],
+  "field_parity": {
+    "checked_fields": 22,
+    "construction.contract": 22,
+    "construction.contract.income": 22,
+    "construction.contract.expense": 22,
+    "conclusion": "full_parity_via_delegation"
+  },
+  "views": {
+    "construction.contract": "view_construction_contract_form",
+    "income": "view_construction_contract_income_form",
+    "expense": "view_construction_contract_expense_form",
+    "note": "three independent form arches; no inherit_id between them"
+  },
+  "released_navigation": {
+    "income": {"action_id": 680, "model": "construction.contract.income"},
+    "expense": {"action_id": 681, "model": "construction.contract.expense"},
+    "base_construction.contract": "not_released"
+  },
+  "frozen_not_verified": [
+    "change_amount_delta_aggregation",
+    "settlement_over_final_amount",
+    "historical_vs_new_system_payment_boundary"
+  ]
+}
