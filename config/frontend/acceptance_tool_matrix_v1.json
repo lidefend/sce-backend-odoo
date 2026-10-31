@@ -60,6 +60,15 @@
         "readonly"
       ]
     },
+    "project-workspace-dom-audit": {
+      "profiles": [
+        "local",
+        "candidate"
+      ],
+      "operations": [
+        "readonly"
+      ]
+    },
     "color-role-audit": {
       "profiles": [
         "local",
