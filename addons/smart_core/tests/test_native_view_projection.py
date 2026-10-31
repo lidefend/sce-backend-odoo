@@ -7,6 +7,7 @@ from lxml import etree
 
 from odoo.addons.smart_core.core.native_view_projection import (
     NativeView,
+    build_native_form_structure_contract,
     derive_native_field_ownership,
     project_native_view,
 )
@@ -126,6 +127,29 @@ class TestNativeViewProjection(unittest.TestCase):
         self.assertEqual(
             ownership["field:reject_reason"]["ownerGroupRef"],
             "group:form/sheet[1]",
+        )
+
+    def test_build_form_structure_contract_from_native(self):
+        view = project_native_view(self.env, "project.project", action_id=590, view_id=1776)
+        contract = build_native_form_structure_contract(
+            view,
+            model="project.project",
+            identity_fields=["name"],
+            navigation_title="项目台账",
+        )
+        self.assertEqual(contract["structureAuthority"], "native_form_slots")
+        self.assertEqual(len(contract["slots"]), 1)
+        slot = contract["slots"][0]
+        group_names = {group["name"] for group in slot["groups"]}
+        self.assertIn("sc_project_information_identity", group_names)
+        identity_group = next(
+            group for group in slot["groups"] if group["name"] == "sc_project_information_identity"
+        )
+        self.assertIn("name", identity_group["fieldRefs"])
+        self.assertEqual(contract["fieldRoles"]["name"]["role"], "identity")
+        self.assertEqual(
+            contract["fieldOwnership"]["field:name"]["ownerGroupRef"],
+            "group:sc_project_information_identity",
         )
 
 

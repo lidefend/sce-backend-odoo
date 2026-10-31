@@ -38,6 +38,7 @@ class NativeContainer:
     container_ref: str
     native_name: str
     native_type: str
+    native_string: str = ""
     parent_ref: str | None = None
     native_locator: str = ""
     children: list["NativeContainer"] = field(default_factory=list)
@@ -59,6 +60,7 @@ class NativeView:
                 "container_ref": node.container_ref,
                 "native_name": node.native_name,
                 "native_type": node.native_type,
+                "native_string": node.native_string,
                 "parent_ref": node.parent_ref,
                 "native_locator": node.native_locator,
                 "children": [container_to_dict(child) for child in node.children],
@@ -152,6 +154,7 @@ def project_native_view(
                 container_ref=_structural_identity(tag, name, parent_ref, position),
                 native_name=name,
                 native_type=tag,
+                native_string=str(element.get("string") or "").strip(),
                 parent_ref=parent_ref,
                 native_locator=locator,
             )
@@ -242,3 +245,141 @@ def derive_native_field_ownership(
             entry["role"] = "identity"
         ownership[f"field:{code}"] = entry
     return ownership
+
+
+def build_native_form_structure_contract(
+    native_view: NativeView,
+    *,
+    model: str,
+    identity_fields: tuple[str, ...] | list[str] = (),
+    field_labels: dict[str, str] | None = None,
+    navigation_title: str = "",
+) -> dict[str, Any]:
+    """Build a formStructureContract from the canonical native projection.
+
+    The sheet is the slot; its native ``<group name>`` children are the groups;
+    field ownership derives from each field's container membership.  Identity
+    is only taken from the explicit ``identity_fields`` declaration.
+    """
+    containers_by_ref: dict[str, NativeContainer] = {}
+
+    def index_containers(nodes: list[NativeContainer]) -> None:
+        for node in nodes:
+            containers_by_ref[node.container_ref] = node
+            index_containers(node.children)
+
+    index_containers(native_view.containers)
+
+    labels = {str(k): str(v) for k, v in (field_labels or {}).items()}
+    identity_set = set(str(item).strip() for item in identity_fields if str(item).strip())
+
+    def field_label(code: str) -> str:
+        return labels.get(code) or str(code)
+
+    slots: list[dict[str, Any]] = []
+    field_roles: dict[str, dict[str, str]] = {}
+    seen_fields: set[str] = set()
+    all_sheets: list[NativeContainer] = []
+
+    def collect_sheets(nodes: list[NativeContainer]) -> None:
+        for node in nodes:
+            if node.native_type == "sheet":
+                all_sheets.append(node)
+            collect_sheets(node.children)
+
+    collect_sheets(native_view.containers)
+
+    for sheet in all_sheets:
+        groups: list[dict[str, Any]] = []
+        slot_identity = sheet.native_name or sheet.container_ref or "sheet"
+        group_containers: list[NativeContainer] = [
+            child
+            for child in sheet.children
+            if child.native_type in {"group", "notebook", "page"}
+        ]
+        for group in group_containers:
+            group_identity = group.native_name or group.container_ref
+            group_fields = [
+                occurrence
+                for occurrence in native_view.fields
+                if occurrence.container_ref == group.container_ref
+            ]
+            field_refs: list[str] = []
+            for occurrence in group_fields:
+                code = occurrence.field_code
+                if code in seen_fields:
+                    continue
+                seen_fields.add(code)
+                field_refs.append(code)
+                role = "identity" if code in identity_set else "fact"
+                field_roles[code] = {
+                    "role": role,
+                    "slot": slot_identity,
+                    "group": group_identity,
+                }
+            groups.append(
+                {
+                    "name": group_identity,
+                    "title": group.native_string or group_identity,
+                    "role": "identity" if any(code in identity_set for code in field_refs) else "fact",
+                    "fieldRefs": field_refs,
+                    "fieldLabels": {code: field_label(code) for code in field_refs},
+                }
+            )
+        # sheet-level fields (not inside a group)
+        sheet_fields = [
+            occurrence
+            for occurrence in native_view.fields
+            if occurrence.container_ref == sheet.container_ref
+        ]
+        for occurrence in sheet_fields:
+            code = occurrence.field_code
+            if code in seen_fields:
+                continue
+            seen_fields.add(code)
+            field_roles[code] = {
+                "role": "identity" if code in identity_set else "fact",
+                "slot": slot_identity,
+                "group": slot_identity,
+            }
+        slots.append(
+            {
+                "slot": slot_identity,
+                "title": sheet.native_string or "业务表单",
+                "role": "context",
+                "groups": [item for item in groups if item.get("fieldRefs")],
+            }
+        )
+
+    ownership = derive_native_field_ownership(native_view, identity_fields=identity_fields)
+    return {
+        "source": "ui.contract.v2.form_structure_contract",
+        "structureVersion": "1.1",
+        "model": model,
+        "viewType": "form",
+        "mode": "native_structured_form",
+        "presentationMode": "workspace",
+        "structureSource": "native_view",
+        "structureAuthority": "native_form_slots",
+        "objectProfile": {
+            "model": model,
+            "kind": "business_form",
+            "factAuthority": "business_object_model_and_view",
+        },
+        "navigation": {"title": navigation_title or "业务办理"},
+        "slots": slots,
+        "fieldRoles": field_roles,
+        "fieldOwnership": ownership,
+        "surfaces": [],
+        "sourceAuthority": {
+            "kind": "unified_page_contract_v2",
+            "runtime_carrier": "ui.contract.v2.form_structure_contract",
+            "projection_only": True,
+            "no_business_fact_authority": True,
+            "governed_form_structure": True,
+            "governance_source": {
+                "source": "native_view_projection",
+                "formStructureAuthority": "native_form_slots",
+            },
+        },
+    }
