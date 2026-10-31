@@ -226,7 +226,7 @@ def derive_native_field_ownership(
         node = containers_by_ref.get(container_ref) if container_ref else None
         while node is not None:
             if node.native_type == "sheet":
-                return node.container_ref
+                return node.native_name or "sheet"
             node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
         return "sheet"
 
@@ -300,7 +300,7 @@ def build_native_form_structure_contract(
 
     for sheet in all_sheets:
         groups: list[dict[str, Any]] = []
-        slot_identity = sheet.native_name or sheet.container_ref or "sheet"
+        slot_identity = sheet.native_name or "sheet"
         group_containers: list[NativeContainer] = [
             child
             for child in sheet.children
