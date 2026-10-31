@@ -32,16 +32,22 @@ formal 页面（Action 590 / View 1776）的 legacy 渲染门控在运行时生�
 ## 与既有文档的差异
 
 `93-pc007-frontend-shadow-contraction.md` 记录 overlap 为 79，本次运行时
-观测为 43。以运行时为准，后续按 43 追踪；若 79 来自不同入口或口径，需另行核对。
+观测为 43。79 为 fieldOwnership 合并前的旧观测；合并后 V2 结构覆盖更多字段，
+overlap 收敛为 43，属正向收敛，非门控隐藏。后续按 43 追踪。
 
-## 未验证
+## 652 / 944 观测
 
-- Action 652 / View 944（非 formal）：运行时 DOM 复核未完成。menu 397 需要
-  Smart Core Admin（group 15），但候选 fixture 角色（pm / config_admin /
-  system_admin）经 `/a/652?menu_id=397` 均返回“无权访问”，需先解决 652 的
-  运行时入口与适用 fixture 身份，再复核 View 944 行为不变。
-  - 代码层面：formal 门控仅对 `pageComposition.class === 'formal'` 生效，
-    故 652/944（非 formal）不应受影响；此为静态结论，运行时证据待补。
+以 fixture_role_pm 观测：
+
+| 路由 | formComposition | shadowLayoutSource | overlap | 可见 legacy |
+| --- | --- | --- | --- | --- |
+| /f/project.project/1 | official-standard-form | v2_store | 62 | 0 |
+| /r/project.project/1 | legacy-form-section | none | 0 | 0（页面仍加载中） |
+
+`/f/project.project/1` 在 fieldOwnership 合并后解析为 formal（与 92 号文档
+旧记录“解析到 View 944”不一致），说明视图解析已随合并变化；`/r/project.project/1`
+（无 action 上下文）仍为 legacy-form-section。该变化需归入 652/944 双入口
+追踪独立核查，不改变本批次 590/1776 的 shadow 收缩结论。
 
 ## 待办
 
@@ -50,4 +56,5 @@ formal 页面（Action 590 / View 1776）的 legacy 渲染门控在运行时生�
 
 ## 状态
 
-Phase 5-01 核心验证通过；652/944 运行时复核与 overlap 口径核对待后续批次。
+Phase 5-01 核心验证通过；overlap 口径已收敛为 43（79 为合并前旧值）；
+652/944 视图解析变化待归入双入口追踪独立核查。
