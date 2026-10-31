@@ -68,8 +68,12 @@ DOM 复核保持 NOT_VERIFIED；代码层面 formal 门控只对 formal 生效�
 
 ## 待办
 
-- 枚举 79 与 43 的 overlap 口径差异来源。
-- 解决 652/944 的 fixture 入口后补 DOM 复核。
+- 590/1776 的 V2 布局 widget 字段全集已枚举为 43 个，落
+  `overlap-fields-project-590.json`（43/43 与 V2 字段描述表一致，为 V2 内部
+  一致性，不是 92 号文档旧口径的“legacy 重叠”）。
+- 79 与 43 的口径差异：79 为 fieldOwnership 合并前旧观测；当前 V2 内部字段
+  集合为 43，已收敛。
+- 解决 652/944 的 fixture 入口后补 DOM 复核（当前被 NAVIGATION_AUTHORITY_DENIED 阻断）。
 
 ## 状态
 
