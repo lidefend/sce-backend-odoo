@@ -15,6 +15,7 @@ from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
+from .form_structure_authority import TECHNICAL_FIELD_CODES
 from .action_semantics_vocabulary import (
     EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
     KINDS as ACTION_SEMANTICS_KINDS,
@@ -781,6 +782,21 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
             if group_identity:
                 group_ids.add(group_identity)
     field_codes = _page_composition_field_codes(contract)
+    owned_field_codes = {
+        (_text(raw_field_ref)[6:] if _text(raw_field_ref).startswith("field:") else _text(raw_field_ref))
+        for raw_field_ref in ownership
+    }
+    # Layout-rendered business fields that the native structure derivation did
+    # not place into a slot/group are owned by the catch-all business-facts
+    # group rather than left as unowned technical noise.
+    if "primary_facts" in slot_ids and "other_facts" in group_ids:
+        for code in sorted(field_codes):
+            if code in owned_field_codes or code in TECHNICAL_FIELD_CODES:
+                continue
+            ownership[f"field:{code}"] = {
+                "ownerSlotRef": "slot:primary_facts",
+                "ownerGroupRef": "group:other_facts",
+            }
     diagnostics: list[dict[str, Any]] = []
     seen_fields: set[str] = set()
     normalized: dict[str, dict[str, Any]] = {}
