@@ -1,0 +1,8 @@
+{
+  "schema": "payment_structure_matrix.v1",
+  "pages": [
+    {"model": "payment.request", "action_id": 649, "view_id": 1773, "slots": 9, "field_groups": true, "container_tree_top": 2, "ownership": false, "class": "unclassified_historical"},
+    {"model": "sc.payment.execution", "action_id": 709, "view_id": 1658, "slots": 0, "field_groups": true, "container_tree_top": 2, "ownership": false, "class": "unclassified_historical"}
+  ]
+}
+

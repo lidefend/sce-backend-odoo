@@ -245,6 +245,8 @@ def main() -> int:
         "dataContract",
         "runtimeContract",
         "meta",
+        "fieldOwnership",
+        "pageComposition",
     }
     if set(contract.keys()) != expected_keys:
         _fail(errors, "v2 contract top-level keys drifted")

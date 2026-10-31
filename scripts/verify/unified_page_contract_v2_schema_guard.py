@@ -29,11 +29,15 @@ OPTIONAL_TOP_LEVEL_KEYS = {
     "formStructureContract",
     "searchContract",
     "workflowContract",
+    "fieldOwnership",
+    "pageComposition",
 }
 TOP_LEVEL_PROPERTIES = TOP_LEVEL_KEYS | OPTIONAL_TOP_LEVEL_KEYS
 
 REQUIRED_DEFS = {
     "pageInfo",
+    "fieldOwnership",
+    "pageComposition",
     "layoutContract",
     "container",
     "layoutNode",

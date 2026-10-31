@@ -1,0 +1,167 @@
+{
+  "guard_version": "1.1.0",
+  "contract_version": "2.2.0",
+  "execution_timestamp": "2026-10-31T10:38:18.081070+00:00",
+  "repository_sha": "a9cd2fd5879d8a5358c2ad737602e0ae72644555",
+  "overall_status": "NOT_VERIFIED",
+  "page_classification": "unclassified_historical",
+  "page_classification_summary": {
+    "unclassified_historical": 1
+  },
+  "rule_results": [
+    {
+      "rule_id": "PC-001",
+      "status": "NOT_VERIFIED",
+      "reason": "business composition authority (slots) not declared; containerTree cannot substitute",
+      "evidence": "formStructureContract.slots",
+      "scope": {},
+      "remediation_hint": "declare business composition (slots) and layout topology (containerTree) in backend contract"
+    },
+    {
+      "rule_id": "PC-002",
+      "status": "NOT_VERIFIED",
+      "reason": "identity slot not evidenced",
+      "evidence": "slot:identity",
+      "scope": {},
+      "remediation_hint": "declare identity slot and bind identity fields via fieldOwnership.ownerSlotRef"
+    },
+    {
+      "rule_id": "PC-003",
+      "status": "NOT_VERIFIED",
+      "reason": "no business section slots declared",
+      "evidence": "slots+groups",
+      "scope": {},
+      "remediation_hint": "declare business section slots and bind fields to slot + group"
+    },
+    {
+      "rule_id": "PC-004",
+      "status": "NOT_VERIFIED",
+      "reason": "ownership not declared",
+      "evidence": "fieldOwnership",
+      "scope": {},
+      "remediation_hint": "provide one valid primary ownership record per field; remove duplicate keys"
+    },
+    {
+      "rule_id": "PC-005",
+      "status": "NOT_VERIFIED",
+      "reason": "slot fieldRefs not available",
+      "evidence": "slots.fieldRefs",
+      "scope": {},
+      "remediation_hint": "declare auxiliary projections through slot roles; fix fieldRefs types and ref prefixes"
+    },
+    {
+      "rule_id": "PC-006",
+      "status": "PASS",
+      "reason": "class=unclassified_historical",
+      "evidence": "pageComposition.class",
+      "scope": {},
+      "remediation_hint": "keep classification within the four allowed page classes"
+    },
+    {
+      "rule_id": "PC-007",
+      "status": "NOT_VERIFIED",
+      "reason": "fallback evidence is source/static; runtime consumption unproven",
+      "evidence": "legacy_fallback_sources",
+      "scope": {},
+      "remediation_hint": "prove runtime fallback consumption; source existence is not runtime proof"
+    },
+    {
+      "rule_id": "PC-008",
+      "status": "NOT_VERIFIED",
+      "reason": "verified permission evidence missing; declaration alone is not proof",
+      "evidence": "permission_evidence",
+      "scope": {},
+      "remediation_hint": "provide independent server permission tests covering authorized and unauthorized paths"
+    },
+    {
+      "rule_id": "PC-009",
+      "status": "NOT_VERIFIED",
+      "reason": "old-consumer regression evidence missing",
+      "evidence": "version_compatibility_evidence",
+      "scope": {},
+      "remediation_hint": "provide real old-consumer regression test evidence"
+    },
+    {
+      "rule_id": "PC-010",
+      "status": "NOT_VERIFIED",
+      "reason": "historical node identity mapping evidence missing",
+      "evidence": "historical_node_identity_evidence",
+      "scope": {},
+      "remediation_hint": "provide traceable before/after historical node identity mapping"
+    },
+    {
+      "rule_id": "PC-011",
+      "status": "NOT_VERIFIED",
+      "reason": "slots<->container mapping not evidenced",
+      "evidence": "slot_container_mapping",
+      "scope": {},
+      "remediation_hint": "provide containerTree integrity and slots<->container mapping evidence"
+    }
+  ],
+  "summary": {
+    "PC-001": "NOT_VERIFIED",
+    "PC-002": "NOT_VERIFIED",
+    "PC-003": "NOT_VERIFIED",
+    "PC-004": "NOT_VERIFIED",
+    "PC-005": "NOT_VERIFIED",
+    "PC-006": "PASS",
+    "PC-007": "NOT_VERIFIED",
+    "PC-008": "NOT_VERIFIED",
+    "PC-009": "NOT_VERIFIED",
+    "PC-010": "NOT_VERIFIED",
+    "PC-011": "NOT_VERIFIED"
+  },
+  "evidence_trust": {
+    "legacy_fallback_sources": {
+      "trusted": 2,
+      "total": 2,
+      "untrusted": 0
+    },
+    "permission_evidence": {
+      "trusted": 0,
+      "total": 0,
+      "untrusted": 0
+    },
+    "version_compatibility_evidence": {
+      "trusted": 1,
+      "total": 1,
+      "untrusted": 0
+    },
+    "historical_node_identity_evidence": {
+      "trusted": 2,
+      "total": 2,
+      "untrusted": 0
+    }
+  },
+  "evidence_summary": {
+    "legacy_fallback_sources": {
+      "total": 2,
+      "trusted": 2,
+      "sufficient": 0,
+      "verified_insufficient": 2,
+      "untrusted": 0
+    },
+    "permission_evidence": {
+      "total": 0,
+      "trusted": 0,
+      "sufficient": 0,
+      "verified_insufficient": 0,
+      "untrusted": 0
+    },
+    "version_compatibility_evidence": {
+      "total": 1,
+      "trusted": 1,
+      "sufficient": 0,
+      "verified_insufficient": 1,
+      "untrusted": 0
+    },
+    "historical_node_identity_evidence": {
+      "total": 2,
+      "trusted": 2,
+      "sufficient": 0,
+      "verified_insufficient": 2,
+      "untrusted": 0
+    }
+  },
+  "parse_diagnostics": {}
+}

@@ -177,6 +177,7 @@ export interface ContractV2FormStructureContract {
   fieldLabels?: Record<string, string>;
   slots: ContractV2FormStructureSlot[];
   fieldRoles: Record<string, ContractV2FormStructureRole>;
+  fieldOwnership?: ContractV2FieldOwnership;
   /** Declared page regions that are not Odoo view elements. */
   surfaces?: ContractV2FormStructureSurface[];
   sourceAuthority: ContractV2FormStructureSourceAuthority;
@@ -648,6 +649,19 @@ export interface ContractV2Snapshot {
   formStructureContract?: ContractV2FormStructureContract;
   searchContract?: ContractV2Dictionary;
   workflowContract?: ContractV2Dictionary;
+  fieldOwnership?: ContractV2FieldOwnership;
+  pageComposition?: ContractV2PageComposition;
+}
+
+export interface ContractV2FieldOwnership {
+  [fieldRef: string]: { ownerSlotRef: string; ownerGroupRef?: string };
+}
+
+export interface ContractV2PageComposition {
+  class: string;
+  diagnostics?: unknown[];
+  schemaVersion?: string;
+  permissionSemanticsPreserved?: boolean;
 }
 
 export interface ContractV2UnsupportedFeature {

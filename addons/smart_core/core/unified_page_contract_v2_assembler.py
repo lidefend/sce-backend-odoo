@@ -722,6 +722,128 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
         return contract
 
 
+def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
+    codes: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        node_type = _text(value.get("type") or value.get("containerType")).lower()
+        if node_type == "field":
+            name = _text(value.get("name") or value.get("fieldCode"))
+            if name:
+                codes.add(name)
+        widget_id = _text(value.get("widgetId"))
+        if widget_id and widget_id.startswith("field."):
+            codes.add(widget_id.split(".", 1)[1].rsplit(".occ.", 1)[0])
+        for key in ("children", "widgetList"):
+            visit(value.get(key))
+
+    visit(_dict(contract.get("layoutContract")).get("containerTree"))
+    for key in _dict(_dict(contract.get("dataContract")).get("mainData")):
+        codes.add(key)
+    return codes
+
+
+def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any]) -> None:
+    form_structure_source = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
+    form_governance = _dict(source.get("form_governance"))
+    raw_ownership = (
+        source.get("field_ownership")
+        or source.get("fieldOwnership")
+        or form_structure_source.get("fieldOwnership")
+        or form_governance.get("field_ownership")
+    )
+    ownership = deepcopy(raw_ownership) if isinstance(raw_ownership, dict) else {}
+    slots = _list(_dict(contract.get("formStructureContract")).get("slots"))
+    slot_ids = {
+        _text(item.get("id") or item.get("slot"))
+        for item in slots
+        if isinstance(item, dict) and _text(item.get("id") or item.get("slot"))
+    }
+    field_groups = _list(
+        _dict(
+            _dict(contract.get("dataContract")).get("dataMeta")
+        ).get("fieldGroups", {}).get("groups")
+    )
+    group_ids = {
+        _text(item.get("id") or item.get("name") or item.get("group"))
+        for item in field_groups
+        if isinstance(item, dict) and _text(item.get("id") or item.get("name") or item.get("group"))
+    }
+    for slot in slots:
+        for group in _list(slot.get("groups")):
+            group_identity = _text(group.get("name") or group.get("id") or group.get("group"))
+            if group_identity:
+                group_ids.add(group_identity)
+    field_codes = _page_composition_field_codes(contract)
+    diagnostics: list[dict[str, Any]] = []
+    seen_fields: set[str] = set()
+    normalized: dict[str, dict[str, Any]] = {}
+    identity_slot_present = "identity" in slot_ids
+
+    def _diag(code: str, rule: str, **extra: Any) -> None:
+        row: dict[str, Any] = {
+            "code": code,
+            "severity": "error",
+            "validationRule": rule,
+            "model": _text(contract.get("pageInfo", {}).get("model")),
+            "action_id": _positive_int(source.get("action_id"), 0) or None,
+            "view_id": _positive_int(source.get("view_id"), 0) or None,
+        }
+        row.update(extra)
+        diagnostics.append(row)
+
+    for raw_field_ref, raw_entry in ownership.items():
+        field_ref = _text(raw_field_ref)
+        entry = _dict(raw_entry)
+        field_code = field_ref[6:] if field_ref.startswith("field:") else field_ref
+        slot_ref = _text(entry.get("ownerSlotRef"))
+        group_ref = _text(entry.get("ownerGroupRef"))
+        if not field_code or not field_code in field_codes:
+            _diag("PAGE_COMPOSITION_FIELD_REF_INVALID", "V1", fieldRef=field_ref)
+        slot_id = slot_ref[5:] if slot_ref.startswith("slot:") else slot_ref
+        if not slot_ref or slot_id not in slot_ids:
+            _diag("PAGE_COMPOSITION_SLOT_REF_INVALID", "V2", fieldRef=field_ref, ownerSlotRef=slot_ref)
+        if group_ref:
+            group_id = group_ref[6:] if group_ref.startswith("group:") else group_ref
+            if group_id not in group_ids:
+                _diag("PAGE_COMPOSITION_GROUP_REF_INVALID", "V3", fieldRef=field_ref, ownerGroupRef=group_ref)
+        if slot_id == "identity" and not identity_slot_present:
+            _diag("PAGE_COMPOSITION_IDENTITY_SLOT_MISSING", "V5", fieldRef=field_ref, ownerSlotRef=slot_ref)
+        if slot_id != "identity" and not group_ref:
+            _diag("PAGE_COMPOSITION_SECTION_GROUP_MISSING", "V6", fieldRef=field_ref, ownerSlotRef=slot_ref)
+        if field_ref in seen_fields:
+            _diag("PAGE_COMPOSITION_DUPLICATE_PRIMARY", "V4", fieldRef=field_ref)
+        seen_fields.add(field_ref)
+        normalized[field_ref] = {"ownerSlotRef": slot_ref, **({"ownerGroupRef": group_ref} if group_ref else {})}
+
+    composition_class = "formal"
+    if diagnostics:
+        composition_class = "incomplete"
+    if not ownership:
+        legacy_compatible = source.get("legacy_compatible") is True
+        composition_class = "legacy_compatible" if legacy_compatible else "unclassified_historical"
+        diagnostics.append({
+            "code": "PAGE_COMPOSITION_FIELD_OWNERSHIP_MISSING",
+            "severity": "warning",
+            "validationRule": "V10",
+            "legacyCompatible": legacy_compatible,
+        })
+
+    contract["fieldOwnership"] = normalized
+    contract["pageComposition"] = {
+        "class": composition_class,
+        "diagnostics": diagnostics,
+        "schemaVersion": _text(_dict(contract.get("pageInfo")).get("contractVersion")),
+        "permissionSemanticsPreserved": True,
+    }
+
+
 def _assemble_unified_page_contract_v2(
     source_contract: dict[str, Any],
     *,
@@ -761,6 +883,8 @@ def _assemble_unified_page_contract_v2(
     _bind_native_layout_action_references(contract)
     _finalize_layout_dsl(contract)
     actions_bound_at = time.monotonic()
+    if resolved in {"ui.contract", "native_form_projection"}:
+        _page_composition_contract(contract, source)
     sealed = seal_unified_page_contract(
         contract,
         source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,
@@ -2093,7 +2217,8 @@ def _normalize_native_layout_nodes(
                 node[canonical] = deepcopy(node.get(alias))
         node_type = _text(node.get("type") or node.get("kind"), "group").lower()
         node["type"] = node_type
-        node_name = _text(node.get("name") or node.get("field"))
+        native_attributes = _dict(node.get("attributes") or node.get("attrs"))
+        node_name = _text(node.get("name") or node.get("field") or native_attributes.get("name"))
         if node_name:
             node["name"] = node_name
         for alias in ("kind", "field", *(pair[0] for pair in alias_pairs)):

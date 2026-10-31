@@ -1,0 +1,75 @@
+decision:
+
+  id:
+    ARCH-DECISION-004
+
+
+  topic:
+    structural_authority_of_backend_owned_page_composition
+
+
+  owner_approval:
+    status: confirmed
+    date: "2026-10-31"
+
+
+  decision:
+
+    # Owner direction 2026-10-31 (Phase 4F-03): backend page composition has two
+    # non-overlapping authorities. Business composition and layout topology are
+    # separate layers; neither substitutes the other and no parallel schema is added.
+    two_layer_backend_authority_no_parallel_schema: true
+    business_composition_authority_is_slots_field_groups_and_field_ownership: true
+    layout_topology_authority_is_layout_contract_container_tree: true
+    frontend_renderer_owns_presentation_only: true
+    server_permissions_are_the_final_authorization_authority: true
+    container_tree_does_not_decide_field_business_ownership: true
+    slots_missing_means_not_formal_even_when_container_tree_renders: true
+    field_groups_existence_is_not_runtime_render_participation_proof: true
+    renderability_is_not_formal_page_eligibility: true
+
+
+  rules:
+
+    - slots_declare_business_regions_identity_sections_order_and_field_references
+
+    - field_groups_declare_field_business_grouping_facts
+
+    - field_ownership_declares_the_unique_primary_field_owner
+
+    - layout_contract_container_tree_declares_container_hierarchy_and_render_topology
+
+    - renderer_maps_components_interaction_and_responsive_presentation_only
+
+    - container_tree_must_not_substitute_slots
+
+    - container_tree_must_not_infer_or_assign_field_business_ownership
+
+    - field_groups_existence_must_not_be_treated_as_runtime_render_participation
+
+    - a_page_that_renders_is_not_thereby_a_formal_page
+
+    - formal_page_requires_non_empty_slots_and_complete_ownership
+
+    - layout_authority_and_business_composition_authority_are_not_merged
+
+    - slots_and_container_tree_require_an_explicit_mapping_and_consistency_check
+
+    - field_ownership_carries_no_display_role_and_no_second_ownership_for_projection
+
+    - pc_011_layout_consistency_is_recorded_as_future_guard_rule_not_implemented_now
+
+
+  related:
+
+    - .agent/decisions/contract-first.yaml
+
+    - .agent/decisions/contract-driven-runtime-authority.yaml
+
+    - .agent/decisions/layout-contract-ownership.yaml
+
+    - docs/architecture/backend-owned-page-composition/54-structural-authority-decision.md
+
+
+  status:
+    active

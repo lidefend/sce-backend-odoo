@@ -183,3 +183,52 @@ const authorizedPolicy = resolveContractPageAccessPolicy(authorizedStore);
 assert.equal(authorizedPolicy.mode, 'allow', 'an authorized page keeps rendering');
 assert.equal(authorizedPolicy.reasonCode, '', 'an authorized page carries no denial reason');
 console.log('[contract_v2_runtime_policy_test] page access policy cases=6 passed');
+
+// Backend-owned page composition declares field ownership and a composition
+// class at the snapshot top level.  The runtime decoder must carry both
+// without rejecting the snapshot, while their absence must stay non-blocking.
+const composedSnapshot = decodeContractV2Snapshot({
+  ...previewSnapshot,
+  fieldOwnership: { 'field.name': { ownerSlotRef: 'slot:identity', ownerGroupRef: 'group:identity' } },
+  pageComposition: { class: 'formal', diagnostics: [], schemaVersion: '2.2.0', permissionSemanticsPreserved: true },
+});
+assert.deepEqual(
+  composedSnapshot.fieldOwnership,
+  { 'field.name': { ownerSlotRef: 'slot:identity', ownerGroupRef: 'group:identity' } },
+  'field ownership must survive snapshot decoding',
+);
+assert.equal(composedSnapshot.pageComposition?.class, 'formal', 'page composition class must survive snapshot decoding');
+assert.equal(composedSnapshot.pageComposition?.permissionSemanticsPreserved, true, 'permission semantics flag must survive snapshot decoding');
+assert.equal(
+  decodeContractV2Snapshot(previewSnapshot).fieldOwnership,
+  undefined,
+  'a snapshot without field ownership must still decode',
+);
+assert.equal(
+  decodeContractV2Snapshot(previewSnapshot).pageComposition,
+  undefined,
+  'a snapshot without page composition must still decode',
+);
+console.log('[contract_v2_runtime_policy_test] page composition field ownership cases=3 passed');
+
+// fieldOwnership is also carried inside formStructureContract by the native
+// form composition enrichment.  It must decode without the decoder rejecting
+// the enclosing structure as an unknown-key snapshot.
+const composedFormSnapshot = decodeContractV2Snapshot({
+  ...previewSnapshot,
+  formStructureContract: {
+    ...previewSnapshot.formStructureContract,
+    fieldOwnership: { 'field.name': { ownerSlotRef: 'slot:identity' } },
+  },
+});
+assert.deepEqual(
+  composedFormSnapshot.formStructureContract?.fieldOwnership,
+  { 'field.name': { ownerSlotRef: 'slot:identity' } },
+  'formStructureContract field ownership must survive snapshot decoding',
+);
+assert.equal(
+  decodeContractV2Snapshot(previewSnapshot).formStructureContract?.fieldOwnership,
+  undefined,
+  'formStructureContract without field ownership must still decode',
+);
+console.log('[contract_v2_runtime_policy_test] form structure field ownership cases=2 passed');

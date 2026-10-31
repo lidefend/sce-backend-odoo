@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: PAGE-CONVERGENCE-01
-  status: active
+  status: completed
   title: 项目详情页专业化收敛（项目台账记录页样板）
   formal_product_layer: P1
   layer_target: smart_construction_core 项目概览表单 + 通用前端契约渲染
