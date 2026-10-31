@@ -76,7 +76,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "df4074ae1a73716d1ef339f2ea6be93d7db7fdd94677891f37c0af23bbd55071"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "f78d9ed79f23935dde31d95f66850cfa796d8c908f394baedba515503dc93312"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
