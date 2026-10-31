@@ -123,11 +123,9 @@ class TestNativeViewProjection(unittest.TestCase):
             ownership["field:project_code"]["ownerGroupRef"],
             "group:sc_project_information_identity",
         )
-        # reject_reason is sheet-level, not in any group
-        self.assertEqual(
-            ownership["field:reject_reason"]["ownerGroupRef"],
-            "group:form/sheet[1]",
-        )
+        # reject_reason is sheet-level (not in a named group), so it is a
+        # summary projection rather than a primary business owner
+        self.assertNotIn("field:reject_reason", ownership)
 
     def test_build_form_structure_contract_from_native(self):
         view = project_native_view(self.env, "project.project", action_id=590, view_id=1776)

@@ -211,10 +211,13 @@ def derive_native_field_ownership(
     itself for sheet-level fields).
     """
     containers_by_ref: dict[str, NativeContainer] = {}
+    named_group_refs: set[str] = set()
 
     def index_containers(nodes: list[NativeContainer]) -> None:
         for node in nodes:
             containers_by_ref[node.container_ref] = node
+            if node.native_name and node.native_type in {"group", "notebook", "page"}:
+                named_group_refs.add(node.container_ref)
             index_containers(node.children)
 
     index_containers(native_view.containers)
@@ -233,6 +236,8 @@ def derive_native_field_ownership(
     for occurrence in native_view.fields:
         code = occurrence.field_code
         if code in TECHNICAL_FIELD_CODES:
+            continue
+        if occurrence.container_ref not in named_group_refs:
             continue
         if code in seen:
             continue
