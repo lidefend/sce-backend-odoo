@@ -7,6 +7,7 @@ from lxml import etree
 
 from odoo.addons.smart_core.core.native_view_projection import (
     NativeView,
+    derive_native_field_ownership,
     project_native_view,
 )
 
@@ -73,7 +74,7 @@ class TestNativeViewProjection(unittest.TestCase):
             item.container_ref
             for item in view.containers[0].children[0].children
         }
-        self.assertIn("group:sc_project_information_identity", names)
+        self.assertIn("sc_project_information_identity", names)
         unnamed = [
             item.container_ref
             for item in view.containers[0].children[0].children
@@ -106,6 +107,26 @@ class TestNativeViewProjection(unittest.TestCase):
         payload = view.to_dict()
         self.assertEqual(payload["identity"]["model"], "project.project")
         self.assertGreaterEqual(len(payload["fields"]), 3)
+
+    def test_derive_ownership_from_native_position(self):
+        view = project_native_view(self.env, "project.project", action_id=590, view_id=1776)
+        ownership = derive_native_field_ownership(view, identity_fields=["name"])
+        # name first occurrence is in the identity group and wins primary ownership
+        self.assertEqual(
+            ownership["field:name"]["ownerGroupRef"],
+            "group:sc_project_information_identity",
+        )
+        self.assertEqual(ownership["field:name"]["role"], "identity")
+        # project_code is in the same identity group
+        self.assertEqual(
+            ownership["field:project_code"]["ownerGroupRef"],
+            "group:sc_project_information_identity",
+        )
+        # reject_reason is sheet-level, not in any group
+        self.assertEqual(
+            ownership["field:reject_reason"]["ownerGroupRef"],
+            "group:form/sheet[1]",
+        )
 
 
 if __name__ == "__main__":

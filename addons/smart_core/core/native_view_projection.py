@@ -89,7 +89,7 @@ class NativeView:
 
 def _structural_identity(tag: str, name: str, parent_ref: str | None, position: int) -> str:
     if name:
-        return f"{tag}:{name}"
+        return name
     if parent_ref:
         return f"{parent_ref}/{tag}[{position}]"
     return tag
@@ -188,3 +188,57 @@ def project_native_view(
 
     walk(root, None, "")
     return result
+
+
+def derive_native_field_ownership(
+    native_view: NativeView,
+    *,
+    identity_fields: tuple[str, ...] | list[str] = (),
+) -> dict[str, dict[str, str]]:
+    """Derive unique primary field ownership from native field position.
+
+    The first occurrence of a field wins as its primary owner; later
+    occurrences are legal projections that must be declared explicitly by a
+    caller, never auto-selected by name/type/order.
+
+    The owner slot is the field's top-level sheet; the owner group is the
+    native ``<group name>`` that contains the field (falling back to the sheet
+    itself for sheet-level fields).
+    """
+    containers_by_ref: dict[str, NativeContainer] = {}
+
+    def index_containers(nodes: list[NativeContainer]) -> None:
+        for node in nodes:
+            containers_by_ref[node.container_ref] = node
+            index_containers(node.children)
+
+    index_containers(native_view.containers)
+
+    def top_sheet_ref(container_ref: str | None) -> str:
+        node = containers_by_ref.get(container_ref) if container_ref else None
+        while node is not None:
+            if node.native_type == "sheet":
+                return node.container_ref
+            node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
+        return "sheet"
+
+    ownership: dict[str, dict[str, str]] = {}
+    seen: set[str] = set()
+    identity_set = set(str(item).strip() for item in identity_fields if str(item).strip())
+    for occurrence in native_view.fields:
+        code = occurrence.field_code
+        if code in seen:
+            continue
+        seen.add(code)
+        owner_group = occurrence.container_ref
+        if not containers_by_ref.get(owner_group):
+            owner_group = "sheet"
+        owner_slot = top_sheet_ref(occurrence.container_ref)
+        entry: dict[str, str] = {
+            "ownerSlotRef": f"slot:{owner_slot}",
+            "ownerGroupRef": f"group:{owner_group}",
+        }
+        if code in identity_set:
+            entry["role"] = "identity"
+        ownership[f"field:{code}"] = entry
+    return ownership
