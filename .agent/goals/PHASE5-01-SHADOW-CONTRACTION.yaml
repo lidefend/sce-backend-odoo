@@ -1,0 +1,46 @@
+schema_version: 1
+goal:
+  id: PHASE5-01-SHADOW-CONTRACTION
+  title: phase5_01_pc007_frontend_shadow_contraction_runtime_verification
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_formal_page_legacy_render_gating_and_shadow_diagnostics
+  module:
+    - frontend/apps/web
+    - docs/architecture/backend-owned-page-composition
+    - scripts/verify
+    - .agent
+  baseline:
+    branch: feature/pc01-phase5-shadow-contraction
+    full_sha: 795f9fc10ed8fca2d7e8444cf92fa5e391609fb0
+    source: post_merge_of_pr_789_page_composition_field_ownership
+  objective: >-
+    验证并收口 formal 页面的 legacy 渲染收缩：View 1776（formal）经真实菜单路径
+    运行时可见 legacy 归零，shadow 诊断仍报告 79 个 overlap，渲染与诊断分离，
+    View 944（非 formal）行为不变；枚举 79 个 overlap 字段清单。
+    本批次只验证前端渲染门控与证据，不修改后端结构、权限、业务配置或删除 fallback。
+  product_boundary:
+    standard_vs_user_specific: platform_frontend_contract_consumption
+    why_here: >-
+      formal 页面的 legacy 渲染门控属于通用前端契约消费：后端已声明
+      pageComposition.class=formal，前端必须据此关闭 legacy 渲染输入，同时保留
+      shadow 诊断直到 overlap 归零。
+    why_not_elsewhere:
+      - no_backend_contract_or_schema_change
+      - no_permission_acl_or_record_rule_change
+      - no_business_config_or_database_change
+      - no_legacy_fallback_deletion
+    blast_radius:
+      - formal project detail page legacy render visibility
+      - shadow overlap diagnostics evidence
+      - agent run metadata for this batch
+  constraints:
+    - formal_pages_render_from_native_tree_not_legacy_nodes
+    - shadow_diagnostics_must_not_be_hidden_by_formal_gating
+    - view_944_legacy_behaviour_unchanged
+  acceptance:
+    - view_1776_formal_visible_legacy_zero_and_overlap_still_readable
+    - view_944_behaviour_unchanged
+    - overlap_field_enumeration_recorded
+  next_exact_step: run_governed_browser_verification_for_view_1776_formal_shadow_contraction

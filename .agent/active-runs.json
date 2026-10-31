@@ -16,6 +16,7 @@
     "codex/test-baseline-incremental-reuse": ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",
     "feature/contract-detail-productization-01": ".agent/runs/PC02-CONTRACT-DETAIL-PRODUCTIZATION/run.json",
     "feature/demo-iteration-line-20261020": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+    "feature/pc01-phase5-shadow-contraction": ".agent/runs/PHASE5-01-SHADOW-CONTRACTION/run.json",
     "feature/product-iteration-v2-20261020": ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
     "feature/project-detail-productization-01": ".agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json",
     "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",

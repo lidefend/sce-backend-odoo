@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "PHASE5-01-SHADOW-CONTRACTION",
+  "branch": "feature/pc01-phase5-shadow-contraction",
+  "baseline_sha": "795f9fc10ed8fca2d7e8444cf92fa5e391609fb0",
+  "status": "active",
+  "goal": ".agent/goals/PHASE5-01-SHADOW-CONTRACTION.yaml",
+  "record": "docs/architecture/backend-owned-page-composition/96-phase5-01-shadow-contraction-arrangement.md",
+  "scope": [
+    "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+    "frontend/apps/web/src/pages/contractForm/useContractV2ShadowDiagnostics.ts",
+    "docs/architecture/backend-owned-page-composition/96-phase5-01-shadow-contraction-arrangement.md",
+    ".agent/goals/PHASE5-01-SHADOW-CONTRACTION.yaml",
+    ".agent/runs/PHASE5-01-SHADOW-CONTRACTION/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "candidate acceptance carrier via governed Make targets"
+  },
+  "checks": {
+    "runtime_shadow_verification": {
+      "target": "verify.frontend.project_workspace_dom.browser",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+        "frontend/apps/web/src/pages/contractForm/useContractV2ShadowDiagnostics.ts"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "run governed browser verification for View 1776 formal shadow contraction"
+}
