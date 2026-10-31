@@ -12,13 +12,17 @@
 6. DOM：`[data-field-name="last_update_status"]` 计数为 0，说明该字段由状态组件渲染，
    不是标准字段节点。
 
-## 结论
+## 定向采集修正结论
 
-`to_define` 是合法 Selection，问题在 `status_with_color` 的状态语义/颜色映射未覆盖
-`to_define`，渲染为“?”。修复应落在通用状态映射层（补充 `to_define` 的中性语义），
-不新增业务状态，不为 PC-01 加前端模型特判。
+- `[data-widget-type="status_with_color"]`、`.sc-status-badge`、
+  `[data-semantic-component="ScStatusBadge"]` 在项目工作空间 DOM 中均为 0。
+- `[data-field-name="last_update_status"]` 计数为 0。
+- “项目状态”对应的“?”实际是 `data-field-help-trigger`，`aria-label="项目状态"`，
+  与“经营方式”“描述”“分析账户”同属帮助触发按钮。
 
-## 尚未闭合
+最终结论：`last_update_status`（合法 Selection，`to_define` → “设定状态”）在项目
+工作空间视图里被声明，但前端未渲染为字段或状态徽标，属于“声明未消费”；用户看到的
+“项目状态: ?”是字段帮助按钮，不是状态值。
 
-产生“?”文本与 `data-semantic-status` 的具体映射表/组件文件，需一次定向捕获状态卡
-文本节点与 `data-widget-type`/`data-semantic-status` 属性后确认。
+修复方向：恢复 `last_update_status` 的展示（显示“设定状态”或等价的合法状态文本），
+并在通用状态展示层为 `to_define` 提供中性语义；帮助按钮若没有有效 help 内容则收敛。
