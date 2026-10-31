@@ -74,6 +74,7 @@ from .ui_contract_v2_constants import (
 from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
 from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
+from ..core.native_view_projection import build_native_form_structure_contract, project_native_view
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -94,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v9-widget-ownership"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v10-native-structure"
 
 
 def _node_validation_snapshot_ready(source):
@@ -3975,16 +3976,36 @@ class UiContractV2Handler(BaseIntentHandler):
             "attachment_field": "",
             "field_labels": {name: field_label(name) for name in common_fields},
         }
-        form_structure = _form_structure.build_form_structure_contract(
-            self,
-            model=model,
-            profile=profile,
-            field_type=field_type,
-            unique=lambda items: list(dict.fromkeys(items)),
-            field_label=field_label,
-            governance=governance,
-            navigation_title=str(ui_data.get("title") or "").strip(),
-        )
+        navigation_title = str(ui_data.get("title") or "").strip()
+        identity_fields = [str(name).strip() for name in (governance.get("identity_fields") if isinstance(governance.get("identity_fields"), list) else []) if str(name).strip()]
+        try:
+            native_view = project_native_view(
+                su_env,
+                model,
+                action_id=action_id,
+                view_id=view_id,
+                view_type="form",
+            )
+            form_structure = build_native_form_structure_contract(
+                native_view,
+                model=model,
+                identity_fields=identity_fields,
+                field_labels=profile["field_labels"],
+                navigation_title=navigation_title,
+            )
+            form_structure["surfaces"] = self._form_structure_surfaces(model=model)
+        except Exception:
+            _logger.debug("native form structure build failed; fallback to legacy heuristic model=%s", model, exc_info=True)
+            form_structure = _form_structure.build_form_structure_contract(
+                self,
+                model=model,
+                profile=profile,
+                field_type=field_type,
+                unique=lambda items: list(dict.fromkeys(items)),
+                field_label=field_label,
+                governance=governance,
+                navigation_title=navigation_title,
+            )
         ui_data["form_structure_contract"] = form_structure
         ownership = form_structure.get("fieldOwnership")
         if isinstance(ownership, dict):
