@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v6-technical-field-exclusion"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v7-layout-field-ownership"
 
 
 def _node_validation_snapshot_ready(source):
@@ -3950,7 +3950,21 @@ class UiContractV2Handler(BaseIntentHandler):
                 name = str(row or "").strip()
             if name and name not in TECHNICAL_FIELD_CODES and name not in raw_view_fields:
                 raw_view_fields.append(name)
-        common_fields = list(dict.fromkeys(common_fields + raw_view_fields))
+
+        def collect_layout_field_names(nodes: Any) -> list[str]:
+            collected: list[str] = []
+            for node in nodes if isinstance(nodes, list) else []:
+                if not isinstance(node, dict):
+                    continue
+                name = str(node.get("name") or node.get("field") or node.get("field_name") or "").strip()
+                if name and name not in TECHNICAL_FIELD_CODES and name not in collected:
+                    collected.append(name)
+                for child_key in ("children", "fields", "widgetList"):
+                    collected.extend(collect_layout_field_names(node.get(child_key)))
+            return collected
+
+        raw_layout_fields = collect_layout_field_names(form_view_spec.get("layout"))
+        common_fields = list(dict.fromkeys(common_fields + raw_view_fields + raw_layout_fields))
         profile = {
             "common_fields": common_fields,
             "detail_fields": [],
