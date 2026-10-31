@@ -352,6 +352,7 @@ def build_native_form_structure_contract(
             for occurrence in native_view.fields
             if occurrence.container_ref == sheet.container_ref
         ]
+        sheet_field_refs: list[str] = []
         for occurrence in sheet_fields:
             code = occurrence.field_code
             if code in TECHNICAL_FIELD_CODES:
@@ -359,6 +360,7 @@ def build_native_form_structure_contract(
             if code in seen_fields:
                 continue
             seen_fields.add(code)
+            sheet_field_refs.append(code)
             field_roles[code] = {
                 "role": "context",
                 "slot": slot_identity,
@@ -369,6 +371,7 @@ def build_native_form_structure_contract(
                 "slot": slot_identity,
                 "title": sheet.native_string or "业务表单",
                 "role": "context",
+                "fieldRefs": sheet_field_refs,
                 "groups": [item for item in groups if item.get("fieldRefs")],
             }
         )
