@@ -40,7 +40,7 @@
                             <field name="submission_readiness_display" readonly="1"/>
                             <field name="name" placeholder="请输入项目名称" required="1" />
                             <field name="initiation_date" required="1" />
-                            <field name="manager_id" string="项目负责人" required="1" />
+                            <field name="manager_id" string="项目经理" required="1" />
                             <field name="operation_strategy" />
                             <field name="owner_id" />
                         </group>

@@ -21,7 +21,7 @@
                                     项目编号 <field name="project_code" readonly="1" nolabel="1"/>
                                     · 经营性质 <field name="business_nature" readonly="1" nolabel="1"/>
                                 </div>
-                                <div class="text-muted">你是：项目负责人 <field name="user_id" readonly="1" />
+                                <div class="text-muted">你的项目角色 <field name="user_id" readonly="1" />
                                 </div>
                                 <div class="text-muted">项目经理 <field name="manager_id" readonly="1" />
                                 </div>
@@ -170,7 +170,7 @@
                         <field name="end_date" groups="smart_construction_core.group_sc_cap_project_read" />
                     </group>
                     <group name="sc_project_information_responsible" string="责任信息" col="2" data-sc-anchor="project-responsible">
-                        <field name="user_id" string="项目负责人" widget="many2one_avatar_user" domain="[('share', '=', False)]" readonly="not active" options="{'no_quick_create': True}" />
+                        <field name="user_id" string="你的项目角色" widget="many2one_avatar_user" domain="[('share', '=', False)]" readonly="not active" options="{'no_quick_create': True}" />
                         <field name="manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="cost_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="doc_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
