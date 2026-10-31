@@ -1382,6 +1382,9 @@
         },
         "sourceAuthority": {
           "$ref": "#/$defs/formStructureSourceAuthority"
+        },
+        "fieldOwnership": {
+          "$ref": "#/$defs/fieldOwnership"
         }
       },
       "allOf": [
