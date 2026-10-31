@@ -49,6 +49,7 @@ const evidence = {
   identity: {},
   status: {},
   collaboration: {},
+  deep: {},
   viewports: [],
 };
 
@@ -95,6 +96,53 @@ const collab = await page.evaluate(() => {
   };
 });
 evidence.collaboration = collab;
+
+const deep = await page.evaluate(() => {
+  const q = (selector) => [...document.querySelectorAll(selector)];
+  const text = (node) => (node.textContent || '').replace(/\s+/g, ' ').trim();
+  const attrs = (node) => {
+    const out = {};
+    for (const name of ['data-widget-type', 'data-component-renderer', 'data-semantic-status', 'data-status', 'data-field-name', 'data-sc-anchor', 'data-component', 'aria-label']) {
+      if (node.getAttribute(name)) out[name] = node.getAttribute(name);
+    }
+    return out;
+  };
+  const closestAnchor = (node) => {
+    let cur = node;
+    while (cur && cur !== document.body) {
+      if (cur.getAttribute && cur.getAttribute('data-sc-anchor')) return cur.getAttribute('data-sc-anchor');
+      cur = cur.parentElement;
+    }
+    return null;
+  };
+  return {
+    statusCards: q('[data-widget-type="status_with_color"], .sc-status-badge, [data-semantic-component="ScStatusBadge"]')
+      .slice(0, 8).map((node) => ({ text: text(node), ...attrs(node), anchor: closestAnchor(node) })),
+    identityOccurrences: ['project_code', 'user_id', 'manager_id'].map((field) => ({
+      field,
+      nodes: q(`[data-field-name="${field}"]`).slice(0, 4).map((node) => ({
+        anchor: closestAnchor(node),
+        text: text(node),
+      })),
+    })),
+    helpTriggers: q('[data-field-help-trigger]').slice(0, 8).map((node) => ({
+      text: text(node),
+      ariaLabel: node.getAttribute('aria-label') || null,
+      anchor: closestAnchor(node),
+      parentField: (node.closest('[data-field-name]') || {}).getAttribute ? node.closest('[data-field-name]')?.getAttribute('data-field-name') : null,
+    })),
+    mailCollaboration: ['message_follower_ids', 'message_attachment_ids'].map((field) => ({
+      field,
+      nodes: q(`[data-field-name="${field}"]`).slice(0, 2).map((node) => {
+        const box = node.getBoundingClientRect();
+        return { anchor: closestAnchor(node), text: text(node).slice(0, 160), rect: { x: Math.round(box.x), width: Math.round(box.width), height: Math.round(box.height) } };
+      }),
+    })),
+    chatterNodes: q('[data-component*="chatter"], [data-component*="Chatter"], .o-mail-Chatter, [data-field-name*="message_"]')
+      .slice(0, 12).map((node) => ({ tag: node.tagName, ...attrs(node), text: text(node).slice(0, 120) })),
+  };
+});
+evidence.deep = deep;
 
 for (const vp of viewports) {
   await page.setViewportSize({ width: vp.width, height: vp.height });
