@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <!-- U-C4 G03: 收款登记 / 公司收入 entries share model sc.receipt.income and the
              native form view view_sc_receipt_income_form (1644).  The rebuilt native

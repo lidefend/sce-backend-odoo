@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <!-- U-C4 G04: 实付登记 / 公司财务支出 / 往来单位付款 entries share model
              sc.payment.execution and the native form view

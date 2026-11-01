@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G15: 税务申报 (880 / menu 702 `menu_sc_product_tax_filing_v1` / action
          `action_sc_product_tax_filing_v1` / view 1659 `view_sc_tax_filing_form`)
          退役入口级结构声明 —— 沿用 G13 对 876 的原地退役形状（同名 record、

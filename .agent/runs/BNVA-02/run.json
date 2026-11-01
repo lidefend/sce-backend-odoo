@@ -69,7 +69,13 @@
     "docs/architecture/backend-owned-page-composition/220-bnva-02c-real-migration-transaction-report.md",
     "docs/architecture/backend-owned-page-composition/221-bnva-02c-overlay-isolation-validation.md",
     "docs/architecture/backend-owned-page-composition/222-bnva-02c-noupdate-runtime-behavior.md",
-    "docs/architecture/backend-owned-page-composition/223-bnva-02c-03a-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/223-bnva-02c-03a-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/224-bnva-02c-noupdate-migration-implementation.md",
+    "docs/architecture/backend-owned-page-composition/225-bnva-02c-real-module-upgrade-validation.md",
+    "docs/architecture/backend-owned-page-composition/226-bnva-02c-version-snapshot-and-rollback-test.md",
+    "docs/architecture/backend-owned-page-composition/227-bnva-02c-tenant-overlay-protection-report.md",
+    "docs/architecture/backend-owned-page-composition/228-bnva-02c-seed-upgrade-regression.md",
+    "docs/architecture/backend-owned-page-composition/229-bnva-02c-03b-final-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -77,5 +83,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02B-03A Odoo adapter integration complete (22/22 offline tests); await BNVA-02B-02C-02B-03B (isolated DB noupdate switch + real upgrade validation) approval"
+  "next_exact_step": "BNVA-02B-02C-02B-03B noupdate classification switch applied (32 IMMUTABLE files -> noupdate=1); real isolated-DB module upgrade validation pending; await BNVA-02B-02C-02C (historical config governance + real upgrade validation) approval"
 }

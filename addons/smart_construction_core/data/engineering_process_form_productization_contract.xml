@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo noupdate="0">
+<odoo noupdate="1">
     <!-- U-C4 G10: 工程过程与资料整组中原先**没有入口级发布**的两条入口，本批补齐同族形状的
          入口发布，使它们的结构权威落在原生主表单上。
 

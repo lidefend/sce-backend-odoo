@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="0">
+<odoo noupdate="1">
     <function model="ir.model.data" name="write">
         <function model="ir.model.data" name="search">
             <value eval="[('module', '=', 'smart_construction_core'), ('name', '=', 'business_config_contract_income_contract_form_structure')]"/>

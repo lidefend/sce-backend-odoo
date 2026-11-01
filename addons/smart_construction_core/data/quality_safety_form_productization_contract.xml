@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G10: 工程过程与资料整组原生结构迁移（安全检查／质量验收 两项）。
 
          两个入口各自只有一张原生主表单：

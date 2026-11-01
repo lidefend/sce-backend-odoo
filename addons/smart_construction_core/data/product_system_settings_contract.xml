@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- U-C4 G11: 887 系统参数（menu 710 / action `action_sc_product_system_parameter_v1`
        / view 2072 `view_sc_product_system_settings_form_v1`）的入口发布退役结构 body。
 

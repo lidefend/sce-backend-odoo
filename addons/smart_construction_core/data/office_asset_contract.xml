@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- U-C4 G11: 885 办公资产（menu 707 / action `action_sc_product_office_asset_v1`
        / view 1908 `view_sc_office_asset_form`）的入口发布退役结构 body。
 

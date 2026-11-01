@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <!-- U-C4 G07: 工资社保与发放 (actions 873 / 884 / 858 / 874 and the five
              archived entries 660 / 661 / 662 / 663 / 664) share model

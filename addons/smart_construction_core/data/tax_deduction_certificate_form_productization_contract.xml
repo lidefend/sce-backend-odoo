@@ -1,4 +1,4 @@
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <!-- U-C4 G06: 抵扣登记 (action 790) and 项目专项抵扣 (action 879) share
              model sc.tax.deduction.registration and the native form view
