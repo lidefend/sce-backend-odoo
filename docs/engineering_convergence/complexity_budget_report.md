@@ -16,11 +16,11 @@ Generated from repository source files. This report is informational during the 
 | 6113 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5273 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5237 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5250 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4991 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4634 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4376 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4377 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3747 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3737 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -74,7 +74,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1562 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
+| 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
@@ -242,11 +242,11 @@ Generated from repository source files. This report is informational during the 
 | 6113 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5273 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5237 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5250 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4991 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4634 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4376 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4377 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3747 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3737 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
@@ -301,8 +301,8 @@ Generated from repository source files. This report is informational during the 
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1562 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
