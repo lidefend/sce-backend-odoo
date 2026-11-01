@@ -985,6 +985,9 @@ acceptance.runtime.baseline_recovery.audit: guard.prod.forbid
 acceptance.runtime.baseline_rebuild: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" EXPECTED_HEAD="$(EXPECTED_HEAD)" EXPECTED_DATABASES="$(EXPECTED_DATABASES)" APPLY="$(APPLY)" CONFIRM_ACCEPTANCE_BASELINE_REBUILD="$${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-rebuild
 
+acceptance.runtime.baseline_restore: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RESTORE_BUNDLE="$(SC_ACCEPTANCE_RESTORE_BUNDLE)" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-restore
+
 frontend.acceptance.up: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-up
 

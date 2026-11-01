@@ -481,7 +481,8 @@ main() {
   case "${1:-audit}" in
     audit) audit ;;
     rebuild) rebuild ;;
-    *) echo "usage: $0 audit|rebuild" >&2; return 2 ;;
+    restore) restore_recovery_bundle "${2:?bundle path required}" ;;
+    *) echo "usage: $0 audit|rebuild|restore <bundle>" >&2; return 2 ;;
   esac
 }
 
