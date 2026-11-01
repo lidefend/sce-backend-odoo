@@ -713,6 +713,41 @@
       "owner": "platform-team",
       "reason": "本地 clean 安装诊断入口，仅人工调用。"
     },
+    "local.clean.entry_identity.ensure": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 入口身份工具，仅人工调用。"
+    },
+    "local.clean.entry_identity.verify": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 入口身份工具，仅人工调用。"
+    },
+    "local.clean.finance_fixture.ensure": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 财务夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.ensure": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.verify": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.revoke": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.revoke_deactivate": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
     "local.clean.view_capability_ledger_gate": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
