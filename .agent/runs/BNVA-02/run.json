@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "BNVA-02",
+  "branch": "feature/pc01-phase5-shadow-contraction",
+  "baseline_sha": "ce0e41de71eb37913afbc2d6d64c41136c35e4ba",
+  "status": "active",
+  "goal": ".agent/goals/BNVA-02.yaml",
+  "record": "docs/architecture/backend-owned-page-composition/166-bnva-02-configuration-authority-inventory.md",
+  "scope": [
+    ".agent/goals/BNVA-02.yaml",
+    ".agent/runs/BNVA-02/run.json",
+    ".agent/active-runs.json",
+    "docs/architecture/backend-owned-page-composition/166-bnva-02-configuration-authority-inventory.md",
+    "docs/architecture/backend-owned-page-composition/167-bnva-02-configuration-scope-and-lifecycle.md",
+    "docs/architecture/backend-owned-page-composition/168-bnva-02-business-structure-coverage.md",
+    "docs/architecture/backend-owned-page-composition/169-bnva-02-field-lifecycle-inventory.md",
+    "docs/architecture/backend-owned-page-composition/170-bnva-02-page-configuration-readiness.md",
+    "docs/architecture/backend-owned-page-composition/171-bnva-02a-final-assessment.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only static audit; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "BNVA-02A configuration facts inventory complete; await BNVA-02B (business structure declaration) approval"
+}

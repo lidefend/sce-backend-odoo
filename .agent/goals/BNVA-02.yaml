@@ -1,0 +1,67 @@
+schema_version: 1
+goal:
+  id: BNVA-02
+  title: backend_configuration_facts_and_page_productization
+  status: active
+  formal_product_layer: P0
+  supporting_layer:
+    - P1
+    - P2
+  layer_target: backend_business_configuration_facts_and_page_contracts
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - customer_addons
+    - docs/architecture/backend-owned-page-composition
+    - .agent
+  baseline:
+    branch: feature/pc01-phase5-shadow-contraction
+    full_sha: ce0e41de71eb37913afbc2d6d64c41136c35e4ba
+    source: bnva_019_backend_native_kernel_normalization_closed
+  objective: >-
+    让业务页面的结构、字段归属、展示职责和数据加载策略成为明确、可治理、可验证的
+    后端配置事实。优先复用现有 ui.business.config.contract、formStructureContract、
+    fieldGroups、fieldOwnership、containerTree，仅在确认真实表达缺口时做最小扩展；
+    不建立新的低代码 Schema。
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_business_configuration_facts
+    why_here: >-
+      BNVA-019 已让后端正确理解 Odoo 原生视图；BNVA-02 要解决后端如何准确表达
+      企业业务，把业务结构/归属/展示/加载全部落为显式、可审计的配置事实。
+    why_not_elsewhere:
+      - no_new_parallel_lowcode_schema
+      - no_frontend_side_business_semantics
+      - no_name_or_orm_type_based_guessing
+      - no_permission_acl_or_record_rule_change
+    blast_radius:
+      - ui.business.config.contract
+      - formStructureContract slots fieldGroups fieldOwnership
+      - layoutContract.containerTree
+      - five pages plus PC-01/PC-02
+  constraints:
+    - reuse_existing_config_contracts_without_parallel_schema
+    - identity_section_ownership_must_be_explicit_declarations
+    - section_titles_do_not_imply_field_membership
+    - configuration_existence_is_not_runtime_consumption
+  acceptance:
+    - every_formal_page_has_explicit_identity_section_and_ownership
+    - entry_semantic_surface_sections_carry_field_membership
+    - field_lifecycle_single_authority_no_duplicate_classifiers
+    - first_batch_pages_pass_end_to_end
+  batches:
+    - id: BNVA-02A
+      name: configuration_facts_inventory
+      kind: read_only
+    - id: BNVA-02B
+      name: business_structure_declaration_specification
+      kind: implementation
+    - id: BNVA-02C
+      name: field_lifecycle_governance
+      kind: implementation
+    - id: BNVA-02D
+      name: first_screen_hydration_governance
+      kind: implementation
+    - id: BNVA-02E
+      name: real_page_end_to_end_verification
+      kind: verification
+  next_exact_step: execute_bnva_02a_configuration_facts_inventory_read_only

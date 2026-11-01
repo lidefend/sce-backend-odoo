@@ -3,7 +3,7 @@
   "id": "BNVA-01",
   "branch": "feature/pc01-phase5-shadow-contraction",
   "baseline_sha": "4cf2e465d1c916edddf4739eb924b36c2e916405",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/BNVA-01.yaml",
   "record": "docs/architecture/backend-owned-page-composition/100-bnva-01-charter.md",
   "scope": [
@@ -43,5 +43,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3C-04 backend kernel acceptance complete; BNVA-019 closure recommended; await unified dispatch to BNVA-02 (backend config fact governance + page productization)"
+  "next_exact_step": "BNVA-019 closed (Stage 3C-04 accepted); ownership handed to BNVA-02 backend config fact governance + page productization"
 }
