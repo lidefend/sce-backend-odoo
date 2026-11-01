@@ -22,7 +22,12 @@ from lxml import etree
 
 from .form_structure_authority import TECHNICAL_FIELD_CODES
 
+# Structural tags whose native ``name`` gives a stable business identity.
 _STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
+# Named business containers that can own fields; layout tags such as ``div``,
+# ``header``, ``label`` or ``span`` are kept as containers for a complete
+# layout tree but never become a business group owner.
+_NAMED_BUSINESS_CONTAINER_TAGS = frozenset({"group", "notebook", "page"})
 
 
 @dataclass
@@ -103,6 +108,20 @@ def _native_locator(parent_locator: str, tag: str, position: int) -> str:
     return f"{parent_locator}/{tag}[{position}]"
 
 
+def _nearest_ancestor_ref(
+    containers_by_ref: dict[str, NativeContainer],
+    container_ref: str | None,
+    tags: frozenset[str],
+) -> str | None:
+    """Return the nearest ancestor (inclusive) whose native_type is in ``tags``."""
+    node = containers_by_ref.get(container_ref) if container_ref else None
+    while node is not None:
+        if node.native_type in tags:
+            return node.container_ref
+        node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
+    return None
+
+
 def project_native_view(
     env: Any,
     model_name: str,
@@ -145,28 +164,13 @@ def project_native_view(
         return position_counter[key]
 
     def walk(element: Any, parent_container: NativeContainer | None, parent_locator: str) -> None:
-        tag = str(element.tag or "").split("}")[-1]
+        if not isinstance(element.tag, str):
+            # Comments / processing instructions carry no structure identity.
+            return
+        tag = str(element.tag).split("}")[-1]
         name = str(element.get("name") or "").strip()
         position = position_of(parent_locator, tag)
         locator = _native_locator(parent_locator, tag, position)
-
-        if tag in _STRUCTURAL_TAGS:
-            parent_ref = parent_container.container_ref if parent_container else None
-            container = NativeContainer(
-                container_ref=_structural_identity(tag, name, parent_ref, position),
-                native_name=name,
-                native_type=tag,
-                native_string=str(element.get("string") or "").strip(),
-                parent_ref=parent_ref,
-                native_locator=locator,
-            )
-            if parent_container is None:
-                result.containers.append(container)
-            else:
-                parent_container.children.append(container)
-            for child in element:
-                walk(child, container, locator)
-            return
 
         if tag == "field":
             field_code = str(element.get("name") or "").strip()
@@ -188,8 +192,24 @@ def project_native_view(
                 )
             return
 
+        # Every non-field element becomes a container so the full Odoo layout
+        # hierarchy (div / header / label / notebook / page / group ...) is
+        # preserved, not flattened away.
+        parent_ref = parent_container.container_ref if parent_container else None
+        container = NativeContainer(
+            container_ref=_structural_identity(tag, name, parent_ref, position),
+            native_name=name,
+            native_type=tag,
+            native_string=str(element.get("string") or "").strip(),
+            parent_ref=parent_ref,
+            native_locator=locator,
+        )
+        if parent_container is None:
+            result.containers.append(container)
+        else:
+            parent_container.children.append(container)
         for child in element:
-            walk(child, parent_container, locator)
+            walk(child, container, locator)
 
     walk(root, None, "")
     return result
@@ -214,7 +234,7 @@ def derive_native_field_ownership(
     def index_containers(nodes: list[NativeContainer]) -> None:
         for node in nodes:
             containers_by_ref[node.container_ref] = node
-            if node.native_name and node.native_type in {"group", "notebook", "page"}:
+            if node.native_name and node.native_type in _NAMED_BUSINESS_CONTAINER_TAGS:
                 named_group_refs.add(node.container_ref)
             index_containers(node.children)
 
@@ -233,19 +253,31 @@ def derive_native_field_ownership(
         code = occurrence.field_code
         if code in TECHNICAL_FIELD_CODES:
             continue
-        if occurrence.container_ref not in named_group_refs:
+        owner_group = _nearest_ancestor_ref(
+            containers_by_ref,
+            occurrence.container_ref,
+            _NAMED_BUSINESS_CONTAINER_TAGS,
+        )
+        if not owner_group or owner_group not in named_group_refs:
             continue
         named_occurrences.setdefault(code, []).append(occurrence)
 
     ownership: dict[str, dict[str, str]] = {}
     for code, occurrences in named_occurrences.items():
-        if len(occurrences) != 1:
+        owner_groups = list(dict.fromkeys(
+            _nearest_ancestor_ref(
+                containers_by_ref,
+                occurrence.container_ref,
+                _NAMED_BUSINESS_CONTAINER_TAGS,
+            )
+            for occurrence in occurrences
+        ))
+        if len(owner_groups) != 1:
             continue
-        occurrence = occurrences[0]
-        owner_group = occurrence.container_ref
+        owner_group = owner_groups[0]
         if not containers_by_ref.get(owner_group):
             owner_group = "sheet"
-        owner_slot = top_sheet_ref(occurrence.container_ref)
+        owner_slot = top_sheet_ref(owner_group)
         entry: dict[str, str] = {
             "ownerSlotRef": f"slot:{owner_slot}",
             "ownerGroupRef": f"group:{owner_group}",
@@ -304,6 +336,25 @@ def build_native_form_structure_contract(
     def field_label(code: str) -> str:
         return labels.get(code) or str(code)
 
+    def business_home_ref(container_ref: str | None) -> str | None:
+        """Nearest named business container, otherwise the enclosing sheet."""
+        node = containers_by_ref.get(container_ref) if container_ref else None
+        while node is not None:
+            if node.native_type in _NAMED_BUSINESS_CONTAINER_TAGS and node.native_name:
+                return node.container_ref
+            if node.native_type == "sheet":
+                return node.container_ref
+            node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
+        return None
+
+    def collect_business_containers(node: NativeContainer) -> list[NativeContainer]:
+        found: list[NativeContainer] = []
+        for child in node.children:
+            if child.native_type in _NAMED_BUSINESS_CONTAINER_TAGS:
+                found.append(child)
+            found.extend(collect_business_containers(child))
+        return found
+
     slots: list[dict[str, Any]] = []
     field_roles: dict[str, dict[str, str]] = {}
     seen_fields: set[str] = set()
@@ -320,17 +371,13 @@ def build_native_form_structure_contract(
     for sheet in all_sheets:
         groups: list[dict[str, Any]] = []
         slot_identity = sheet.native_name or "sheet"
-        group_containers: list[NativeContainer] = [
-            child
-            for child in sheet.children
-            if child.native_type in {"group", "notebook", "page"}
-        ]
+        group_containers: list[NativeContainer] = collect_business_containers(sheet)
         for group in group_containers:
             group_identity = group.native_name or group.container_ref
             group_fields = [
                 occurrence
                 for occurrence in native_view.fields
-                if occurrence.container_ref == group.container_ref
+                if business_home_ref(occurrence.container_ref) == group.container_ref
             ]
             field_refs: list[str] = []
             for occurrence in group_fields:
@@ -360,7 +407,7 @@ def build_native_form_structure_contract(
         sheet_fields = [
             occurrence
             for occurrence in native_view.fields
-            if occurrence.container_ref == sheet.container_ref
+            if business_home_ref(occurrence.container_ref) == sheet.container_ref
         ]
         sheet_field_refs: list[str] = []
         for occurrence in sheet_fields:

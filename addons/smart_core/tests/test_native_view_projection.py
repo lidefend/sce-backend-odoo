@@ -203,6 +203,54 @@ class TestNativeViewProjection(unittest.TestCase):
         ownership = derive_native_field_ownership(view, identity_fields=[])
         self.assertNotIn("field:partner_id", ownership)
 
+    def test_layout_tags_are_containers_and_nested_groups_are_projected(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <div class="oe_title">
+                  <h1>项目标题</h1>
+                </div>
+                <notebook>
+                  <page name="main_page" string="主要信息">
+                    <group name="nested_group" string="嵌套分组">
+                      <field name="name" string="项目名称"/>
+                    </group>
+                  </page>
+                </notebook>
+              </sheet>
+            </form>""",
+            {
+                "name": {"type": "char", "string": "项目名称"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        container_types = set()
+
+        def collect(node):
+            container_types.add(node.native_type)
+            for child in node.children:
+                collect(child)
+
+        for root in view.containers:
+            collect(root)
+        self.assertIn("div", container_types)
+        self.assertIn("notebook", container_types)
+        contract = build_native_form_structure_contract(
+            view,
+            model="project.project",
+            identity_fields=[],
+            navigation_title="项目台账",
+        )
+        nested_group_names = {
+            group["name"]
+            for slot in contract["slots"]
+            for group in slot["groups"]
+        }
+        self.assertIn("nested_group", nested_group_names)
+        self.assertEqual(contract["fieldRoles"]["name"]["group"], "nested_group")
+
 
 if __name__ == "__main__":
     unittest.main()
