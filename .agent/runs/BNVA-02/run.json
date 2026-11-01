@@ -21,7 +21,16 @@
     "docs/architecture/backend-owned-page-composition/174-bnva-02b-field-ownership-admission-rules.md",
     "docs/architecture/backend-owned-page-composition/175-bnva-02b-native-group-mapping-policy.md",
     "docs/architecture/backend-owned-page-composition/176-bnva-02b-configuration-publication-guard.md",
-    "docs/architecture/backend-owned-page-composition/177-bnva-02b-01-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/177-bnva-02b-01-acceptance.md",
+    "addons/smart_core/core/business_structure_integrity.py",
+    "addons/smart_core/model/ui_business_config_contract.py",
+    "addons/smart_core/tests/test_business_structure_integrity.py",
+    "scripts/verify/business_structure_integrity_shadow.py",
+    "docs/architecture/backend-owned-page-composition/178-bnva-02b-02a-validator-design.md",
+    "docs/architecture/backend-owned-page-composition/179-bnva-02b-02a-integrity-validator-implementation.md",
+    "docs/architecture/backend-owned-page-composition/180-bnva-02b-02a-five-page-shadow-report.md",
+    "docs/architecture/backend-owned-page-composition/181-bnva-02b-02a-test-report.md",
+    "docs/architecture/backend-owned-page-composition/182-bnva-02b-02a-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -29,5 +38,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-01 explicit business structure specification complete; await BNVA-02B-02 (historical config governance) approval"
+  "next_exact_step": "BNVA-02B-02A business structure integrity validator complete (shadow); await BNVA-02B-02B (publication gate) approval"
 }
