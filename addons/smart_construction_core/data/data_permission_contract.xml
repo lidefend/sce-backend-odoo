@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G16: 数据权限 (886 / menu 709 `menu_sc_product_data_permission_v1` / action
          `action_sc_product_data_permission_v1` / view 1904
          `view_sc_data_permission_user_form`) 退役入口级结构声明 —— 沿用 G13／G15 的原地

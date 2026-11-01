@@ -175,6 +175,18 @@ def view_orchestration_source_status(payload: Any) -> str:
     return LOWCODE_SOURCE_STATUS_PRODUCT_RELEASE
 
 
+def lowcode_publication_gate_applies(payload: Any, view_type: Any) -> bool:
+    """Whether the tenant low-code structure publication gate applies to a config.
+
+    Product-release seeds are authoritative product defaults (ARCH-DECISION-006)
+    and must not be forced through the tenant low-code completeness gate. Only
+    low-code form configs are subject to the gate.
+    """
+    if str(view_type or "").strip() != "form":
+        return False
+    return view_orchestration_source_status(payload) != LOWCODE_SOURCE_STATUS_PRODUCT_RELEASE
+
+
 def menu_orchestration_source_status(payload: Any) -> str:
     if not isinstance(payload, dict):
         return LOWCODE_SOURCE_STATUS_PRODUCT_RELEASE

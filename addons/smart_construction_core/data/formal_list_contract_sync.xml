@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <function model="ui.business.config.contract" name="sc_sync_settlement_formal_list_contracts"/>
 </odoo>

@@ -818,6 +818,38 @@ local.clean.health: guard.prod.forbid local.clean.require_env
 	  LOCAL_CLEAN_HEALTH_MODULES="$(LOCAL_CLEAN_HEALTH_MODULES)" \
 	  bash scripts/dev/local_environment_health.sh clean
 
+.PHONY: local.clean.finance_fixture.ensure
+local.clean.finance_fixture.ensure: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CLEAN_FINANCE_FIXTURE="$${CONFIRM_LOCAL_CLEAN_FINANCE_FIXTURE:-}" \
+	  bash scripts/dev/local_clean_finance_fixture.sh
+
+.PHONY: local.clean.entry_identity.ensure local.clean.entry_identity.verify
+local.clean.entry_identity.ensure: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_entry_identity.sh ensure
+
+local.clean.entry_identity.verify: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_entry_identity.sh verify
+
+.PHONY: local.clean.dependency_fixture.ensure local.clean.dependency_fixture.verify local.clean.dependency_fixture.revoke local.clean.dependency_fixture.revoke_deactivate
+local.clean.dependency_fixture.ensure: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_dependency_fixture.sh ensure
+
+local.clean.dependency_fixture.verify: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_dependency_fixture.sh verify
+
+local.clean.dependency_fixture.revoke: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_dependency_fixture.sh revoke
+
+local.clean.dependency_fixture.revoke_deactivate: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/local_clean_dependency_fixture.sh revoke_deactivate
+
 # Required feature environment plus explicitly optional lanes; strict all-profile status remains below.
 .PHONY: local.env.readiness verify.local.env.readiness.unit
 verify.local.env.readiness.unit: guard.prod.forbid
@@ -952,6 +984,9 @@ acceptance.runtime.baseline_recovery.audit: guard.prod.forbid
 
 acceptance.runtime.baseline_rebuild: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" EXPECTED_HEAD="$(EXPECTED_HEAD)" EXPECTED_DATABASES="$(EXPECTED_DATABASES)" APPLY="$(APPLY)" CONFIRM_ACCEPTANCE_BASELINE_REBUILD="$${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-rebuild
+
+acceptance.runtime.baseline_restore: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RESTORE_BUNDLE="$(SC_ACCEPTANCE_RESTORE_BUNDLE)" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-restore
 
 frontend.acceptance.up: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-up

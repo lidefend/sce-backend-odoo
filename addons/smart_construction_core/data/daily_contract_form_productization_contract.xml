@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo noupdate="0">
+<odoo noupdate="1">
     <!-- U-C4 G13: 日常合同 (687 / menu 663 `menu_sc_p1_daily_contract` /
          action `action_sc_general_contract`) 原先**没有入口级发布**，本批补齐
          同族形状的入口发布，使它的结构权威落在原生主表单上。

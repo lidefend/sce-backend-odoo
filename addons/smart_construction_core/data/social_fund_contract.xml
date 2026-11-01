@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- U-C4 G07: 社保公积 (action 884) consumes the shared native form
        smart_construction_core.view_sc_hr_payroll_document_form, which now owns
        the structure for the whole 人事薪酬 group.  The entry keeps its title

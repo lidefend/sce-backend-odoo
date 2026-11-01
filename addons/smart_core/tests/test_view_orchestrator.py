@@ -1418,6 +1418,9 @@ class TestRoleScopedFormBoundary(unittest.TestCase):
                      "role_form_structure_violations": self.authority.role_form_structure_violations,
                      "assert_role_form_permissions_only": self.authority.assert_role_form_permissions_only,
                      "assert_configuration_field_usage": __import__("odoo.addons.smart_core.core.field_presentation_usage", fromlist=["assert_configuration_field_usage"]).assert_configuration_field_usage,
+                     "validate_business_structure": __import__("odoo.addons.smart_core.core.business_structure_integrity", fromlist=["validate_business_structure"]).validate_business_structure,
+                     "extract_compatibility": __import__("odoo.addons.smart_core.core.business_structure_integrity", fromlist=["extract_compatibility"]).extract_compatibility,
+                     "publication_gate": __import__("odoo.addons.smart_core.core.business_structure_integrity", fromlist=["publication_gate"]).publication_gate,
                      "_logger": logging.getLogger(__name__), "view_orchestration_apply_order_key": lambda c: c.id,
                      "ViewOrchestrationContractProjection": types.SimpleNamespace(from_record=lambda c: c, from_preview_item=lambda i: i),
                      "fields": types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: 0))}

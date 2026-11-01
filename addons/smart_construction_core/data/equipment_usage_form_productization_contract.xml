@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G09: 用量与履约登记整组原生结构迁移（sc.equipment.usage）。
 
          两个正式入口共享原生主表单 `view_sc_equipment_usage_form`（库内 view 1476）：

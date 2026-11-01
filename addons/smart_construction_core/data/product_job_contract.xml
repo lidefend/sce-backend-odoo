@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- U-C4 G11: 883 岗位管理（menu 705 / action `action_sc_product_job_management_v1`
        / view 2070 `view_sc_product_job_form_v1`）的入口发布退役结构 body。
 

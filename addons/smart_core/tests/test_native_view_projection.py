@@ -181,6 +181,176 @@ class TestNativeViewProjection(unittest.TestCase):
             "sc_project_information_responsible",
         )
 
+    def test_duplicate_field_in_multiple_named_groups_is_not_auto_owned(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <group name="first_group" string="第一组">
+                  <field name="partner_id" string="客户"/>
+                </group>
+                <group name="second_group" string="第二组">
+                  <field name="partner_id" string="客户摘要"/>
+                </group>
+              </sheet>
+            </form>""",
+            {
+                "partner_id": {"type": "many2one", "string": "客户", "relation": "res.partner"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        ownership = derive_native_field_ownership(view, identity_fields=[])
+        self.assertNotIn("field:partner_id", ownership)
+
+    def test_layout_tags_are_containers_and_nested_groups_are_projected(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <div class="oe_title">
+                  <h1>项目标题</h1>
+                </div>
+                <notebook>
+                  <page name="main_page" string="主要信息">
+                    <group name="nested_group" string="嵌套分组">
+                      <field name="name" string="项目名称"/>
+                    </group>
+                  </page>
+                </notebook>
+              </sheet>
+            </form>""",
+            {
+                "name": {"type": "char", "string": "项目名称"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        container_types = set()
+
+        def collect(node):
+            container_types.add(node.native_type)
+            for child in node.children:
+                collect(child)
+
+        for root in view.containers:
+            collect(root)
+        self.assertIn("div", container_types)
+        self.assertIn("notebook", container_types)
+        contract = build_native_form_structure_contract(
+            view,
+            model="project.project",
+            identity_fields=[],
+            navigation_title="项目台账",
+        )
+        nested_group_names = {
+            group["name"]
+            for slot in contract["slots"]
+            for group in slot["groups"]
+        }
+        self.assertIn("nested_group", nested_group_names)
+        self.assertEqual(contract["fieldRoles"]["name"]["group"], "nested_group")
+
+    def test_native_attributes_are_kept_and_serializable(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <div class="oe_title" colspan="2">
+                  <group name="facts" string="事实" col="2">
+                    <field name="name" string="项目名称" widget="char" placeholder="输入名称"/>
+                  </group>
+                </div>
+              </sheet>
+            </form>""",
+            {"name": {"type": "char", "string": "项目名称"}},
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        payload = view.to_dict()
+
+        def find_container(native_type):
+            stack = list(payload["containers"])
+            while stack:
+                row = stack.pop()
+                if row["native_type"] == native_type:
+                    return row
+                stack.extend(row.get("children", []))
+            return None
+
+        self.assertEqual(find_container("div")["native_attributes"]["class"], "oe_title")
+        self.assertEqual(find_container("div")["native_attributes"]["colspan"], "2")
+        name_field = next(f for f in payload["fields"] if f["field_code"] == "name")
+        self.assertEqual(name_field["native_attributes"]["widget"], "char")
+        self.assertEqual(name_field["native_attributes"]["placeholder"], "输入名称")
+        import json
+        json.dumps(payload)
+
+    def test_relation_descriptor_from_field_metadata_not_type_guess(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <group name="relations" string="关系">
+                  <field name="partner_id"/>
+                  <field name="responsibility_ids"/>
+                  <field name="tag_ids"/>
+                  <field name="name"/>
+                </group>
+              </sheet>
+            </form>""",
+            {
+                "partner_id": {"type": "many2one", "string": "客户", "relation": "res.partner"},
+                "responsibility_ids": {"type": "one2many", "string": "责任矩阵", "relation": "sc.project.responsibility"},
+                "tag_ids": {"type": "many2many", "string": "标签", "relation": "sc.project.tag"},
+                "name": {"type": "char", "string": "项目名称"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        by_code = {f.field_code: f for f in view.fields}
+        self.assertEqual(
+            by_code["partner_id"].relation_descriptor,
+            {"field_type": "many2one", "relation_type": "many2one", "relation_model": "res.partner"},
+        )
+        self.assertEqual(
+            by_code["responsibility_ids"].relation_descriptor["relation_model"],
+            "sc.project.responsibility",
+        )
+        self.assertEqual(
+            by_code["tag_ids"].relation_descriptor["relation_type"],
+            "many2many",
+        )
+        self.assertIsNone(by_code["name"].relation_descriptor)
+
+    def test_internal_attributes_do_not_leak_into_form_structure(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <group name="facts" string="事实">
+                  <field name="manager_id" widget="many2one"/>
+                </group>
+              </sheet>
+            </form>""",
+            {"manager_id": {"type": "many2one", "string": "项目经理", "relation": "res.users"}},
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        contract = build_native_form_structure_contract(
+            view,
+            model="project.project",
+            identity_fields=[],
+            navigation_title="项目台账",
+        )
+        for slot in contract["slots"]:
+            self.assertNotIn("native_attributes", slot)
+            for group in slot.get("groups", []):
+                self.assertNotIn("native_attributes", group)
+        role = contract["fieldRoles"]["manager_id"]
+        self.assertNotIn("relation_descriptor", role)
+        self.assertNotIn("native_attributes", role)
+
 
 if __name__ == "__main__":
     unittest.main()

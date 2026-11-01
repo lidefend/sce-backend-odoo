@@ -549,7 +549,7 @@ class PageAssembler:
                 if explicit_target_view:
                     scoped_view_context["contract_view_id"] = requested_view_id
                 view_config_model = env['app.view.config'].with_context(**scoped_view_context) if scoped_view_context else env['app.view.config']
-                view_data = view_config_model._safe_get_view_data(model, vt)
+                view_data = view_config_model._safe_get_view_data(model, vt, carrier=p.get("_request_carrier"))
                 if isinstance(view_data, dict):
                     view_data['_fields_snapshot'] = model_fields_snapshot
                     view_projection_sources[vt] = view_data

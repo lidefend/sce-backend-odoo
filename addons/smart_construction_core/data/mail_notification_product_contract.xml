@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- U-C4 G11: 860 消息通知（menu 675 / action `action_sc_product_message_notification_v1`
        / view 1910 `view_sc_product_mail_notification_form`）的入口发布退役结构 body。
 

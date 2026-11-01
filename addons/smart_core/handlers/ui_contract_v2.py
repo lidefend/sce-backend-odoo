@@ -21,7 +21,6 @@ from ..core.unified_page_contract_v2_assembler import (
     project_workflow_action_semantics,
 )
 from ..core.unified_page_contract_v2_client import (
-    MOBILE_CLIENT_TYPES,
     resolve_client_type,
     resolve_delivery_profile,
     trim_unified_page_contract_v2,
@@ -57,10 +56,6 @@ from . import ui_contract_v2_adapters as _adapters
 from . import ui_contract_v2_authority as _authority
 from .ui_contract_v2_constants import (
     BUSINESS_FORM_STRUCTURE_ALLOWED_LEGACY_FIELDS,
-    BUSINESS_FORM_STRUCTURE_HISTORY_LABEL_TOKENS,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_PREFIXES,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_SUFFIXES,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_TOKENS,
     BUSINESS_FORM_STRUCTURE_INTERNAL_FIELDS,
     BUSINESS_FORM_STRUCTURE_INTERNAL_PREFIXES,
     BUSINESS_FORM_STRUCTURE_INTERNAL_SUFFIXES,
@@ -75,6 +70,8 @@ from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
 from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
 from ..core.native_view_projection import build_native_form_structure_contract, project_native_view
+from ..core.native_view_parsed_cache import RequestScopedCarrier
+from ..core import native_projection_shadow as _shadow
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -95,7 +92,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v15-native-convergence-preserve-selected-authority"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v25-legacy-fallback-retirement"
 
 
 def _node_validation_snapshot_ready(source):
@@ -610,6 +607,11 @@ class UiContractV2Handler(BaseIntentHandler):
             result = self._err(409, "页面配置无法应用，请联系配置管理员处理")
             result.error.update(exc.public_details())
             return result
+        finally:
+            carrier = getattr(self, "_request_carrier", None)
+            if carrier is not None:
+                carrier.close()
+                self._request_carrier = None
 
     def _validate_form_record(self, model, params):
         view_type = str(params.get("view_type") or params.get("viewType") or "form").lower()
@@ -683,6 +685,7 @@ class UiContractV2Handler(BaseIntentHandler):
         # including entry-contract re-resolution and orchestration overlays.
         self.env = projection_env
         self.su_env = projection_su_env
+        self._request_carrier = RequestScopedCarrier(self.env)
         scene_binding_error = self._validate_scene_action_binding(params)
         if scene_binding_error is not None:
             return scene_binding_error
@@ -851,11 +854,13 @@ class UiContractV2Handler(BaseIntentHandler):
                         projection_env,
                         projection_su_env,
                         base_ui_params or ui_params,
+                        carrier=self._request_carrier,
                     )
                     self._enrich_native_form_composition(
                         ui_data,
                         projection_su_env,
                         action_id=int((base_ui_params or ui_params).get("action_id") or 0),
+                        carrier=self._request_carrier,
                     )
                 except FormConfigurationError:
                     raise
@@ -1193,6 +1198,7 @@ class UiContractV2Handler(BaseIntentHandler):
             source_contract,
             node_actor_env=self.env,
             draft_feedback=draft_feedback_proof,
+            carrier=getattr(self, "_request_carrier", None),
             source_type=runtime_source_type,
             client_type=client_type,
             request_id=str(request_id),
@@ -2634,11 +2640,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 ]
                 try:
                     native_view = project_native_view(
-                        self.su_env,
+                        self.env,
                         model,
                         action_id=action_id,
                         view_id=form_view_id,
                         view_type="form",
+                        carrier=getattr(self, "_request_carrier", None),
                     )
                     form_structure = build_native_form_structure_contract(
                         native_view,
@@ -2648,8 +2655,10 @@ class UiContractV2Handler(BaseIntentHandler):
                         navigation_title=str(source_contract.get("title") or "").strip(),
                     )
                     form_structure["surfaces"] = self._form_structure_surfaces(model=model)
-                except Exception:
-                    _logger.debug("native form structure build failed in business operation path model=%s", model, exc_info=True)
+                    _shadow.record_native_success(model, action_id, form_view_id, "native_form_slots")
+                except Exception as native_exc:
+                    _logger.warning("native form structure build failed in business operation path; falling back to minimal structure model=%s", model, exc_info=True)
+                    _shadow.record_native_failure(model, action_id, form_view_id, type(native_exc).__name__)
                     form_structure = self._build_form_structure_contract(
                         model=model,
                         profile=profile,
@@ -2659,6 +2668,12 @@ class UiContractV2Handler(BaseIntentHandler):
                         governance=form_structure_governance,
                         navigation_title=str(source_contract.get("title") or "").strip(),
                     )
+                    if isinstance(form_structure, dict) and any(
+                        str(item.get("slot")) == "primary_facts"
+                        for item in (form_structure.get("slots") or [])
+                        if isinstance(item, dict)
+                    ):
+                        _shadow.record_default_fallback(model, action_id, form_view_id)
             source_contract["form_structure_contract"] = form_structure
             form_structure = source_contract.get("form_structure_contract")
             if isinstance(form_structure, dict) and isinstance(form_structure.get("fieldOwnership"), dict):
@@ -3932,6 +3947,7 @@ class UiContractV2Handler(BaseIntentHandler):
         su_env,
         *,
         action_id: int = 0,
+        carrier: Any | None = None,
     ) -> None:
         if not isinstance(ui_data, dict):
             return
@@ -4025,11 +4041,12 @@ class UiContractV2Handler(BaseIntentHandler):
         identity_fields = [str(name).strip() for name in (governance.get("identity_fields") if isinstance(governance.get("identity_fields"), list) else []) if str(name).strip()]
         try:
             native_view = project_native_view(
-                su_env,
+                self.env,
                 model,
                 action_id=action_id,
                 view_id=view_id,
                 view_type="form",
+                carrier=carrier,
             )
             form_structure = build_native_form_structure_contract(
                 native_view,
@@ -4039,8 +4056,10 @@ class UiContractV2Handler(BaseIntentHandler):
                 navigation_title=navigation_title,
             )
             form_structure["surfaces"] = self._form_structure_surfaces(model=model)
-        except Exception:
-            _logger.debug("native form structure build failed; fallback to legacy heuristic model=%s", model, exc_info=True)
+            _shadow.record_native_success(model, action_id, view_id, "native_form_slots")
+        except Exception as native_exc:
+            _logger.warning("native form structure build failed; falling back to minimal structure model=%s", model, exc_info=True)
+            _shadow.record_native_failure(model, action_id, view_id, type(native_exc).__name__)
             form_structure = _form_structure.build_form_structure_contract(
                 self,
                 model=model,
@@ -4051,13 +4070,25 @@ class UiContractV2Handler(BaseIntentHandler):
                 governance=governance,
                 navigation_title=navigation_title,
             )
+            if isinstance(form_structure, dict) and any(
+                str(item.get("slot")) == "primary_facts"
+                for item in (form_structure.get("slots") or [])
+                if isinstance(item, dict)
+            ):
+                _shadow.record_default_fallback(model, action_id, view_id)
         ui_data["form_structure_contract"] = form_structure
         ownership = form_structure.get("fieldOwnership")
         if isinstance(ownership, dict):
             ui_data["field_ownership"] = ownership
 
     @staticmethod
-    def _dispatch_native_form_source(env, su_env, ui_params: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    def _dispatch_native_form_source(
+        env,
+        su_env,
+        ui_params: dict[str, Any],
+        *,
+        carrier: Any | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         direct_params = dict(ui_params)
         op = str(direct_params.pop("op", "") or direct_params.get("subject") or "").strip().lower()
         if op == "model":
@@ -4068,6 +4099,8 @@ class UiContractV2Handler(BaseIntentHandler):
             raise ValueError("native form projection requires model, action, or menu authority")
         direct_params["view_type"] = "form"
         direct_params["view_types"] = ["form"]
+        if carrier is not None:
+            direct_params["_request_carrier"] = carrier
         result = ActionDispatcher(env, su_env).dispatch(direct_params)
         if not isinstance(result, tuple) or len(result) != 2:
             raise ValueError("native form projection returned an invalid source payload")

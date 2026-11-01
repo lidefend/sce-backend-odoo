@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G10: 施工日志入口（729 / menu 426 / action `action_sc_construction_diary`）的
          结构权威交给原生主表单 view 1893 `view_sc_construction_diary_form`。
 

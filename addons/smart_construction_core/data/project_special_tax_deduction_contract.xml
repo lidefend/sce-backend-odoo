@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G06: 项目专项抵扣 (action 879) shares model
          sc.tax.deduction.registration and the native form view
          smart_construction_core.view_sc_tax_deduction_registration_form with

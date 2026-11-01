@@ -1,0 +1,49 @@
+<odoo noupdate="1">
+    <data noupdate="0">
+        <!-- BNVA-04-06: 外经证登记 (action `action_sc_tax_certificate_registration_user`)
+             owns model sc.tax.certificate.registration and its native form/tree/search
+             (`view_sc_tax_certificate_registration_form` / `_tree` / `_search`).  The
+             native action already binds tree+form+search and declares role groups
+             (project_read / finance_read / finance_user / finance_manager); the native
+             arch owns the structure.  This entry therefore keeps only the page title
+             and declares a sparse annotation over the native arch — no Identity /
+             Section / FieldOwnership body is re-declared, matching the tax deduction
+             sibling (`tax_deduction_registration_productized_form_v1`) and the
+             quality/safety G10 entries.
+
+             Audit note (recorded, not fixed in this batch): the native tree/form still
+             reference `source_created_by` / `source_created_at`, which are not declared
+             on sc.tax.certificate.registration (its sibling sc.tax.deduction.registration
+             opts into the `sc.formal.display.copy.sources` protocol and carries its own
+             display fields).  This is a pre-existing native-view field-resolution risk
+             owned by the model layer, outside this page-contract batch; runtime renderer
+             verification stays NOT_RUN until that question is closed.
+
+             Rollback: `git revert` (pure declaration, no data migration). -->
+        <record id="business_config_contract_tax_certificate_registration_productized_form_v1" model="ui.business.config.contract">
+            <field name="name">tax_certificate_registration_productized_form_v1</field>
+            <field name="model">sc.tax.certificate.registration</field>
+            <field name="view_type">form</field>
+            <field name="action_id" ref="smart_construction_core.action_sc_tax_certificate_registration_user" />
+            <field name="priority">700</field>
+            <field name="company_id" eval="False" />
+            <field name="active" eval="True" />
+            <field name="status">published</field>
+            <field name="version_no">1</field>
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {
+                        'source': 'smart_construction_core.product_release',
+                        'source_status': 'product_release'
+                    },
+                    'views': {
+                        'form': {
+                            'title': '外经证登记',
+                            'composition_mode': 'native_semantic_surface'
+                        }
+                    }
+                }
+            }" />
+        </record>
+    </data>
+</odoo>

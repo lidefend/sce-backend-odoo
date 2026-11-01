@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <record id="business_config_contract_tender_bid_registration_productized_form_v1" model="ui.business.config.contract">
             <field name="name">tender_bid_registration_productized_form_v1</field>

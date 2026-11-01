@@ -656,6 +656,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     from .form_configuration_compiler import FormConfigurationError
     from .native_advisory import project as project_native_advisory
     draft_feedback = kwargs.pop("draft_feedback", None)
+    carrier = kwargs.pop("carrier", None)
     source_contract = project_native_advisory(source_contract, node_actor_env)
     raw_nodes = []
     def collect(value):
@@ -713,12 +714,24 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
                 declared=len(declarations),
                 projected=len(projected),
             )
+        parsed_view = None
+        if carrier is not None and node_actor_env is not None:
+            model = _text(source.get("model") or source_contract.get("model"))
+            resolved_view_id = _positive_int(
+                source.get("view_id")
+                or _dict(source.get("view_ids_by_type")).get("form")
+                or _dict(_dict(source.get("views")).get("form")).get("view_id"),
+                0,
+            )
+            if model and resolved_view_id:
+                parsed_view = carrier.fetch(node_actor_env, model, "form", resolved_view_id)
         validate_final_nodes(
             node_actor_env,
             contract,
             deepcopy(tree),
             apply_visibility=False,
             draft_feedback=draft_feedback,
+            parsed_view=parsed_view,
         )
         return contract
 
@@ -809,17 +822,6 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
         (_text(raw_field_ref)[6:] if _text(raw_field_ref).startswith("field:") else _text(raw_field_ref))
         for raw_field_ref in ownership
     }
-    # Layout-rendered business fields that the native structure derivation did
-    # not place into a slot/group are owned by the catch-all business-facts
-    # group rather than left as unowned technical noise.
-    if "primary_facts" in slot_ids and "other_facts" in group_ids:
-        for code in sorted(widget_field_codes):
-            if code in owned_field_codes or code in TECHNICAL_FIELD_CODES:
-                continue
-            ownership[f"field:{code}"] = {
-                "ownerSlotRef": "slot:primary_facts",
-                "ownerGroupRef": "group:other_facts",
-            }
     diagnostics: list[dict[str, Any]] = []
     seen_fields: set[str] = set()
     normalized: dict[str, dict[str, Any]] = {}
@@ -1354,18 +1356,13 @@ def _assemble_ui_contract(
             }
         ]
         contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
-    _standardize_business_form_default_tabs(
-        container_tree,
-        model=model,
-        view_type=view_type,
-        container_status=contract["statusContract"]["containerStatus"],
-    )
     # The governed section-heading channel.  The contract owns the semantic
     # title of a form-body group; the native-section renderer may only present
     # a heading the contract authored.  This writes semanticTitle /
     # semanticAnchor metadata and never a user-visible title/label/string, so
     # "declared" stays distinguishable from "missing".
-    _standardize_form_container_semantics(
+    from .layout_semantics import standardize_form_container_semantics
+    standardize_form_container_semantics(
         container_tree,
         model=model,
         view_type=view_type,
@@ -1702,25 +1699,6 @@ def _assemble_native_form_projection(
                 continue
             runtime_contract[key] = value
     return contract
-
-
-def _has_governed_form_layout_overlay(source: dict[str, Any]) -> bool:
-    governance = _dict(source.get("governance"))
-    view_governance = _dict(governance.get("view_orchestration"))
-    source_trace = _dict(source.get("source_trace"))
-    view_trace = _dict(source_trace.get("view_orchestration"))
-    business_profile = _dict(source.get("business_operation_profile"))
-    runtime_form_governance = _dict(business_profile.get("form_structure_governance"))
-    form_structure_authority = _text(
-        view_trace.get("form_structure_authority")
-        or view_governance.get("form_structure_authority")
-        or runtime_form_governance.get("form_structure_authority")
-    )
-    return bool(
-        view_trace.get("form_layout_overlay")
-        or view_governance.get("form_layout_overlay")
-        or form_structure_authority == "entry_semantic_surface"
-    )
 
 
 def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
@@ -2408,569 +2386,6 @@ def _walk_native_nodes(nodes: list[dict[str, Any]]):
                 yield from _walk_native_nodes([item for item in child_rows if isinstance(item, dict)])
 
 
-def _layout_contains_node_type(nodes: list[dict[str, Any]], node_types: set[str]) -> bool:
-    for node in _walk_native_nodes(nodes):
-        if _text(node.get("containerType") or node.get("type") or node.get("kind")).lower() in node_types:
-            return True
-    return False
-
-
-def _node_field_names(node: dict[str, Any]) -> list[str]:
-    out: list[str] = []
-    for item in _walk_native_nodes([node]):
-        if _text(item.get("type") or item.get("kind")).lower() != "field":
-            continue
-        field_name = _text(item.get("name") or item.get("field"))
-        if field_name and field_name not in out:
-            out.append(field_name)
-    return out
-
-
-def _node_field_types(node: dict[str, Any]) -> list[str]:
-    out: list[str] = []
-    for item in _walk_native_nodes([node]):
-        if _text(item.get("type") or item.get("kind")).lower() != "field":
-            continue
-        field_info = _dict(item.get("fieldInfo") or item.get("field_info"))
-        field_type = _text(field_info.get("type") or field_info.get("ttype") or item.get("widget")).lower()
-        if field_type:
-            out.append(field_type)
-    return out
-
-
-def _node_text_fingerprint(node: dict[str, Any]) -> str:
-    values: list[str] = []
-    for item in _walk_native_nodes([node]):
-        values.extend([
-            _text(item.get("name") or item.get("field")).lower(),
-            _text(item.get("string") or item.get("label") or item.get("title")).lower(),
-        ])
-        field_info = _dict(item.get("fieldInfo") or item.get("field_info"))
-        values.extend([
-            _text(field_info.get("string") or field_info.get("label")).lower(),
-            _text(field_info.get("name")).lower(),
-        ])
-    return " ".join(item for item in values if item)
-
-
-def _node_has_token(node: dict[str, Any], tokens: tuple[str, ...]) -> bool:
-    fingerprint = _node_text_fingerprint(node)
-    return any(token.lower() in fingerprint for token in tokens)
-
-
-def _node_has_x2many(node: dict[str, Any]) -> bool:
-    return any(field_type in {"one2many", "many2many"} for field_type in _node_field_types(node))
-
-
-def _node_has_direct_group_child(node: dict[str, Any]) -> bool:
-    for key in ("children", "pages", "tabs", "nodes", "items"):
-        child_rows = node.get(key)
-        if not isinstance(child_rows, list):
-            continue
-        for child in child_rows:
-            if not isinstance(child, dict):
-                continue
-            child_type = _text(child.get("type") or child.get("kind") or child.get("containerType")).lower()
-            if child_type == "group":
-                return True
-    return False
-
-
-def _is_generic_container_label(node: dict[str, Any]) -> bool:
-    """Report whether a container carries no authored heading of its own.
-
-    ``generic`` holds the values that are container identities rather than
-    headings: the absence of a label, the container type, and a technical
-    container id/name.  A label is a heading only when it is non-empty and
-    differs from every identity value.  The empty string must never be
-    intersected directly: as soon as one of title/label/string is absent the
-    label set contains it, so a set intersection would mark every group
-    generic and would let a structural guess replace an authored title.
-    """
-    node_type = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
-    generic = {"", node_type}
-    container_id = _text(node.get("containerId")).lower()
-    node_name = _text(node.get("name")).lower()
-    if _is_technical_container_identifier(container_id):
-        generic.add(container_id)
-    if _is_technical_container_identifier(node_name):
-        generic.add(node_name)
-    labels = (
-        _text(node.get("title")).lower(),
-        _text(node.get("label")).lower(),
-        _text(node.get("string")).lower(),
-    )
-    return not any(label and label not in generic for label in labels)
-
-
-def _is_technical_container_identifier(value: str) -> bool:
-    if not value:
-        return False
-    return bool(re.fullmatch(r"[a-z0-9_.:-]+", value))
-
-
-def _semantic_group_label(node: dict[str, Any], *, level: int, index: int) -> str:
-    fingerprint = _node_text_fingerprint(node)
-    field_names = set(_node_field_names(node))
-    if level <= 1 and _node_has_direct_group_child(node):
-        return "主信息"
-    if _node_has_token(node, TRACE_FIELD_TOKENS):
-        return "来源追溯"
-    if _node_has_token(node, NOTE_FIELD_TOKENS):
-        return "备注说明"
-    if _node_has_x2many(node):
-        return "业务明细"
-    if any(token in fingerprint for token in ("amount", "price", "cost", "budget", "fee", "money", "金额", "费用", "成本", "预算")):
-        return "金额信息"
-    if any(token in fingerprint for token in ("date", "time", "deadline", "start", "end", "日期", "时间", "截止")):
-        return "时间信息"
-    if any(token in fingerprint for token in ("partner", "supplier", "owner", "manager", "user", "负责人", "供应", "往来", "经理")):
-        return "责任与往来"
-    if level <= 1 or field_names & {"name", "code", "project_id", "state", "company_id"}:
-        return "主信息" if level == 0 else "基础信息"
-    return f"业务信息 {index + 1}"
-
-
-def _apply_semantic_container_label(node: dict[str, Any], label: str) -> None:
-    _apply_semantic_container_annotation(node, label)
-
-
-def _apply_semantic_container_annotation(node: dict[str, Any], label: str) -> None:
-    node["semanticTitle"] = label
-    node["semanticAnchor"] = _stable_id(label, "semantic.group")
-    source = _dict(node.get("sourceAuthority"))
-    source.update({
-        "kind": SOURCE_KIND,
-        "projection_only": True,
-        "no_business_fact_authority": True,
-        "runtime_carrier": "business_form_semantic_label_standardizer",
-    })
-    node["sourceAuthority"] = source
-
-
-def _business_group_label_for_node(source: dict[str, Any], node: dict[str, Any]) -> str:
-    groups = _list(source.get("field_groups"))
-    business_groups: list[tuple[str, str, set[str]]] = []
-    for group in groups:
-        if not isinstance(group, dict):
-            continue
-        name = _text(group.get("name")).lower()
-        if not name.startswith("business_"):
-            continue
-        fields = {_text(item) for item in _list(group.get("fields")) if _text(item)}
-        if not fields:
-            continue
-        label = _text(group.get("label") or group.get("title") or group.get("string"))
-        if label:
-            business_groups.append((name, label, fields))
-    if not business_groups:
-        return ""
-    node_fields = set(_node_field_names(node))
-    if not node_fields:
-        return ""
-    ranked = sorted(
-        (
-            (len(node_fields & fields), name, label)
-            for name, label, fields in business_groups
-            if node_fields & fields
-        ),
-        key=lambda item: (
-            item[0],
-            4 if item[1] == "business_collaboration" else 3 if item[1] == "business_details" else 2 if item[1] == "business_amount" else 1,
-        ),
-        reverse=True,
-    )
-    return ranked[0][2] if ranked else ""
-
-
-def _standardize_form_container_semantics(nodes: list[dict[str, Any]], *, model: str, view_type: str, source: dict[str, Any] | None = None) -> None:
-    if view_type != "form" or not model:
-        return
-
-    def visit(rows: list[dict[str, Any]], *, level: int) -> None:
-        group_index = 0
-        for node in rows:
-            if not isinstance(node, dict):
-                continue
-            node_type = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
-            if node_type == "group":
-                if _is_generic_container_label(node):
-                    business_label = _business_group_label_for_node(_dict(source), node)
-                    _apply_semantic_container_label(
-                        node,
-                        business_label or _semantic_group_label(node, level=level, index=group_index),
-                    )
-                else:
-                    semantic_title = _text(node.get("semanticTitle"))
-                    visible_label = _text(node.get("title") or node.get("label") or node.get("string"))
-                    if not semantic_title and visible_label:
-                        _apply_semantic_container_annotation(node, visible_label)
-                group_index += 1
-            for key in ("children", "pages", "tabs", "nodes", "items"):
-                child_rows = node.get(key)
-                if isinstance(child_rows, list):
-                    visit([item for item in child_rows if isinstance(item, dict)], level=level + 1)
-
-    visit(nodes, level=0)
-
-
-def _node_is_button_box(node: dict[str, Any]) -> bool:
-    classes = _text(_dict(node.get("attributes")).get("class") or node.get("class")).split()
-    if "oe_button_box" in classes:
-        return True
-    for item in _walk_native_nodes([node]):
-        if _text(item.get("type") or item.get("kind")).lower() != "button":
-            continue
-        action = _dict(item.get("action"))
-        if _text(action.get("level")).lower() == "smart":
-            return True
-        item_classes = _text(_dict(item.get("attributes")).get("class") or item.get("class")).split()
-        if "oe_stat_button" in item_classes:
-            return True
-    return False
-
-
-def _append_container_status_once(container_status: list[dict[str, Any]], container_id: str) -> None:
-    if not container_id:
-        return
-    if any(_text(row.get("containerId")) == container_id for row in container_status if isinstance(row, dict)):
-        return
-    container_status.append({"containerId": container_id, "visible": True, "disabled": False})
-
-
-def _standardize_business_form_default_tabs(
-    container_tree: list[dict[str, Any]],
-    *,
-    model: str,
-    view_type: str,
-    container_status: list[dict[str, Any]],
-) -> None:
-    # Odoo native form views only expose notebook/page captions as visible
-    # structure.  Generic tabs such as "主信息" or "业务明细" are semantic
-    # guesses, so they must not be projected as user-visible page titles.
-    return
-
-
-def _form_structure_contract_layout_rows(
-    structure_contract: dict[str, Any],
-    fields_by_name: dict[str, dict[str, Any]],
-    *,
-    native_layout_rows: list[dict[str, Any]],
-    page_title: str,
-    render_profile: str = "",
-) -> list[dict[str, Any]]:
-    if not structure_contract:
-        return native_layout_rows
-    available = {name for name in fields_by_name if _text(name)}
-    native_field_nodes: dict[str, dict[str, Any]] = {}
-    native_group_layouts: list[dict[str, Any]] = []
-
-    def normalize_layout_columns(value: Any) -> int | None:
-        try:
-            columns = int(value)
-        except (TypeError, ValueError):
-            return None
-        return columns if columns > 0 else None
-
-    def node_layout_columns(node: dict[str, Any]) -> int | None:
-        attrs = _dict(node.get("attributes") or node.get("attrs"))
-        return (
-            normalize_layout_columns(node.get("cols"))
-            or normalize_layout_columns(node.get("columns"))
-            or normalize_layout_columns(node.get("col"))
-            or normalize_layout_columns(attrs.get("columns"))
-            or normalize_layout_columns(attrs.get("cols"))
-            or normalize_layout_columns(attrs.get("col"))
-        )
-
-    def collect_node_field_names(nodes: Any, out: list[str] | None = None) -> list[str]:
-        names = out if out is not None else []
-        for node in _list(nodes):
-            if not isinstance(node, dict):
-                continue
-            node_type = _text(node.get("type") or node.get("kind")).lower()
-            node_name = _text(node.get("name") or node.get("field"))
-            if node_type == "field" and node_name and node_name not in names:
-                names.append(node_name)
-            for key in ("children", "pages", "tabs", "nodes", "items", "groups", "fields"):
-                child_rows = node.get(key)
-                if isinstance(child_rows, list) and child_rows:
-                    collect_node_field_names(child_rows, names)
-        return names
-
-    def collect_native_field_nodes(nodes: Any) -> None:
-        for node in _list(nodes):
-            if not isinstance(node, dict):
-                continue
-            node_type = _text(node.get("type") or node.get("kind")).lower()
-            node_name = _text(node.get("name") or node.get("field"))
-            if node_type == "field" and node_name and node_name not in native_field_nodes:
-                native_field_nodes[node_name] = deepcopy(node)
-            if node_type == "group":
-                columns = node_layout_columns(node)
-                if columns:
-                    title = _text(node.get("string") or node.get("label") or node.get("title"))
-                    native_group_layouts.append({
-                        "title": title,
-                        "fields": collect_node_field_names(node.get("children")),
-                        "cols": columns,
-                    })
-            for key in ("children", "pages", "tabs", "nodes", "items", "groups", "fields"):
-                child_rows = node.get(key)
-                if isinstance(child_rows, list) and child_rows:
-                    collect_native_field_nodes(child_rows)
-
-    def dominant_native_group_columns() -> int | None:
-        counts: dict[int, int] = {}
-        for row in native_group_layouts:
-            columns = normalize_layout_columns(row.get("cols"))
-            if columns:
-                counts[columns] = counts.get(columns, 0) + 1
-        if not counts:
-            return None
-        return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
-
-    def native_field_hidden(node: dict[str, Any]) -> bool:
-        if node.get("invisible") is True:
-            return True
-        modifiers = _dict(node.get("modifiers"))
-        if modifiers.get("invisible") is True:
-            return True
-        attrs = _dict(node.get("attrs") or node.get("attributes"))
-        if attrs.get("invisible") is True:
-            return True
-        return False
-
-    collect_native_field_nodes(native_layout_rows)
-
-    field_roles = _dict(structure_contract.get("fieldRoles") or structure_contract.get("field_roles"))
-    normalized_render_profile = _text(render_profile).lower()
-
-    def skip_field_for_create(name: str, native_node: dict[str, Any] | None = None) -> bool:
-        if normalized_render_profile != "create":
-            return False
-        field_meta = _dict(fields_by_name.get(name))
-        node_meta = _dict(native_node or {})
-        node_field_info = _dict(node_meta.get("fieldInfo") or node_meta.get("field_info"))
-        role = _dict(field_roles.get(name))
-        fingerprint = " ".join(
-            _text(value).lower()
-            for value in (
-                name,
-                field_meta.get("string"),
-                field_meta.get("label"),
-                node_meta.get("string"),
-                node_meta.get("label"),
-                node_field_info.get("label"),
-                node_field_info.get("string"),
-                role.get("role"),
-                role.get("slot"),
-                role.get("group"),
-            )
-            if _text(value)
-        )
-        return any(
-            token in fingerprint
-            for token in ("legacy", "history", "history_check", "provenance", "source", "snapshot", "历史", "来源", "追溯", "快照", "迁移")
-        )
-
-    def field_nodes(names: list[Any], *, readonly: bool = False) -> list[dict[str, Any]]:
-        rows: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for item in names:
-            name = _text(item)
-            if not name or name in seen or name not in available:
-                continue
-            native_node = native_field_nodes.get(name)
-            if native_node and native_field_hidden(native_node):
-                continue
-            if skip_field_for_create(name, native_node):
-                continue
-            seen.add(name)
-            row: dict[str, Any] = deepcopy(native_node) if native_node else {"type": "field", "name": name}
-            row["type"] = "field"
-            row["name"] = name
-            if readonly:
-                row["readonly"] = True
-                modifiers = _dict(row.get("modifiers"))
-                modifiers["readonly"] = True
-                row["modifiers"] = modifiers
-            role = _dict(field_roles.get(name))
-            if role:
-                row["formStructureRole"] = deepcopy(role)
-            rows.append(row)
-        return rows
-
-    def group_node(group: dict[str, Any], *, readonly: bool = False, slot_name: str = "") -> dict[str, Any]:
-        name = _stable_id(group.get("name") or group.get("title") or "business_group", "group")
-        title = _text(group.get("title") or group.get("label") or group.get("string") or name, name)
-        field_refs = _list(group.get("fieldRefs") or group.get("field_refs") or group.get("fields"))
-        children = field_nodes(field_refs, readonly=readonly)
-        if not children:
-            return {}
-        child_names = [row.get("name") for row in children if _text(row.get("name"))]
-        configured_columns = node_layout_columns(group)
-        inherited_columns = configured_columns or next(
-            (
-                row.get("cols")
-                for row in native_group_layouts
-                if row.get("title") and _text(row.get("title")) == title
-            ),
-            None,
-        ) or next(
-            (
-                row.get("cols")
-                for row in native_group_layouts
-                if row.get("fields") and child_names and set(row.get("fields") or []) == set(child_names)
-            ),
-            None,
-        ) or dominant_native_group_columns()
-        layout_attrs = {"col": str(inherited_columns)} if inherited_columns else {}
-        node = {
-            "type": "group",
-            "name": name,
-            "string": title,
-            "label": title,
-            "formStructure": {
-                "slot": slot_name,
-                "group": name,
-                "role": _text(group.get("role") or name, name),
-            },
-            "children": children,
-            "sourceAuthority": {
-                "kind": SOURCE_KIND,
-                "runtime_carrier": "form_structure_contract",
-                "no_business_fact_authority": True,
-            },
-        }
-        if inherited_columns:
-            node["cols"] = inherited_columns
-            node["attributes"] = layout_attrs
-        return node
-
-    header_rows = [
-        deepcopy(row)
-        for row in native_layout_rows
-        if _text(row.get("type") or row.get("kind")).lower() == "header"
-    ]
-    children: list[dict[str, Any]] = []
-    slots = [_dict(item) for item in _list(structure_contract.get("slots")) if isinstance(item, dict)]
-    summary = next(
-        (
-            slot
-            for slot in slots
-            if _text(slot.get("slot") or slot.get("name")).lower() in {"overview", "summary", "business_overview"}
-        ),
-        _dict(structure_contract.get("summary")),
-    )
-    show_summary_group = _text(render_profile).lower() == "readonly"
-    summary_group = group_node(summary, readonly=True) if summary and show_summary_group else {}
-    if summary_group:
-        children.append(summary_group)
-
-    tabs: list[dict[str, Any]] = []
-    flatten_task_groups = normalized_render_profile != "readonly"
-
-    def skip_group_for_create(group_row: dict[str, Any]) -> bool:
-        if normalized_render_profile != "create":
-            return False
-        form_structure = _dict(group_row.get("formStructure"))
-        fingerprint = " ".join(
-            _text(value).lower()
-            for value in (
-                group_row.get("name"),
-                group_row.get("label"),
-                group_row.get("string"),
-                form_structure.get("slot"),
-                form_structure.get("group"),
-                form_structure.get("role"),
-            )
-            if _text(value)
-        )
-        return any(
-            token in fingerprint
-            for token in ("provenance", "history", "history_check", "source", "legacy", "追溯", "历史", "来源")
-        )
-    page_slots = [
-        slot
-        for slot in slots
-        if _text(slot.get("slot") or slot.get("name")).lower() not in {"overview", "summary", "business_overview"}
-    ]
-    legacy_pages = [_dict(item) for item in _list(structure_contract.get("pages")) if isinstance(item, dict)]
-    for page_dict in page_slots or legacy_pages:
-        page_name = _stable_id(
-            page_dict.get("slot") or page_dict.get("name") or page_dict.get("title") or "business_page",
-            "page",
-        )
-        page_title = _text(page_dict.get("title") or page_dict.get("label") or page_dict.get("string") or page_name, page_name)
-        page_role = _text(page_dict.get("role") or page_name, page_name)
-        page_children: list[dict[str, Any]] = []
-        for group in _list(page_dict.get("groups")):
-            group_row = group_node(_dict(group), readonly=bool(page_dict.get("readonly")), slot_name=page_name)
-            if group_row:
-                page_children.append(group_row)
-        if not page_children:
-            direct_group = group_node({
-                "name": f"{page_name}.fields",
-                "title": page_title,
-                "fieldRefs": _list(page_dict.get("fieldRefs") or page_dict.get("field_refs") or page_dict.get("fields")),
-                "role": page_role,
-            }, readonly=bool(page_dict.get("readonly")), slot_name=page_name)
-            if direct_group:
-                page_children.append(direct_group)
-        if not page_children:
-            continue
-        if flatten_task_groups:
-            children.extend([row for row in page_children if not skip_group_for_create(row)])
-            continue
-        tabs.append({
-            "type": "page",
-            "name": page_name,
-            "string": page_title,
-            "label": page_title,
-            "formStructure": {
-                "slot": page_name,
-                "role": page_role,
-            },
-            "children": page_children,
-            "sourceAuthority": {
-                "kind": SOURCE_KIND,
-                "runtime_carrier": "form_structure_contract",
-                "projection_only": True,
-                "no_business_fact_authority": True,
-            },
-        })
-    if tabs:
-        navigation = _dict(structure_contract.get("navigation"))
-        notebook_title = _text(navigation.get("title") or structure_contract.get("taskTitle") or "业务办理", "业务办理")
-        children.append({
-            "type": "notebook",
-            "name": "form_structure_task_tabs",
-            "string": notebook_title,
-            "label": notebook_title,
-            "tabs": tabs,
-            "sourceAuthority": {
-                "kind": SOURCE_KIND,
-                "runtime_carrier": "form_structure_contract",
-                "projection_only": True,
-                "no_business_fact_authority": True,
-            },
-        })
-    if not children:
-        return native_layout_rows
-    sheet = {
-        "type": "sheet",
-        "name": "business_orchestrated_sheet",
-        "string": page_title,
-        "label": page_title,
-        "children": children,
-        "sourceAuthority": {
-            "kind": SOURCE_KIND,
-            "runtime_carrier": "form_structure_contract",
-            "no_business_fact_authority": True,
-        },
-    }
-    return header_rows + [sheet]
 
 
 def _apply_form_structure_roles_to_tree(
@@ -3133,108 +2548,6 @@ def _project_form_structure_to_layout(
     return out
 
 
-def _form_structure_layout_columns(value: Any) -> int | None:
-    try:
-        columns = int(value)
-    except (TypeError, ValueError):
-        return None
-    return columns if columns > 0 else None
-
-
-def _form_structure_node_columns(node: dict[str, Any]) -> int | None:
-    attrs = _dict(node.get("attributes") or node.get("attrs"))
-    return (
-        _form_structure_layout_columns(node.get("cols"))
-        or _form_structure_layout_columns(node.get("columns"))
-        or _form_structure_layout_columns(node.get("col"))
-        or _form_structure_layout_columns(attrs.get("columns"))
-        or _form_structure_layout_columns(attrs.get("cols"))
-        or _form_structure_layout_columns(attrs.get("col"))
-    )
-
-
-def _form_structure_field_refs(node: dict[str, Any]) -> list[str]:
-    refs: list[str] = []
-
-    def collect(value: Any) -> None:
-        for item in _list(value):
-            if not isinstance(item, dict):
-                continue
-            node_type = _text(item.get("type") or item.get("kind")).lower()
-            name = _text(item.get("name") or item.get("field"))
-            if node_type == "field" and name and name not in refs:
-                refs.append(name)
-            for key in ("children", "pages", "tabs", "nodes", "items", "groups", "fields"):
-                collect(item.get(key))
-
-    collect(node.get("children"))
-    return refs
-
-
-def _apply_form_structure_columns_to_tree(container_tree: list[dict[str, Any]], structure_contract: dict[str, Any]) -> None:
-    if not container_tree or not structure_contract:
-        return
-    default_columns = _form_structure_node_columns(structure_contract)
-    group_policies: list[dict[str, Any]] = []
-    for slot in _list(structure_contract.get("slots")):
-        if not isinstance(slot, dict):
-            continue
-        for group in _list(slot.get("groups")):
-            if not isinstance(group, dict):
-                continue
-            columns = _form_structure_node_columns(group)
-            if not columns:
-                continue
-            group_policies.append({
-                "title": _text(group.get("title") or group.get("label") or group.get("string") or group.get("name")),
-                "fields": [
-                    _text(item)
-                    for item in _list(group.get("fieldRefs") or group.get("field_refs") or group.get("fields"))
-                    if _text(item)
-                ],
-                "columns": columns,
-            })
-
-    def apply(node: dict[str, Any]) -> None:
-        node_type = _text(node.get("type") or node.get("kind") or node.get("containerType")).lower()
-        if node_type == "group":
-            title = _text(node.get("string") or node.get("label") or node.get("title") or node.get("name"))
-            node_fields = _form_structure_field_refs(node)
-            columns = next(
-                (
-                    int(row["columns"])
-                    for row in group_policies
-                    if row.get("title") and row.get("title") == title
-                ),
-                None,
-            )
-            if columns is None and node_fields:
-                node_field_set = set(node_fields)
-                columns = next(
-                    (
-                        int(row["columns"])
-                        for row in group_policies
-                        if row.get("fields") and set(row.get("fields") or []) == node_field_set
-                    ),
-                    None,
-                )
-            columns = columns or default_columns
-            if columns:
-                node["cols"] = columns
-                node["columns"] = columns
-                attrs = _dict(node.get("attributes") or node.get("attrs"))
-                attrs["col"] = str(columns)
-                node["attributes"] = attrs
-        for key in ("children", "pages", "tabs", "nodes", "items", "groups"):
-            for child in _list(node.get(key)):
-                if isinstance(child, dict):
-                    apply(child)
-
-    for row in container_tree:
-        if isinstance(row, dict):
-            apply(row)
-
-
 def _is_attachment_field_name(name: str, fields_by_name: dict[str, dict[str, Any]]) -> bool:
     if not name:
         return False
@@ -3339,24 +2652,6 @@ def _button_badge_count_source(
         if short_label and (short_label in candidate_label or short_label in candidate_name):
             return _badge_count(main_data.get(candidate_name)), short_label, candidate_name
     return None, short_label, ""
-
-
-def _button_display_label(
-    node: dict[str, Any],
-    main_data: dict[str, Any],
-    fields_by_name: dict[str, dict[str, Any]],
-    layout_nodes: list[dict[str, Any]],
-) -> str:
-    action = _dict(node.get("action"))
-    badge = _dict(action.get("badge") or node.get("badge"))
-    field_name = _text(badge.get("field") or badge.get("fieldCode"))
-    badge_label = _text(node.get("displayLabel") or action.get("displayLabel") or badge.get("label"))
-    if not field_name and not badge_label:
-        return ""
-    count, resolved_label, source_field = _button_badge_count_source(badge, main_data, fields_by_name, layout_nodes)
-    if count is None:
-        return ""
-    return f"{count}{resolved_label or badge_label}"
 
 
 def _decorate_button_display_labels(

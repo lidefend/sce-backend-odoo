@@ -23,6 +23,7 @@ MENU_ORCHESTRATION_SOURCE_TENANT_LOWCODING = boundaries.MENU_ORCHESTRATION_SOURC
 APPROVAL_POLICY_RUNTIME_SOURCE = boundaries.APPROVAL_POLICY_RUNTIME_SOURCE
 APPROVAL_POLICY_SOURCE_TENANT_LOWCODING = boundaries.APPROVAL_POLICY_SOURCE_TENANT_LOWCODING
 view_orchestration_apply_order_key = boundaries.view_orchestration_apply_order_key
+lowcode_publication_gate_applies = boundaries.lowcode_publication_gate_applies
 
 
 class _Ref:
@@ -65,6 +66,41 @@ class BackendContractBoundaryTests(unittest.TestCase):
         )
 
         self.assertEqual(boundary["source_status"], LOWCODE_SOURCE_STATUS_PRODUCT_RELEASE)
+
+    def test_lowcode_gate_skips_product_release_native_surface(self):
+        payload = {"view_orchestration": {
+            "context": {"source": "smart_construction_core.product_release", "source_status": "product_release"},
+            "views": {"form": {"composition_mode": "native_semantic_surface"}},
+        }}
+        self.assertFalse(lowcode_publication_gate_applies(payload, "form"))
+
+    def test_lowcode_gate_skips_product_release_entry_surface(self):
+        payload = {"view_orchestration": {
+            "context": {"source": "smart_construction_core.product_release"},
+            "views": {"form": {"composition_mode": "entry_semantic_surface"}},
+        }}
+        self.assertFalse(lowcode_publication_gate_applies(payload, "form"))
+
+    def test_lowcode_gate_applies_to_lowcode_native_surface(self):
+        payload = {"view_orchestration": {
+            "context": {"source": "smart_core.lowcode.business_config"},
+            "views": {"form": {"composition_mode": "native_semantic_surface"}},
+        }}
+        self.assertTrue(lowcode_publication_gate_applies(payload, "form"))
+
+    def test_lowcode_gate_applies_to_lowcode_entry_surface(self):
+        payload = {"view_orchestration": {
+            "context": {"source": "smart_core.lowcode.business_config"},
+            "views": {"form": {"composition_mode": "entry_semantic_surface"}},
+        }}
+        self.assertTrue(lowcode_publication_gate_applies(payload, "form"))
+
+    def test_lowcode_gate_skips_non_form_view(self):
+        payload = {"view_orchestration": {
+            "context": {"source": "smart_core.lowcode.business_config"},
+            "views": {"list": {}},
+        }}
+        self.assertFalse(lowcode_publication_gate_applies(payload, "list"))
 
     def test_contract_source_status_backfill_marks_product_view_contracts(self):
         result = ensure_lowcode_contract_source_status({"view_orchestration": {"views": {"form": {}}}})

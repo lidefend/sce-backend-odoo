@@ -22,7 +22,27 @@ from lxml import etree
 
 from .form_structure_authority import TECHNICAL_FIELD_CODES
 
+# Structural tags whose native ``name`` gives a stable business identity.
 _STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
+# Named business containers that can own fields; layout tags such as ``div``,
+# ``header``, ``label`` or ``span`` are kept as containers for a complete
+# layout tree but never become a business group owner.
+_NAMED_BUSINESS_CONTAINER_TAGS = frozenset({"group", "notebook", "page"})
+
+# Curated native attributes that a downstream adapter may need.  We do not
+# capture every XML attribute: each entry below has a concrete consumer.  All
+# values are plain strings, so the model stays JSON-serializable and never
+# holds an lxml Element reference.
+_CONTAINER_ATTRIBUTE_KEYS = frozenset({
+    "class", "colspan", "col", "span", "groups", "attrs",
+})
+_FIELD_ATTRIBUTE_KEYS = frozenset({
+    "string", "widget", "options", "placeholder", "nolabel", "colspan",
+    "sum", "attrs", "invisible", "readonly", "required", "groups",
+})
+
+# ORM field types that carry a native relation target model.
+_RELATION_FIELD_TYPES = frozenset({"many2one", "one2many", "many2many"})
 
 
 @dataclass
@@ -33,6 +53,8 @@ class NativeFieldOccurrence:
     native_locator: str
     modifiers_raw: dict[str, str] = field(default_factory=dict)
     field_metadata: dict[str, Any] = field(default_factory=dict)
+    native_attributes: dict[str, str] = field(default_factory=dict)
+    relation_descriptor: dict[str, Any] | None = None
 
 
 @dataclass
@@ -44,6 +66,7 @@ class NativeContainer:
     parent_ref: str | None = None
     native_locator: str = ""
     children: list["NativeContainer"] = field(default_factory=list)
+    native_attributes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -65,6 +88,7 @@ class NativeView:
                 "native_string": node.native_string,
                 "parent_ref": node.parent_ref,
                 "native_locator": node.native_locator,
+                "native_attributes": node.native_attributes,
                 "children": [container_to_dict(child) for child in node.children],
             }
 
@@ -84,6 +108,8 @@ class NativeView:
                     "native_locator": item.native_locator,
                     "modifiers_raw": item.modifiers_raw,
                     "field_metadata": item.field_metadata,
+                    "native_attributes": item.native_attributes,
+                    "relation_descriptor": item.relation_descriptor,
                 }
                 for item in self.fields
             ],
@@ -103,6 +129,39 @@ def _native_locator(parent_locator: str, tag: str, position: int) -> str:
     return f"{parent_locator}/{tag}[{position}]"
 
 
+def _nearest_ancestor_ref(
+    containers_by_ref: dict[str, NativeContainer],
+    container_ref: str | None,
+    tags: frozenset[str],
+) -> str | None:
+    """Return the nearest ancestor (inclusive) whose native_type is in ``tags``."""
+    node = containers_by_ref.get(container_ref) if container_ref else None
+    while node is not None:
+        if node.native_type in tags:
+            return node.container_ref
+        node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
+    return None
+
+
+def _relation_descriptor(field_metadata: dict[str, Any]) -> dict[str, Any] | None:
+    """Describe a field's native relation target, never its access authority.
+
+    ``relation_descriptor`` records the ORM relation capability derived from
+    ``fields_get()`` metadata.  It is a description, not a permission grant:
+    being ``openable`` is still resolved by the server-side relation entry
+    contract and record rules, not by this descriptor.
+    """
+    field_type = str(field_metadata.get("type") or "").strip()
+    if field_type not in _RELATION_FIELD_TYPES:
+        return None
+    relation_model = str(field_metadata.get("relation") or "").strip() or None
+    return {
+        "field_type": field_type,
+        "relation_type": field_type,
+        "relation_model": relation_model,
+    }
+
+
 def project_native_view(
     env: Any,
     model_name: str,
@@ -110,24 +169,40 @@ def project_native_view(
     action_id: int = 0,
     view_id: int = 0,
     view_type: str = "form",
+    root: Any | None = None,
+    carrier: Any | None = None,
 ) -> NativeView:
     """Parse one merged Odoo view arch exactly once into a Canonical AST."""
     model = env[model_name]
-    view_data = model.get_view(view_id=view_id or False, view_type=view_type)
-    arch = str((view_data or {}).get("arch") or "")
-    if not arch:
-        raise ValueError(f"native view projection requires a resolved arch for {model_name}")
-    root = etree.fromstring(arch.encode("utf-8"))
+    normalized_view_id = int(view_id or 0)
+    view_data = None
+    if root is None:
+        cached = carrier.fetch(env, model_name, view_type, normalized_view_id) if carrier is not None else None
+        if cached is not None and cached.get("_arch_root") is not None:
+            view_data = cached
+            root = cached["_arch_root"]
+    if root is None:
+        view_data = model.get_view(view_id=view_id or False, view_type=view_type)
+        arch = str((view_data or {}).get("arch") or "")
+        if not arch:
+            raise ValueError(f"native view projection requires a resolved arch for {model_name}")
+        root = etree.fromstring(arch.encode("utf-8"))
 
-    field_meta = model.fields_get()
+    fields_meta = model.fields_get()
+    resolved_view_id = int(
+        (view_data or {}).get("id")
+        or (view_data or {}).get("_source_view_id")
+        or view_id
+        or 0
+    )
 
     result = NativeView(
         model=model_name,
         action_id=int(action_id or 0),
-        view_id=int((view_data or {}).get("id") or view_id or 0),
+        view_id=resolved_view_id,
         view_type=view_type,
         provenance={
-            "source_view_id": int((view_data or {}).get("id") or view_id or 0),
+            "source_view_id": resolved_view_id,
             "runtime_context": {
                 key: str(value)
                 for key, value in (dict(env.context or {}) or {}).items()
@@ -145,33 +220,24 @@ def project_native_view(
         return position_counter[key]
 
     def walk(element: Any, parent_container: NativeContainer | None, parent_locator: str) -> None:
-        tag = str(element.tag or "").split("}")[-1]
+        if not isinstance(element.tag, str):
+            # Comments / processing instructions carry no structure identity.
+            return
+        tag = str(element.tag).split("}")[-1]
         name = str(element.get("name") or "").strip()
         position = position_of(parent_locator, tag)
         locator = _native_locator(parent_locator, tag, position)
-
-        if tag in _STRUCTURAL_TAGS:
-            parent_ref = parent_container.container_ref if parent_container else None
-            container = NativeContainer(
-                container_ref=_structural_identity(tag, name, parent_ref, position),
-                native_name=name,
-                native_type=tag,
-                native_string=str(element.get("string") or "").strip(),
-                parent_ref=parent_ref,
-                native_locator=locator,
-            )
-            if parent_container is None:
-                result.containers.append(container)
-            else:
-                parent_container.children.append(container)
-            for child in element:
-                walk(child, container, locator)
-            return
 
         if tag == "field":
             field_code = str(element.get("name") or "").strip()
             if field_code:
                 occurrence_counter[field_code] = occurrence_counter.get(field_code, 0) + 1
+                occurrence_meta = dict(fields_meta.get(field_code) or {})
+                native_attributes = {
+                    key: str(element.get(key))
+                    for key in _FIELD_ATTRIBUTE_KEYS
+                    if element.get(key) is not None
+                }
                 result.fields.append(
                     NativeFieldOccurrence(
                         field_code=field_code,
@@ -183,13 +249,36 @@ def project_native_view(
                             for key in ("invisible", "readonly", "required")
                             if element.get(key) is not None
                         },
-                        field_metadata=dict(field_meta.get(field_code) or {}),
+                        field_metadata=occurrence_meta,
+                        native_attributes=native_attributes,
+                        relation_descriptor=_relation_descriptor(occurrence_meta),
                     )
                 )
             return
 
+        # Every non-field element becomes a container so the full Odoo layout
+        # hierarchy (div / header / label / notebook / page / group ...) is
+        # preserved, not flattened away.
+        parent_ref = parent_container.container_ref if parent_container else None
+        container = NativeContainer(
+            container_ref=_structural_identity(tag, name, parent_ref, position),
+            native_name=name,
+            native_type=tag,
+            native_string=str(element.get("string") or "").strip(),
+            parent_ref=parent_ref,
+            native_locator=locator,
+            native_attributes={
+                key: str(element.get(key))
+                for key in _CONTAINER_ATTRIBUTE_KEYS
+                if element.get(key) is not None
+            },
+        )
+        if parent_container is None:
+            result.containers.append(container)
+        else:
+            parent_container.children.append(container)
         for child in element:
-            walk(child, parent_container, locator)
+            walk(child, container, locator)
 
     walk(root, None, "")
     return result
@@ -200,15 +289,13 @@ def derive_native_field_ownership(
     *,
     identity_fields: tuple[str, ...] | list[str] = (),
 ) -> dict[str, dict[str, str]]:
-    """Derive unique primary field ownership from native field position.
+    """Derive candidate primary field ownership from native group membership.
 
-    The first occurrence of a field wins as its primary owner; later
-    occurrences are legal projections that must be declared explicitly by a
-    caller, never auto-selected by name/type/order.
-
-    The owner slot is the field's top-level sheet; the owner group is the
-    native ``<group name>`` that contains the field (falling back to the sheet
-    itself for sheet-level fields).
+    A field earns a candidate primary owner only when it appears in exactly one
+    named native group.  A field present in several named groups is an
+    undeclared duplicate projection and must NOT be auto-selected by XML order;
+    it stays unowned so the downstream guard reports NOT_VERIFIED instead of
+    fabricating a business fact from node ordering.
     """
     containers_by_ref: dict[str, NativeContainer] = {}
     named_group_refs: set[str] = set()
@@ -216,7 +303,7 @@ def derive_native_field_ownership(
     def index_containers(nodes: list[NativeContainer]) -> None:
         for node in nodes:
             containers_by_ref[node.container_ref] = node
-            if node.native_name and node.native_type in {"group", "notebook", "page"}:
+            if node.native_name and node.native_type in _NAMED_BUSINESS_CONTAINER_TAGS:
                 named_group_refs.add(node.container_ref)
             index_containers(node.children)
 
@@ -230,21 +317,36 @@ def derive_native_field_ownership(
             node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
         return "sheet"
 
-    ownership: dict[str, dict[str, str]] = {}
-    seen: set[str] = set()
+    named_occurrences: dict[str, list[NativeFieldOccurrence]] = {}
     for occurrence in native_view.fields:
         code = occurrence.field_code
         if code in TECHNICAL_FIELD_CODES:
             continue
-        if occurrence.container_ref not in named_group_refs:
+        owner_group = _nearest_ancestor_ref(
+            containers_by_ref,
+            occurrence.container_ref,
+            _NAMED_BUSINESS_CONTAINER_TAGS,
+        )
+        if not owner_group or owner_group not in named_group_refs:
             continue
-        if code in seen:
+        named_occurrences.setdefault(code, []).append(occurrence)
+
+    ownership: dict[str, dict[str, str]] = {}
+    for code, occurrences in named_occurrences.items():
+        owner_groups = list(dict.fromkeys(
+            _nearest_ancestor_ref(
+                containers_by_ref,
+                occurrence.container_ref,
+                _NAMED_BUSINESS_CONTAINER_TAGS,
+            )
+            for occurrence in occurrences
+        ))
+        if len(owner_groups) != 1:
             continue
-        seen.add(code)
-        owner_group = occurrence.container_ref
+        owner_group = owner_groups[0]
         if not containers_by_ref.get(owner_group):
             owner_group = "sheet"
-        owner_slot = top_sheet_ref(occurrence.container_ref)
+        owner_slot = top_sheet_ref(owner_group)
         entry: dict[str, str] = {
             "ownerSlotRef": f"slot:{owner_slot}",
             "ownerGroupRef": f"group:{owner_group}",
@@ -303,6 +405,25 @@ def build_native_form_structure_contract(
     def field_label(code: str) -> str:
         return labels.get(code) or str(code)
 
+    def business_home_ref(container_ref: str | None) -> str | None:
+        """Nearest named business container, otherwise the enclosing sheet."""
+        node = containers_by_ref.get(container_ref) if container_ref else None
+        while node is not None:
+            if node.native_type in _NAMED_BUSINESS_CONTAINER_TAGS and node.native_name:
+                return node.container_ref
+            if node.native_type == "sheet":
+                return node.container_ref
+            node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
+        return None
+
+    def collect_business_containers(node: NativeContainer) -> list[NativeContainer]:
+        found: list[NativeContainer] = []
+        for child in node.children:
+            if child.native_type in _NAMED_BUSINESS_CONTAINER_TAGS:
+                found.append(child)
+            found.extend(collect_business_containers(child))
+        return found
+
     slots: list[dict[str, Any]] = []
     field_roles: dict[str, dict[str, str]] = {}
     seen_fields: set[str] = set()
@@ -319,17 +440,13 @@ def build_native_form_structure_contract(
     for sheet in all_sheets:
         groups: list[dict[str, Any]] = []
         slot_identity = sheet.native_name or "sheet"
-        group_containers: list[NativeContainer] = [
-            child
-            for child in sheet.children
-            if child.native_type in {"group", "notebook", "page"}
-        ]
+        group_containers: list[NativeContainer] = collect_business_containers(sheet)
         for group in group_containers:
             group_identity = group.native_name or group.container_ref
             group_fields = [
                 occurrence
                 for occurrence in native_view.fields
-                if occurrence.container_ref == group.container_ref
+                if business_home_ref(occurrence.container_ref) == group.container_ref
             ]
             field_refs: list[str] = []
             for occurrence in group_fields:
@@ -359,7 +476,7 @@ def build_native_form_structure_contract(
         sheet_fields = [
             occurrence
             for occurrence in native_view.fields
-            if occurrence.container_ref == sheet.container_ref
+            if business_home_ref(occurrence.container_ref) == sheet.container_ref
         ]
         sheet_field_refs: list[str] = []
         for occurrence in sheet_fields:

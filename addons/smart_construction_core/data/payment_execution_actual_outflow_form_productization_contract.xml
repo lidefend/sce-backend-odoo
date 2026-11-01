@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo>
+<odoo noupdate="1">
     <data noupdate="0">
         <!-- U-C4 G04: 实付登记 / 公司财务支出 / 往来单位付款 entries share model
              sc.payment.execution and the native form view
@@ -84,6 +84,30 @@
                         'form': {
                             'title': '往来单位付款',
                             'composition_mode': 'native_semantic_surface'
+                        }
+                    }
+                }
+            }"/>
+        </record>
+
+        <record id="business_config_contract_sc_payment_execution_productized_form_v1" model="ui.business.config.contract">
+            <field name="name">sc_payment_execution_productized_form_v1</field>
+            <field name="model">sc.payment.execution</field>
+            <field name="view_type">form</field>
+            <field name="action_id" ref="smart_construction_core.action_sc_payment_execution"/>
+            <field name="priority">700</field>
+            <field name="company_id" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="status">published</field>
+            <field name="version_no">1</field>
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
+                    'views': {
+                        'form': {
+                            'title': '资金执行',
+                            'composition_mode': 'native_semantic_surface',
+                            'identity_fields': ['name']
                         }
                     }
                 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo noupdate="0">
+<odoo noupdate="1">
     <!-- U-C4 G14: 台账汇总与保证金（523 成本归集 / 522 项目盈亏分析 / 646 资金汇总 /
          778 投标保证金）四个入口此前**都没有入口级发布**，各自只消费一条**模型级生成契约**
          （39 / 44 / 41 / 137，`action_id` 为空），于是 `form_structure_authority` 解析停在

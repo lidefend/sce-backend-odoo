@@ -144,13 +144,14 @@ services:
       # namespace has its own upstream, and no database name is rendered.
       SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM:-odoo:8069}
       SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
+      SC_PROXY_DEFAULT_NAMESPACE: ${SC_PROXY_DEFAULT_NAMESPACE:-demo}
       SC_DECLARED_NAMESPACE_ALIASES: ${SC_DECLARED_NAMESPACE_ALIASES:-demo}
       SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
       SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:-}
       # The platform namespace is a declared two-layer hop: this profile is the
       # serving entry face, so it forwards `/platform-admin/...` unchanged.
       SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP:-0}
-      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(ROUTE_VERSION|SHARED_SECRET|PLATFORM_STRIP)|DECLARED_NAMESPACE_ALIASES)$'
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM|DEFAULT_NAMESPACE)|ENTRY_(ROUTE_VERSION|SHARED_SECRET|PLATFORM_STRIP)|DECLARED_NAMESPACE_ALIASES)$'
     volumes:
       - ./config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR:-./frontend/apps/web/dist}:/usr/share/nginx/html:ro

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <record id="business_config_contract_policy_document_form_v1" model="ui.business.config.contract">
     <field name="name">policy_document_form_v1</field>
     <field name="model">sc.document.admin.document</field>

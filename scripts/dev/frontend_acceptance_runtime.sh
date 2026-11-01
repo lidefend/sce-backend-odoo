@@ -871,6 +871,11 @@ PYPROJECTDOM
       CONFIRM_ACCEPTANCE_BASELINE_REBUILD="${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" \
       bash "$ROOT_DIR/scripts/dev/frontend_acceptance_baseline_rebuild.sh" rebuild
     ;;
+  baseline-restore)
+    preflight
+    SC_ACCEPTANCE_RESTORE_BUNDLE="${SC_ACCEPTANCE_RESTORE_BUNDLE:?bundle path required}" \
+      bash "$ROOT_DIR/scripts/dev/frontend_acceptance_baseline_rebuild.sh" restore "$SC_ACCEPTANCE_RESTORE_BUNDLE"
+    ;;
   module-upgrade)
     preflight
     : "${MODULE:?MODULE is required}"

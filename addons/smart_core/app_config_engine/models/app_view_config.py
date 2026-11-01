@@ -649,7 +649,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
     # ====================== 内部：获取视图数据（版本兼容） ======================
 
-    def _safe_get_view_data(self, model_name, view_type):
+    def _safe_get_view_data(self, model_name, view_type, carrier=None):
         """
         兼容不同 Odoo 版本：
         - 新：env[model].get_view(view_type=...)
@@ -684,6 +684,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 payload['_arch_root'] = etree.fromstring(payload['arch'].encode('utf-8'))
             except Exception as exc:
                 _logger.warning("XML解析失败，仍然使用视图数据: %s", exc)
+            if payload.get('_arch_root') is not None and carrier is not None:
+                carrier.store(
+                    self.env,
+                    model_name,
+                    view_type,
+                    int(payload.get('_source_view_id') or 0),
+                    payload,
+                )
             return payload
 
         # a) 尝试跟随当前动作绑定的视图（优先精准 view_id）
@@ -741,13 +749,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         - kanban：提供最小可渲染块，避免误用 form 逻辑
         """
         fields_get = (view_data or {}).get('fields') or self.env[model_name].sudo().fields_get()
-        arch = (view_data or {}).get('arch', '') or ''
         arch_root = (view_data or {}).get('_arch_root')
-        if arch_root is None and arch:
-            try:
-                arch_root = etree.fromstring(arch.encode('utf-8'))
-            except Exception as exc:
-                _logger.warning("fallback XML解析失败: %s", exc)
         base = {
             'modifiers': {},
             'toolbar': {'header': [], 'sidebar': [], 'footer': []},

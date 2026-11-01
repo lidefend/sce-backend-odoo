@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G08: 上下文办理工作台整组迁移。  sc.current.account.workspace consumes the shared-shape
          dispatch workspace body: this entry keeps its title and its semantic
          declaration and drops its section/field body, because the native form

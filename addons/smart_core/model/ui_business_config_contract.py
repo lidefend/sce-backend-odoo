@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import logging
 from typing import Any
 
@@ -15,6 +16,7 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     view_orchestration_apply_order_key,
     ensure_view_orchestration_source,
     VIEW_ORCHESTRATION_SOURCE_TENANT_LOWCODING,
+    lowcode_publication_gate_applies,
 )
 from odoo.addons.smart_core.utils.business_config_mutation_audit import record_business_config_mutation
 from odoo.addons.smart_core.core.view_contract_presence import (
@@ -24,6 +26,11 @@ from odoo.addons.smart_core.core.view_contract_presence import (
 from odoo.addons.smart_core.core.contract_lifecycle import payload_sha256
 from odoo.addons.smart_core.core.form_structure_authority import (
     role_form_structure_violations, assert_role_form_permissions_only, validated_field_grid_columns,
+)
+from odoo.addons.smart_core.core.business_structure_integrity import (
+    validate_business_structure,
+    extract_compatibility,
+    publication_gate,
 )
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
@@ -495,6 +502,10 @@ class UIBusinessConfigContract(models.Model):
             "valid": not reasons,
             "reason_codes": [row["reason_code"] for row in reasons],
             "reasons": reasons,
+            "structure_diagnostics": validate_business_structure(
+                payload,
+                model_fields=model_fields,
+            ),
             "fields": names,
             "authoritative_fields": [row["name"] for row in authoritative],
             "view_type": normalized,
@@ -846,6 +857,28 @@ class UIBusinessConfigContract(models.Model):
                 "source_authority_json": record.source_authority_json or record.source_authority_contract(),
             })
 
+    def _publication_gate_for(self, record) -> dict[str, Any] | None:
+        """Evaluate the business-structure publication gate for one form config."""
+        payload = record.contract_json if isinstance(record.contract_json, dict) else {}
+        if not lowcode_publication_gate_applies(payload, record.view_type):
+            return None
+        model_fields: dict[str, Any] = {}
+        if record.model and record.model in self.env:
+            model_fields = self.env[record.model]._fields
+        diagnostics = validate_business_structure(
+            payload,
+            model_fields=model_fields,
+        )
+        compatibility = extract_compatibility(payload)
+        return publication_gate(diagnostics, compatibility=compatibility)
+
+    @staticmethod
+    def _publication_gate_error(gate: dict[str, Any]) -> str:
+        return "Business structure publication gate blocked (%s): %s" % (
+            str(gate.get("reason") or ""),
+            json.dumps(gate.get("errors") or [], ensure_ascii=False),
+        )
+
     def _append_published_version(self):
         """Append one immutable publication snapshot under a database row lock."""
         Version = self.env["ui.business.config.contract.version"].sudo()
@@ -872,6 +905,12 @@ class UIBusinessConfigContract(models.Model):
                     "version_no": int(latest.version_no),
                 })
                 continue
+            publication_gate_result = self._publication_gate_for(record)
+            if (
+                publication_gate_result is not None
+                and publication_gate_result.get("verdict") == "blocked"
+            ):
+                raise ValidationError(self._publication_gate_error(publication_gate_result))
             next_version = max(int(record.version_no or 0), int(latest.version_no or 0)) + (1 if latest else 0)
             next_version = max(next_version, 1)
             published_at = fields.Datetime.now()
@@ -880,10 +919,13 @@ class UIBusinessConfigContract(models.Model):
                 "published_at": published_at,
                 "version_no": next_version,
             })
+            snapshot = dict(record.contract_json or {})
+            if publication_gate_result is not None:
+                snapshot["_publication_gate"] = publication_gate_result
             Version.with_context(contract_lifecycle_internal=True).create({
                 "contract_id": record.id,
                 "version_no": next_version,
-                "snapshot_json": record.contract_json or {},
+                "snapshot_json": snapshot,
                 "definition_json": record._definition_payload(),
                 "payload_sha256": record.payload_sha256,
                 "definition_sha256": record.definition_sha256,
@@ -933,6 +975,8 @@ class UIBusinessConfigContract(models.Model):
         if not version or version.contract_id != self:
             raise ValidationError("The requested snapshot does not belong to this contract.")
         definition = version.definition_json if isinstance(version.definition_json, dict) else {}
+        snapshot = dict(version.snapshot_json or {})
+        snapshot.pop("_publication_gate", None)
         restored_values = {
             key: definition[key]
             for key in (
@@ -951,7 +995,7 @@ class UIBusinessConfigContract(models.Model):
         for relation_key in ("action_id", "view_id", "company_id"):
             if relation_key in restored_values:
                 restored_values[relation_key] = int(restored_values[relation_key] or 0) or False
-        return self.replace_and_publish(version.snapshot_json or {}, values=restored_values)
+        return self.replace_and_publish(snapshot, values=restored_values)
 
     def action_publish(self):
         if not self.env.su:

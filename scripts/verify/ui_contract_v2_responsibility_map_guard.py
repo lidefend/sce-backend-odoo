@@ -258,7 +258,6 @@ def main() -> int:
             "def build_form_structure_contract(",
             "form_structure_common_fields",
             "form_structure_detail_fields",
-            "BUSINESS_FORM_STRUCTURE_HISTORY_LABEL_TOKENS",
             "form_structure_presentation_mode",
             "governed_form_structure",
         ]:

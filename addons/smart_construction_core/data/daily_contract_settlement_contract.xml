@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
     <!-- U-C4 G13: 日常合同结算 (876 / menu 698
          `menu_sc_product_general_contract_settlement_v1` / action
          `action_sc_product_general_contract_settlement_v1` / view 1764
