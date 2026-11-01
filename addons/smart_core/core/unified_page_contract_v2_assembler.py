@@ -826,6 +826,7 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
     # not place into a slot/group are owned by the catch-all business-facts
     # group rather than left as unowned technical noise.
     if "primary_facts" in slot_ids and "other_facts" in group_ids:
+        supplemented = 0
         for code in sorted(widget_field_codes):
             if code in owned_field_codes or code in TECHNICAL_FIELD_CODES:
                 continue
@@ -833,6 +834,14 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
                 "ownerSlotRef": "slot:primary_facts",
                 "ownerGroupRef": "group:other_facts",
             }
+            supplemented += 1
+        from .native_projection_shadow import record_catch_all
+        record_catch_all(
+            _text(contract.get("pageInfo", {}).get("model")),
+            source.get("action_id"),
+            source.get("view_id"),
+            supplemented,
+        )
     diagnostics: list[dict[str, Any]] = []
     seen_fields: set[str] = set()
     normalized: dict[str, dict[str, Any]] = {}

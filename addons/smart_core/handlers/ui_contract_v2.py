@@ -71,6 +71,7 @@ from . import ui_contract_v2_form_structure as _form_structure
 from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
 from ..core.native_view_projection import build_native_form_structure_contract, project_native_view
 from ..core.native_view_parsed_cache import RequestScopedCarrier
+from ..core import native_projection_shadow as _shadow
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -91,7 +92,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v23-layout-semantic-migration"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v24-shadow-observation"
 
 
 def _node_validation_snapshot_ready(source):
@@ -2654,8 +2655,10 @@ class UiContractV2Handler(BaseIntentHandler):
                         navigation_title=str(source_contract.get("title") or "").strip(),
                     )
                     form_structure["surfaces"] = self._form_structure_surfaces(model=model)
-                except Exception:
+                    _shadow.record_native_success(model, action_id, form_view_id, "native_form_slots")
+                except Exception as native_exc:
                     _logger.warning("native form structure build failed in business operation path; falling back to heuristic model=%s", model, exc_info=True)
+                    _shadow.record_native_failure(model, action_id, form_view_id, type(native_exc).__name__)
                     form_structure = self._build_form_structure_contract(
                         model=model,
                         profile=profile,
@@ -2665,6 +2668,12 @@ class UiContractV2Handler(BaseIntentHandler):
                         governance=form_structure_governance,
                         navigation_title=str(source_contract.get("title") or "").strip(),
                     )
+                    if isinstance(form_structure, dict) and any(
+                        str(item.get("slot")) == "primary_facts"
+                        for item in (form_structure.get("slots") or [])
+                        if isinstance(item, dict)
+                    ):
+                        _shadow.record_default_fallback(model, action_id, form_view_id)
             source_contract["form_structure_contract"] = form_structure
             form_structure = source_contract.get("form_structure_contract")
             if isinstance(form_structure, dict) and isinstance(form_structure.get("fieldOwnership"), dict):
@@ -4047,8 +4056,10 @@ class UiContractV2Handler(BaseIntentHandler):
                 navigation_title=navigation_title,
             )
             form_structure["surfaces"] = self._form_structure_surfaces(model=model)
-        except Exception:
+            _shadow.record_native_success(model, action_id, view_id, "native_form_slots")
+        except Exception as native_exc:
             _logger.warning("native form structure build failed; falling back to legacy heuristic model=%s", model, exc_info=True)
+            _shadow.record_native_failure(model, action_id, view_id, type(native_exc).__name__)
             form_structure = _form_structure.build_form_structure_contract(
                 self,
                 model=model,
@@ -4059,6 +4070,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 governance=governance,
                 navigation_title=navigation_title,
             )
+            if isinstance(form_structure, dict) and any(
+                str(item.get("slot")) == "primary_facts"
+                for item in (form_structure.get("slots") or [])
+                if isinstance(item, dict)
+            ):
+                _shadow.record_default_fallback(model, action_id, view_id)
         ui_data["form_structure_contract"] = form_structure
         ownership = form_structure.get("fieldOwnership")
         if isinstance(ownership, dict):

@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3C-03C-01 audit done; await 3C-03C-02 approval (zero-fallback evidence then exit)"
+  "next_exact_step": "Stage 3C-03C-02A shadow observation done (zero fallback); await 3C-03C-02B exit approval"
 }
