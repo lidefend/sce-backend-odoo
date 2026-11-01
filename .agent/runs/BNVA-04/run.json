@@ -16,7 +16,14 @@
     "docs/architecture/backend-owned-page-composition/357-bnva-04-parallel-model-and-duplicate-capability-audit.md",
     "docs/architecture/backend-owned-page-composition/358-bnva-04-business-lifecycle-ownership.md",
     "docs/architecture/backend-owned-page-composition/359-bnva-04-17-orphan-action-product-review.md",
-    "docs/architecture/backend-owned-page-composition/360-bnva-04-01-architecture-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/360-bnva-04-01-architecture-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/361-bnva-04-industry-model-inventory.md",
+    "docs/architecture/backend-owned-page-composition/362-bnva-04-model-standard-dependency-matrix.md",
+    "docs/architecture/backend-owned-page-composition/363-bnva-04-model-consumer-and-lifecycle-matrix.md",
+    "docs/architecture/backend-owned-page-composition/364-bnva-04-orphan-action-business-review.md",
+    "docs/architecture/backend-owned-page-composition/365-bnva-04-industry-business-capability-map.md",
+    "docs/architecture/backend-owned-page-composition/366-bnva-04-product-capability-gap-assessment.md",
+    "docs/architecture/backend-owned-page-composition/367-bnva-04-02-final-adjudication.md"
   ],
   "environment": {
     "kind": "offline",
@@ -24,7 +31,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-04-01 open: deep per-model parallel audit of 187 sc.* models deferred to 04-02; 17 orphan action lifecycle ruling deferred to 04-02 business review."
+    "BNVA-04-02 open: 69 workflow models have menu but no productized contract; 17 orphan action lifecycle ruling (mostly MERGE/RETIRE candidates) deferred to 04-03 business productization."
   ],
-  "next_exact_step": "BNVA-04-01 done (354-360): Odoo standard modules correctly reused/inherited; no sc.partner/product/employee/purchase.order/stock/account parallel models found; 260 _inherit + 2 _inherits + many2one composition. Next BNVA-04-02: per-model parallel audit of 187 sc.* + 17 orphan action lifecycle ruling + business asset/product capability inventory."
+  "next_exact_step": "BNVA-04-02 done (361-367): 187 sc.* classified (50 core+contract, 69 workflow-menu-only, 11 action-only, 57 technical infra all abstract/transient); count corrected to 277; 17 orphan actions are mostly MERGE/RETIRE candidates; product gap = 69 workflow lacking contract. Next BNVA-04-03: prioritize the 69 workflow page productization + 17 orphan action lifecycle ruling."
 }
