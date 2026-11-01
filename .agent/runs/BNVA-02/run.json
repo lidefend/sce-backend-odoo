@@ -97,7 +97,10 @@
     "docs/architecture/backend-owned-page-composition/253-bnva-02c-retired-configuration-review.md",
     "docs/architecture/backend-owned-page-composition/254-bnva-02c-noupdate-ownership-review.md",
     "docs/architecture/backend-owned-page-composition/255-bnva-02c-product-configuration-approval-sheet.md",
-    "docs/architecture/backend-owned-page-composition/256-bnva-02c-business-semantics-decisions.md"
+    "docs/architecture/backend-owned-page-composition/256-bnva-02c-business-semantics-decisions.md",
+    "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
+    "docs/architecture/backend-owned-page-composition/257-bnva-02c-payment-request-identity-implementation.md",
+    "docs/architecture/backend-owned-page-composition/258-bnva-02c-execution-receipt-native-structure.md"
   ],
   "environment": {
     "kind": "offline",
@@ -105,5 +108,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C business semantics decided (identity_fields = Identity Summary; 590 baseline; 652 needs runtime action/view resolution). payment.request name = 申请单号 (identity candidate B). Await product scope decision on sc.payment.execution / sc.receipt.income first-release inclusion before config implementation"
+  "next_exact_step": "BNVA-02C-02B-02 in progress: payment.request Identity implemented (identity_fields=['name']). execution/receipt confirmed first-release; native structure audit done (named groups exist). Await per-item Section key/fields confirmation + project 652 isolated-DB action/view resolution before further XML changes"
 }

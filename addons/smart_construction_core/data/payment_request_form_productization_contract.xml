@@ -74,6 +74,7 @@
                         'form': {
                             'title': '收款申请',
                             'composition_mode': 'entry_semantic_surface',
+                            'identity_fields': ['name'],
                             'columns': 2,
                             'sections': [
                                 {'title': '办理主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'validation_status', 'name', 'type', 'payment_flow_label', 'business_category_id', 'date_request']},
