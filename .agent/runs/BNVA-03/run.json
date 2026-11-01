@@ -35,6 +35,11 @@
     "docs/architecture/backend-owned-page-composition/341-bnva-03-finance-primary-entry-fix.md",
     "docs/architecture/backend-owned-page-composition/342-bnva-03-finance-navigation-regression.md",
     "docs/architecture/backend-owned-page-composition/343-bnva-03-04-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/344-bnva-03-unmenu-action-caller-inventory.md",
+    "docs/architecture/backend-owned-page-composition/345-bnva-03-action-invocation-chain-matrix.md",
+    "docs/architecture/backend-owned-page-composition/346-bnva-03-orphan-business-entry-candidates.md",
+    "docs/architecture/backend-owned-page-composition/347-bnva-03-action-asset-lifecycle-recommendations.md",
+    "docs/architecture/backend-owned-page-composition/348-bnva-03-04c-final-assessment.md",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
@@ -43,7 +48,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-03-04C pending: 179 menu-less actions still need caller analysis; 709/908 runtime business behavior NOT_VERIFIED; project 652 productized config transferred to BNVA-04; multi-role/company runtime NOT_RUN in sc_clean."
+    "BNVA-03-05 pending: 17 smart_construction_core single-file actions need same-file caller confirmation; 709/908 runtime business behavior NOT_VERIFIED; multi-role/company runtime NOT_RUN."
   ],
-  "next_exact_step": "BNVA-03-04A/B done: finance primary entry fixed (menu_sc_company_expense 709 moved from contextual to primary; menu_sc_payment_execution 908 retained; no duplicate). Regression 15+13+51 OK. Next BNVA-03-04C: caller analysis of the 179 menu-less actions to close genuine orphan candidates; then decide navigation governance closure."
+  "next_exact_step": "BNVA-03-04C done (344-348): 179 menu-less actions first-pass — 45 multi-file referenced, 134 single-file; ~116 are Odoo standard internal actions, 17 are smart_construction_core candidates needing same-file caller confirmation. Next BNVA-03-05: same-file caller confirmation + action lifecycle registration + navigation governance final closure."
 }
