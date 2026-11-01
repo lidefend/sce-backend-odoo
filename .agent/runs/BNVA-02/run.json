@@ -50,7 +50,13 @@
     "docs/architecture/backend-owned-page-composition/205-bnva-02c-02a-final-decision.md",
     ".agent/decisions/ARCH-DECISION-005.yaml",
     "docs/architecture/backend-owned-page-composition/206-bnva-02d-configuration-ownership-data-boundary.md",
-    "docs/architecture/backend-owned-page-composition/207-bnva-02d-copy-on-write-overlay-study.md"
+    "docs/architecture/backend-owned-page-composition/207-bnva-02d-copy-on-write-overlay-study.md",
+    "scripts/verify/controlled_seed_migration_dryrun.py",
+    "docs/architecture/backend-owned-page-composition/208-bnva-02c-migration-runner-architecture.md",
+    "docs/architecture/backend-owned-page-composition/209-bnva-02c-seed-version-identity.md",
+    "docs/architecture/backend-owned-page-composition/210-bnva-02c-overlay-protection-design.md",
+    "docs/architecture/backend-owned-page-composition/211-bnva-02c-migration-dry-run-report.md",
+    "docs/architecture/backend-owned-page-composition/212-bnva-02c-02b-01-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -58,5 +64,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02D configuration ownership & data boundary + copy-on-write overlay study recorded; await BNVA-02B-02C-02B (controlled seed upgrade mechanism) approval"
+  "next_exact_step": "BNVA-02B-02C-02B-01 migration runner design & dry-run complete; await BNVA-02B-02C-02B-02 (controlled seed upgrade implementation) approval"
 }
