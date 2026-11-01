@@ -150,6 +150,37 @@ class TestNativeViewProjection(unittest.TestCase):
             "group:sc_project_information_identity",
         )
 
+    def test_many2one_field_inherits_group_role_not_type_role(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <group name="sc_project_information_responsible" string="责任信息">
+                  <field name="manager_id" string="项目经理"/>
+                </group>
+              </sheet>
+            </form>""",
+            {
+                "manager_id": {"type": "many2one", "string": "项目经理", "relation": "res.users"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        contract = build_native_form_structure_contract(
+            view,
+            model="project.project",
+            identity_fields=[],
+            navigation_title="项目台账",
+        )
+        self.assertEqual(
+            contract["fieldRoles"]["manager_id"]["role"],
+            "context",
+        )
+        self.assertEqual(
+            contract["fieldRoles"]["manager_id"]["group"],
+            "sc_project_information_responsible",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

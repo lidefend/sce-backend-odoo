@@ -292,9 +292,12 @@ def build_native_form_structure_contract(
         return "context"
 
     def field_role(occurrence: NativeFieldOccurrence, group_native_name: str) -> str:
-        field_type = str(occurrence.field_metadata.get("type") or "").strip()
-        if field_type == "many2one":
-            return "relation"
+        # The native group is the business-structure authority. A field's
+        # semantic role follows its owning group, never its ORM field type:
+        # a many2one like ``manager_id`` inside a ``context`` group is a
+        # primary business fact, not a subordinate relation collection.
+        # Relation navigation is driven by the field descriptor type, which
+        # the frontend already consumes independently of this role.
         return group_role(group_native_name)
 
     def field_label(code: str) -> str:
