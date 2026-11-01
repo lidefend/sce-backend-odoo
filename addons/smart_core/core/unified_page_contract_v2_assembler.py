@@ -1372,7 +1372,7 @@ def _assemble_ui_contract(
     # a heading the contract authored.  This writes semanticTitle /
     # semanticAnchor metadata and never a user-visible title/label/string, so
     # "declared" stays distinguishable from "missing".
-    from odoo.addons.smart_core.app_config_engine.services.view_Parser.layout_semantics import standardize_form_container_semantics
+    from .layout_semantics import standardize_form_container_semantics
     standardize_form_container_semantics(
         container_tree,
         model=model,

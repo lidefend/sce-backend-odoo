@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+from .unified_page_contract_v2_assembler import (
     NOTE_FIELD_TOKENS,
     SOURCE_KIND,
     TRACE_FIELD_TOKENS,
