@@ -2606,39 +2606,7 @@ class UiContractV2Handler(BaseIntentHandler):
             )
 
         if form_structure_governance:
-            action_id = self._source_action_id(source_contract)
-            form_view_ids = source_contract.get("view_ids_by_type") if isinstance(source_contract.get("view_ids_by_type"), dict) else {}
-            try:
-                form_view_id = int(source_contract.get("view_id") or form_view_ids.get("form") or 0)
-            except (TypeError, ValueError):
-                form_view_id = 0
-            identity_fields = [
-                str(name).strip()
-                for name in (
-                    form_structure_governance.get("identity_fields")
-                    if isinstance(form_structure_governance.get("identity_fields"), list)
-                    else []
-                )
-                if str(name).strip()
-            ]
-            try:
-                native_view = project_native_view(
-                    self.su_env,
-                    model,
-                    action_id=action_id,
-                    view_id=form_view_id,
-                    view_type="form",
-                )
-                form_structure = build_native_form_structure_contract(
-                    native_view,
-                    model=model,
-                    identity_fields=identity_fields,
-                    field_labels={name: field_label(name) for name in profile.get("common_fields") or []},
-                    navigation_title=str(source_contract.get("title") or "").strip(),
-                )
-                form_structure["surfaces"] = self._form_structure_surfaces(model=model)
-            except Exception:
-                _logger.debug("native form structure build failed in business operation path model=%s", model, exc_info=True)
+            if _projection.has_selected_form_structure_authority(form_structure_governance):
                 form_structure = self._build_form_structure_contract(
                     model=model,
                     profile=profile,
@@ -2648,6 +2616,49 @@ class UiContractV2Handler(BaseIntentHandler):
                     governance=form_structure_governance,
                     navigation_title=str(source_contract.get("title") or "").strip(),
                 )
+            else:
+                action_id = self._source_action_id(source_contract)
+                form_view_ids = source_contract.get("view_ids_by_type") if isinstance(source_contract.get("view_ids_by_type"), dict) else {}
+                try:
+                    form_view_id = int(source_contract.get("view_id") or form_view_ids.get("form") or 0)
+                except (TypeError, ValueError):
+                    form_view_id = 0
+                identity_fields = [
+                    str(name).strip()
+                    for name in (
+                        form_structure_governance.get("identity_fields")
+                        if isinstance(form_structure_governance.get("identity_fields"), list)
+                        else []
+                    )
+                    if str(name).strip()
+                ]
+                try:
+                    native_view = project_native_view(
+                        self.su_env,
+                        model,
+                        action_id=action_id,
+                        view_id=form_view_id,
+                        view_type="form",
+                    )
+                    form_structure = build_native_form_structure_contract(
+                        native_view,
+                        model=model,
+                        identity_fields=identity_fields,
+                        field_labels={name: field_label(name) for name in profile.get("common_fields") or []},
+                        navigation_title=str(source_contract.get("title") or "").strip(),
+                    )
+                    form_structure["surfaces"] = self._form_structure_surfaces(model=model)
+                except Exception:
+                    _logger.debug("native form structure build failed in business operation path model=%s", model, exc_info=True)
+                    form_structure = self._build_form_structure_contract(
+                        model=model,
+                        profile=profile,
+                        field_type=field_type,
+                        unique=unique,
+                        field_label=field_label,
+                        governance=form_structure_governance,
+                        navigation_title=str(source_contract.get("title") or "").strip(),
+                    )
             source_contract["form_structure_contract"] = form_structure
             form_structure = source_contract.get("form_structure_contract")
             if isinstance(form_structure, dict) and isinstance(form_structure.get("fieldOwnership"), dict):
@@ -3960,7 +3971,7 @@ class UiContractV2Handler(BaseIntentHandler):
             return
         if not isinstance(governance, dict) or not governance:
             return
-        if str(governance.get("form_structure_authority") or "").strip() == "native_authority":
+        if _projection.has_selected_form_structure_authority(governance):
             return
 
         def field_type(name):
