@@ -35,7 +35,13 @@
     "docs/architecture/backend-owned-page-composition/184-bnva-02b-publication-gate-implementation.md",
     "docs/architecture/backend-owned-page-composition/185-bnva-02b-legacy-compatibility-policy.md",
     "docs/architecture/backend-owned-page-composition/186-bnva-02b-publication-regression-report.md",
-    "docs/architecture/backend-owned-page-composition/187-bnva-02b-02b-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/187-bnva-02b-02b-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/194-bnva-02c-configuration-source-inventory.md",
+    "docs/architecture/backend-owned-page-composition/195-bnva-02c-configuration-ownership-matrix.md",
+    "docs/architecture/backend-owned-page-composition/196-bnva-02c-module-upgrade-impact.md",
+    "docs/architecture/backend-owned-page-composition/197-bnva-02c-historical-configuration-classification.md",
+    "docs/architecture/backend-owned-page-composition/198-bnva-02c-runtime-resolution-audit.md",
+    "docs/architecture/backend-owned-page-composition/199-bnva-02c-01-final-assessment.md"
   ],
   "environment": {
     "kind": "offline",
@@ -43,5 +49,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02B publication gate + legacy compatibility channel complete; await BNVA-02B-02C (historical config governance) approval"
+  "next_exact_step": "BNVA-02B-02C-01 configuration ownership & source inventory complete; await BNVA-02B-02C-02 (controlled historical config governance) approval"
 }
