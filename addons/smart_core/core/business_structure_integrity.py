@@ -21,6 +21,26 @@ from __future__ import annotations
 from typing import Any
 
 
+# Structure violations that are never legal, even for an explicit legacy
+# compatibility declaration: they reference facts that cannot exist.
+BLOCKING_CODES = {
+    "SECTION_INVALID",
+    "SECTION_FIELD_INVALID",
+    "IDENTITY_FIELD_INVALID",
+    "NATIVE_GROUP_UNRESOLVED",
+}
+
+# An explicit legacy-compatible declaration must carry governance, not a bare
+# boolean; otherwise it is just the old implicit fallback renamed.
+LEGACY_REQUIRED_KEYS = (
+    "compatibilityReason",
+    "compatibilityScope",
+    "unresolvedDiagnostics",
+    "owner",
+    "migrationStatus",
+)
+
+
 def _text(value: Any) -> str:
     return str(value or "").strip()
 
@@ -176,3 +196,93 @@ def validate_business_structure(
             ))
 
     return diagnostics
+
+
+def extract_compatibility(payload: dict[str, Any]) -> dict[str, Any]:
+    """Read the explicit compatibility declaration from the orchestration payload."""
+    if not isinstance(payload, dict):
+        return {}
+    orchestration = payload.get("view_orchestration")
+    if not isinstance(orchestration, dict):
+        return {}
+    compatibility = orchestration.get("compatibility")
+    return compatibility if isinstance(compatibility, dict) else {}
+
+
+def publication_gate(
+    diagnostics: list[dict[str, str]],
+    *,
+    compatibility: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Classify a publication against the structure gate.
+
+    verdict:
+    - blocked: an illegal reference or an incomplete structure without an
+      explicit legacy-compatible declaration.
+    - formal: no ERROR and no NOT_VERIFIED.
+    - legacy_compatible: explicit complete compatibility declaration covering
+      non-blocking gaps.
+    - unclassified_historical: publishable but neither formal nor legacy.
+    """
+    compatibility = compatibility if isinstance(compatibility, dict) else {}
+    errors = [row for row in diagnostics if row.get("severity") == "ERROR"]
+    warnings = [row for row in diagnostics if row.get("severity") == "WARNING"]
+    not_verified = [row for row in diagnostics if row.get("severity") == "NOT_VERIFIED"]
+    blocking = [row for row in errors if row.get("code") in BLOCKING_CODES]
+    legacy = bool(compatibility.get("legacyCompatible"))
+
+    if blocking:
+        return {
+            "verdict": "blocked",
+            "reason": "illegal_structure_reference",
+            "blocking": blocking,
+            "errors": errors,
+            "warnings": warnings,
+            "not_verified": not_verified,
+        }
+
+    if legacy:
+        missing = [key for key in LEGACY_REQUIRED_KEYS if not _text(compatibility.get(key))]
+        if missing:
+            return {
+                "verdict": "blocked",
+                "reason": "incomplete_legacy_declaration",
+                "missing_keys": missing,
+                "errors": errors,
+                "warnings": warnings,
+                "not_verified": not_verified,
+            }
+        return {
+            "verdict": "legacy_compatible",
+            "reason": "explicit_compatibility",
+            "errors": errors,
+            "warnings": warnings,
+            "not_verified": not_verified,
+            "compatibility": compatibility,
+        }
+
+    if errors:
+        return {
+            "verdict": "blocked",
+            "reason": "incomplete_structure_without_compatibility",
+            "errors": errors,
+            "warnings": warnings,
+            "not_verified": not_verified,
+        }
+
+    if not_verified:
+        return {
+            "verdict": "unclassified_historical",
+            "reason": "unverified_structure",
+            "errors": [],
+            "warnings": warnings,
+            "not_verified": not_verified,
+        }
+
+    return {
+        "verdict": "formal",
+        "reason": "complete_structure",
+        "errors": [],
+        "warnings": warnings,
+        "not_verified": [],
+    }

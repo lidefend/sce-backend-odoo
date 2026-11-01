@@ -16,7 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "addons"))
 
-from smart_core.core.business_structure_integrity import validate_business_structure  # noqa: E402
+from smart_core.core.business_structure_integrity import (  # noqa: E402
+    validate_business_structure,
+    extract_compatibility,
+    publication_gate,
+)
 
 
 SAMPLES = {
@@ -123,15 +127,23 @@ def main() -> int:
                 ),
             })
         merged_diagnostics = []
+        merged_gate = None
         if data["configs"]:
             merged_diagnostics = validate_business_structure(
                 {"view_orchestration": {"views": {"form": _merge(data["configs"])}}},
                 model_fields=data["model_fields"],
             )
+            merged_gate = publication_gate(
+                merged_diagnostics,
+                compatibility=extract_compatibility(
+                    {"view_orchestration": {"views": {"form": _merge(data["configs"])}}}
+                ),
+            )
         report["samples"].append({
             "sample": sample,
             "configs": rows,
             "merged_diagnostics": merged_diagnostics,
+            "merged_gate": merged_gate,
         })
 
     out = Path(args.output)
