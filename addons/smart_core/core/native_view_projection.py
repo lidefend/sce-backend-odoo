@@ -29,6 +29,21 @@ _STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
 # layout tree but never become a business group owner.
 _NAMED_BUSINESS_CONTAINER_TAGS = frozenset({"group", "notebook", "page"})
 
+# Curated native attributes that a downstream adapter may need.  We do not
+# capture every XML attribute: each entry below has a concrete consumer.  All
+# values are plain strings, so the model stays JSON-serializable and never
+# holds an lxml Element reference.
+_CONTAINER_ATTRIBUTE_KEYS = frozenset({
+    "class", "colspan", "col", "span", "groups", "attrs",
+})
+_FIELD_ATTRIBUTE_KEYS = frozenset({
+    "string", "widget", "options", "placeholder", "nolabel", "colspan",
+    "sum", "attrs", "invisible", "readonly", "required", "groups",
+})
+
+# ORM field types that carry a native relation target model.
+_RELATION_FIELD_TYPES = frozenset({"many2one", "one2many", "many2many"})
+
 
 @dataclass
 class NativeFieldOccurrence:
@@ -38,6 +53,8 @@ class NativeFieldOccurrence:
     native_locator: str
     modifiers_raw: dict[str, str] = field(default_factory=dict)
     field_metadata: dict[str, Any] = field(default_factory=dict)
+    native_attributes: dict[str, str] = field(default_factory=dict)
+    relation_descriptor: dict[str, Any] | None = None
 
 
 @dataclass
@@ -49,6 +66,7 @@ class NativeContainer:
     parent_ref: str | None = None
     native_locator: str = ""
     children: list["NativeContainer"] = field(default_factory=list)
+    native_attributes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -70,6 +88,7 @@ class NativeView:
                 "native_string": node.native_string,
                 "parent_ref": node.parent_ref,
                 "native_locator": node.native_locator,
+                "native_attributes": node.native_attributes,
                 "children": [container_to_dict(child) for child in node.children],
             }
 
@@ -89,6 +108,8 @@ class NativeView:
                     "native_locator": item.native_locator,
                     "modifiers_raw": item.modifiers_raw,
                     "field_metadata": item.field_metadata,
+                    "native_attributes": item.native_attributes,
+                    "relation_descriptor": item.relation_descriptor,
                 }
                 for item in self.fields
             ],
@@ -122,6 +143,25 @@ def _nearest_ancestor_ref(
     return None
 
 
+def _relation_descriptor(field_metadata: dict[str, Any]) -> dict[str, Any] | None:
+    """Describe a field's native relation target, never its access authority.
+
+    ``relation_descriptor`` records the ORM relation capability derived from
+    ``fields_get()`` metadata.  It is a description, not a permission grant:
+    being ``openable`` is still resolved by the server-side relation entry
+    contract and record rules, not by this descriptor.
+    """
+    field_type = str(field_metadata.get("type") or "").strip()
+    if field_type not in _RELATION_FIELD_TYPES:
+        return None
+    relation_model = str(field_metadata.get("relation") or "").strip() or None
+    return {
+        "field_type": field_type,
+        "relation_type": field_type,
+        "relation_model": relation_model,
+    }
+
+
 def project_native_view(
     env: Any,
     model_name: str,
@@ -138,7 +178,7 @@ def project_native_view(
         raise ValueError(f"native view projection requires a resolved arch for {model_name}")
     root = etree.fromstring(arch.encode("utf-8"))
 
-    field_meta = model.fields_get()
+    fields_meta = model.fields_get()
 
     result = NativeView(
         model=model_name,
@@ -176,6 +216,12 @@ def project_native_view(
             field_code = str(element.get("name") or "").strip()
             if field_code:
                 occurrence_counter[field_code] = occurrence_counter.get(field_code, 0) + 1
+                occurrence_meta = dict(fields_meta.get(field_code) or {})
+                native_attributes = {
+                    key: str(element.get(key))
+                    for key in _FIELD_ATTRIBUTE_KEYS
+                    if element.get(key) is not None
+                }
                 result.fields.append(
                     NativeFieldOccurrence(
                         field_code=field_code,
@@ -187,7 +233,9 @@ def project_native_view(
                             for key in ("invisible", "readonly", "required")
                             if element.get(key) is not None
                         },
-                        field_metadata=dict(field_meta.get(field_code) or {}),
+                        field_metadata=occurrence_meta,
+                        native_attributes=native_attributes,
+                        relation_descriptor=_relation_descriptor(occurrence_meta),
                     )
                 )
             return
@@ -203,6 +251,11 @@ def project_native_view(
             native_string=str(element.get("string") or "").strip(),
             parent_ref=parent_ref,
             native_locator=locator,
+            native_attributes={
+                key: str(element.get(key))
+                for key in _CONTAINER_ATTRIBUTE_KEYS
+                if element.get(key) is not None
+            },
         )
         if parent_container is None:
             result.containers.append(container)

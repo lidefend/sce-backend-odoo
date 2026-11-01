@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3A: complete Canonical Native View Model fields (native_attributes / relation_descriptor) without changing V2 output, then Stage 3B unified parse"
+  "next_exact_step": "Stage 3A complete; await Stage 3B approval for single parse entry with dual adapters"
 }
