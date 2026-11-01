@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from . import test_native_view_permission_projection
 from . import test_action_groups_gate
 from . import test_salary_summary_data_scope
 from . import test_payroll_data_space_rules
