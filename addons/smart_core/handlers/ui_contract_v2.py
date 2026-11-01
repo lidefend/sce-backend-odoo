@@ -21,7 +21,6 @@ from ..core.unified_page_contract_v2_assembler import (
     project_workflow_action_semantics,
 )
 from ..core.unified_page_contract_v2_client import (
-    MOBILE_CLIENT_TYPES,
     resolve_client_type,
     resolve_delivery_profile,
     trim_unified_page_contract_v2,
@@ -57,10 +56,6 @@ from . import ui_contract_v2_adapters as _adapters
 from . import ui_contract_v2_authority as _authority
 from .ui_contract_v2_constants import (
     BUSINESS_FORM_STRUCTURE_ALLOWED_LEGACY_FIELDS,
-    BUSINESS_FORM_STRUCTURE_HISTORY_LABEL_TOKENS,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_PREFIXES,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_SUFFIXES,
-    BUSINESS_FORM_STRUCTURE_HISTORY_NAME_TOKENS,
     BUSINESS_FORM_STRUCTURE_INTERNAL_FIELDS,
     BUSINESS_FORM_STRUCTURE_INTERNAL_PREFIXES,
     BUSINESS_FORM_STRUCTURE_INTERNAL_SUFFIXES,
