@@ -1327,7 +1327,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(contract["dataContract"]["mainData"], {})
 
     def test_visible_layout_hydration_is_bounded_and_keeps_semantic_priority(self):
-        ordinary = ["context_%02d" % index for index in range(30)]
+        ordinary = ["context_%02d" % index for index in range(50)]
         names = ordinary + ["late_summary"]
 
         class _Field:
@@ -1378,7 +1378,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertEqual(len(record.read_fields), 24)
+        self.assertEqual(len(record.read_fields), 40)
         self.assertTrue(all(len(call) == 1 for call in record.read_fields))
         self.assertEqual(record.read_fields[0][0], "late_summary")
         self.assertIn("late_summary", contract["dataContract"]["mainData"])
