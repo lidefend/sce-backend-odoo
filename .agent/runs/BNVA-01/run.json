@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "rebuild candidate at 72fcfe33b, run relation_roundtrip + list_surface acceptance, then push PR 790"
+  "next_exact_step": "Stage 3A: complete Canonical Native View Model fields (native_attributes / relation_descriptor) without changing V2 output, then Stage 3B unified parse"
 }
