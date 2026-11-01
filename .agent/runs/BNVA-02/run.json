@@ -75,7 +75,14 @@
     "docs/architecture/backend-owned-page-composition/226-bnva-02c-version-snapshot-and-rollback-test.md",
     "docs/architecture/backend-owned-page-composition/227-bnva-02c-tenant-overlay-protection-report.md",
     "docs/architecture/backend-owned-page-composition/228-bnva-02c-seed-upgrade-regression.md",
-    "docs/architecture/backend-owned-page-composition/229-bnva-02c-03b-final-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/229-bnva-02c-03b-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/230-bnva-02c-versioned-template-inventory.md",
+    "docs/architecture/backend-owned-page-composition/231-bnva-02c-title-only-template-analysis.md",
+    "docs/architecture/backend-owned-page-composition/232-bnva-02c-real-noupdate-upgrade-validation.md",
+    "docs/architecture/backend-owned-page-composition/233-bnva-02c-runner-real-execution-report.md",
+    "docs/architecture/backend-owned-page-composition/234-bnva-02c-tenant-overlay-regression.md",
+    "docs/architecture/backend-owned-page-composition/235-bnva-02c-historical-configuration-migration-matrix.md",
+    "docs/architecture/backend-owned-page-composition/236-bnva-02c-01-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -83,5 +90,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02B-03B noupdate classification switch applied (32 IMMUTABLE files -> noupdate=1); real isolated-DB module upgrade validation pending; await BNVA-02B-02C-02C (historical config governance + real upgrade validation) approval"
+  "next_exact_step": "BNVA-02B-02C-02C-01 historical inventory complete (84 VERSIONED records classified; corrected form_productization to sections+fields missing identity); real isolated-DB upgrade validation still not_run; await BNVA-02B-02C-02C-02 (per-config governance) approval"
 }
