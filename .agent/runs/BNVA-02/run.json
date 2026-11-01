@@ -96,7 +96,8 @@
     "docs/architecture/backend-owned-page-composition/252-bnva-02c-identity-only-association-review.md",
     "docs/architecture/backend-owned-page-composition/253-bnva-02c-retired-configuration-review.md",
     "docs/architecture/backend-owned-page-composition/254-bnva-02c-noupdate-ownership-review.md",
-    "docs/architecture/backend-owned-page-composition/255-bnva-02c-product-configuration-approval-sheet.md"
+    "docs/architecture/backend-owned-page-composition/255-bnva-02c-product-configuration-approval-sheet.md",
+    "docs/architecture/backend-owned-page-composition/256-bnva-02c-business-semantics-decisions.md"
   ],
   "environment": {
     "kind": "offline",
@@ -104,5 +105,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02B-01 business confirmation matrix complete (ARCH-DECISION-006 registered; 26 Identity models + 13 Section.fields + 1 companion + 6 retired + 32 noupdate reassessment). Await product owner per-item confirmation before 02C-02B-02 config implementation"
+  "next_exact_step": "BNVA-02C business semantics decided (identity_fields = Identity Summary; 590 baseline; 652 needs runtime action/view resolution). payment.request name = 申请单号 (identity candidate B). Await product scope decision on sc.payment.execution / sc.receipt.income first-release inclusion before config implementation"
 }
