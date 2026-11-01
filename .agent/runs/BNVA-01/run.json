@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3C-02B done (legacy consumer migration); await 3C-03 approval"
+  "next_exact_step": "Stage 3C-03A audit done; await 3C-03B approval (migrate container semantics to Layout Adapter)"
 }
