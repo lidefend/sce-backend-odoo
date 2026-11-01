@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3C-03B done (layout semantic migrated); await 3C-03C/3C-04 approval"
+  "next_exact_step": "Stage 3C-03C-01 audit done; await 3C-03C-02 approval (zero-fallback evidence then exit)"
 }
