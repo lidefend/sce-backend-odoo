@@ -89,7 +89,14 @@
     "docs/architecture/backend-owned-page-composition/246-bnva-02c-form-sections-ownership-matrix.md",
     "docs/architecture/backend-owned-page-composition/247-bnva-02c-product-default-vs-overlay.md",
     "docs/architecture/backend-owned-page-composition/248-bnva-02c-first-release-product-config-inventory.md",
-    "docs/architecture/backend-owned-page-composition/249-bnva-02c-02a-r-final-decision.md"
+    "docs/architecture/backend-owned-page-composition/249-bnva-02c-02a-r-final-decision.md",
+    ".agent/decisions/ARCH-DECISION-006.yaml",
+    "docs/architecture/backend-owned-page-composition/250-bnva-02c-identity-business-review-matrix.md",
+    "docs/architecture/backend-owned-page-composition/251-bnva-02c-section-fields-review-matrix.md",
+    "docs/architecture/backend-owned-page-composition/252-bnva-02c-identity-only-association-review.md",
+    "docs/architecture/backend-owned-page-composition/253-bnva-02c-retired-configuration-review.md",
+    "docs/architecture/backend-owned-page-composition/254-bnva-02c-noupdate-ownership-review.md",
+    "docs/architecture/backend-owned-page-composition/255-bnva-02c-product-configuration-approval-sheet.md"
   ],
   "environment": {
     "kind": "offline",
@@ -97,5 +104,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02A-R ownership reassessment complete (66 seeds are product_release; 46+13 PRODUCT_CORE gaps, 6 RETIRED). Await product owner confirmation of Identity/Section fields and Product Configuration Ownership Principle formalization before config modification (02C-02B)"
+  "next_exact_step": "BNVA-02C-02B-01 business confirmation matrix complete (ARCH-DECISION-006 registered; 26 Identity models + 13 Section.fields + 1 companion + 6 retired + 32 noupdate reassessment). Await product owner per-item confirmation before 02C-02B-02 config implementation"
 }

@@ -1,0 +1,20 @@
+decision:
+  id: ARCH-DECISION-006
+  topic: product_configuration_ownership
+  bnva_stage: BNVA-02C
+  owner_approval:
+    status: confirmed
+    date: "2026-11-01"
+  decision:
+    product_default_business_structure_is_product_release_asset: true
+    product_code_and_version_own_product_default_configuration: true
+    lowcode_provides_edit_validate_approve_publish_not_structure_definition: true
+    first_install_requires_no_user_lowcode_initialization: true
+  rules:
+    - product_standard_business_structure_is_product_delivery_responsibility
+    - lowcode_never_defines_product_core_business_structure
+    - user_customization_is_tenant_metadata_not_product_definition
+  related:
+    - .agent/decisions/ARCH-DECISION-005.yaml
+    - docs/architecture/backend-owned-page-composition/244-bnva-02c-product-lowcode-ownership-principle.md
+  status: active
