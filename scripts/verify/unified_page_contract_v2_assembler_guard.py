@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v22-consumer-migration"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v23-layout-semantic-migration"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -38,6 +38,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/core/form_structure_authority.py",
     "addons/smart_core/core/native_view_projection.py",
     "addons/smart_core/core/native_view_parsed_cache.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/layout_semantics.py",
     "addons/smart_core/handlers/ui_contract_v2_form_structure.py",
     "addons/smart_core/core/native_modifier_comparison.py",
     "addons/smart_core/core/native_modifier_context.py",
@@ -77,7 +78,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "8c0cbe3ad744e848f430ab90f92111e29b7d65694b639772ef4e77cb79aed3dc"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "a8dd772b1bc8e49266106261994b0d6c7572788db0293528863b60f13669c027"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
@@ -474,6 +475,24 @@ def load_assembler():
     smart_core_pkg.__path__ = [str(CORE_DIR.parent)]
     core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
     core_pkg.__path__ = [str(CORE_DIR)]
+    # The assembler lazy-imports the Layout Adapter semantic normalization.
+    # Stub the app_config_engine package chain so that import does not execute
+    # the real package __init__ (which imports odoo.models outside a registry).
+    app_config_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.app_config_engine",
+        types.ModuleType("odoo.addons.smart_core.app_config_engine"),
+    )
+    app_config_pkg.__path__ = [str(ROOT / "addons/smart_core/app_config_engine")]
+    app_services_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.app_config_engine.services",
+        types.ModuleType("odoo.addons.smart_core.app_config_engine.services"),
+    )
+    app_services_pkg.__path__ = [str(ROOT / "addons/smart_core/app_config_engine/services")]
+    view_parser_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.app_config_engine.services.view_Parser",
+        types.ModuleType("odoo.addons.smart_core.app_config_engine.services.view_Parser"),
+    )
+    view_parser_pkg.__path__ = [str(ROOT / "addons/smart_core/app_config_engine/services/view_Parser")]
     spec = importlib.util.spec_from_file_location(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler_guard_target",
         ASSEMBLER_PATH,
