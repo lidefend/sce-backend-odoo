@@ -17,7 +17,14 @@
     "docs/architecture/backend-owned-page-composition/324-bnva-03-workspace-home-route-audit.md",
     "docs/architecture/backend-owned-page-composition/325-bnva-03-frontend-navigation-consumption.md",
     "docs/architecture/backend-owned-page-composition/326-bnva-03-architecture-gap-assessment.md",
-    "docs/architecture/backend-owned-page-composition/327-bnva-03-01-final-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/327-bnva-03-01-final-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/328-bnva-03-project-initiation-entry-audit.md",
+    "docs/architecture/backend-owned-page-composition/329-bnva-03-project-initiation-entry-fix.md",
+    "docs/architecture/backend-owned-page-composition/330-bnva-03-payment-execution-action-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/331-bnva-03-project-652-entry-resolution.md",
+    "docs/architecture/backend-owned-page-composition/332-bnva-03-unmenu-action-classification.md",
+    "docs/architecture/backend-owned-page-composition/333-bnva-03-02-final-assessment.md",
+    "addons/smart_construction_core/core_extension_policy_maps.py"
   ],
   "environment": {
     "kind": "offline",
@@ -25,8 +32,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-03-01 finding: test_identity_resolver_entry_target fails 1/15 — project-manager multi-role surface omits menu_sc_project_initiation (project intake entry).",
-    "BNVA-03-01 open items: 233 menu-less act_window need triage; 709/908 runtime business behavior NOT_VERIFIED; action 652 has no productized config and no explicit act_window.view bindings."
+    "BNVA-03-02 open: 179 menu-less named actions need caller analysis; 709/908 runtime business behavior still NOT_VERIFIED; project 652 has no productized config (product ruling pending)."
   ],
-  "next_exact_step": "BNVA-03-01 audit complete (320-327). Navigation architecture is sound; real gaps: project-manager intake surface missing menu_sc_project_initiation, 709/908 entry ruling, project 652 entry resolution, and triage of 233 menu-less actions. Next BNVA-03-02: adjudicate the minimum navigation governance scope for these gaps; no menu/action/view/role changes yet."
+  "next_exact_step": "BNVA-03-02 done: project-initiation entry fixed via minimal pm primary_menu_xmlids projection (test 15/15); 709/908 adjudicated (main vs actual-outflow); project 652 resolved (manage kanban, no productized config, View 944 = project.edit_project); 233 actions classified (179 need caller analysis). Next: decide commit boundary for core_extension_policy_maps.py + 328-333, then BNVA-03-03 role/workspace runtime audit."
 }
