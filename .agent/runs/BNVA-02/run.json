@@ -118,7 +118,11 @@
     "docs/architecture/backend-owned-page-composition/271-bnva-02c-02d-final-acceptance.md",
     "docs/architecture/backend-owned-page-composition/272-bnva-02c-02e-environment-readiness.md",
     "docs/architecture/backend-owned-page-composition/273-bnva-02c-02e-p4-credential-stop.md",
-    "docs/architecture/backend-owned-page-composition/274-bnva-02c-02e-p4-execution-report.md"
+    "docs/architecture/backend-owned-page-composition/274-bnva-02c-02e-p4-execution-report.md",
+    "docs/architecture/backend-owned-page-composition/277-p4-install-failure-root-cause.md",
+    "docs/architecture/backend-owned-page-composition/278-p4-module-dependency-closure.md",
+    "docs/architecture/backend-owned-page-composition/279-p4-manifest-repair-safety-assessment.md",
+    "docs/architecture/backend-owned-page-composition/280-p4-02a-final-recommendation.md"
   ],
   "environment": {
     "kind": "offline",
@@ -126,5 +130,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02E-P4 executed: credential regenerated (600); sc_clean fresh; module install FAILED (Error 255) on malformed reST in 'Time Off Management' module description (environment/baseline defect, not our config). Await decision on module description fix or install-module-set adjustment before retry"
+  "next_exact_step": "BNVA-02C-02E-P4-02A root cause: Odoo official hr/README.md 'Time Off Management' underline 2 chars short + indentation (docutils fatal). hr is required indirect dep, cannot exclude. Recommend reST format fix at P4 environment layer (image patch/mount override). Await decision on repair carrier before retry"
 }
