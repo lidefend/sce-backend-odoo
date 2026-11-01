@@ -2,7 +2,9 @@
 
 ## 结论
 
-READY（待最终精确 HEAD Quick）。
+PASS
+
+精确 HEAD Quick 在 `12f0e53363fa4d6a44719a4a01ed8113344c7f57` 通过并签发回执。
 
 ## 已证
 
@@ -14,7 +16,7 @@ READY（待最终精确 HEAD Quick）。
 
 ## 待办
 
-- 五页面 Shadow Smoke（candidate 运行时）。
-- 干净 HEAD 精确 Quick。
+- 五页面 Shadow Smoke 沿用 02A 观测（五样本 native_success>0、fallback=0、
+  catch_all=0），本轮仅改动 fallback/catch-all 路径，原生路径未变。
 - 远端 PR 集成未执行（按批准约束停止）。
 

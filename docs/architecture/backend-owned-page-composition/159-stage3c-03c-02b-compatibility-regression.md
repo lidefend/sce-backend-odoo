@@ -12,6 +12,7 @@
 - `verify.contract.entry_equivalence.guard`（10）。
 - `verify.business_config.formal_list.unit`。
 - `make ci.local.iteration`（L1，dirty scope）。
+- `make ci.local.quick`（HEAD `12f0e53363fa4d6a44719a4a01ed8113344c7f57`，签发回执）。
 
 ## 既有失败（排除，非本轮引入）
 
