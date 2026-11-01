@@ -89,15 +89,17 @@
     "docs/architecture/backend-owned-page-composition/428-bnva-04-pr790-cross-file-evolution-matrix.md",
     "docs/architecture/backend-owned-page-composition/429-bnva-04-pr790-independent-increment-audit.md",
     "docs/architecture/backend-owned-page-composition/430-bnva-04-mainline-merge-strategy.md",
-    "docs/architecture/backend-owned-page-composition/431-bnva-04-06f02-final-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/431-bnva-04-06f02-final-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/432-bnva-04-merge-commit-conflict-resolution.md",
+    "docs/architecture/backend-owned-page-composition/433-bnva-04-merge-sha-kernel-regression.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D runtime + 04-06F-01/02 read-only GitHub mainline conflict preflight + PR790 differential audit; no merge/rebase/cherry-pick/push; no business-data writes"
+    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D runtime + 04-06F-01/02 read-only preflight/audit + 04-06F-03 controlled Merge Commit (dde5224e7) with Feature versions, catch-all retired; no rebase/cherry-pick/push yet; no business-data writes"
   },
   "checks": {},
   "blockers": [
-    "GitHub mainline merge NOT executed (awaiting owner approval after differential audit): 10 conflicts classified 5 STRICT_EVOLUTION + 1 EVOLVED_WITH_ADAPTATION, no MISSING_INCREMENT. Merge strategy = Merge Commit, Feature version for 6 source files, regenerate 2 reports, 3-way merge active-runs/BNVA-01 run. sc.quality.issue L3 remains NOT_RUN (finance role navigation denied). sc.tax.deduction.registration sibling view defect remains registered (separate)."
+    "GitHub mainline PR + merge + daily server upgrade NOT executed (next stage). sc.quality.issue L3 remains NOT_RUN (finance role navigation denied). sc.tax.deduction.registration sibling view defect remains registered (separate)."
   ],
-  "next_exact_step": "BNVA-04-06F-02 complete (read-only): PR #790 differential audit done (docs 426-431); no MISSING_INCREMENT; merge is safe via Merge Commit with Feature versions + regenerate reports + 3-way merge metadata. Await owner approval to execute the controlled merge commit, then exact-head Quick, protected PR, GitHub CI, merge main."
+  "next_exact_step": "BNVA-04-06F-03 merge commit dde5224e7 created (parents 5f909dc2e + 37796bc94), 10 conflicts resolved, catch-all retired, kernel regression PASS (assembler/runtime/business_structure_integrity/contract_structure_lock/V2/PC guards; lxml tests deferred to CI). Next: protected push + GitHub PR + CI, then merge main, then daily dev server upgrade."
 }
