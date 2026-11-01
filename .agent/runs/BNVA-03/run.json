@@ -32,6 +32,9 @@
     "docs/architecture/backend-owned-page-composition/338-bnva-03-multi-role-company-context-audit.md",
     "docs/architecture/backend-owned-page-composition/339-bnva-03-role-navigation-regression.md",
     "docs/architecture/backend-owned-page-composition/340-bnva-03-03-final-assessment.md",
+    "docs/architecture/backend-owned-page-composition/341-bnva-03-finance-primary-entry-fix.md",
+    "docs/architecture/backend-owned-page-composition/342-bnva-03-finance-navigation-regression.md",
+    "docs/architecture/backend-owned-page-composition/343-bnva-03-04-final-acceptance.md",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
@@ -40,7 +43,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-03-03 open: finance role primary surface lists menu_sc_payment_execution (action 908 actual outflow) but not the action 709 main payment-execution entry (reachable only via menu_sc_company_expense). 179 menu-less actions still need caller analysis; 709/908 runtime business behavior NOT_VERIFIED; project 652 productized config pending; multi-role/company runtime NOT_RUN in sc_clean."
+    "BNVA-03-04C pending: 179 menu-less actions still need caller analysis; 709/908 runtime business behavior NOT_VERIFIED; project 652 productized config transferred to BNVA-04; multi-role/company runtime NOT_RUN in sc_clean."
   ],
-  "next_exact_step": "BNVA-03-03 done (334-340): role projection/workspace/contextual/multi-role mechanisms are statically sound; real gap is finance role missing action 709 main entry in primary surface. Next BNVA-03-04: adjudicate minimum governance scope (709 finance entry projection, 179 action caller analysis, project 652 productization), then decide implementation. Await owner for commit boundary of 334-340."
+  "next_exact_step": "BNVA-03-04A/B done: finance primary entry fixed (menu_sc_company_expense 709 moved from contextual to primary; menu_sc_payment_execution 908 retained; no duplicate). Regression 15+13+51 OK. Next BNVA-03-04C: caller analysis of the 179 menu-less actions to close genuine orphan candidates; then decide navigation governance closure."
 }
