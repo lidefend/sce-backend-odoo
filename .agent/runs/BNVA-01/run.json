@@ -43,5 +43,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3C-03C-02B complete: legacy ownership fallback retired; exact-head Quick passed at 12f0e53363fa4d6a44719a4a01ed8113344c7f57; await unified dispatch"
+  "next_exact_step": "Stage 3C-04 backend kernel acceptance complete; BNVA-019 closure recommended; await unified dispatch to BNVA-02 (backend config fact governance + page productization)"
 }
