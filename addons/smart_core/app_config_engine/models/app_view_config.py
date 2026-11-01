@@ -23,6 +23,7 @@ from odoo.addons.smart_core.app_config_engine.services.contract_governance_filte
     ContractGovernanceFilterService,
 )
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+from odoo.addons.smart_core.core.native_view_parsed_cache import store_parsed_view as _store_shared_parsed_view
 from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 from odoo.addons.smart_core.utils.native_collection_presentation import (
     native_collection_presentation,
@@ -684,6 +685,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 payload['_arch_root'] = etree.fromstring(payload['arch'].encode('utf-8'))
             except Exception as exc:
                 _logger.warning("XML解析失败，仍然使用视图数据: %s", exc)
+            if payload.get('_arch_root') is not None:
+                _store_shared_parsed_view(
+                    self.env,
+                    model_name,
+                    view_type,
+                    int(payload.get('_source_view_id') or 0),
+                    payload,
+                )
             return payload
 
         # a) 尝试跟随当前动作绑定的视图（优先精准 view_id）

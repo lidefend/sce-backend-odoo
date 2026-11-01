@@ -21,6 +21,7 @@ from typing import Any
 from lxml import etree
 
 from .form_structure_authority import TECHNICAL_FIELD_CODES
+from .native_view_parsed_cache import fetch_parsed_view
 
 # Structural tags whose native ``name`` gives a stable business identity.
 _STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
@@ -169,24 +170,39 @@ def project_native_view(
     action_id: int = 0,
     view_id: int = 0,
     view_type: str = "form",
+    root: Any | None = None,
 ) -> NativeView:
     """Parse one merged Odoo view arch exactly once into a Canonical AST."""
     model = env[model_name]
-    view_data = model.get_view(view_id=view_id or False, view_type=view_type)
-    arch = str((view_data or {}).get("arch") or "")
-    if not arch:
-        raise ValueError(f"native view projection requires a resolved arch for {model_name}")
-    root = etree.fromstring(arch.encode("utf-8"))
+    normalized_view_id = int(view_id or 0)
+    view_data = None
+    if root is None:
+        cached = fetch_parsed_view(env, model_name, view_type, normalized_view_id)
+        if cached is not None and cached.get("_arch_root") is not None:
+            view_data = cached
+            root = cached["_arch_root"]
+    if root is None:
+        view_data = model.get_view(view_id=view_id or False, view_type=view_type)
+        arch = str((view_data or {}).get("arch") or "")
+        if not arch:
+            raise ValueError(f"native view projection requires a resolved arch for {model_name}")
+        root = etree.fromstring(arch.encode("utf-8"))
 
     fields_meta = model.fields_get()
+    resolved_view_id = int(
+        (view_data or {}).get("id")
+        or (view_data or {}).get("_source_view_id")
+        or view_id
+        or 0
+    )
 
     result = NativeView(
         model=model_name,
         action_id=int(action_id or 0),
-        view_id=int((view_data or {}).get("id") or view_id or 0),
+        view_id=resolved_view_id,
         view_type=view_type,
         provenance={
-            "source_view_id": int((view_data or {}).get("id") or view_id or 0),
+            "source_view_id": resolved_view_id,
             "runtime_context": {
                 key: str(value)
                 for key, value in (dict(env.context or {}) or {}).items()

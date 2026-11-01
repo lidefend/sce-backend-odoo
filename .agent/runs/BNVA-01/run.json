@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3A complete; await Stage 3B approval for single parse entry with dual adapters"
+  "next_exact_step": "Stage 3B complete (shared L0 parsed view); await Stage 3C approval"
 }
