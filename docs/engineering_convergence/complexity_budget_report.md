@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5006`
+- Scanned files: `5009`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -164,9 +164,9 @@ Generated from repository source files. This report is informational during the 
 | 1005 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
 | 1001 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
+| 999 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
-| 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 991 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |

@@ -25,6 +25,9 @@ from odoo.addons.smart_core.core.contract_lifecycle import payload_sha256
 from odoo.addons.smart_core.core.form_structure_authority import (
     role_form_structure_violations, assert_role_form_permissions_only, validated_field_grid_columns,
 )
+from odoo.addons.smart_core.core.business_structure_integrity import (
+    validate_business_structure,
+)
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
 STALE_TRANSITION_FIELD_PREFIXES = (
@@ -495,6 +498,10 @@ class UIBusinessConfigContract(models.Model):
             "valid": not reasons,
             "reason_codes": [row["reason_code"] for row in reasons],
             "reasons": reasons,
+            "structure_diagnostics": validate_business_structure(
+                payload,
+                model_fields=model_fields,
+            ),
             "fields": names,
             "authoritative_fields": [row["name"] for row in authoritative],
             "view_type": normalized,
