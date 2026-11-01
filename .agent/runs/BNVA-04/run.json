@@ -36,7 +36,13 @@
     "docs/architecture/backend-owned-page-composition/377-bnva-04-orphan-action-frontend-consumption.md",
     "docs/architecture/backend-owned-page-composition/378-bnva-04-contract-necessity-assessment.md",
     "docs/architecture/backend-owned-page-composition/379-bnva-04-business-page-productization-priority.md",
-    "docs/architecture/backend-owned-page-composition/380-bnva-04-04-final-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/380-bnva-04-04-final-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/381-bnva-04-consumption-scope-reconciliation.md",
+    "docs/architecture/backend-owned-page-composition/382-bnva-04-contextual-workflow-business-review.md",
+    "docs/architecture/backend-owned-page-composition/383-bnva-04-orphan-action-lifecycle-final-matrix.md",
+    "docs/architecture/backend-owned-page-composition/384-bnva-04-minimal-productization-scope.md",
+    "docs/architecture/backend-owned-page-composition/385-bnva-04-business-productization-roadmap.md",
+    "docs/architecture/backend-owned-page-composition/386-bnva-04-05-final-adjudication.md"
   ],
   "environment": {
     "kind": "offline",
@@ -44,7 +50,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-04-04 open: 25 VUE_CONTEXTUAL models (role-surface menu, no productized contract) need business-owner confirmation for minimal contract; 17 orphan actions pending business lifecycle ruling; minimal implementation scope deferred to 04-05."
+    "BNVA-04-05 open: product-owner confirmation needed for 17 orphan actions (5 NOT_VERIFIED + RETIRE/MERGE_ENTRY) and 2 NOT_VERIFIED contextual objects before BNVA-04-06 minimal implementation."
   ],
-  "next_exact_step": "BNVA-04-04 done (375-380): frontend consumption = 50 product pages + 25 contextual (native projection) + 44 odoo-native; no orphan contract without consumer; minimal contract scope is small (subset of 25 contextual). Next BNVA-04-05: business-owner confirmation of the minimal productization set and 17 orphan action lifecycle; then minimal implementation."
+  "next_exact_step": "BNVA-04-05 done (381-386): scope reconciled (187=50+25+44+11+57; 69=25+44); 25 contextual = 2 professional + 7 embedded + ~14 native-sufficient + 2 NOT_VERIFIED; 17 actions adjudicated; minimal scope P0 finance+project, P1 procurement/material+labor/subcontract. Next BNVA-04-06: product-owner confirmation then minimal implementation within this scope."
 }
