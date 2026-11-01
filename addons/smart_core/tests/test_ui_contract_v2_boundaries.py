@@ -3788,22 +3788,14 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=unique,
         )
 
-        slot_titles = [slot["title"] for slot in structure["slots"]]
-        self.assertEqual(slot_titles, ["办理总览", "主业务事实", "金额与进度", "办理协作", "明细与来源"])
-        self.assertNotIn("合同事实", slot_titles)
-        self.assertNotIn("工程与合同约定", slot_titles)
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["fieldOwnership"], {})
         self.assertEqual(structure["structureSource"], "native_view")
-        self.assertEqual(structure["structureAuthority"], "native_form_slots")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["source"], "ui.contract.v2.form_structure_contract")
         self.assertNotIn("businessSectionAliases", structure)
-        self.assertEqual(structure["sourceSectionTitles"], ["Source Section"])
-        self.assertEqual(structure["fieldRoles"]["engineering_address"]["role"], "term")
-        self.assertEqual(structure["fieldRoles"]["visible_contract_amount"]["slot"], "amount_progress")
-        self.assertEqual(structure["fieldRoles"]["line_ids"]["group"], "details")
-        self.assertIn("engineering_address", structure["slots"][1]["groups"][2]["fieldRefs"])
-        self.assertEqual(structure["slots"][2]["groups"][0]["title"], "金额信息")
-        self.assertIn("line_ids", structure["slots"][4]["groups"][0]["fieldRefs"])
 
     def test_form_structure_contract_uses_native_mode_without_entry_authority(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -3848,10 +3840,13 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             field_label=lambda name: name,
             governance=None,
         )
-        self.assertEqual(default_structure["mode"], "native_structured_form")
+        self.assertEqual(default_structure["mode"], "minimal_fallback")
         self.assertEqual(default_structure["presentationMode"], "workspace")
         self.assertEqual(default_structure["structureSource"], "native_view")
-        self.assertEqual(default_structure["structureAuthority"], "native_form_slots")
+        self.assertEqual(default_structure["structureAuthority"], "container_tree")
+        self.assertEqual(default_structure["slots"], [])
+        self.assertEqual(default_structure["fieldRoles"], {})
+        self.assertEqual(default_structure["fieldOwnership"], {})
 
     def test_native_authority_can_publish_task_presentation_without_configured_sections(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -4281,7 +4276,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_SECTION_ALIASES_BY_MODEL"))
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_STRUCTURE_P1_VISIBLE_FIELD_MODELS"))
 
-    def test_form_structure_contract_places_history_fields_in_check_group(self):
+    def test_form_structure_contract_does_not_guess_history_check_fields(self):
         handler = self.module.UiContractV2Handler(env=object())
         field_types = {
             "project_id": "many2one",
@@ -4322,27 +4317,14 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=unique,
         )
 
-        history_group = None
-        primary_refs = []
-        for slot in structure["slots"]:
-            if slot["slot"] == "primary_facts":
-                for group in slot.get("groups") or []:
-                    primary_refs.extend(group.get("fieldRefs") or [])
-            if slot["slot"] == "details_source":
-                history_group = next(
-                    (group for group in slot.get("groups") or [] if group.get("name") == "history_check"),
-                    None,
-                )
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["fieldOwnership"], {})
+        self.assertEqual(structure["structureAuthority"], "container_tree")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["mode"], "minimal_fallback")
 
-        self.assertIsNotNone(history_group)
-        self.assertEqual(
-            history_group["fieldRefs"],
-            ["legacy_document_no", "legacy_project_name", "legacy_status"],
-        )
-        self.assertNotIn("legacy_document_no", primary_refs)
-        self.assertNotIn("legacy_status", primary_refs)
-
-    def test_form_structure_contract_promotes_formalized_migration_business_fields(self):
+    def test_form_structure_contract_does_not_promote_legacy_fields_by_name(self):
         handler = self.module.UiContractV2Handler(env=object())
         field_types = {
             "name": "char",
@@ -4383,13 +4365,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=unique,
         )
 
-        roles = structure["fieldRoles"]
-        self.assertEqual(roles["legacy_owner_unit"]["slot"], "primary_facts")
-        self.assertEqual(roles["legacy_owner_unit"]["group"], "other_facts")
-        self.assertEqual(roles["legacy_source_created_at"]["slot"], "details_source")
-        self.assertEqual(roles["legacy_source_created_at"]["group"], "history_check")
-        self.assertEqual(roles["legacy_attachment_ref"]["slot"], "details_source")
-        self.assertEqual(roles["legacy_attachment_ref"]["group"], "history_check")
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["fieldOwnership"], {})
+        self.assertEqual(structure["structureAuthority"], "container_tree")
+        self.assertEqual(structure["structureSource"], "native_view")
 
     def test_form_structure_governance_hidden_rows_override_duplicate_migration_fields(self):
         class _Field:
@@ -4477,10 +4456,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
 
         roles = source_contract["form_structure_contract"]["fieldRoles"]
-        self.assertIn("owner_id", roles)
-        self.assertIn("owner_contact", roles)
-        self.assertNotIn("legacy_owner_unit", roles)
-        self.assertNotIn("legacy_owner_contact", roles)
+        self.assertEqual(roles, {})
+        self.assertEqual(
+            source_contract["form_structure_contract"]["structureAuthority"],
+            "container_tree",
+        )
         visible_fields = source_contract["business_operation_profile"]["form_structure_common_fields"]
         self.assertEqual(visible_fields, ["owner_id", "owner_contact"])
 
@@ -4522,16 +4502,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=unique,
         )
 
-        refs = []
-        for slot in structure["slots"]:
-            refs.extend(slot.get("fieldRefs") or [])
-            for group in slot.get("groups") or []:
-                refs.extend(group.get("fieldRefs") or [])
-        self.assertIn("subject", refs)
-        self.assertIn("project_id", refs)
-        self.assertIn("line_ids", refs)
-        self.assertNotIn("company_id", refs)
-        self.assertNotIn("review_ids", refs)
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["fieldOwnership"], {})
+        self.assertEqual(structure["structureAuthority"], "container_tree")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["mode"], "minimal_fallback")
 
     def test_business_operation_projection_uses_source_form_fields_for_generic_object(self):
         class _Field:
@@ -4869,9 +4845,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
 
         structure = source_contract["form_structure_contract"]
-        self.assertNotIn("name", structure["fieldRoles"])
-        self.assertIn("amount", structure["fieldRoles"])
-        self.assertNotIn("line_ids", structure["fieldRoles"])
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["structureAuthority"], "container_tree")
+        self.assertEqual(
+            source_contract["business_operation_profile"]["form_structure_common_fields"],
+            ["amount"],
+        )
 
     def test_form_structure_governance_hides_configured_groups(self):
         class _Field:

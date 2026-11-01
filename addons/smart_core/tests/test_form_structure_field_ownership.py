@@ -59,7 +59,7 @@ class FieldOwnershipDerivationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module, _ = _load_builder()
 
-    def test_field_ownership_derived_from_field_roles(self):
+    def test_default_fallback_returns_minimal_structure_not_guessed_ownership(self):
         def field_type(name):
             return "many2one" if name == "owner_id" else "char"
 
@@ -85,11 +85,11 @@ class FieldOwnershipDerivationTests(unittest.TestCase):
             governance={"form_structure_authority": "business_view_orchestration", "field_groups": {}, "form_presentation_mode": "workspace"},
             navigation_title="项目概览",
         )
-        ownership = contract["fieldOwnership"]
-        self.assertEqual(ownership["field:name"]["ownerSlotRef"], "slot:primary_facts")
-        self.assertEqual(ownership["field:name"]["ownerGroupRef"], "group:identity")
-        self.assertEqual(ownership["field:owner_id"]["ownerSlotRef"], "slot:primary_facts")
-        self.assertEqual(ownership["field:owner_id"]["ownerGroupRef"], "group:relations")
+        self.assertEqual(contract["structureAuthority"], "container_tree")
+        self.assertEqual(contract["structureSource"], "native_view")
+        self.assertEqual(contract["slots"], [])
+        self.assertEqual(contract["fieldRoles"], {})
+        self.assertEqual(contract["fieldOwnership"], {})
 
     def test_native_authority_yields_empty_ownership(self):
         contract = self.module.build_form_structure_contract(
@@ -104,7 +104,7 @@ class FieldOwnershipDerivationTests(unittest.TestCase):
         )
         self.assertEqual(contract["fieldOwnership"], {})
 
-    def test_declared_identity_fields_override_generic_candidates(self):
+    def test_no_field_name_guessing_without_explicit_config(self):
         def field_type(name):
             return "char"
 
@@ -135,7 +135,8 @@ class FieldOwnershipDerivationTests(unittest.TestCase):
             },
             navigation_title="项目概览",
         )
-        self.assertEqual(contract["fieldOwnership"]["field:project_code"]["ownerGroupRef"], "group:identity")
+        self.assertEqual(contract["structureAuthority"], "container_tree")
+        self.assertEqual(contract["fieldOwnership"], {})
 
 
 if __name__ == "__main__":

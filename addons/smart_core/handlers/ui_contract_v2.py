@@ -92,7 +92,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v24-shadow-observation"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v25-legacy-fallback-retirement"
 
 
 def _node_validation_snapshot_ready(source):
@@ -2657,7 +2657,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     form_structure["surfaces"] = self._form_structure_surfaces(model=model)
                     _shadow.record_native_success(model, action_id, form_view_id, "native_form_slots")
                 except Exception as native_exc:
-                    _logger.warning("native form structure build failed in business operation path; falling back to heuristic model=%s", model, exc_info=True)
+                    _logger.warning("native form structure build failed in business operation path; falling back to minimal structure model=%s", model, exc_info=True)
                     _shadow.record_native_failure(model, action_id, form_view_id, type(native_exc).__name__)
                     form_structure = self._build_form_structure_contract(
                         model=model,
@@ -4058,7 +4058,7 @@ class UiContractV2Handler(BaseIntentHandler):
             form_structure["surfaces"] = self._form_structure_surfaces(model=model)
             _shadow.record_native_success(model, action_id, view_id, "native_form_slots")
         except Exception as native_exc:
-            _logger.warning("native form structure build failed; falling back to legacy heuristic model=%s", model, exc_info=True)
+            _logger.warning("native form structure build failed; falling back to minimal structure model=%s", model, exc_info=True)
             _shadow.record_native_failure(model, action_id, view_id, type(native_exc).__name__)
             form_structure = _form_structure.build_form_structure_contract(
                 self,
