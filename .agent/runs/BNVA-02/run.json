@@ -109,7 +109,13 @@
     "docs/architecture/backend-owned-page-composition/264-bnva-02c-finance-pages-acceptance.md",
     "addons/smart_construction_core/data/receipt_income_form_productization_contract.xml",
     "addons/smart_construction_core/data/payment_execution_actual_outflow_form_productization_contract.xml",
-    "docs/architecture/backend-owned-page-composition/265-bnva-02c-finance-configuration-implementation.md"
+    "docs/architecture/backend-owned-page-composition/265-bnva-02c-finance-configuration-implementation.md",
+    "docs/architecture/backend-owned-page-composition/266-bnva-02c-finance-first-install-report.md",
+    "docs/architecture/backend-owned-page-composition/267-bnva-02c-finance-navigation-action-view-validation.md",
+    "docs/architecture/backend-owned-page-composition/268-bnva-02c-finance-contract-and-composition-regression.md",
+    "docs/architecture/backend-owned-page-composition/269-bnva-02c-finance-lowcode-overlay-validation.md",
+    "docs/architecture/backend-owned-page-composition/270-bnva-02c-finance-runtime-business-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/271-bnva-02c-02d-final-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -117,5 +123,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02C finance config implemented: payment.request complete; execution new main config + identity=name; receipt identity=name. Await 02C-02C-03 unified regression (first-install validation) and project 652 isolated-DB audit"
+  "next_exact_step": "BNVA-02C-02D static acceptance done (0 preset lowcode configs; menu/action/view chain traced; 3 configs diagnostics=[]). Real fresh-install + runtime business acceptance NOT_RUN (needs disposable clean DB + fixture role). Await runtime acceptance environment + project 652 isolated-DB audit"
 }
