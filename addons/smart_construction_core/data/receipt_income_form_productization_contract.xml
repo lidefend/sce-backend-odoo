@@ -27,7 +27,8 @@
                     'views': {
                         'form': {
                             'title': '收款登记',
-                            'composition_mode': 'native_semantic_surface'
+                            'composition_mode': 'native_semantic_surface',
+                            'identity_fields': ['name']
                         }
                     }
                 }

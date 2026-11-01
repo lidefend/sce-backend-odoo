@@ -106,7 +106,10 @@
     "docs/architecture/backend-owned-page-composition/261-bnva-02c-execution-business-identity-and-section-matrix.md",
     "docs/architecture/backend-owned-page-composition/262-bnva-02c-receipt-business-identity-and-section-matrix.md",
     "docs/architecture/backend-owned-page-composition/263-bnva-02c-project-652-action-view-identity-audit.md",
-    "docs/architecture/backend-owned-page-composition/264-bnva-02c-finance-pages-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/264-bnva-02c-finance-pages-acceptance.md",
+    "addons/smart_construction_core/data/receipt_income_form_productization_contract.xml",
+    "addons/smart_construction_core/data/payment_execution_actual_outflow_form_productization_contract.xml",
+    "docs/architecture/backend-owned-page-composition/265-bnva-02c-finance-configuration-implementation.md"
   ],
   "environment": {
     "kind": "offline",
@@ -114,5 +117,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02B-03: payment.request complete (Identity=name + 7 section keys, zero diagnostics). execution/receipt Identity evidence = name (单据号) only, document_no is 来源单号. Await product owner confirmation of execution/receipt Identity + notebook layout level, and project 652 isolated-DB audit"
+  "next_exact_step": "BNVA-02C-02C finance config implemented: payment.request complete; execution new main config + identity=name; receipt identity=name. Await 02C-02C-03 unified regression (first-install validation) and project 652 isolated-DB audit"
 }
