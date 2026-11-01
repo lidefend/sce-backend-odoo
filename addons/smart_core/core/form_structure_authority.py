@@ -9,6 +9,34 @@ from __future__ import annotations
 
 from typing import Any
 import json
+
+
+# Generic Odoo/technical fields that must never receive a business slot/group.
+# They stay invisible/technical metadata; excluding them here prevents the
+# ownership derivation from flagging them as missing business ownership.
+TECHNICAL_FIELD_CODES = frozenset({
+    "id",
+    "create_uid",
+    "create_date",
+    "write_uid",
+    "write_date",
+    "display_name",
+    "__last_update",
+    "access_token",
+    "active",
+    "message_needaction",
+    "message_is_follower",
+    "message_follower_ids",
+    "message_ids",
+    "activity_ids",
+    "activity_date_deadline",
+    "activity_summary",
+    "activity_type_id",
+    "activity_user_id",
+    "can_review",
+})
+
+
 def resolve_form_structure_governance(source_contract: dict[str, Any], configs, *, view_type: str) -> dict[str, Any]:
     if view_type != "form":
         return {}

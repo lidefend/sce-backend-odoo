@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: BNVA-01
+  title: backend_native_view_authority_optimization
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P1
+  layer_target: backend_native_view_projection_and_contract_assembly
+  module:
+    - addons/smart_core/core
+    - addons/smart_core/handlers
+    - addons/smart_core/app_config_engine
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - docs/architecture/backend-owned-page-composition
+    - .agent
+  baseline:
+    branch: feature/pc01-phase5-shadow-contraction
+    full_sha: be0da9942b18e6b5bbedf4646705ca472834dab1
+    source: continuation_of_odoo_native_leverage_research_99
+  objective: >-
+    让 Odoo 原生视图成为页面结构事实的唯一输入：后端契约只做规范化投影和补充
+    明确声明的业务语义，不再用字段名启发式独立猜测第二套页面结构。分 6 批次
+    18 项任务，先只读审计原生能力与重复处理，再统一 Canonical AST、消除业务
+    结构双轨、瘦身 Assembler、收敛 modifiers/字段元数据/权限投影，最后全链路回归。
+  product_boundary:
+    standard_vs_user_specific: platform_backend_contract_projection
+    why_here: >-
+      页面结构权威应回归 Odoo 原生视图；当前后端在 get_view() 之外另建了一套
+      字段名启发式业务结构，形成双轨并靠 Guard/诊断兜底，属于平台契约组装层的
+      职责重叠。
+    why_not_elsewhere:
+      - no_frontend_side_structure_derivation
+      - no_permission_acl_or_record_rule_change
+      - no_bypassing_odoo_native_view_pruning
+      - no_new_parallel_public_schema
+    blast_radius:
+      - native view canonical projection
+      - formStructureContract slots fieldGroups fieldOwnership
+      - unified_page_contract_v2_assembler
+      - five known pages and PC-01/PC-02 regression
+  constraints:
+    - odoo_native_view_is_single_structure_fact_source
+    - preserve_node_identity_occurrence_and_permission_pruning
+    - identity_only_from_explicit_business_declaration
+    - arch_decision_004_binds_structural_authority
+  acceptance:
+    - canonical_projection_is_single_shared_structure_fact
+    - field_ownership_derives_from_native_field_position_not_name_heuristics
+    - no_second_structure_derivation_survives
+    - five_pages_plus_pc01_pc02_regression_pass
+  batches:
+    - id: BNVA-001..003
+      name: native_capability_and_duplication_audit
+      kind: read_only
+    - id: BNVA-004..007
+      name: unified_native_view_projection
+      kind: implementation
+    - id: BNVA-008..011
+      name: eliminate_dual_business_structure
+      kind: implementation
+    - id: BNVA-012..014
+      name: slim_v2_assembler
+      kind: implementation
+    - id: BNVA-015..017
+      name: converge_native_duplication
+      kind: implementation
+    - id: BNVA-018
+      name: full_chain_regression
+      kind: verification
+  next_exact_step: execute_bnva_001_odoo_view_api_capability_audit_read_only

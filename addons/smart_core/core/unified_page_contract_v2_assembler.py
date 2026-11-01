@@ -15,6 +15,7 @@ from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
+from .form_structure_authority import TECHNICAL_FIELD_CODES
 from .action_semantics_vocabulary import (
     EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
     KINDS as ACTION_SEMANTICS_KINDS,
@@ -749,6 +750,28 @@ def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
     return codes
 
 
+def _page_composition_widget_field_codes(contract: dict[str, Any]) -> set[str]:
+    """Field codes of actual rendered form widgets, excluding chatter/system
+    field nodes that are not part of the business field projection."""
+    codes: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        widget_id = _text(value.get("widgetId"))
+        if widget_id and widget_id.startswith("field."):
+            codes.add(widget_id.split(".", 1)[1].rsplit(".occ.", 1)[0])
+        for key in ("children", "widgetList"):
+            visit(value.get(key))
+
+    visit(_dict(contract.get("layoutContract")).get("containerTree"))
+    return codes
+
+
 def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any]) -> None:
     form_structure_source = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
     form_governance = _dict(source.get("form_governance"))
@@ -781,6 +804,22 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
             if group_identity:
                 group_ids.add(group_identity)
     field_codes = _page_composition_field_codes(contract)
+    widget_field_codes = _page_composition_widget_field_codes(contract)
+    owned_field_codes = {
+        (_text(raw_field_ref)[6:] if _text(raw_field_ref).startswith("field:") else _text(raw_field_ref))
+        for raw_field_ref in ownership
+    }
+    # Layout-rendered business fields that the native structure derivation did
+    # not place into a slot/group are owned by the catch-all business-facts
+    # group rather than left as unowned technical noise.
+    if "primary_facts" in slot_ids and "other_facts" in group_ids:
+        for code in sorted(widget_field_codes):
+            if code in owned_field_codes or code in TECHNICAL_FIELD_CODES:
+                continue
+            ownership[f"field:{code}"] = {
+                "ownerSlotRef": "slot:primary_facts",
+                "ownerGroupRef": "group:other_facts",
+            }
     diagnostics: list[dict[str, Any]] = []
     seen_fields: set[str] = set()
     normalized: dict[str, dict[str, Any]] = {}

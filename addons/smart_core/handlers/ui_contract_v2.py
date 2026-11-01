@@ -73,7 +73,8 @@ from .ui_contract_v2_constants import (
 )
 from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
-from ..core.form_structure_authority import resolve_form_structure_governance
+from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
+from ..core.native_view_projection import build_native_form_structure_contract, project_native_view
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -94,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v5-field-ownership"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v15-native-convergence-preserve-selected-authority"
 
 
 def _node_validation_snapshot_ready(source):
@@ -2605,15 +2606,60 @@ class UiContractV2Handler(BaseIntentHandler):
             )
 
         if form_structure_governance:
-            source_contract["form_structure_contract"] = self._build_form_structure_contract(
-                model=model,
-                profile=profile,
-                field_type=field_type,
-                unique=unique,
-                field_label=field_label,
-                governance=form_structure_governance,
-                navigation_title=str(source_contract.get("title") or "").strip(),
-            )
+            if _projection.has_selected_form_structure_authority(form_structure_governance):
+                form_structure = self._build_form_structure_contract(
+                    model=model,
+                    profile=profile,
+                    field_type=field_type,
+                    unique=unique,
+                    field_label=field_label,
+                    governance=form_structure_governance,
+                    navigation_title=str(source_contract.get("title") or "").strip(),
+                )
+            else:
+                action_id = self._source_action_id(source_contract)
+                form_view_ids = source_contract.get("view_ids_by_type") if isinstance(source_contract.get("view_ids_by_type"), dict) else {}
+                try:
+                    form_view_id = int(source_contract.get("view_id") or form_view_ids.get("form") or 0)
+                except (TypeError, ValueError):
+                    form_view_id = 0
+                identity_fields = [
+                    str(name).strip()
+                    for name in (
+                        form_structure_governance.get("identity_fields")
+                        if isinstance(form_structure_governance.get("identity_fields"), list)
+                        else []
+                    )
+                    if str(name).strip()
+                ]
+                try:
+                    native_view = project_native_view(
+                        self.su_env,
+                        model,
+                        action_id=action_id,
+                        view_id=form_view_id,
+                        view_type="form",
+                    )
+                    form_structure = build_native_form_structure_contract(
+                        native_view,
+                        model=model,
+                        identity_fields=identity_fields,
+                        field_labels={name: field_label(name) for name in profile.get("common_fields") or []},
+                        navigation_title=str(source_contract.get("title") or "").strip(),
+                    )
+                    form_structure["surfaces"] = self._form_structure_surfaces(model=model)
+                except Exception:
+                    _logger.debug("native form structure build failed in business operation path model=%s", model, exc_info=True)
+                    form_structure = self._build_form_structure_contract(
+                        model=model,
+                        profile=profile,
+                        field_type=field_type,
+                        unique=unique,
+                        field_label=field_label,
+                        governance=form_structure_governance,
+                        navigation_title=str(source_contract.get("title") or "").strip(),
+                    )
+            source_contract["form_structure_contract"] = form_structure
             form_structure = source_contract.get("form_structure_contract")
             if isinstance(form_structure, dict) and isinstance(form_structure.get("fieldOwnership"), dict):
                 source_contract["field_ownership"] = form_structure["fieldOwnership"]
@@ -3925,7 +3971,7 @@ class UiContractV2Handler(BaseIntentHandler):
             return
         if not isinstance(governance, dict) or not governance:
             return
-        if str(governance.get("form_structure_authority") or "").strip() == "native_authority":
+        if _projection.has_selected_form_structure_authority(governance):
             return
 
         def field_type(name):
@@ -3941,6 +3987,30 @@ class UiContractV2Handler(BaseIntentHandler):
             return str(name or "").strip()
 
         common_fields = [name for name in fields.keys() if isinstance(name, str) and name.strip()]
+        form_view_spec = (ui_data.get("views") or {}).get("form") if isinstance(ui_data.get("views"), dict) else {}
+        raw_view_fields = []
+        for row in (form_view_spec.get("fields") if isinstance(form_view_spec.get("fields"), list) else []):
+            if isinstance(row, dict):
+                name = str(row.get("name") or row.get("field") or row.get("field_name") or "").strip()
+            else:
+                name = str(row or "").strip()
+            if name and name not in TECHNICAL_FIELD_CODES and name not in raw_view_fields:
+                raw_view_fields.append(name)
+
+        def collect_layout_field_names(nodes: Any) -> list[str]:
+            collected: list[str] = []
+            for node in nodes if isinstance(nodes, list) else []:
+                if not isinstance(node, dict):
+                    continue
+                name = str(node.get("name") or node.get("field") or node.get("field_name") or "").strip()
+                if name and name not in TECHNICAL_FIELD_CODES and name not in collected:
+                    collected.append(name)
+                for child_key in ("children", "fields", "widgetList"):
+                    collected.extend(collect_layout_field_names(node.get(child_key)))
+            return collected
+
+        raw_layout_fields = collect_layout_field_names(form_view_spec.get("layout"))
+        common_fields = list(dict.fromkeys(common_fields + raw_view_fields + raw_layout_fields))
         profile = {
             "common_fields": common_fields,
             "detail_fields": [],
@@ -3951,16 +4021,36 @@ class UiContractV2Handler(BaseIntentHandler):
             "attachment_field": "",
             "field_labels": {name: field_label(name) for name in common_fields},
         }
-        form_structure = _form_structure.build_form_structure_contract(
-            self,
-            model=model,
-            profile=profile,
-            field_type=field_type,
-            unique=lambda items: list(dict.fromkeys(items)),
-            field_label=field_label,
-            governance=governance,
-            navigation_title=str(ui_data.get("title") or "").strip(),
-        )
+        navigation_title = str(ui_data.get("title") or "").strip()
+        identity_fields = [str(name).strip() for name in (governance.get("identity_fields") if isinstance(governance.get("identity_fields"), list) else []) if str(name).strip()]
+        try:
+            native_view = project_native_view(
+                su_env,
+                model,
+                action_id=action_id,
+                view_id=view_id,
+                view_type="form",
+            )
+            form_structure = build_native_form_structure_contract(
+                native_view,
+                model=model,
+                identity_fields=identity_fields,
+                field_labels=profile["field_labels"],
+                navigation_title=navigation_title,
+            )
+            form_structure["surfaces"] = self._form_structure_surfaces(model=model)
+        except Exception:
+            _logger.debug("native form structure build failed; fallback to legacy heuristic model=%s", model, exc_info=True)
+            form_structure = _form_structure.build_form_structure_contract(
+                self,
+                model=model,
+                profile=profile,
+                field_type=field_type,
+                unique=lambda items: list(dict.fromkeys(items)),
+                field_label=field_label,
+                governance=governance,
+                navigation_title=navigation_title,
+            )
         ui_data["form_structure_contract"] = form_structure
         ownership = form_structure.get("fieldOwnership")
         if isinstance(ownership, dict):

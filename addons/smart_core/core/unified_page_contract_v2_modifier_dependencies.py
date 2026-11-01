@@ -15,7 +15,12 @@ FORM_RECORD_SNAPSHOT_FIELD_BUDGET = 80
 # Bounds the final, layout-aware closure independently of the initial snapshot.
 # This is deliberately small: it closes visible first-screen facts without
 # turning the form response into an unbounded model read.
-FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET = 24
+# The native projection carries the full native form structure, so a context
+# group late in the arch (for example project responsibility fields) can exceed
+# the legacy heuristic's first-screen count.  Keep the cap bounded, but large
+# enough to close the native first-screen business facts without truncating a
+# primary fact such as ``manager_id``.
+FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET = 40
 FIRST_SCREEN_SEMANTIC_ROLES = {"summary", "task", "risk"}
 SUBORDINATE_SEMANTIC_ROLES = {"relation", "activity", "audit"}
 
