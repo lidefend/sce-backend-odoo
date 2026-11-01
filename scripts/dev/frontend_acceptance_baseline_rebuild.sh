@@ -428,7 +428,7 @@ print_plan() {
 }
 
 rebuild() {
-  local actual_head snapshot_id bundle destructive_started
+  local actual_head snapshot_id bundle
   actual_head="$(git -C "$ROOT_DIR" rev-parse HEAD)"
   print_plan
   pre_execution_checks
@@ -468,7 +468,6 @@ rebuild() {
   remove_volume_exact "$ODOO_DATA" || { echo "[acceptance.baseline.rebuild] FAIL filestore_volume_remove" >&2; return 1; }
   compose_dev up -d --wait db redis
   compose_dev create odoo >/dev/null
-  require_database_volume_scope "$DB_INIT_EXTRA_DATABASE"
   require_volume_mount_scope "$DB_DATA" db
   require_volume_mount_scope "$REDIS_DATA" redis
   require_volume_mount_scope "$ODOO_DATA" odoo
