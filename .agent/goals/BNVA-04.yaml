@@ -1,0 +1,37 @@
+schema_version: 1
+goal:
+  id: BNVA-04
+  title: business_productization_over_odoo_standard_modules
+  status: active
+  formal_product_layer: P1
+  supporting_layer:
+    - P0
+    - P2
+  layer_target: construction_industry_business_productization
+  module:
+    - addons/smart_construction_core
+    - addons/smart_core
+    - customer_addons
+    - docs/architecture/backend-owned-page-composition
+    - .agent
+  baseline:
+    branch: feature/pc01-phase5-shadow-contraction
+    full_sha: ee08c989d651ba767e5f7f2d69be7f82c2aae57b
+    source: bnva_03_navigation_governance_closed
+  objective: >-
+    以 Odoo 标准业务能力为基础、以建筑行业专业模型和业务流程为核心、以统一平台内核和
+    Vue 前端提供一致产品体验。审计并治理 Odoo 标准模块与行业模块之间的继承、组合、依赖
+    与职责边界，避免平行模型和重复业务能力，并把 17 个孤立候选 Action 纳入产品化评审。
+  product_boundary:
+    standard_vs_user_specific: construction_industry_product_over_odoo_standard
+    why_here: >-
+      Smart Construction 是构建在 Odoo 标准能力之上的行业产品，平台内核负责整合治理，
+      行业模块负责行业业务事实；不得为每个标准模型复制平行 sc.* 模型。
+    why_not_elsewhere:
+      - no_parallel_sc_models_for_odoo_standard_capabilities
+      - no_platform_kernel_owning_industry_business_facts
+      - no_frontend_reimplementing_backend_authority
+    blast_radius:
+      - project/purchase/stock/account/product/hr/mail/resource standard modules
+      - smart_core / smart_construction_core inherit and composition edges
+      - 17 orphan action candidates

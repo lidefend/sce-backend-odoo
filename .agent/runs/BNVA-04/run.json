@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "BNVA-04",
+  "branch": "feature/pc01-phase5-shadow-contraction",
+  "baseline_sha": "ee08c989d651ba767e5f7f2d69be7f82c2aae57b",
+  "status": "active",
+  "goal": ".agent/goals/BNVA-04.yaml",
+  "record": "docs/architecture/backend-owned-page-composition/354-bnva-04-standard-module-inventory.md",
+  "scope": [
+    ".agent/goals/BNVA-04.yaml",
+    ".agent/runs/BNVA-04/run.json",
+    ".agent/active-runs.json",
+    "docs/architecture/backend-owned-page-composition/354-bnva-04-standard-module-inventory.md",
+    "docs/architecture/backend-owned-page-composition/355-bnva-04-industry-model-extension-matrix.md",
+    "docs/architecture/backend-owned-page-composition/356-bnva-04-inheritance-composition-dependency-map.md",
+    "docs/architecture/backend-owned-page-composition/357-bnva-04-parallel-model-and-duplicate-capability-audit.md",
+    "docs/architecture/backend-owned-page-composition/358-bnva-04-business-lifecycle-ownership.md",
+    "docs/architecture/backend-owned-page-composition/359-bnva-04-17-orphan-action-product-review.md",
+    "docs/architecture/backend-owned-page-composition/360-bnva-04-01-architecture-adjudication.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only Odoo standard module vs industry module architecture audit; no code/model/action/ACL writes"
+  },
+  "checks": {},
+  "blockers": [
+    "BNVA-04-01 open: deep per-model parallel audit of 187 sc.* models deferred to 04-02; 17 orphan action lifecycle ruling deferred to 04-02 business review."
+  ],
+  "next_exact_step": "BNVA-04-01 done (354-360): Odoo standard modules correctly reused/inherited; no sc.partner/product/employee/purchase.order/stock/account parallel models found; 260 _inherit + 2 _inherits + many2one composition. Next BNVA-04-02: per-model parallel audit of 187 sc.* + 17 orphan action lifecycle ruling + business asset/product capability inventory."
+}
