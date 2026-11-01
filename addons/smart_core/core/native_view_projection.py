@@ -200,15 +200,13 @@ def derive_native_field_ownership(
     *,
     identity_fields: tuple[str, ...] | list[str] = (),
 ) -> dict[str, dict[str, str]]:
-    """Derive unique primary field ownership from native field position.
+    """Derive candidate primary field ownership from native group membership.
 
-    The first occurrence of a field wins as its primary owner; later
-    occurrences are legal projections that must be declared explicitly by a
-    caller, never auto-selected by name/type/order.
-
-    The owner slot is the field's top-level sheet; the owner group is the
-    native ``<group name>`` that contains the field (falling back to the sheet
-    itself for sheet-level fields).
+    A field earns a candidate primary owner only when it appears in exactly one
+    named native group.  A field present in several named groups is an
+    undeclared duplicate projection and must NOT be auto-selected by XML order;
+    it stays unowned so the downstream guard reports NOT_VERIFIED instead of
+    fabricating a business fact from node ordering.
     """
     containers_by_ref: dict[str, NativeContainer] = {}
     named_group_refs: set[str] = set()
@@ -230,17 +228,20 @@ def derive_native_field_ownership(
             node = containers_by_ref.get(node.parent_ref) if node.parent_ref else None
         return "sheet"
 
-    ownership: dict[str, dict[str, str]] = {}
-    seen: set[str] = set()
+    named_occurrences: dict[str, list[NativeFieldOccurrence]] = {}
     for occurrence in native_view.fields:
         code = occurrence.field_code
         if code in TECHNICAL_FIELD_CODES:
             continue
         if occurrence.container_ref not in named_group_refs:
             continue
-        if code in seen:
+        named_occurrences.setdefault(code, []).append(occurrence)
+
+    ownership: dict[str, dict[str, str]] = {}
+    for code, occurrences in named_occurrences.items():
+        if len(occurrences) != 1:
             continue
-        seen.add(code)
+        occurrence = occurrences[0]
         owner_group = occurrence.container_ref
         if not containers_by_ref.get(owner_group):
             owner_group = "sheet"

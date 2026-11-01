@@ -181,6 +181,28 @@ class TestNativeViewProjection(unittest.TestCase):
             "sc_project_information_responsible",
         )
 
+    def test_duplicate_field_in_multiple_named_groups_is_not_auto_owned(self):
+        model = _FakeModel(
+            """<form string="Project">
+              <sheet>
+                <group name="first_group" string="第一组">
+                  <field name="partner_id" string="客户"/>
+                </group>
+                <group name="second_group" string="第二组">
+                  <field name="partner_id" string="客户摘要"/>
+                </group>
+              </sheet>
+            </form>""",
+            {
+                "partner_id": {"type": "many2one", "string": "客户", "relation": "res.partner"},
+            },
+        )
+        env = _FakeEnv()
+        env["project.project"] = model
+        view = project_native_view(env, "project.project", action_id=590, view_id=1776)
+        ownership = derive_native_field_ownership(view, identity_fields=[])
+        self.assertNotIn("field:partner_id", ownership)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -90,7 +90,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v16-assembler-dead-code-removal"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v17-user-env-and-ownership"
 
 
 def _node_validation_snapshot_ready(source):
@@ -2629,7 +2629,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 ]
                 try:
                     native_view = project_native_view(
-                        self.su_env,
+                        self.env,
                         model,
                         action_id=action_id,
                         view_id=form_view_id,
@@ -2644,7 +2644,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     )
                     form_structure["surfaces"] = self._form_structure_surfaces(model=model)
                 except Exception:
-                    _logger.debug("native form structure build failed in business operation path model=%s", model, exc_info=True)
+                    _logger.warning("native form structure build failed in business operation path; falling back to heuristic model=%s", model, exc_info=True)
                     form_structure = self._build_form_structure_contract(
                         model=model,
                         profile=profile,
@@ -4020,7 +4020,7 @@ class UiContractV2Handler(BaseIntentHandler):
         identity_fields = [str(name).strip() for name in (governance.get("identity_fields") if isinstance(governance.get("identity_fields"), list) else []) if str(name).strip()]
         try:
             native_view = project_native_view(
-                su_env,
+                self.env,
                 model,
                 action_id=action_id,
                 view_id=view_id,
@@ -4035,7 +4035,7 @@ class UiContractV2Handler(BaseIntentHandler):
             )
             form_structure["surfaces"] = self._form_structure_surfaces(model=model)
         except Exception:
-            _logger.debug("native form structure build failed; fallback to legacy heuristic model=%s", model, exc_info=True)
+            _logger.warning("native form structure build failed; falling back to legacy heuristic model=%s", model, exc_info=True)
             form_structure = _form_structure.build_form_structure_contract(
                 self,
                 model=model,
