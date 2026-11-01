@@ -163,7 +163,7 @@ def _read_actor_facts(record, names, path):
     return values[0]
 
 
-def native_feedback_fields(record, contract, node, source, invisible, path):
+def native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=None):
     """Prove a legacy advisory against the actor's actual native form.
 
     A wire native marker grants nothing. Only matching XML host, direct content
@@ -188,17 +188,24 @@ def native_feedback_fields(record, contract, node, source, invisible, path):
     view_id = meta.get("formViewId")
     if type(view_id) is not int or view_id <= 0:
         return False
-    view = record.get_view(view_id=view_id, view_type="form")
-    if view.get("id") != view_id:
-        fail("FEEDBACK_SOURCE_INVALID", path)
     # Metadata only, never sudo the business record or its field values.
     view_record = record.env["ir.ui.view"].sudo().browse(view_id)
     if view_record.model != record._name or view_record.type != "form":
         fail("FEEDBACK_SOURCE_INVALID", path)
-    try:
-        root = ET.fromstring(view.get("arch", ""))
-    except (ET.ParseError, TypeError):
-        fail("FEEDBACK_SOURCE_INVALID", path)
+    if (
+        parsed_view is not None
+        and int(parsed_view.get("_source_view_id") or 0) == view_id
+        and parsed_view.get("_arch_root") is not None
+    ):
+        root = parsed_view["_arch_root"]
+    else:
+        view = record.get_view(view_id=view_id, view_type="form")
+        if view.get("id") != view_id:
+            fail("FEEDBACK_SOURCE_INVALID", path)
+        try:
+            root = ET.fromstring(view.get("arch", ""))
+        except (ET.ParseError, TypeError):
+            fail("FEEDBACK_SOURCE_INVALID", path)
     if root.tag != "form":
         fail("FEEDBACK_SOURCE_INVALID", path)
     elements, fields = {}, set()
@@ -268,7 +275,7 @@ def read_native_facts(record, names, path):
     return values
 
 
-def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, draft_feedback=None):
+def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, draft_feedback=None, parsed_view=None):
     """Validate all declarations before modifying visibility. Re-run per request."""
     tree = (contract.get("layoutContract") or {}).get("containerTree", [])
     rows, originals = list(walk(tree)), list(walk(native_tree))
@@ -378,7 +385,7 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
             require_nonconstant(invisible, path)
         if config["purpose"] != "error":
             direct = deps | ({name} if name else set())
-            if record is not None and native_feedback_fields(record, contract, node, source, invisible, path):
+            if record is not None and native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=parsed_view):
                 native_needed.update(direct)
                 native_plans.add(node["containerId"])
             else:

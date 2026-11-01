@@ -749,13 +749,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         - kanban：提供最小可渲染块，避免误用 form 逻辑
         """
         fields_get = (view_data or {}).get('fields') or self.env[model_name].sudo().fields_get()
-        arch = (view_data or {}).get('arch', '') or ''
         arch_root = (view_data or {}).get('_arch_root')
-        if arch_root is None and arch:
-            try:
-                arch_root = etree.fromstring(arch.encode('utf-8'))
-            except Exception as exc:
-                _logger.warning("fallback XML解析失败: %s", exc)
         base = {
             'modifiers': {},
             'toolbar': {'header': [], 'sidebar': [], 'footer': []},

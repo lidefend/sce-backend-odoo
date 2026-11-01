@@ -656,6 +656,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     from .form_configuration_compiler import FormConfigurationError
     from .native_advisory import project as project_native_advisory
     draft_feedback = kwargs.pop("draft_feedback", None)
+    carrier = kwargs.pop("carrier", None)
     source_contract = project_native_advisory(source_contract, node_actor_env)
     raw_nodes = []
     def collect(value):
@@ -713,12 +714,24 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
                 declared=len(declarations),
                 projected=len(projected),
             )
+        parsed_view = None
+        if carrier is not None and node_actor_env is not None:
+            model = _text(source.get("model") or source_contract.get("model"))
+            resolved_view_id = _positive_int(
+                source.get("view_id")
+                or _dict(source.get("view_ids_by_type")).get("form")
+                or _dict(_dict(source.get("views")).get("form")).get("view_id"),
+                0,
+            )
+            if model and resolved_view_id:
+                parsed_view = carrier.fetch(node_actor_env, model, "form", resolved_view_id)
         validate_final_nodes(
             node_actor_env,
             contract,
             deepcopy(tree),
             apply_visibility=False,
             draft_feedback=draft_feedback,
+            parsed_view=parsed_view,
         )
         return contract
 

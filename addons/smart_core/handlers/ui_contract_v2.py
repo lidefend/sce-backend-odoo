@@ -91,7 +91,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v21-request-carrier"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v22-consumer-migration"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1197,6 +1197,7 @@ class UiContractV2Handler(BaseIntentHandler):
             source_contract,
             node_actor_env=self.env,
             draft_feedback=draft_feedback_proof,
+            carrier=getattr(self, "_request_carrier", None),
             source_type=runtime_source_type,
             client_type=client_type,
             request_id=str(request_id),
