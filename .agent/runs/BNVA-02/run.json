@@ -41,7 +41,13 @@
     "docs/architecture/backend-owned-page-composition/196-bnva-02c-module-upgrade-impact.md",
     "docs/architecture/backend-owned-page-composition/197-bnva-02c-historical-configuration-classification.md",
     "docs/architecture/backend-owned-page-composition/198-bnva-02c-runtime-resolution-audit.md",
-    "docs/architecture/backend-owned-page-composition/199-bnva-02c-01-final-assessment.md"
+    "docs/architecture/backend-owned-page-composition/199-bnva-02c-01-final-assessment.md",
+    "docs/architecture/backend-owned-page-composition/200-bnva-02c-seed-classification.md",
+    "docs/architecture/backend-owned-page-composition/201-bnva-02c-noupdate-policy.md",
+    "docs/architecture/backend-owned-page-composition/202-bnva-02c-controlled-seed-upgrade-design.md",
+    "docs/architecture/backend-owned-page-composition/203-bnva-02c-xml-upgrade-impact-matrix.md",
+    "docs/architecture/backend-owned-page-composition/204-bnva-02c-runtime-configuration-conflicts.md",
+    "docs/architecture/backend-owned-page-composition/205-bnva-02c-02a-final-decision.md"
   ],
   "environment": {
     "kind": "offline",
@@ -49,5 +55,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-01 configuration ownership & source inventory complete; await BNVA-02B-02C-02 (controlled historical config governance) approval"
+  "next_exact_step": "BNVA-02B-02C-02A code seed ownership & upgrade policy adjudication complete; await BNVA-02B-02C-02B (controlled seed upgrade mechanism) approval"
 }
