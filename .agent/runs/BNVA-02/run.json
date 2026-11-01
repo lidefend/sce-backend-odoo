@@ -82,7 +82,8 @@
     "docs/architecture/backend-owned-page-composition/233-bnva-02c-runner-real-execution-report.md",
     "docs/architecture/backend-owned-page-composition/234-bnva-02c-tenant-overlay-regression.md",
     "docs/architecture/backend-owned-page-composition/235-bnva-02c-historical-configuration-migration-matrix.md",
-    "docs/architecture/backend-owned-page-composition/236-bnva-02c-01-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/236-bnva-02c-01-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/237-bnva-02-first-release-configuration-boundary.md"
   ],
   "environment": {
     "kind": "offline",
@@ -90,5 +91,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02C-01 historical inventory complete (84 VERSIONED records classified; corrected form_productization to sections+fields missing identity); real isolated-DB upgrade validation still not_run; await BNVA-02B-02C-02C-02 (per-config governance) approval"
+  "next_exact_step": "BNVA-02 pivoted to first-release preparation: capability + product defaults, not user-data migration; 84 records are product defaults. Await complete BNVA-02C-02 task book before per-item config modification (46 Identity + 19 Section governance)"
 }
