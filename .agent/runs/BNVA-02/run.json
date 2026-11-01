@@ -116,7 +116,8 @@
     "docs/architecture/backend-owned-page-composition/269-bnva-02c-finance-lowcode-overlay-validation.md",
     "docs/architecture/backend-owned-page-composition/270-bnva-02c-finance-runtime-business-acceptance.md",
     "docs/architecture/backend-owned-page-composition/271-bnva-02c-02d-final-acceptance.md",
-    "docs/architecture/backend-owned-page-composition/272-bnva-02c-02e-environment-readiness.md"
+    "docs/architecture/backend-owned-page-composition/272-bnva-02c-02e-environment-readiness.md",
+    "docs/architecture/backend-owned-page-composition/273-bnva-02c-02e-p4-credential-stop.md"
   ],
   "environment": {
     "kind": "offline",
@@ -124,5 +125,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02E-01 environment readiness checked: local.clean isolated but .env.local.clean missing; finance fixture_role only in acceptance profile (not clean). Need env credential + fresh-DB finance fixture + browser wiring before 02E-02 real install acceptance. Await P4 environment prep approval"
+  "next_exact_step": "BNVA-02C-02E-P4 stopped: .env.local.clean missing while sc-local-clean containers/volumes still running (credential-overwrite stop condition). Await explicit confirmation of `make local.clean.rebuild CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL` before destructive rebuild"
 }
