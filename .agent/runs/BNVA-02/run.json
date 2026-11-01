@@ -83,7 +83,13 @@
     "docs/architecture/backend-owned-page-composition/234-bnva-02c-tenant-overlay-regression.md",
     "docs/architecture/backend-owned-page-composition/235-bnva-02c-historical-configuration-migration-matrix.md",
     "docs/architecture/backend-owned-page-composition/236-bnva-02c-01-acceptance.md",
-    "docs/architecture/backend-owned-page-composition/237-bnva-02-first-release-configuration-boundary.md"
+    "docs/architecture/backend-owned-page-composition/237-bnva-02-first-release-configuration-boundary.md",
+    "docs/architecture/backend-owned-page-composition/244-bnva-02c-product-lowcode-ownership-principle.md",
+    "docs/architecture/backend-owned-page-composition/245-bnva-02c-form-productization-ownership-matrix.md",
+    "docs/architecture/backend-owned-page-composition/246-bnva-02c-form-sections-ownership-matrix.md",
+    "docs/architecture/backend-owned-page-composition/247-bnva-02c-product-default-vs-overlay.md",
+    "docs/architecture/backend-owned-page-composition/248-bnva-02c-first-release-product-config-inventory.md",
+    "docs/architecture/backend-owned-page-composition/249-bnva-02c-02a-r-final-decision.md"
   ],
   "environment": {
     "kind": "offline",
@@ -91,5 +97,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02 pivoted to first-release preparation: capability + product defaults, not user-data migration; 84 records are product defaults. Await complete BNVA-02C-02 task book before per-item config modification (46 Identity + 19 Section governance)"
+  "next_exact_step": "BNVA-02C-02A-R ownership reassessment complete (66 seeds are product_release; 46+13 PRODUCT_CORE gaps, 6 RETIRED). Await product owner confirmation of Identity/Section fields and Product Configuration Ownership Principle formalization before config modification (02C-02B)"
 }
