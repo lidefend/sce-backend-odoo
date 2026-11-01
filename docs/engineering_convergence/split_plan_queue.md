@@ -43,7 +43,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 1650 | Platform owner | `addons/smart_core/core/scene_ready_contract_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 1556 | Platform owner | `addons/smart_core/app_config_engine/models/app_view_config.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 1543 | Platform owner | `addons/smart_core/tests/test_delivery_menu_entry_target.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
-| P1 | 1522 | Platform owner | `addons/smart_core/tests/test_view_orchestrator.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P1 | 1525 | Platform owner | `addons/smart_core/tests/test_view_orchestrator.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 1521 | Platform owner | `addons/smart_core/handlers/business_config_surface.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P2 | 2894 | Construction backend owner | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 2727 | Construction backend owner | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |

@@ -16,6 +16,7 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     view_orchestration_apply_order_key,
     ensure_view_orchestration_source,
     VIEW_ORCHESTRATION_SOURCE_TENANT_LOWCODING,
+    lowcode_publication_gate_applies,
 )
 from odoo.addons.smart_core.utils.business_config_mutation_audit import record_business_config_mutation
 from odoo.addons.smart_core.core.view_contract_presence import (
@@ -858,16 +859,17 @@ class UIBusinessConfigContract(models.Model):
 
     def _publication_gate_for(self, record) -> dict[str, Any] | None:
         """Evaluate the business-structure publication gate for one form config."""
-        if str(record.view_type or "").strip() != "form":
+        payload = record.contract_json if isinstance(record.contract_json, dict) else {}
+        if not lowcode_publication_gate_applies(payload, record.view_type):
             return None
         model_fields: dict[str, Any] = {}
         if record.model and record.model in self.env:
             model_fields = self.env[record.model]._fields
         diagnostics = validate_business_structure(
-            record.contract_json if isinstance(record.contract_json, dict) else {},
+            payload,
             model_fields=model_fields,
         )
-        compatibility = extract_compatibility(record.contract_json or {})
+        compatibility = extract_compatibility(payload)
         return publication_gate(diagnostics, compatibility=compatibility)
 
     @staticmethod

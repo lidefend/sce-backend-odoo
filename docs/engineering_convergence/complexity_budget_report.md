@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5012`
+- Scanned files: `5017`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -78,7 +78,7 @@ Generated from repository source files. This report is informational during the 
 | 1543 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1522 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
+| 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 950 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 604 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
@@ -156,7 +156,7 @@ Generated from repository source files. This report is informational during the 
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
-| 1034 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
+| 1036 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
@@ -306,7 +306,7 @@ Generated from repository source files. This report is informational during the 
 | 1543 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1522 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
+| 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
