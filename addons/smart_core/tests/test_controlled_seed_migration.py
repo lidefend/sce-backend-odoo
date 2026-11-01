@@ -114,5 +114,101 @@ class ControlledSeedMigrationTests(unittest.TestCase):
         self.assertTrue(self.m.verify_target_digest(payload, self.m._stable_digest(payload)))
 
 
+class _FakeRecord:
+    def __init__(self, payload, source="smart_construction_core.product_release",
+                 active=True, view_type="form", composition_mode="", has_sections=False,
+                 name="seed"):
+        self.contract_json = payload
+        self.source = source
+        self.active = active
+        self.view_type = view_type
+        self.composition_mode = composition_mode
+        self.has_sections = has_sections
+        self.name = name
+        self.definition_sha256 = _load()._stable_digest(payload)
+        self.restored = None
+        self.published = None
+
+    def latest_published_version(self):
+        return {"definition_sha256": self.definition_sha256}
+
+    def replace_and_publish(self, payload):
+        self.published = payload
+        self.contract_json = payload
+
+    def restore_published_version(self, version):
+        self.restored = version
+
+
+class RunMigrationAdapterTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.m = _load()
+
+    def test_classify_lowcode_is_user_owned(self):
+        self.assertEqual(
+            self.m.classify_record(source="smart_core.lowcode.business_config", active=True, view_type="form"),
+            "USER_OWNED_CONFIGURATION",
+        )
+
+    def test_classify_retired(self):
+        self.assertEqual(
+            self.m.classify_record(source="x", active=False, view_type="form"),
+            "RETIRED_CONFIGURATION",
+        )
+
+    def test_classify_entry_sections_as_versioned_template(self):
+        self.assertEqual(
+            self.m.classify_record(
+                source="smart_construction_core.product_release", active=True,
+                view_type="form", composition_mode="entry_semantic_surface",
+            ),
+            "VERSIONED_CODE_TEMPLATE",
+        )
+
+    def test_run_migration_applies(self):
+        record = _FakeRecord(
+            {"composition_mode": "entry_semantic_surface", "sections": [{"title": "a"}]},
+            composition_mode="entry_semantic_surface",
+        )
+        target = {"composition_mode": "entry_semantic_surface", "sections": [{"key": "a", "title": "a", "fields": ["name"]}]}
+        result = self.m.run_migration(
+            record, module="smart_construction_core", external_id="seed_x",
+            seed_version="v1", target_payload=target,
+        )
+        self.assertEqual(result["outcome"], "applied")
+        self.assertEqual(record.published, target)
+
+    def test_run_migration_skips_no_change(self):
+        payload = {"composition_mode": "native_semantic_surface"}
+        record = _FakeRecord(payload)
+        result = self.m.run_migration(
+            record, module="smart_construction_core", external_id="seed_x",
+            seed_version="v1", target_payload=payload,
+        )
+        self.assertEqual(result["outcome"], "skip")
+
+    def test_run_migration_target_mismatch_restores(self):
+        class _MismatchRecord(_FakeRecord):
+            def replace_and_publish(self, payload):
+                # Simulate Odoo normalizing the payload into a shape that no
+                # longer matches the target digest.
+                self.published = dict(payload, _unexpected="x")
+                self.contract_json = self.published
+
+        record = _MismatchRecord(
+            {"composition_mode": "entry_semantic_surface"},
+            composition_mode="entry_semantic_surface",
+        )
+        target = {"composition_mode": "entry_semantic_surface", "sections": [{"key": "a", "title": "a", "fields": ["name"]}]}
+        result = self.m.run_migration(
+            record, module="smart_construction_core", external_id="seed_x",
+            seed_version="v1", target_payload=target,
+        )
+        self.assertEqual(result["outcome"], "error")
+        self.assertEqual(result["reason"], "target_digest_mismatch")
+        self.assertIsNotNone(record.restored)
+
+
 if __name__ == "__main__":
     unittest.main()

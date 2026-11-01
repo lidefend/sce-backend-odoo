@@ -64,7 +64,12 @@
     "docs/architecture/backend-owned-page-composition/215-bnva-02c-migration-transaction-and-rollback.md",
     "docs/architecture/backend-owned-page-composition/216-bnva-02c-tenant-overlay-isolation-tests.md",
     "docs/architecture/backend-owned-page-composition/217-bnva-02c-runner-integration-report.md",
-    "docs/architecture/backend-owned-page-composition/218-bnva-02c-02b-02-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/218-bnva-02c-02b-02-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/219-bnva-02c-odoo-runner-integration.md",
+    "docs/architecture/backend-owned-page-composition/220-bnva-02c-real-migration-transaction-report.md",
+    "docs/architecture/backend-owned-page-composition/221-bnva-02c-overlay-isolation-validation.md",
+    "docs/architecture/backend-owned-page-composition/222-bnva-02c-noupdate-runtime-behavior.md",
+    "docs/architecture/backend-owned-page-composition/223-bnva-02c-03a-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -72,5 +77,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02B-02 controlled seed migration runner core implemented (16/16 tests); await BNVA-02B-02C-02B-03 (XML noupdate strategy switch + module upgrade simulation) approval"
+  "next_exact_step": "BNVA-02B-02C-02B-03A Odoo adapter integration complete (22/22 offline tests); await BNVA-02B-02C-02B-03B (isolated DB noupdate switch + real upgrade validation) approval"
 }

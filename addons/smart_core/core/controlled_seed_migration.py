@@ -137,3 +137,76 @@ def rollback_reference(snapshot: dict[str, Any]) -> dict[str, Any]:
         "definition_digest": snapshot.get("definition_sha256", ""),
         "payload_digest": snapshot.get("payload_sha256", ""),
     }
+
+
+def classify_record(
+    *,
+    source: str,
+    active: bool,
+    view_type: str,
+    composition_mode: str = "",
+    has_sections: bool = False,
+    name: str = "",
+) -> str:
+    """Preliminary seed classification (final ownership is per-record in 03B/03C)."""
+    if not active:
+        return SeedClassification.RETIRED_CONFIGURATION.value
+    if str(source or "").startswith("smart_core.lowcode."):
+        return SeedClassification.USER_OWNED_CONFIGURATION.value
+    if "_generated_" in str(name or "") or "generated" in str(source or "").lower():
+        return SeedClassification.GENERATED_BASELINE.value
+    if str(view_type or "") == "form" and (
+        composition_mode == "entry_semantic_surface" or has_sections
+    ):
+        return SeedClassification.VERSIONED_CODE_TEMPLATE.value
+    return SeedClassification.IMMUTABLE_CODE_SEED.value
+
+
+def run_migration(
+    record: Any,
+    *,
+    module: str,
+    external_id: str,
+    seed_version: str,
+    target_payload: dict[str, Any],
+    expected_source_digest: str | None = None,
+) -> dict[str, Any]:
+    """Orchestrate one migration through the existing publication service.
+
+    ``record`` is an already-resolved Odoo record (or a test double) exposing:
+    definition_sha256, contract_json, latest_published_version(),
+    replace_and_publish(payload), restore_published_version(version).
+    """
+    classification = classify_record(
+        source=str(getattr(record, "source", "") or ""),
+        active=bool(getattr(record, "active", True)),
+        view_type=str(getattr(record, "view_type", "form") or "form"),
+        composition_mode=str(getattr(record, "composition_mode", "") or ""),
+        has_sections=bool(getattr(record, "has_sections", False)),
+        name=str(getattr(record, "name", "") or ""),
+    )
+    current_digest = str(getattr(record, "definition_sha256", "") or "")
+    target_digest = _stable_digest(target_payload)
+    plan = plan_migration(
+        SeedIdentity(module=module, external_id=external_id),
+        classification,
+        seed_version=seed_version,
+        current_digest=current_digest,
+        target_digest=target_digest,
+        expected_source_digest=expected_source_digest,
+    )
+    if plan["outcome"] != "migrate":
+        return plan
+    snapshot = record.latest_published_version()
+    record.replace_and_publish(target_payload)
+    if not verify_target_digest(
+        getattr(record, "contract_json", {}) if isinstance(getattr(record, "contract_json", None), dict) else {},
+        target_digest,
+    ):
+        record.restore_published_version(snapshot)
+        return {
+            "outcome": "error",
+            "reason": "target_digest_mismatch",
+            "migration_id": plan["migration_id"],
+        }
+    return {"outcome": "applied", "migration_id": plan["migration_id"]}
