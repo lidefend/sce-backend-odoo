@@ -10,23 +10,34 @@
     "docs/architecture/backend-owned-page-composition/100-bnva-01-charter.md",
     ".agent/goals/BNVA-01.yaml",
     ".agent/runs/BNVA-01/run.json",
-    ".agent/active-runs.json"
+    ".agent/active-runs.json",
+    "addons/smart_core/core/native_view_projection.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_view_projection.py",
+    "docs/architecture/backend-owned-page-composition/101-bnva-001-odoo-view-api-audit.md",
+    "docs/architecture/backend-owned-page-composition/102-bnva-002-arch-parsing-duplication.md",
+    "docs/architecture/backend-owned-page-composition/103-bnva-003-modifiers-authority.md",
+    "docs/architecture/backend-owned-page-composition/104-bnva-platform-kernel-architecture.md",
+    "docs/architecture/backend-owned-page-composition/105-bnva-008-011-native-group-mapping-design.md",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing Odoo runtime introspection via governed read-only tools"
+    "kind": "runtime",
+    "authority": "candidate acceptance runtime via governed backend.acceptance and verify.frontend lanes"
   },
   "checks": {
     "bnva_001_odoo_view_api_audit": {
-      "target": "readonly_odoo_view_api_capability_audit",
+      "target": "verify.unified_page_contract.v2",
       "inputs": [
-        "addons/smart_core/app_config_engine/services/view_Parser/base.py",
-        "addons/smart_core/app_config_engine/services/view_Parser/contract_Parser.py",
-        "addons/smart_core/app_config_engine/models/app_view_config.py"
+        "addons/smart_core/core/native_view_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_native_view_projection.py"
       ],
-      "kind": "offline"
+      "kind": "runtime"
     }
   },
   "blockers": [],
-  "next_exact_step": "execute BNVA-004..007 unified Native View Canonical AST design"
+  "next_exact_step": "rebuild candidate at 72fcfe33b, run relation_roundtrip + list_surface acceptance, then push PR 790"
 }
