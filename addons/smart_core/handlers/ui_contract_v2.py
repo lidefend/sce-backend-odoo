@@ -70,6 +70,7 @@ from . import ui_contract_v2_projection as _projection
 from . import ui_contract_v2_form_structure as _form_structure
 from ..core.form_structure_authority import TECHNICAL_FIELD_CODES, resolve_form_structure_governance
 from ..core.native_view_projection import build_native_form_structure_contract, project_native_view
+from ..core.native_view_parsed_cache import RequestScopedCarrier
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
@@ -90,7 +91,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v20-shared-parsed-view"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v21-request-carrier"
 
 
 def _node_validation_snapshot_ready(source):
@@ -605,6 +606,11 @@ class UiContractV2Handler(BaseIntentHandler):
             result = self._err(409, "页面配置无法应用，请联系配置管理员处理")
             result.error.update(exc.public_details())
             return result
+        finally:
+            carrier = getattr(self, "_request_carrier", None)
+            if carrier is not None:
+                carrier.close()
+                self._request_carrier = None
 
     def _validate_form_record(self, model, params):
         view_type = str(params.get("view_type") or params.get("viewType") or "form").lower()
@@ -678,6 +684,7 @@ class UiContractV2Handler(BaseIntentHandler):
         # including entry-contract re-resolution and orchestration overlays.
         self.env = projection_env
         self.su_env = projection_su_env
+        self._request_carrier = RequestScopedCarrier(self.env)
         scene_binding_error = self._validate_scene_action_binding(params)
         if scene_binding_error is not None:
             return scene_binding_error
@@ -846,11 +853,13 @@ class UiContractV2Handler(BaseIntentHandler):
                         projection_env,
                         projection_su_env,
                         base_ui_params or ui_params,
+                        carrier=self._request_carrier,
                     )
                     self._enrich_native_form_composition(
                         ui_data,
                         projection_su_env,
                         action_id=int((base_ui_params or ui_params).get("action_id") or 0),
+                        carrier=self._request_carrier,
                     )
                 except FormConfigurationError:
                     raise
@@ -2634,6 +2643,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         action_id=action_id,
                         view_id=form_view_id,
                         view_type="form",
+                        carrier=getattr(self, "_request_carrier", None),
                     )
                     form_structure = build_native_form_structure_contract(
                         native_view,
@@ -3927,6 +3937,7 @@ class UiContractV2Handler(BaseIntentHandler):
         su_env,
         *,
         action_id: int = 0,
+        carrier: Any | None = None,
     ) -> None:
         if not isinstance(ui_data, dict):
             return
@@ -4025,6 +4036,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 action_id=action_id,
                 view_id=view_id,
                 view_type="form",
+                carrier=carrier,
             )
             form_structure = build_native_form_structure_contract(
                 native_view,
@@ -4052,7 +4064,13 @@ class UiContractV2Handler(BaseIntentHandler):
             ui_data["field_ownership"] = ownership
 
     @staticmethod
-    def _dispatch_native_form_source(env, su_env, ui_params: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    def _dispatch_native_form_source(
+        env,
+        su_env,
+        ui_params: dict[str, Any],
+        *,
+        carrier: Any | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         direct_params = dict(ui_params)
         op = str(direct_params.pop("op", "") or direct_params.get("subject") or "").strip().lower()
         if op == "model":
@@ -4063,6 +4081,8 @@ class UiContractV2Handler(BaseIntentHandler):
             raise ValueError("native form projection requires model, action, or menu authority")
         direct_params["view_type"] = "form"
         direct_params["view_types"] = ["form"]
+        if carrier is not None:
+            direct_params["_request_carrier"] = carrier
         result = ActionDispatcher(env, su_env).dispatch(direct_params)
         if not isinstance(result, tuple) or len(result) != 2:
             raise ValueError("native form projection returned an invalid source payload")

@@ -21,7 +21,6 @@ from typing import Any
 from lxml import etree
 
 from .form_structure_authority import TECHNICAL_FIELD_CODES
-from .native_view_parsed_cache import fetch_parsed_view
 
 # Structural tags whose native ``name`` gives a stable business identity.
 _STRUCTURAL_TAGS = frozenset({"form", "sheet", "group", "notebook", "page"})
@@ -171,13 +170,14 @@ def project_native_view(
     view_id: int = 0,
     view_type: str = "form",
     root: Any | None = None,
+    carrier: Any | None = None,
 ) -> NativeView:
     """Parse one merged Odoo view arch exactly once into a Canonical AST."""
     model = env[model_name]
     normalized_view_id = int(view_id or 0)
     view_data = None
     if root is None:
-        cached = fetch_parsed_view(env, model_name, view_type, normalized_view_id)
+        cached = carrier.fetch(env, model_name, view_type, normalized_view_id) if carrier is not None else None
         if cached is not None and cached.get("_arch_root") is not None:
             view_data = cached
             root = cached["_arch_root"]

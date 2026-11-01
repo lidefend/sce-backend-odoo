@@ -23,7 +23,6 @@ from odoo.addons.smart_core.app_config_engine.services.contract_governance_filte
     ContractGovernanceFilterService,
 )
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
-from odoo.addons.smart_core.core.native_view_parsed_cache import store_parsed_view as _store_shared_parsed_view
 from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 from odoo.addons.smart_core.utils.native_collection_presentation import (
     native_collection_presentation,
@@ -650,7 +649,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
     # ====================== 内部：获取视图数据（版本兼容） ======================
 
-    def _safe_get_view_data(self, model_name, view_type):
+    def _safe_get_view_data(self, model_name, view_type, carrier=None):
         """
         兼容不同 Odoo 版本：
         - 新：env[model].get_view(view_type=...)
@@ -685,8 +684,8 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 payload['_arch_root'] = etree.fromstring(payload['arch'].encode('utf-8'))
             except Exception as exc:
                 _logger.warning("XML解析失败，仍然使用视图数据: %s", exc)
-            if payload.get('_arch_root') is not None:
-                _store_shared_parsed_view(
+            if payload.get('_arch_root') is not None and carrier is not None:
+                carrier.store(
                     self.env,
                     model_name,
                     view_type,
