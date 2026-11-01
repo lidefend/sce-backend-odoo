@@ -100,7 +100,13 @@
     "docs/architecture/backend-owned-page-composition/256-bnva-02c-business-semantics-decisions.md",
     "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
     "docs/architecture/backend-owned-page-composition/257-bnva-02c-payment-request-identity-implementation.md",
-    "docs/architecture/backend-owned-page-composition/258-bnva-02c-execution-receipt-native-structure.md"
+    "docs/architecture/backend-owned-page-composition/258-bnva-02c-execution-receipt-native-structure.md",
+    "docs/architecture/backend-owned-page-composition/259-bnva-02c-payment-request-section-key-implementation.md",
+    "docs/architecture/backend-owned-page-composition/260-bnva-02c-payment-request-ownership-regression.md",
+    "docs/architecture/backend-owned-page-composition/261-bnva-02c-execution-business-identity-and-section-matrix.md",
+    "docs/architecture/backend-owned-page-composition/262-bnva-02c-receipt-business-identity-and-section-matrix.md",
+    "docs/architecture/backend-owned-page-composition/263-bnva-02c-project-652-action-view-identity-audit.md",
+    "docs/architecture/backend-owned-page-composition/264-bnva-02c-finance-pages-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -108,5 +114,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02B-02 in progress: payment.request Identity implemented (identity_fields=['name']). execution/receipt confirmed first-release; native structure audit done (named groups exist). Await per-item Section key/fields confirmation + project 652 isolated-DB action/view resolution before further XML changes"
+  "next_exact_step": "BNVA-02C-02B-03: payment.request complete (Identity=name + 7 section keys, zero diagnostics). execution/receipt Identity evidence = name (单据号) only, document_no is 来源单号. Await product owner confirmation of execution/receipt Identity + notebook layout level, and project 652 isolated-DB audit"
 }
