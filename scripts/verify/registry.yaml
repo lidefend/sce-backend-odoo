@@ -149,6 +149,12 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: business_structure_integrity_shadow.py
+  status: orphan
+  owner: platform-team
+  date: '2026-11-01'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: capability_lint.py
   status: active
   owner: platform-team
@@ -209,6 +215,12 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: controlled_seed_migration_dryrun.py
+  status: orphan
+  owner: platform-team
+  date: '2026-11-01'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: controller_allowlist_policy.py
   status: active
   owner: platform-team
