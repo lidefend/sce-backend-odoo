@@ -138,7 +138,7 @@ server {
     if ($sc_entry_platform_strip = "1") {
       return 308 /platform-admin/;
     }
-    return 308 /t/demo/;
+    return 308 /t/${SC_PROXY_DEFAULT_NAMESPACE}/;
   }
 
   location / {

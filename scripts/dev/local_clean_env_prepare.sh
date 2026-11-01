@@ -72,6 +72,8 @@ db_password="$(random_secret 24)"
 admin_password="$(random_secret 24)"
 jwt_secret="$(random_secret 32)"
 bootstrap_secret="$(random_secret 32)"
+entry_shared_secret="$(grep -E '^SC_ENTRY_SHARED_SECRET=' "${SOURCE_ENV_FILE}" | head -1 | cut -d= -f2-)"
+entry_route_version="$(grep -E '^SC_ENTRY_ROUTE_VERSION=' "${SOURCE_ENV_FILE}" | head -1 | cut -d= -f2-)"
 
 {
   printf '%s\n' \
@@ -103,7 +105,14 @@ bootstrap_secret="$(random_secret 32)"
     'SCENE_ROLLBACK=0' \
     'SC_ENVIRONMENT=dev' \
     'SC_ALLOW_DEMO_DATA=0' \
-    'SC_SEED_ENABLED=0'
+    'SC_SEED_ENABLED=0' \
+    'SC_DECLARED_NAMESPACE_ALIASES=clean' \
+    'SC_PROXY_DEFAULT_NAMESPACE=clean' \
+    'SC_PROXY_DEFAULT_UPSTREAM=odoo:8069' \
+    'SC_PROXY_PLATFORM_UPSTREAM=odoo:8069' \
+    'SC_ENTRY_PLATFORM_STRIP=0' \
+    "SC_ENTRY_SHARED_SECRET=${entry_shared_secret}" \
+    "SC_ENTRY_ROUTE_VERSION=${entry_route_version}"
   printf '%s\n' 'ISOLATED_REHEARSAL_DATABASE=1'
 } >"${TARGET_ENV_FILE}"
 chmod 600 "${TARGET_ENV_FILE}"

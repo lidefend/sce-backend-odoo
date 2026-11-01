@@ -1,0 +1,91 @@
+{
+  "schema": "daily.runtime.entry.v1",
+  "authority": "config/ops/local_clean_runtime_entry.v1.json (local.clean instance of the shared daily.runtime.entry.v1 schema)",
+  "owner_ruling": "2026-11-01 the local.clean disposable clean-install rehearsal exposes one isolated public entry. The path prefix clean selects namespace ns_c6fed472e939 which binds sc_clean; every client database hint (X-Odoo-Database / X-Odoo-DB / X-DB / X-Odoo-DB-Locked / ?db=) is refused with HTTP 409 NS_DATABASE_HINT_CONFLICT. The demo and platform namespaces are not served by this entry and are never modified.",
+  "host": "sc-local-clean",
+  "public_entry": {
+    "serving_duty": "local_clean",
+    "bind_host": "0.0.0.0",
+    "port": 18083,
+    "url": "http://127.0.0.1:18083",
+    "demo_path": "/t/clean",
+    "platform_admin_path": null,
+    "root_path": "/",
+    "root_path_action": "redirect",
+    "root_path_redirect_status": 308,
+    "root_path_redirect_location": "/t/clean/"
+  },
+  "network": {
+    "name": "sc-local-clean_default",
+    "driver": "bridge"
+  },
+  "routes": [
+    {
+      "database": "sc_clean",
+      "duty": "local_clean",
+      "upstream": "odoo:8069",
+      "default": true
+    }
+  ],
+  "exposure": [
+    {
+      "duty": "local_clean",
+      "service": "nginx",
+      "host_port": 18083,
+      "bind_host": "0.0.0.0",
+      "public": false
+    },
+    {
+      "duty": "local_clean",
+      "service": "odoo",
+      "host_port": 8072,
+      "bind_host": "127.0.0.1",
+      "public": false
+    }
+  ],
+  "assertions": {
+    "one_public_entry": true,
+    "root_path_requires_a_namespace": true,
+    "root_api_without_a_namespace_is_refused": true,
+    "no_second_public_route": true,
+    "namespace_is_the_only_database_selector": true,
+    "client_database_hints_are_refused": true,
+    "unknown_namespace_is_rejected": true,
+    "never_route_to_an_undeclared_database": true
+  },
+  "namespace_routes": {
+    "kind": "path",
+    "platform_prefix": "/platform-admin",
+    "tenant_prefix": "/t",
+    "namespaces": [
+      {
+        "alias": "clean",
+        "namespace_id": "ns_c6fed472e939",
+        "database": "sc_clean",
+        "duty": "local_clean"
+      }
+    ],
+    "client_database_hint": {
+      "headers": [
+        "X-Odoo-Database",
+        "X-Odoo-DB",
+        "X-DB",
+        "X-Odoo-DB-Locked"
+      ],
+      "query": "db",
+      "action": "reject",
+      "status": 409,
+      "code": "NS_DATABASE_HINT_CONFLICT"
+    },
+    "missing_namespace": {
+      "status": 400,
+      "code": "NS_NAMESPACE_REQUIRED",
+      "content_type": "application/json"
+    },
+    "unknown_namespace": {
+      "status": 404,
+      "code": "NS_UNKNOWN_NAMESPACE",
+      "content_type": "application/json"
+    }
+  }
+}
