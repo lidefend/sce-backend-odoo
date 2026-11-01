@@ -42,15 +42,40 @@
     "docs/architecture/backend-owned-page-composition/383-bnva-04-orphan-action-lifecycle-final-matrix.md",
     "docs/architecture/backend-owned-page-composition/384-bnva-04-minimal-productization-scope.md",
     "docs/architecture/backend-owned-page-composition/385-bnva-04-business-productization-roadmap.md",
-    "docs/architecture/backend-owned-page-composition/386-bnva-04-05-final-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/386-bnva-04-05-final-adjudication.md",
+    "addons/smart_construction_core/data/quality_safety_form_productization_contract.xml",
+    "docs/architecture/backend-owned-page-composition/387-bnva-04-quality-issue-productization.md",
+    "docs/architecture/backend-owned-page-composition/388-bnva-04-quality-issue-contract-validation.md",
+    "addons/smart_construction_core/data/tax_certificate_form_productization_contract.xml",
+    "addons/smart_construction_core/__manifest__.py",
+    "docs/architecture/backend-owned-page-composition/389-bnva-04-tax-certificate-registration-productization.md",
+    "docs/architecture/backend-owned-page-composition/390-bnva-04-tax-certificate-contract-validation.md",
+    "docs/architecture/backend-owned-page-composition/391-bnva-04-two-page-productization-regression.md",
+    "docs/architecture/backend-owned-page-composition/392-bnva-04-06-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/393-bnva-04-tax-certificate-display-field-provenance.md",
+    "docs/architecture/backend-owned-page-composition/394-bnva-04-display-copy-protocol-consumer-audit.md",
+    "docs/architecture/backend-owned-page-composition/395-bnva-04-tax-certificate-field-ownership-adjudication.md",
+    "addons/smart_construction_core/views/core/tax_certificate_registration_views.xml",
+    "docs/architecture/backend-owned-page-composition/396-bnva-04-tax-certificate-native-view-fix.md",
+    "docs/architecture/backend-owned-page-composition/397-bnva-04-tax-certificate-view-regression.md",
+    "docs/architecture/backend-owned-page-composition/398-bnva-04-06b-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/399-bnva-04-quality-issue-static-regression.md",
+    "docs/architecture/backend-owned-page-composition/400-bnva-04-tax-certificate-static-regression.md",
+    "docs/architecture/backend-owned-page-composition/401-bnva-04-dual-page-contract-comparison.md",
+    "docs/architecture/backend-owned-page-composition/402-bnva-04-kernel-boundary-regression.md",
+    "docs/architecture/backend-owned-page-composition/403-bnva-04-06c-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/404-bnva-04-quality-issue-runtime-consumption.md",
+    "docs/architecture/backend-owned-page-composition/405-bnva-04-tax-certificate-runtime-consumption.md",
+    "docs/architecture/backend-owned-page-composition/406-bnva-04-dual-page-vue-renderer-evidence.md",
+    "docs/architecture/backend-owned-page-composition/407-bnva-04-06d-final-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "read-only Odoo standard module vs industry module architecture audit; no code/model/action/ACL writes"
+    "authority": "BNVA-04-06 approved minimal implementation + 04-06A read-only audit + 04-06B approved native view correction + 04-06C read-only static regression + 04-06D read-only runtime verification (blocked at L1); no DB write / module upgrade / push / merge"
   },
   "checks": {},
   "blockers": [
-    "BNVA-04-05 open: product-owner confirmation needed for 17 orphan actions (5 NOT_VERIFIED + RETIRE/MERGE_ENTRY) and 2 NOT_VERIFIED contextual objects before BNVA-04-06 minimal implementation."
+    "Runtime verification (L2 Contract/L3 Vue/L4 interaction) NOT_RUN: acceptance.runtime.login_probe fail-closed 'managed backend source mount differs from current worktree'; uncommitted product changes are not loaded into any running DB. Requires a governed module upgrade + frontend preview rebuild (DB/build write), not authorized this round. sc.tax.deduction.registration sibling view defect remains registered (separate)."
   ],
-  "next_exact_step": "BNVA-04-05 done (381-386): scope reconciled (187=50+25+44+11+57; 69=25+44); 25 contextual = 2 professional + 7 embedded + ~14 native-sufficient + 2 NOT_VERIFIED; 17 actions adjudicated; minimal scope P0 finance+project, P1 procurement/material+labor/subcontract. Next BNVA-04-06: product-owner confirmation then minimal implementation within this scope."
+  "next_exact_step": "BNVA-04-06D complete (L1 identity verified; L2/L3/L4 NOT_RUN, blocked by acceptance backend source-mount mismatch + no authorized module upgrade). docs 404-407 written; run record updated. Stop and await approval for a governed module upgrade in an isolated environment (plus frontend preview rebuild) before re-running L1-L4 runtime verification."
 }
