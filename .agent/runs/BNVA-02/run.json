@@ -47,7 +47,10 @@
     "docs/architecture/backend-owned-page-composition/202-bnva-02c-controlled-seed-upgrade-design.md",
     "docs/architecture/backend-owned-page-composition/203-bnva-02c-xml-upgrade-impact-matrix.md",
     "docs/architecture/backend-owned-page-composition/204-bnva-02c-runtime-configuration-conflicts.md",
-    "docs/architecture/backend-owned-page-composition/205-bnva-02c-02a-final-decision.md"
+    "docs/architecture/backend-owned-page-composition/205-bnva-02c-02a-final-decision.md",
+    ".agent/decisions/ARCH-DECISION-005.yaml",
+    "docs/architecture/backend-owned-page-composition/206-bnva-02d-configuration-ownership-data-boundary.md",
+    "docs/architecture/backend-owned-page-composition/207-bnva-02d-copy-on-write-overlay-study.md"
   ],
   "environment": {
     "kind": "offline",
@@ -55,5 +58,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02A code seed ownership & upgrade policy adjudication complete; await BNVA-02B-02C-02B (controlled seed upgrade mechanism) approval"
+  "next_exact_step": "BNVA-02D configuration ownership & data boundary + copy-on-write overlay study recorded; await BNVA-02B-02C-02B (controlled seed upgrade mechanism) approval"
 }

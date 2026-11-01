@@ -1,0 +1,30 @@
+decision:
+  id: ARCH-DECISION-005
+  topic: configuration_ownership_and_data_boundary
+  bnva_stage: BNVA-02D
+  owner_approval:
+    status: confirmed
+    date: "2026-11-01"
+  decision:
+    three_plane_model: true
+    lowcode_is_capability_plane_not_business_data_owner: true
+    configuration_metadata_authority_is_ui_business_config_contract: true
+    odoo_business_models_are_business_data_authority: true
+    xml_seeds_provide_product_default_configuration: true
+    user_config_is_authorized_tenant_metadata_customization: true
+    product_upgrade_and_user_config_lifecycle_are_independent: true
+    resolver_selects_effective_config_and_never_creates_business_facts: true
+  planes:
+    capability: lowcode_configuration_editing_and_publication
+    configuration_metadata: ui_business_config_contract
+    business_data: odoo_business_models
+  rules:
+    - lowcode_never_owns_business_records
+    - configuration_metadata_never_becomes_a_business_fact
+    - xml_seed_is_default_not_tenant_data
+    - user_override_is_tenant_metadata_not_code_seed_mutation
+    - resolver_projects_config_onto_existing_odoo_models_only
+  related:
+    - .agent/decisions/ARCH-DECISION-004.yaml
+    - docs/architecture/backend-owned-page-composition/206-bnva-02d-configuration-ownership-data-boundary.md
+  status: active
