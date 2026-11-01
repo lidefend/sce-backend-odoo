@@ -79,15 +79,19 @@
     "docs/architecture/backend-owned-page-composition/415-bnva-04-quality-issue-dom-consumption.md",
     "docs/architecture/backend-owned-page-composition/416-bnva-04-tax-certificate-dom-consumption.md",
     "docs/architecture/backend-owned-page-composition/417-bnva-04-dual-page-runtime-evidence.md",
-    "docs/architecture/backend-owned-page-composition/418-bnva-04-06d02-final-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/418-bnva-04-06d02-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/422-bnva-04-github-mainline-history-audit.md",
+    "docs/architecture/backend-owned-page-composition/423-bnva-04-pr790-overlap-matrix.md",
+    "docs/architecture/backend-owned-page-composition/424-bnva-04-merge-conflict-preflight.md",
+    "docs/architecture/backend-owned-page-composition/425-bnva-04-mainline-integration-recommendation.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D-01 sc_clean upgrade + 04-06D-02 clean browser L3 verification (read-only login/nav/DOM); no business-data writes; no push/merge"
+    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D runtime + 04-06F-01 read-only GitHub mainline conflict preflight; no merge/rebase/cherry-pick/push; no business-data writes"
   },
   "checks": {},
   "blockers": [
-    "sc.quality.issue L3 browser DOM NOT_RUN: NAVIGATION_AUTHORITY_DENIED for fixture_role_finance (project-domain page, finance navigation excludes it); sc_clean has no project fixture role and creating users/records is forbidden this round. L4 business interaction NOT_RUN for both pages (no records). sc.tax.deduction.registration sibling view defect remains registered (separate)."
+    "GitHub mainline merge NOT executed: merge-tree preflight shows 10 content conflicts vs PR #790, including architecture divergence on native_view_projection.py (419 vs 536 lines) and unified_page_contract_v2_assembler.py (~720-line difference). Owner review of these two implementations required before any merge. sc.quality.issue L3 remains NOT_RUN (finance role navigation denied). sc.tax.deduction.registration sibling view defect remains registered (separate)."
   ],
-  "next_exact_step": "BNVA-04-06D-02 complete: tax.certificate L3 PASS (V2 contract + ActionView list rendered, 13 valid tree fields, no source_created_*, zero console/API errors); quality.issue L3 NOT_RUN (finance role navigation denied; needs project fixture role). docs 414-418 written; run record updated. Await dispatch: either authorize a project-domain fixture role for quality L3, or close BNVA-04-06 with tax L3 evidence and defer quality browser DOM + L4."
+  "next_exact_step": "BNVA-04-06F-01 complete (read-only): merge-base 795f9fc10 confirmed; HEAD ahead 122 / behind 1; PR #790 = 27 files +1803/-36; 10 conflict files identified; architecture divergence documented (docs 422-425). Await owner review/decision on native_view_projection + unified_page_contract_v2_assembler divergence, then authorize the controlled merge commit + exact-head Quick + protected PR."
 }
