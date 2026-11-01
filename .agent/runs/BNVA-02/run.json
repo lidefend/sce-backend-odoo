@@ -30,7 +30,12 @@
     "docs/architecture/backend-owned-page-composition/179-bnva-02b-02a-integrity-validator-implementation.md",
     "docs/architecture/backend-owned-page-composition/180-bnva-02b-02a-five-page-shadow-report.md",
     "docs/architecture/backend-owned-page-composition/181-bnva-02b-02a-test-report.md",
-    "docs/architecture/backend-owned-page-composition/182-bnva-02b-02a-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/182-bnva-02b-02a-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/183-bnva-02b-publication-gate-design.md",
+    "docs/architecture/backend-owned-page-composition/184-bnva-02b-publication-gate-implementation.md",
+    "docs/architecture/backend-owned-page-composition/185-bnva-02b-legacy-compatibility-policy.md",
+    "docs/architecture/backend-owned-page-composition/186-bnva-02b-publication-regression-report.md",
+    "docs/architecture/backend-owned-page-composition/187-bnva-02b-02b-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -38,5 +43,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02A business structure integrity validator complete (shadow); await BNVA-02B-02B (publication gate) approval"
+  "next_exact_step": "BNVA-02B-02B publication gate + legacy compatibility channel complete; await BNVA-02B-02C (historical config governance) approval"
 }
