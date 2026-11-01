@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 3B complete (shared L0 parsed view); await Stage 3C approval"
+  "next_exact_step": "Stage 3C-01 inventory done; await 3C-02 approval (first fix cache lifecycle with request-scoped carrier)"
 }
