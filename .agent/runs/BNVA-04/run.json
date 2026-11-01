@@ -23,7 +23,20 @@
     "docs/architecture/backend-owned-page-composition/364-bnva-04-orphan-action-business-review.md",
     "docs/architecture/backend-owned-page-composition/365-bnva-04-industry-business-capability-map.md",
     "docs/architecture/backend-owned-page-composition/366-bnva-04-product-capability-gap-assessment.md",
-    "docs/architecture/backend-owned-page-composition/367-bnva-04-02-final-adjudication.md"
+    "docs/architecture/backend-owned-page-composition/367-bnva-04-02-final-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/368-bnva-04-workflow-productization-inventory.md",
+    "docs/architecture/backend-owned-page-composition/369-bnva-04-workflow-readiness-priority-matrix.md",
+    "docs/architecture/backend-owned-page-composition/370-bnva-04-orphan-action-lifecycle-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/371-bnva-04-business-capability-map.md",
+    "docs/architecture/backend-owned-page-composition/372-bnva-04-product-capability-gap-matrix.md",
+    "docs/architecture/backend-owned-page-composition/373-bnva-04-industry-productization-roadmap.md",
+    "docs/architecture/backend-owned-page-composition/374-bnva-04-03-final-adjudication.md",
+    "docs/architecture/backend-owned-page-composition/375-bnva-04-frontend-consumption-inventory.md",
+    "docs/architecture/backend-owned-page-composition/376-bnva-04-business-page-contract-coverage.md",
+    "docs/architecture/backend-owned-page-composition/377-bnva-04-orphan-action-frontend-consumption.md",
+    "docs/architecture/backend-owned-page-composition/378-bnva-04-contract-necessity-assessment.md",
+    "docs/architecture/backend-owned-page-composition/379-bnva-04-business-page-productization-priority.md",
+    "docs/architecture/backend-owned-page-composition/380-bnva-04-04-final-adjudication.md"
   ],
   "environment": {
     "kind": "offline",
@@ -31,7 +44,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-04-02 open: 69 workflow models have menu but no productized contract; 17 orphan action lifecycle ruling (mostly MERGE/RETIRE candidates) deferred to 04-03 business productization."
+    "BNVA-04-04 open: 25 VUE_CONTEXTUAL models (role-surface menu, no productized contract) need business-owner confirmation for minimal contract; 17 orphan actions pending business lifecycle ruling; minimal implementation scope deferred to 04-05."
   ],
-  "next_exact_step": "BNVA-04-02 done (361-367): 187 sc.* classified (50 core+contract, 69 workflow-menu-only, 11 action-only, 57 technical infra all abstract/transient); count corrected to 277; 17 orphan actions are mostly MERGE/RETIRE candidates; product gap = 69 workflow lacking contract. Next BNVA-04-03: prioritize the 69 workflow page productization + 17 orphan action lifecycle ruling."
+  "next_exact_step": "BNVA-04-04 done (375-380): frontend consumption = 50 product pages + 25 contextual (native projection) + 44 odoo-native; no orphan contract without consumer; minimal contract scope is small (subset of 25 contextual). Next BNVA-04-05: business-owner confirmation of the minimal productization set and 17 orphan action lifecycle; then minimal implementation."
 }
