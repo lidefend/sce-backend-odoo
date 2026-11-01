@@ -117,7 +117,8 @@
     "docs/architecture/backend-owned-page-composition/270-bnva-02c-finance-runtime-business-acceptance.md",
     "docs/architecture/backend-owned-page-composition/271-bnva-02c-02d-final-acceptance.md",
     "docs/architecture/backend-owned-page-composition/272-bnva-02c-02e-environment-readiness.md",
-    "docs/architecture/backend-owned-page-composition/273-bnva-02c-02e-p4-credential-stop.md"
+    "docs/architecture/backend-owned-page-composition/273-bnva-02c-02e-p4-credential-stop.md",
+    "docs/architecture/backend-owned-page-composition/274-bnva-02c-02e-p4-execution-report.md"
   ],
   "environment": {
     "kind": "offline",
@@ -125,5 +126,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02C-02E-P4 stopped: .env.local.clean missing while sc-local-clean containers/volumes still running (credential-overwrite stop condition). Await explicit confirmation of `make local.clean.rebuild CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL` before destructive rebuild"
+  "next_exact_step": "BNVA-02C-02E-P4 executed: credential regenerated (600); sc_clean fresh; module install FAILED (Error 255) on malformed reST in 'Time Off Management' module description (environment/baseline defect, not our config). Await decision on module description fix or install-module-set adjustment before retry"
 }
