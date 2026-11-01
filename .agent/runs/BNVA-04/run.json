@@ -83,15 +83,21 @@
     "docs/architecture/backend-owned-page-composition/422-bnva-04-github-mainline-history-audit.md",
     "docs/architecture/backend-owned-page-composition/423-bnva-04-pr790-overlap-matrix.md",
     "docs/architecture/backend-owned-page-composition/424-bnva-04-merge-conflict-preflight.md",
-    "docs/architecture/backend-owned-page-composition/425-bnva-04-mainline-integration-recommendation.md"
+    "docs/architecture/backend-owned-page-composition/425-bnva-04-mainline-integration-recommendation.md",
+    "docs/architecture/backend-owned-page-composition/426-bnva-04-pr790-native-projection-differential.md",
+    "docs/architecture/backend-owned-page-composition/427-bnva-04-pr790-assembler-differential.md",
+    "docs/architecture/backend-owned-page-composition/428-bnva-04-pr790-cross-file-evolution-matrix.md",
+    "docs/architecture/backend-owned-page-composition/429-bnva-04-pr790-independent-increment-audit.md",
+    "docs/architecture/backend-owned-page-composition/430-bnva-04-mainline-merge-strategy.md",
+    "docs/architecture/backend-owned-page-composition/431-bnva-04-06f02-final-adjudication.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D runtime + 04-06F-01 read-only GitHub mainline conflict preflight; no merge/rebase/cherry-pick/push; no business-data writes"
+    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D runtime + 04-06F-01/02 read-only GitHub mainline conflict preflight + PR790 differential audit; no merge/rebase/cherry-pick/push; no business-data writes"
   },
   "checks": {},
   "blockers": [
-    "GitHub mainline merge NOT executed: merge-tree preflight shows 10 content conflicts vs PR #790, including architecture divergence on native_view_projection.py (419 vs 536 lines) and unified_page_contract_v2_assembler.py (~720-line difference). Owner review of these two implementations required before any merge. sc.quality.issue L3 remains NOT_RUN (finance role navigation denied). sc.tax.deduction.registration sibling view defect remains registered (separate)."
+    "GitHub mainline merge NOT executed (awaiting owner approval after differential audit): 10 conflicts classified 5 STRICT_EVOLUTION + 1 EVOLVED_WITH_ADAPTATION, no MISSING_INCREMENT. Merge strategy = Merge Commit, Feature version for 6 source files, regenerate 2 reports, 3-way merge active-runs/BNVA-01 run. sc.quality.issue L3 remains NOT_RUN (finance role navigation denied). sc.tax.deduction.registration sibling view defect remains registered (separate)."
   ],
-  "next_exact_step": "BNVA-04-06F-01 complete (read-only): merge-base 795f9fc10 confirmed; HEAD ahead 122 / behind 1; PR #790 = 27 files +1803/-36; 10 conflict files identified; architecture divergence documented (docs 422-425). Await owner review/decision on native_view_projection + unified_page_contract_v2_assembler divergence, then authorize the controlled merge commit + exact-head Quick + protected PR."
+  "next_exact_step": "BNVA-04-06F-02 complete (read-only): PR #790 differential audit done (docs 426-431); no MISSING_INCREMENT; merge is safe via Merge Commit with Feature versions + regenerate reports + 3-way merge metadata. Await owner approval to execute the controlled merge commit, then exact-head Quick, protected PR, GitHub CI, merge main."
 }
