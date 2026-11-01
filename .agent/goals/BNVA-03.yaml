@@ -1,0 +1,38 @@
+schema_version: 1
+goal:
+  id: BNVA-03
+  title: navigation_governance_and_business_entry_authority
+  status: active
+  formal_product_layer: P0
+  supporting_layer:
+    - P1
+  layer_target: backend_navigation_authority_and_business_entry_map
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - frontend/apps/web/src/app
+    - docs/architecture/backend-owned-page-composition
+    - .agent
+  baseline:
+    branch: feature/pc01-phase5-shadow-contraction
+    full_sha: 00317630480bcdc29ab8ec8de5045e474369434a
+    source: bnva_02_backend_kernel_governance_closed
+  objective: >-
+    在已关闭的 BNVA-02 后端内核之上，审计并治理 Smart Construction 的业务入口：
+    Odoo 原生 Menu / Action / View 作为唯一原生事实，自定义导航体系只是可重建投影，
+    Vue 只负责消费与路由呈现。先形成完整、可信的企业业务入口地图，再裁定最小治理范围。
+  product_boundary:
+    standard_vs_user_specific: platform_navigation_mechanism_and_product_entry_facts
+    why_here: >-
+      导航决定发现与进入路径，服务端决定授权。原生事实与投影必须分离，前端不得成为
+      第二导航权威，也不得把菜单隐藏当作权限控制。
+    why_not_elsewhere:
+      - no_frontend_side_business_entry_authority
+      - no_menu_visibility_as_authorization
+      - no_rebuild_of_odoo_native_navigation
+    blast_radius:
+      - ir.ui.menu
+      - ir.actions.act_window
+      - ir.ui.view
+      - delivery_engine.nav / MenuFactService / MenuService.build_nav
+      - frontend routeAuthority / canonicalNavigation / workspaceHome

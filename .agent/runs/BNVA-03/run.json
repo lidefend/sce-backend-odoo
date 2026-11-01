@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "BNVA-03",
+  "branch": "feature/pc01-phase5-shadow-contraction",
+  "baseline_sha": "00317630480bcdc29ab8ec8de5045e474369434a",
+  "status": "active",
+  "goal": ".agent/goals/BNVA-03.yaml",
+  "record": "docs/architecture/backend-owned-page-composition/320-bnva-03-navigation-asset-inventory.md",
+  "scope": [
+    ".agent/goals/BNVA-03.yaml",
+    ".agent/runs/BNVA-03/run.json",
+    ".agent/active-runs.json",
+    "docs/architecture/backend-owned-page-composition/320-bnva-03-navigation-asset-inventory.md",
+    "docs/architecture/backend-owned-page-composition/321-bnva-03-navigation-authority-chain.md",
+    "docs/architecture/backend-owned-page-composition/322-bnva-03-menu-action-model-view-matrix.md",
+    "docs/architecture/backend-owned-page-composition/323-bnva-03-role-navigation-matrix.md",
+    "docs/architecture/backend-owned-page-composition/324-bnva-03-workspace-home-route-audit.md",
+    "docs/architecture/backend-owned-page-composition/325-bnva-03-frontend-navigation-consumption.md",
+    "docs/architecture/backend-owned-page-composition/326-bnva-03-architecture-gap-assessment.md",
+    "docs/architecture/backend-owned-page-composition/327-bnva-03-01-final-adjudication.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only navigation architecture audit; no database, menu, action, role or ACL writes"
+  },
+  "checks": {},
+  "blockers": [
+    "BNVA-03-01 finding: test_identity_resolver_entry_target fails 1/15 — project-manager multi-role surface omits menu_sc_project_initiation (project intake entry).",
+    "BNVA-03-01 open items: 233 menu-less act_window need triage; 709/908 runtime business behavior NOT_VERIFIED; action 652 has no productized config and no explicit act_window.view bindings."
+  ],
+  "next_exact_step": "BNVA-03-01 audit complete (320-327). Navigation architecture is sound; real gaps: project-manager intake surface missing menu_sc_project_initiation, 709/908 entry ruling, project 652 entry resolution, and triage of 233 menu-less actions. Next BNVA-03-02: adjudicate the minimum navigation governance scope for these gaps; no menu/action/view/role changes yet."
+}
