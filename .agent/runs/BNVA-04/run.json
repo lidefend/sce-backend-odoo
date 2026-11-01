@@ -67,15 +67,16 @@
     "docs/architecture/backend-owned-page-composition/404-bnva-04-quality-issue-runtime-consumption.md",
     "docs/architecture/backend-owned-page-composition/405-bnva-04-tax-certificate-runtime-consumption.md",
     "docs/architecture/backend-owned-page-composition/406-bnva-04-dual-page-vue-renderer-evidence.md",
-    "docs/architecture/backend-owned-page-composition/407-bnva-04-06d-final-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/407-bnva-04-06d-final-acceptance.md",
+    "docs/architecture/backend-owned-page-composition/408-bnva-04-runtime-source-alignment.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "BNVA-04-06 approved minimal implementation + 04-06A read-only audit + 04-06B approved native view correction + 04-06C read-only static regression + 04-06D read-only runtime verification (blocked at L1); no DB write / module upgrade / push / merge"
+    "authority": "BNVA-04-06 implementation/audit/static regression + 04-06D-01A local commits (no push) + 04-06D-01B clean binding verification; module upgrade on sc_clean authorized but blocked on module-install-state + backup precondition; no push/merge"
   },
   "checks": {},
   "blockers": [
-    "Runtime verification (L2 Contract/L3 Vue/L4 interaction) NOT_RUN: acceptance.runtime.login_probe fail-closed 'managed backend source mount differs from current worktree'; uncommitted product changes are not loaded into any running DB. Requires a governed module upgrade + frontend preview rebuild (DB/build write), not authorized this round. sc.tax.deduction.registration sibling view defect remains registered (separate)."
+    "P4-06D-01C module upgrade NOT executed: (1) LOCAL_CLEAN_MODULES=sc_norm_engine, cannot confirm via existing governed entries that sc_clean has smart_construction_core installed; risk that -u becomes an install. (2) No governed point-in-time backup entry for sc_clean; only recovery is local.clean.rebuild. Owner decision required before write. sc.tax.deduction.registration sibling view defect remains registered (separate)."
   ],
-  "next_exact_step": "BNVA-04-06D complete (L1 identity verified; L2/L3/L4 NOT_RUN, blocked by acceptance backend source-mount mismatch + no authorized module upgrade). docs 404-407 written; run record updated. Stop and await approval for a governed module upgrade in an isolated environment (plus frontend preview rebuild) before re-running L1-L4 runtime verification."
+  "next_exact_step": "BNVA-04-06D-01A source frozen at HEAD 381af4abc (product b7e2383a1 + docs 381af4abc), worktree clean; 04-06D-01B clean binding verified (source mount=pc01, db=sc_clean, health PASS, entry identity active). Await owner decision on 04-06D-01C preconditions: confirm sc_clean has smart_construction_core installed (or authorize governed install) and establish a governed sc_clean backup/recovery point before module upgrade."
 }
