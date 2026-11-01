@@ -15,7 +15,13 @@
     "docs/architecture/backend-owned-page-composition/168-bnva-02-business-structure-coverage.md",
     "docs/architecture/backend-owned-page-composition/169-bnva-02-field-lifecycle-inventory.md",
     "docs/architecture/backend-owned-page-composition/170-bnva-02-page-configuration-readiness.md",
-    "docs/architecture/backend-owned-page-composition/171-bnva-02a-final-assessment.md"
+    "docs/architecture/backend-owned-page-composition/171-bnva-02a-final-assessment.md",
+    "docs/architecture/backend-owned-page-composition/172-bnva-02b-business-section-schema.md",
+    "docs/architecture/backend-owned-page-composition/173-bnva-02b-identity-declaration-policy.md",
+    "docs/architecture/backend-owned-page-composition/174-bnva-02b-field-ownership-admission-rules.md",
+    "docs/architecture/backend-owned-page-composition/175-bnva-02b-native-group-mapping-policy.md",
+    "docs/architecture/backend-owned-page-composition/176-bnva-02b-configuration-publication-guard.md",
+    "docs/architecture/backend-owned-page-composition/177-bnva-02b-01-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -23,5 +29,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02A configuration facts inventory complete; await BNVA-02B (business structure declaration) approval"
+  "next_exact_step": "BNVA-02B-01 explicit business structure specification complete; await BNVA-02B-02 (historical config governance) approval"
 }
