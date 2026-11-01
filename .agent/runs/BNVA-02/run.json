@@ -56,7 +56,15 @@
     "docs/architecture/backend-owned-page-composition/209-bnva-02c-seed-version-identity.md",
     "docs/architecture/backend-owned-page-composition/210-bnva-02c-overlay-protection-design.md",
     "docs/architecture/backend-owned-page-composition/211-bnva-02c-migration-dry-run-report.md",
-    "docs/architecture/backend-owned-page-composition/212-bnva-02c-02b-01-acceptance.md"
+    "docs/architecture/backend-owned-page-composition/212-bnva-02c-02b-01-acceptance.md",
+    "addons/smart_core/core/controlled_seed_migration.py",
+    "addons/smart_core/tests/test_controlled_seed_migration.py",
+    "docs/architecture/backend-owned-page-composition/213-bnva-02c-migration-runner-implementation.md",
+    "docs/architecture/backend-owned-page-composition/214-bnva-02c-seed-identity-and-idempotency.md",
+    "docs/architecture/backend-owned-page-composition/215-bnva-02c-migration-transaction-and-rollback.md",
+    "docs/architecture/backend-owned-page-composition/216-bnva-02c-tenant-overlay-isolation-tests.md",
+    "docs/architecture/backend-owned-page-composition/217-bnva-02c-runner-integration-report.md",
+    "docs/architecture/backend-owned-page-composition/218-bnva-02c-02b-02-acceptance.md"
   ],
   "environment": {
     "kind": "offline",
@@ -64,5 +72,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "BNVA-02B-02C-02B-01 migration runner design & dry-run complete; await BNVA-02B-02C-02B-02 (controlled seed upgrade implementation) approval"
+  "next_exact_step": "BNVA-02B-02C-02B-02 controlled seed migration runner core implemented (16/16 tests); await BNVA-02B-02C-02B-03 (XML noupdate strategy switch + module upgrade simulation) approval"
 }
