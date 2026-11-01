@@ -3,7 +3,7 @@
   "id": "BNVA-03",
   "branch": "feature/pc01-phase5-shadow-contraction",
   "baseline_sha": "00317630480bcdc29ab8ec8de5045e474369434a",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/BNVA-03.yaml",
   "record": "docs/architecture/backend-owned-page-composition/320-bnva-03-navigation-asset-inventory.md",
   "scope": [
@@ -40,6 +40,11 @@
     "docs/architecture/backend-owned-page-composition/346-bnva-03-orphan-business-entry-candidates.md",
     "docs/architecture/backend-owned-page-composition/347-bnva-03-action-asset-lifecycle-recommendations.md",
     "docs/architecture/backend-owned-page-composition/348-bnva-03-04c-final-assessment.md",
+    "docs/architecture/backend-owned-page-composition/349-bnva-03-own-action-caller-matrix.md",
+    "docs/architecture/backend-owned-page-composition/350-bnva-03-same-file-action-reference-audit.md",
+    "docs/architecture/backend-owned-page-composition/351-bnva-03-unmenu-action-final-classification.md",
+    "docs/architecture/backend-owned-page-composition/352-bnva-03-navigation-asset-lifecycle.md",
+    "docs/architecture/backend-owned-page-composition/353-bnva-03-navigation-governance-final-acceptance.md",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
@@ -48,7 +53,7 @@
   },
   "checks": {},
   "blockers": [
-    "BNVA-03-05 pending: 17 smart_construction_core single-file actions need same-file caller confirmation; 709/908 runtime business behavior NOT_VERIFIED; multi-role/company runtime NOT_RUN."
+    "BNVA-03-05 closure findings: 17 smart_construction_core actions are ORPHAN_CANDIDATE (defined, no navigation/invocation caller) — lifecycle ruling deferred to BNVA-04. 709/908 runtime behavior NOT_VERIFIED; multi-role/company runtime NOT_RUN."
   ],
-  "next_exact_step": "BNVA-03-04C done (344-348): 179 menu-less actions first-pass — 45 multi-file referenced, 134 single-file; ~116 are Odoo standard internal actions, 17 are smart_construction_core candidates needing same-file caller confirmation. Next BNVA-03-05: same-file caller confirmation + action lifecycle registration + navigation governance final closure."
+  "next_exact_step": "BNVA-03 CLOSED (COMPLETED). 233 unmenu actions fully classified (54+45+117+17). 17 ORPHAN_CANDIDATE + 709/908 runtime + multi-role runtime carried to BNVA-04; do not auto-add menus or auto-delete."
 }
