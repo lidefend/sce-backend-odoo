@@ -243,6 +243,9 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
         root = Path(self.temp.name) / "mock-root"
         (root / "scripts/common").mkdir(parents=True)
         (root / "scripts/test").mkdir(parents=True)
+        (root / "config/acceptance").mkdir(parents=True)
+        (root / "config/acceptance/isolated_entry_identity.v1.env").write_text(
+            "SC_ENTRY_NAMESPACE=test\nSC_ENTRY_AUDIENCE=tenant\nSC_ENTRY_SHARED_SECRET=synthetic-only\nSC_ENTRY_ROUTE_VERSION=1\n")
         identity = root / "scripts/common/frontend_release_ci_identity.sh"
         calls = Path(self.temp.name) / "resource-validations"
         compose_calls = Path(self.temp.name) / "compose-calls"

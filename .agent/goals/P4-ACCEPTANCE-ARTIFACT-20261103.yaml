@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: P4-ACCEPTANCE-ARTIFACT-20261103
+  status: active
+  formal_product_layer: P4
+  objective: Decouple shared acceptance runtime custody from mutable topic worktrees while preserving exact source identity and reversible lifecycle.

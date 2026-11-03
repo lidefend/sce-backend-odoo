@@ -957,7 +957,7 @@ acceptance.runtime.infrastructure.restore: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 
 .PHONY: acceptance.runtime.baseline_recovery.audit acceptance.runtime.baseline_rebuild acceptance.runtime.carrier.discard acceptance.runtime.carrier.provision verify.acceptance.runtime.baseline_rebuild.unit verify.candidate.profile.unit
-verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid verify.candidate.profile.unit
+verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid verify.candidate.profile.unit verify.acceptance.artifact.unit
 	@bash -n scripts/dev/frontend_acceptance_baseline_rebuild.sh scripts/dev/frontend_acceptance_runtime.sh scripts/dev/frontend_acceptance_operation_entry.sh scripts/dev/frontend_acceptance_carrier_common.sh scripts/dev/frontend_acceptance_carrier_discard.sh scripts/dev/frontend_acceptance_carrier_provision.sh
 	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity scripts.verify.test_frontend_acceptance_carrier_discard scripts.verify.test_frontend_acceptance_carrier_common scripts.verify.test_frontend_acceptance_runtime_standard_profile scripts.verify.test_frontend_acceptance_candidate_guards
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
@@ -997,7 +997,7 @@ frontend.acceptance.down: guard.prod.forbid
 frontend.acceptance.health:
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-health
 
-backend.acceptance.up: guard.prod.forbid
+backend.acceptance.up: guard.prod.forbid acceptance.artifact.verify
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh backend-up
 .PHONY: backend.acceptance.replace-stale
 backend.acceptance.replace-stale: guard.prod.forbid
@@ -1854,3 +1854,15 @@ local.dev.journal.role.identities: guard.prod.forbid local.dev.ready
 	  SC_CONFIRM_JOURNAL_RECOVERY=READ_ONLY_ACCOUNTING_ROLE_IDENTITIES \
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_journal_recovery.py
+
+ACCEPTANCE_ARTIFACT_SHA ?= $(shell git rev-parse HEAD)
+export SC_ACCEPTANCE_SOURCE_SHA = $(ACCEPTANCE_ARTIFACT_SHA)
+
+# Exact Git-object custody is independent of the invoking topic worktree.
+.PHONY: acceptance.artifact.build acceptance.artifact.verify verify.acceptance.artifact.unit
+acceptance.artifact.build: guard.prod.forbid
+	@python3 scripts/dev/acceptance_artifact.py build --source-sha "$(ACCEPTANCE_ARTIFACT_SHA)"
+acceptance.artifact.verify: guard.prod.forbid acceptance.artifact.build
+	@python3 scripts/dev/acceptance_artifact.py verify --source-sha "$(ACCEPTANCE_ARTIFACT_SHA)"
+verify.acceptance.artifact.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_acceptance_artifact
