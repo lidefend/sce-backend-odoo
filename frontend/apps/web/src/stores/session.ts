@@ -903,7 +903,6 @@ export const useSessionStore = defineStore('session', {
           this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
-          this.invalidateProductCapabilityCatalog();
           this.publicPageContractStatus = 'idle';
           this.pageContracts = {};
           this.sceneReadyContract = null;
@@ -1324,6 +1323,7 @@ export const useSessionStore = defineStore('session', {
           // previous bootstrap request failed.
         }
       }
+      if (!isCurrentContextEpoch(requestEpoch)) return;
       const run = (async () => {
       // Every authoritative bootstrap starts fail-closed. This covers login,
       // Company/record-context/role transitions and policy publish/rollback refreshes.

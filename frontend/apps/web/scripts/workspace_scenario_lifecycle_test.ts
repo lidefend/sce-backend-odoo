@@ -137,6 +137,24 @@ assert.equal(await beforeCapabilityRestore.result, null);
 assert.equal(session.productCapabilityCatalog, null);
 console.log('[capability_catalog_lifecycle_test] PASS cases=4 store=actual transport=controlled');
 
+// A forced bootstrap waiting for an older request must revalidate the epoch
+// after waiting, before clearing the new company's already-ready navigation.
+session.initStatus = 'ready';
+const bootstrapInOldCompany = await nextRequest(() => session.loadAppInit({ force: true }));
+const requestCountBeforeQueuedBootstrap = pending.length;
+const queuedOldBootstrap = session.loadAppInit({ force: true });
+beginContextTransition();
+session.initStatus = 'ready';
+session.menuTree = [{ id: 999, name: 'Current company', route: '/current-company' }];
+bootstrapInOldCompany.request.fail(new Error('obsolete company bootstrap'));
+await bootstrapInOldCompany.result;
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(pending.length, requestCountBeforeQueuedBootstrap, 'obsolete queued bootstrap must not send another request');
+await queuedOldBootstrap;
+assert.equal(session.initStatus, 'ready');
+assert.equal(session.menuTree[0].id, 999);
+console.log('[queued_bootstrap_context_test] PASS cases=1 store=actual transport=controlled');
+
 // The actual workspace consumer must not expand shortcuts while the projection
 // is unknown, failed, or invalidated. Its decisions still come from the server.
 session.clearSession();
