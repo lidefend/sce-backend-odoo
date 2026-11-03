@@ -167,6 +167,17 @@ class TestNativeHandlingProjection(unittest.TestCase):
         self.assertEqual(item["target"], {"type": "action", "action_xmlid": "test.action"})
         self.assertEqual(item["model"], self.action.res_model)
 
+    def test_denied_view_acl_does_not_read_metadata_or_break_startup(self):
+        self.denied_models.add('ir.ui.view')
+        def denied_ref(*args, **kwargs):
+            raise AssertionError('must check metadata ACL before resolving/reading view')
+        self.env.ref = denied_ref
+        self.assertEqual(self.project(self.env, self.scene)['item_count'], 0)
+
+    def test_denied_action_metadata_returns_no_entries(self):
+        self.denied_models.add('ir.actions.act_window')
+        self.assertEqual(self.project(self.env, self.scene)['item_count'], 0)
+
     def test_remediation_uses_only_authorized_native_metadata(self):
         self.arch.find('.//button').set('data-sc-remediation', ' profile, personnel ')
         item = self.project(self.env, self.scene)['groups'][0]['items'][0]

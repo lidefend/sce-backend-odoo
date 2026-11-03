@@ -46,13 +46,20 @@ def project_native_handling_catalog(env, scene):
         raise ValueError("NATIVE_HANDLING_SOURCE_INVALID")
     if env is None:
         raise ValueError("NATIVE_HANDLING_ENV_REQUIRED")
-    view = env.ref(source["view_xmlid"], raise_if_not_found=False)
-    if not view or view._name != "ir.ui.view" or view.type != "form" or not view.active:
-        raise ValueError("NATIVE_HANDLING_VIEW_UNAVAILABLE")
     catalog = {"contract_version": "handling_entry_catalog.v1",
                "domain": str(scene.get("code") or scene.get("key") or ""),
                "entry_mode": "integrated_handling", "source_authority": "ir.ui.view + ir.actions.act_window",
                "source_view_xmlid": source["view_xmlid"], "groups": [], "group_count": 0, "item_count": 0}
+    # Startup projects shared scene declarations for ordinary principals too.
+    # Denied metadata must produce no entries before any field is read, rather
+    # than aborting the whole session or elevating the principal.
+    if not env["ir.ui.view"].check_access_rights("read", raise_exception=False):
+        return catalog
+    view = env.ref(source["view_xmlid"], raise_if_not_found=False)
+    if not view or view._name != "ir.ui.view" or view.type != "form" or not view.active:
+        raise ValueError("NATIVE_HANDLING_VIEW_UNAVAILABLE")
+    if not env["ir.actions.act_window"].check_access_rights("read", raise_exception=False):
+        return catalog
     if view.groups_id and not (view.groups_id & env.user.groups_id):
         return catalog
     if not env[view.model].check_access_rights("read", raise_exception=False):

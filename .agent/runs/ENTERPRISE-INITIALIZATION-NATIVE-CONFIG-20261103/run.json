@@ -3,7 +3,7 @@
   "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
   "branch": "feature/enterprise-initialization-native-config-20261103",
   "baseline_sha": "852d7f2a2f448f84bbbe5b0df56875262de803fc",
-  "status": "verification_pending",
+  "status": "active",
   "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
   "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
   "scope": [
@@ -48,7 +48,7 @@
     "authority": "Reuse registered local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180; daily read-only only; no new credentials or database"
   },
   "blockers": [
-    "Owner independent review of final clean candidate before governed PR publication; required remote CI, protected integration and daily deployment not yet performed."
+    "Current candidate PR required checks, protected merge and daily deployment pending"
   ],
   "layer": {
     "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
@@ -76,7 +76,7 @@
     },
     "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Owner independently reviews the clean candidate fingerprint in live_state_file; after explicit approval use governed PR publication, current remote CI and protected integration/deployment. Local enterprise initialization implementation and focused acceptance complete.",
+  "next_exact_step": "Validate ordinary finance startup after native metadata ACL early-denial fix; record required merge suites, publish current candidate and deploy protected main per owner instruction.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -285,6 +285,15 @@
     "continuation_final_binding_l1": {
       "status": "passed",
       "log": ".runtime/enterprise-init/continuation-binding-iteration.log"
+    },
+    "integration_startup_regression": {
+      "classification": "product_defect",
+      "failed_receipt": ".runtime/enterprise-init/integration-contract-receipt.log",
+      "diagnosis": "ordinary finance principal lacks ir.ui.view read ACL; native scene metadata read occurred before access check and aborted system.init",
+      "fix": "P0 generic native projection checks metadata read ACL before view field access; denied returns empty entries, no elevation",
+      "tests": 21,
+      "status": "passed",
+      "log": ".runtime/enterprise-init/integration-startup-tests.log"
     }
   },
   "checks": {},
@@ -303,13 +312,14 @@
     "P0 preserves the source reference through user contract compaction and projects native groups/action/model read ACL; missing declarations fail closed."
   ],
   "closure": {
-    "local_implementation": "complete",
+    "local_implementation": "startup regression fixed; integration checks pending",
     "local_acceptance": "passed",
     "business_fact_authority": "native models/views/actions/ACL; scene projection only",
     "frontend": "company/session-aware diagnostic lifecycle and native remediation; readable theme-based cards",
     "remote_mutations": false,
     "full_quick": "not_run_incremental_policy",
     "business_data_mutations": "synthetic TransactionCase rollback only",
-    "pending": "owner independent review, governed PR/current CI/merge/deployment"
+    "pending": "owner independent review, governed PR/current CI/merge/deployment",
+    "owner_authorization": "Current request: 先集成部署日常开发服务器"
   }
 }
