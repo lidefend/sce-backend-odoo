@@ -112,6 +112,26 @@ try {
         scope: 'native_configuration_and_existing_setup_first_hop', initializationEntry: 'enterprise.setup',
         catalogCount: catalog.business_scenarios.length, mutationPerformed: false };
       await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });
+      if (process.env.BOOTSTRAP_ENTERPRISE_INITIALIZATION === '1') {
+        assert.ok(managementOnly, 'initialization traversal is scoped to the config-admin journey');
+        const entries = ['企业信息', '组织架构', '岗位管理', '人员与账号', '业务权限分配'];
+        observed.initializationEntries = [];
+        for (const label of entries) {
+          await page.goto(`${base}/s/enterprise.setup`);
+          const button = page.locator('.handling-surface').getByRole('button', { name: label, exact: true });
+          await button.waitFor();
+          assert.equal(await button.isEnabled(), true, `${label} has native action authority`);
+          const offset = observed.contracts.length;
+          await button.click();
+          await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));
+          await page.locator('[data-list-composition="official-standard-list"]').waitFor();
+          await page.waitForLoadState('networkidle');
+          const contracts = observed.contracts.slice(offset).filter(row => row.intent.startsWith('ui.contract'));
+          assert.ok(contracts.some(row => row.payload.ok), `${label} consumes an actual successful contract`);
+          assert.deepEqual(await page.locator('[role="alert"]').allTextContents(), [], `${label} has no blocking alert`);
+          observed.initializationEntries.push({ label, route: page.url().replace(base, ''), contractCount: contracts.length });
+        }
+      }
       if (managementOnly) {
         await page.unrouteAll({ behavior: 'wait' });
         assert.deepEqual(observed.blockedWrites, [], 'no unregistered request in management recovery');

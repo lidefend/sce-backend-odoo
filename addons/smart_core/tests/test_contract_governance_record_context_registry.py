@@ -21,6 +21,24 @@ class ContractGovernanceRecordContextRegistryTests(unittest.TestCase):
     def setUp(self):
         self.contract_governance = _load_contract_governance()
 
+    def test_native_scene_source_survives_user_mode_without_other_extensions(self):
+        source = {"view_xmlid": "test.native_view", "debug": "private"}
+        scene = self.contract_governance._sanitize_scene_for_user({
+            "code": "test.setup", "extensions": {
+                "native_handling_entry_source": source,
+                "debug_payload": {"private": True},
+                "handling_entry_catalog_v1": {"groups": [{"key": "stale"}]},
+            }})
+        self.assertEqual(scene["extensions"], {
+            "native_handling_entry_source": {"view_xmlid": "test.native_view"}})
+        self.assertEqual(source["debug"], "private", "source data must not be mutated")
+
+    def test_invalid_native_scene_source_is_not_silently_dropped(self):
+        for source in (None, {}, {"view_xmlid": ""}, {"view_xmlid": 3}):
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, "SOURCE_INVALID"):
+                self.contract_governance._sanitize_scene_for_user({
+                    "code": "test.setup", "extensions": {"native_handling_entry_source": source}})
+
     def test_core_has_no_default_business_record_context_clear_models(self):
         self.assertEqual(self.contract_governance.LEGACY_RECORD_CONTEXT_CLEAR_MODELS, set())
 

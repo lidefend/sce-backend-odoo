@@ -26,7 +26,10 @@
     "addons/smart_construction_core/models/support/res_company.py",
     "addons/smart_construction_core/security/ir.model.access.csv",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
-    "addons/smart_construction_core/tests/test_system_permission_separation.py"
+    "addons/smart_construction_core/tests/test_system_permission_separation.py",
+    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
+    "addons/smart_core/utils/contract_governance_user_surface.py",
+    "addons/smart_core/tests/test_contract_governance_record_context_registry.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -58,12 +61,15 @@
       "limits": "Static only; runtime reuse planner flagged changed inputs; no runtime reuse claimed"
     },
     "company_security_orm": {
-      "status": "not_run",
-      "reason": "Pending native ACL/view upgrade in registered acceptance runtime"
+      "status": "passed",
+      "tests": 2,
+      "log": ".runtime/enterprise-init/module-upgrade-orm.log",
+      "limits": "Exact two company boundary cases; transactions rolled back"
     },
     "initialization_journey": {
-      "status": "not_run",
-      "reason": "Pending runtime update and actual contract/entry readback"
+      "status": "failed",
+      "log": ".runtime/enterprise-init/bootstrap-browser.log",
+      "reason": "P0 user surface sanitizer dropped declared native view source before scene projection; fixing explicit source transport"
     }
   },
   "blockers": [],
@@ -73,7 +79,8 @@
     "why_here": "Native declarations own entry metadata and access; scene only consumes projections",
     "why_not_elsewhere": "No provider/frontend duplicate action/menu/role lists",
     "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
-    "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant."
+    "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
+    "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests"
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
