@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103
+  status: active
+  formal_product_layer: P1
+  objective: Deliver enterprise initialization from native view/action/group facts, retaining existing scenario orchestration and authorization.

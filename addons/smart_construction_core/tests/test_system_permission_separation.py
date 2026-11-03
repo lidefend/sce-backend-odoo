@@ -19,6 +19,36 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         cls.job_a = cls.env['hr.job'].create({'name': 'Synthetic position A', 'company_id': cls.env.company.id})
         cls.job_b = cls.env['hr.job'].create({'name': 'Synthetic position B', 'company_id': cls.env.company.id})
 
+    def test_enterprise_profile_write_is_current_company_only(self):
+        company = self.env.company
+        actor = company.with_user(self.manager).with_context(allowed_company_ids=company.ids)
+        self.assertFalse(actor.env.su)
+        self.assertFalse(self.manager.has_group('base.group_system'))
+        actor.write({'name': 'Synthetic updated enterprise', 'city': 'Synthetic city'})
+        self.assertEqual(company.name, 'Synthetic updated enterprise')
+        self.assertEqual(company.city, 'Synthetic city')
+        other = self.env['res.company'].create({'name': 'Synthetic other enterprise'})
+        self.register_business_company(other)
+        self.manager.write({'company_ids': [(4, other.id)]})
+        with self.assertRaises(AccessError):
+            other.with_user(self.manager).with_context(
+                allowed_company_ids=[company.id, other.id]).write({'name': 'Denied'})
+        other.with_user(self.manager).with_context(
+            allowed_company_ids=[other.id, company.id]).write({'city': 'Switched company'})
+        self.assertEqual(other.city, 'Switched company')
+
+    def test_enterprise_profile_cannot_write_system_fields_or_create_company(self):
+        actor = self.env.company.with_user(self.manager)
+        for values in ({'currency_id': self.env.ref('base.USD').id},
+                       {'sc_default_payment_terms': 'net60'}, {'parent_id': False}):
+            with self.subTest(values=values), self.assertRaises(AccessError):
+                actor.write(values)
+        self.assertFalse(actor.check_access_rights('create', raise_exception=False))
+        self.assertFalse(actor.check_access_rights('unlink', raise_exception=False))
+        ordinary = self._subject('general_user')
+        with self.assertRaises(AccessError):
+            self.env.company.with_user(ordinary).write({'city': 'Denied'})
+
     def _group(self, suffix):
         return self.env.ref('smart_construction_core.group_sc_role_' + suffix)
 

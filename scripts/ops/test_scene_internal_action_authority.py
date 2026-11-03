@@ -97,5 +97,95 @@ class TestSceneInternalActionAuthority(unittest.TestCase):
         self.assertEqual(_mod.build_scene_internal_actions(env, scenes), {})
 
 
+class TestNativeHandlingProjection(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        from xml.etree import ElementTree as etree
+        spec = importlib.util.spec_from_file_location(
+            "native_handling_entry_catalog", "addons/smart_core/core/native_handling_entry_catalog.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.project = module.project_native_handling_catalog
+        self.arch = etree.fromstring(b'<form><sheet><group name="setup" string="Setup"><button name="test.action" type="action" string="Profile"/></group></sheet></form>')
+        self.groups = {"test.config"}
+        self.denied_models = set()
+        self.action = types.SimpleNamespace(
+            _name="ir.actions.act_window", id=7, res_model="res.company", name="Company",
+            groups_id={"test.config"}, get_external_id=lambda: {7: "test.action"})
+        self.view = types.SimpleNamespace(
+            _name="ir.ui.view", active=True, type="form", model="res.company", groups_id={"test.config"},
+            _get_combined_arch=lambda: self.arch)
+        refs = {"test.view": self.view, "test.action": self.action}
+        case = self
+
+        class Env:
+            user = types.SimpleNamespace(groups_id=case.groups, has_group=lambda group: group in case.groups)
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return refs.get(xmlid)
+
+            def __getitem__(self, model):
+                return types.SimpleNamespace(check_access_rights=lambda operation, raise_exception=False: model not in case.denied_models)
+
+        self.env = Env()
+        self.scene = {"code": "test.setup", "extensions": {"native_handling_entry_source": {"view_xmlid": "test.view"}}}
+
+    def test_native_label_order_and_action_identity(self):
+        self.arch.find(".//button").set("string", "Updated native label")
+        catalog = self.project(self.env, self.scene)
+        self.assertEqual(catalog["item_count"], 1)
+        item = catalog["groups"][0]["items"][0]
+        self.assertEqual(item["label"], "Updated native label")
+        self.assertEqual(item["target"], {"type": "action", "action_xmlid": "test.action"})
+        self.assertEqual(item["model"], self.action.res_model)
+
+    def test_denied_view_never_falls_back_to_historical_catalog(self):
+        self.scene["handling_entry_catalog"] = {"groups": [{"items": [{"key": "stale"}]}]}
+        self.groups.clear()
+        self.assertEqual(self.project(self.env, self.scene)["item_count"], 0)
+
+    def test_denied_action_group(self):
+        self.action.groups_id = {"test.admin"}
+        self.assertEqual(self.project(self.env, self.scene)["item_count"], 0)
+
+    def test_denied_target_model_acl(self):
+        self.action.res_model = "res.users"
+        self.denied_models.add("res.users")
+        self.assertEqual(self.project(self.env, self.scene)["item_count"], 0)
+
+    def test_ancestor_and_negative_groups(self):
+        sheet = self.arch.find("sheet")
+        for restriction in ("test.admin", "!test.config", "test.config,!test.config"):
+            with self.subTest(restriction=restriction):
+                sheet.set("groups", restriction)
+                self.assertEqual(self.project(self.env, self.scene)["item_count"], 0)
+
+    def test_invisible_ancestor(self):
+        self.arch.find("sheet").set("invisible", "1")
+        self.assertEqual(self.project(self.env, self.scene)["item_count"], 0)
+
+    def test_record_dependent_visibility_rejected(self):
+        self.arch.find("sheet").set("invisible", "state == 'draft'")
+        with self.assertRaisesRegex(ValueError, "MODIFIER_UNSUPPORTED"):
+            self.project(self.env, self.scene)
+
+    def test_untransported_button_context_rejected(self):
+        self.arch.find(".//button").set("context", "{'default_active': False}")
+        with self.assertRaisesRegex(ValueError, "CONTEXT_UNSUPPORTED"):
+            self.project(self.env, self.scene)
+
+    def test_missing_declared_source_fails_closed(self):
+        self.scene["extensions"]["native_handling_entry_source"]["view_xmlid"] = "test.missing"
+        with self.assertRaisesRegex(ValueError, "VIEW_UNAVAILABLE"):
+            self.project(self.env, self.scene)
+
+    def test_legacy_scene_is_unchanged(self):
+        self.assertIsNone(self.project(None, {"code": "legacy"}))
+
+    def test_native_source_requires_principal(self):
+        with self.assertRaisesRegex(ValueError, "ENV_REQUIRED"):
+            self.project(None, self.scene)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -60,10 +60,11 @@
         <field name="res_model">hr.department</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_sc_organization_department_tree"/>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('view_sc_organization_department_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_sc_organization_department_form')})]"/>
         <field name="search_view_id" ref="view_sc_organization_department_search"/>
         <field name="domain">[('name', 'not in', ['系统管理', 'Administration'])]</field>
         <field name="context">{}</field>
-        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
 
     <menuitem id="menu_sc_organization_department"
@@ -71,5 +72,5 @@
               parent="menu_sc_business_base_config_group"
               action="action_sc_organization_department"
               sequence="10"
-              groups="smart_construction_core.group_sc_cap_data_read"/>
+              groups="smart_construction_core.group_sc_cap_data_read,smart_construction_core.group_sc_cap_business_config_admin"/>
 </odoo>

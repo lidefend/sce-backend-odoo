@@ -724,8 +724,8 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         post = next((row for row in rows if row.get("code") == "enterprise.post"), {})
 
         self.assertEqual(((company.get("target") or {}).get("route")), "/s/enterprise.company")
-        self.assertEqual(((company.get("target") or {}).get("menu_xmlid")), "base.menu_action_res_company_form")
-        self.assertEqual(((company.get("target") or {}).get("action_xmlid")), "base.action_res_company_form")
+        self.assertNotIn("menu_xmlid", company.get("target") or {})
+        self.assertEqual(((company.get("target") or {}).get("action_xmlid")), "smart_construction_core.action_sc_enterprise_company")
         self.assertEqual(((department.get("target") or {}).get("route")), "/s/enterprise.department")
         self.assertEqual(((department.get("target") or {}).get("action_xmlid")), "smart_construction_core.action_sc_organization_department")
         self.assertEqual(((user.get("target") or {}).get("route")), "/s/enterprise.user")
@@ -1090,13 +1090,10 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
-            maps["action_xmlid_scene_map"]["base.action_res_company_form"],
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_enterprise_company"],
             "enterprise.company",
         )
-        self.assertEqual(
-            maps["menu_scene_map"]["base.menu_action_res_company_form"],
-            "enterprise.company",
-        )
+        self.assertNotIn("base.menu_action_res_company_form", maps["menu_scene_map"])
         self.assertEqual(
             maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_organization_department"],
             "enterprise.department",
@@ -1215,9 +1212,10 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         payload = enterprise_setup_provider.build(scene_key="enterprise.setup")
         self.assertEqual(payload.get("scene_key"), "enterprise.setup")
         self.assertEqual((payload.get("guidance") or {}).get("title"), "企业初始化工作空间")
-        self.assertEqual((payload.get("primary_action") or {}).get("scene_key"), "enterprise.company")
-        self.assertEqual(payload.get("next_scene"), "enterprise.company")
-        self.assertEqual(payload.get("setup_mainline"), ["enterprise.company", "enterprise.department", "enterprise.post", "enterprise.user"])
+        # Providers may describe the journey, but may not duplicate native entry facts.
+        for field in ("primary_action", "next_scene", "setup_mainline", "handling_entry_catalog"):
+            self.assertNotIn(field, payload)
+        self.assertIn("业务权限", payload["guidance"]["message"])
 
     def test_smart_core_nav_scene_maps_include_material_resource_targets(self):
         _reset_caches()

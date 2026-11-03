@@ -86,8 +86,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "name": "企业信息",
             "target": {
                 "route": "/s/enterprise.company",
-                "menu_xmlid": "base.menu_action_res_company_form",
-                "action_xmlid": "base.action_res_company_form",
+                "action_xmlid": "smart_construction_core.action_sc_enterprise_company",
                 "model": "res.company",
                 "view_type": "form",
             },

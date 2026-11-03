@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
+  "branch": "feature/enterprise-initialization-native-config-20261103",
+  "baseline_sha": "852d7f2a2f448f84bbbe5b0df56875262de803fc",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
+  "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
+    ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
+    "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    "addons/smart_construction_core/views/support/organization_department_views.xml",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
+    "addons/smart_construction_scene/providers/enterprise_setup_provider.py",
+    "addons/smart_core/core/native_handling_entry_catalog.py",
+    "addons/smart_core/core/scene_ready_contract_builder.py",
+    "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "scripts/ops/test_scene_internal_action_authority.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "addons/smart_construction_core/models/support/res_company.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_core/tests/test_system_permission_separation.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Reuse registered local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180; daily read-only only; no new credentials or database"
+  },
+  "checks": {
+    "native_projection": {
+      "status": "passed",
+      "command": "make verify.nav01.native_authority.unit",
+      "tests": 14,
+      "log": ".runtime/enterprise-init/native-test-2.log",
+      "limits": "14 internal-action/projection cases plus existing authority suites; initial test-only lxml dependency failure retained in native-test.log"
+    },
+    "scene_semantics": {
+      "status": "passed",
+      "command": "python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+      "tests": 63,
+      "log": ".runtime/enterprise-init/scene-tests-2.log"
+    },
+    "configuration_guard": {
+      "status": "passed",
+      "command": "make verify.product.configuration_center.wave1.guard",
+      "log": ".runtime/enterprise-init/config-guard.log"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/enterprise-init/iteration.log",
+      "limits": "Static only; runtime reuse planner flagged changed inputs; no runtime reuse claimed"
+    },
+    "company_security_orm": {
+      "status": "not_run",
+      "reason": "Pending native ACL/view upgrade in registered acceptance runtime"
+    },
+    "initialization_journey": {
+      "status": "not_run",
+      "reason": "Pending runtime update and actual contract/entry readback"
+    }
+  },
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
+    "standard_vs_user_specific": "Standard enterprise initialization, no customer-specific data",
+    "why_here": "Native declarations own entry metadata and access; scene only consumes projections",
+    "why_not_elsewhere": "No provider/frontend duplicate action/menu/role lists",
+    "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
+    "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant."
+  },
+  "validation_plan": {
+    "earliest": "L1 native XML/semantic projection tests",
+    "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
+    "excluded": "No account/role or enterprise enablement changes on daily server; no full Quick or environment rebuild"
+  },
+  "next_exact_step": "Commit local implementation for immutable acceptance source, run affected module upgrade and exact company permission tests; then inspect initialization contracts and actual entries.",
+  "live_state_file": ".runtime/enterprise-init/state.json"
+}

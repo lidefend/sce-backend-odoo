@@ -211,8 +211,10 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                 _key = str(_row.get("code") or _row.get("key") or "").strip()
                 if not _key:
                     continue
-                _catalog = _row.get("handling_entry_catalog")
-                if not isinstance(_catalog, dict) or not _catalog.get("groups"):
+                from odoo.addons.smart_core.core.native_handling_entry_catalog import project_native_handling_catalog
+                _native_catalog = project_native_handling_catalog(env, _row)
+                _catalog = _native_catalog if _native_catalog is not None else _row.get("handling_entry_catalog")
+                if _native_catalog is None and (not isinstance(_catalog, dict) or not _catalog.get("groups")):
                     _provider = _resolve_scene_provider_payload(
                         _key,
                         {

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sc_enterprise_company_tree" model="ir.ui.view">
+        <field name="name">res.company.sc.enterprise.tree</field>
+        <field name="model">res.company</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <tree string="企业信息" create="0" delete="0">
+                <field name="name"/><field name="vat"/><field name="phone"/><field name="email"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_sc_enterprise_company_form" model="ir.ui.view">
+        <field name="name">res.company.sc.enterprise.form</field>
+        <field name="model">res.company</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="企业信息" create="0" delete="0">
+                <sheet>
+                    <group name="enterprise_identity" string="企业资料">
+                        <field name="name" required="1"/><field name="vat"/>
+                        <field name="currency_id" readonly="1"/>
+                    </group>
+                    <group name="enterprise_contact" string="联系方式">
+                        <field name="phone"/><field name="email"/><field name="website"/>
+                        <field name="country_id"/><field name="state_id"/><field name="city"/>
+                        <field name="street"/><field name="street2"/><field name="zip"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sc_enterprise_company" model="ir.actions.act_window">
+        <field name="name">企业信息</field><field name="res_model">res.company</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('view_sc_enterprise_company_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_sc_enterprise_company_form')})]"/>
+        <field name="domain">[('id', '=', allowed_company_ids[0])]</field>
+        <field name="context">{'create': False, 'delete': False}</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+    </record>
+    <!-- The native form is the sole maintained initialization entry definition.
+         The scene references this view and reads its authorized action buttons. -->
+    <record id="view_sc_enterprise_initialization_form" model="ir.ui.view">
+        <field name="name">res.company.sc.enterprise.initialization</field>
+        <field name="model">res.company</field><field name="priority">100</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+        <field name="arch" type="xml">
+            <form string="企业初始化" create="0" edit="0" delete="0">
+                <sheet>
+                    <group name="enterprise_bootstrap" string="企业基础初始化">
+                        <button name="%(action_sc_enterprise_company)d" type="action" string="企业信息"/>
+                        <button name="%(action_sc_organization_department)d" type="action" string="组织架构"/>
+                        <button name="%(action_sc_product_job_management_v1)d" type="action" string="岗位管理"/>
+                        <button name="%(action_sc_runtime_user_management)d" type="action" string="人员与账号"/>
+                        <button name="%(action_sc_product_data_permission_v1)d" type="action" string="业务权限分配"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

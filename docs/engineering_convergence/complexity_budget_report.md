@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5054`
+- Scanned files: `5056`
 - Files requiring split plan: `72`
 - Files above warning threshold: `145`
 
@@ -65,7 +65,7 @@ Generated from repository source files. This report is informational during the 
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1710 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1669 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1644 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
@@ -103,7 +103,7 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
-| 1368 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
@@ -292,7 +292,7 @@ Generated from repository source files. This report is informational during the 
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1710 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1669 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |

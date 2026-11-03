@@ -253,6 +253,7 @@
         # Complete locked menu surface. Capability refinement must preserve
         # these stable menu paths and XMLIDs.
         'views/menu_product_contract_completion_v1.xml',
+        'views/support/enterprise_initialization_views.xml',
         # Action-scoped project master-data maintenance form. Keep this after
         # the complete menu/action declarations so it cannot become the
         # default project.project form used by dashboard fallbacks.

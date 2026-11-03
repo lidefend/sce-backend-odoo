@@ -37,6 +37,15 @@ class ResCompany(models.Model):
     )
 
     def write(self, vals):
+        if (not self.env.su
+                and self.env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin")
+                and not self.env.user.has_group("base.group_system")):
+            profile_fields = {"name", "vat", "phone", "email", "website", "country_id",
+                              "state_id", "city", "street", "street2", "zip"}
+            if set(vals) - profile_fields:
+                raise AccessError(_("企业初始化仅允许维护企业基本资料。"))
+            if any(company != self.env.company for company in self):
+                raise AccessError(_("只能维护当前公司的企业资料，请先切换公司。"))
         parameter_fields = {
             "sc_default_payment_terms", "sc_cost_from_account_move",
             "sc_cost_from_purchase", "sc_cost_from_stock",

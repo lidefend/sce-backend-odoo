@@ -1299,6 +1299,13 @@ def _scene_ready_entry(
             if current in (None, {}, [], "") and provider_value not in (None, {}, [], ""):
                 scene_payload[field] = provider_value
 
+    from odoo.addons.smart_core.core.native_handling_entry_catalog import project_native_handling_catalog
+    native_catalog = project_native_handling_catalog(env, scene_payload)
+    if native_catalog is not None:
+        scene_payload["handling_entry_catalog"] = native_catalog
+        scene_payload["extensions"] = {**(scene_payload.get("extensions") or {}),
+                                       "handling_entry_catalog_v1": native_catalog}
+
     if not isinstance(scene_payload.get("actions"), list):
         provider_actions = scene_provider_payload.get("default_actions") if isinstance(scene_provider_payload.get("default_actions"), list) else []
         if provider_actions:
