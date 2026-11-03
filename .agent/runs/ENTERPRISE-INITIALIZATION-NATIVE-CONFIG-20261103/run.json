@@ -53,7 +53,9 @@
     "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
     "addons/smart_core/tests/test_relation_entry_contract.py",
     "frontend/apps/web/scripts/route_authority_guard_test.ts",
-    "frontend/apps/web/src/services/actionRoutePolicy.ts"
+    "frontend/apps/web/src/services/actionRoutePolicy.ts",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
   ],
   "environment": {
     "kind": "runtime",
