@@ -13,6 +13,9 @@
     ".agent/decisions/ARCH-DECISION-010.yaml",
     ".agent/goals/NAV01-MAINLINE-INTEGRATION-20261103.yaml",
     ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "addons/smart_construction_core/__init__.py",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/core_extension.py",
@@ -71,6 +74,7 @@
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/models/release_management.py",
     "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
@@ -86,6 +90,7 @@
     "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
     "frontend/apps/web/src/composables/useScenarioActivation.ts",
     "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/stores/navigationProjectionActions.ts",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/packages/schema/src/index.ts",
@@ -94,29 +99,25 @@
     "make/guards.mk",
     "make/runtime_ops.mk",
     "scripts/ops/test_scene_internal_action_authority.py",
+    "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
     "scripts/verify/data_scope_declarations.json",
     "scripts/verify/fact_layer_authority_guard.py",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
-    "frontend/apps/web/src/stores/navigationProjectionActions.ts",
-    "scripts/verify/frontend_menu_navigation_diagnostic.py",
-    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "scripts/verify/test_daily_acceptance_fixture_lane.py",
-    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
-    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
-    "scripts/test/frontend_acceptance_fixture_orm.sh"
+    "scripts/verify/test_daily_acceptance_fixture_lane.py"
   ],
   "environment": {
     "kind": "runtime",
-    "authority": "Existing local isolated acceptance profile only; sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082; readonly diagnosis, unchanged backend ce5140cdc8cd2cb13e51d58a95fab0e387520186; persistent dev untouched"
+    "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
   },
   "blockers": [
-    "Runtime contract HTTP403 requires authoritative denial diagnosis",
-    "Affected browser acceptance pending",
-    "Owner independent review and current candidate remote CI pending"
+    "Final exact-head Quick and deterministic carry-forward validation pending",
+    "Owner independent review of final candidate pending",
+    "Current-candidate remote required CI and protected merge pending"
   ],
-  "next_exact_step": "Provision diagnostic candidate in existing acceptance profile, reconcile fixture-owned scene choices, run 3 added ORM lifecycle cases and exact runtime contract; no final Quick while runtime defect unresolved.",
+  "next_exact_step": "Generate final evidence; commit only run/generated reports; carry unchanged runtime suites with registered input fingerprints; run exact-head Quick once; request owner independent review, archive and publish through governed Make.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -128,7 +129,7 @@
   "source_worktree": "/home/lidefend/workspace/sce-backend-odoo-pc01",
   "excluded": "Historical environment redesign, deployment tools and hundreds of audit documents; source tree preserved",
   "validation_adjustment": "Historical imported authority guard incorrectly treated native field groups as role-menu lists; restrict carrier check to native menus/actions/view access bindings, preserving field ACL facts. New tests required. Wire new checks into both existing lanes, do not relax coverage baseline.",
-  "product_status": "Implementation and targeted integration checks passed; not batch/user acceptance or mainline merged.",
+  "product_status": "Scoped implementation, 40 fixture offline tests, 6 ORM tests, HTTP contract and list/relation browser acceptance passed. Mainline merge and product delivery not completed.",
   "observed_results": {
     "iteration": {
       "status": "passed",
@@ -205,6 +206,48 @@
     "fixture_iteration": {
       "status": "passed",
       "log": ".runtime/nav01/fixture-iteration-r2.log"
+    },
+    "runtime_contract_350ccd6c6": {
+      "status": "passed",
+      "head": "350ccd6c6e83252fba14ffa1f1458a76dc77ddfc",
+      "log": ".runtime/nav01/fixture-contract-receipt.log",
+      "report": "artifacts/backend/dev_acceptance_release_probe.json"
+    },
+    "fixture_setup": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-business-setup.log",
+      "scope": "17 explicitly selected business scenarios on each of two fixture-owned companies; native model set_enabled validates publication; no role-menu list"
+    },
+    "fixture_lifecycle_orm": {
+      "status": "passed",
+      "tests": 6,
+      "new_lifecycle_tests": 3,
+      "log": ".runtime/nav01/fixture-business-orm.log",
+      "restoration": "TransactionCase rolls back scene toggles/deletion/legacy rows; subsequent live contract passed"
+    },
+    "list_browser": {
+      "status": "passed",
+      "rows": 18,
+      "assertions": 316,
+      "runtime_errors": 0,
+      "log": ".runtime/nav01/fixture-list-browser.log",
+      "report": ".runtime/final-acceptance/list-surface-structure.json"
+    },
+    "relation_browser": {
+      "status": "passed",
+      "blocking_differences": 0,
+      "nonblocking_differences": 9,
+      "log": ".runtime/nav01/fixture-relation-browser.log",
+      "report": ".runtime/acceptance/local/350ccd6c6e83252fba14ffa1f1458a76dc77ddfc/relation-roundtrip/20261103T094825772Z-2533544-b3cfd3b5/summary.json"
+    },
+    "runtime_evolution_record": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-evolution-record.log",
+      "manifest": ".runtime/acceptance-evolution/evidence.v1.json"
+    },
+    "batch_author_check": {
+      "status": "passed",
+      "scope": "Scoped native default-deny/company lifecycle plus frontend actual-store lifecycle tests and list/relation consumers. Desktop screenshot inspected. Not independent review or whole-product delivery."
     }
   },
   "checks": {
@@ -235,7 +278,7 @@
     "module": "existing acceptance menu diagnostic and run metadata",
     "reason": "Confirmed BUSINESS_SCENARIO_NOT_ENABLED with zero company states. Explicit synthetic enterprise scenario choices in existing fixture only; never modify product default deny.",
     "risk": "read-only registered acceptance transaction",
-    "validation": "L1 fixture scope/ownership/activation tests then existing isolated fixture and contract/readback. Previous product source unchanged; fixture inputs changed invalidate runtime acceptance.",
+    "validation": "P4 fixture changes: 40 offline tests, 6 native ORM tests (3 new), exact candidate HTTP contract, 18 browser list combinations and relation roundtrip passed. Final metadata-only changes use registered evidence carry-forward, no product/runtime input change.",
     "rollback": "Revert diagnostic-only diff; transaction always rolls back"
   }
 }
