@@ -104,7 +104,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         leaf = {'menu_xmlid': 'test.native_workspace', 'menu_id': 901, 'action_id': 902,
                 'label': 'Native workspace', 'route': '/s/test.workspace',
                 'delivery_bucket': 'delivery_business_config',
-                'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.workspace'}}
+                'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.workspace', 'delivery_scope': 'configuration'}}
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[leaf], include_platform=True)
         self.assertEqual(result['tree']['platform'], [leaf])
         self.assertEqual(result['tree']['domains'], [])

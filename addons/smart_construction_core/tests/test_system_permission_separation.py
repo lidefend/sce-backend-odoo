@@ -74,6 +74,9 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.assertEqual(len(projected), 1)
         self.assertEqual(projected[0]['entry_target']['route'], '/s/enterprise.setup')
         self.assertEqual(projected[0]['entry_target']['type'], 'admin_surface')
+        self.assertEqual(projected[0]['entry_target']['delivery_scope'], 'configuration')
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, menu_publication_decision
+        self.assertTrue(menu_publication_decision(published_route_authority(actor), menu.id, menu.action.id))
         ordinary_actor = actor(user=self._subject('general_user').id)
         self.assertNotIn(menu.id, ordinary_actor['ir.ui.menu']._visible_menu_ids())
         diagnose = EnterpriseReadinessDiagnosisGetHandler(actor)

@@ -48,7 +48,8 @@
     "addons/smart_core/delivery/menu_service.py",
     "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
-    "scripts/verify/scenario_surface_projection_guard.py"
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "addons/smart_core/core/navigation_entry_target.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -84,7 +85,7 @@
     },
     "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Complete scoped ORM; prepare exact candidate in existing acceptance backend and run menu-return/HTTP activation/browser restoration journey.",
+  "next_exact_step": "Scoped native upgrade/ORM with published route assertion, then actual menu and activation HTTP journey with restoration.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -325,7 +326,8 @@
       "browser": "failed: native menu omitted by closed-edition delivery; P0 explicit native admin surface delivery and P1 platform projection fixed, retest pending",
       "daily": "unchanged, user-reported failure confirmed",
       "independent_review": "pending_owner",
-      "no_full_quick": "incremental policy; no frontend application changes"
+      "no_full_quick": "incremental policy; no frontend application changes",
+      "architecture_resolution": "Explicit sc_delivery_scope=configuration on native action, distinct from sc_web_route. Same declaration feeds native config navigation and route publication classification; business catalogue unchanged. Native authorization remains mandatory."
     }
   },
   "checks": {},

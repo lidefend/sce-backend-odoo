@@ -136,7 +136,7 @@ def project_scenario_navigation(
                        if isinstance(leaf, dict)
                        and _text(leaf.get("menu_xmlid")) not in index
                        and leaf.get("delivery_bucket") == "delivery_business_config"
-                       and (leaf.get("entry_target") or {}).get("type") == "admin_surface"]
+                       and (leaf.get("entry_target") or {}).get("delivery_scope") == "configuration"]
     native_platform_keys = {leaf["menu_xmlid"] for leaf in native_platform}
     unmapped = [key for key in unmapped if key not in native_platform_keys]
 

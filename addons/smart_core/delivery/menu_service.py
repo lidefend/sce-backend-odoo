@@ -387,6 +387,8 @@ class MenuService:
         )
         if declared_target:
             entry["entry_target"] = declared_target
+            if declared_target.get("delivery_scope") == "configuration":
+                entry["delivery_bucket"] = "delivery_business_config"
         return entry
 
     def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
@@ -432,6 +434,8 @@ class MenuService:
         )
         if declared_target:
             entry["entry_target"] = declared_target
+            if declared_target.get("delivery_scope") == "configuration":
+                entry["delivery_bucket"] = "delivery_business_config"
         return entry
 
     def _denied_route_entry(self, menu_xmlid: str) -> dict | None:
@@ -2638,7 +2642,7 @@ class MenuService:
                 # configuration surfaces are delivered from visible menu facts.
                 config_groups = [dict(group, menus=[
                     menu for menu in group.get("menus", [])
-                    if (menu.get("entry_target") or {}).get("type") == "admin_surface"
+                    if (menu.get("entry_target") or {}).get("delivery_scope") == "configuration"
                 ]) for group in config_groups]
                 config_groups = [group for group in config_groups if group["menus"]]
             grouped_native = config_groups + list(grouped_native or [])
