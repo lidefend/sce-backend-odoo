@@ -13,6 +13,18 @@ from __future__ import annotations
 from typing import Any
 
 
+RULE_LABELS = {
+    "enterprise.identity": "企业身份", "enterprise.organization": "组织架构",
+    "enterprise.positions": "岗位体系", "enterprise.users": "用户身份",
+    "enterprise.employees": "员工档案", "enterprise.user_employee_link": "用户与员工关联",
+    "enterprise.user_org_position": "用户与部门、岗位关系", "enterprise.roles": "系统角色",
+    "enterprise.project_responsibility": "项目成员责任", "enterprise.scenario_enablement": "企业场景启用",
+    "enterprise.scenario_dependencies": "场景依赖", "enterprise.role_delivery": "角色工作空间交付",
+}
+STATUS_LABELS = {"VERIFIED": "已验证", "CONFIGURED": "已配置",
+                 "NOT_CONFIGURED": "未配置", "NOT_EVALUATED": "待业务验证"}
+
+
 def _rule(
     *,
     rule_key: str,
@@ -28,6 +40,8 @@ def _rule(
 ) -> dict[str, Any]:
     return {
         "rule_key": rule_key,
+        "label": RULE_LABELS[rule_key],
+        "status_label": STATUS_LABELS[status] if applicability else "不适用",
         "evaluation_layer": layer,
         "applicability": applicability,
         "status": status,
@@ -57,12 +71,12 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     dept_count = env["hr.department"].sudo().search_count(company_domain)
     job_count = env["hr.job"].sudo().search_count(company_domain)
     user_count = env["res.users"].sudo().search_count(
-        [("share", "=", False), ("company_ids", "in", [company_id])]
+        [("share", "=", False), ("active", "=", True), ("company_ids", "in", [company_id])]
     )
     employee_count = env["hr.employee"].sudo().search_count(company_domain + [("active", "=", True)])
-    linked_employee_count = env["hr.employee"].sudo().search_count(company_domain + [("user_id", "!=", False)])
+    linked_employee_count = env["hr.employee"].sudo().search_count(company_domain + [("active", "=", True), ("user_id.active", "=", True), ("user_id", "!=", False)])
     positioned_employee_count = env["hr.employee"].sudo().search_count(
-        company_domain + [("department_id", "!=", False), ("job_id", "!=", False)]
+        company_domain + [("active", "=", True), ("user_id.active", "=", True), ("user_id", "!=", False), ("department_id", "!=", False), ("job_id", "!=", False)]
     )
 
     assignable_group_ids = env["res.groups"].sudo().search(
@@ -71,14 +85,18 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     role_user_count = 0
     if assignable_group_ids:
         role_user_count = env["res.users"].sudo().search_count(
-            [("share", "=", False), ("groups_id", "in", assignable_group_ids), ("company_ids", "in", [company_id])]
+            [("share", "=", False), ("active", "=", True), ("groups_id", "in", assignable_group_ids), ("company_ids", "in", [company_id])]
         )
     project_responsibility_count = env["sc.project.member.assignment"].sudo().search_count(
         [("company_id", "=", company_id)]
     )
-    enabled_scene_count = env["sc.scene.company.enablement"].sudo().search_count(
-        [("company_id", "=", company_id), ("enabled", "=", True)]
-    )
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_surface
+    from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+    business_keys = [business_key(row["key"]) for row in load_surface()["scenarios"]]
+    enabled_rows = env["sc.scene.company.enablement"].sudo().search(
+        [("company_id", "=", company_id), ("enabled", "=", True), ("scene_key", "in", business_keys)])
+    enabled_scene_count = len(enabled_rows)
+    project_enabled = business_key("project.management") in enabled_rows.mapped("scene_key")
 
     def _count_status(count: int, reason: str) -> str:
         if count <= 0:
@@ -185,7 +203,7 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
         _rule(
             rule_key="enterprise.project_responsibility",
             layer="user",
-            applicability=True,
+            applicability=project_enabled,
             status=_count_status(project_responsibility_count, "项目责任未建立"),
             source="sc.project.member.assignment",
             evidence={"project_responsibility_count": project_responsibility_count},
@@ -210,8 +228,8 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
             rule_key="enterprise.scenario_dependencies",
             layer="scenario",
             applicability=enabled_scene_count > 0,
-            status=("CONFIGURED" if enabled_scene_count > 0 else ""),
-            source="scene target res_model + FK",
+            status=("NOT_EVALUATED" if enabled_scene_count > 0 else ""),
+            source="sc.scene.company.enablement; business dependencies not evaluated",
             evidence={"enabled_scene_count": enabled_scene_count},
             failure_reason="",
             affected_scenarios=["enabled"],
@@ -222,7 +240,7 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
             rule_key="enterprise.role_delivery",
             layer="user",
             applicability=enabled_scene_count > 0,
-            status=("CONFIGURED" if enabled_scene_count > 0 and role_user_count > 0 else ("NOT_CONFIGURED" if enabled_scene_count > 0 else "")),
+            status=("NOT_EVALUATED" if enabled_scene_count > 0 and role_user_count > 0 else ("NOT_CONFIGURED" if enabled_scene_count > 0 else "")),
             source="role_surface + route authority",
             evidence={"role_user_count": role_user_count, "enabled_scene_count": enabled_scene_count},
             failure_reason="" if role_user_count else "角色未分配",
@@ -232,9 +250,36 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
         ),
     ]
 
+    # Bind remediation to the same authorized native entry projection as the
+    # workspace. No role/action whitelist is maintained by this diagnosis.
+    from odoo.addons.smart_core.core.native_handling_entry_catalog import project_native_handling_catalog
+    scene = env["sc.scene"].search([("code", "=", "enterprise.setup"), ("state", "=", "published")], limit=1)
+    catalog = project_native_handling_catalog(env, scene.to_public_dict(env.user)) if scene else None
+    decorate_remediation(rules, catalog)
     return {
+        "contract_version": "enterprise_readiness.v2",
         "company_id": company_id,
         "company_name": company.display_name if company else "",
         "checked_at": env.cr.now(),
         "rules": rules,
     }
+
+
+def decorate_remediation(rules, catalog):
+    entries = {}
+    for group in (catalog or {}).get("groups", []):
+        for item in group.get("items", []):
+            for key in item.get("remediation_keys", []):
+                if key in entries:
+                    raise ValueError("READINESS_REMEDIATION_AMBIGUOUS")
+                entries[key] = {"kind": "handling_entry", "key": item["key"], "label": item["label"]}
+    for rule in rules:
+        key = rule["remediation_entry"]
+        rule["remediation"] = entries.get(key) if rule["applicability"] else None
+        if key == "scenario.enablement" and rule["applicability"]:
+            rule["remediation"] = {"kind": "anchor", "key": "enterprise-scenario-activation", "label": "前往场景管理"}
+        # An evaluated fact is not proof of an unexecuted business journey.
+        if rule["rule_key"] == "enterprise.scenario_dependencies" and rule["applicability"]:
+            rule["failure_reason"] = "基础配置不代替各业务场景的实际办理验证。"
+        if rule["rule_key"] == "enterprise.role_delivery" and rule["status"] == "NOT_EVALUATED":
+            rule["failure_reason"] = "请使用对应业务账号验证工作入口及数据范围。"

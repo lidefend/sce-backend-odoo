@@ -161,6 +161,15 @@ def sanitize_scene_for_user(item: dict) -> dict:
                 continue
             cleaned_tiles.append(strip_user_mode_fields(pick_fields(tile, _USER_SCENE_TILE_KEYS)))
         scene["tiles"] = cleaned_tiles
+    # Preserve the declared native carrier through user-mode compaction. Its
+    # entries are projected later under the current principal; arbitrary scene
+    # extensions and historical entry lists remain excluded.
+    extensions = item.get("extensions")
+    if isinstance(extensions, dict) and "native_handling_entry_source" in extensions:
+        source = extensions["native_handling_entry_source"]
+        if not isinstance(source, dict) or not isinstance(source.get("view_xmlid"), str) or not source["view_xmlid"].strip():
+            raise ValueError("NATIVE_HANDLING_SOURCE_INVALID")
+        scene["extensions"] = {"native_handling_entry_source": {"view_xmlid": source["view_xmlid"]}}
     scene["tags"] = normalized_tags_for_item(scene)
     return scene
 

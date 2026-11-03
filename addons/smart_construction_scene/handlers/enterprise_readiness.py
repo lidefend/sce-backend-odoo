@@ -27,12 +27,15 @@ class EnterpriseReadinessDiagnosisGetHandler(BaseIntentHandler):
 
     def handle(self, payload=None, ctx=None):
         params = payload or self.params or {}
-        company_id = int(params.get("company_id") or self.env.company.id or 0)
-        if company_id not in self.env.user.company_ids.ids:
-            return {
-                "ok": False,
-                "error": {"code": 403, "message": "company out of user scope"},
-            }
+        from odoo.addons.smart_construction_scene.services.workspace_scenario_projection import (
+            resolve_request_company, bind_company_context,
+        )
+        if not isinstance(params, dict):
+            return {"ok": False, "error": {"code": 400, "message": "invalid diagnosis parameters"}}
+        company_id, error = resolve_request_company(
+            params.get("company_id"), set(self.env.user.company_ids.ids), self.env.company.id)
+        if error:
+            return {"ok": False, "error": error}
         if not self.env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin"):
             return {
                 "ok": False,
@@ -44,6 +47,6 @@ class EnterpriseReadinessDiagnosisGetHandler(BaseIntentHandler):
 
         return {
             "ok": True,
-            "data": evaluate_enterprise_readiness(self.env, company_id=company_id),
+            "data": evaluate_enterprise_readiness(bind_company_context(self.env, company_id), company_id=company_id),
             "meta": {},
         }

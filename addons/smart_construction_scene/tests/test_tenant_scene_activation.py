@@ -705,6 +705,26 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             self.authority if authority is None else authority, surface_index=self.index,
             enabled=enabled, entries=self.entries, menu_xmlids_by_id={1: "test.project"})
 
+    def test_initialization_preserves_only_existing_authorized_internal_routes(self):
+        self.entries.append({"code": "test.setup", "enablement_scope": "enterprise_initialization"})
+        row = {"action_id": 88, "menu_id": 0, "scene_key": "test.setup",
+               "source": "scene_internal_action_authority", "allowed": True}
+        result = self.filtered({}, {"contextual_actions": [row]})
+        self.assertEqual(result["contextual_actions"], [row])
+        self.assertEqual(self.filtered({}, {})["contextual_actions"], [])
+        for change in ({"allowed": False}, {"source": "client"},
+                       {"menu_xmlid": "test.project"}):
+            with self.subTest(change=change):
+                result = self.filtered({}, {"contextual_actions": [{**row, **change}]})
+                self.assertEqual(result["contextual_actions"], [])
+        denied = {**row, "route_kind": "DENIED", "allowed_operation": "none"}
+        self.assertEqual(self.filtered({}, {"denied_actions": [denied]})["denied_actions"], [denied])
+
+    def test_route_cannot_self_declare_initialization_scope(self):
+        row = {"action_id": 88, "scene_key": "unknown.legacy", "allowed": True,
+               "source": "scene_internal_action_authority", "enablement_scope": "enterprise_initialization"}
+        self.assertEqual(self.filtered({}, {"contextual_actions": [row]})["contextual_actions"], [])
+
     def test_legacy_same_name_never_enables_business_scenario(self):
         states = business_enablement.business_states({"project.management": True, "legacy.project": True})
         self.assertEqual(states, {})

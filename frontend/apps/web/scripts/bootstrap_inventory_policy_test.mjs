@@ -66,3 +66,11 @@ test('initialization observation reads catalogs without enabling scenes', () => 
   for (const intent of ['scenario.activation.catalog.get', 'enterprise.readiness.diagnosis.get', 'workspace.scenario.projection.get']) assert.equal(allow('POST', '/api/v1/intent', { intent }), true);
   for (const intent of ['scenario.activation.set', 'enterprise.readiness.diagnosis.set']) assert.equal(allow('POST', '/api/v1/intent', { intent }), false);
 });
+
+
+test('company form timeline read never permits collaboration mutations', () => {
+  for (const intent of ['chatter.timeline', 'chatter.followers.list']) assert.equal(allow('POST', '/api/v1/intent', { intent }), true);
+  for (const intent of ['chatter.post', 'chatter.unlink', 'chatter.message.delete', 'chatter.activity.create', 'chatter.followers.update']) {
+    assert.equal(allow('POST', '/api/v1/intent', { intent }), false);
+  }
+});

@@ -19,6 +19,99 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         cls.job_a = cls.env['hr.job'].create({'name': 'Synthetic position A', 'company_id': cls.env.company.id})
         cls.job_b = cls.env['hr.job'].create({'name': 'Synthetic position B', 'company_id': cls.env.company.id})
 
+    def test_enterprise_profile_write_is_current_company_only(self):
+        company = self.env.company
+        actor = company.with_user(self.manager).with_context(allowed_company_ids=company.ids)
+        self.assertFalse(actor.env.su)
+        self.assertFalse(self.manager.has_group('base.group_system'))
+        actor.write({'name': 'Synthetic updated enterprise', 'city': 'Synthetic city'})
+        self.assertEqual(company.name, 'Synthetic updated enterprise')
+        self.assertEqual(company.city, 'Synthetic city')
+        other = self.env['res.company'].create({'name': 'Synthetic other enterprise'})
+        self.register_business_company(other)
+        self.manager.write({'company_ids': [(4, other.id)]})
+        with self.assertRaises(AccessError):
+            other.with_user(self.manager).with_context(
+                allowed_company_ids=[company.id, other.id]).write({'name': 'Denied'})
+        other.with_user(self.manager).with_context(
+            allowed_company_ids=[other.id, company.id]).write({'city': 'Switched company'})
+        self.assertEqual(other.city, 'Switched company')
+
+    def test_enterprise_profile_view_preserves_native_readonly(self):
+        from lxml import etree
+        profile = self.env.ref('smart_construction_core.view_sc_enterprise_company_form')
+        result = self.env['res.company'].with_user(self.manager).get_view(profile.id, 'form')
+        arch = etree.fromstring(result['arch'])
+        self.assertEqual(arch.xpath("//field[@name='currency_id']")[0].get('readonly'), '1')
+        self.assertNotEqual(arch.xpath("//field[@name='name']")[0].get('readonly'), '1')
+        self.assertEqual(arch.get('create'), '0')
+        self.assertEqual(arch.get('delete'), '0')
+
+    def test_enterprise_profile_cannot_write_system_fields_or_create_company(self):
+        actor = self.env.company.with_user(self.manager)
+        for values in ({'currency_id': self.env.ref('base.USD').id},
+                       {'sc_default_payment_terms': 'net60'}, {'parent_id': False}):
+            with self.subTest(values=values), self.assertRaises(AccessError):
+                actor.write(values)
+        self.assertFalse(actor.check_access_rights('create', raise_exception=False))
+        self.assertFalse(actor.check_access_rights('unlink', raise_exception=False))
+        ordinary = self._subject('general_user')
+        with self.assertRaises(AccessError):
+            self.env.company.with_user(ordinary).write({'city': 'Denied'})
+
+    def test_enterprise_initialization_configuration_journey(self):
+        import secrets
+        from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import EnterpriseReadinessDiagnosisGetHandler
+        from odoo.addons.smart_construction_scene.handlers.scenario_activation import ScenarioActivationSetHandler
+        company = self.env.company
+        actor = self.env['res.company'].with_user(self.manager).with_context(allowed_company_ids=company.ids).env
+        diagnose = EnterpriseReadinessDiagnosisGetHandler(actor)
+        def rules():
+            result = diagnose.handle({'company_id': company.id})
+            self.assertTrue(result['ok'], result)
+            self.assertEqual(result['data']['contract_version'], 'enterprise_readiness.v2')
+            self.assertEqual(result['data']['company_id'], company.id)
+            self.assertEqual(len(result['data']['rules']), 12)
+            return {row['rule_key']: row for row in result['data']['rules']}
+        before = rules()
+        department = actor['hr.department'].create({'name': 'Synthetic initialization department', 'company_id': company.id})
+        job = actor['hr.job'].create({'name': 'Synthetic initialization position', 'company_id': company.id})
+        user = actor['res.users'].with_context(sc_runtime_user_management=True, no_reset_password=True).create({
+            'name': 'Synthetic initialization employee', 'login': 'initialization_journey_employee',
+            'password': secrets.token_urlsafe(24),
+            'company_id': company.id, 'company_ids': [(6, 0, company.ids)],
+            'sc_personnel_department_id': department.id, 'sc_personnel_job_id': job.id,
+        })
+        self.assertEqual(user.employee_id.department_id, department)
+        self.assertEqual(user.employee_id.job_id, job)
+        self.assertFalse(self._group('general_user') in user.groups_id)
+        self._managed(user).write({'sc_user_role_group_ids': [(6, 0, self._group('general_user').ids)]})
+        self.assertIn(self._group('general_user'), user.groups_id)
+        self.assertEqual(user.employee_id.job_id, job)
+        after = rules()
+        for key, count in [('organization', 'department_count'), ('positions', 'job_count'),
+                           ('user_employee_link', 'linked_employee_count'), ('user_org_position', 'positioned_employee_count')]:
+            self.assertEqual(after['enterprise.' + key]['evidence'][count], before['enterprise.' + key]['evidence'][count] + 1)
+        self.assertEqual(after['enterprise.roles']['remediation']['key'], 'smart_construction_core.action_sc_product_data_permission_v1')
+        self.assertEqual(after['enterprise.employees']['remediation']['key'], 'smart_construction_core.action_sc_runtime_user_management')
+        self.env['sc.scene.company.enablement'].create({'company_id': company.id, 'scene_key': 'enterprise.setup', 'enabled': True})
+        self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
+        activation = ScenarioActivationSetHandler(actor)
+        params = {'company_id': company.id, 'scene_key': 'project.management', 'enablement_scope': 'business.v1'}
+        self.assertTrue(activation.handle({**params, 'enabled': True})['ok'])
+        enabled = rules()
+        self.assertEqual(enabled['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 1)
+        self.assertTrue(enabled['enterprise.project_responsibility']['applicability'])
+        self.assertEqual(enabled['enterprise.project_responsibility']['remediation']['key'], 'smart_construction_core.action_sc_product_data_permission_v1')
+        self.assertEqual(enabled['enterprise.scenario_dependencies']['status'], 'NOT_EVALUATED')
+        self.assertEqual(enabled['enterprise.role_delivery']['status'], 'NOT_EVALUATED')
+        self.assertTrue(activation.handle({**params, 'enabled': False})['ok'])
+        self.assertFalse(rules()['enterprise.project_responsibility']['applicability'])
+        self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
+        ordinary = EnterpriseReadinessDiagnosisGetHandler(actor(user=user.id))
+        self.assertEqual(ordinary.handle({'company_id': company.id})['error']['code'], 403)
+        self.assertEqual(diagnose.handle({'company_id': True})['error']['code'], 400)
+
     def _group(self, suffix):
         return self.env.ref('smart_construction_core.group_sc_role_' + suffix)
 

@@ -52,7 +52,7 @@ try {
       const intent = body?.intent;
       if (intent) {
         observed.calls.push({ intent, httpStatus: response.status() });
-        if (intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
+        if (intent === 'enterprise.readiness.diagnosis.get' || intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
           const result = await response.json();
           observed.contracts.push({ intent, params: redact(body.params || {}), payload: redact(result) });
         }
@@ -112,6 +112,66 @@ try {
         scope: 'native_configuration_and_existing_setup_first_hop', initializationEntry: 'enterprise.setup',
         catalogCount: catalog.business_scenarios.length, mutationPerformed: false };
       await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });
+      if (process.env.BOOTSTRAP_ENTERPRISE_INITIALIZATION === '1') {
+        assert.ok(managementOnly, 'initialization traversal is scoped to the config-admin journey');
+        const entries = ['企业信息', '组织架构', '岗位管理', '人员与账号', '业务权限分配'];
+        observed.initializationEntries = [];
+        for (const label of entries) {
+          await page.goto(`${base}/s/enterprise.setup`);
+          const button = page.locator('.handling-surface').getByRole('button', { name: label, exact: true });
+          await button.waitFor();
+          assert.equal(await button.isEnabled(), true, `${label} has native action authority`);
+          const offset = observed.contracts.length;
+          const diagnosis = page.locator('.enterprise-readiness-panel[data-state="ready"]');
+          await diagnosis.waitFor();
+          assert.equal(await diagnosis.locator('li').count(), 12, 'twelve actual readiness results');
+          const readiness = observed.contracts.filter(row => row.intent === 'enterprise.readiness.diagnosis.get').at(-1)?.payload?.data;
+          assert.equal(readiness?.contract_version, 'enterprise_readiness.v2');
+          assert.ok(readiness.rules.some(row => row.remediation?.label === label), `${label} has native remediation`);
+          if (label === '企业信息') {
+            await diagnosis.getByRole('button', { name: '前往场景管理', exact: true }).click();
+            await page.locator('#enterprise-scenario-activation[data-state="ready"]').waitFor();
+            assert.equal(await page.locator('#enterprise-scenario-activation li').count(), 17);
+          }
+          await diagnosis.getByRole('button', { name: label, exact: true }).first().click();
+          await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));
+          await page.locator('[data-list-composition="official-standard-list"]').waitFor();
+          await page.waitForLoadState('networkidle');
+          const contracts = observed.contracts.slice(offset).filter(row => row.intent.startsWith('ui.contract'));
+          assert.ok(contracts.some(row => row.payload.ok), `${label} consumes an actual successful contract`);
+          assert.deepEqual(await page.locator('[role="alert"]').allTextContents(), [], `${label} has no blocking alert`);
+          const entryResult = { label, route: page.url().replace(base, ''), contractCount: contracts.length };
+          observed.initializationEntries.push(entryResult);
+          if (label === '企业信息') {
+            const companyRows = page.locator('.desktop-record-table tbody tr .cell-primary-link');
+            assert.equal(await companyRows.count(), 1, 'company action returns only the current company');
+            const formOffset = observed.contracts.length;
+            await companyRows.first().click();
+            await page.locator('[data-form-composition]').waitFor();
+            await page.waitForLoadState('networkidle');
+            const save = page.getByRole('button', { name: '保存草稿', exact: true });
+            await save.waitFor();
+            assert.equal(await save.isEnabled(), true, 'configuration administrator can edit the company profile');
+            assert.ok(observed.contracts.slice(formOffset).some(row => row.intent === 'ui.contract.v2' && row.params.view_type === 'form' && row.payload.ok), 'native company form contract consumed');
+            const formContract = observed.contracts.slice(formOffset).find(row => row.intent === 'ui.contract.v2' && row.params.view_type === 'form' && row.payload.ok)?.payload.data;
+            const currencyFields = [];
+            const collectCurrency = value => {
+              if (!value || typeof value !== 'object') return;
+              if (value.fieldInfo?.name === 'currency_id') currencyFields.push(value.fieldInfo);
+              for (const child of Object.values(value)) collectCurrency(child);
+            };
+            collectCurrency(formContract.layoutContract.containerTree);
+            assert.ok(currencyFields.length && currencyFields.every(field => field.modifiers?.readonly === true), 'native currency readonly modifier survives company delegation');
+            const currencyStatus = formContract.statusContract.widgetStatus.filter(row => row.widgetId.startsWith('field.currency_id.'));
+            assert.ok(currencyStatus.length && currencyStatus.every(row => row.readonly === true && row.auth === 'read'), 'effective currency contract is readonly');
+            const currencyControl = page.locator('[data-field-name="currency_id"]');
+            await currencyControl.waitFor();
+            assert.equal(await currencyControl.locator('input:not([readonly]):not([disabled]), select:not([disabled])').count(), 0, 'currency has no editable input');
+            entryResult.formRoute = page.url().replace(base, '');
+            await page.screenshot({ path: path.join(out, `${role}-enterprise-company-form.png`) });
+          }
+        }
+      }
       if (managementOnly) {
         await page.unrouteAll({ behavior: 'wait' });
         assert.deepEqual(observed.blockedWrites, [], 'no unregistered request in management recovery');

@@ -185,8 +185,21 @@
             }"/>
         </record>
 
+        <record id="sc_scene_version_enterprise_setup_v5" model="sc.scene.version">
+            <field name="scene_id" ref="sc_scene_enterprise_setup"/>
+            <field name="version">v5</field><field name="source">system</field>
+            <field name="payload_json" eval="{
+                'code': 'enterprise.setup', 'name': '企业初始化工作空间', 'version': 'v5',
+                'page': {'key': 'enterprise.setup.main', 'title': '企业初始化工作空间', 'page_type': 'workspace', 'page_mode': 'stack'},
+                'layout': {'kind': 'workspace', 'sidebar': 'fixed', 'header': 'full'},
+                'zone_blocks': [], 'target': {'route': '/s/enterprise.setup'},
+                'extensions': {'native_handling_entry_source': {'view_xmlid': 'smart_construction_core.view_sc_enterprise_initialization_form'}},
+                'filters': []
+            }"/>
+        </record>
         <record id="sc_scene_enterprise_setup" model="sc.scene">
-            <field name="active_version_id" ref="sc_scene_version_enterprise_setup_v4"/>
+            <field name="version">v5</field>
+            <field name="active_version_id" ref="sc_scene_version_enterprise_setup_v5"/>
         </record>
     </data>
 </odoo>
