@@ -187,6 +187,25 @@ class QuickInputScopeTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {'ACTUAL_TEST_INPUT': 'changed'}):
             self.assertNotEqual(before, scope.execution_identity())
 
+    def test_call_correlation_does_not_invalidate_execution(self):
+        before = scope.execution_identity()
+        with mock.patch.dict(os.environ, {"CODEX_TOOL_CALL_ID": "another-call"}):
+            self.assertEqual(before, scope.execution_identity())
+            self.assertNotIn("CODEX_TOOL_CALL_ID", scope.environment_hashes())
+
+    def test_default_candidate_revision_normalizes_but_explicit_revision_invalidates(self):
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "a" * 40}):
+            before = scope.execution_identity(candidate_head="a" * 40)
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "b" * 40}):
+            self.assertEqual(before, scope.execution_identity(candidate_head="b" * 40))
+            self.assertNotEqual(before, scope.execution_identity(candidate_head="a" * 40))
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "candidate-head"}):
+            self.assertNotEqual(before, scope.execution_identity(candidate_head="a" * 40))
+        with mock.patch.dict(os.environ, {}, clear=True):
+            absent = scope.execution_identity(candidate_head="a" * 40)
+            with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "a" * 40}):
+                self.assertNotEqual(absent, scope.execution_identity(candidate_head="a" * 40))
+
     def test_quick_targets_contains_the_entry_and_is_bounded(self):
         targets = scope.quick_targets()
         self.assertIn(scope.QUICK_ENTRY, targets)

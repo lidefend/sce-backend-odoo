@@ -118,14 +118,26 @@ NON_INPUT_ENVIRONMENT = frozenset({
     "MAKEOVERRIDES", "SC_QUICK_SCAN_COVERAGE_DIR",
     # Admission budget only; never changes a selected target's command/inputs.
     "QUICK_MAX_TARGETS",
+    # Orchestrator correlation only; no repository executor consumes this ID.
+    "CODEX_TOOL_CALL_ID",
 })
 
 
-def execution_identity() -> dict:
+def input_environment(*, candidate_head: str | None = None) -> dict[str, object]:
+    environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
+    # Make exports the current HEAD by default. Bind that relation rather than
+    # the changing SHA; each unit already binds its committed source inputs.
+    # An explicitly selected different acceptance revision remains an input.
+    if candidate_head and environment.get("SC_ACCEPTANCE_SOURCE_SHA") == candidate_head:
+        environment["SC_ACCEPTANCE_SOURCE_SHA"] = {"binding": "candidate-head"}
+    return environment
+
+
+def execution_identity(*, candidate_head: str | None = None) -> dict:
     # Do not persist environment values (they can contain credentials). Bind
     # their digest, Python runtime, and executable instead. Make's process-local
     # recursion counters and working-directory aliases are not test inputs.
-    environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
+    environment = input_environment(candidate_head=candidate_head)
     tools = {}
     for name in ('git', 'make', 'bash'):
         location = shutil.which(name)
@@ -139,10 +151,10 @@ def execution_identity() -> dict:
             "environment_sha256": hashlib.sha256(json.dumps(environment, sort_keys=True).encode()).hexdigest()}
 
 
-def environment_hashes() -> dict[str, str]:
+def environment_hashes(*, candidate_head: str | None = None) -> dict[str, str]:
     """Diagnostic key-level digests only; never weaken the identity comparison."""
-    return {key: hashlib.sha256(value.encode()).hexdigest()
-            for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
+    return {key: hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+            for key, value in input_environment(candidate_head=candidate_head).items()}
 
 
 def execution_units(root: Path, head: str, targets: list[str]) -> dict:
@@ -150,7 +162,7 @@ def execution_units(root: Path, head: str, targets: list[str]) -> dict:
     rows = git(root, "ls-tree", "-r", "--full-tree", head).splitlines()
     declared = quick_suite_fingerprint.committed_fingerprints(root, head, rows)
     return {"schema": "evidence_scope.units.v1", "check": "ci.local.quick",
-            "identity": execution_identity(),
+            "identity": execution_identity(candidate_head=git(root, "rev-parse", "HEAD")),
             "units": [{"id": target, "fingerprint": declared.get(target) or _fingerprint_rows(rows, target, head),
                        "required": True} for target in targets]}
 

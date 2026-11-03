@@ -47,6 +47,22 @@ class IncrementalEvidenceTests(unittest.TestCase):
                 evidence.scans.record_scan_success(self.root, kind)
         return subprocess.CompletedProcess(command, 0)
 
+    def test_candidate_default_and_call_id_changes_preserve_bounded_reuse(self):
+        source = self.head
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": source,
+                                          "CODEX_TOOL_CALL_ID": "source-call"}), \
+             mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            evidence.run_quick(self.root, runner=self.runner)
+        head = self.fixture.commit_change('frontend/existing.ts', 'next candidate\n')
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": head,
+                                          "CODEX_TOOL_CALL_ID": "next-call"}):
+            run, reuse, base = evidence._incremental_plan(self.root, head)
+            self.assertEqual(source, base)
+            self.assertEqual(MANIFEST[:-1], run)
+            self.assertEqual(MANIFEST[-1:], reuse)
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": source}):
+            self.assertIsNone(evidence._incremental_plan(self.root, head))
+
     def test_plan_keeps_unscoped_targets_and_reuses_bounded_test(self):
         run, reuse, base = evidence._incremental_plan(self.root, self.head)
         self.assertEqual(MANIFEST[:-1], run)

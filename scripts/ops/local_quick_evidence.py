@@ -363,7 +363,7 @@ def _save_target_scope(root: Path, head: str, receipt: Path,
         atomic_json(receipt.with_suffix(".scope.json"), {
             "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
             "document": document,
-            "environment_hashes": scope.environment_hashes(),
+            "environment_hashes": scope.environment_hashes(candidate_head=head),
         })
         # The ledger is an audit of actual execution, not an alternative to
         # ancestor receipt/hash/scan validation in the planner.
@@ -429,7 +429,7 @@ def _incremental_plan(root: Path, head: str, rejected: list | None = None) -> tu
             if saved.get("document") != source_units:
                 if rejected is not None:
                     old = saved.get("environment_hashes")
-                    new = scope.environment_hashes()
+                    new = scope.environment_hashes(candidate_head=head)
                     old_identity = (saved.get('document') or {}).get('identity', {})
                     new_identity = source_units['identity']
                     changed_identity = sorted(k for k in set(old_identity) | set(new_identity)

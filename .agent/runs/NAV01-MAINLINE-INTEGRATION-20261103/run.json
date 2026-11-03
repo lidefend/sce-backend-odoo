@@ -135,7 +135,7 @@
   "blockers": [
     "PR794 current ff7 CI failed: isolated snapshot missing guard source; repair under verification."
   ],
-  "next_exact_step": "Validate corrected frozen isolated scene snapshot, then incremental Quick, exact delta review and protected PR publication.",
+  "next_exact_step": "Verify iteration and commit mechanism repair; inspect final Quick admission without automatic full fallback.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -497,5 +497,15 @@
       "dependency_discovery": "guard included, zero unresolved reads"
     },
     "next": "Validate committed isolated executor before publication; unchanged browser and ORM inputs remain reusable"
+  },
+  "quick_environment_fix": {
+    "layer": "P4",
+    "target": "Quick execution identity",
+    "module": "scripts/ops/quick_input_scope.py and local_quick_evidence.py",
+    "reason": "Exclude unused orchestrator call correlation and normalize the default acceptance source relation to current HEAD, preserving explicit revision drift",
+    "blast_radius": "Only offline declared target reuse; current-state/security/undeclared targets still execute; historical receipts never relabelled",
+    "validation": "22 input-scope + 4 suite-fingerprint + 22 evidence tests passed; actual two-candidate temporary Git history verifies reuse and explicit revision rejection",
+    "log": ".runtime/nav01/environment-fix-unit-r2.log",
+    "limitation": "Pre-fix receipts remain invalid; mechanism input changes also invalidate declared broad script scopes. Fresh baseline admission required, not automatically run."
   }
 }
