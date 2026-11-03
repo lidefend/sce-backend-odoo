@@ -38,3 +38,47 @@ import { useScenarioActivation } from '../../composables/useScenarioActivation';
 
 const { rows, state, errorMessage, busy, refresh, execute } = useScenarioActivation();
 </script>
+
+<style scoped>
+.scenario-activation-panel {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-primary);
+  scroll-margin-top: 20px;
+}
+.scenario-activation-panel__header, .scenario-activation-panel__row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.scenario-activation-panel__header h3 { margin: 0; font-size: 16px; }
+.scenario-activation-panel__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+}
+.scenario-activation-panel__row {
+  padding: 14px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  min-width: 0;
+}
+.scenario-activation-panel__row-main { margin-bottom: 8px; }
+.scenario-activation-panel__label, .scenario-activation-panel__name { font-weight: 600; }
+.scenario-activation-panel__state, .scenario-activation-panel__enabled {
+  font-size: 12px;
+  color: var(--sc-app-text-secondary);
+}
+.scenario-activation-panel__detail { display: grid; gap: 8px; font-size: 13px; }
+.scenario-activation-panel__detail :deep(button) { justify-self: start; }
+.scenario-activation-panel__status { padding: 16px 0; color: var(--sc-app-text-secondary); }
+.scenario-activation-panel__status--error { color: var(--sc-app-danger-text); }
+</style>

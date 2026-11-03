@@ -60,7 +60,8 @@
     "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests",
     "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list.",
     "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment.",
-    "onboarding_fix": "P1 native personnel field owner defers personnel inverses until native account/partner creation completes; retains original runtime validation and atomic savepoint."
+    "onboarding_fix": "P1 native personnel field owner defers personnel inverses until native account/partner creation completes; retains original runtime validation and atomic savepoint.",
+    "presentation": "P3 uses existing theme tokens for readable readiness and activation cards; consumes all labels/actions/statuses from server unchanged."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
@@ -199,7 +200,7 @@
       "status": "passed",
       "checks": [
         "strict typecheck",
-        "native projection 15 cases plus owning authority suites",
+        "native projection 19 cases plus owning authority suites",
         "actual frontend readiness lifecycle 6 cases plus existing workspace/activation suites",
         "ci.local.iteration"
       ],
@@ -208,6 +209,50 @@
         ".runtime/enterprise-init/continuation-lifecycle.log",
         ".runtime/enterprise-init/continuation-iteration.log"
       ]
+    },
+    "continuation_native_projection": {
+      "status": "passed",
+      "tests": 19,
+      "command": "make verify.nav01.native_authority.unit",
+      "log": ".runtime/enterprise-init/continuation-native-final.log"
+    },
+    "continuation_orm": {
+      "status": "passed",
+      "tests": 5,
+      "source_sha": "2ca22fce7a867809cb808af27ba437da6c808c1d",
+      "log": ".runtime/enterprise-init/continuation-orm-3.log",
+      "scope": "Actual native organization/job/account/employee/role writes, business scene enable/disable and readiness readback; original-principal create rules, forbidden groups and inaccessible personnel relations",
+      "mutation_policy": "All synthetic business writes rolled back by TransactionCase in registered acceptance DB",
+      "result": "0 failed, 0 errors of 5 tests"
+    },
+    "continuation_failures": [
+      {
+        "classification": "validation_tool",
+        "log": ".runtime/enterprise-init/continuation-orm.log",
+        "resolution": "Supplied required random initial password to native account-create test input."
+      },
+      {
+        "classification": "product",
+        "log": ".runtime/enterprise-init/continuation-orm-2.log",
+        "resolution": "P1 defers personnel inverses until native account identity completes; actual journey and access regressions passed."
+      },
+      {
+        "classification": "environment_identity",
+        "log": ".runtime/enterprise-init/continuation-preview.log",
+        "resolution": "Initial preview preparation overlapped backend identity replacement; rerun after backend became ready passed without environment changes."
+      }
+    ],
+    "continuation_freeze": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/continuation-freeze.log",
+      "limits": "Incremental policy; full Quick not run"
+    },
+    "continuation_frontend_build": {
+      "status": "passed",
+      "build_log": ".runtime/enterprise-init/continuation-preview-2.log",
+      "serve_log": ".runtime/enterprise-init/continuation-preview-up.log",
+      "source_sha": "8b93ef61a",
+      "source_dependency_diff_to_runtime_head": "frontend application source unchanged"
     }
   },
   "checks": {},

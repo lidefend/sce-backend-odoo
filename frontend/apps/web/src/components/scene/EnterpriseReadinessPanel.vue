@@ -44,3 +44,47 @@ import { useEnterpriseReadiness, type ReadinessRemediation } from '../../composa
 defineEmits<{ (e: 'remediate', target: ReadinessRemediation): void }>();
 const { rules, state, errorMessage, busy, load } = useEnterpriseReadiness();
 </script>
+
+<style scoped>
+.enterprise-readiness-panel {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-primary);
+  scroll-margin-top: 20px;
+}
+.enterprise-readiness-panel__header, .enterprise-readiness-panel__row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.enterprise-readiness-panel__header h3 { margin: 0; font-size: 16px; }
+.enterprise-readiness-panel__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+}
+.enterprise-readiness-panel__row {
+  padding: 14px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  min-width: 0;
+}
+.enterprise-readiness-panel__row-main { margin-bottom: 8px; }
+.enterprise-readiness-panel__label, .enterprise-readiness-panel__name { font-weight: 600; }
+.enterprise-readiness-panel__state, .enterprise-readiness-panel__enabled {
+  font-size: 12px;
+  color: var(--sc-app-text-secondary);
+}
+.enterprise-readiness-panel__detail { display: grid; gap: 8px; font-size: 13px; }
+.enterprise-readiness-panel__detail :deep(button) { justify-self: start; }
+.enterprise-readiness-panel__status { padding: 16px 0; color: var(--sc-app-text-secondary); }
+.enterprise-readiness-panel__status--error { color: var(--sc-app-danger-text); }
+</style>
