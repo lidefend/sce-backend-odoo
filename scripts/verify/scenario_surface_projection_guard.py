@@ -193,29 +193,6 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5]), route_authority=authority, surface=self.surface)
         self.assertEqual(revoked["tree"]["platform"], [])
 
-    def test_management_workspace_has_effective_scene_delivery_declaration(self):
-        policy = json.loads((ROOT / "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json").read_text())
-        surface_policy = policy["surfaces"][policy["default_surface"]]
-        published = set(surface_policy["nav_allowlist"] + surface_policy["deep_link_allowlist"])
-        for entry in self.surface["platform_support"]["workspace_entries"]:
-            self.assertIn(entry["scene_key"], published)
-
-    def test_setup_workspace_uses_native_acl_and_delivered_scene(self):
-        scene = {"key": "enterprise.setup", "name": "企业初始化工作空间", "target": {"route": "/s/enterprise.setup"}}
-        seen = []
-        def allowed(model, operation):
-            seen.append((model, operation))
-            return True
-        rows = PROJ.project_management_workspaces(scenes=[scene], check_access=allowed, surface=self.surface)
-        self.assertEqual(rows, [{"key": "enterprise.setup", "label": scene["name"], "route": scene["target"]["route"]}])
-        self.assertEqual(seen, [("sc.scene.company.enablement", operation) for operation in ["read", "create", "write"]])
-        for denied_operation in ["read", "create", "write"]:
-            self.assertEqual(PROJ.project_management_workspaces(scenes=[scene], surface=self.surface,
-                check_access=lambda model, operation: operation != denied_operation), [])
-        self.assertEqual(PROJ.project_management_workspaces(scenes=[], check_access=allowed, surface=self.surface), [])
-        self.assertEqual(PROJ.project_management_workspaces(scenes=[dict(scene, access={"allowed": False})],
-            check_access=allowed, surface=self.surface), [])
-
     def test_role_difference_only_authorized_scenarios_present(self):
         finance_only = [
             "smart_construction_core.menu_sc_user_payment_apply",

@@ -98,20 +98,9 @@ try {
       const management = page.locator('[data-management-navigation="true"]');
       await management.waitFor();
       for (const entry of surface.platform) await management.getByRole('button', { name: entry.label, exact: true }).waitFor();
-      const setup = surface.management_actions?.find(action => action.key === 'enterprise.setup');
-      assert.ok(setup?.route, 'native configuration administrator has a persistent setup entry');
-      const catalogResponse = page.waitForResponse(response => {
-        try { const body = response.request().postDataJSON(); return (body?.params?.intent ? body.params : body)?.intent === 'scenario.activation.catalog.get'; }
-        catch { return false; }
-      });
-      await management.getByRole('button', { name: setup.label, exact: true }).click();
-      const response = await catalogResponse;
-      assert.ok(response.ok(), 'actual scenario catalog read succeeds');
-      const catalog = await response.json();
-      assert.equal(catalog.data?.business_scenarios?.length, 17, '17 declared business scenes available to initialize');
-      await page.locator('[data-semantic-component="ScenarioActivationPanel"][data-state="ready"]').waitFor();
-      observed.managementRecovery = { visibleEntries: surface.platform.length, setupRoute: setup.route, businessScenarios: catalog.data.business_scenarios.length, mutationPerformed: false };
-      await page.screenshot({ path: path.join(out, `${role}-enterprise-setup.png`) });
+      observed.managementRecovery = { visibleEntries: surface.platform.length,
+        scope: 'existing_native_configuration_entries', initializationEntry: 'pending_native_carrier_decision', mutationPerformed: false };
+      await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });
       if (managementOnly) {
         await page.unrouteAll({ behavior: 'wait' });
         assert.deepEqual(observed.blockedWrites, [], 'no unregistered request in management recovery');

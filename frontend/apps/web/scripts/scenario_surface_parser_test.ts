@@ -44,7 +44,7 @@ assert.strictEqual(parseScenarioSurface(undefined), null);
 assert.strictEqual(parseScenarioSurface(null), null);
 assert.strictEqual(parseScenarioSurface({}), null);
 assert.strictEqual(parseScenarioSurface({ ok: false, tree: valid.tree }), null);
-assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [] } }), { domains: [], horizontal: [], platform: [], platformLabel: '', managementActions: [] });
+assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [] } }), { domains: [], horizontal: [], platform: [], platformLabel: '' });
 assert.strictEqual(parseScenarioSurface({ ok: true }), null);
 assert.strictEqual(parseScenarioSurface({ ok: true, tree: { domains: {}, horizontal: [] } }), null);
 
@@ -66,7 +66,3 @@ assert.deepStrictEqual(adminOnly?.platform, [management]);
 assert.strictEqual(adminOnly?.platformLabel, '产品配置');
 assert.throws(() => parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [management] } }), /管理入口缺少/);
 assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [] } })?.platform, []);
-
-const setup = { key: 'enterprise.setup', label: '企业初始化工作空间', route: '/s/enterprise.setup' };
-assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [], platform_label: '产品配置', management_actions: [setup] } })?.managementActions, [setup]);
-assert.throws(() => parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], management_actions: [{ ...setup, route: '//external.example' }] } }), /管理入口契约/);

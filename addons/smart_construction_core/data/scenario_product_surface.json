@@ -93,7 +93,6 @@
   },
   "platform_support": {
     "name": "产品配置",
-    "workspace_entries": [{"scene_key": "enterprise.setup", "access_model": "sc.scene.company.enablement", "access_operations": ["read", "create", "write"]}],
     "note": "Platform configuration/diagnostics; excluded from ordinary business scenario surface.",
     "menus": [
       "smart_construction_core.menu_sc_business_config_workbench",

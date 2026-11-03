@@ -2383,8 +2383,6 @@ class SystemInitHandler(BaseIntentHandler):
             "smart_core_scenario_surface_projection",
             _final_navigation,
             _final_route_authority,
-            principal_env=env,
-            available_scenes=data.get("scenes") or [],
         )
         if isinstance(_scenario_surface, dict):
             data["navigation"]["scenario_surface"] = _scenario_surface

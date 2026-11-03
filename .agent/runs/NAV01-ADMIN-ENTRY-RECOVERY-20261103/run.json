@@ -25,14 +25,17 @@
     "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
     "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json"
+    "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
   },
-  "blockers": [],
-  "next_exact_step": "Run final management-only browser on frozen denial-respecting candidate; affected list/relation checks then independent review",
+  "blockers": [
+    "Owner architecture question: choose native standalone initialization menu or native handling action within system settings; no projection-owned entry permitted"
+  ],
+  "next_exact_step": "Resolve native initialization carrier choice; implement and validate that fact-layer path. Seven existing-menu projection repair retained; prototype workspace_entries withdrawn.",
   "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
   "layer": {
     "formal_product_layer": "P1 plus P0 generic frontend consumer",
@@ -89,5 +92,12 @@
       "next": "Explicit config-admin management-only mode retains original navigation, real catalog and no-write assertions; default full probe unchanged"
     }
   },
-  "checks": {}
+  "checks": {},
+  "architecture_correction": {
+    "decision": "ARCH-DECISION-010",
+    "removed": "workspace_entries, model-ACL-generated navigation links, extra P0 extension context and frontend management_actions",
+    "retained": "Projection/consumer of seven existing native configuration menus",
+    "native_carrier": "Existing system-parameter native form -> native action button -> existing enterprise.setup scene; no additional sidebar capability",
+    "prototype_browser_evidence": "86e/f3 prototype succeeded for management catalog but is NOT final-architecture acceptance; isolated carrier still serves that prototype until next governed refresh, daily server unchanged"
+  }
 }
