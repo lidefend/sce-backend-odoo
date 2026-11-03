@@ -60,6 +60,7 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
             self.env.company.with_user(ordinary).write({'city': 'Denied'})
 
     def test_enterprise_initialization_configuration_journey(self):
+        import secrets
         from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import EnterpriseReadinessDiagnosisGetHandler
         from odoo.addons.smart_construction_scene.handlers.scenario_activation import ScenarioActivationSetHandler
         company = self.env.company
@@ -77,6 +78,7 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         job = actor['hr.job'].create({'name': 'Synthetic initialization position', 'company_id': company.id})
         user = actor['res.users'].with_context(sc_runtime_user_management=True, no_reset_password=True).create({
             'name': 'Synthetic initialization employee', 'login': 'initialization_journey_employee',
+            'password': secrets.token_urlsafe(24),
             'company_id': company.id, 'company_ids': [(6, 0, company.ids)],
             'sc_personnel_department_id': department.id, 'sc_personnel_job_id': job.id,
         })
