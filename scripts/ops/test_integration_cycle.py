@@ -143,23 +143,36 @@ class GateTests(unittest.TestCase):
         self.assertFalse(cycle.checks_ready([self.check(10, 100, "SUCCESS")],
                                           required_checks={("gate", "required")})[0])
 
-    def test_merge_readiness_preserves_head_quick_and_platform_boundaries(self):
+    def test_merge_readiness_preserves_head_and_platform_without_local_full_gate(self):
         head = "a" * 40
         rows = [self.check(10, 100, "SUCCESS", workflow=name, name=name)
                 for name in cycle.REQUIRED_MERGE_CHECKS]
         base = {"state": "OPEN", "headRefOid": head, "mergeable": "MERGEABLE",
                 "mergeStateStatus": "CLEAN", "statusCheckRollup": rows}
         for delta, quick, expected in (({}, True, 0), ({"headRefOid": "b" * 40}, True, 1),
-                                     ({}, False, 1), ({"mergeStateStatus": "BLOCKED"}, True, 1),
+                                     ({}, False, 0), ({"mergeStateStatus": "BLOCKED"}, True, 1),
                                      ({"state": "CLOSED"}, True, 1),
                                      ({"statusCheckRollup": rows[:-1]}, True, 1)):
             with self.subTest(delta=delta, quick=quick), \
-                    patch.object(cycle, "git", return_value=head), \
+                    patch.object(cycle, "git", side_effect=lambda root, *args: "" if args[0] == "status" else head), \
                     patch.object(cycle, "_receipt_verified", return_value=quick), \
                     patch.object(cycle.subprocess, "run", return_value=subprocess.CompletedProcess(
                         [], 0, stdout=json.dumps({**base, **delta}), stderr="")):
                 code, _ = cycle.merge_readiness(Path("/unused"), 769)
                 self.assertEqual(code, expected)
+
+    def test_dirty_checkout_blocks_merge_even_with_successful_remote_checks(self):
+        head = "a" * 40
+        payload = {"state": "OPEN", "headRefOid": head, "mergeable": "MERGEABLE",
+                   "mergeStateStatus": "CLEAN", "statusCheckRollup": [
+                       self.check(10, 100, "SUCCESS", workflow=name, name=name)
+                       for name in cycle.REQUIRED_MERGE_CHECKS]}
+        with patch.object(cycle, "git", side_effect=lambda root, *args:
+                          " M tracked.py" if args[0] == "status" else head), \
+             patch.object(cycle, "_receipt_verified", return_value=True), \
+             patch.object(cycle.subprocess, "run", return_value=subprocess.CompletedProcess(
+                 [], 0, stdout=json.dumps(payload), stderr="")):
+            self.assertEqual(cycle.merge_readiness(Path("/unused"), 794)[0], 1)
 
     def test_fast_gates_aggregates_independent_failures(self):
         def fake_runner(command, **kwargs):

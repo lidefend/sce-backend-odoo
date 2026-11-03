@@ -99,11 +99,10 @@ class PrIdentityTests(unittest.TestCase):
             text=True, capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = [line for line in result.stdout.splitlines() if line.startswith('python3 ')]
-        self.assertEqual(len(commands), 3, result.stdout)
+        self.assertEqual(len(commands), 2, result.stdout)
         self.assertIn('validation_delivery_plan.py --pr "7"', commands[0])
         self.assertIn('--require-ready', commands[0])
-        self.assertIn('local_quick_evidence.py verify --expected-head "' + 'a' * 40 + '"', commands[1])
-        self.assertIn('integration_cycle.py merge-readiness --pr "7"', commands[2])
+        self.assertIn('integration_cycle.py merge-readiness --pr "7"', commands[1])
         for forbidden in ('gh api', 'gh pr merge', 'pr.merge.prep', '--allow-no-quick', '--apply'):
             self.assertNotIn(forbidden, result.stdout)
 

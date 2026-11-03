@@ -102,7 +102,7 @@ def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = Fa
             'status': 'blocked' if blockers else 'ready_for_existing_gates',
             'candidate_evidence': False, 'writes_authorized': False,
             'limits': ['No runtime readback or credential verification performed',
-                       'Quick, independent review and current remote CI remain mandatory']}
+                       'Affected local validation, independent review and current remote CI remain mandatory; full local Quick is optional']}
 
 
 def main(argv=None) -> int:

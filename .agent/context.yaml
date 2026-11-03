@@ -135,6 +135,10 @@ execution:
   full_product_acceptance_trigger: selected_delivery_version
   require_non_zero_targeted_tests: true
   remote_writes_via_make_only: true
+  github_pr_local_gate: lightweight_iteration_and_affected_targeted_tests
+  github_pr_full_integration_gate: remote_required_checks
+  github_pr_requires_local_quick: false
+  quick_full_policy: explicit_audit_or_baseline_rebuild_only
   gitee_pr_local_gate: lightweight_iteration_and_affected_targeted_tests
   gitee_pr_full_integration_gate: remote_required_checks
   gitee_pr_requires_local_quick: false

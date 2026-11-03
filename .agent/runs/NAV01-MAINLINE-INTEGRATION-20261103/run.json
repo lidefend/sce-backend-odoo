@@ -8,11 +8,13 @@
   "record": ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/context.yaml",
     ".agent/decisions/ARCH-DECISION-008.yaml",
     ".agent/decisions/ARCH-DECISION-009.yaml",
     ".agent/decisions/ARCH-DECISION-010.yaml",
     ".agent/goals/NAV01-MAINLINE-INTEGRATION-20261103.yaml",
     ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",
+    "AGENTS.md",
     "addons/smart_construction_acceptance_fixture/tests/__init__.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
@@ -89,7 +91,9 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/codex_delivery_collaboration_protocol_v1.md",
     "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/codex_workspace_execution_rules.md",
     "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "frontend/apps/web/src/app/scenarioSurface.ts",
@@ -104,18 +108,22 @@
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/packages/schema/src/index.ts",
     "make/ci.mk",
+    "make/codex.mk",
     "make/frontend.mk",
     "make/guards.mk",
     "make/runtime_ops.mk",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/ci/personal_data_false_positives.json",
+    "scripts/ops/integration_cycle.py",
     "scripts/ops/local_quick_evidence.py",
     "scripts/ops/quick_input_scope.py",
     "scripts/ops/quick_suite_fingerprint.py",
     "scripts/ops/quick_suite_manifest.json",
+    "scripts/ops/test_integration_cycle.py",
     "scripts/ops/test_local_quick_evidence.py",
     "scripts/ops/test_quick_input_scope.py",
     "scripts/ops/test_scene_internal_action_authority.py",
+    "scripts/ops/validation_delivery_plan.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/acceptance_evolution_binding_guard.py",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
@@ -125,17 +133,19 @@
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
-    "scripts/verify/test_daily_acceptance_fixture_lane.py"
+    "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "scripts/verify/test_validation_delivery_plan.py"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
   },
   "blockers": [
-    "PR794 current ff7 CI failed: isolated snapshot missing guard source; repair under verification."
+    "New exact candidate requires owner independent delta review before publication; remote current candidate gates still required."
   ],
-  "next_exact_step": "Verify iteration and commit mechanism repair; inspect final Quick admission without automatic full fallback.",
+  "next_exact_step": "Finish L1 iteration, commit policy and tooling together, obtain exact delta review; publish without full local Quick under owner incremental policy.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -507,5 +517,29 @@
     "validation": "22 input-scope + 4 suite-fingerprint + 22 evidence tests passed; actual two-candidate temporary Git history verifies reuse and explicit revision rejection",
     "log": ".runtime/nav01/environment-fix-unit-r2.log",
     "limitation": "Pre-fix receipts remain invalid; mechanism input changes also invalidate declared broad script scopes. Fresh baseline admission required, not automatically run."
+  },
+  "incremental_policy_update": {
+    "authority": "Owner explicitly requested rule update for established incremental iteration",
+    "layer": "P4",
+    "scope": [
+      "AGENTS.md",
+      ".agent/context.yaml",
+      "docs/ops/codex_workspace_execution_rules.md",
+      "docs/ops/codex_execution_allowlist.md",
+      "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+      "make/codex.mk",
+      "scripts/ops/integration_cycle.py",
+      "scripts/ops/test_integration_cycle.py"
+    ],
+    "local_requirement": "iteration plus affected nonzero tests, exact clean identity and review",
+    "remote_requirement": "All four current required gates and protected merge remain mandatory",
+    "quick": "Optional explicit audit/baseline tool; no automatic fallback; existing receipts unchanged",
+    "next": "Run integration readiness regression and publication checks before freezing",
+    "validation": {
+      "integration_publication_merge_tests": 50,
+      "safe_push_isolated_scenarios": 18,
+      "log": ".runtime/nav01/incremental-policy-regression-r2.log",
+      "push_log": ".runtime/nav01/incremental-policy-push.log"
+    }
   }
 }
