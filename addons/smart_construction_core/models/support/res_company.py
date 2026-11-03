@@ -36,6 +36,23 @@ class ResCompany(models.Model):
         help="新建采购、销售等业务单据时默认采用的付款条件。",
     )
 
+    @api.model
+    def _get_view(self, view_id=None, view_type="form", **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
+        profile = self.env.ref(
+            "smart_construction_core.view_sc_enterprise_company_form", raise_if_not_found=False)
+        if profile and view == profile:
+            # Odoo's company root delegation rewrites readonly attributes. Keep
+            # stronger static restrictions from this native profile declaration;
+            # the view remains the only maintained field-policy authority.
+            declared = profile._get_combined_arch()
+            readonly_names = {node.get("name") for node in declared.iter("field")
+                              if node.get("readonly") in ("1", "True", "true")}
+            for node in arch.iter("field"):
+                if node.get("name") in readonly_names:
+                    node.set("readonly", "1")
+        return arch, view
+
     def write(self, vals):
         if (not self.env.su
                 and self.env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin")

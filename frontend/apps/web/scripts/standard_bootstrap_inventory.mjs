@@ -129,7 +129,31 @@ try {
           const contracts = observed.contracts.slice(offset).filter(row => row.intent.startsWith('ui.contract'));
           assert.ok(contracts.some(row => row.payload.ok), `${label} consumes an actual successful contract`);
           assert.deepEqual(await page.locator('[role="alert"]').allTextContents(), [], `${label} has no blocking alert`);
-          observed.initializationEntries.push({ label, route: page.url().replace(base, ''), contractCount: contracts.length });
+          const entryResult = { label, route: page.url().replace(base, ''), contractCount: contracts.length };
+          observed.initializationEntries.push(entryResult);
+          if (label === '企业信息') {
+            const companyRows = page.locator('.desktop-record-table tbody tr .cell-primary-link');
+            assert.equal(await companyRows.count(), 1, 'company action returns only the current company');
+            const formOffset = observed.contracts.length;
+            await companyRows.first().click();
+            await page.locator('[data-form-composition]').waitFor();
+            await page.waitForLoadState('networkidle');
+            const save = page.getByRole('button', { name: '保存草稿', exact: true });
+            await save.waitFor();
+            assert.equal(await save.isEnabled(), true, 'configuration administrator can edit the company profile');
+            assert.ok(observed.contracts.slice(formOffset).some(row => row.intent === 'ui.contract.v2' && row.params.view_type === 'form' && row.payload.ok), 'native company form contract consumed');
+            const formContract = observed.contracts.slice(formOffset).find(row => row.intent === 'ui.contract.v2' && row.params.view_type === 'form' && row.payload.ok)?.payload.data;
+            const currencyFields = [];
+            const collectCurrency = value => {
+              if (!value || typeof value !== 'object') return;
+              if (value.fieldInfo?.name === 'currency_id') currencyFields.push(value.fieldInfo);
+              for (const child of Object.values(value)) collectCurrency(child);
+            };
+            collectCurrency(formContract.layoutContract.containerTree);
+            assert.ok(currencyFields.length && currencyFields.every(field => field.readonly === true), 'native currency readonly survives company delegation and contract projection');
+            entryResult.formRoute = page.url().replace(base, '');
+            await page.screenshot({ path: path.join(out, `${role}-enterprise-company-form.png`) });
+          }
         }
       }
       if (managementOnly) {

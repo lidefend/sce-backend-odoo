@@ -37,6 +37,16 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
             allowed_company_ids=[other.id, company.id]).write({'city': 'Switched company'})
         self.assertEqual(other.city, 'Switched company')
 
+    def test_enterprise_profile_view_preserves_native_readonly(self):
+        from lxml import etree
+        profile = self.env.ref('smart_construction_core.view_sc_enterprise_company_form')
+        result = self.env['res.company'].with_user(self.manager).get_view(profile.id, 'form')
+        arch = etree.fromstring(result['arch'])
+        self.assertEqual(arch.xpath("//field[@name='currency_id']")[0].get('readonly'), '1')
+        self.assertNotEqual(arch.xpath("//field[@name='name']")[0].get('readonly'), '1')
+        self.assertEqual(arch.get('create'), '0')
+        self.assertEqual(arch.get('delete'), '0')
+
     def test_enterprise_profile_cannot_write_system_fields_or_create_company(self):
         actor = self.env.company.with_user(self.manager)
         for values in ({'currency_id': self.env.ref('base.USD').id},

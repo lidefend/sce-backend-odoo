@@ -31,7 +31,9 @@
     "addons/smart_core/utils/contract_governance_user_surface.py",
     "addons/smart_core/tests/test_contract_governance_record_context_registry.py",
     "addons/smart_construction_scene/services/business_scene_enablement.py",
-    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs"
   ],
   "environment": {
     "kind": "runtime",
