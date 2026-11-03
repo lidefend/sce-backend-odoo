@@ -23,13 +23,31 @@
     "frontend/apps/web/src/layouts/AppShell.vue",
     "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
     "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
-    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs"
+    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
   },
-  "checks": {
+  "blockers": [],
+  "next_exact_step": "Freeze candidate then existing local backend artifact/preview refresh and config-admin browser startup with management recovery assertions",
+  "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
+  "layer": {
+    "formal_product_layer": "P1 plus P0 generic frontend consumer",
+    "layer_target": "smart_construction_core scenario surface and frontend contract consumption",
+    "reason": "Native authorization already supplies seven config menus; scenario projection drops them; do not change user groups or enterprise scene enablement",
+    "initialization": "P1 declares setup workspace and native model ACL prerequisites; P0 passes existing principal/scenes to extension; frontend consumes authorized route only"
+  },
+  "observed": {
+    "report": ".runtime/nav01/demo-wutao-menu-final.json",
+    "uid": 41,
+    "source": "aa28f842e778eb38541920d73cb67a60c1e72132",
+    "canonical_leaves": 12,
+    "scenario_visible_leaves": 5,
+    "configuration_leaves_dropped": 7
+  },
+  "results": {
     "projection": {
       "status": "passed",
       "count": 14,
@@ -58,21 +76,5 @@
       "log": ".runtime/nav01/admin-entry-iteration.log"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Freeze candidate then existing local backend artifact/preview refresh and config-admin browser startup with management recovery assertions",
-  "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
-  "layer": {
-    "formal_product_layer": "P1 plus P0 generic frontend consumer",
-    "layer_target": "smart_construction_core scenario surface and frontend contract consumption",
-    "reason": "Native authorization already supplies seven config menus; scenario projection drops them; do not change user groups or enterprise scene enablement",
-    "initialization": "P1 declares setup workspace and native model ACL prerequisites; P0 passes existing principal/scenes to extension; frontend consumes authorized route only"
-  },
-  "observed": {
-    "report": ".runtime/nav01/demo-wutao-menu-final.json",
-    "uid": 41,
-    "source": "aa28f842e778eb38541920d73cb67a60c1e72132",
-    "canonical_leaves": 12,
-    "scenario_visible_leaves": 5,
-    "configuration_leaves_dropped": 7
-  }
+  "checks": {}
 }
