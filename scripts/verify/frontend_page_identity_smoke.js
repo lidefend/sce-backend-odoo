@@ -81,7 +81,47 @@ function main() {
   assert(!isTechnicalPageIdentity('FE-A-PR-001'), 'business identifier accepted');
   assert(resolve({ kind: 'list', actionName: '结算管理' }).documentTitle === `结算管理 - ${PRODUCT_APP_TITLE}`, 'document title contract');
 
-  console.log('[frontend_page_identity_smoke] PASS assertions=23');
+  // Execute the exact browser predicate from the audit, without starting the
+  // audit or replacing its identity decisions with a test-only implementation.
+  const auditPath = path.join(ROOT, 'frontend/apps/web/scripts/frontend_product_maturity_audit.mjs');
+  const auditSource = fs.readFileSync(auditPath, 'utf8');
+  const parsed = ts.createSourceFile(auditPath, auditSource, ts.ScriptTarget.ES2020, true);
+  const predicate = parsed.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'captureReadyPageIdentity');
+  assert(predicate, 'audit provides an atomic browser predicate');
+  const state = { title: '公司&项目退款', source: 'action', documentTitle: '新建公司&项目退款 · 加载中 - 企业业务管理平台',
+    url: '/f/sc.company.project.refund.workspace/new', mode: 'create', body: '退款表单' };
+  const root = { getAttribute: key => key === 'data-page-identity-title' ? state.title : state.source };
+  const document = {
+    get title() { return state.documentTitle; },
+    get body() { return { innerText: state.body }; },
+    querySelector: selector => selector === '.layout-shell' ? root : { getAttribute: () => state.mode },
+    querySelectorAll: () => [{ textContent: state.title }],
+  };
+  const capture = vm.runInNewContext(`(${predicate.getText(parsed)})`, {
+    document, window: { location: { get href() { return state.url; } } },
+  });
+  equal(capture(PRODUCT_APP_TITLE), false, 'old action title plus loading form document is not ready');
+  state.documentTitle = `新建公司&项目退款 - ${PRODUCT_APP_TITLE}`;
+  equal(capture(PRODUCT_APP_TITLE), false, 'new document with old shell title is not ready');
+  state.title = '新建公司&项目退款';
+  state.source = '';
+  equal(capture(PRODUCT_APP_TITLE), false, 'missing identity source remains blocked');
+  state.source = 'action';
+  const snapshot = capture(PRODUCT_APP_TITLE);
+  equal(snapshot.title, state.title, 'resolved create identity accepted');
+  equal(snapshot.documentTitle, `${snapshot.title} - ${PRODUCT_APP_TITLE}`, 'snapshot title pair coherent');
+  equal(snapshot.url, state.url, 'redirect destination captured with identity');
+  equal(snapshot.mode, 'create', 'page type input belongs to same snapshot');
+  state.title = '后来页面';
+  equal(snapshot.title, '新建公司&项目退款', 'later DOM change cannot mutate captured identity');
+  state.documentTitle = '永久错误标题';
+  equal(capture(PRODUCT_APP_TITLE), false, 'persistent mismatch never accepted');
+  state.title = '加载中';
+  state.documentTitle = `加载中 - ${PRODUCT_APP_TITLE}`;
+  equal(capture(PRODUCT_APP_TITLE), false, 'matching loading titles are not readiness');
+  assert(!auditSource.includes('{ timeout: 15000 }).catch(() => {})'), 'identity readiness timeout must not be swallowed');
+
+  console.log('[frontend_page_identity_smoke] PASS assertions=34');
 }
 
 main();

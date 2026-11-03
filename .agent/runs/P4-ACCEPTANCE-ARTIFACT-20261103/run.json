@@ -25,7 +25,9 @@
     "contracts/generated/",
     "config/frontend/authoritative_navigation.json",
     "addons/smart_construction_core/views/core/settlement_views.xml",
-    "scripts/verify/test_frontend_delivery_hardening_guard.py"
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+    "scripts/verify/frontend_page_identity_smoke.js"
   ],
   "environment": {
     "kind": "runtime",
@@ -36,11 +38,10 @@
   },
   "checks": {},
   "blockers": [
-    "Current PR793 frontend gate failed at dependency.compliance_state",
-    "Local XML fix not yet installed/verified in acceptance",
-    "New fingerprint requires independent delta review; previous review applies only to 3249"
+    "New exact candidate awaits Quick and independent delta review before publication",
+    "New probe needs remote full page-identity evidence; do not reuse old failed browser result"
   ],
-  "next_exact_step": "Freeze native view capability correction, run exact-head Quick and upgrade only smart_construction_core through registered acceptance.module.upgrade; verify affected contracts then request owner independent delta review.",
+  "next_exact_step": "Prepare frozen candidate and exact-head Quick; owner independent delta review then governed publication and new current-head CI.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "registered acceptance artifact and lifecycle",
@@ -166,12 +167,29 @@
         "status": "passed",
         "log": ".runtime/p4-acceptance-artifact/compliance-freeze.log"
       }
+    },
+    "atomic_identity_probe": {
+      "status": "passed",
+      "classification": "P4 validation-tool asynchronous mixed-snapshot defect",
+      "source_head": "9f61d0f1020acb843cb8e3367104c1fc35338fd5",
+      "source_ci_run": 41598849554,
+      "command": "make verify.frontend.page_identity",
+      "assertions": [
+        34,
+        28
+      ],
+      "guard": "writers=1 integrations=6",
+      "log": ".runtime/p4-acceptance-artifact/identity-atomic-tests.log",
+      "coverage": "Actual browser predicate executed in controlled DOM; loading/mixed titles and missing source rejected, settled snapshot retained after DOM changes; existing production identity and lifecycle assertions unchanged",
+      "limits": "No current-head remote/browser pass; unchanged application/runtime code does not require DB upgrade or fixture reset; changed browser probe requires new execution evidence"
     }
   },
   "continuation_scope": {
-    "formal_product_layer": "P1 native view group binding; P4 regression diagnostic",
-    "reason": "Ordinary PM lacks payment.request read ACL, so native compliance compute fails; finance read succeeds with warn",
-    "baseline": "3249d583d66e8ab425160aa4a0a0884c48dfbaab",
-    "blast_radius": "Only hidden compliance_state and three compliance_message occurrences; preserve computed method, data ACL and frontend fail-closed semantics"
+    "formal_product_layer": "P4 validation tool",
+    "module": "frontend_product_maturity_audit",
+    "standard_vs_user_specific": "Shared browser evidence collection",
+    "reason": "CI41598849554 sampled old action identity and transitioning create document title separately",
+    "blast_radius": "Identity readiness and atomic snapshot only; unchanged role counts, expected title assertions and product/ACL",
+    "baseline": "9f61d0f1020acb843cb8e3367104c1fc35338fd5"
   }
 }

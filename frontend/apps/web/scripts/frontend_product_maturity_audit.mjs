@@ -143,6 +143,23 @@ function flattenNavigation(nodes, parent = []) {
   return rows;
 }
 
+// Executed in the browser: return one coherent snapshot, never a mixture of
+// an action shell and the form it is redirecting to. Persistent gaps time out.
+function captureReadyPageIdentity(appTitle) {
+  const root = document.querySelector('.layout-shell');
+  const title = String(root?.getAttribute('data-page-identity-title') || '').trim();
+  const source = String(root?.getAttribute('data-page-identity-source') || '').trim();
+  const documentTitle = document.title;
+  if (!title || title.includes('加载中') || !source || documentTitle !== `${title} - ${appTitle}`) return false;
+  return {
+    title, source, documentTitle,
+    url: window.location.href,
+    body: document.body?.innerText || '',
+    mode: document.querySelector('[data-product-page-mode]')?.getAttribute('data-product-page-mode') || '',
+    breadcrumbs: Array.from(document.querySelectorAll('.breadcrumb .crumb'), node => node.textContent || ''),
+  };
+}
+
 async function inspectPage(page, role, route, screenshotPath) {
   const consoleErrors = [];
   const pageErrors = [];
@@ -158,17 +175,10 @@ async function inspectPage(page, role, route, screenshotPath) {
     await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     const shell = page.locator('.layout-shell');
     await shell.waitFor({ timeout: 15000 });
-    await page.waitForFunction(() => {
-      const root = document.querySelector('.layout-shell');
-      const title = root?.getAttribute('data-page-identity-title') || '';
-      return Boolean(title && !title.includes('加载中'));
-    }, undefined, { timeout: 15000 }).catch(() => {});
-    const body = await page.locator('body').innerText();
-    const mode = await page.locator('[data-product-page-mode]').first().getAttribute('data-product-page-mode').catch(() => '');
-    const mainTitle = String(await shell.getAttribute('data-page-identity-title') || '').trim();
-    const identitySource = String(await shell.getAttribute('data-page-identity-source') || '').trim();
-    const documentTitle = await page.title();
-    const breadcrumbs = await page.locator('.breadcrumb .crumb').allTextContents();
+    const identityHandle = await page.waitForFunction(captureReadyPageIdentity, expectedAppTitle, { timeout: 15000 });
+    const identity = await identityHandle.jsonValue();
+    await identityHandle.dispose();
+    const { body, mode, title: mainTitle, source: identitySource, documentTitle, breadcrumbs } = identity;
     const technicalPattern = /(?:[a-z_][a-z0-9_]*\.)+[a-z_][a-z0-9_]*|\s#\d+|undefined|null|\b(?:action|menu|record)_?id\b/i;
     const genericTitle = mainTitle === '业务动作' || documentTitle === `业务动作 - ${expectedAppTitle}`;
     const technicalFallback = technicalPattern.test(mainTitle) || technicalPattern.test(documentTitle) || breadcrumbs.some((item) => technicalPattern.test(item));
@@ -181,12 +191,12 @@ async function inspectPage(page, role, route, screenshotPath) {
     return {
       role,
       route,
-      final_url: page.url(),
+      final_url: identity.url,
       title: mainTitle,
       document_title: documentTitle,
       breadcrumbs,
       identity_source: identitySource,
-      page_type: pageType(page.url(), mode, body),
+      page_type: pageType(identity.url, mode, body),
       load_ms: Date.now() - started,
       load_result: httpErrors.some((item) => item.status === 403) ? 'permission' : httpErrors.length ? 'error' : body.includes('暂无') ? 'empty' : 'ok',
       console_errors: consoleErrors,
