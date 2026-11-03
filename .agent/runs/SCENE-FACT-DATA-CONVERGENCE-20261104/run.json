@@ -7,6 +7,9 @@
   "goal": ".agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml",
   "record": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
   "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml",
+    ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
     "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
     "addons/smart_scene/core/scene_registry_engine.py",
