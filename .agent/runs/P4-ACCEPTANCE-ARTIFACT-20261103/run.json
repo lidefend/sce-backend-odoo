@@ -22,7 +22,8 @@
     "scripts/verify/test_frontend_release_ci_identity.py",
     "docs/engineering_convergence/",
     "docs/audit/test_coverage_registry/",
-    "contracts/generated/"
+    "contracts/generated/",
+    "config/frontend/authoritative_navigation.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -33,10 +34,10 @@
   },
   "checks": {},
   "blockers": [
-    "Exact-head contract and list browser acceptance pending clean candidate",
-    "New P4 code requires independent review before publication"
+    "PR793 full frontend gate: PM browser expectation omitted the already-published project initiation entry",
+    "New candidate requires exact-head evidence and independent review"
   ],
-  "next_exact_step": "Prepare generated evidence and commit clean P4 candidate; deploy exact artifact through governed entry and obtain contract prerequisite and list-surface evidence before final Quick and independent review.",
+  "next_exact_step": "Correct only the PM browser verification expectation, replay the actual failed CI report with negative controls, run affected guards and freeze the corrected candidate.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "registered acceptance artifact and lifecycle",
@@ -65,7 +66,13 @@
   "findings": [
     "Backend stopped; mounted pc01 and recorded cfd3d51cd97b6980819f898390cb3d4e7da2f9fc.",
     "Artifact identity tied to mutable worktree; frontend 5175 health differs from actual standard-list 5180 preview.",
-    "Owning runtime test harness has 17 failures from private .env.dev dependency, one whitespace-sensitive source assertion and one incomplete isolated entry fixture."
+    "Owning runtime test harness has 17 failures from private .env.dev dependency, one whitespace-sensitive source assertion and one incomplete isolated entry fixture.",
+    {
+      "owner": "P4 verification baseline",
+      "source": "GitHub Actions run 41588976540 at 359bd43f9f70fbb9672e7357e6ce2248aacf8bc9",
+      "failure": "PM browser expected 7, actual 8; project initiation is already declared by P1 role and formal publication",
+      "scope": "Verification expectation only; NAV-01 remains read-only; no authorization or runtime implementation change"
+    }
   ],
   "results": {
     "L1": {
