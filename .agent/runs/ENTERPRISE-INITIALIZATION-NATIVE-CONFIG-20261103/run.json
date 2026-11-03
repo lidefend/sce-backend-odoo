@@ -49,7 +49,11 @@
     "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "scripts/verify/scenario_surface_projection_guard.py",
-    "addons/smart_core/core/navigation_entry_target.py"
+    "addons/smart_core/core/navigation_entry_target.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "frontend/apps/web/scripts/route_authority_guard_test.ts",
+    "frontend/apps/web/src/services/actionRoutePolicy.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -71,7 +75,8 @@
     "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment.",
     "onboarding_fix": "P1 native personnel field owner defers personnel inverses until native account/partner creation completes; retains original runtime validation and atomic savepoint.",
     "presentation": "P3 uses existing theme tokens for readable readiness and activation cards; consumes all labels/actions/statuses from server unchanged.",
-    "activation_repair": "P1 native setup menu/action and REQUIRED_GROUPS declaration; P0 consumes existing sc_web_surface action contract in native config projection. No role whitelist, no frontend product change. P4 exact single fixture company/scenario toggle with baseline restoration."
+    "activation_repair": "P1 native setup menu/action and REQUIRED_GROUPS declaration; P0 consumes existing sc_web_surface action contract in native config projection. No role whitelist, no frontend product change. P4 exact single fixture company/scenario toggle with baseline restoration.",
+    "relation_open_fix": "P0 page_assembler relation-open resolution excludes declared sc_web_surface workspace actions so a configuration workspace never hijacks a relation field's record navigation; frontend actionRoutePolicy registers enterprise_initialization as a declared admin surface (declaration -> consumption -> actual behavior)."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",

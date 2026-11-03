@@ -53,6 +53,13 @@ from ...utils.view_utils import normalize_cols_safely
 _logger = logging.getLogger(__name__)
 
 
+def _relation_action_is_record_open_form(action) -> bool:
+    """A declared web-surface action is a configuration workspace, not a
+    record-open form; it must never hijack a relation field's record
+    navigation."""
+    return "sc_web_surface" not in str(getattr(action, "context", "") or "")
+
+
 class PageAssembler:
     SOURCE_KIND = "app_config_page_contract_projection"
     SOURCE_AUTHORITIES = (
@@ -4245,6 +4252,11 @@ class PageAssembler:
                 continue
             model_name = str(act.res_model or "").strip()
             if model_name not in relation_models or model_name in action_by_model:
+                continue
+            # A declared web-surface action is a configuration workspace, not a
+            # record-open form; it must never hijack a relation field's record
+            # navigation.
+            if not _relation_action_is_record_open_form(act):
                 continue
             action_by_model[model_name] = act
             menu_by_action[act.id] = menu.id
