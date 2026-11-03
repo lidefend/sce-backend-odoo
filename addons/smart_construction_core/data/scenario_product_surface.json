@@ -81,29 +81,15 @@
     "report": "报表",
     "master_data": "基础信息维护"
   },
-  "horizontal_work_center": {
-    "note": "Cross-scenario horizontal work center; not assigned to a single business scenario.",
-    "menus": [
-      "smart_construction_core.menu_sc_workspace_home",
-      "smart_construction_core.menu_sc_operating_metrics_project",
-      "smart_construction_core.menu_sc_project_kanban",
-      "smart_construction_core.menu_sc_workbench_my_todo_fact",
-      "smart_construction_core.menu_sc_product_message_notification_v1"
-    ]
-  },
-  "platform_support": {
-    "name": "产品配置",
-    "note": "Platform configuration/diagnostics; excluded from ordinary business scenario surface.",
-    "menus": [
-      "smart_construction_core.menu_sc_business_config_workbench",
-      "smart_construction_core.menu_sc_approval_policy",
-      "smart_construction_core.menu_ui_form_field_policy_business_config",
-      "smart_construction_core.menu_ui_menu_config_policy_business_config",
-      "smart_construction_core.menu_sc_product_data_permission_v1",
-      "smart_construction_core.menu_sc_product_system_parameter_v1",
-      "smart_construction_core.menu_sc_product_numbering_rule_v1"
-    ]
-  },
+    "horizontal_work_center": {
+        "note": "Cross-scenario horizontal work center; derived from the native workspace-center menu tree.",
+        "root_menu_xmlid": "smart_construction_core.menu_sc_workspace_center"
+    },
+    "platform_support": {
+        "name": "产品配置",
+        "note": "Platform configuration/diagnostics; derived from the native business-config-center menu tree.",
+        "root_menu_xmlid": "smart_construction_core.menu_sc_business_config_center"
+    },
   "scenarios": [
     {
       "key": "governance.organization",

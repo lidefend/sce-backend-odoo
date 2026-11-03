@@ -125,6 +125,32 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 company_ids=types.SimpleNamespace(ids=[1]),
                 has_group=lambda group: can_manage,
             )
+            roots = {
+                "smart_construction_core.menu_sc_workspace_center": [
+                    "smart_construction_core.menu_sc_workspace_home",
+                    "smart_construction_core.menu_sc_operating_metrics_project",
+                    "smart_construction_core.menu_sc_project_kanban",
+                    "smart_construction_core.menu_sc_workbench_my_todo_fact",
+                    "smart_construction_core.menu_sc_product_message_notification_v1",
+                ],
+                "smart_construction_core.menu_sc_business_config_center": [
+                    "smart_construction_core.menu_sc_business_config_workbench",
+                    "smart_construction_core.menu_sc_approval_policy",
+                    "smart_construction_core.menu_ui_form_field_policy_business_config",
+                    "smart_construction_core.menu_ui_menu_config_policy_business_config",
+                    "smart_construction_core.menu_sc_product_data_permission_v1",
+                    "smart_construction_core.menu_sc_product_system_parameter_v1",
+                    "smart_construction_core.menu_sc_product_numbering_rule_v1",
+                ],
+            }
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                children = []
+                for index, child_xmlid in enumerate(self.roots.get(xmlid, []), start=900):
+                    child = types.SimpleNamespace(id=index, xmlid=child_xmlid)
+                    child.get_external_id = lambda child=child: {child.id: child.xmlid}
+                    children.append(child)
+                return types.SimpleNamespace(child_id=children)
 
             def __getitem__(self, name):
                 if name == "ir.config_parameter":
@@ -188,7 +214,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
         handler.env, handler.params = env, {}
         handler._resolve_authorized_scene_candidates = lambda entries, company_id: [row["code"] for row in self.entries]
         result = handler.handle()["data"]
-        index = scenario_surface.build_menu_index(scenario_surface.load_surface())
+        surface = scenario_surface.load_surface()
+        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
         expected = sum(self.expected.get(row.get("target", {}).get("menu_xmlid")) == "released"
                        and business_enablement.entry_business_enabled(row, index, {}) for row in self.entries)
         self.assertGreater(expected, 0)
@@ -202,7 +229,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
         workspace.env, workspace.params = env, {}
         workspace._resolve_authorized_scene_candidates = lambda entries, company_id: []
         projection = workspace.handle()["data"]
-        index = scenario_surface.build_menu_index(scenario_surface.load_surface())
+        surface = scenario_surface.load_surface()
+        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
         self.assertEqual(len({value["scenario_key"] for value in index.values() if value["location"] == "scenario"}), 17)
         for entry, catalog_row, workspace_row in zip(self.entries, catalog["rows"], projection["rows"]):
             expected = index.get(entry.get("target", {}).get("menu_xmlid"))

@@ -7,13 +7,18 @@ class ScProductPolicy(models.Model):
 
     @api.model
     def _apply_company_route_scope(self, authority):
-        from odoo.addons.smart_construction_core.services.scenario_surface_projection import build_menu_index, load_surface
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+            build_menu_index,
+            load_surface,
+            resolve_native_parent_by_menu,
+        )
         from odoo.addons.smart_construction_scene.profiles.scene_registry_content import list_scene_entries
         from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key, business_states, filter_business_authority
         from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
 
         authority = super()._apply_company_route_scope(authority)
-        index = build_menu_index(load_surface())
+        surface = load_surface()
+        index = build_menu_index(surface, parent_by_menu=resolve_native_parent_by_menu(self.env, surface))
         stored = {}
         for scene in load_surface().get("scenarios") or []:
             key = str(scene.get("key") or "").strip()

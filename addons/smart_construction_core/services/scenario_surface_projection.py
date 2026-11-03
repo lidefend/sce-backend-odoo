@@ -39,7 +39,11 @@ def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
-def build_menu_index(surface: dict[str, Any]) -> dict[str, dict[str, str]]:
+def build_menu_index(
+    surface: dict[str, Any],
+    *,
+    parent_by_menu: dict[str, str] | None = None,
+) -> dict[str, dict[str, str]]:
     """Return menu_xmlid -> location/intent/scenario metadata.
 
     Raises ValueError on duplicate or empty menu assignments so the caller can
@@ -61,10 +65,22 @@ def build_menu_index(surface: dict[str, Any]) -> dict[str, dict[str, str]]:
             "intent": _text(intent),
         }
 
-    for menu in surface.get("horizontal_work_center", {}).get("menus", []) or []:
-        claim(menu, "horizontal")
-    for menu in surface.get("platform_support", {}).get("menus", []) or []:
-        claim(menu, "platform")
+    horizontal_root = _text(surface.get("horizontal_work_center", {}).get("root_menu_xmlid"))
+    platform_root = _text(surface.get("platform_support", {}).get("root_menu_xmlid"))
+    if parent_by_menu:
+        for menu_xmlid, parent_xmlid in parent_by_menu.items():
+            key = _text(menu_xmlid)
+            if not key:
+                continue
+            if horizontal_root and _text(parent_xmlid) == horizontal_root:
+                claim(key, "horizontal")
+            elif platform_root and _text(parent_xmlid) == platform_root:
+                claim(key, "platform")
+    else:
+        for menu in surface.get("horizontal_work_center", {}).get("menus", []) or []:
+            claim(menu, "horizontal")
+        for menu in surface.get("platform_support", {}).get("menus", []) or []:
+            claim(menu, "platform")
     scenario_keys: set[str] = set()
     for scenario in surface.get("scenarios", []) or []:
         if not isinstance(scenario, dict) or not isinstance(scenario.get("key"), str):
@@ -80,6 +96,32 @@ def build_menu_index(surface: dict[str, Any]) -> dict[str, dict[str, str]]:
             for menu in menus or []:
                 claim(menu, "scenario", scenario_key, scenario_name, _text(intent))
     return index
+
+
+def resolve_native_parent_by_menu(env, surface: dict[str, Any]) -> dict[str, str]:
+    """Resolve each horizontal/platform menu's native parent xmlid from the menu tree."""
+    mapping: dict[str, str] = {}
+    if env is None:
+        return mapping
+    for section in ("horizontal_work_center", "platform_support"):
+        root_xmlid = _text((surface.get(section) or {}).get("root_menu_xmlid"))
+        if not root_xmlid:
+            continue
+        try:
+            root = env.ref(root_xmlid, raise_if_not_found=False)
+        except Exception:
+            continue
+        if not root:
+            continue
+        for child in getattr(root, "child_id", []) or []:
+            try:
+                ext = child.get_external_id().get(child.id)
+                child_xmlid = _text(ext) if ext else ""
+            except Exception:
+                child_xmlid = ""
+            if child_xmlid:
+                mapping[child_xmlid] = root_xmlid
+    return mapping
 
 
 def _group_leaves(
@@ -119,7 +161,13 @@ def project_scenario_navigation(
         source = surface if surface is not None else load_surface()
         if _text(source.get("schema")) != SCHEMA:
             raise ValueError(f"invalid scenario product surface schema: {source.get('schema')!r}")
-        index = build_menu_index(source)
+        leaves = list(authorized_leaves)
+        parent_by_menu = {
+            _text(leaf.get("menu_xmlid")): _text(leaf.get("parent_menu_xmlid"))
+            for leaf in leaves
+            if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid"))
+        }
+        index = build_menu_index(source, parent_by_menu=parent_by_menu)
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         return {
             "ok": False,
@@ -128,7 +176,7 @@ def project_scenario_navigation(
             "tree": None,
         }
 
-    authorized_leaves = list(authorized_leaves)
+    authorized_leaves = leaves
     by_menu, unmapped = _group_leaves(authorized_leaves, index)
     # Native configuration workspaces have their own authorized action
     # declaration and lifecycle, independent of the released business catalogue.
@@ -179,8 +227,17 @@ def project_scenario_navigation(
                 "scenarios": scenario_nodes,
             })
 
-    horizontal = [leaf for menu in (source.get("horizontal_work_center", {}).get("menus", []) or []) for leaf in by_menu.get(_text(menu), [])]
-    platform = [leaf for menu in (source.get("platform_support", {}).get("menus", []) or []) for leaf in by_menu.get(_text(menu), [])]
+    horizontal_root = _text(source.get("horizontal_work_center", {}).get("root_menu_xmlid"))
+    platform_root = _text(source.get("platform_support", {}).get("root_menu_xmlid"))
+    horizontal = [
+        dict(leaf) for leaf in authorized_leaves
+        if horizontal_root and _text(leaf.get("parent_menu_xmlid")) == horizontal_root
+    ]
+    platform = [
+        dict(leaf) for leaf in authorized_leaves
+        if platform_root and _text(leaf.get("parent_menu_xmlid")) == platform_root
+        and _text(leaf.get("menu_xmlid")) not in native_platform_keys
+    ]
     platform = native_platform + platform
 
     grouped_menu_count = sum(len(v) for v in by_menu.values()) + len(native_platform)
@@ -235,7 +292,7 @@ def flatten_authorized_nav_leaves(
     authority_by_pair = _route_authority_by_pair(route_authority)
     leaves: list[dict[str, Any]] = []
 
-    def walk(nodes: Iterable[dict[str, Any]]) -> None:
+    def walk(nodes: Iterable[dict[str, Any]], parent_menu_xmlid: str = "") -> None:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
@@ -250,8 +307,10 @@ def flatten_authorized_nav_leaves(
             route = _text(carrier.get("route") or node.get("route") or meta.get("route"))
             if menu_id > 0 and (action_id > 0 or route):
                 entry = authority_by_pair.get((menu_id, action_id), {})
+                menu_xmlid = _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid"))
+                leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
-                    "menu_xmlid": _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid")),
+                    "menu_xmlid": menu_xmlid,
                     "menu_id": menu_id,
                     "action_id": action_id,
                     "action_xmlid": _text(entry.get("action_xmlid")),
@@ -261,9 +320,10 @@ def flatten_authorized_nav_leaves(
                     "label": _text(node.get("label") or node.get("name") or carrier.get("label")),
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
                     "entry_target": entry.get("entry_target") or meta.get("entry_target") or {},
+                    "parent_menu_xmlid": leaf_parent,
                 })
             if children:
-                walk(children)
+                walk(children, menu_xmlid)
 
     walk(nav or [])
     return leaves

@@ -39,7 +39,37 @@ def released_menu_xmlids():
     return [row["menu_xmlid"] for group in standard["menu_groups"] for row in group["menus"]]
 
 
-def synthetic_leaves(menu_xmlids):
+HORIZONTAL_MENUS = [
+    "smart_construction_core.menu_sc_workspace_home",
+    "smart_construction_core.menu_sc_operating_metrics_project",
+    "smart_construction_core.menu_sc_project_kanban",
+    "smart_construction_core.menu_sc_workbench_my_todo_fact",
+    "smart_construction_core.menu_sc_product_message_notification_v1",
+]
+PLATFORM_MENUS = [
+    "smart_construction_core.menu_sc_business_config_workbench",
+    "smart_construction_core.menu_sc_approval_policy",
+    "smart_construction_core.menu_ui_form_field_policy_business_config",
+    "smart_construction_core.menu_ui_menu_config_policy_business_config",
+    "smart_construction_core.menu_sc_product_data_permission_v1",
+    "smart_construction_core.menu_sc_product_system_parameter_v1",
+    "smart_construction_core.menu_sc_product_numbering_rule_v1",
+]
+HORIZONTAL_ROOT = "smart_construction_core.menu_sc_workspace_center"
+PLATFORM_ROOT = "smart_construction_core.menu_sc_business_config_center"
+
+
+def native_parent_by_menu():
+    mapping = {}
+    for menu in HORIZONTAL_MENUS:
+        mapping[menu] = HORIZONTAL_ROOT
+    for menu in PLATFORM_MENUS:
+        mapping[menu] = PLATFORM_ROOT
+    return mapping
+
+
+def synthetic_leaves(menu_xmlids, parent_by_menu=None):
+    parent_by_menu = parent_by_menu or {}
     leaves = []
     for index, xmlid in enumerate(menu_xmlids, start=1):
         leaves.append({
@@ -51,11 +81,13 @@ def synthetic_leaves(menu_xmlids):
             "view_modes": ["tree", "form"],
             "route": f"/a/{index}?menu_id={index}",
             "label": xmlid,
+            "parent_menu_xmlid": parent_by_menu.get(xmlid, ""),
         })
     return leaves
 
 
-def synthetic_nav(menu_xmlids):
+def synthetic_nav(menu_xmlids, parent_by_menu=None):
+    parent_by_menu = parent_by_menu or {}
     nodes = []
     for index, xmlid in enumerate(menu_xmlids, start=1):
         nodes.append({
@@ -67,6 +99,7 @@ def synthetic_nav(menu_xmlids):
             "model": "res.model",
             "view_modes": ["tree", "form"],
             "route": f"/a/{index}?menu_id={index}",
+            "parent_menu_xmlid": parent_by_menu.get(xmlid, ""),
             "children": [],
             "canonical_navigation": {
                 "schema_version": "1.0",
@@ -119,13 +152,14 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
     def setUpClass(cls):
         cls.surface = PROJ.load_surface(SURFACE_PATH)
         cls.released = released_menu_xmlids()
-        cls.leaves = synthetic_leaves(cls.released)
+        cls.parent_by_menu = native_parent_by_menu()
+        cls.leaves = synthetic_leaves(cls.released, cls.parent_by_menu)
 
     def test_released_universe_is_exactly_91(self):
         self.assertEqual(len(self.released), 91)
 
     def test_surface_maps_all_91_and_only_them(self):
-        index = PROJ.build_menu_index(self.surface)
+        index = PROJ.build_menu_index(self.surface, parent_by_menu=self.parent_by_menu)
         self.assertEqual(set(index), set(self.released))
 
     def test_surface_declares_17_scenarios_under_6_domains(self):
@@ -163,7 +197,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual([i["intent"] for i in ledger["intents"]], ["view"])
 
     def test_unmapped_leaf_reported_not_grouped(self):
-        extra = dict(self.leaves[0], menu_xmlid="smart_construction_core.menu_not_in_surface")
+        extra = dict(self.leaves[0], menu_xmlid="smart_construction_core.menu_not_in_surface", parent_menu_xmlid="")
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves + [extra])
         self.assertEqual(result["diagnostics"]["unmapped_count"], 1)
         self.assertIn("smart_construction_core.menu_not_in_surface", result["diagnostics"]["unmapped_menu_xmlids"])
@@ -186,7 +220,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(leaves[0]["route"], "/a/1?menu_id=1")
 
     def test_project_authorized_nav_end_to_end(self):
-        nav = synthetic_nav(self.released)
+        nav = synthetic_nav(self.released, native_parent_by_menu())
         authority = synthetic_route_authority(self.released)
         result = PROJ.project_authorized_nav(nav=nav, route_authority=authority, surface=self.surface)
         self.assertTrue(result["ok"])
@@ -196,8 +230,8 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(len(result["tree"]["horizontal"]), 5)
 
     def test_zero_business_scenes_keep_only_authorized_management_entries(self):
-        subset = self.surface["horizontal_work_center"]["menus"] + self.surface["platform_support"]["menus"]
-        result = PROJ.project_authorized_nav(nav=synthetic_nav(subset),
+        subset = HORIZONTAL_MENUS + PLATFORM_MENUS
+        result = PROJ.project_authorized_nav(nav=synthetic_nav(subset, native_parent_by_menu()),
             route_authority=synthetic_route_authority(subset), surface=self.surface)
         self.assertEqual(result["tree"]["domains"], [])
         self.assertEqual(len(result["tree"]["horizontal"]), 5)
@@ -205,7 +239,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(result["tree"]["platform_label"], "产品配置")
         authority = synthetic_route_authority(subset)
         authority["primary_actions"] = authority["primary_actions"][:5]
-        revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5]), route_authority=authority, surface=self.surface)
+        revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5], native_parent_by_menu()), route_authority=authority, surface=self.surface)
         self.assertEqual(revoked["tree"]["platform"], [])
 
     def test_role_difference_only_authorized_scenarios_present(self):

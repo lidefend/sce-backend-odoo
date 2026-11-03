@@ -34,7 +34,9 @@
     },
     "hardcoded_scene_surface_menus": {
       "file": "addons/smart_construction_core/data/scenario_product_surface.json",
-      "sha256": "ef270c0ab637b6f2b0cddb8170ee0d1758199b0b2c89e0b509660a96d2bf5fd1"
+      "sha256": null,
+      "converged": true,
+      "converged_by": "horizontal and platform groups derive from native menu-tree roots"
     }
   }
 }

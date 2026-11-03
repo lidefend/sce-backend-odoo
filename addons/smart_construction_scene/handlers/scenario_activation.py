@@ -20,13 +20,15 @@ def _resolve_request_company(env, params):
     return resolve_request_company(requested, env.user.company_ids.ids, env.company.id or 0)
 
 
-def _product_surface_index():
+def _product_surface_index(env=None):
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
         build_menu_index,
         load_surface,
+        resolve_native_parent_by_menu,
     )
 
-    return build_menu_index(load_surface())
+    surface = load_surface()
+    return build_menu_index(surface, parent_by_menu=resolve_native_parent_by_menu(env, surface))
 
 
 def _catalog(env, company_id=0):
@@ -85,7 +87,7 @@ def _catalog(env, company_id=0):
         release_state_by_menu=release_state_by_menu,
         product_release_by_scene=product_release_by_scene,
         tenant_enablement_by_scene=enablement,
-        surface_index=_product_surface_index(),
+        surface_index=_product_surface_index(env),
     )
     can_manage = bool(env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
     result["business_scenarios"] = business_catalog(
@@ -239,7 +241,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
             tenant_enabled_by_scene=enablement,
             business_enabled_by_scene=business_states(enablement),
             role_scene_candidates=role_scene_candidates,
-            surface_index=_product_surface_index(),
+            surface_index=_product_surface_index(self.env),
         )
         return {"ok": True, "data": data, "meta": {}}
 

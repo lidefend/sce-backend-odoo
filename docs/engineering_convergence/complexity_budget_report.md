@@ -112,13 +112,13 @@ Generated from repository source files. This report is informational during the 
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1315 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1291 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
-| 1263 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1226 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
