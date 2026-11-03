@@ -1006,6 +1006,33 @@ class TestCarryForwardPolicy(unittest.TestCase):
             guard.suite_input_sha256(self.registry, "frontend_contract", head),
         )
 
+    def test_offline_scene_tests_and_planner_bookkeeping_preserve_browser_inputs(self):
+        registry = json.loads(json.dumps(self.registry))
+        suites = ('list_surface_structure', 'relation_roundtrip')
+        for suite in suites:
+            registry['suites'][suite]['make_inputs'] = []
+        test_path = 'addons/smart_construction_scene/tests/test_tenant_scene_activation.py'
+        runtime_path = 'addons/smart_construction_scene/services/tenant_scene_activation.py'
+        self._write(test_path, 'old test')
+        self._write(runtime_path, 'old runtime')
+        self._write('config/acceptance/evolution_binding.v1.json', json.dumps(registry))
+        base = self._commit('browser inputs')
+        before = {s: guard.suite_input_sha256(registry, s, base) for s in suites}
+        self._write(test_path, 'corrected isolated test input')
+        self._write('config/acceptance/evolution_binding.v1.json', json.dumps(registry, indent=4))
+        head = self._commit('offline tests and planner formatting')
+        plan = guard.build_plan(registry, [test_path], base, head)
+        self.assertEqual(['backend_contract'], plan['required_suites'])
+        for suite in suites:
+            self.assertEqual(before[suite], guard.suite_input_sha256(registry, suite, head))
+        self._write(runtime_path, 'changed runtime')
+        runtime = self._commit('actual product change')
+        for suite in suites:
+            self.assertNotEqual(before[suite], guard.suite_input_sha256(registry, suite, runtime))
+        registry['suites']['list_surface_structure']['evidence']['min_counts']['records_total'] += 1
+        self.assertNotEqual(before['list_surface_structure'],
+                            guard.suite_input_sha256(registry, 'list_surface_structure', head))
+
     def test_governance_tool_change_preserves_runtime_fingerprint(self):
         base = self._git('rev-parse', 'HEAD')
         self._write('scripts/ops/evidence_scope.py', 'offline ledger change')

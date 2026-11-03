@@ -320,7 +320,7 @@
       "id": "offline-delivery-governance",
       "paths": [
         "scripts/ops/agent_run_context.py",
-    "scripts/ops/local_quick_evidence.py",
+        "scripts/ops/local_quick_evidence.py",
         "scripts/ops/evidence_scope.py",
         "scripts/ops/test_evidence_scope.py",
         "scripts/ops/validation_delivery_plan.py",
@@ -332,6 +332,16 @@
       ],
       "suites": [
         "governance_static"
+      ]
+    },
+    {
+      "id": "offline-scene-test-implementation",
+      "paths": [
+        "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+      ],
+      "suites": [
+        "backend_contract"
       ]
     },
     {

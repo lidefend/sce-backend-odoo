@@ -119,6 +119,7 @@ Generated from repository source files. This report is informational during the 
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1226 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1222 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
@@ -126,13 +127,12 @@ Generated from repository source files. This report is informational during the 
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
-| 1199 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
+| 1155 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1149 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
-| 1149 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1147 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |

@@ -307,6 +307,12 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     strict_selectors = revision == str(_git("rev-parse", "HEAD"))
     for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
         _, _, path = line.partition("\t")
+        if (path == 'config/acceptance/evolution_binding.v1.json'
+                and suite_id in {'list_surface_structure', 'relation_roundtrip'}):
+            # These probes do not consume the planner registry. Their complete
+            # descriptor and rule-selected inputs below bind relevant policy;
+            # hashing this file again invalidates them for unrelated rule edits.
+            continue
         if path in make_input_paths:
             continue
         if path and suite_owns_path(registry, suite_id, path):

@@ -80,6 +80,7 @@
     "addons/smart_core/delivery/runtime_route_authority.py",
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/models/release_management.py",
+    "config/acceptance/evolution_binding.v1.json",
     "config/frontend/role_surface_exposure_declarations_v1.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
@@ -116,12 +117,14 @@
     "scripts/ops/test_quick_input_scope.py",
     "scripts/ops/test_scene_internal_action_authority.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
     "scripts/verify/data_scope_declarations.json",
     "scripts/verify/fact_layer_authority_guard.py",
     "scripts/verify/frontend_menu_navigation_diagnostic.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_daily_acceptance_fixture_lane.py"
   ],
@@ -474,5 +477,11 @@
     "remaining_undeclared_targets": 15,
     "dependency_audit": "Manifest-only matrix fingerprints include additions/removals. Fresh-install inherits core runtime/XML readers; payload inherits tenant schema and customer sample readers. Imported or executed git/make/bash bytes bound in environment identity.",
     "limits": "Old receipt has neither matching environment identity nor tool executable evidence. No inferred carry-forward, full Quick, browser/ORM replay or remote publication."
+  },
+  "merge_continuation": {
+    "layer": "P4",
+    "reason": "Two offline scene tests incorrectly invalidate list/relation browser evidence; planner registry bytes are not browser inputs, descriptor and selected inputs already bind relevant policy.",
+    "quick_attempt": "Stopped owned process group before mutation after detecting known readiness failure; log retained, not a passed receipt.",
+    "next": "Correct exact path ownership, focused guard tests, existing policy-reanchor carry-forward; freeze once, obtain mandatory Quick, owner delta review, archive/push/current CI/merge."
   }
 }
