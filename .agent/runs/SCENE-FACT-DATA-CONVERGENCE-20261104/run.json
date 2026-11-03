@@ -18,6 +18,7 @@
     "kind": "offline",
     "authority": "existing local Make tools; no database or service access"
   },
+  "checks": {},
   "blockers": [],
   "next_exact_step": "Derive enterprise.setup scene entry from native action/view declarations; retire hardcoded registry entry and independent scene version XML"
 }
