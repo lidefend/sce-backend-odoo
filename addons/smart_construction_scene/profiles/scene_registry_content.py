@@ -82,57 +82,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             },
         },
         {
-            "code": "enterprise.company",
-            "name": "企业信息",
-            "target": {
-                "route": "/s/enterprise.company",
-                "action_xmlid": "smart_construction_core.action_sc_enterprise_company",
-                "model": "res.company",
-                "view_type": "form",
-            },
-        },
-        {
-            "code": "enterprise.department",
-            "name": "组织架构",
-            "target": {
-                "route": "/s/enterprise.department",
-                "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
-                "action_xmlid": "smart_construction_core.action_sc_organization_department",
-                "model": "hr.department",
-                "view_type": "tree",
-            },
-        },
-        {
-            "code": "enterprise.user",
-            "name": "用户设置",
-            "target": {
-                "route": "/s/enterprise.user",
-                "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
-                "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
-                "model": "res.users",
-                "view_type": "tree",
-            },
-        },
-        {
-            "code": "enterprise.post",
-            "name": "岗位管理",
-            "target": {
-                "route": "/s/enterprise.post",
-                "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1",
-                "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
-                "model": "hr.job",
-                "view_type": "tree",
-            },
-        },
-        {
-            "code": "enterprise.setup",
-            "name": "企业初始化工作空间",
-            "enablement_scope": "enterprise_initialization",
-            "target": {
-                "route": "/s/enterprise.setup",
-            },
-        },
-        {
             "code": "projects.list",
             "name": "项目台账",
             "identity_owner": True,

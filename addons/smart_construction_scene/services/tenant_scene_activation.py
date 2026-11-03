@@ -11,11 +11,18 @@ from __future__ import annotations
 from typing import Any
 
 
+ENTERPRISE_SETUP_CODE = "enterprise.setup"
+ENTERPRISE_SETUP_MENU_XMLID = "smart_construction_core.menu_sc_enterprise_initialization"
+ENTERPRISE_SETUP_ACTION_XMLID = "smart_construction_core.action_sc_enterprise_initialization"
+
+
 def resolve_scene_menu(scene_key: str, entries: list[dict[str, Any]] | None = None) -> str:
     """Map a scene key to its menu xmlid via the scene registry content."""
     key = str(scene_key or "").strip()
     if not key:
         return ""
+    if key == ENTERPRISE_SETUP_CODE:
+        return ENTERPRISE_SETUP_MENU_XMLID
     if entries is None:
         from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
             list_scene_entries,

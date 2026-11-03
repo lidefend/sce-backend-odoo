@@ -39,8 +39,27 @@ def _catalog(env, company_id=0):
     from odoo.addons.smart_construction_scene.services.scenario_activation_catalog import (
         build_scenario_activation_catalog,
     )
-
     entries = list_scene_entries()
+    derived = None
+    try:
+        action = env.ref("smart_construction_core.action_sc_enterprise_initialization", raise_if_not_found=False)
+        if action:
+            derived = {
+                "code": "enterprise.setup",
+                "name": str(action.name or "企业初始化").strip(),
+                "enablement_scope": "enterprise_initialization",
+                "target": {
+                    "route": "/s/enterprise.setup",
+                    "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+                    "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
+                    "model": str(action.res_model or "").strip(),
+                    "view_type": "form",
+                },
+            }
+    except Exception:
+        derived = None
+    if derived:
+        entries.append(derived)
     release_state_by_menu = load_menu_release_states()
     product_release_by_scene = {}
     scenes = env["sc.scene"].sudo().search([("active_version_id", "!=", False)])
