@@ -42,6 +42,24 @@ class ResUsers(models.Model):
             user.sc_personnel_job_id = employee.job_id
             user.sc_personnel_active = bool(employee and employee.active)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Personnel inverses need the completed native account/partner. During
+        # base create their ordering relative to the related name inverse is
+        # unspecified; creating an employee there can produce an unnamed resource.
+        account_vals = [dict(vals) for vals in vals_list]
+        personnel_vals = [
+            {key: vals.pop(key) for key in (
+                "sc_personnel_department_id", "sc_personnel_job_id", "sc_personnel_active"
+            ) if key in vals}
+            for vals in account_vals
+        ]
+        users = super().create(account_vals)
+        for user, values in zip(users, personnel_vals):
+            if values:
+                user.write(values)
+        return users
+
     def _sc_check_personnel_maintainer(self):
         if not self.env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin"):
             raise AccessError(_("仅业务配置管理员可以维护人员档案。"))

@@ -97,6 +97,34 @@ class TestSceneInternalActionAuthority(unittest.TestCase):
         self.assertEqual(_mod.build_scene_internal_actions(env, scenes), {})
 
 
+class TestReadinessNativeRemediation(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('readiness', 'addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.decorate = module.decorate_remediation
+        self.rule = {'rule_key': 'enterprise.identity', 'remediation_entry': 'profile', 'applicability': True, 'status': 'CONFIGURED'}
+        self.item = {'key': 'native.profile', 'label': 'Native profile', 'remediation_keys': ['profile']}
+
+    def test_uses_native_identity_and_label(self):
+        self.decorate([self.rule], {'groups': [{'items': [self.item]}]})
+        self.assertEqual(self.rule['remediation'], {'kind': 'handling_entry', 'key': 'native.profile', 'label': 'Native profile'})
+
+    def test_no_authorized_entry_has_no_remediation(self):
+        self.decorate([self.rule], None)
+        self.assertIsNone(self.rule['remediation'])
+
+    def test_inapplicable_rule_has_no_remediation(self):
+        self.rule['applicability'] = False
+        self.decorate([self.rule], {'groups': [{'items': [self.item]}]})
+        self.assertIsNone(self.rule['remediation'])
+
+    def test_ambiguous_native_binding_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, 'READINESS_REMEDIATION_AMBIGUOUS'):
+            self.decorate([self.rule], {'groups': [{'items': [self.item, self.item]}]})
+
+
 class TestNativeHandlingProjection(unittest.TestCase):
     def setUp(self):
         import importlib.util

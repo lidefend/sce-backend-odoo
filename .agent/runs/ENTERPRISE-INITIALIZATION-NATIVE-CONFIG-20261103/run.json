@@ -40,7 +40,8 @@
     "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
     "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
     "frontend/apps/web/src/views/SceneView.vue",
-    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "addons/smart_construction_core/models/support/formal_user_management.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -58,7 +59,8 @@
     "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
     "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests",
     "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list.",
-    "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment."
+    "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment.",
+    "onboarding_fix": "P1 native personnel field owner defers personnel inverses until native account/partner creation completes; retains original runtime validation and atomic savepoint."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
