@@ -1720,11 +1720,6 @@
       "owner": "construction-product",
       "reason": "On-demand Odoo ORM verification for payment prerequisite authorization; it requires an installed disposable Odoo database and is invoked by the daily permission closeout run rather than shared static lanes."
     },
-    "verify.daily_dev.acceptance_fixture.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.daily_dev.list_surface.readonly.browser": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

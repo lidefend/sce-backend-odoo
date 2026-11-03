@@ -98,6 +98,7 @@
     "make/frontend.mk",
     "make/guards.mk",
     "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/ops/test_scene_internal_action_authority.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
@@ -118,7 +119,7 @@
     "Owner independent review of final candidate pending",
     "Current-candidate remote required CI and protected merge pending"
   ],
-  "next_exact_step": "Freeze registration-only correction, carry unchanged runtime suites, run exact-head Quick, preserve owner approval of 94750dab8 and obtain review of small registration delta for final fingerprint before governed publication.",
+  "next_exact_step": "Remove obsolete unwired disposition for now-wired fixture unit target; run all three affected registries/coverage checks together, then frozen exact-head Quick and governed integration.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -294,5 +295,6 @@
     "reason": "Register native lifecycle tag already executed (3 cases in 6-test fixture ORM suite); no product/test implementation/runtime changes",
     "risk": "coverage metadata only",
     "validation": "coverage audit then generated preflight and new exact-head Quick; unchanged runtime suite input fingerprints must pass carry-forward"
-  }
+  },
+  "live_state": ".runtime/nav01/integration-state.json"
 }
