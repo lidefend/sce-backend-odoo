@@ -47,6 +47,22 @@ class IncrementalEvidenceTests(unittest.TestCase):
                 evidence.scans.record_scan_success(self.root, kind)
         return subprocess.CompletedProcess(command, 0)
 
+    def test_candidate_default_and_call_id_changes_preserve_bounded_reuse(self):
+        source = self.head
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": source,
+                                          "CODEX_TOOL_CALL_ID": "source-call"}), \
+             mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            evidence.run_quick(self.root, runner=self.runner)
+        head = self.fixture.commit_change('frontend/existing.ts', 'next candidate\n')
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": head,
+                                          "CODEX_TOOL_CALL_ID": "next-call"}):
+            run, reuse, base = evidence._incremental_plan(self.root, head)
+            self.assertEqual(source, base)
+            self.assertEqual(MANIFEST[:-1], run)
+            self.assertEqual(MANIFEST[-1:], reuse)
+        with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": source}):
+            self.assertIsNone(evidence._incremental_plan(self.root, head))
+
     def test_plan_keeps_unscoped_targets_and_reuses_bounded_test(self):
         run, reuse, base = evidence._incremental_plan(self.root, self.head)
         self.assertEqual(MANIFEST[:-1], run)
@@ -62,6 +78,14 @@ class IncrementalEvidenceTests(unittest.TestCase):
         self.fixture.commit_change('frontend/apps/web/package.json', '{}')
         self.fixture.commit_change('.github/workflows/check.yml', 'fixture')
         self.fixture.commit_change('docs/engineering_convergence/test_inventory.csv', 'fixture')
+        self.fixture.commit_change('addons/smart_core/handlers/example.py', 'fixture')
+        self.fixture.commit_change('addons/smart_construction_core/services/example.py', 'fixture')
+        for name in ('addons/smart_core/__manifest__.py', 'Dockerfile', 'Dockerfile.production-candidate',
+                     'config/tenant/module_sets.v1.json', 'config/product_addons_allowlist.txt',
+                     'config/product_optional_addons_allowlist.txt',
+                     'schemas/tenant_delivery/schema.json', 'customer_addons/sce_customer_sample/hooks.py',
+                     'docs/audit/tenant_pro_03_data_responsibility_inventory.csv'):
+            self.fixture.commit_change(name, 'fixture')
         source = self.fixture.commit_change('make/ci.mk', 'ci.local.quick.run: ' + ' '.join(manifest) + '\n\t@git diff --check\n')
         with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
             evidence.run_quick(self.root, runner=self.runner)
@@ -154,6 +178,64 @@ class IncrementalEvidenceTests(unittest.TestCase):
     def test_environment_drift_forces_full_run(self):
         with mock.patch.dict(os.environ, {'QUICK_TEST_NEW_INPUT': 'changed'}):
             self.assertIsNone(evidence._incremental_plan(self.root, self.head))
+
+    def test_incremental_only_refuses_missing_evidence_before_execution(self):
+        self.receipt.with_suffix('.scope.json').unlink()
+        with self.assertRaisesRegex(evidence.EvidenceError, 'full fallback refused'):
+            evidence.run_quick(self.root, runner=self.runner, require_incremental_only=True)
+        self.assertEqual([], self.calls)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_target_budget_refuses_oversized_plan_before_execution(self):
+        with self.assertRaisesRegex(evidence.EvidenceError, 'budget exceeded'):
+            evidence.run_quick(self.root, runner=self.runner, require_incremental_only=True, max_targets=1)
+        self.assertEqual([], self.calls)
+
+    def test_bounded_incremental_execution_signs_complete_receipt(self):
+        with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            path = evidence.run_quick(self.root, runner=self.runner,
+                                      require_incremental_only=True, max_targets=len(MANIFEST)-1)
+        self.assertEqual(path, evidence.verify(self.root, self.head))
+        self.assertNotIn(MANIFEST[-1], self.calls[0])
+
+    def test_same_head_incremental_continuation_reuses_verified_receipt(self):
+        with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            path = evidence.run_quick(self.root, runner=self.runner)
+        self.calls.clear()
+        with mock.patch.object(evidence, '_observe_quick'):
+            self.assertEqual(path, evidence.run_default(self.root, runner=self.runner,
+                             require_incremental_only=True, max_targets=1))
+        self.assertEqual([], self.calls)
+
+    def test_plan_explains_env_drift_without_values_or_execution(self):
+        with mock.patch.dict(os.environ, {'QUICK_TEST_NEW_INPUT': 'private-value-do-not-print'}):
+            report = evidence.incremental_report(self.root)
+        self.assertTrue(report['full_fallback_required'])
+        self.assertFalse(report['candidate_evidence'])
+        self.assertIn('QUICK_TEST_NEW_INPUT', report['rejected'][0]['environment_changed_keys'])
+        self.assertNotIn('private-value-do-not-print', json.dumps(report))
+        self.assertEqual([], self.calls)
+
+    def test_make_default_refuses_fallback_and_full_lane_is_explicit(self):
+        source = (ROOT / 'make/ci.mk').read_text()
+        default = source.split('ci.local.quick: guard.prod.forbid\n', 1)[1].split('\n\n', 1)[0]
+        full = source.split('ci.local.quick.full: guard.prod.forbid\n', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('--require-incremental', default)
+        self.assertIn('--max-targets', default)
+        self.assertNotIn('--require-incremental', full)
+
+    def test_legacy_environment_receipt_is_not_relabelled(self):
+        sidecar = self.receipt.with_suffix('.scope.json')
+        saved = json.loads(sidecar.read_text())
+        saved.pop('environment_hashes')
+        sidecar.write_text(json.dumps(saved))
+        before = sidecar.read_bytes()
+        with mock.patch.dict(os.environ, {'QUICK_TEST_NEW_INPUT': 'changed'}):
+            report = evidence.incremental_report(self.root)
+        self.assertEqual('legacy_receipt_has_no_key_digests',
+                         report['rejected'][0]['environment_changed_keys'])
+        self.assertTrue(report['full_fallback_required'])
+        self.assertEqual(before, sidecar.read_bytes())
 
     def test_recipe_change_forces_full_run(self):
         head = self.fixture.commit_change('make/ci.mk', (self.root / 'make/ci.mk').read_text() + '\n# changed recipe authority\n')

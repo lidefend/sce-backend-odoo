@@ -2326,6 +2326,29 @@ class SystemInitHandler(BaseIntentHandler):
             _final_route_authority.get("principal_scope") or {}
         )
         _final_route_authority["principal_scope"]["company_id"] = _route_company_id
+        _scene_internal_actions = (
+            data.get("scene_ready_contract", {}).get("scene_internal_actions")
+            if isinstance(data.get("scene_ready_contract"), dict)
+            else {}
+        )
+        if isinstance(_scene_internal_actions, dict):
+            _scene_internal_bucket = _final_route_authority.setdefault("contextual_actions", [])
+            for _internal_key, _internal_row in _scene_internal_actions.items():
+                if not isinstance(_internal_row, dict):
+                    continue
+                if int(_internal_row.get("action_id") or 0) <= 0:
+                    continue
+                _entry = dict(_internal_row)
+                _entry["route_kind"] = "CONTEXTUAL_ROUTE"
+                _entry["source"] = "scene_internal_action_authority"
+                _entry.setdefault("scene_key", str(_internal_row.get("scene_key") or ""))
+                _scene_internal_bucket.append(_entry)
+        # Narrow after all authority producers (including scene internal routes),
+        # using the same live company scope as request-time route admission.
+        _final_route_authority = env["sc.product.policy"]._apply_company_route_scope(_final_route_authority)
+        _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
+            _final_navigation, _final_route_authority,
+        )
         _final_navigation = delivery_engine.menu_service.project_canonical_navigation(
             _final_navigation,
             _final_route_authority,
@@ -2355,6 +2378,14 @@ class SystemInitHandler(BaseIntentHandler):
             },
             "meta": _navigation_meta,
         }
+        _scenario_surface = call_extension_hook_first(
+            env,
+            "smart_core_scenario_surface_projection",
+            _final_navigation,
+            _final_route_authority,
+        )
+        if isinstance(_scenario_surface, dict):
+            data["navigation"]["scenario_surface"] = _scenario_surface
         for _removed_navigation_carrier in (
             "nav",
             "nav_role_surface",

@@ -393,7 +393,7 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
         and payload.get("mergeable") == "MERGEABLE"
         and payload.get("mergeStateStatus") in {"CLEAN", "HAS_HOOKS"}
         and ready_checks
-        and (quick_verified or allow_no_quick)
+        and not git(root, "status", "--porcelain")
     )
     return (0 if ready else 1), {
         "schema": "integration_cycle.merge_readiness.v1",
@@ -404,6 +404,8 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
         "merge_state": payload.get("mergeStateStatus"),
         "mergeable": payload.get("mergeable"),
         "quick_verified": quick_verified,
+        "local_quick_required": False,
+        "validation_policy": "incremental_local_remote_integration",
         "allow_no_quick": allow_no_quick,
         "failed_checks": failed,
         "pending_checks": pending,

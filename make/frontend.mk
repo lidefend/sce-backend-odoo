@@ -106,9 +106,18 @@ verify.frontend.intent_request_identity.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_identity_test.ts --bundle --platform=node --format=esm --outfile=/tmp/intent-request-identity-test.mjs >/dev/null
 	@node /tmp/intent-request-identity-test.mjs
 
-verify.frontend.intent_request_coalescing.unit: guard.prod.forbid
+verify.frontend.intent_request_coalescing.unit: guard.prod.forbid verify.frontend.workspace_scenario_lifecycle.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
 	@node /tmp/intent-request-coalescing-test.mjs
+
+.PHONY: verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
+verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit
+	@mkdir -p .runtime/nav01
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=.runtime/nav01/workspace-scenario-lifecycle-test.mjs >/dev/null
+	@node .runtime/nav01/workspace-scenario-lifecycle-test.mjs
+
+verify.navigation.publication_consumers.unit: guard.prod.forbid verify.nav01.native_authority.unit
+	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
 
 .PHONY: verify.frontend.official_icon.unit
 verify.frontend.official_icon.unit: guard.prod.forbid
@@ -1524,3 +1533,10 @@ verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	  FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
+
+.PHONY: verify.nav01.native_authority.unit
+verify.nav01.native_authority.unit: guard.prod.forbid
+	@$(MAKE) --no-print-directory verify.daily_dev.acceptance_fixture.unit
+	@python3 scripts/verify/fact_layer_authority_guard.py
+	@python3 scripts/verify/scenario_surface_projection_guard.py
+	@python3 -m unittest scripts.ops.test_scene_internal_action_authority

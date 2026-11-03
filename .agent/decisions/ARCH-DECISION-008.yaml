@@ -1,0 +1,29 @@
+decision:
+  id: ARCH-DECISION-008
+  topic: scenario_governed_navigation_delivery
+  bnva_stage: BNVA-04-15C-04B-08
+  owner_approval:
+    status: confirmed
+    date: "2026-11-02"
+  decision:
+    menu_existence_does_not_imply_product_admission: true
+    action_existence_does_not_imply_standalone_navigation: true
+    model_existence_does_not_imply_user_exposure: true
+    formal_scenes_may_contain_internal_handling_entries_without_sidebar_navigation: true
+    standalone_professional_capabilities_require_conditional_product_admission: true
+    tenant_enablement_role_assignment_and_server_authorization_are_governed_separately: true
+    navigation_delivers_only_product_governed_business_capabilities: true
+  navigation_admission_classes:
+    scenario_navigation: complete_scenario_entry
+    conditional_professional: independently_authorized_professional_capability
+    scene_internal_operation: in_scene_handling_action_not_sidebar_entry
+    technical_fact_internal: technical_or_fact_object_not_user_navigation
+  rules:
+    - do_not_treat_odoo_menu_tree_as_product_catalog
+    - do_not_promote_action_to_navigation_because_it_has_a_menu
+    - scene_internal_actions_require_server_authorized_resolution_not_menu_tree_membership
+    - keep_canonical_navigation_regression_free_when_adjusting_admission
+    - scene_authorization_must_not_become_permission_bypass
+  related:
+    - .agent/decisions/ARCH-DECISION-007.yaml
+  status: active

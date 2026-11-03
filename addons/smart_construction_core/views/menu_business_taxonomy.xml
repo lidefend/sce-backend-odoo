@@ -567,7 +567,7 @@
         <field name="search_view_id" ref="smart_construction_core.view_sc_customer_partner_search" />
         <field name="domain">[('customer_rank', '&gt;', 0)]</field>
         <field name="context">{'default_customer_rank': 1, 'default_is_company': True, 'default_company_type': 'company'}</field>
-        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_contact_manager'))]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contact_manager'), ref('smart_construction_core.group_sc_cap_purchase_read'), ref('smart_construction_core.group_sc_cap_purchase_user'), ref('smart_construction_core.group_sc_cap_purchase_manager')])]" />
     </record>
     <record id="action_sc_customer_partner_tree_view" model="ir.actions.act_window.view">
         <field name="sequence" eval="1" />
@@ -812,7 +812,13 @@
     <menuitem id="menu_sc_quality_issue" name="质量检查" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_quality_issue" sequence="70" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
     <menuitem id="menu_sc_quality_rectification" name="质量整改" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_quality_rectification" sequence="71" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
     <menuitem id="menu_sc_quality_recheck" name="质量复验" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_quality_recheck" sequence="72" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
-    <menuitem id="menu_sc_safety_issue" name="安全检查" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_safety_issue" sequence="80" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
+    <record id="menu_sc_safety_issue" model="ir.ui.menu">
+        <field name="name">安全检查</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/>
+        <field name="action" ref="smart_construction_core.action_sc_safety_issue"/>
+        <field name="sequence">80</field>
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_safety_read'), ref('smart_construction_core.group_sc_cap_safety_user'), ref('smart_construction_core.group_sc_cap_safety_manager')])]"/>
+    </record>
     <menuitem id="menu_sc_safety_rectification" name="安全整改" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_safety_rectification" sequence="81" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
     <menuitem id="menu_sc_safety_recheck" name="安全复验" parent="smart_construction_core.menu_sc_construction_management_center" action="smart_construction_core.action_sc_safety_recheck" sequence="82" groups="smart_construction_core.group_sc_cap_project_read,smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" />
     <delete model="ir.ui.menu" search="[('name', 'in', ['质量检查', '质量整改', '质量复验', '安全检查', '安全整改', '安全复验']), ('parent_id', '=', ref('smart_construction_core.menu_sc_construction_management_center')), ('id', 'not in', [ref('smart_construction_core.menu_sc_quality_issue'), ref('smart_construction_core.menu_sc_quality_rectification'), ref('smart_construction_core.menu_sc_quality_recheck'), ref('smart_construction_core.menu_sc_safety_issue'), ref('smart_construction_core.menu_sc_safety_rectification'), ref('smart_construction_core.menu_sc_safety_recheck')])]" />
@@ -1072,7 +1078,7 @@
         <field name="sequence">80</field>
     </record>
     <menuitem id="menu_sc_customer_partner" name="客户" parent="smart_construction_core.menu_sc_master_data_center" action="smart_construction_core.action_sc_customer_partner" sequence="1" groups="smart_construction_core.group_sc_cap_contact_manager" />
-    <menuitem id="menu_sc_supplier_partner" name="供应商" parent="smart_construction_core.menu_sc_master_data_center" action="smart_construction_core.action_sc_supplier_partner" sequence="2" groups="smart_construction_core.group_sc_cap_contact_manager" />
+    <menuitem id="menu_sc_supplier_partner" name="供应商" parent="smart_construction_core.menu_sc_master_data_center" action="smart_construction_core.action_sc_supplier_partner" sequence="2" groups="smart_construction_core.group_sc_cap_contact_manager,smart_construction_core.group_sc_cap_purchase_read,smart_construction_core.group_sc_cap_purchase_user,smart_construction_core.group_sc_cap_purchase_manager" />
     <record id="menu_sc_dictionary" model="ir.ui.menu">
         <field name="name">数据字典</field>
         <field name="parent_id" ref="smart_construction_core.menu_sc_business_base_config_group" />

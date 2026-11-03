@@ -1,5 +1,15 @@
 version: 1
 entries:
+- group: acceptance_business_scene_lifecycle
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_business_scene_lifecycle test.safe'
+  reason: The existing managed acceptance ORM entry selects this tag alongside execution freeze,
+    verifies a nonzero test summary, and rolls back native company scene lifecycle test mutations.
+    Three lifecycle cases passed in the six-test fixture ORM run; this is on-demand acceptance,
+    not a recurring PR or scheduled gate.
 - group: acceptance_fixture_data_space
   kind: odoo_tag
   status: unwired

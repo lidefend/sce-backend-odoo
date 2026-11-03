@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 205,
+    "odoo_tags": 206,
     "gated": 5,
-    "on_demand": 52,
+    "on_demand": 53,
     "unwired": 148,
-    "odoo_tag_declarations": 424,
+    "odoo_tag_declarations": 425,
     "gated_declarations": 97,
-    "uncovered_declarations": 327,
+    "uncovered_declarations": 328,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -510,6 +510,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "acceptance_business_scene_lifecycle",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "acceptance_fixture_data_space",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -531,7 +545,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze"
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
       ],
       "disposition": "class-selected"
     },

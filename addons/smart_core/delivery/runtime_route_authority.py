@@ -110,9 +110,16 @@ def published_route_authority(env) -> dict:
     models signal a change. Any failure keeps the caller fail-closed.
     """
     try:
-        return env["sc.product.policy"].published_route_authority()
+        policy = env["sc.product.policy"]
+        try:
+            authority = policy.published_route_authority()
+        except Exception:
+            authority = _build_runtime_route_authority(env)
+        # Apply volatile company restrictions outside the process cache. A stale
+        # browser or cached publication cannot bypass a committed revocation.
+        return policy._apply_company_route_scope(authority)
     except Exception:
-        return _build_runtime_route_authority(env)
+        return {}
 
 
 def build_runtime_route_authority(env) -> dict:

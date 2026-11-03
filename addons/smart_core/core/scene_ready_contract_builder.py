@@ -1274,6 +1274,7 @@ def _scene_ready_entry(
     runtime_context: Dict[str, Any] | None = None,
     action_surface_strategy: Dict[str, Any] | None = None,
     scene_catalog: Dict[str, Dict[str, Any]] | None = None,
+    env=None,
 ) -> Dict[str, Any]:
     scene_key = _text(item.get("code") or item.get("key"))
     scene_payload = dict(item)
@@ -1594,6 +1595,7 @@ def build_scene_ready_contract(
     scene_channel: str | None = None,
     action_surface_strategy: Dict[str, Any] | None = None,
     runtime_context: Dict[str, Any] | None = None,
+    env=None,
 ) -> Dict[str, Any]:
     scene_rows = []
     for item in scenes or []:
@@ -1612,6 +1614,7 @@ def build_scene_ready_contract(
             runtime_context=runtime_context,
             action_surface_strategy=action_surface_strategy,
             scene_catalog=scene_catalog,
+            env=env,
         )
         for row in scene_rows
     ]
@@ -1630,6 +1633,21 @@ def build_scene_ready_contract(
         if not bool(verdict.get("ok", False)):
             compile_issue_scene_count += 1
 
+    scene_internal_actions: Dict[str, Any] = {}
+    if env is not None:
+        from odoo.addons.smart_core.core.scene_internal_action_authority import (
+            build_scene_internal_actions,
+        )
+
+        compiled_scene_sources = [
+            {
+                "code": _text((entry.get("scene") or {}).get("key")),
+                "handling_entry_catalog": entry.get("handling_entry_catalog"),
+            }
+            for entry in entries
+        ]
+        scene_internal_actions = build_scene_internal_actions(env, compiled_scene_sources)
+
     return {
         "contract_version": "2.0.0",
         "schema_version": "2.0.0",
@@ -1638,6 +1656,7 @@ def build_scene_ready_contract(
         "scene_channel": _text(scene_channel),
         "active_scene_key": landing_scene_key,
         "scenes": entries,
+        "scene_internal_actions": scene_internal_actions,
         "meta": {
             "generated_by": "smart_core.scene_ready_contract_builder",
             "source_authority": source_authority_contract(),

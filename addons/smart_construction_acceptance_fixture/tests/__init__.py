@@ -2,3 +2,4 @@
 from . import test_acceptance_fixture_guard
 from . import test_execution_freeze
 from . import test_data_space_creation
+from . import test_business_scene_lifecycle

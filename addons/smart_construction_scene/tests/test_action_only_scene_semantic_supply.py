@@ -117,6 +117,10 @@ payment_entry_workbench_provider = _load_module(
     "odoo.addons.smart_construction_scene.providers.payment_entry_workbench_provider",
     SCENE_DIR / "providers" / "payment_entry_workbench_provider.py",
 )
+enterprise_setup_provider = _load_module(
+    "odoo.addons.smart_construction_scene.providers.enterprise_setup_provider",
+    SCENE_DIR / "providers" / "enterprise_setup_provider.py",
+)
 register_scene_providers = _load_module(
     "odoo.addons.smart_construction_scene.bootstrap.register_scene_providers",
     SCENE_DIR / "bootstrap" / "register_scene_providers.py",
@@ -720,13 +724,15 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         post = next((row for row in rows if row.get("code") == "enterprise.post"), {})
 
         self.assertEqual(((company.get("target") or {}).get("route")), "/s/enterprise.company")
-        self.assertEqual(((company.get("target") or {}).get("menu_xmlid")), "smart_enterprise_base.menu_enterprise_company")
+        self.assertEqual(((company.get("target") or {}).get("menu_xmlid")), "base.menu_action_res_company_form")
+        self.assertEqual(((company.get("target") or {}).get("action_xmlid")), "base.action_res_company_form")
         self.assertEqual(((department.get("target") or {}).get("route")), "/s/enterprise.department")
-        self.assertEqual(((department.get("target") or {}).get("action_xmlid")), "smart_enterprise_base.action_enterprise_department")
+        self.assertEqual(((department.get("target") or {}).get("action_xmlid")), "smart_construction_core.action_sc_organization_department")
         self.assertEqual(((user.get("target") or {}).get("route")), "/s/enterprise.user")
-        self.assertEqual(((user.get("target") or {}).get("action_xmlid")), "smart_enterprise_base.action_enterprise_user")
+        self.assertEqual(((user.get("target") or {}).get("action_xmlid")), "smart_construction_core.action_sc_runtime_user_management")
         self.assertEqual(((post.get("target") or {}).get("route")), "/s/enterprise.post")
-        self.assertEqual(((post.get("target") or {}).get("action_xmlid")), "smart_enterprise_base.action_enterprise_post")
+        self.assertEqual(((post.get("target") or {}).get("action_xmlid")), "smart_construction_core.action_sc_product_job_management_v1")
+        self.assertEqual(((post.get("target") or {}).get("model")), "hr.job")
 
     def test_enterprise_bootstrap_provider_supplies_guidance_and_next_scene(self):
         company = enterprise_bootstrap_provider.build(scene_key="enterprise.company", runtime={"company_id": 9})
@@ -1084,23 +1090,39 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
-            maps["menu_scene_map"]["smart_enterprise_base.menu_enterprise_company"],
+            maps["action_xmlid_scene_map"]["base.action_res_company_form"],
             "enterprise.company",
         )
         self.assertEqual(
-            maps["action_xmlid_scene_map"]["smart_enterprise_base.action_enterprise_department"],
+            maps["menu_scene_map"]["base.menu_action_res_company_form"],
+            "enterprise.company",
+        )
+        self.assertEqual(
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_organization_department"],
             "enterprise.department",
         )
         self.assertEqual(
-            maps["action_xmlid_scene_map"]["smart_enterprise_base.action_enterprise_user"],
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_runtime_user_management"],
             "enterprise.user",
         )
         self.assertEqual(
-            maps["action_xmlid_scene_map"]["smart_enterprise_base.action_enterprise_post"],
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_product_job_management_v1"],
             "enterprise.post",
         )
         self.assertEqual(
-            maps["menu_scene_map"]["smart_enterprise_base.menu_enterprise_post"],
+            maps["menu_scene_map"]["smart_construction_core.menu_sc_organization_department"],
+            "enterprise.department",
+        )
+        self.assertEqual(
+            maps["menu_scene_map"]["smart_construction_core.menu_sc_product_job_management_v1"],
+            "enterprise.post",
+        )
+        self.assertEqual(
+            maps["menu_scene_map"]["smart_construction_core.menu_sc_runtime_user_management"],
+            "enterprise.user",
+        )
+        self.assertEqual(
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_product_job_management_v1"],
             "enterprise.post",
         )
 
@@ -1181,6 +1203,21 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             ((specs.get("quality.center") or {}).get("provider_key")),
             "construction.execution_provider.v1",
         )
+
+    def test_enterprise_setup_workspace_registered_and_guides_to_bootstrap(self):
+        registry = _DummyRegistry()
+        register_scene_providers.register_scene_content_providers(registry, SCENE_DIR.parent)
+        specs = {row.get("scene_key"): row for row in registry.specs}
+        setup_spec = specs.get("enterprise.setup") or {}
+        self.assertEqual(setup_spec.get("provider_path").name, "enterprise_setup_provider.py")
+        self.assertEqual(setup_spec.get("provider_key"), "construction.enterprise_setup_provider.v1")
+
+        payload = enterprise_setup_provider.build(scene_key="enterprise.setup")
+        self.assertEqual(payload.get("scene_key"), "enterprise.setup")
+        self.assertEqual((payload.get("guidance") or {}).get("title"), "企业初始化工作空间")
+        self.assertEqual((payload.get("primary_action") or {}).get("scene_key"), "enterprise.company")
+        self.assertEqual(payload.get("next_scene"), "enterprise.company")
+        self.assertEqual(payload.get("setup_mainline"), ["enterprise.company", "enterprise.department", "enterprise.post", "enterprise.user"])
 
     def test_smart_core_nav_scene_maps_include_material_resource_targets(self):
         _reset_caches()

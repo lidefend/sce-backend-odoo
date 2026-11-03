@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
+
 import os
 import shutil
 import subprocess
@@ -124,6 +126,12 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             bin_dir = root / "bin"
             bin_dir.mkdir()
             merge_log = root / "merge.log"
+            from scripts.ops.test_integration_cycle import GateTests, cycle
+            checks_file = root / "checks.json"
+            checks_file.write_text(json.dumps({"state": "OPEN", "headRefOid": actual_head,
+                "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": [
+                    GateTests.check(10, 100, "SUCCESS", workflow=name, name=name)
+                    for name in cycle.REQUIRED_MERGE_CHECKS]}))
             git = bin_dir / "git"
             git.write_text(
                 "#!/usr/bin/env bash\n"
@@ -157,6 +165,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "  echo '      --match-head-commit SHA'\n"
                 "  for index in $(seq 1 10000); do echo \"merge help padding $index\"; done\n"
                 "elif [[ \"$1 $2\" == \"pr view\" ]]; then\n"
+                "  if [[ \"$*\" == *statusCheckRollup* ]]; then cat \"${FAKE_CHECKS_FILE:?}\"; exit 0; fi\n"
                 "  if [[ \"$*\" == *baseRefOid* ]]; then\n"
                 "    printf '{\"number\":30,\"state\":\"OPEN\",\"isCrossRepository\":false,\"baseRefName\":\"main\",\"baseRefOid\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"headRefOid\":\"%s\"}\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
                 "  else printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"; fi\n"
@@ -179,6 +188,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                     "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": actual_head,
+                    "FAKE_CHECKS_FILE": str(checks_file),
                     "FAKE_MERGE_LOG": str(merge_log),
                 }
             )

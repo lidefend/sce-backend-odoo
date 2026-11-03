@@ -1,0 +1,350 @@
+{
+  "schema": "construction.scenario_product_surface.v1",
+  "product_layer": "P1",
+  "module": "smart_construction_core",
+  "status": "APPROVED_AS_PROJECTION_INPUT",
+  "authority_note": "Scenario navigation grouping over the released 91 standard menus. This is NOT a scene registry and NOT scene content; scene content/version authority remains sc.scene / smart_construction_scene.scene_registry. It materializes the 05A-05C business scenario x user intent design (966d4a0c9) as a P1 data contract so the delivery projection can organize the product surface. Per ARCH-DECISION-009 this is governance-confirmed business semantics carried by an existing contract-data mechanism, not a per-scene XML.",
+  "source_design": [
+    "docs/architecture/backend-owned-page-composition/887-bnva-04-final-candidate-scenario-catalog.md",
+    "docs/architecture/backend-owned-page-composition/888-bnva-04-scene-intent-capability-matrix.md",
+    "addons/smart_construction_core/data/product_menu_source.json"
+  ],
+  "coverage_scope": "released",
+  "taxonomy": {
+    "L0": "business_domain",
+    "L1": "product_scenario",
+    "L2": "user_intent",
+    "L3": "capability_menu_action",
+    "candidate_scenario_count": 12,
+    "actual_scenario_count": 17,
+    "note": "12 is the 05A-05C candidate classification set; 17 is the final L1 scenario count after the quality/safety, subcontract/labor and tax/accounting splits plus equipment and administration office professional scenarios."
+  },
+  "domains": [
+    {
+      "key": "governance",
+      "name": "企业治理",
+      "scenarios": [
+        "governance.organization",
+        "administration.office"
+      ]
+    },
+    {
+      "key": "project",
+      "name": "项目经营",
+      "scenarios": [
+        "project.management",
+        "contract.performance",
+        "cost.budget"
+      ]
+    },
+    {
+      "key": "supply_chain",
+      "name": "供应链管理",
+      "scenarios": [
+        "procurement.supplier",
+        "material.management",
+        "subcontract.management",
+        "labor.management"
+      ]
+    },
+    {
+      "key": "finance",
+      "name": "资金财务",
+      "scenarios": [
+        "payment.capital",
+        "receipt.payment.ledger",
+        "tax.management",
+        "accounting.management"
+      ]
+    },
+    {
+      "key": "professional",
+      "name": "专业管理",
+      "scenarios": [
+        "quality.management",
+        "safety.management",
+        "equipment.management"
+      ]
+    },
+    {
+      "key": "analytics",
+      "name": "经营分析",
+      "scenarios": [
+        "analytics.decision"
+      ]
+    }
+  ],
+  "intent_labels": {
+    "handle": "办理",
+    "view": "查看",
+    "approve": "审批",
+    "report": "报表",
+    "master_data": "基础信息维护"
+  },
+  "horizontal_work_center": {
+    "note": "Cross-scenario horizontal work center; not assigned to a single business scenario.",
+    "menus": [
+      "smart_construction_core.menu_sc_workspace_home",
+      "smart_construction_core.menu_sc_operating_metrics_project",
+      "smart_construction_core.menu_sc_project_kanban",
+      "smart_construction_core.menu_sc_workbench_my_todo_fact",
+      "smart_construction_core.menu_sc_product_message_notification_v1"
+    ]
+  },
+  "platform_support": {
+    "note": "Platform configuration/diagnostics; excluded from ordinary business scenario surface.",
+    "menus": [
+      "smart_construction_core.menu_sc_business_config_workbench",
+      "smart_construction_core.menu_sc_approval_policy",
+      "smart_construction_core.menu_ui_form_field_policy_business_config",
+      "smart_construction_core.menu_ui_menu_config_policy_business_config",
+      "smart_construction_core.menu_sc_product_data_permission_v1",
+      "smart_construction_core.menu_sc_product_system_parameter_v1",
+      "smart_construction_core.menu_sc_product_numbering_rule_v1"
+    ]
+  },
+  "scenarios": [
+    {
+      "key": "governance.organization",
+      "name": "企业组织与治理",
+      "type": "COMPOSITE",
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_organization_department",
+          "smart_construction_core.menu_sc_product_job_management_v1",
+          "smart_construction_core.menu_sc_runtime_user_management"
+        ]
+      }
+    },
+    {
+      "key": "project.management",
+      "name": "项目经营管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_project_initiation",
+          "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+          "smart_construction_core.menu_sc_product_tender_information_v1",
+          "smart_construction_core.menu_sc_project_tender",
+          "smart_construction_core.menu_sc_product_tender_document_v1",
+          "smart_construction_core.menu_sc_tender_guarantee",
+          "smart_construction_core.menu_sc_tender_won",
+          "smart_construction_core.menu_sc_construction_diary",
+          "smart_construction_core.menu_sc_construction_progress",
+          "smart_construction_core.menu_sc_product_site_variation_v1"
+        ],
+        "view": [
+          "smart_construction_core.menu_sc_project_project",
+          "smart_construction_core.menu_sc_project_documents"
+        ],
+        "master_data": [
+          "smart_construction_core.menu_sc_customer_partner"
+        ]
+      }
+    },
+    {
+      "key": "contract.performance",
+      "name": "合同履约管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_p1_income_contract",
+          "smart_construction_core.menu_sc_p1_expense_contract",
+          "smart_construction_core.menu_sc_p1_contract_change",
+          "smart_construction_core.menu_sc_p1_daily_contract",
+          "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+          "smart_construction_core.menu_sc_p1_income_settlement",
+          "smart_construction_core.menu_sc_p1_expense_settlement"
+        ]
+      }
+    },
+    {
+      "key": "cost.budget",
+      "name": "成本与预算管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_p1_project_budget",
+          "smart_construction_core.menu_sc_p1_cost_plan",
+          "smart_construction_core.menu_sc_p1_cost_ledger"
+        ]
+      }
+    },
+    {
+      "key": "procurement.supplier",
+      "name": "采购与供应商管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_supplier_partner",
+          "smart_construction_core.menu_sc_product_partner_blacklist_v1"
+        ]
+      }
+    },
+    {
+      "key": "material.management",
+      "name": "项目材料管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_material_inbound",
+          "smart_construction_core.menu_sc_material_outbound",
+          "smart_construction_core.menu_sc_product_material_return_v1"
+        ]
+      }
+    },
+    {
+      "key": "subcontract.management",
+      "name": "分包管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+          "smart_construction_core.menu_sc_product_subcontract_variation_v1"
+        ]
+      }
+    },
+    {
+      "key": "labor.management",
+      "name": "劳务管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_labor_realname_v1",
+          "smart_construction_core.menu_sc_product_labor_cost_v1",
+          "smart_construction_core.menu_sc_product_labor_deduction_v1"
+        ]
+      }
+    },
+    {
+      "key": "quality.management",
+      "name": "工程质量管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_quality_acceptance_v1"
+        ]
+      }
+    },
+    {
+      "key": "safety.management",
+      "name": "安全管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_safety_issue"
+        ]
+      }
+    },
+    {
+      "key": "payment.capital",
+      "name": "付款与资金办理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_receipt_income",
+          "smart_construction_core.menu_sc_user_payment_apply",
+          "smart_construction_core.menu_sc_payment_execution",
+          "smart_construction_core.menu_sc_reimbursement_request",
+          "smart_construction_core.menu_sc_product_current_account_v1",
+          "smart_construction_core.menu_sc_user_income",
+          "smart_construction_core.menu_sc_company_finance_expense",
+          "smart_construction_core.menu_sc_deduction_bill",
+          "smart_construction_core.menu_sc_product_company_project_refund_v1",
+          "smart_construction_core.menu_sc_advance_fund",
+          "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+        ]
+      }
+    },
+    {
+      "key": "receipt.payment.ledger",
+      "name": "收付款业务台账",
+      "type": "DIRECT_FACT",
+      "intents": {
+        "view": [
+          "smart_construction_core.menu_sc_funding_plan_summary"
+        ]
+      }
+    },
+    {
+      "key": "tax.management",
+      "name": "税务管理",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_tax_certificate_registration_user",
+          "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+          "smart_construction_core.menu_sc_invoice_application_user",
+          "smart_construction_core.menu_sc_invoice_registration_user",
+          "smart_construction_core.menu_sc_output_invoice_change_registration",
+          "smart_construction_core.menu_sc_invoice_input",
+          "smart_construction_core.menu_sc_tax_deduction_registration_user",
+          "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+          "smart_construction_core.menu_sc_product_tax_filing_v1"
+        ]
+      }
+    },
+    {
+      "key": "accounting.management",
+      "name": "会计核算",
+      "type": "COMPOSITE",
+      "intents": {
+        "handle": [
+          "account.menu_action_move_journal_line_form"
+        ],
+        "view": [
+          "account.menu_action_account_moves_all"
+        ],
+        "master_data": [
+          "account.menu_action_account_form",
+          "smart_construction_core.menu_sc_account_journal_foundation",
+          "smart_construction_core.menu_sc_analytic_account_foundation",
+          "smart_construction_core.menu_sc_analytic_distribution_foundation"
+        ]
+      }
+    },
+    {
+      "key": "analytics.decision",
+      "name": "经营分析与决策",
+      "type": "DERIVED",
+      "intents": {
+        "report": [
+          "smart_construction_core.menu_sc_p1_profit_analysis",
+          "smart_construction_core.menu_sc_project_operation_statistics_report",
+          "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+          "smart_construction_core.menu_sc_fund_daily_summary",
+          "smart_construction_core.menu_sc_product_tax_report_v1",
+          "smart_construction_core.menu_sc_product_labor_subcontract_report_v1"
+        ]
+      }
+    },
+    {
+      "key": "equipment.management",
+      "name": "设备管理",
+      "type": "PROFESSIONAL",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_equipment_shift_v1"
+        ]
+      }
+    },
+    {
+      "key": "administration.office",
+      "name": "行政办公",
+      "type": "PROFESSIONAL",
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_social_fund_v1",
+          "smart_construction_core.menu_sc_payroll_management",
+          "smart_construction_core.menu_sc_product_project_payroll_v1",
+          "smart_construction_core.menu_sc_product_project_salary_payment_v1"
+        ],
+        "master_data": [
+          "smart_construction_core.menu_sc_certificate_registration",
+          "smart_construction_core.menu_sc_product_office_asset_v1",
+          "smart_construction_core.menu_sc_product_policy_document_v1"
+        ]
+      }
+    }
+  ]
+}

@@ -1015,6 +1015,18 @@ QUICK_RECEIPT_KEEP ?= 50
 QUICK_JOBS ?=
 
 ci.local.quick: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py run --require-incremental $(if $(strip $(QUICK_MAX_TARGETS)),--max-targets "$(QUICK_MAX_TARGETS)",) --shards "$(QUICK_SHARDS)" $(if $(strip $(QUICK_JOBS)),--jobs "$(QUICK_JOBS)",)
+
+# Bounded continuation: no implicit full gate when ancestor evidence is missing
+# or stale. Plan uses this same Make environment and never issues a receipt.
+.PHONY: ci.local.quick.plan ci.local.quick.incremental ci.local.quick.full
+ci.local.quick.plan: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py plan
+
+ci.local.quick.incremental: ci.local.quick
+
+# Explicit bootstrap/rebaseline lane; never selected as incremental fallback.
+ci.local.quick.full: guard.prod.forbid
 	@python3 scripts/ops/local_quick_evidence.py run --shards "$(QUICK_SHARDS)" $(if $(strip $(QUICK_JOBS)),--jobs "$(QUICK_JOBS)",)
 
 # Explicit receipt-free mode for a dirty development tree. It runs the suite and
@@ -1210,7 +1222,7 @@ verify.contract.architecture.suite: verify.native_advisory.unit verify.node_comp
 	@python3 scripts/ci/node_syntax_check.py
 	@echo "[OK] contract & architecture guard suite passed"
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite verify.contract.list_preference.single_application verify.contract.gate_case_normalisation.unit verify.product.menu.metadata_batch.unit verify.local.dev.runtime.performance.unit verify.system.performance.baseline.unit verify.frontend.scoped_preference.runtime.unit verify.frontend.static.image.decoupling verify.smart_core.ui_base_asset_refresh.unit verify.quick.input_scope.unit verify.quick.evidence.unit verify.test.determinism verify.test.isolation verify.test.baseline
+ci.local.quick.run: guard.prod.forbid verify.frontend.workspace_scenario_lifecycle.unit ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite verify.contract.list_preference.single_application verify.contract.gate_case_normalisation.unit verify.product.menu.metadata_batch.unit verify.local.dev.runtime.performance.unit verify.system.performance.baseline.unit verify.frontend.scoped_preference.runtime.unit verify.frontend.static.image.decoupling verify.smart_core.ui_base_asset_refresh.unit verify.quick.input_scope.unit verify.quick.evidence.unit verify.test.determinism verify.test.isolation verify.test.baseline
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 

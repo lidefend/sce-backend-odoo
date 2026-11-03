@@ -70,6 +70,11 @@ class ScProductPolicy(models.Model):
 
         return _build_runtime_route_authority(self.env)
 
+    @api.model
+    def _apply_company_route_scope(self, authority):
+        """Extension seam for current company delivery restrictions, never grants."""
+        return authority
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

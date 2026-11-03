@@ -195,6 +195,37 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                     scene_ready_input.append(scene_row)
                     break
 
+        scene_internal_actions: dict = {}
+        if env is not None:
+            from odoo.addons.smart_core.core.scene_internal_action_authority import (
+                build_scene_internal_actions,
+            )
+            from odoo.addons.smart_core.core.scene_ready_contract_builder import (
+                _resolve_scene_provider_payload,
+            )
+
+            _scene_internal_sources = []
+            for _row in scene_ready_input:
+                if not isinstance(_row, dict):
+                    continue
+                _key = str(_row.get("code") or _row.get("key") or "").strip()
+                if not _key:
+                    continue
+                _catalog = _row.get("handling_entry_catalog")
+                if not isinstance(_catalog, dict) or not _catalog.get("groups"):
+                    _provider = _resolve_scene_provider_payload(
+                        _key,
+                        {
+                            "role_code": str(role_surface.get("role_code") or "").strip(),
+                            "company_id": env.company.id if env.company else 0,
+                        },
+                    )
+                    if isinstance(_provider, dict) and isinstance(_provider.get("handling_entry_catalog"), dict):
+                        _catalog = _provider.get("handling_entry_catalog")
+                if isinstance(_catalog, dict):
+                    _scene_internal_sources.append({"code": _key, "handling_entry_catalog": _catalog})
+            scene_internal_actions = build_scene_internal_actions(env, _scene_internal_sources)
+
         nav_contract_input = dict(data)
         nav_contract_input["scenes"] = preload_scenes
         nav_contract_input["delivery_policy_applied"] = bool(delivery_result.get("meta", {}).get("enabled"))
@@ -207,6 +238,7 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                 schema_version=data.get("schema_version"),
                 scene_channel=scene_channel,
             )
+            data["scene_ready_contract"]["scene_internal_actions"] = scene_internal_actions
             if isinstance(data.get("nav_meta"), dict):
                 data["nav_meta"]["scene_ready_mode"] = "registry"
         else:
@@ -242,7 +274,9 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                     "role_code": role_code,
                     "company_id": env.company.id if env.company else None,
                 },
+                env=env,
             )
+            data["scene_ready_contract"]["scene_internal_actions"] = scene_internal_actions
             if requested_scene_key:
                 ready = data["scene_ready_contract"]
                 detailed = ready.get("scenes") or []

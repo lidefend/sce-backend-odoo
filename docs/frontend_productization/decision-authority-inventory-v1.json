@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1439
+        1441
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        523
+        552
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        547
+        551
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        551
+        555
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1429
+        1431
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -598,7 +598,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1492
+        1494
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -611,7 +611,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1492
+        1494
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -624,7 +624,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1492
+        1494
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -637,7 +637,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1492
+        1494
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -665,9 +665,9 @@
       "literal": "denied",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        134,
-        171,
-        175
+        135,
+        172,
+        176
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -681,7 +681,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        165
+        166
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -695,7 +695,7 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        165
+        166
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -709,9 +709,9 @@
       "literal": "not-found",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        134,
-        167,
-        175
+        135,
+        168,
+        176
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -1080,7 +1080,7 @@
       "literal": "overdue",
       "path": "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
       "lines": [
-        276
+        266
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1093,7 +1093,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
       "lines": [
-        276
+        266
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1149,7 +1149,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3038
+        3050
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1389,7 +1389,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1010
+        1039
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1441,9 +1441,11 @@
         136,
         160,
         165,
-        166
+        166,
+        168,
+        172
       ],
-      "occurrences": 9,
+      "occurrences": 11,
       "classification": "excluded-render-interaction",
       "reason": "declared UI state-machine value",
       "declaredClass": "ui_state_machine",
@@ -1658,21 +1660,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 153,
+    "totalFindings": 155,
     "distinctDecisions": 111,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 117
+      "R4_business_state_literal": 119
     },
     "byClassification": {
       "contract-derived": 62,
-      "excluded-render-interaction": 91
+      "excluded-render-interaction": 93
     },
     "unclassified": 0,
     "contractDerived": 62,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 91
+    "excludedRenderInteraction": 93
   }
 }

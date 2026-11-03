@@ -234,3 +234,11 @@ def register_scene_content_providers(registry, addons_root: Path) -> None:
         priority=300,
         source="industry_registration",
     )
+    registry.register_spec(
+        scene_key="enterprise.setup",
+        provider_key="construction.enterprise_setup_provider.v1",
+        module_name=scene_module,
+        provider_path=addons_root / scene_module / "providers" / "enterprise_setup_provider.py",
+        priority=300,
+        source="industry_registration",
+    )

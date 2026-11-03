@@ -895,7 +895,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
 
-        finance_primary = ROLE_SURFACE_OVERRIDES["finance"]["primary_menu_xmlids"]
+        finance_primary = ROLE_SURFACE_OVERRIDES["finance"].get("primary_menu_xmlids") or []
         for menu in ("menu_sc_product_current_account_v1",
                      "menu_sc_product_company_project_refund_v1"):
             self.assertIn("smart_construction_core." + menu, finance_primary, menu)

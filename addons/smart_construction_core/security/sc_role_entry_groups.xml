@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="group_sc_role_accounting_read" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p10')), (4, ref('smart_construction_core.group_sc_entry_p12')), (4, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_role_accounting_user" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p10')), (4, ref('smart_construction_core.group_sc_entry_p12')), (4, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_role_accounting_manager" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p10')), (4, ref('smart_construction_core.group_sc_entry_p12')), (4, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_role_cost_user" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p10')), (4, ref('smart_construction_core.group_sc_entry_p11')), (4, ref('smart_construction_core.group_sc_entry_p13'))]"/>
+        </record>
+        <record id="group_sc_role_executive" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p13'))]"/>
+        </record>
+        <record id="group_sc_role_finance_user" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p13'))]"/>
+        </record>
+        <record id="group_sc_role_finance_manager" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p13'))]"/>
+        </record>
+        <record id="group_sc_role_owner" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p11')), (4, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_role_project_manager" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_entry_p02')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p11')), (4, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_role_project_user" model="res.groups">
+            <field name="implied_ids" eval="[(3, ref('smart_construction_core.group_sc_entry_p02')), (3, ref('smart_construction_core.group_sc_entry_p13')), (4, ref('smart_construction_core.group_sc_entry_p03')), (4, ref('smart_construction_core.group_sc_entry_p04')), (4, ref('smart_construction_core.group_sc_entry_p05')), (4, ref('smart_construction_core.group_sc_entry_p06')), (4, ref('smart_construction_core.group_sc_entry_p07')), (4, ref('smart_construction_core.group_sc_entry_p08')), (4, ref('smart_construction_core.group_sc_entry_p09')), (4, ref('smart_construction_core.group_sc_entry_p10')), (4, ref('smart_construction_core.group_sc_entry_p11')), (4, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+        <record id="group_sc_cap_project_read" model="res.groups">
+            <field name="implied_ids" eval="[(3, ref('smart_construction_core.group_sc_entry_p03')), (3, ref('smart_construction_core.group_sc_entry_p04')), (3, ref('smart_construction_core.group_sc_entry_p05')), (3, ref('smart_construction_core.group_sc_entry_p06')), (3, ref('smart_construction_core.group_sc_entry_p07')), (3, ref('smart_construction_core.group_sc_entry_p08')), (3, ref('smart_construction_core.group_sc_entry_p09')), (3, ref('smart_construction_core.group_sc_entry_p10')), (3, ref('smart_construction_core.group_sc_entry_p11')), (3, ref('smart_construction_core.group_sc_entry_p14'))]"/>
+        </record>
+    </data>
+</odoo>

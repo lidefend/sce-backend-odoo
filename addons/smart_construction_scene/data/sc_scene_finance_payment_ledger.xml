@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="sc_scene_finance_payment_ledger" model="sc.scene">
+            <field name="active" eval="True"/>
+            <field name="sequence">60</field>
+            <field name="code">finance.payment_ledger</field>
+            <field name="name">收付款业务台账</field>
+            <field name="layout">grid</field>
+            <field name="state">published</field>
+            <field name="version">v1</field>
+        </record>
+
+        <record id="sc_scene_version_finance_payment_ledger_v1" model="sc.scene.version">
+            <field name="scene_id" ref="sc_scene_finance_payment_ledger"/>
+            <field name="version">v1</field>
+            <field name="source">system</field>
+            <field name="product_release_state">PREVIEW</field>
+            <field name="product_edition">construction.standard</field>
+            <field name="payload_json" eval="{
+                'code': 'finance.payment_ledger',
+                'name': '收付款业务台账',
+                'version': 'v1',
+                'page': {
+                    'key': 'finance.payment_ledger.ledger',
+                    'title': '收付款业务台账',
+                    'page_type': 'ledger',
+                    'page_mode': 'stack'
+                },
+                'layout': {'kind': 'ledger', 'sidebar': 'fixed', 'header': 'full'},
+                'zone_blocks': [
+                    {'key': 'ledger_area', 'title': '台账', 'zone_type': 'primary', 'display_mode': 'stack', 'block_key': 'block.finance.payment_ledger.ledger'},
+                    {'key': 'filters', 'title': '筛选与追溯', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.finance.payment_ledger.filters'}
+                ],
+                'data_sources': {
+                    'payment_facts': {'source_type': 'odoo_model', 'model': 'payment.request'},
+                    'account_facts': {'source_type': 'odoo_model', 'model': 'account.move'}
+                },
+                'target': {'route': '/s/finance.payment_ledger'},
+                'role_variants': {
+                    'finance': {'default_actions': ['query', 'trace'], 'focus_zones': ['ledger_area', 'filters']}
+                },
+                'filters': []
+            }"/>
+        </record>
+
+        <record id="sc_scene_finance_payment_ledger" model="sc.scene">
+            <field name="active_version_id" ref="sc_scene_version_finance_payment_ledger_v1"/>
+        </record>
+    </data>
+</odoo>

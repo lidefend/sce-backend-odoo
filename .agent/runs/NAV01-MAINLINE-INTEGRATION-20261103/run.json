@@ -1,0 +1,545 @@
+{
+  "schema_version": 1,
+  "id": "NAV01-MAINLINE-INTEGRATION-20261103",
+  "branch": "fix/nav01-mainline-integration-20261103",
+  "baseline_sha": "fc35807dc0e0960336f671878d2f6d8be8c618a7",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NAV01-MAINLINE-INTEGRATION-20261103.yaml",
+  "record": ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/context.yaml",
+    ".agent/decisions/ARCH-DECISION-008.yaml",
+    ".agent/decisions/ARCH-DECISION-009.yaml",
+    ".agent/decisions/ARCH-DECISION-010.yaml",
+    ".agent/goals/NAV01-MAINLINE-INTEGRATION-20261103.yaml",
+    ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",
+    "AGENTS.md",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+    "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+    "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_actor_roles.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/data/menu_entry_group_rebinding.json",
+    "addons/smart_construction_core/data/menu_entry_group_rebinding.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/data/tenant/scoped_business_models.v1.json",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/models/support/scene_orchestration.py",
+    "addons/smart_construction_core/security/action_groups_patch.xml",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "addons/smart_construction_core/views/core/workflow_views.xml",
+    "addons/smart_construction_core/views/menu.xml",
+    "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/__manifest__.py",
+    "addons/smart_construction_scene/bootstrap/register_scene_providers.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
+    "addons/smart_construction_scene/data/sc_scene_finance_payment_ledger.xml",
+    "addons/smart_construction_scene/handlers/__init__.py",
+    "addons/smart_construction_scene/handlers/enterprise_readiness.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/handlers/scenario_dependency.py",
+    "addons/smart_construction_scene/models/__init__.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/models/scene_company_enablement.py",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/providers/enterprise_setup_provider.py",
+    "addons/smart_construction_scene/security/ir.model.access.csv",
+    "addons/smart_construction_scene/security/sc_scene_company_enablement_rules.xml",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+    "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/services/workspace_scenario_projection.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/core/scene_internal_action_authority.py",
+    "addons/smart_core/core/scene_ready_contract_builder.py",
+    "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/models/release_management.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/src/app/scenarioSurface.ts",
+    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+    "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/stores/navigationProjectionActions.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/packages/schema/src/index.ts",
+    "make/ci.mk",
+    "make/codex.mk",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/quick_suite_fingerprint.py",
+    "scripts/ops/quick_suite_manifest.json",
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ops/test_local_quick_evidence.py",
+    "scripts/ops/test_quick_input_scope.py",
+    "scripts/ops/test_scene_internal_action_authority.py",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
+    "scripts/verify/data_scope_declarations.json",
+    "scripts/verify/fact_layer_authority_guard.py",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "scripts/verify/test_validation_delivery_plan.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
+  },
+  "blockers": [
+    "New exact candidate requires owner independent delta review before publication; remote current candidate gates still required."
+  ],
+  "next_exact_step": "Finish L1 iteration, commit policy and tooling together, obtain exact delta review; publish without full local Quick under owner incremental policy.",
+  "layer": {
+    "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
+    "standard_vs_user_specific": "standard product",
+    "why_here": "P1 owns scene and native group facts; P0 consumes contracts",
+    "why_not_elsewhere": "No role-menu whitelist or P4 product policy",
+    "blast_radius": "Native menu/group publication, company enablement, startup route authority and homepage; preserve merged CI code"
+  },
+  "source_checkpoint": "d89a310fd1a3c56bc0a995b1e10dcb06fc7c5adc",
+  "source_worktree": "/home/lidefend/workspace/sce-backend-odoo-pc01",
+  "excluded": "Historical environment redesign, deployment tools and hundreds of audit documents; source tree preserved",
+  "validation_adjustment": "Historical imported authority guard incorrectly treated native field groups as role-menu lists; restrict carrier check to native menus/actions/view access bindings, preserving field ACL facts. New tests required. Wire new checks into both existing lanes, do not relax coverage baseline.",
+  "product_status": "Scoped implementation, 40 fixture offline tests, 6 ORM tests, HTTP contract and list/relation browser acceptance passed. Mainline merge and product delivery not completed.",
+  "observed_results": {
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-iteration-r3.log"
+    },
+    "targeted": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-targeted-r3.log",
+      "backend": 73,
+      "frontend": 35,
+      "native_projection": 12,
+      "internal_action_authority": 3
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-typecheck.log"
+    },
+    "hardening": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-hardening-r3.log"
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-freeze-prepare-r2.log"
+    },
+    "navigation_shell": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-navigation-shell.log"
+    },
+    "scene_entry": {
+      "status": "passed",
+      "log": ".runtime/nav01/integration-scene-entry.log"
+    },
+    "quick_4011d2db": {
+      "status": "failed",
+      "log": ".runtime/nav01/integration-quick.log",
+      "reason": "session.ts complexity baseline exceeded; no receipt; fixed by extracting projection state/actions"
+    },
+    "projection_extraction": {
+      "status": "passed",
+      "tests": ".runtime/nav01/integration-extract-tests-r2.log",
+      "typecheck": ".runtime/nav01/integration-extract-typecheck-r2.log",
+      "complexity": ".runtime/nav01/integration-extract-complexity-r2.log",
+      "freeze_prepare": ".runtime/nav01/integration-extract-freeze.log"
+    },
+    "quick_ce5140": {
+      "status": "passed",
+      "head": "ce5140cdc8cd2cb13e51d58a95fab0e387520186",
+      "log": ".runtime/nav01/integration-quick-r4.log"
+    },
+    "runtime_contract_ce5140": {
+      "status": "failed",
+      "log": ".runtime/nav01/integration-contract-receipt.log",
+      "reason": "Correct actor/company/source; HTTP403; denial reason not captured; diagnose before fixture or product changes"
+    },
+    "route_diagnostic": {
+      "status": "passed",
+      "log": ".runtime/nav01/business-route-diagnostic-r2.log",
+      "reason": "Native authority denies payment request BUSINESS_SCENARIO_NOT_ENABLED; company_states empty. Fixed obsolete numeric config-admin uid assertion."
+    },
+    "fixture_unit": {
+      "status": "passed",
+      "tests": 40,
+      "log": ".runtime/nav01/fixture-business-scenes-unit-r2.log",
+      "notes": "Two stale existing assertions updated to mainline: both declarations bind runtime context; daily database derives from registered serving duty. Production rules unchanged."
+    },
+    "fixture_native_authority": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-native-authority.log",
+      "fixture_tests": 40,
+      "projection_tests": 12,
+      "internal_action_tests": 3
+    },
+    "fixture_iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-iteration-r2.log"
+    },
+    "runtime_contract_350ccd6c6": {
+      "status": "passed",
+      "head": "350ccd6c6e83252fba14ffa1f1458a76dc77ddfc",
+      "log": ".runtime/nav01/fixture-contract-receipt.log",
+      "report": "artifacts/backend/dev_acceptance_release_probe.json"
+    },
+    "fixture_setup": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-business-setup.log",
+      "scope": "17 explicitly selected business scenarios on each of two fixture-owned companies; native model set_enabled validates publication; no role-menu list"
+    },
+    "fixture_lifecycle_orm": {
+      "status": "passed",
+      "tests": 6,
+      "new_lifecycle_tests": 3,
+      "log": ".runtime/nav01/fixture-business-orm.log",
+      "restoration": "TransactionCase rolls back scene toggles/deletion/legacy rows; subsequent live contract passed"
+    },
+    "list_browser": {
+      "status": "passed",
+      "rows": 18,
+      "assertions": 316,
+      "runtime_errors": 0,
+      "log": ".runtime/nav01/fixture-list-browser.log",
+      "report": ".runtime/final-acceptance/list-surface-structure.json"
+    },
+    "relation_browser": {
+      "status": "passed",
+      "blocking_differences": 0,
+      "nonblocking_differences": 9,
+      "log": ".runtime/nav01/fixture-relation-browser.log",
+      "report": ".runtime/acceptance/local/350ccd6c6e83252fba14ffa1f1458a76dc77ddfc/relation-roundtrip/20261103T094825772Z-2533544-b3cfd3b5/summary.json"
+    },
+    "runtime_evolution_record": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-evolution-record.log",
+      "manifest": ".runtime/acceptance-evolution/evidence.v1.json"
+    },
+    "batch_author_check": {
+      "status": "passed",
+      "scope": "Scoped native default-deny/company lifecycle plus frontend actual-store lifecycle tests and list/relation consumers. Desktop screenshot inspected. Not independent review or whole-product delivery."
+    },
+    "quick_94750dab8": {
+      "status": "failed",
+      "log": ".runtime/nav01/final-quick.log",
+      "reason": "New acceptance_business_scene_lifecycle tag executed by existing fixture ORM entry but not dispositioned in test coverage registry; P4 registration omission, no product/runtime failure"
+    },
+    "coverage_registration": {
+      "status": "passed",
+      "tests": 18,
+      "log": ".runtime/nav01/coverage-registration-test-r2.log",
+      "scope": "Existing managed fixture ORM entry registered as on-demand; no assertion or gate removed"
+    },
+    "final_freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/nav01/coverage-freeze-prepare.log"
+    }
+  },
+  "checks": {
+    "native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/fact_layer_authority_guard.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/ops/test_scene_internal_action_authority.py",
+        "addons/smart_core/core/scene_internal_action_authority.py",
+        "make/frontend.mk",
+        "addons/smart_construction_acceptance_fixture",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/dev.mk"
+      ]
+    }
+  },
+  "scope_delta": {
+    "layer": "P0 primitive presentation consumer; P4 isolated ORM test setup",
+    "reason": "PR794 frontend primitive chrome ownership failure and bundle tests missing explicit company scenario enablement; shard0 native menu tests conflate capability groups with Entry Groups; assert separate grants without widening model ACLs",
+    "risk": "No authorization relaxation; preserve all positive and negative assertions; test enablement transaction-rolled-back",
+    "validation": "Existing primitive adapter gate, frontend checks; isolated local.test bundle sc_gate ORM; remaining remote shard failures inspected before freeze"
+  },
+  "live_state": ".runtime/nav01/integration-state.json",
+  "ci_repair_results": {
+    "source_head": "af6700aee8da41c1534d12caa60c8d3b67ac16f6",
+    "frontend": {
+      "status": "passed",
+      "commands": [
+        "make verify.frontend.pr.unit verify.frontend.lint.src verify.frontend.typecheck.strict",
+        "make verify.frontend.style_system.guard"
+      ],
+      "logs": [
+        ".runtime/nav01/ci-frontend-r2.log",
+        ".runtime/nav01/ci-style-system.log"
+      ],
+      "generated_change": "component inventory inputDigest only"
+    },
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/ci-fix-iteration-r2.log"
+    },
+    "orm": {
+      "status": "affected_failures_resolved",
+      "environment": "Registered disposable sc-local-test / sc_test; private existing profile; fresh isolated DB per run, transaction rollback and exact carrier cleanup",
+      "first_run": {
+        "status": "failed",
+        "tests": 30,
+        "passing_cases": 29,
+        "log": ".runtime/test-baseline/1793701814698445185/odoo.log",
+        "remaining": "project_member capability-only principal lacks explicit entry"
+      },
+      "second_run": {
+        "status": "failed",
+        "tests": 8,
+        "passing_cases": 7,
+        "log": ".runtime/test-baseline/1793702048673281719/odoo.log",
+        "remaining": "replacing principal with full project role changes resolver role; corrected by retaining principal and granting only entry_p06"
+      },
+      "third_run": {
+        "status": "passed",
+        "tests": 1,
+        "receipt": ".runtime/test-baseline/1793702218750360707/receipt.json"
+      },
+      "incremental_scope": "37 distinct cases observed passing across three runs; first two suite receipts remain failed. Final change affects only TestPublishedRoleReplacementMenus actor setup; all remaining test bodies, fixtures and product inputs unchanged from their passing execution. Last affected class rerun through governed local.test. No assertion removed."
+    },
+    "remote_failures": {
+      "frontend": "primitive consumer chrome",
+      "bundle": "4 failures / 19 errors across 30 tests: company enablement and capability-only actor entry",
+      "core": "2 failures / 500 tests: capability groups incorrectly assumed to grant native entries"
+    },
+    "runtime_invalidation": "Binding registry assigns bundle test paths to list and relation suites; current rules require both browser receipts renewed. No gate weakened to reuse old receipts.",
+    "input_hashes": {
+      "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py": "27a9d99c784f245adaec90d67353fc9361a57522d233d02860c5ace4451a63f2",
+      "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py": "ca5dc4147a7bb8d68313f0da5bbeadb9e0ef2df75e122b3c6dd19b80f9d424dd",
+      "addons/smart_construction_bundle/tests/test_current_account_workspace.py": "81a8a0042a87ffb08bb203053a1160f28c08183194e2c1ed84fbfbcd0df9143f",
+      "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py": "20b0dfb3757e4463af86137eb1305db519bf7116a2b84016f61ab4913c692ee0",
+      "addons/smart_construction_bundle/tests/test_workspace_role_routes.py": "9794d1c934bc2a2bbb0957ae2b841760101f15b8d81de9a837f0b124b4440e0d",
+      "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py": "76376a4b9ce72b88d4635cdf5701f1bd64efeedfcfada9eaf3c660da48c16023",
+      "addons/smart_construction_core/tests/test_p1_funding_authority.py": "f4a0c64a761f7a82783cdd072a1c6a0200455efe15351c7604973ca3613914da",
+      "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py": "c842d679207dac8fd93ad712d68bda46ffd0b3235bef1ae0d50c87f6832f0a05",
+      "addons/smart_construction_core/tests/test_role_surface_project_member.py": "4f2a98874a147d3fbd738cc5de69a9c7188e8710d1cee8e41bc9306947e0494a",
+      "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py": "1995b885b84908398bef19d263764ce305d8f4b7cc36e649731c5bbe7dfc99a2",
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py": "3d365d40ffa481b124b7a8e319c21fe7dbc5f52132fff0eab43618ede0ba8004"
+    },
+    "quick_f98882a": {
+      "status": "failed",
+      "log": ".runtime/nav01/ci-fix-quick.log",
+      "reason": "Existing synthetic bank fixture exact-blob PD003 registration stale after six-line test setup change; RH018 consumes same registry; no new data values",
+      "recovery": "Append PD003 exact path and full blob 535c1cae1690f1973c62a12c4a34eb5c0ac6dcd8 only; preserve prior history entries; regex numeric values compared equal with approved af6700"
+    }
+  },
+  "ci_input_repair": {
+    "layer": "P4 test evidence and input declarations",
+    "base": "5388bb84b24aafe7041c5774f09d535fff60f1da",
+    "paths": [
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+      "addons/smart_construction_scene/tests/test_scene_data_ref_order.py"
+    ],
+    "reason": "Static receipt scanner cannot resolve imported module attributes; XML-order simulation omitted pre-data model registration. Product declarations and permission gates unchanged.",
+    "validation": {
+      "scene_python": "passed 145 tests; .runtime/nav01/ci-input-scene-tests-r2.log",
+      "discovery": "passed all 6 scene test files with zero unresolved reads; .runtime/nav01/ci-input-discovery.json",
+      "previous_scene_run": "failed one model registration simulation; preserved .runtime/nav01/ci-input-scene-tests.log",
+      "iteration_initial": "failed newly affected file not in run scope; scope explicitly added"
+    },
+    "reuse": "No product/frontend/ORM/runtime/probe inputs changed; their earlier observations retained with original identities, not relabeled as new-head remote successes.",
+    "excluded": "Full browser/ORM/runtime refresh, deployment, P4 environment reconciliation branch, new approval/archive cycle"
+  },
+  "quick_mechanism_repair": {
+    "layer": "P4",
+    "module": "existing Quick evidence planner and runner",
+    "standard": "shared verification mechanism",
+    "why": "input declarations, identity diagnosis and full-run fallback are P4 responsibilities",
+    "blast_radius": "Quick planning and explicitly selected incremental execution; no product/runtime changes",
+    "baseline": "16c78bf39dbf7cbedff6cd1560d056ee3cd3fa53",
+    "validation": "existing focused Quick input/evidence unit targets; actual plans are diagnostic, not receipts",
+    "exclusions": "no fabricated historical identity, no automatic full gate, no runtime/browser/ORM replay",
+    "status": "focused_validation_passed",
+    "results": [
+      {
+        "suite": "Quick input scope",
+        "count": 15,
+        "log": ".runtime/nav01/quick-mechanism-input-r2.log"
+      },
+      {
+        "suite": "suite fingerprint",
+        "count": 4,
+        "log": ".runtime/nav01/quick-mechanism-input-r2.log"
+      },
+      {
+        "suite": "incremental evidence",
+        "count": 21,
+        "log": ".runtime/nav01/quick-mechanism-evidence-r3.log"
+      },
+      {
+        "suite": "existing runner compatibility",
+        "count": 66,
+        "log": ".runtime/nav01/quick-mechanism-runner-regression.log"
+      }
+    ],
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/quick-mechanism-iteration.log"
+    },
+    "read_only_plan": ".runtime/nav01/quick-mechanism-plan.log",
+    "guarantees": [
+      "Default Make Quick refuses implicit full fallback",
+      "Optional affected target admission budget",
+      "Same-head verified receipt reused without test execution",
+      "8 offline capability scopes bind complete platform and industry modules",
+      "Legacy environment digest never rewritten; new diagnostic key hashes contain no plaintext values",
+      "Security scans still require actual successful proof"
+    ],
+    "limits": [
+      "12 of 47 top-level targets have reviewed reusable scopes; remaining 35 remain conservative execution",
+      "Current legacy receipt identity mismatch is still rejected; no current-head Quick receipt fabricated",
+      "Changing Make/scanner authority legitimately invalidates affected evidence"
+    ],
+    "external_mutations": false
+  },
+  "quick_mechanism_continuation": {
+    "layer": "P4",
+    "baseline": "6ddbdd704",
+    "scope": "Existing Quick declarations and read-only plan reasons",
+    "change": "Declare audited tenant file readers, manifest inventory patterns, and explicit non-reuse classifications",
+    "exclude": "No old identity rewrite, no full gate, no runtime changes",
+    "validation": "Existing input/evidence unit targets plus bounded static tenant guards",
+    "status": "focused_validation_passed",
+    "passed": {
+      "quick_input_scope": 20,
+      "suite_fingerprint": 4,
+      "quick_evidence": 21,
+      "tenant_boundary_entrypoints": 6,
+      "tenant_embedded_tests": 21,
+      "iteration": "passed"
+    },
+    "logs": [
+      ".runtime/nav01/quick-continuation-unit-r2.log",
+      ".runtime/nav01/quick-continuation-tenant.log",
+      ".runtime/nav01/quick-continuation-iteration.log"
+    ],
+    "reviewed_scope_count": 18,
+    "current_state_forced_targets": 4,
+    "installed_toolchain_unbound_targets": 10,
+    "remaining_undeclared_targets": 15,
+    "dependency_audit": "Manifest-only matrix fingerprints include additions/removals. Fresh-install inherits core runtime/XML readers; payload inherits tenant schema and customer sample readers. Imported or executed git/make/bash bytes bound in environment identity.",
+    "limits": "Old receipt has neither matching environment identity nor tool executable evidence. No inferred carry-forward, full Quick, browser/ORM replay or remote publication."
+  },
+  "merge_continuation": {
+    "layer": "P4",
+    "reason": "Two offline scene tests incorrectly invalidate list/relation browser evidence; planner registry bytes are not browser inputs, descriptor and selected inputs already bind relevant policy.",
+    "quick_attempt": "Stopped owned process group before mutation after detecting known readiness failure; log retained, not a passed receipt.",
+    "next": "Correct exact path ownership, focused guard tests, existing policy-reanchor carry-forward; freeze once, obtain mandatory Quick, owner delta review, archive/push/current CI/merge."
+  },
+  "isolated_dependency_fix": {
+    "layer": "P4",
+    "source_head": "ff7cda32a18b99a577cfe65f5fa36bebbdedb7a1",
+    "failure": "CI 41631999082 shard 3: 2/145 errors, missing dynamically loaded scripts/verify/fact_layer_authority_guard.py in isolated snapshot",
+    "change": "Read and compile actual guard source explicitly in shared test setup so existing dependency scanner includes it; preserve both authorization assertions",
+    "scope": [
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+    ],
+    "passed": {
+      "host_scene_tests": 145,
+      "dependency_discovery": "guard included, zero unresolved reads"
+    },
+    "next": "Validate committed isolated executor before publication; unchanged browser and ORM inputs remain reusable"
+  },
+  "quick_environment_fix": {
+    "layer": "P4",
+    "target": "Quick execution identity",
+    "module": "scripts/ops/quick_input_scope.py and local_quick_evidence.py",
+    "reason": "Exclude unused orchestrator call correlation and normalize the default acceptance source relation to current HEAD, preserving explicit revision drift",
+    "blast_radius": "Only offline declared target reuse; current-state/security/undeclared targets still execute; historical receipts never relabelled",
+    "validation": "22 input-scope + 4 suite-fingerprint + 22 evidence tests passed; actual two-candidate temporary Git history verifies reuse and explicit revision rejection",
+    "log": ".runtime/nav01/environment-fix-unit-r2.log",
+    "limitation": "Pre-fix receipts remain invalid; mechanism input changes also invalidate declared broad script scopes. Fresh baseline admission required, not automatically run."
+  },
+  "incremental_policy_update": {
+    "authority": "Owner explicitly requested rule update for established incremental iteration",
+    "layer": "P4",
+    "scope": [
+      "AGENTS.md",
+      ".agent/context.yaml",
+      "docs/ops/codex_workspace_execution_rules.md",
+      "docs/ops/codex_execution_allowlist.md",
+      "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+      "make/codex.mk",
+      "scripts/ops/integration_cycle.py",
+      "scripts/ops/test_integration_cycle.py"
+    ],
+    "local_requirement": "iteration plus affected nonzero tests, exact clean identity and review",
+    "remote_requirement": "All four current required gates and protected merge remain mandatory",
+    "quick": "Optional explicit audit/baseline tool; no automatic fallback; existing receipts unchanged",
+    "next": "Run integration readiness regression and publication checks before freezing",
+    "validation": {
+      "integration_publication_merge_tests": 50,
+      "safe_push_isolated_scenarios": 18,
+      "log": ".runtime/nav01/incremental-policy-regression-r2.log",
+      "push_log": ".runtime/nav01/incremental-policy-push.log"
+    }
+  }
+}

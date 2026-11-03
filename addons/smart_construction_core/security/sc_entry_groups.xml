@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="group_sc_entry_p01" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 01</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p02" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 02</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p03" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 03</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p04" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 04</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p05" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 05</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p06" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 06</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p07" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 07</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p08" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 08</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p09" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 09</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p10" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 10</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p11" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 11</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p12" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 12</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p13" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 13</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+        <record id="group_sc_entry_p14" model="res.groups">
+            <field name="name">SC 入口 - 可见性模式 14</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+    </data>
+</odoo>

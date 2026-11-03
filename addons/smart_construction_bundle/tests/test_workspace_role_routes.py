@@ -13,6 +13,11 @@ class TestWorkspaceExclusiveRoleRoutes(BusinessTransactionCase):
         config.set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
         EditionReleaseSnapshotService(self.env).freeze_release_surface(
             product_key="construction.standard", version="synthetic-exclusive-workspaces", replace_active=True)
+        # Product publication and company scenario choice are independent prerequisites.
+        self.env["sc.scene.company.enablement"].create({
+            "company_id": self.env.company.id,
+            "scene_key": "business.v1:payment.capital",
+        }).set_enabled(True)
         actor = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Synthetic full business operator", "login": "synthetic-workspace-full",
             "company_id": self.env.company.id, "company_ids": [(6, 0, self.env.company.ids)],
@@ -62,6 +67,19 @@ class TestPublishedRoleReplacementMenus(BusinessTransactionCase):
         config.set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
         EditionReleaseSnapshotService(self.env).freeze_release_surface(
             product_key="construction.standard", version="synthetic-role-replacements", replace_active=True)
+        # Product publication and company scenario choice are independent prerequisites.
+        self.env["sc.scene.company.enablement"].create({
+            "company_id": self.env.company.id,
+            "scene_key": "business.v1:contract.performance",
+        }).set_enabled(True)
+        self.env["sc.scene.company.enablement"].create({
+            "company_id": self.env.company.id,
+            "scene_key": "business.v1:cost.budget",
+        }).set_enabled(True)
+        self.env["sc.scene.company.enablement"].create({
+            "company_id": self.env.company.id,
+            "scene_key": "business.v1:payment.capital",
+        }).set_enabled(True)
         cases = {
             "owner": ("group_sc_role_owner", ["menu_sc_p1_daily_contract"]),
             "project_member": ("group_sc_cap_business_initiator", ["menu_sc_p1_daily_contract"]),
@@ -79,6 +97,11 @@ class TestPublishedRoleReplacementMenus(BusinessTransactionCase):
                         self.env.ref("smart_construction_core." + group).id,
                         self.env.ref("smart_construction_core.group_sc_cap_project_read").id])],
                 })
+                if role == "project_member":
+                    # Keep the capability-only principal; entry visibility is a separate grant.
+                    menu = self.env.ref("smart_construction_core.menu_sc_p1_daily_contract")
+                    self.assertNotIn(menu.id, self.env["ir.ui.menu"].with_user(actor)._visible_menu_ids())
+                    actor.write({"groups_id": [(4, self.env.ref("smart_construction_core.group_sc_entry_p06").id)]})
                 actor_env = self.env(user=actor)
                 native = MenuFactService(actor_env).export_visible_menu_facts()
                 resolver = IdentityResolver(actor_env)

@@ -12,11 +12,37 @@ import hashlib
 import json
 import sys
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = "scripts/ops/quick_suite_manifest.json"
-REVIEWED_SUITES = frozenset({"verify.test.determinism", "verify.test.isolation"})
+# These recipes run Python with Odoo/transport stubs, not a live registry or DB.
+# Bind both complete platform/industry modules (including tests), not just the
+# entry script: helpers and dynamically loaded handlers are execution inputs.
+OFFLINE_CAPABILITY_SUITES = frozenset({
+    "verify.visualization.chart.capability", "verify.boq.export.capability",
+    "verify.write.idempotency.capability", "verify.boq.dangerous.import.capability",
+    "verify.boq.line.patch.capability", "verify.overview.rich.text.patch.capability",
+    "verify.ui_contract.delivery_surface.unit", "verify.smart_core.ui_base_asset_refresh.unit",
+})
+MODULE_MANIFESTS = "addons/*/__manifest__.py"
+# Whole directories cover dynamic XML references and configured module names.
+# Manifest-only readers deliberately bind the inventory, not unrelated tests.
+TENANT_SUITE_INPUTS = {
+    "verify.tenant.data_responsibility_boundary": (
+        "config/tenant/module_sets.v1.json", "docs/audit/tenant_pro_03_data_responsibility_inventory.csv"),
+    "verify.tenant.module_set_matrix": (
+        "config/tenant/module_sets.v1.json", "config/product_addons_allowlist.txt",
+        "config/product_optional_addons_allowlist.txt", MODULE_MANIFESTS),
+    "verify.tenant.product_legacy_boundary": ("addons/smart_construction_core/",),
+    "verify.tenant.legacy_xmlid_boundary": ("addons/smart_construction_core/",),
+    "verify.tenant.product_fresh_install": (MODULE_MANIFESTS, "addons/smart_construction_core/"),
+    "verify.tenant.payload_boundary": (
+        "addons/", "config/", "Dockerfile", "Dockerfile.production-candidate",
+        "schemas/tenant_delivery/", "customer_addons/sce_customer_sample/"),
+}
+REVIEWED_SUITES = (frozenset({"verify.test.determinism", "verify.test.isolation"})
+                   | OFFLINE_CAPABILITY_SUITES | TENANT_SUITE_INPUTS.keys())
 
 
 def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, str]:
@@ -50,8 +76,11 @@ def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, 
             if (not isinstance(path, str) or not path or path.startswith("/")
                     or any(part in ("", ".", "..") for part in path.rstrip("/").split("/"))):
                 raise ValueError("suite input must be a bounded repository path")
+            if any(char in path for char in '*?[') and path != MODULE_MANIFESTS:
+                raise ValueError("unreviewed suite input pattern")
             matches = {key: value for key, value in tree.items()
-                       if (key.startswith(path) if path.endswith("/") else key == path)}
+                       if (len(PurePosixPath(key).parts) == 3 and PurePosixPath(key).match(path) if path == MODULE_MANIFESTS else
+                           key.startswith(path) if path.endswith("/") else key == path)}
             if not matches or any(not value.startswith(("100644 blob ", "100755 blob "))
                                   for value in matches.values()):
                 raise ValueError(f"missing or unsafe suite input: {path}")
@@ -62,6 +91,13 @@ def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, 
                      ".github/workflows/", "frontend/apps/web/package.json"):
             if path not in inputs:
                 raise ValueError(f"suite missing execution authority: {path}")
+        if name in OFFLINE_CAPABILITY_SUITES:
+            for path in ("addons/smart_core/", "addons/smart_construction_core/"):
+                if path not in inputs:
+                    raise ValueError(f"suite missing module inputs: {path}")
+        for path in TENANT_SUITE_INPUTS.get(name, ()):
+            if path not in inputs:
+                raise ValueError(f"suite missing tenant inputs: {path}")
         result[name] = hashlib.sha256(json.dumps(
             {"command": suite["command"], "files": selected}, sort_keys=True,
             separators=(",", ":")).encode()).hexdigest()
@@ -73,6 +109,12 @@ def fingerprint_suite(command: list[str], inputs: list[str]) -> str:
     digest.update(json.dumps(command, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     expanded = set()
     for rel in inputs:
+        if rel == MODULE_MANIFESTS:
+            manifests = {p.relative_to(ROOT).as_posix() for p in ROOT.glob(rel) if p.is_file()}
+            if not manifests:
+                raise ValueError("declared module manifest inventory is missing")
+            expanded.update(manifests)
+            continue
         path = ROOT / rel
         if path.is_dir():
             expanded.update(p.relative_to(ROOT).as_posix() for p in path.rglob("*")
