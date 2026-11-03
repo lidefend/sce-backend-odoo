@@ -657,8 +657,17 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
 
 
 class TestNativeAuthorityGuardScope(unittest.TestCase):
+    def setUp(self):
+        # Consume the source explicitly so isolated snapshots bind this
+        # repository-level dependency as well as the addon module tree.
+        guard_path = SCENE_DIR.parents[1] / "scripts/verify/fact_layer_authority_guard.py"
+        self.guard = types.ModuleType("nav01_fact_guard")
+        self.guard.__file__ = str(guard_path)
+        exec(compile(guard_path.read_text(encoding="utf-8"), str(guard_path), "exec"),
+             self.guard.__dict__)
+
     def test_native_field_groups_do_not_count_as_entry_lists(self):
-        guard = _load("nav01_fact_guard", SCENE_DIR.parents[1] / "scripts/verify/fact_layer_authority_guard.py")
+        guard = self.guard
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "view.xml").write_text('<odoo><record id="view" model="ir.ui.view"><field name="arch" type="xml"><form><field name="x" groups="test.group_sc_role_executive"/></form></field></record></odoo>')
@@ -666,7 +675,7 @@ class TestNativeAuthorityGuardScope(unittest.TestCase):
                 self.assertEqual(guard._role_group_direct_authorization_violations(), [])
 
     def test_role_bound_entry_carriers_still_fail(self):
-        guard = _load("nav01_fact_guard", SCENE_DIR.parents[1] / "scripts/verify/fact_layer_authority_guard.py")
+        guard = self.guard
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "entry.xml").write_text('<odoo><menuitem id="menu" groups="test.group_sc_role_manager"/><record id="action" model="ir.actions.act_window"><field name="groups_id" eval="test.group_sc_role_manager"/></record><record id="view" model="ir.ui.view"><field name="groups_id" eval="test.group_sc_role_manager"/></record></odoo>')

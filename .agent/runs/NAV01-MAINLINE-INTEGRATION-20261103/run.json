@@ -133,9 +133,9 @@
     "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
   },
   "blockers": [
-    "Current PR794 required CI failed before scene isolated execution; local corrected scene suite PASS145; new head remote checks pending."
+    "PR794 current ff7 CI failed: isolated snapshot missing guard source; repair under verification."
   ],
-  "next_exact_step": "Read committed Quick plan classifications; address remaining 15 undeclared scopes and 10 installed-toolchain bindings before selecting bounded validation. Legacy identity proof remains unresolved; do not auto-run full.",
+  "next_exact_step": "Validate corrected frozen isolated scene snapshot, then incremental Quick, exact delta review and protected PR publication.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -483,5 +483,19 @@
     "reason": "Two offline scene tests incorrectly invalidate list/relation browser evidence; planner registry bytes are not browser inputs, descriptor and selected inputs already bind relevant policy.",
     "quick_attempt": "Stopped owned process group before mutation after detecting known readiness failure; log retained, not a passed receipt.",
     "next": "Correct exact path ownership, focused guard tests, existing policy-reanchor carry-forward; freeze once, obtain mandatory Quick, owner delta review, archive/push/current CI/merge."
+  },
+  "isolated_dependency_fix": {
+    "layer": "P4",
+    "source_head": "ff7cda32a18b99a577cfe65f5fa36bebbdedb7a1",
+    "failure": "CI 41631999082 shard 3: 2/145 errors, missing dynamically loaded scripts/verify/fact_layer_authority_guard.py in isolated snapshot",
+    "change": "Read and compile actual guard source explicitly in shared test setup so existing dependency scanner includes it; preserve both authorization assertions",
+    "scope": [
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+    ],
+    "passed": {
+      "host_scene_tests": 145,
+      "dependency_discovery": "guard included, zero unresolved reads"
+    },
+    "next": "Validate committed isolated executor before publication; unchanged browser and ORM inputs remain reusable"
   }
 }
