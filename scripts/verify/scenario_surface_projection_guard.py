@@ -213,6 +213,8 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
             self.assertEqual(PROJ.project_management_workspaces(scenes=[scene], surface=self.surface,
                 check_access=lambda model, operation: operation != denied_operation), [])
         self.assertEqual(PROJ.project_management_workspaces(scenes=[], check_access=allowed, surface=self.surface), [])
+        self.assertEqual(PROJ.project_management_workspaces(scenes=[dict(scene, access={"allowed": False})],
+            check_access=allowed, surface=self.surface), [])
 
     def test_role_difference_only_authorized_scenarios_present(self):
         finance_only = [

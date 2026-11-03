@@ -9,6 +9,7 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
 const candidateStartup = process.env.BOOTSTRAP_SCOPE === 'candidate-startup';
+const managementOnly = process.env.BOOTSTRAP_MANAGEMENT_ONLY === '1';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `bootstrap-inventory-${Date.now()}`);
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
 const bytes = Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()));
@@ -26,6 +27,8 @@ const registeredRoles = ['fixture_role_finance', 'fixture_role_contract_operator
 const roles = process.env.BOOTSTRAP_ROLES?.split(',') || registeredRoles;
 assert.ok(roles.length && roles.every(role => registeredRoles.includes(role)), 'registered fixture role scope only');
 report.roleScope = roles;
+report.managementOnly = managementOnly;
+if (managementOnly) assert.ok(candidateStartup && roles.length === 1 && roles[0] === 'fixture_role_config_admin', 'management-only audit requires the registered config-admin candidate journey');
 try {
   for (const role of roles) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
@@ -109,6 +112,13 @@ try {
       await page.locator('[data-semantic-component="ScenarioActivationPanel"][data-state="ready"]').waitFor();
       observed.managementRecovery = { visibleEntries: surface.platform.length, setupRoute: setup.route, businessScenarios: catalog.data.business_scenarios.length, mutationPerformed: false };
       await page.screenshot({ path: path.join(out, `${role}-enterprise-setup.png`) });
+      if (managementOnly) {
+        await page.unrouteAll({ behavior: 'wait' });
+        assert.deepEqual(observed.blockedWrites, [], 'no unregistered request in management recovery');
+        assert.deepEqual(observed.errors, [], 'no uncaught management recovery error');
+        await ctx.close();
+        continue;
+      }
     }
     const leaves = [];
     const walk = (nodes) => { for (const node of nodes || []) {

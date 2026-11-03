@@ -289,6 +289,8 @@ def project_management_workspaces(*, scenes, check_access, surface=None):
         model = declaration.get("access_model")
         if not scene or not model or not operations:
             continue
+        if (scene.get("access") or {}).get("allowed") is False:
+            continue
         if not all(check_access(model, operation) for operation in operations):
             continue
         route = _text((scene.get("target") or {}).get("route"))

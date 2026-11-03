@@ -32,7 +32,7 @@
     "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
   },
   "blockers": [],
-  "next_exact_step": "Freeze candidate then existing local backend artifact/preview refresh and config-admin browser startup with management recovery assertions",
+  "next_exact_step": "Run final management-only browser on frozen denial-respecting candidate; affected list/relation checks then independent review",
   "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
   "layer": {
     "formal_product_layer": "P1 plus P0 generic frontend consumer",
@@ -80,6 +80,13 @@
       "status": "failed",
       "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793713257683/report.json",
       "reason": "Management buttons rendered; enterprise.setup absent from effective product scene delivery policy; catalog not reached. Probe also missing readonly workspace.scenario.projection.get."
+    },
+    "browser_second_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793713445960/report.json",
+      "management_path": "7 entries visible, enterprise.setup opened, 17-scene catalog loaded without mutation",
+      "failure": "Later unrelated form inventory blocked api.onchange; do not broaden write policy",
+      "next": "Explicit config-admin management-only mode retains original navigation, real catalog and no-write assertions; default full probe unchanged"
     }
   },
   "checks": {}
