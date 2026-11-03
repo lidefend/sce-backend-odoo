@@ -52,7 +52,7 @@
                         <button name="%(action_sc_organization_department)d" type="action" string="组织架构" data-sc-remediation="organization.department"/>
                         <button name="%(action_sc_product_job_management_v1)d" type="action" string="岗位管理" data-sc-remediation="job.management"/>
                         <button name="%(action_sc_runtime_user_management)d" type="action" string="人员与账号" data-sc-remediation="user.management,personnel.record"/>
-                        <button name="%(action_sc_product_data_permission_v1)d" type="action" string="业务权限分配" data-sc-remediation="data.permission"/>
+                        <button name="%(action_sc_product_data_permission_v1)d" type="action" string="业务权限分配" data-sc-remediation="data.permission,project.member.permission"/>
                     </group>
                 </sheet>
             </form>

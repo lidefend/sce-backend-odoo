@@ -128,6 +128,11 @@ try {
           const readiness = observed.contracts.filter(row => row.intent === 'enterprise.readiness.diagnosis.get').at(-1)?.payload?.data;
           assert.equal(readiness?.contract_version, 'enterprise_readiness.v2');
           assert.ok(readiness.rules.some(row => row.remediation?.label === label), `${label} has native remediation`);
+          if (label === '企业信息') {
+            await diagnosis.getByRole('button', { name: '前往场景管理', exact: true }).click();
+            await page.locator('#enterprise-scenario-activation[data-state="ready"]').waitFor();
+            assert.equal(await page.locator('#enterprise-scenario-activation li').count(), 17);
+          }
           await diagnosis.getByRole('button', { name: label, exact: true }).first().click();
           await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));
           await page.locator('[data-list-composition="official-standard-list"]').waitFor();

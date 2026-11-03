@@ -102,6 +102,7 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         enabled = rules()
         self.assertEqual(enabled['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 1)
         self.assertTrue(enabled['enterprise.project_responsibility']['applicability'])
+        self.assertEqual(enabled['enterprise.project_responsibility']['remediation']['key'], 'smart_construction_core.action_sc_product_data_permission_v1')
         self.assertEqual(enabled['enterprise.scenario_dependencies']['status'], 'NOT_EVALUATED')
         self.assertEqual(enabled['enterprise.role_delivery']['status'], 'NOT_EVALUATED')
         self.assertTrue(activation.handle({**params, 'enabled': False})['ok'])
