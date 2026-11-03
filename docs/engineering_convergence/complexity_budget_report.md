@@ -53,7 +53,7 @@ Generated from repository source files. This report is informational during the 
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1886 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1881 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1879 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -280,7 +280,7 @@ Generated from repository source files. This report is informational during the 
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1886 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1881 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1879 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |

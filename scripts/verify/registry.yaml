@@ -1871,11 +1871,9 @@ entries:
   status: active
   owner: platform-team
   date: '2026-11-03'
-  wire_or_retire: make
   reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
 - script: scenario_surface_projection_guard.py
   status: active
   owner: platform-team
   date: '2026-11-03'
-  wire_or_retire: make
   reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks

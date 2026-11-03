@@ -61,7 +61,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1930 | Construction backend owner | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1886 | Construction backend owner | `addons/smart_construction_core/core_extension.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1885 | Construction backend owner | `addons/smart_construction_core/models/core/project_core.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
-| P2 | 1881 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1879 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1870 | DevOps owner | `scripts/verify/industry_module_product_boundary_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1864 | DevOps owner | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1818 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
