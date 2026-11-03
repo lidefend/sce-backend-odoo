@@ -41,7 +41,18 @@ def _dep(
 def diagnose_scenario_dependencies(env, *, scene_key: str, company_id: int) -> dict[str, Any]:
     scene = env["sc.scene"].sudo().search([("code", "=", scene_key)], limit=1)
     product_released = resolve_product_released(scene_key)
-    scene_published = bool(scene) and scene.state == "published"
+    if scene_key == "enterprise.setup":
+        # The configuration workspace is published by its native action fact,
+        # not by a persisted scene-version release record.
+        try:
+            scene_published = bool(env.ref(
+                "smart_construction_core.action_sc_enterprise_initialization",
+                raise_if_not_found=False,
+            ))
+        except Exception:
+            scene_published = False
+    else:
+        scene_published = bool(scene) and scene.state == "published"
     product_ready = product_released and scene_published
     company = env["res.company"].browse(company_id).exists()
 

@@ -12,7 +12,9 @@
     },
     "independent_scene_version_payload": {
       "file": "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
-      "sha256": "0e3aa76bf3bc1d7759f16f70e35c23a837cefc0bd7ed346610618b4e7d926997"
+      "sha256": null,
+      "converged": true,
+      "converged_by": "scene entry and workspace facts derive from native action/menu/view"
     },
     "scene_enablement_fact_writes": {
       "files": [
