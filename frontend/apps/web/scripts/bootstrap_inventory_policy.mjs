@@ -1,10 +1,16 @@
 // Authentication establishes only the fixture session; all remaining calls read.
 // The P1 catalog handler projects declarations and current-user capabilities only.
 const reads = new Set(['chatter.timeline', 'chatter.followers.list', 'workspace.scenario.projection.get', 'scenario.activation.catalog.get', 'enterprise.readiness.diagnosis.get', 'product.configuration.capability.catalog', 'ui.menu_config.panel.get', 'login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'workspace.home', 'user.view.preference.get', 'ui.business_config.surface.get', 'ui.business_config.coverage.scan', 'ui.business_config.list_search.audit', 'ui.business_config.analysis.audit', 'global.message.conversations', 'global.message.thread']);
-export function permitsInventoryRequest(method, pathname, body, allowNavigationTelemetry = false) {
+export function permitsInventoryRequest(method, pathname, body, allowNavigationTelemetry = false, activationScope = null) {
   if (method === 'GET' && pathname === '/api/v1/auth/page-contracts') return true;
   if (method !== 'POST' || pathname !== '/api/v1/intent') return false;
   const request = body?.params?.intent ? body.params : body;
+  if (request?.intent === 'scenario.activation.set') {
+    const params = request.params;
+    return Boolean(activationScope && params?.company_id === activationScope.company_id
+      && params?.scene_key === activationScope.scene_key && params?.enablement_scope === 'business.v1'
+      && typeof params?.enabled === 'boolean');
+  }
   if (request?.intent === 'ui.business_config.change_set.open') return request.params?.resume_only === true && !request.params?.fresh;
   if (request?.intent === 'ui.menu_config.versions') return !['allow_bootstrap', 'allowBootstrap', 'bootstrap'].some(key => request.params?.[key]);
   if (request?.intent === 'usage.track') return allowNavigationTelemetry;

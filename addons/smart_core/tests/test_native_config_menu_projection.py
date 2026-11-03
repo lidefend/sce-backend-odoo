@@ -36,6 +36,12 @@ def _load_module():
         "odoo.addons.smart_core.core.source_authority",
         build_source_authority_contract=lambda **kwargs: dict(kwargs),
     )
+    target_name = "odoo.addons.smart_core.core.navigation_entry_target"
+    target_spec = importlib.util.spec_from_file_location(
+        target_name, ROOT / "addons/smart_core/core/navigation_entry_target.py")
+    target_module = importlib.util.module_from_spec(target_spec)
+    target_spec.loader.exec_module(target_module)
+    sys.modules[target_name] = target_module
     _install_module(
         "odoo.addons.smart_core.security.platform_admin",
         can_manage_system_configuration=lambda user: False,
@@ -86,6 +92,26 @@ class _Menu:
 
 
 class NativeConfigMenuProjectionTests(unittest.TestCase):
+    def test_native_declared_surface_survives_config_projection(self):
+        module = _load_module()
+        action = _ProjectedAction()
+        action.context = "{'sc_web_surface': 'test_workspace', 'sc_web_route': '/s/test.setup'}"
+        action.sudo = lambda: action
+        payload = module._action_payload(_Menu(action))
+        self.assertEqual(payload['type'], 'admin_surface')
+        self.assertEqual(payload['route'], '/s/test.setup')
+        self.assertEqual(payload['compatibility_refs']['menu_id'], 17)
+        self.assertEqual(payload['compatibility_refs']['action_id'], 91)
+
+    def test_partial_surface_is_not_silently_replaced_with_action_route(self):
+        module = _load_module()
+        action = _ProjectedAction()
+        action.context = "{'sc_web_surface': 'test_workspace'}"
+        action.sudo = lambda: action
+        payload = module._action_payload(_Menu(action))
+        self.assertEqual(payload['type'], 'admin_surface')
+        self.assertEqual(payload['route'], '')
+
     def test_action_metadata_uses_sudo_after_menu_visibility_projection(self):
         module = _load_module()
         restricted_action = _RestrictedAction()

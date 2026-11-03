@@ -10,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const base = 'http://127.0.0.1:5180';
 const candidateStartup = process.env.BOOTSTRAP_SCOPE === 'candidate-startup';
 const managementOnly = process.env.BOOTSTRAP_MANAGEMENT_ONLY === '1';
+const activationJourney = process.env.BOOTSTRAP_SCENARIO_ACTIVATION === '1';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `bootstrap-inventory-${Date.now()}`);
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
 const bytes = Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()));
@@ -29,6 +30,7 @@ assert.ok(roles.length && roles.every(role => registeredRoles.includes(role)), '
 report.roleScope = roles;
 report.managementOnly = managementOnly;
 if (managementOnly) assert.ok(candidateStartup && roles.length === 1 && roles[0] === 'fixture_role_config_admin', 'management-only audit requires the registered config-admin candidate journey');
+if (activationJourney) assert.ok(managementOnly && candidateStartup, 'activation requires isolated scoped config-admin journey');
 try {
   for (const role of roles) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
@@ -36,6 +38,7 @@ try {
     page.setDefaultTimeout(15000);
     page.setDefaultNavigationTimeout(30000);
     const observed = { role, calls: [], contracts: [], errors: [], blockedWrites: [] };
+    let activationScope = null;
     report.roles.push(observed);
     page.on('pageerror', error => observed.errors.push(error.message));
     await page.route('**/api/**', async route => {
@@ -44,7 +47,7 @@ try {
       const body = rawBody?.params?.intent ? rawBody.params : rawBody;
       observed.requests ??= [];
       observed.requests.push({ path: new URL(route.request().url()).pathname, keys: Object.keys(rawBody || {}) });
-      if (!permitsInventoryRequest(route.request().method(), new URL(route.request().url()).pathname, rawBody, candidateStartup)) {
+      if (!permitsInventoryRequest(route.request().method(), new URL(route.request().url()).pathname, rawBody, candidateStartup, activationScope)) {
         observed.blockedWrites.push(body?.intent || new URL(route.request().url()).pathname);
         return route.abort();
       }
@@ -52,7 +55,7 @@ try {
       const intent = body?.intent;
       if (intent) {
         observed.calls.push({ intent, httpStatus: response.status() });
-        if (intent === 'enterprise.readiness.diagnosis.get' || intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
+        if (intent === 'enterprise.readiness.diagnosis.get' || intent === 'system.init' || intent === 'scenario.activation.set' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
           const result = await response.json();
           observed.contracts.push({ intent, params: redact(body.params || {}), payload: redact(result) });
         }
@@ -112,6 +115,42 @@ try {
         scope: 'native_configuration_and_existing_setup_first_hop', initializationEntry: 'enterprise.setup',
         catalogCount: catalog.business_scenarios.length, mutationPerformed: false };
       await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });
+      if (activationJourney) {
+        // Leave the first-hop page, then return using the persistent native menu.
+        await page.locator('.handling-surface').getByRole('button', { name: '企业信息', exact: true }).click();
+        await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));
+        await management.getByRole('button', { name: '企业初始化', exact: true }).click();
+        await page.waitForURL(url => url.pathname === '/s/enterprise.setup');
+        await catalogPanel.waitFor();
+        const baseline = observed.contracts.filter(row => row.intent === 'scenario.activation.catalog.get').at(-1).payload.data;
+        const selected = baseline.business_scenarios.find(row => row.scene_key === 'project.management');
+        assert.ok(selected?.product_released && selected.actions.length);
+        activationScope = { company_id: baseline.company_id, scene_key: selected.scene_key };
+        const card = () => catalogPanel.locator('li').filter({ hasText: selected.name });
+        const currentCatalog = () => observed.contracts.filter(row => row.intent === 'scenario.activation.catalog.get').at(-1).payload.data;
+        const toggle = async () => {
+          const offset = observed.contracts.length;
+          await card().getByRole('button', { name: /^(启用|停用)$/ }).click();
+          await page.waitForFunction(() => document.querySelector('#enterprise-scenario-activation')?.getAttribute('data-state') === 'ready'
+            && !document.querySelector('#enterprise-scenario-activation button:disabled'));
+          const result = observed.contracts.slice(offset).find(row => row.intent === 'scenario.activation.set');
+          assert.ok(result?.payload?.ok, 'real HTTP activation succeeds');
+          assert.ok(observed.contracts.slice(offset).some(row => row.intent === 'system.init' && row.payload.ok), 'navigation refreshed after write');
+        };
+        observed.activationJourney = { baseline: selected.tenant_enabled, restored: false };
+        try {
+          await toggle();
+          assert.equal(currentCatalog().business_scenarios.find(row => row.scene_key === selected.scene_key).tenant_enabled, !selected.tenant_enabled);
+          await page.screenshot({ path: path.join(out, `${role}-scenario-toggled.png`) });
+        } finally {
+          await page.reload();
+          await catalogPanel.waitFor();
+          if (currentCatalog().business_scenarios.find(row => row.scene_key === selected.scene_key).tenant_enabled !== selected.tenant_enabled) await toggle();
+          assert.equal(currentCatalog().business_scenarios.find(row => row.scene_key === selected.scene_key).tenant_enabled, selected.tenant_enabled);
+          observed.activationJourney.restored = true;
+          activationScope = null;
+        }
+      }
       if (process.env.BOOTSTRAP_ENTERPRISE_INITIALIZATION === '1') {
         assert.ok(managementOnly, 'initialization traversal is scoped to the config-admin journey');
         const entries = ['企业信息', '组织架构', '岗位管理', '人员与账号', '业务权限分配'];

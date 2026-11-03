@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
-  "branch": "feature/enterprise-initialization-native-config-20261103",
-  "baseline_sha": "852d7f2a2f448f84bbbe5b0df56875262de803fc",
+  "branch": "fix/enterprise-activation-entry-20261104",
+  "baseline_sha": "251cde6c51a94754c717694af605a9a378886355",
   "status": "active",
   "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
   "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
@@ -41,7 +41,10 @@
     "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
-    "addons/smart_construction_core/models/support/formal_user_management.py"
+    "addons/smart_construction_core/models/support/formal_user_management.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_core/delivery/native_config_menu_projection.py",
+    "addons/smart_core/tests/test_native_config_menu_projection.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -61,7 +64,8 @@
     "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list.",
     "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment.",
     "onboarding_fix": "P1 native personnel field owner defers personnel inverses until native account/partner creation completes; retains original runtime validation and atomic savepoint.",
-    "presentation": "P3 uses existing theme tokens for readable readiness and activation cards; consumes all labels/actions/statuses from server unchanged."
+    "presentation": "P3 uses existing theme tokens for readable readiness and activation cards; consumes all labels/actions/statuses from server unchanged.",
+    "activation_repair": "P1 native setup menu/action and REQUIRED_GROUPS declaration; P0 consumes existing sc_web_surface action contract in native config projection. No role whitelist, no frontend product change. P4 exact single fixture company/scenario toggle with baseline restoration."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
@@ -76,7 +80,7 @@
     },
     "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Validate ordinary finance startup after native metadata ACL early-denial fix; record required merge suites, publish current candidate and deploy protected main per owner instruction.",
+  "next_exact_step": "Complete scoped ORM; prepare exact candidate in existing acceptance backend and run menu-return/HTTP activation/browser restoration journey.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -294,6 +298,30 @@
       "tests": 21,
       "status": "passed",
       "log": ".runtime/enterprise-init/integration-startup-tests.log"
+    },
+    "user_acceptance_regression": {
+      "status": "failed",
+      "deployed_sha": "251cde6c51a94754c717694af605a9a378886355",
+      "observations": [
+        "Daily scenario.activation.set HTTP 403; catalog GET 200",
+        "Initialization has landing route only, no persistent native menu"
+      ],
+      "scope": "P1 native entry and activation declaration; P0 generic native route projection if required",
+      "verification": "Targeted authorization and menu projection tests then governed scoped journey; no full Quick"
+    },
+    "activation_repair": {
+      "status": "verification_pending",
+      "static": "passed",
+      "unit": "passed",
+      "logs": [
+        ".runtime/enterprise-init/activation-iteration.log",
+        ".runtime/enterprise-init/activation-unit.log"
+      ],
+      "orm": "running",
+      "browser": "pending",
+      "daily": "unchanged, user-reported failure confirmed",
+      "independent_review": "pending_owner",
+      "no_full_quick": "incremental policy; no frontend application changes"
     }
   },
   "checks": {},

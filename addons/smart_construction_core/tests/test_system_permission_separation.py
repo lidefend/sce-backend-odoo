@@ -65,6 +65,17 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         from odoo.addons.smart_construction_scene.handlers.scenario_activation import ScenarioActivationSetHandler
         company = self.env.company
         actor = self.env['res.company'].with_user(self.manager).with_context(allowed_company_ids=company.ids).env
+        from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
+        menu_xmlid = 'smart_construction_core.menu_sc_enterprise_initialization'
+        menu = self.env.ref(menu_xmlid)
+        self.assertIn(menu.id, actor['ir.ui.menu']._visible_menu_ids())
+        projected = [row for group in native_config_delivery_groups(actor) for row in group['menus']
+                     if row['menu_xmlid'] == menu_xmlid]
+        self.assertEqual(len(projected), 1)
+        self.assertEqual(projected[0]['entry_target']['route'], '/s/enterprise.setup')
+        self.assertEqual(projected[0]['entry_target']['type'], 'admin_surface')
+        ordinary_actor = actor(user=self._subject('general_user').id)
+        self.assertNotIn(menu.id, ordinary_actor['ir.ui.menu']._visible_menu_ids())
         diagnose = EnterpriseReadinessDiagnosisGetHandler(actor)
         def rules():
             result = diagnose.handle({'company_id': company.id})
@@ -97,6 +108,10 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.env['sc.scene.company.enablement'].create({'company_id': company.id, 'scene_key': 'enterprise.setup', 'enabled': True})
         self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
         activation = ScenarioActivationSetHandler(actor)
+        from odoo.addons.smart_core.security.intent_authorization import authorize_intent
+        self.assertTrue(authorize_intent(actor, 'scenario.activation.set', {})['allowed'])
+        with self.assertRaises(AccessError):
+            authorize_intent(actor(user=user.id), 'scenario.activation.set', {})
         params = {'company_id': company.id, 'scene_key': 'project.management', 'enablement_scope': 'business.v1'}
         self.assertTrue(activation.handle({**params, 'enabled': True})['ok'])
         enabled = rules()

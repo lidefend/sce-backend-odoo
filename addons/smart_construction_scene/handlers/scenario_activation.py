@@ -95,6 +95,7 @@ class ScenarioActivationCatalogGetHandler(BaseIntentHandler):
 
 class ScenarioActivationSetHandler(BaseIntentHandler):
     INTENT_TYPE = "scenario.activation.set"
+    REQUIRED_GROUPS = ["smart_construction_core.group_sc_cap_business_config_admin"]
     DESCRIPTION = "企业场景启用/停用"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
