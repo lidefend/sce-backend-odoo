@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { permitsInventoryRequest as allow } from './bootstrap_inventory_policy.mjs';
+test('activation journey permits only the exact captured company and scenario', () => {
+  const scope = { company_id: 7, scene_key: 'project.management' };
+  const params = { ...scope, enablement_scope: 'business.v1', enabled: true };
+  const request = value => ({ intent: 'scenario.activation.set', params: value });
+  assert.equal(allow('POST', '/api/v1/intent', request(params), true), false);
+  for (const enabled of [true, false]) assert.equal(allow('POST', '/api/v1/intent', request({ ...params, enabled }), true, scope), true);
+  for (const delta of [{ company_id: 8 }, { scene_key: 'other' }, { enablement_scope: 'scene_entry.v1' }, { enabled: 'false' }]) {
+    assert.equal(allow('POST', '/api/v1/intent', request({ ...params, ...delta }), true, scope), false);
+  }
+});
 test('known startup and read intents permitted', () => {
   for (const intent of ['login', 'system.init', 'ui.contract.v2', 'my.work.summary', 'user.view.preference.get', 'ui.business_config.coverage.scan']) assert.equal(allow('POST', '/api/v1/intent', { intent }), true);
 });

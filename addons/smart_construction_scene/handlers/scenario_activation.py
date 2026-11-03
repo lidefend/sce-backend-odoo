@@ -84,8 +84,8 @@ class ScenarioActivationCatalogGetHandler(BaseIntentHandler):
         "no_business_fact_authority": True,
     }
 
-    def handle(self, payload=None, ctx=None):
-        params = payload or self.params or {}
+    def handle(self, params=None, ctx=None):
+        params = params if params is not None else self.params or {}
         company_id, error = _resolve_request_company(self.env, params)
         if error:
             return {"ok": False, "error": error}
@@ -95,6 +95,7 @@ class ScenarioActivationCatalogGetHandler(BaseIntentHandler):
 
 class ScenarioActivationSetHandler(BaseIntentHandler):
     INTENT_TYPE = "scenario.activation.set"
+    REQUIRED_GROUPS = ["smart_construction_core.group_sc_cap_business_config_admin"]
     DESCRIPTION = "企业场景启用/停用"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
@@ -105,8 +106,8 @@ class ScenarioActivationSetHandler(BaseIntentHandler):
         "no_business_fact_authority": True,
     }
 
-    def handle(self, payload=None, ctx=None):
-        params = payload if payload is not None else self.params
+    def handle(self, params=None, ctx=None):
+        params = params if params is not None else self.params
         if not isinstance(params, dict):
             return {"ok": False, "error": {"code": 400, "message": "invalid activation parameters"}}
         # Mutations require explicit JSON booleans. In particular, "false" is
@@ -182,7 +183,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
         "no_business_fact_authority": True,
     }
 
-    def handle(self, payload=None, ctx=None):
+    def handle(self, params=None, ctx=None):
         from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
             list_scene_entries,
         )
@@ -193,7 +194,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
             project_workspace_scenes,
         )
 
-        params = payload or self.params or {}
+        params = params if params is not None else self.params or {}
         company_id, error = _resolve_request_company(self.env, params)
         if error:
             return {"ok": False, "error": error}

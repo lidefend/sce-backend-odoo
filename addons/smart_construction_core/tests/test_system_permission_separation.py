@@ -65,9 +65,23 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         from odoo.addons.smart_construction_scene.handlers.scenario_activation import ScenarioActivationSetHandler
         company = self.env.company
         actor = self.env['res.company'].with_user(self.manager).with_context(allowed_company_ids=company.ids).env
+        from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
+        menu_xmlid = 'smart_construction_core.menu_sc_enterprise_initialization'
+        menu = self.env.ref(menu_xmlid)
+        self.assertIn(menu.id, actor['ir.ui.menu']._visible_menu_ids())
+        projected = [row for group in native_config_delivery_groups(actor) for row in group['menus']
+                     if row['menu_xmlid'] == menu_xmlid]
+        self.assertEqual(len(projected), 1)
+        self.assertEqual(projected[0]['entry_target']['route'], '/s/enterprise.setup')
+        self.assertEqual(projected[0]['entry_target']['type'], 'admin_surface')
+        self.assertEqual(projected[0]['entry_target']['delivery_scope'], 'configuration')
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, menu_publication_decision
+        self.assertTrue(menu_publication_decision(published_route_authority(actor), menu.id, menu.action.id))
+        ordinary_actor = actor(user=self._subject('general_user').id)
+        self.assertNotIn(menu.id, ordinary_actor['ir.ui.menu']._visible_menu_ids())
         diagnose = EnterpriseReadinessDiagnosisGetHandler(actor)
         def rules():
-            result = diagnose.handle({'company_id': company.id})
+            result = diagnose.run(payload={'intent': 'enterprise.readiness.diagnosis.get', 'params': {'company_id': company.id}})
             self.assertTrue(result['ok'], result)
             self.assertEqual(result['data']['contract_version'], 'enterprise_readiness.v2')
             self.assertEqual(result['data']['company_id'], company.id)
@@ -97,15 +111,19 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.env['sc.scene.company.enablement'].create({'company_id': company.id, 'scene_key': 'enterprise.setup', 'enabled': True})
         self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
         activation = ScenarioActivationSetHandler(actor)
+        from odoo.addons.smart_core.security.intent_authorization import authorize_intent
+        self.assertTrue(authorize_intent(actor, 'scenario.activation.set', {})['allowed'])
+        with self.assertRaises(AccessError):
+            authorize_intent(actor(user=user.id), 'scenario.activation.set', {})
         params = {'company_id': company.id, 'scene_key': 'project.management', 'enablement_scope': 'business.v1'}
-        self.assertTrue(activation.handle({**params, 'enabled': True})['ok'])
+        self.assertTrue(activation.run(payload={'intent': 'scenario.activation.set', 'params': {**params, 'enabled': True}})['ok'])
         enabled = rules()
         self.assertEqual(enabled['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 1)
         self.assertTrue(enabled['enterprise.project_responsibility']['applicability'])
         self.assertEqual(enabled['enterprise.project_responsibility']['remediation']['key'], 'smart_construction_core.action_sc_product_data_permission_v1')
         self.assertEqual(enabled['enterprise.scenario_dependencies']['status'], 'NOT_EVALUATED')
         self.assertEqual(enabled['enterprise.role_delivery']['status'], 'NOT_EVALUATED')
-        self.assertTrue(activation.handle({**params, 'enabled': False})['ok'])
+        self.assertTrue(activation.run(payload={'intent': 'scenario.activation.set', 'params': {**params, 'enabled': False}})['ok'])
         self.assertFalse(rules()['enterprise.project_responsibility']['applicability'])
         self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
         ordinary = EnterpriseReadinessDiagnosisGetHandler(actor(user=user.id))

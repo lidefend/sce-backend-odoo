@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
 from odoo.addons.smart_core.security.platform_admin import can_manage_system_configuration
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
@@ -134,6 +135,12 @@ def _action_payload(menu: Any) -> dict[str, Any]:
                 "action_xmlid": _xmlid(action),
             }
         )
+        declared_target = build_web_surface_entry_target(
+            getattr(action, "context", ""), menu_id=menu_id, action_id=action_id,
+            model=payload["model"], view_modes=payload["view_modes"],
+        )
+        if declared_target:
+            payload.update(declared_target)
     return payload
 
 

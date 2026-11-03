@@ -3,7 +3,7 @@ import { routeAuthorityContextAllowed, routeAuthorityEntries, type RouteAuthorit
 import { contractGapError } from '../app/contract/contractGap';
 
 const ADMIN_SURFACE_DECLARATION_LAYER = 'P0:smart_core:navigation_entry_target.build_web_surface_entry_target';
-const ADMIN_SURFACES = new Set(['business_config', 'menu_config']);
+const ADMIN_SURFACES = new Set(['business_config', 'menu_config', 'enterprise_initialization']);
 
 type AdminSurfaceTarget = { surface: string; route: string; rootMenuXmlid: string };
 

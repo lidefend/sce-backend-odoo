@@ -142,6 +142,29 @@ class TestActualPublicationConsumers(unittest.TestCase):
         self.assertTrue(any(expected))
         self.assertEqual([row["product_released"] for row in result["rows"]], expected)
 
+    def test_activation_request_group_gate_allows_admin_and_rejects_ordinary_user(self):
+        handlers, env = self._handlers_and_env()
+        platform = types.ModuleType('odoo.addons.smart_core.security.platform_admin')
+        platform.user_is_tenant_config_admin = lambda user: False
+        exceptions = types.ModuleType('odoo.exceptions')
+        exceptions.AccessError = type('AccessError', (Exception,), {})
+        with patch.dict(sys.modules, {platform.__name__: platform, exceptions.__name__: exceptions}):
+            policy = _load('activation_request_authorization',
+                           SCENE_DIR.parent / 'smart_core/security/intent_authorization.py')
+            operation = _load('odoo.addons.smart_core.core.intent_operation_policy',
+                             SCENE_DIR.parent / 'smart_core/core/intent_operation_policy.py')
+            # Exercise the same authorization function called before dispatch,
+            # including its write-intent declaration requirement.
+            policy.__package__ = 'odoo.addons.smart_core.security'
+            with patch.object(policy, 'registered_handlers', return_value={
+                    'scenario.activation.set': handlers.ScenarioActivationSetHandler}):
+                self.assertTrue(operation.is_write_intent('scenario.activation.set', {}))
+                env.user.has_group = lambda group: group == 'smart_construction_core.group_sc_cap_business_config_admin'
+                self.assertTrue(policy.authorize_intent(env, 'scenario.activation.set', {})['allowed'])
+                env.user.has_group = lambda group: False
+                with self.assertRaises(exceptions.AccessError):
+                    policy.authorize_intent(env, 'scenario.activation.set', {})
+
     def test_actual_catalog_actions_use_native_model_access_rights(self):
         for allowed in (False, True):
             with self.subTest(allowed=allowed):

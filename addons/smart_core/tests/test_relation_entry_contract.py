@@ -84,6 +84,17 @@ class TestRelationEntryContract(unittest.TestCase):
         self.assembler.env = {}
 
 
+    def test_relation_open_excludes_declared_web_surface_workspace_actions(self):
+        module_name = "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
+        helper = sys.modules[module_name]._relation_action_is_record_open_form
+        workspace = types.SimpleNamespace(
+            context="{'sc_web_surface': 'enterprise_initialization', 'sc_web_route': '/s/enterprise.setup'}")
+        record_form = types.SimpleNamespace(context="{'create': False, 'delete': False}")
+        self.assertFalse(helper(workspace))
+        self.assertTrue(helper(record_form))
+        self.assertTrue(helper(types.SimpleNamespace(context="")))
+
+
     def test_preference_projection_keeps_relation_denial_and_core_block(self):
         self.assembler.include_relation_search_dialogs = False
         self.assembler._build_relation_entry_map = lambda models: {

@@ -45,6 +45,40 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_native_configuration_scope_survives_route_publication(self):
+        action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
+        model = types.SimpleNamespace(sudo=lambda: model, browse=lambda value: model, exists=lambda: action)
+        service = menu_service.MenuService({'ir.actions.act_window': model})
+        base = {'menu_id': 501, 'action_id': 601, 'action_exists': True,
+                'action_model': 'ir.actions.act_window', 'menu_xmlid': 'test.setup', 'name': 'Setup'}
+        for scope, expected in [('', False), ("'sc_delivery_scope': 'configuration',", True),
+                                ("'sc_delivery_scope': 'unknown',", False)]:
+            context = "{" + scope + "'sc_web_surface': 'test', 'sc_web_route': '/s/test.setup'}"
+            with patch.object(service, '_action_is_runtime_allowed', return_value=True):
+                entry = service._route_entry_from_menu(dict(base, action_meta={'context': context}),
+                    route_kind='PRIMARY_NAV', source='native', action_xmlids={('ir.actions.act_window', 601): 'test.action'})
+            self.assertEqual(entry.get('delivery_bucket') == 'delivery_business_config', expected)
+            authority = service.filter_route_authority_by_publication({'primary_actions': [entry]},
+                filter_nodes=lambda nodes: [n for n in nodes if n['meta'].get('delivery_bucket') == 'delivery_business_config'])
+            self.assertEqual(bool(authority['primary_actions']), expected)
+            with patch.object(service, '_action_is_runtime_allowed', return_value=False):
+                self.assertIsNone(service._route_entry_from_menu(dict(base, action_meta={'context': context}),
+                    route_kind='PRIMARY_NAV', source='native'))
+
+    def test_closed_edition_retains_only_declared_native_config_surfaces(self):
+        service = menu_service.MenuService(object())
+        declared = {'menu_id': 501, 'action_id': 601, 'menu_xmlid': 'test.setup',
+                    'menu_key': 'test.setup', 'label': 'Setup', 'route': '/s/test.setup',
+                    'scene_source': 'native_business_config_menu_projection',
+                    'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.setup', 'delivery_scope': 'configuration'}}
+        ordinary = dict(declared, menu_id=502, action_id=602, menu_xmlid='test.other', menu_key='test.other', entry_target={})
+        groups = [{'group_key': 'platform.config', 'group_label': 'Configuration', 'menus': [declared, ordinary]}]
+        with patch.object(menu_service, 'native_config_delivery_groups', return_value=groups), \
+             patch.object(service, '_authorization_native_nav', return_value=[]), \
+             patch.object(service, '_native_group_config_menu_ids_by_label', return_value={}):
+            nav = service.build_nav(policy={'menu_groups': []}, role_surface=self._runtime_role_surface('business_config_admin'), native_nav=[])
+        self.assertEqual(set(service._walk_nav_action_refs(nav)), {(501, 601)})
+
     def test_web_surface_entry_target_projects_only_declared_fields(self):
         target = menu_service.build_web_surface_entry_target(
             "{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config',"

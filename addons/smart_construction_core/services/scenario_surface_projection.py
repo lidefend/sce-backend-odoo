@@ -128,7 +128,17 @@ def project_scenario_navigation(
             "tree": None,
         }
 
+    authorized_leaves = list(authorized_leaves)
     by_menu, unmapped = _group_leaves(authorized_leaves, index)
+    # Native configuration workspaces have their own authorized action
+    # declaration and lifecycle, independent of the released business catalogue.
+    native_platform = [dict(leaf) for leaf in authorized_leaves
+                       if isinstance(leaf, dict)
+                       and _text(leaf.get("menu_xmlid")) not in index
+                       and leaf.get("delivery_bucket") == "delivery_business_config"
+                       and (leaf.get("entry_target") or {}).get("delivery_scope") == "configuration"]
+    native_platform_keys = {leaf["menu_xmlid"] for leaf in native_platform}
+    unmapped = [key for key in unmapped if key not in native_platform_keys]
 
     scenario_rows: dict[str, dict[str, Any]] = {
         _text(s.get("key")): s for s in (source.get("scenarios") or []) if _text(s.get("key"))
@@ -171,8 +181,9 @@ def project_scenario_navigation(
 
     horizontal = [leaf for menu in (source.get("horizontal_work_center", {}).get("menus", []) or []) for leaf in by_menu.get(_text(menu), [])]
     platform = [leaf for menu in (source.get("platform_support", {}).get("menus", []) or []) for leaf in by_menu.get(_text(menu), [])]
+    platform = native_platform + platform
 
-    grouped_menu_count = sum(len(v) for v in by_menu.values())
+    grouped_menu_count = sum(len(v) for v in by_menu.values()) + len(native_platform)
     return {
         "ok": True,
         "tree": {
@@ -184,7 +195,7 @@ def project_scenario_navigation(
         "diagnostics": {
             "authorized_leaf_count": sum(1 for leaf in authorized_leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
             "grouped_menu_count": grouped_menu_count,
-            "grouped_leaf_count": sum(len(v) for v in by_menu.values()),
+            "grouped_leaf_count": grouped_menu_count,
             "unmapped_menu_xmlids": unmapped,
             "unmapped_count": len(unmapped),
             "domain_count": len(domains),
@@ -248,6 +259,8 @@ def flatten_authorized_nav_leaves(
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
                     "route": route,
                     "label": _text(node.get("label") or node.get("name") or carrier.get("label")),
+                    "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
+                    "entry_target": entry.get("entry_target") or meta.get("entry_target") or {},
                 })
             if children:
                 walk(children)

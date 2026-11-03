@@ -387,6 +387,8 @@ class MenuService:
         )
         if declared_target:
             entry["entry_target"] = declared_target
+            if declared_target.get("delivery_scope") == "configuration":
+                entry["delivery_bucket"] = "delivery_business_config"
         return entry
 
     def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
@@ -432,6 +434,8 @@ class MenuService:
         )
         if declared_target:
             entry["entry_target"] = declared_target
+            if declared_target.get("delivery_scope") == "configuration":
+                entry["delivery_bucket"] = "delivery_business_config"
         return entry
 
     def _denied_route_entry(self, menu_xmlid: str) -> dict | None:
@@ -2631,8 +2635,17 @@ class MenuService:
             if policy_has_menu_surface
             else self._native_preview_menus(native_nav=primary_native_nav, policy=policy)
         )
-        if self.env is not None and (is_admin or is_business_config_admin) and "menu_groups" not in policy:
-            grouped_native = native_config_delivery_groups(self.env) + list(grouped_native or [])
+        if self.env is not None and (is_admin or is_business_config_admin):
+            config_groups = native_config_delivery_groups(self.env)
+            if "menu_groups" in policy:
+                # Edition menus remain closed; independently declared native
+                # configuration surfaces are delivered from visible menu facts.
+                config_groups = [dict(group, menus=[
+                    menu for menu in group.get("menus", [])
+                    if (menu.get("entry_target") or {}).get("delivery_scope") == "configuration"
+                ]) for group in config_groups]
+                config_groups = [group for group in config_groups if group["menus"]]
+            grouped_native = config_groups + list(grouped_native or [])
         groups_by_key = {}
         group_order = []
         scene_group_map = {}

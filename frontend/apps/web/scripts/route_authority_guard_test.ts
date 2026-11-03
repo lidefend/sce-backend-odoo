@@ -260,6 +260,7 @@ assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type
 assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'business_config', route: '' } }));
 assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'unknown_surface', route: '/admin/unknown' } }));
 assert.equal(resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'menu_config', route: '/admin/menu-config' } }), '/admin/menu-config');
+assert.equal(resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'enterprise_initialization', route: '/s/enterprise.setup' } }), '/s/enterprise.setup');
 console.log('[configuration_entry_routing] PASS cases=10');
 
 import { buildLowCodeReturnQuery } from '../src/pages/contractForm/formConfigHelpers';

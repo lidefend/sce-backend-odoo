@@ -90,6 +90,10 @@ def build_web_surface_entry_target(
         "surface": surface,
         "route": route,
     }
+    # Presentation is not admission. Only an explicit native action scope
+    # declares a configuration workspace independent of business publication.
+    if declared.get("sc_delivery_scope") == "configuration":
+        entry_target["delivery_scope"] = "configuration"
     root_menu_xmlid = _text(declared.get("business_config_root_menu_xmlid"))
     if root_menu_xmlid:
         entry_target["root_menu_xmlid"] = root_menu_xmlid
