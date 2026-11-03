@@ -26,22 +26,27 @@
     "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json",
-    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "config/product_menu_contract_v1.json",
+    "scripts/release/test_locked_menu_policy_contract.py"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
   },
-  "blockers": [
-    "Owner architecture question: choose native standalone initialization menu or native handling action within system settings; no projection-owned entry permitted"
-  ],
-  "next_exact_step": "Resolve native initialization carrier choice; implement and validate that fact-layer path. Seven existing-menu projection repair retained; prototype workspace_entries withdrawn.",
+  "blockers": [],
+  "next_exact_step": "Refresh existing isolated backend/preview with corrected source and run management-only real login; no database reset or module upgrade.",
   "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
   "layer": {
     "formal_product_layer": "P1 plus P0 generic frontend consumer",
     "layer_target": "smart_construction_core scenario surface and frontend contract consumption",
     "reason": "Native authorization already supplies seven config menus; scenario projection drops them; do not change user groups or enterprise scene enablement",
-    "initialization": "P1 declares setup workspace and native model ACL prerequisites; P0 passes existing principal/scenes to extension; frontend consumes authorized route only"
+    "initialization": "P1 existing product role landing declaration and scene delivery policy; no additional permission or menu whitelist, no frontend role inference."
   },
   "observed": {
     "report": ".runtime/nav01/demo-wutao-menu-final.json",
@@ -90,6 +95,40 @@
       "management_path": "7 entries visible, enterprise.setup opened, 17-scene catalog loaded without mutation",
       "failure": "Later unrelated form inventory blocked api.onchange; do not broaden write policy",
       "next": "Explicit config-admin management-only mode retains original navigation, real catalog and no-write assertions; default full probe unchanged"
+    },
+    "current_candidate": {
+      "identity": "49fc62611 plus declared dirty first-hop delta",
+      "landing_contract": {
+        "status": "passed",
+        "count": 33,
+        "log": ".runtime/nav01/admin-entry-landing-tests-r2.log"
+      },
+      "native_projection": {
+        "status": "passed",
+        "count": 13,
+        "log": ".runtime/nav01/admin-entry-native-tests-r3.log"
+      },
+      "lifecycle": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-lifecycle-r3.log"
+      },
+      "typecheck": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-typecheck-r3.log"
+      },
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-iteration-r3.log"
+      },
+      "browser": {
+        "status": "not_run",
+        "reason": "refresh corrected artifact first"
+      }
+    },
+    "landing_first_attempt": {
+      "status": "failed",
+      "log": ".runtime/nav01/admin-entry-landing-tests.log",
+      "resolution": "Tests compared historical Python defaults instead of runtime contract overlays; verify the actual overlay, preserving exact group and precedence assertions. Project-member difference predates this delta."
     }
   },
   "checks": {},
@@ -97,7 +136,24 @@
     "decision": "ARCH-DECISION-010",
     "removed": "workspace_entries, model-ACL-generated navigation links, extra P0 extension context and frontend management_actions",
     "retained": "Projection/consumer of seven existing native configuration menus",
-    "native_carrier": "Existing system-parameter native form -> native action button -> existing enterprise.setup scene; no additional sidebar capability",
+    "native_carrier": "No new menu/action: reuse registered enterprise.setup as first-hop orchestration; native model/action permissions remain authoritative.",
     "prototype_browser_evidence": "86e/f3 prototype succeeded for management catalog but is NOT final-architecture acceptance; isolated carrier still serves that prototype until next governed refresh, daily server unchanged"
-  }
+  },
+  "validation_plan": {
+    "risk": "P1 first-hop behavior and existing management navigation; native grants and company enablement unchanged",
+    "L1_L2": [
+      "verify.role_surface.landing.contract.unit",
+      "scenario projection and parser",
+      "bootstrap policy",
+      "ci.local.iteration"
+    ],
+    "L3": "No native XML/model changes; no module upgrade needed",
+    "L4": "Existing isolated config-admin startup browser; refresh changed source and frontend only",
+    "baseline_delta": "Config administrator and existing business_full composite prefer published enterprise.setup; all roles retain workspace.home fallback; 91 capabilities unchanged"
+  },
+  "exclusions": [
+    "No account/group or business-scene enablement writes",
+    "No expansion of the 91-capability publication baseline",
+    "Historical initialization provider/XML duplication not changed in this entry-delivery repair"
+  ]
 }

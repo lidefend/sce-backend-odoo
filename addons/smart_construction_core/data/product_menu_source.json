@@ -1092,12 +1092,14 @@
             },
             "business_full": {
               "landing_scene_candidates": [
+                "enterprise.setup",
                 "workspace.home",
                 "projects.list"
               ]
             },
             "business_config_admin": {
               "landing_scene_candidates": [
+                "enterprise.setup",
                 "workspace.home",
                 "projects.list",
                 "projects.ledger",
@@ -1212,12 +1214,14 @@
             },
             "business_full": {
               "landing_scene_candidates": [
+                "enterprise.setup",
                 "workspace.home",
                 "projects.list"
               ]
             },
             "business_config_admin": {
               "landing_scene_candidates": [
+                "enterprise.setup",
                 "workspace.home",
                 "projects.list",
                 "projects.ledger",

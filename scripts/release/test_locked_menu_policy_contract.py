@@ -259,9 +259,14 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     candidates[0],
-                    "workspace.home",
-                    f"{product_key}.{role_code} first hop must be the role home surface",
+                    "enterprise.setup" if role_code in {"business_config_admin", "business_full"} else "workspace.home",
+                    f"{product_key}.{role_code} first hop must follow the released entry policy",
                 )
+            resolver = _load_identity_resolver_module().IdentityResolver()
+            for role in ("business_config_admin", "business_full"):
+                candidates = declared[role]
+                self.assertEqual(resolver._pick_landing_scene(candidates, {"enterprise.setup", "workspace.home"}), "enterprise.setup")
+                self.assertEqual(resolver._pick_landing_scene(candidates, {"workspace.home"}), "workspace.home")
             # The released role landing must never send a role to a scene the
             # published surface does not grant, which is what caused the
             # login -> access-denied first hop.
@@ -310,7 +315,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertTrue(receipt["overlaid_roles"])
         for role, candidates in declared.items():
             self.assertEqual(overrides[role]["landing_scene_candidates"], candidates, role)
-            self.assertEqual(candidates[0], "workspace.home", role)
+            self.assertEqual(candidates[0], "enterprise.setup" if role in {"business_config_admin", "business_full"} else "workspace.home", role)
         # A role the contract does not declare keeps its own declaration.
         self.assertEqual(overrides["unknown_role_kept"]["landing_scene_candidates"], ["custom.scene"])
 
@@ -343,10 +348,13 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         ):
             code_map = _code_map_landing(ROOT / relative)
             self.assertTrue(code_map, relative)
-            for role, candidates in code_map.items():
+            projected, receipt = _load_role_surface_contract_module().apply_contract_role_landing(
+                {role: {"landing_scene_candidates": candidates} for role, candidates in code_map.items()})
+            self.assertEqual(receipt["contract_status"], "ok")
+            for role in code_map:
                 self.assertIn(role, declared, f"{relative}: {role} is not declared by the contract")
                 self.assertEqual(
-                    candidates,
+                    projected[role]["landing_scene_candidates"],
                     declared[role],
                     f"{relative}: {role} landing must mirror the released contract",
                 )
@@ -357,23 +365,29 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         resolution = CONTRACT.role_catalog_resolution(contract)
         policy = _load_policy_maps_module()
 
+        projected, receipt = _load_role_catalog_contract_module().apply_contract_role_catalog({
+            "role_groups_explicit": policy.ROLE_GROUPS_EXPLICIT,
+            "role_groups_capability_fallback": policy.ROLE_GROUPS_CAPABILITY_FALLBACK,
+            "role_precedence": policy.ROLE_PRECEDENCE,
+        })
+        self.assertEqual(receipt["contract_status"], "ok")
         for role, groups in resolution["bindings"].items():
             with self.subTest(role=role):
                 self.assertEqual(
-                    sorted(policy.ROLE_GROUPS_EXPLICIT.get(role) or ()),
+                    sorted(projected["role_groups_explicit"].get(role) or ()),
                     sorted(groups),
                     f"{role} group binding must be declared by the contract",
                 )
-        declared_order = [role for role in resolution["precedence"] if role in policy.ROLE_PRECEDENCE]
+        declared_order = [role for role in resolution["precedence"] if role in projected["role_precedence"]]
         self.assertEqual(
             declared_order,
-            [role for role in policy.ROLE_PRECEDENCE if role in set(resolution["bindings"])],
+            [role for role in projected["role_precedence"] if role in set(resolution["bindings"])],
             "role precedence must follow the contract catalog order, not a code literal",
         )
         for role, groups in resolution["capability_groups"].items():
             with self.subTest(role=f"capability:{role}"):
                 self.assertEqual(
-                    sorted(policy.ROLE_GROUPS_CAPABILITY_FALLBACK.get(role) or ()),
+                    sorted(projected["role_groups_capability_fallback"].get(role) or ()),
                     sorted(groups),
                     f"{role} capability fallback must be declared by the contract",
                 )

@@ -182,10 +182,10 @@ Generated from repository source files. This report is informational during the 
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
+| 899 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
-| 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 882 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
