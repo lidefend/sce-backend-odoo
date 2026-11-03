@@ -106,6 +106,7 @@
     "scripts/verify/frontend_menu_navigation_diagnostic.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_daily_acceptance_fixture_lane.py"
   ],
   "environment": {
@@ -117,7 +118,7 @@
     "Owner independent review of final candidate pending",
     "Current-candidate remote required CI and protected merge pending"
   ],
-  "next_exact_step": "Generate final evidence; commit only run/generated reports; carry unchanged runtime suites with registered input fingerprints; run exact-head Quick once; request owner independent review, archive and publish through governed Make.",
+  "next_exact_step": "Freeze registration-only correction, carry unchanged runtime suites, run exact-head Quick, preserve owner approval of 94750dab8 and obtain review of small registration delta for final fingerprint before governed publication.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -248,6 +249,21 @@
     "batch_author_check": {
       "status": "passed",
       "scope": "Scoped native default-deny/company lifecycle plus frontend actual-store lifecycle tests and list/relation consumers. Desktop screenshot inspected. Not independent review or whole-product delivery."
+    },
+    "quick_94750dab8": {
+      "status": "failed",
+      "log": ".runtime/nav01/final-quick.log",
+      "reason": "New acceptance_business_scene_lifecycle tag executed by existing fixture ORM entry but not dispositioned in test coverage registry; P4 registration omission, no product/runtime failure"
+    },
+    "coverage_registration": {
+      "status": "passed",
+      "tests": 18,
+      "log": ".runtime/nav01/coverage-registration-test-r2.log",
+      "scope": "Existing managed fixture ORM entry registered as on-demand; no assertion or gate removed"
+    },
+    "final_freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/nav01/coverage-freeze-prepare.log"
     }
   },
   "checks": {
@@ -275,10 +291,8 @@
   },
   "scope_delta": {
     "layer": "P4",
-    "module": "existing acceptance menu diagnostic and run metadata",
-    "reason": "Confirmed BUSINESS_SCENARIO_NOT_ENABLED with zero company states. Explicit synthetic enterprise scenario choices in existing fixture only; never modify product default deny.",
-    "risk": "read-only registered acceptance transaction",
-    "validation": "P4 fixture changes: 40 offline tests, 6 native ORM tests (3 new), exact candidate HTTP contract, 18 browser list combinations and relation roundtrip passed. Final metadata-only changes use registered evidence carry-forward, no product/runtime input change.",
-    "rollback": "Revert diagnostic-only diff; transaction always rolls back"
+    "reason": "Register native lifecycle tag already executed (3 cases in 6-test fixture ORM suite); no product/test implementation/runtime changes",
+    "risk": "coverage metadata only",
+    "validation": "coverage audit then generated preflight and new exact-head Quick; unchanged runtime suite input fingerprints must pass carry-forward"
   }
 }

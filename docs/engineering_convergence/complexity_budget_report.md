@@ -69,8 +69,8 @@ Generated from repository source files. This report is informational during the 
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1644 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1635 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1628 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
-| 1625 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1622 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
@@ -297,8 +297,8 @@ Generated from repository source files. This report is informational during the 
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1644 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1635 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1628 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
-| 1625 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1622 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |

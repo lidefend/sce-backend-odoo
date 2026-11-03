@@ -520,7 +520,8 @@
       "owner": "construction-product",
       "evidence": [
         "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "acceptance_fixture_data_space",
