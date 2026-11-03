@@ -327,7 +327,8 @@
       "daily": "unchanged, user-reported failure confirmed",
       "independent_review": "pending_owner",
       "no_full_quick": "incremental policy; no frontend application changes",
-      "architecture_resolution": "Explicit sc_delivery_scope=configuration on native action, distinct from sc_web_route. Same declaration feeds native config navigation and route publication classification; business catalogue unchanged. Native authorization remains mandatory."
+      "architecture_resolution": "Explicit sc_delivery_scope=configuration on native action, distinct from sc_web_route. Same declaration feeds native config navigation and route publication classification; business catalogue unchanged. Native authorization remains mandatory.",
+      "dispatch_fix": "Actual browser now reaches persistent menu and passes authorization, but activation returned 400 because payload-named handlers received outer envelope. P1 handlers now use BaseIntentHandler params mapping; ORM journey invokes run() with actual envelope."
     }
   },
   "checks": {},

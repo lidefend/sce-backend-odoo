@@ -25,8 +25,8 @@ class EnterpriseReadinessDiagnosisGetHandler(BaseIntentHandler):
         "no_business_fact_authority": True,
     }
 
-    def handle(self, payload=None, ctx=None):
-        params = payload or self.params or {}
+    def handle(self, params=None, ctx=None):
+        params = params if params is not None else self.params or {}
         from odoo.addons.smart_construction_scene.services.workspace_scenario_projection import (
             resolve_request_company, bind_company_context,
         )

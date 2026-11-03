@@ -81,7 +81,7 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.assertNotIn(menu.id, ordinary_actor['ir.ui.menu']._visible_menu_ids())
         diagnose = EnterpriseReadinessDiagnosisGetHandler(actor)
         def rules():
-            result = diagnose.handle({'company_id': company.id})
+            result = diagnose.run(payload={'intent': 'enterprise.readiness.diagnosis.get', 'params': {'company_id': company.id}})
             self.assertTrue(result['ok'], result)
             self.assertEqual(result['data']['contract_version'], 'enterprise_readiness.v2')
             self.assertEqual(result['data']['company_id'], company.id)
@@ -116,14 +116,14 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         with self.assertRaises(AccessError):
             authorize_intent(actor(user=user.id), 'scenario.activation.set', {})
         params = {'company_id': company.id, 'scene_key': 'project.management', 'enablement_scope': 'business.v1'}
-        self.assertTrue(activation.handle({**params, 'enabled': True})['ok'])
+        self.assertTrue(activation.run(payload={'intent': 'scenario.activation.set', 'params': {**params, 'enabled': True}})['ok'])
         enabled = rules()
         self.assertEqual(enabled['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 1)
         self.assertTrue(enabled['enterprise.project_responsibility']['applicability'])
         self.assertEqual(enabled['enterprise.project_responsibility']['remediation']['key'], 'smart_construction_core.action_sc_product_data_permission_v1')
         self.assertEqual(enabled['enterprise.scenario_dependencies']['status'], 'NOT_EVALUATED')
         self.assertEqual(enabled['enterprise.role_delivery']['status'], 'NOT_EVALUATED')
-        self.assertTrue(activation.handle({**params, 'enabled': False})['ok'])
+        self.assertTrue(activation.run(payload={'intent': 'scenario.activation.set', 'params': {**params, 'enabled': False}})['ok'])
         self.assertFalse(rules()['enterprise.project_responsibility']['applicability'])
         self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
         ordinary = EnterpriseReadinessDiagnosisGetHandler(actor(user=user.id))
