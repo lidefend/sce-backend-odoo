@@ -99,13 +99,37 @@
     "scripts/verify/fact_layer_authority_guard.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
-    "frontend/apps/web/src/stores/navigationProjectionActions.ts"
+    "frontend/apps/web/src/stores/navigationProjectionActions.ts",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+    "scripts/test/frontend_acceptance_fixture_orm.sh"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "Existing worktree and Make validation; no runtime mutation"
+    "kind": "runtime",
+    "authority": "Existing local isolated acceptance profile only; sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082; readonly diagnosis, unchanged backend ce5140cdc8cd2cb13e51d58a95fab0e387520186; persistent dev untouched"
   },
-  "checks": {
+  "blockers": [
+    "Runtime contract HTTP403 requires authoritative denial diagnosis",
+    "Affected browser acceptance pending",
+    "Owner independent review and current candidate remote CI pending"
+  ],
+  "next_exact_step": "Provision diagnostic candidate in existing acceptance profile, reconcile fixture-owned scene choices, run 3 added ORM lifecycle cases and exact runtime contract; no final Quick while runtime defect unresolved.",
+  "layer": {
+    "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
+    "standard_vs_user_specific": "standard product",
+    "why_here": "P1 owns scene and native group facts; P0 consumes contracts",
+    "why_not_elsewhere": "No role-menu whitelist or P4 product policy",
+    "blast_radius": "Native menu/group publication, company enablement, startup route authority and homepage; preserve merged CI code"
+  },
+  "source_checkpoint": "d89a310fd1a3c56bc0a995b1e10dcb06fc7c5adc",
+  "source_worktree": "/home/lidefend/workspace/sce-backend-odoo-pc01",
+  "excluded": "Historical environment redesign, deployment tools and hundreds of audit documents; source tree preserved",
+  "validation_adjustment": "Historical imported authority guard incorrectly treated native field groups as role-menu lists; restrict carrier check to native menus/actions/view access bindings, preserving field ACL facts. New tests required. Wire new checks into both existing lanes, do not relax coverage baseline.",
+  "product_status": "Implementation and targeted integration checks passed; not batch/user acceptance or mainline merged.",
+  "observed_results": {
     "iteration": {
       "status": "passed",
       "log": ".runtime/nav01/integration-iteration-r3.log"
@@ -149,24 +173,69 @@
       "typecheck": ".runtime/nav01/integration-extract-typecheck-r2.log",
       "complexity": ".runtime/nav01/integration-extract-complexity-r2.log",
       "freeze_prepare": ".runtime/nav01/integration-extract-freeze.log"
+    },
+    "quick_ce5140": {
+      "status": "passed",
+      "head": "ce5140cdc8cd2cb13e51d58a95fab0e387520186",
+      "log": ".runtime/nav01/integration-quick-r4.log"
+    },
+    "runtime_contract_ce5140": {
+      "status": "failed",
+      "log": ".runtime/nav01/integration-contract-receipt.log",
+      "reason": "Correct actor/company/source; HTTP403; denial reason not captured; diagnose before fixture or product changes"
+    },
+    "route_diagnostic": {
+      "status": "passed",
+      "log": ".runtime/nav01/business-route-diagnostic-r2.log",
+      "reason": "Native authority denies payment request BUSINESS_SCENARIO_NOT_ENABLED; company_states empty. Fixed obsolete numeric config-admin uid assertion."
+    },
+    "fixture_unit": {
+      "status": "passed",
+      "tests": 40,
+      "log": ".runtime/nav01/fixture-business-scenes-unit-r2.log",
+      "notes": "Two stale existing assertions updated to mainline: both declarations bind runtime context; daily database derives from registered serving duty. Production rules unchanged."
+    },
+    "fixture_native_authority": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-native-authority.log",
+      "fixture_tests": 40,
+      "projection_tests": 12,
+      "internal_action_tests": 3
+    },
+    "fixture_iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/fixture-iteration-r2.log"
     }
   },
-  "blockers": [
-    "Replacement exact-head Quick pending",
-    "Candidate-bound runtime contract and browser/role acceptance pending",
-    "Owner independent review and current-head remote CI required before merge"
-  ],
-  "next_exact_step": "Run exact-head Quick for refactored candidate, then governed browser acceptance and owner independent review.",
-  "layer": {
-    "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
-    "standard_vs_user_specific": "standard product",
-    "why_here": "P1 owns scene and native group facts; P0 consumes contracts",
-    "why_not_elsewhere": "No role-menu whitelist or P4 product policy",
-    "blast_radius": "Native menu/group publication, company enablement, startup route authority and homepage; preserve merged CI code"
+  "checks": {
+    "native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/fact_layer_authority_guard.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/ops/test_scene_internal_action_authority.py",
+        "addons/smart_core/core/scene_internal_action_authority.py",
+        "make/frontend.mk",
+        "addons/smart_construction_acceptance_fixture",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/dev.mk"
+      ]
+    }
   },
-  "source_checkpoint": "d89a310fd1a3c56bc0a995b1e10dcb06fc7c5adc",
-  "source_worktree": "/home/lidefend/workspace/sce-backend-odoo-pc01",
-  "excluded": "Historical environment redesign, deployment tools and hundreds of audit documents; source tree preserved",
-  "validation_adjustment": "Historical imported authority guard incorrectly treated native field groups as role-menu lists; restrict carrier check to native menus/actions/view access bindings, preserving field ACL facts. New tests required. Wire new checks into both existing lanes, do not relax coverage baseline.",
-  "product_status": "Implementation and targeted integration checks passed; not batch/user acceptance or mainline merged."
+  "scope_delta": {
+    "layer": "P4",
+    "module": "existing acceptance menu diagnostic and run metadata",
+    "reason": "Confirmed BUSINESS_SCENARIO_NOT_ENABLED with zero company states. Explicit synthetic enterprise scenario choices in existing fixture only; never modify product default deny.",
+    "risk": "read-only registered acceptance transaction",
+    "validation": "L1 fixture scope/ownership/activation tests then existing isolated fixture and contract/readback. Previous product source unchanged; fixture inputs changed invalidate runtime acceptance.",
+    "rollback": "Revert diagnostic-only diff; transaction always rolls back"
+  }
 }

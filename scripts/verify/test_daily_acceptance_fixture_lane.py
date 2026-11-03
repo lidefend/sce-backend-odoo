@@ -18,7 +18,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
     DAILY_DEV_DB,
@@ -29,6 +29,7 @@ from addons.smart_construction_acceptance_fixture.tools.frontend_productization_
     _activity_move,
     _company,
     _guard_acceptance_scope,
+    _ensure_business_scenarios,
     _reconcile_activity_move,
     _resolve_existing_fixture_company,
 )
@@ -47,6 +48,59 @@ ACCEPTANCE_DECLARATION = ROOT / "config" / "acceptance" / "backend_contract_inst
 DAILY_DECLARATION = ROOT / "config" / "acceptance" / "backend_contract_instance_daily_v1.json"
 DAILY_FIXTURE_SCRIPT = ROOT / "scripts" / "dev" / "daily_dev_acceptance_fixture.sh"
 CANONICAL_FIXTURE_SCRIPT = ROOT / "scripts" / "test" / "frontend_productization_fixture.sh"
+
+
+class FixtureBusinessScenarioTest(unittest.TestCase):
+    def setUp(self):
+        self.env = Mock()
+        self.env.ref.return_value = False
+        self.company = types.SimpleNamespace(id=23)
+        self.guard = patch(FIXTURE_MODULE + '._guard_acceptance_scope').start()
+        self.owner = patch(FIXTURE_MODULE + '._fixture_owns_company', return_value=True).start()
+        self.upsert = patch(FIXTURE_MODULE + '._upsert').start()
+        self.addCleanup(patch.stopall)
+        patch(FIXTURE_MODULE + '.FIXTURE_BUSINESS_SCENARIOS', ('payment.capital',)).start()
+        self.record = types.SimpleNamespace(enabled=False, company_id=self.company,
+                                            scene_key='business.v1:payment.capital')
+        self.record.set_enabled = Mock(side_effect=lambda value: setattr(self.record, 'enabled', value))
+        self.upsert.return_value = self.record
+
+    def test_scope_denial_precedes_company_lookup_or_write(self):
+        self.guard.side_effect = RuntimeError('wrong scope')
+        with self.assertRaisesRegex(RuntimeError, 'wrong scope'):
+            _ensure_business_scenarios(self.env, [self.company])
+        self.owner.assert_not_called()
+        self.upsert.assert_not_called()
+
+    def test_foreign_company_denies_entire_batch_before_write(self):
+        self.owner.side_effect = [True, False]
+        with self.assertRaisesRegex(RuntimeError, 'fixture-owned'):
+            _ensure_business_scenarios(self.env, [self.company, types.SimpleNamespace(id=24)])
+        self.upsert.assert_not_called()
+
+    def test_misbound_scene_xmlid_is_not_adopted(self):
+        self.env.ref.return_value = types.SimpleNamespace(
+            _name='sc.scene.company.enablement', company_id=types.SimpleNamespace(id=24),
+            scene_key='business.v1:payment.capital')
+        with self.assertRaisesRegex(RuntimeError, 'identity mismatch'):
+            _ensure_business_scenarios(self.env, [self.company])
+        self.upsert.assert_not_called()
+
+    def test_native_enablement_and_readback_are_required(self):
+        self.assertEqual(_ensure_business_scenarios(self.env, [self.company]), 1)
+        self.record.set_enabled.assert_called_once_with(True)
+        values = self.upsert.call_args.args[-1]
+        self.assertNotIn('enabled', values)  # native API owns publication validation
+        self.assertEqual(values['company_id'], 23)
+        self.record.enabled = False
+        self.record.set_enabled.side_effect = None
+        with self.assertRaisesRegex(RuntimeError, 'readback failed'):
+            _ensure_business_scenarios(self.env, [self.company])
+
+    def test_unreleased_native_scene_refusal_is_not_swallowed(self):
+        self.record.set_enabled.side_effect = RuntimeError('not released')
+        with self.assertRaisesRegex(RuntimeError, 'not released'):
+            _ensure_business_scenarios(self.env, [self.company])
 
 
 class _Cursor:
@@ -164,18 +218,10 @@ class DailyDeclarationTests(unittest.TestCase):
         self.assertEqual(daily["required_checks"], acceptance["required_checks"])
         self.assertEqual(daily["resolution"], acceptance["resolution"])
         self.assertEqual(daily["account"], acceptance["account"])
-        # The daily instance mirrors the acceptance request binding exactly, plus
-        # the one declared daily-only derived key the probe consumes verbatim.
-        # The released record page replays the runtime-declared record context
-        # into params.context and the sealed contract echoes it, so the daily
-        # instance must bind that source; the shared instance stays without it.
-        daily_only = set(daily["request"]) - set(acceptance["request"])
-        self.assertEqual(daily_only, {"params_context_from"})
-        self.assertTrue(str(daily["request"]["params_context_from"]).strip())
-        self.assertEqual(
-            {key: value for key, value in daily["request"].items() if key not in daily_only},
-            acceptance["request"],
-        )
+        # Both entry profiles now replay the runtime-declared record context.
+        self.assertEqual(daily["request"], acceptance["request"])
+        self.assertEqual(daily["request"]["params_context_from"],
+                         "system.init.record_context.request_context")
 
     def test_daily_declaration_schema_asset_exists(self) -> None:
         _, daily = self._declarations()
@@ -211,7 +257,16 @@ class DailyLaneWiringTests(unittest.TestCase):
     def test_defaults_point_at_the_daily_declaration_and_require_the_contract(self) -> None:
         self.assertIn("DAILY_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_daily_v1.json", self.text)
         self.assertIn("DAILY_ACCEPTANCE_REQUIRE_CONTRACT ?= 1", self.text)
-        self.assertIn("DAILY_DEV_ACCEPTANCE_DB ?= sc_demo", self.text)
+        import subprocess
+        entry = json.loads((ROOT / "config/ops/daily_runtime_entry.v1.json").read_text())
+        duties = json.loads((ROOT / "config/ops/daily_runtime_database_duties.v1.json").read_text())["duties"]
+        expected = next(row["database"] for row in duties
+                        if row["duty"] == entry["public_entry"]["serving_duty"])
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-f", "make/dev.mk", "--eval",
+             "fixture-db-readback:\n\t@echo $(DAILY_DEV_ACCEPTANCE_DB)", "fixture-db-readback"],
+            cwd=ROOT, text=True, capture_output=True, check=True)
+        self.assertEqual(result.stdout.strip(), expected)
 
     def test_fixture_ensure_binds_the_daily_database_and_requires_confirmation(self) -> None:
         recipe = "\n".join(_make_recipe(self.text, "daily.dev.acceptance_fixture.ensure"))

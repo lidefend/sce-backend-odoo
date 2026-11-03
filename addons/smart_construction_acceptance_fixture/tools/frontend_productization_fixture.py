@@ -32,6 +32,45 @@ FIXTURE_SCOPES = {
 }
 FIXTURE_SCOPE_ENV = "SC_ACCEPTANCE_FIXTURE_SCOPE"
 
+# Explicit choices of the synthetic acceptance enterprises, not a product
+# default or a role/menu authorization list. New product scenarios are NOT
+# automatically opted into by this fixture.
+FIXTURE_BUSINESS_SCENARIOS = (
+    "governance.organization", "project.management", "contract.performance",
+    "cost.budget", "procurement.supplier", "material.management",
+    "subcontract.management", "labor.management", "quality.management",
+    "safety.management", "payment.capital", "receipt.payment.ledger",
+    "tax.management", "accounting.management", "analytics.decision",
+    "equipment.management", "administration.office",
+)
+
+
+def _ensure_business_scenarios(env, companies):
+    """Apply fixture-owned enterprise choices through the native model API."""
+    _guard_acceptance_scope(env)
+    plan = []
+    for company in companies:
+        if not _fixture_owns_company(env, company):
+            raise RuntimeError("business scenario setup requires a fixture-owned company")
+        for key in FIXTURE_BUSINESS_SCENARIOS:
+            scene_key = "business.v1:" + key
+            xmlid = "fe_business_scene_%s_%s" % (company.id, key.replace(".", "_"))
+            existing = env.ref(MODULE + "." + xmlid, raise_if_not_found=False)
+            if existing and (existing._name != "sc.scene.company.enablement"
+                             or existing.company_id.id != company.id
+                             or existing.scene_key != scene_key):
+                raise RuntimeError("fixture scene identity mismatch: " + xmlid)
+            plan.append((company, scene_key, xmlid))
+    for company, scene_key, xmlid in plan:
+        record = _upsert(env, "sc.scene.company.enablement", xmlid,
+                         [("company_id", "=", company.id), ("scene_key", "=", scene_key)],
+                         {"company_id": company.id, "scene_key": scene_key,
+                          "provenance": MODULE})
+        record.set_enabled(True)
+        if not record.enabled or record.company_id.id != company.id or record.scene_key != scene_key:
+            raise RuntimeError("fixture business scene readback failed: " + xmlid)
+    return len(plan)
+
 # Dedicated carrier for the project lifecycle browser acceptance.
 #
 # The 项目启停管理 entry walks the declared project ladder from `draft` to its
@@ -1294,6 +1333,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
 
     company_a = _company(env, "A")
     company_b = _company(env, "B")
+    _ensure_business_scenarios(env, (company_a, company_b))
     activity_company = company_a
     activity_journal = _activity_journal(env, activity_company)
 

@@ -19,7 +19,7 @@ source "$ROOT_DIR/scripts/_lib/common.sh"
 # nothing. This entry runs the same tag on the governed acceptance carrier, where
 # the module is installed and the freeze it pins is actually exercised.
 MODULE=smart_construction_acceptance_fixture
-TEST_TAGS=acceptance_fixture_execution_freeze
+TEST_TAGS=acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle
 TEST_TAGS_FINAL="$(normalize_test_tags "${MODULE}" "${TEST_TAGS}")"
 export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA
 
