@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "NAV01-DAILY-DEPLOY-20261103",
+  "branch": "fix/daily-main-namespace-delivery-20261103",
+  "baseline_sha": "aa28f842e778eb38541920d73cb67a60c1e72132",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NAV01-DAILY-DEPLOY-20261103.yaml",
+  "record": ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NAV01-DAILY-DEPLOY-20261103.yaml",
+    ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
+    "config/ops/daily_runtime_duty_stack.env",
+    "config/ops/daily_runtime_duty_stack.yml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/verify/daily_runtime_entry_guard.py",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered daily demo/platform_control duties on sc-root; declared credentials and storage"
+  },
+  "checks": {},
+  "blockers": [
+    "Deployment restored and verified; P4 namespace binding repair needs independent review and mainline integration."
+  ],
+  "next_exact_step": "Validate changed list/relation probes on existing isolated carrier; independent review of combined candidate then protected PR integration.",
+  "live_state_file": ".runtime/nav01/integration-state.json",
+  "results": {
+    "deployment": "daily demo/platform_control passed final entry verification",
+    "business_source": "aa28f842e778eb38541920d73cb67a60c1e72132",
+    "tool_tests": {
+      "entry": 65,
+      "entry_verify": 32,
+      "duty": 168
+    },
+    "iteration": "passed",
+    "original_failure": ".runtime/nav01/daily-duty-refresh.json",
+    "recovery": ".runtime/nav01/daily-duty-refresh-fixed.json",
+    "final_entry": ".runtime/nav01/daily-entry-final.json",
+    "published_face": ".runtime/nav01/daily-published-face.json",
+    "db_recovery_points": ".runtime/nav01/daily-duty-upgrade.json",
+    "runtime_repair": "Corrected local P4 renderer applied through governed Make; remote Git tree remains unchanged at deployed main."
+  },
+  "local_closeout": {
+    "scope_reconciliation": "Include the two reports refreshed by the governed pre-commit hook; no runtime/source changes",
+    "workspace_status": "All six existing worktrees clean before metadata reconciliation",
+    "preserved_p4": "0c5ea32aee9b6b6bfae5caa8f67760fb9377edb3; five probe paths still require affected browser verification",
+    "deployment": "aa28f842e778eb38541920d73cb67a60c1e72132 verified; no deployment replay",
+    "review": "Independent review pending; local closeout is not a review approval"
+  },
+  "p4_probe_closeout": {
+    "source": "0c5ea32aee9b6b6bfae5caa8f67760fb9377edb3",
+    "base": "fc35807dc0e0960336f671878d2f6d8be8c618a7",
+    "current_main": "aa28f842e778eb38541920d73cb67a60c1e72132",
+    "paths": [
+      "scripts/verify/frontend_authenticated_intent.mjs",
+      "scripts/verify/frontend_list_surface_structure_browser.mjs",
+      "scripts/verify/record_relation_roundtrip_acceptance.js",
+      "scripts/verify/test_frontend_delivery_hardening_guard.py",
+      "scripts/verify/test_frontend_probe_toolchain_guard.py"
+    ],
+    "transfer": "All five old base blobs equal current main blobs; exact retained source blobs copied, no three-way conflict resolution",
+    "why_same_candidate": "Owner requested both remaining P4 items closed; current integration worktree has exact main product base, existing registered acceptance carrier and no overlapping source paths",
+    "environment": "Existing isolated local acceptance profile only; daily server unchanged",
+    "validation": "Affected login and list/relation probes require actual browser execution; old product probe receipts not reused",
+    "offline_results": {
+      "hardening_guard": "passed; 15 toolchain tests",
+      ".runtime/nav01/two-items-auth-unit.log": "33 passed",
+      "iteration": ".runtime/nav01/two-items-iteration.log"
+    },
+    "runtime_preflight": "Old f988 carrier denied because two addon test inputs differ from main; preserve failure log. Refresh existing isolated backend once at frozen candidate, without database rebuild or fixture reset."
+  }
+}

@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: NAV01-DAILY-DEPLOY-20261103
+  status: active
+  formal_product_layer: P4
+  objective: Deploy reviewed main to daily server and close namespace delivery binding defect.

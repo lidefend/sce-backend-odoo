@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { authenticateBrowserProbe } from './frontend_authenticated_intent.mjs';
+import { authenticateBrowserProbe, fillLoginCredentials } from './frontend_authenticated_intent.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { launchAcceptanceChromium } from './playwright_runtime.mjs';
@@ -158,8 +158,7 @@ const authenticatedProbes = new WeakMap();
 async function login(page, navigation) {
   authenticatedProbes.delete(page);
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.locator('#login-username, input[autocomplete="username"]').first().fill(LOGIN);
-  await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
+  await fillLoginCredentials(page, LOGIN, PASSWORD);
   const database = page.locator('input').nth(2);
   if (await database.isEnabled().catch(() => false)) await database.fill(DATABASE);
   authenticatedProbes.set(page, await authenticateBrowserProbe(page, LOGIN,

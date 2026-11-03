@@ -22,10 +22,11 @@ const page = {
  locator: selector => ({ nth: () => ({ fill: async () => {} }), fill: async () => {}, click: async () => events.push('click') })
 };
 const context = vm.createContext({ FRONTEND_URL: 'https://example.invalid/t/test', LOGIN: 'role', PASSWORD: 'synthetic',
+ fillLoginCredentials: async (p, login, password) => { if (p !== page || login !== 'role' || password !== 'synthetic') throw Error('credentials'); events.push('fill'); },
  authenticateBrowserProbe: async (p, login, submit) => { if (p !== page || login !== 'role') throw Error('identity'); events.push('observe'); await submit(); }, page });
 vm.runInContext(process.argv[1], context);
 context.login(page).then(() => {
- if (events.join(',') !== 'goto,observe,click') throw Error(events.join(','));
+ if (events.join(',') !== 'goto,fill,observe,click') throw Error(events.join(','));
 }).catch(e => { console.error(e.message); process.exitCode = 1; });
 """
         result = subprocess.run(['node', '-e', program, login], cwd=ROOT, capture_output=True, text=True)
@@ -44,7 +45,7 @@ const vm = require('node:vm');
   const environment = {};
   const modules = {
    './lib/frontend_acceptance_environment.mjs': { resolveAcceptanceEnvironment: () => environment },
-   './frontend_authenticated_intent.mjs': { authenticateBrowserProbe: () => {} },
+   './frontend_authenticated_intent.mjs': { authenticateBrowserProbe: () => {}, fillLoginCredentials: () => {} },
    './lib/frontend_acceptance_lease.mjs': { acquireAcceptanceLease: async args => {
     if (args.environment !== environment || args.mode !== 'shared-read') throw Error('lease scope');
     events.push('acquire'); return { release: async () => events.push('release') };
