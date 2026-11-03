@@ -100,6 +100,8 @@ export interface NavNode {
   groups?: number[];
   action?: any;
   icon?: string | null;
+  scene_key?: string;
+  sceneKey?: string;
   meta?: NavMeta;
   children?: NavNode[];
   canonical_navigation?: {

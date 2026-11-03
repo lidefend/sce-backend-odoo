@@ -315,6 +315,7 @@ SURFACE_DEEP_LINK_ALLOWLIST = {
         "subcontract.request",
         "subcontract.settlement",
         "task.center",
+        "enterprise.setup",
     ]
 }
 
@@ -449,7 +450,37 @@ def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
 
 
 def get_intent_handler_contributions():
-    return []
+    try:
+        from odoo.addons.smart_construction_scene.handlers.scenario_activation import (
+            ScenarioActivationCatalogGetHandler,
+            ScenarioActivationSetHandler,
+            WorkspaceScenarioProjectionGetHandler,
+        )
+        from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import (
+            EnterpriseReadinessDiagnosisGetHandler,
+        )
+        from odoo.addons.smart_construction_scene.handlers.scenario_dependency import (
+            ScenarioDependencyDiagnosisGetHandler,
+        )
+        return [
+            ScenarioActivationCatalogGetHandler,
+            ScenarioActivationSetHandler,
+            WorkspaceScenarioProjectionGetHandler,
+            EnterpriseReadinessDiagnosisGetHandler,
+            ScenarioDependencyDiagnosisGetHandler,
+        ]
+    except Exception:  # pragma: no cover - keep the loader fail-safe
+        return []
+
+
+def smart_core_register(registry):
+    """Register smart_construction_scene intent handlers via the platform loader."""
+    if not isinstance(registry, dict):
+        return
+    for handler_cls in get_intent_handler_contributions():
+        intent = getattr(handler_cls, "INTENT_TYPE", "")
+        if intent:
+            registry[intent] = handler_cls
 
 
 def _contract_role_surface_overrides() -> dict:

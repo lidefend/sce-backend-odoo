@@ -1,0 +1,32 @@
+decision:
+  id: ARCH-DECISION-010
+  topic: fact_layer_is_the_single_maintenance_source
+  bnva_stage: BNVA-04-15C-06E-08
+  owner_approval:
+    status: confirmed
+    date: "2026-11-02"
+  decision:
+    fact_layer_definition: model_view_permission_group
+    only_fact_layer_is_maintained: true
+    fact_layer_is_the_single_authority_for_business_configuration: true
+    scenario_projection_is_read_only_over_fact_layer: true
+    role_surface_and_navigation_are_read_only_projections: true
+    no_mechanism_may_own_or_modify_fact_layer_data: true
+    product_exposure_must_derive_from_native_model_view_permission_group: true
+    product_entry_visibility_is_decided_by_native_menu_and_action_groups: true
+    role_surface_primary_menu_lists_are_a_temporary_projection_and_must_not_be_extended: true
+    exposure_changes_belong_only_to_fact_layer_group_binding: true
+    forbidden_other_maintenance_surfaces: python_role_surface_hardcoded_lists_and_frontend_hardcoded_entries
+  strict_constraint:
+    - 未来只维护事实层数据（模型 / 视图 / 权限 / 分组）。
+    - 场景投影、role_surface、导航与前端只能读取和投影事实，永远不能改写或替代事实。
+    - 菜单与动作的可见性由原生 menu / action 的 groups 与 ACL 决定。
+    - 任何产品入口暴露调整，只能落到事实层的分组绑定，不得落到机制层。
+  enforcement:
+    - 新增或调整角色可见入口时，先核对原生 menu / action 的 groups 绑定，再改事实层。
+    - 禁止在 role_surface / 场景投影 / 前端新增硬编码入口清单。
+    - 对机制层事实代持（如 role_surface primary_menu_xmlids）仅允许逐步收敛到事实层派生，不允许继续扩展。
+  related:
+    - .agent/decisions/ARCH-DECISION-009.yaml
+    - .agent/decisions/data-authority-boundary.yaml
+  status: active

@@ -162,8 +162,15 @@
           <span>{{ initStatus === 'error' ? '请重试初始化，业务入口仍保持关闭。' : '业务入口将在权限与导航完成校验后开放。' }}</span>
         </div>
         <div class="menu">
+          <ProductScenarioNavigation
+            v-if="navigationReady && scenarioNavigation"
+            :model="scenarioNavigation"
+            :active-menu-id="activeMenuId"
+            :collapsed="sidebarCompact"
+            @select="handleScenarioSelect"
+          />
           <ProductSideNavigation
-            v-if="navigationReady"
+            v-else-if="navigationReady"
             :nodes="filteredNavigation"
             :active-menu-id="activeMenuId"
             :expanded-keys="session.menuExpandedKeys"
@@ -384,6 +391,8 @@
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router';
 import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
+import ProductScenarioNavigation from '../components/product-shell/ProductScenarioNavigation.vue';
+import type { ScenarioNavEntry, ScenarioNavigationModel } from '../app/scenarioSurface';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
 import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcrumb.vue';
@@ -512,6 +521,7 @@ let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
 const navigationNodes = computed(() => session.navigationModel?.nodes || []);
+const scenarioNavigation = computed<ScenarioNavigationModel | null>(() => session.scenarioSurface);
 const roleSurface = computed(() => session.roleSurface);
 const shellLogoText = computed(() => config.appBrand.shellLogoText || 'SC');
 const rootNode = computed(() => (menuTree.value.length === 1 ? menuTree.value[0] : null));
@@ -1493,6 +1503,14 @@ function buildMenuSelectionQuery(): LocationQueryRaw {
     }
   });
   return next;
+}
+
+function handleScenarioSelect(entry: ScenarioNavEntry) {
+  if (!navigationReady.value) return;
+  const route = String(entry.route || '').trim();
+  if (!route) return;
+  closeMobileSidebar();
+  router.push(route).catch(() => {});
 }
 
 function handleSelect(node: CanonicalNavigationNode) {

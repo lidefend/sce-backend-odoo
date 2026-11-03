@@ -1076,6 +1076,13 @@
       "rule": "rule_sc_tender_opportunity_company",
       "file": "addons/smart_construction_core/security/sc_record_rules.xml",
       "reason": "bounded in source by the global ir.rule rule_sc_tender_opportunity_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.scene.company.enablement",
+      "anchor": "company_id",
+      "rule": "rule_sc_scene_company_enablement_allowed_company",
+      "file": "addons/smart_construction_scene/security/sc_scene_company_enablement_rules.xml",
+      "reason": "bounded in source by a scene-local global ir.rule constraining company_id to the allowed company set; the core ceiling cannot reference a downstream scene model"
     }
   ]
 }

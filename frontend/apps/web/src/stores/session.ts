@@ -17,6 +17,7 @@ import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNam
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
+import { parseScenarioSurface, type ScenarioNavigationModel } from '../app/scenarioSurface';
 import {
   activityPageTitleTargetKeys,
   normalizeRetainedActivityPageIdentity,
@@ -250,6 +251,7 @@ export interface SessionState {
   user: AppInitResponse['user'] | null;
   menuTree: NavNode[];
   navigationModel: CanonicalNavigationModel | null;
+  scenarioSurface: ScenarioNavigationModel | null;
   routeAuthority: RouteAuthorityContract | null;
   menuExpandedKeys: string[];
   currentAction: NavMeta | null;
@@ -273,7 +275,20 @@ export interface SessionState {
     scene_key?: string;
     loaded?: boolean;
   } | null;
+  workspaceScenarioProjection: {
+    rows: Array<{
+      scene_key: string;
+      name: string;
+      product_released: boolean;
+      tenant_enabled: boolean;
+      role_assigned: boolean;
+      workspace_candidate: boolean;
+    }>;
+    workspace_candidate_count: number;
+  } | null;
+  workspaceScenarioRequestSequence: number;
   productCapabilityCatalog: ProductCapabilityCatalog | null;
+  productCapabilityCatalogRequestSequence: number;
   errorStateContract: unknown;
   pageContracts: Record<string, PageContract>;
   publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
@@ -573,6 +588,7 @@ export const useSessionStore = defineStore('session', {
     user: null,
     menuTree: [],
     navigationModel: null,
+    scenarioSurface: null,
     routeAuthority: null,
     menuExpandedKeys: [],
     currentAction: null,
@@ -595,7 +611,10 @@ export const useSessionStore = defineStore('session', {
     },
     workspaceHome: null,
     workspaceHomeRef: null,
+    workspaceScenarioProjection: null,
+    workspaceScenarioRequestSequence: 0,
     productCapabilityCatalog: null,
+    productCapabilityCatalogRequestSequence: 0,
     errorStateContract: null,
     pageContracts: {},
     publicPageContractStatus: 'idle',
@@ -832,13 +851,52 @@ export const useSessionStore = defineStore('session', {
     },
   },
   actions: {
+    invalidateProductCapabilityCatalog() {
+      this.productCapabilityCatalogRequestSequence += 1;
+      this.productCapabilityCatalog = null;
+    },
+    invalidateWorkspaceScenarioProjection() {
+      this.workspaceScenarioRequestSequence += 1;
+      this.workspaceScenarioProjection = null;
+    },
+    async loadWorkspaceScenarioProjection() {
+      this.invalidateWorkspaceScenarioProjection();
+      const requestSequence = this.workspaceScenarioRequestSequence;
+      const requestEpoch = currentContextEpoch();
+      const result = await intentRequest<{
+        contract_version?: string;
+        rows?: Array<{
+          scene_key: string;
+          name: string;
+          product_released: boolean;
+          tenant_enabled: boolean;
+          role_assigned: boolean;
+          workspace_candidate: boolean;
+        }>;
+        workspace_candidate_count?: number;
+      }>({
+        intent: 'workspace.scenario.projection.get',
+        params: {},
+      });
+      if (!isCurrentContextEpoch(requestEpoch)
+        || requestSequence !== this.workspaceScenarioRequestSequence) return null;
+      this.workspaceScenarioProjection = {
+        rows: Array.isArray(result?.rows) ? result.rows : [],
+        workspace_candidate_count: Number(result?.workspace_candidate_count || 0),
+      };
+      return this.workspaceScenarioProjection;
+    },
     setToken(token: string) {
+      this.invalidateProductCapabilityCatalog();
+      this.invalidateWorkspaceScenarioProjection();
       this.token = token;
       sessionStorage.setItem(scopedTokenStorageKey(), token);
       // Do not keep cross-db legacy token once db-scoped token is set.
       sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
     },
     restore() {
+      this.invalidateProductCapabilityCatalog();
+      this.invalidateWorkspaceScenarioProjection();
       this.isReady = false;
       this.initStatus = 'idle';
       this.initError = null;
@@ -855,6 +913,7 @@ export const useSessionStore = defineStore('session', {
           // manual cache clear.
           this.menuTree = [];
           this.navigationModel = null;
+          this.scenarioSurface = null;
           this.menuExpandedKeys = parsed.menuExpandedKeys ?? [];
           this.currentAction = null;
           this.capabilities = parsed.capabilities ?? [];
@@ -896,7 +955,7 @@ export const useSessionStore = defineStore('session', {
           this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
-          this.productCapabilityCatalog = null;
+          this.invalidateProductCapabilityCatalog();
           this.publicPageContractStatus = 'idle';
           this.pageContracts = {};
           this.sceneReadyContract = null;
@@ -922,6 +981,7 @@ export const useSessionStore = defineStore('session', {
     },
     clearSession() {
       invalidateContextRequests();
+      this.invalidateWorkspaceScenarioProjection();
       appInitInFlight = null;
       appInitEpoch = -1;
       this.token = null;
@@ -929,6 +989,7 @@ export const useSessionStore = defineStore('session', {
       this.user = null;
       this.menuTree = [];
       this.navigationModel = null;
+      this.scenarioSurface = null;
       this.menuExpandedKeys = [];
       this.currentAction = null;
       this.capabilities = [];
@@ -948,7 +1009,7 @@ export const useSessionStore = defineStore('session', {
       this.productFacts = { license: null, bundle: null };
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
-      this.productCapabilityCatalog = null;
+      this.invalidateProductCapabilityCatalog();
       this.errorStateContract = null;
       this.publicPageContractStatus = 'idle';
       this.pageContracts = {};
@@ -1319,9 +1380,11 @@ export const useSessionStore = defineStore('session', {
       // Every authoritative bootstrap starts fail-closed. This covers login,
       // Company/record-context/role transitions and policy publish/rollback refreshes.
       this.isReady = false;
+      this.invalidateWorkspaceScenarioProjection();
       this.routeAuthority = null;
       this.menuTree = [];
       this.navigationModel = null;
+      this.scenarioSurface = null;
       this.currentAction = null;
       this.featureFlags = {};
       this.scenes = [];
@@ -1331,7 +1394,7 @@ export const useSessionStore = defineStore('session', {
       this.roleSurfaceMap = {};
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
-      this.productCapabilityCatalog = null;
+      this.invalidateProductCapabilityCatalog();
       this.errorStateContract = null;
       this.publicPageContractStatus = 'idle';
       this.pageContracts = {};
@@ -1409,6 +1472,7 @@ export const useSessionStore = defineStore('session', {
         this.routeAuthority = null;
         this.menuTree = [];
         this.navigationModel = null;
+        this.scenarioSurface = null;
         this.currentAction = null;
         setSceneRegistry([]);
         throw err;
@@ -1654,6 +1718,7 @@ export const useSessionStore = defineStore('session', {
         navigation?: {
           nav?: unknown;
           route_authority?: unknown;
+          scenario_surface?: unknown;
           integrity?: {
             visible_action_count?: unknown;
             authorized_action_count?: unknown;
@@ -1689,6 +1754,7 @@ export const useSessionStore = defineStore('session', {
         this.initStatus = 'error';
         throw new Error(this.initError);
       }
+      this.scenarioSurface = parseScenarioSurface(navigation?.scenario_surface);
       if (debugIntent) {
         console.info('[debug] system.init navigation:', {
           type: typeof navigation?.nav,
@@ -1814,10 +1880,13 @@ export const useSessionStore = defineStore('session', {
       const requestEpoch = currentContextEpoch();
       if (!force && this.productCapabilityCatalog) return this.productCapabilityCatalog;
       if (!this.token) return null;
+      const token = this.token;
+      const requestSequence = ++this.productCapabilityCatalogRequestSequence;
       const result = await intentRequest<ProductCapabilityCatalog>({
         intent: PRODUCT_CAPABILITY_INTENTS.catalog,
       });
-      if (!isCurrentContextEpoch(requestEpoch)) return this.productCapabilityCatalog;
+      if (!isCurrentContextEpoch(requestEpoch) || token !== this.token
+        || requestSequence !== this.productCapabilityCatalogRequestSequence) return null;
       this.productCapabilityCatalog = result;
       this.persist();
       return this.productCapabilityCatalog;

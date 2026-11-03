@@ -787,6 +787,20 @@ class ScSceneVersion(models.Model):
         [("manual", "Manual"), ("import", "Import"), ("system", "System")],
         default="manual",
     )
+    product_release_state = fields.Selection(
+        [
+            ("STANDARD_RELEASE", "STANDARD_RELEASE"),
+            ("OPTIONAL_CAPABILITY", "OPTIONAL_CAPABILITY"),
+            ("PREVIEW", "PREVIEW"),
+            ("NOT_READY", "NOT_READY"),
+        ],
+        default="PREVIEW",
+        required=True,
+    )
+    product_edition = fields.Char(default="construction.standard")
+    release_approved_by = fields.Many2one("res.users")
+    release_approved_at = fields.Datetime()
+    release_approval_ref = fields.Char()
     create_date = fields.Datetime(readonly=True)
     create_uid = fields.Many2one("res.users", readonly=True)
 

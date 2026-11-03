@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: NAV01-MAINLINE-INTEGRATION-20261103
+  status: active
+  formal_product_layer: P1
+  objective: Integrate scenario-governed navigation and native authorization on current mainline.

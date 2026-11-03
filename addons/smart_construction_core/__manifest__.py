@@ -42,9 +42,12 @@
         # 安全
         'security/sc_groups.xml',
         'security/sc_capability_groups.xml',
+        'security/sc_entry_groups.xml',
         'security/contract_settlement_capability_bridge.xml',
         'security/sc_role_groups.xml',
         'security/runtime_user_permission_groups.xml',
+        'security/sc_role_entry_groups.xml',
+        'security/sc_discover_entry_groups.xml',
         'security/sc_model_records.xml',
         'security/ir.model.access.csv',
         'security/sc_record_rules.xml',
@@ -303,6 +306,7 @@
         'data/settlement_adjustment_form_productization_contract.xml',
         'data/remaining_p3_form_productization_contract.xml',
         'data/product_policy_menu_sync.xml',
+        'data/menu_entry_group_rebinding.xml',
         'security/action_groups_patch.xml',
     ],
     'assets': {

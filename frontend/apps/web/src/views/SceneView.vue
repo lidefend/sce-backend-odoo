@@ -164,6 +164,13 @@
     />
     <ContractFormPage v-if="status === 'idle' && !sceneContractEntryIntent && embeddedRecordActionId > 0" />
     <ActionView v-else-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId > 0" />
+    <EnterpriseReadinessPanel
+      v-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId <= 0 && embeddedRecordActionId <= 0 && currentSceneKey === 'enterprise.setup'"
+      @remediate="openHandlingEntryByKey"
+    />
+    <ScenarioActivationPanel
+      v-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId <= 0 && embeddedRecordActionId <= 0 && currentSceneKey === 'enterprise.setup'"
+    />
   </section>
 </template>
 
@@ -173,6 +180,8 @@ import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ActionView from './ActionViewShell.vue';
 import SceneContractBlockGridView from './SceneContractBlockGridView.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
+import ScenarioActivationPanel from '../components/scene/ScenarioActivationPanel.vue';
+import EnterpriseReadinessPanel from '../components/scene/EnterpriseReadinessPanel.vue';
 import ContractFormPage from '../pages/ContractFormPage.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -498,7 +507,18 @@ function openHandlingEntry(item: HandlingEntryItem) {
     }));
     return;
   }
-  const resolvedAction = resolveVisibleActionTarget(target as SceneTarget, currentSceneKey.value);
+  let resolvedAction = resolveVisibleActionTarget(target as SceneTarget, currentSceneKey.value);
+  if (!resolvedAction) {
+    const internalActions = ((session.sceneReadyContract as Record<string, unknown> | null)?.scene_internal_actions
+      || {}) as Record<string, Record<string, unknown>>;
+    const internal = internalActions[`${currentSceneKey.value}:${String(item.key || '').trim()}`];
+    if (internal && Number(internal.action_id || 0) > 0) {
+      resolvedAction = {
+        actionId: Number(internal.action_id),
+        menuId: Number(internal.menu_id || 0) || undefined,
+      };
+    }
+  }
   if (!resolvedAction) return;
   void router.push({
     path: `/a/${resolvedAction.actionId}`,
@@ -509,6 +529,15 @@ function openHandlingEntry(item: HandlingEntryItem) {
       business_category_code: item.business_category_code || undefined,
     }),
   });
+}
+
+function openHandlingEntryByKey(entryKey: string) {
+  const key = String(entryKey || '').trim();
+  if (!key) return;
+  const item = handlingEntryGroups.value
+    .flatMap((group) => group.items)
+    .find((row) => String(row.key || '').trim() === key);
+  if (item) openHandlingEntry(item);
 }
 
 async function hydrateSceneReadyForCurrentScene(sceneKey: string) {

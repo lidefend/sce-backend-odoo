@@ -17,6 +17,22 @@ def load_source(path=SOURCE_PATH):
         raise ValueError("invalid product menu source schema")
     return resolve_native_source(source)
 
+
+def load_menu_release_states():
+    """Read publication states from validated native menu bindings.
+
+    ``load_source`` resolves and consumes the raw ``entries`` selection. Its
+    consumers must read the resolved bindings rather than treating that removed
+    input field as an empty publication. This projection grants no user access.
+    """
+    source = load_source()
+    return {
+        leaf["binding"]["menu_xmlid"]: leaf["binding"]["release_state"]
+        for center in source["product_contract"]["centers"]
+        for item in center["level_two"]
+        for leaf in (item.get("children") or [item])
+    }
+
 def native_facts(module_root=None, _visiting=None, _loaded=None, _facts=None):
     """Resolve shipped Odoo XML in manifest order; never infer from labels."""
     root = Path(module_root) if module_root else SOURCE_PATH.parents[1]

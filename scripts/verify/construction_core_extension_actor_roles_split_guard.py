@@ -44,7 +44,7 @@ class _User:
 
     def has_group(self, xmlid: str) -> bool:
         return xmlid in {
-            "smart_construction_core.group_sc_cap_project_read",
+            "smart_construction_core.group_sc_role_project_user",
             "smart_construction_core.group_sc_business_full",
         }
 
@@ -77,7 +77,7 @@ def main() -> int:
         for token in [
             "def resolve_release_actor_role_codes(",
             "smart_construction_core.group_sc_role_",
-            "smart_construction_core.group_sc_cap_project_read",
+            "smart_construction_core.group_sc_role_project_user",
             "smart_construction_core.group_sc_business_full",
         ]:
             if token not in roles_text:

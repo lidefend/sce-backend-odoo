@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
 import { fetchMyWorkSummary, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
@@ -73,6 +73,8 @@ export function useWorkspaceHome() {
   const catalogGap = ref('');
   const loginBlocks = ref<ProductCapabilityLoginHomeBlock[]>([]);
   let loadRequestSequence = 0;
+  let catalogRequestSequence = 0;
+  let disposed = false;
 
   const pageProfile = computed(() => pageContract.contract.value?.page_orchestration?.page || {});
   const title = computed(() => text(pageProfile.value.title) || pageContract.text('title', '首页'));
@@ -89,7 +91,28 @@ export function useWorkspaceHome() {
     const workspaceLinks = (workWorkspace.value?.presentation.quick_links || [])
       .filter((item) => text(item.route) && text(item.label))
       .map((item) => ({ key: text(item.key) || text(item.route), label: text(item.label), detail: text(item.detail), route: text(item.route) }));
+    // The server surface already combines publication, company enablement and
+    // native authority. Business keys must not be filtered by the legacy entry registry.
+    if (session.scenarioSurface) {
+      const navigationLinks = session.scenarioSurface.domains.flatMap(domain => domain.scenarios)
+        .flatMap(scenario => {
+          const entry = scenario.intents.flatMap(intent => intent.entries)[0];
+          return entry ? [{ key: scenario.key, label: scenario.name, detail: entry.label, route: entry.route }] : [];
+        });
+      const horizontalLinks = session.scenarioSurface.horizontal.map(entry => ({
+        key: entry.menu_xmlid, label: entry.label, detail: '', route: entry.route,
+      }));
+      return mergeWorkspaceNavigationLinks([...navigationLinks, ...horizontalLinks], workspaceLinks).slice(0, 7);
+    }
+    const candidateSceneKeys = new Set(scenarioCandidateSceneKeys.value);
     const navigationLinks = topNodes(session.menuTree)
+      .filter((node) => {
+        if (!scenarioProjectionLoaded.value) return false;
+        const meta = node.meta && typeof node.meta === 'object' ? node.meta as Record<string, unknown> : {};
+        const sceneKey = text(node.scene_key || node.sceneKey || meta.scene_key || meta.sceneKey);
+        if (!sceneKey) return true;
+        return candidateSceneKeys.has(sceneKey);
+      })
       .map(resolveWorkspaceNavigationLink)
       .filter((item): item is SurfaceLink => Boolean(item));
     return mergeWorkspaceNavigationLinks(navigationLinks, workspaceLinks)
@@ -131,9 +154,26 @@ export function useWorkspaceHome() {
     .slice(0, 6));
   const myObjectsTitle = computed(() => text(session.workspaceHome?.layout?.texts?.['my_objects.title']));
   const myObjectsEmpty = computed(() => text(session.workspaceHome?.layout?.texts?.['my_objects.empty']));
+  const scenarioCandidateSceneKeys = computed<string[]>(() => {
+    if (session.scenarioSurface) {
+      return session.scenarioSurface.domains.flatMap(domain => domain.scenarios.map(scenario => scenario.key));
+    }
+    const projection = session.workspaceScenarioProjection;
+    if (!projection) return [];
+    return projection.rows
+      .filter((row) => row.workspace_candidate)
+      .map((row) => row.scene_key)
+      .filter(Boolean);
+  });
+  const scenarioProjectionLoaded = computed(() => session.workspaceScenarioProjection !== null);
 
   async function loadCatalog() {
-    if (!session.token) {
+    const request = ++catalogRequestSequence;
+    const epoch = currentContextEpoch();
+    const token = session.token;
+    const current = () => !disposed && request === catalogRequestSequence
+      && token === session.token && isCurrentContextEpoch(epoch);
+    if (!session.token || session.initStatus !== 'ready') {
       loginBlocks.value = [];
       return;
     }
@@ -141,9 +181,11 @@ export function useWorkspaceHome() {
     catalogError.value = '';
     catalogGap.value = '';
     try {
-      await session.loadProductCapabilityCatalog();
-      loginBlocks.value = projectLoginHomeBlocks(session.productCapabilityCatalog);
+      const catalog = await session.loadProductCapabilityCatalog();
+      if (!current()) return;
+      loginBlocks.value = projectLoginHomeBlocks(catalog);
     } catch (err) {
+      if (!current()) return;
       loginBlocks.value = [];
       if (isProductCapabilityCatalogGap(err)) {
         catalogGap.value = String(err.message || '');
@@ -151,15 +193,22 @@ export function useWorkspaceHome() {
         catalogError.value = pageContract.text('load_error', '当前页面暂时无法加载，请稍后重试。');
       }
     } finally {
-      catalogLoading.value = false;
+      if (current()) catalogLoading.value = false;
     }
   }
 
   async function load() {
     const requestSequence = ++loadRequestSequence;
-    if (!session.token) {
+    catalogRequestSequence += 1;
+    catalogLoading.value = false;
+    catalogError.value = '';
+    catalogGap.value = '';
+    if (!session.token || session.initStatus !== 'ready') {
+      session.invalidateWorkspaceScenarioProjection();
       workWorkspace.value = null;
       loginBlocks.value = [];
+      loading.value = false;
+      error.value = '';
       return;
     }
     const navMeta = ((session.initMeta as Record<string, unknown> | null)?.nav_meta ?? {}) as Record<string, unknown>;
@@ -176,6 +225,9 @@ export function useWorkspaceHome() {
     unsupported.value = false;
     workWorkspace.value = null;
     void loadCatalog();
+    void session.loadWorkspaceScenarioProjection().catch(() => {
+      // Fail-closed: a failed projection must not expand home entries.
+    });
     try {
       const result = await fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' });
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
@@ -199,6 +251,7 @@ export function useWorkspaceHome() {
   watch(
     [
       () => session.token,
+      () => session.initStatus,
       () => session.recordContext?.company_id,
       () => session.recordContext?.selected?.id,
     ],
@@ -206,12 +259,19 @@ export function useWorkspaceHome() {
     { immediate: true },
   );
 
+  onScopeDispose(() => {
+    disposed = true;
+    loadRequestSequence += 1;
+    catalogRequestSequence += 1;
+  });
+
   return {
     title,
     subtitle,
     tasks,
     summaries,
     quickLinks,
+    scenarioCandidateSceneKeys,
     recentItems,
     riskItems,
     objectItems,

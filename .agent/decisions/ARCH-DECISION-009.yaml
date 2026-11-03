@@ -1,0 +1,29 @@
+decision:
+  id: ARCH-DECISION-009
+  topic: model_driven_scenario_composition
+  bnva_stage: BNVA-04-15C-05A-06
+  owner_approval:
+    status: confirmed
+    date: "2026-11-02"
+  decision:
+    business_model_view_security_and_fact_data_are_the_core_maintenance_source: true
+    do_not_maintain_one_independent_scene_xml_per_business_scenario: true
+    scenario_is_platform_organization_and_projection_of_existing_business_capabilities: true
+    automatic_inference_requires_evidence_and_confidence: true
+    unreliable_business_semantics_require_product_governance_confirmation: true
+    never_copy_business_facts_or_establish_parallel_fact_ownership: true
+    scene_workspace_and_navigation_remain_under_existing_contracts_and_server_authorization: true
+    scene_version_release_governance_is_separate_from_scene_content_maintenance: true
+  mechanisms:
+    - capability_discovery
+    - fact_ownership_analysis
+    - business_task_inference
+    - user_intent_classification
+    - scenario_composition
+    - scenario_integrity_guard
+    - workspace_projection
+    - route_authority
+  related:
+    - .agent/decisions/ARCH-DECISION-007.yaml
+    - .agent/decisions/ARCH-DECISION-008.yaml
+  status: active

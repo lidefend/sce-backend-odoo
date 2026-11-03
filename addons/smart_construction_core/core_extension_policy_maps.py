@@ -9,14 +9,7 @@ ROLE_SURFACE_OVERRIDES = {
         "label": "会计账务",
         "landing_scene_candidates": ["workspace.home"],
         "menu_xmlids": ["smart_construction_core.menu_sc_accounting_center"],
-        "primary_menu_xmlids": [
-            "account.menu_action_move_journal_line_form",
-            "account.menu_action_account_moves_all",
-            "account.menu_action_account_form",
-            "smart_construction_core.menu_sc_account_journal_foundation",
-            "smart_construction_core.menu_sc_analytic_account_foundation",
-            "smart_construction_core.menu_sc_analytic_distribution_foundation",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [],
@@ -28,7 +21,6 @@ ROLE_SURFACE_OVERRIDES = {
         "landing_scene_candidates": ["workspace.home"],
         "discover_installed_capabilities": True,
         "menu_xmlids": ["smart_construction_core.menu_sc_root"],
-        "primary_menu_xmlids": [],
         "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [],
@@ -47,24 +39,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
         ],
-        "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_project_project",
-            "smart_construction_core.menu_sc_p1_daily_contract",
-            "smart_construction_core.menu_sc_plan",
-            "smart_construction_core.menu_sc_plan_report",
-            "smart_construction_core.menu_sc_construction_diary",
-            "smart_construction_core.menu_sc_certificate_registration",
-            "smart_construction_core.menu_sc_company_document_archive",
-            "smart_construction_core.menu_sc_document_borrow",
-            # U-C4 G08：875「班组借/扣款登记」上下文办理工作台。该入口菜单自身
-            # 声明为项目中心持组（group_sc_cap_project_user/manager），项目中心
-            # 本应从这里发起班组借/扣款，但角色导航面此前没有列它，项目经办/
-            # 审批能打开单据却打不开工作台，办理路径断在入口。此处按入口自身
-            # 声明的持组对齐项目角色导航面，属于既有授权路径（角色导航面 +
-            # 菜单持组），未新增机制、未改 ACL、未开放系统设置。该条目只在当前
-            # 用户原生可见该菜单时才生成路由，所以只读项目角色看不到这个入口。
-            "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -157,7 +132,6 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
         ],
-        "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -272,7 +246,7 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "business_config_admin": {
         "label": "业务配置管理员",
-        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": ["enterprise.setup", "workspace.home", "projects.list", "projects.ledger", "projects.intake"],
         # The primary role owns the landing surface, while the released
         # construction catalogue is still intersected with the user's native
         # Odoo ACL-visible menu facts.  This composes existing business
@@ -283,8 +257,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_business_config_center",
         ],
-        "primary_menu_xmlids": [
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -330,7 +303,6 @@ ROLE_SURFACE_OVERRIDES = {
         "system_configuration_visible": True,
         "deny_all_navigation": False,
         "menu_xmlids": [],
-        "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -356,13 +328,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
         ],
-        "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_project_project",
-            "smart_construction_core.menu_sc_p1_daily_contract",
-            "smart_construction_core.menu_sc_plan",
-            "smart_construction_core.menu_sc_plan_report",
-            "smart_construction_core.menu_sc_construction_diary",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -408,32 +374,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_contract_center",
             "smart_construction_core.menu_sc_cost_center",
         ],
-        "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_project_initiation",
-            "smart_construction_core.menu_sc_project_project",
-            "smart_construction_core.menu_sc_boq_version",
-            "smart_construction_core.menu_sc_project_boq_root",
-            "smart_construction_core.menu_sc_boq_analysis",
-            "smart_construction_core.menu_sc_p1_project_budget",
-            "smart_construction_core.menu_sc_project_work_breakdown",
-            "smart_construction_core.menu_sc_wbs_plan_version",
-            "smart_construction_core.menu_sc_project_location_breakdown",
-            "smart_construction_core.menu_sc_project_contract_section",
-            "smart_construction_core.menu_sc_project_execution_scope",
-            "smart_construction_core.menu_sc_project_boq_allocation",
-            "smart_construction_core.menu_sc_p1_daily_contract",
-            "smart_construction_core.menu_sc_plan",
-            "smart_construction_core.menu_sc_plan_report",
-            "smart_construction_core.menu_sc_construction_diary",
-            "smart_construction_core.menu_sc_settlement_order",
-            "smart_construction_core.menu_sc_settlement_adjustment",
-            "smart_construction_core.menu_sc_p1_expense_settlement",
-            "smart_construction_core.menu_sc_expense_contract_variation",
-            "smart_construction_core.menu_sc_p1_income_settlement",
-            "smart_construction_core.menu_sc_income_contract_variation",
-            "smart_construction_core.menu_sc_tender_registration",
-            "smart_construction_core.menu_sc_tender_registration_fee",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -531,62 +472,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_settlement_center",
             "smart_construction_core.menu_payment_request",
         ],
-        "primary_menu_xmlids": [
-            "smart_construction_core.menu_payment_request_receive",
-            "smart_construction_core.menu_sc_receipt_income",
-            "smart_construction_core.menu_sc_user_income",
-            "smart_construction_core.menu_sc_engineering_progress_income",
-            "smart_construction_core.menu_sc_settlement_order",
-            "smart_construction_core.menu_sc_settlement_adjustment",
-            "smart_construction_core.menu_sc_user_payment_apply",
-            "smart_construction_core.menu_sc_payment_execution",
-            "smart_construction_core.menu_sc_partner_payment",
-            "smart_construction_core.menu_sc_company_finance_expense",
-            "smart_construction_core.menu_sc_company_expense",
-            "smart_construction_core.menu_sc_invoice_input",
-            "smart_construction_core.menu_sc_invoice_application_user",
-            "smart_construction_core.menu_sc_invoice_registration_user",
-            "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
-            "smart_construction_core.menu_sc_tax_certificate_registration_user",
-            "smart_construction_core.menu_sc_tax_deduction_registration_user",
-            "smart_construction_core.menu_sc_finance_project_capital_position",
-            "smart_construction_core.menu_sc_finance_counterparty_position_summary",
-            "smart_construction_core.menu_sc_finance_project_counterparty_position",
-            "smart_construction_core.menu_sc_company_contractor_responsibility_summary",
-            "smart_construction_core.menu_sc_company_contractor_responsibility_fact",
-            "smart_construction_core.menu_sc_treasury_reconciliation",
-            "smart_construction_core.menu_sc_fund_daily_user_report",
-            "smart_construction_core.menu_sc_borrowing_request",
-            "smart_construction_core.menu_sc_repayment_registration",
-            "smart_construction_core.menu_sc_contractor_project_repay",
-            "smart_construction_core.menu_sc_contractor_project_borrow",
-            "smart_construction_core.menu_sc_project_borrow_company",
-            "smart_construction_core.menu_sc_project_repay_company",
-            "smart_construction_core.menu_sc_self_funding_advance_income",
-            "smart_construction_core.menu_sc_self_funding_advance_refund",
-            "smart_construction_core.menu_sc_fund_account_between_user",
-            "smart_construction_core.menu_sc_deduction_bill",
-            "smart_construction_core.menu_sc_reimbursement_request",
-            "smart_construction_core.menu_sc_expense_claim",
-            "smart_construction_core.menu_sc_project_expense_claim",
-            "smart_construction_core.menu_sc_deduction_paid",
-            "smart_construction_core.menu_sc_deduction_paid_refund",
-            "smart_construction_core.menu_sc_bid_deposit_pay",
-            "smart_construction_core.menu_sc_bid_deposit_return",
-            "smart_construction_core.menu_sc_contract_deposit_register",
-            "smart_construction_core.menu_sc_contract_deposit_return",
-            # U-C4 G08：上下文办理工作台。这两条入口菜单本身已按
-            # 财务中心经办/主管持组声明并挂在「财务中心」下，但角色导航
-            # 面此前未列，导致财务角色能派发（借款/退款目标本就在其导航面）
-            # 却打不开工作台，办理路径断在入口。此处按入口自身声明的持组
-            # 对齐角色导航面，属于既有授权路径（角色导航面 + 菜单持组），
-            # 未新增机制、未改 ACL、未开放系统设置。
-            # 875「班组借/扣款登记」不在此列：其菜单与模型 ACL 均声明为
-            # 项目中心持组，财务角色既不能建单也不应看到该入口（见本批记录
-            # 的首次偏差登记）。
-            "smart_construction_core.menu_sc_product_current_account_v1",
-            "smart_construction_core.menu_sc_product_company_project_refund_v1",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -730,8 +616,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_finance_center",
             "smart_construction_core.menu_sc_data_center",
         ],
-        "primary_menu_xmlids": [
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -750,17 +635,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
         ],
-        "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_project_project",
-            "smart_construction_core.menu_sc_general_contract",
-            "smart_construction_core.menu_sc_p1_daily_contract",
-            "smart_construction_core.menu_sc_plan",
-            "smart_construction_core.menu_sc_plan_report",
-            "smart_construction_core.menu_sc_construction_diary",
-            "smart_construction_core.menu_sc_certificate_registration",
-            "smart_construction_core.menu_sc_company_document_archive",
-            "smart_construction_core.menu_sc_document_borrow",
-        ],
+        "discover_installed_capabilities": True,
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
         ],
@@ -828,7 +703,7 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_owner",
     },
     "project_member": {
-        "smart_construction_core.group_sc_cap_project_read",
+        "smart_construction_core.group_sc_role_project_user",
     },
     "business_config_admin": {
         "smart_construction_core.group_sc_cap_business_config_admin",

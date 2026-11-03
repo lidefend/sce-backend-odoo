@@ -579,6 +579,7 @@ class SystemInitPayloadBuilder:
             value = meta.get(key)
             if value not in (None, {}, []):
                 compact_meta[key] = value
+        scene_internal_actions = raw.get("scene_internal_actions") if isinstance(raw.get("scene_internal_actions"), dict) else {}
         return {
             "contract_version": str(raw.get("contract_version") or "v1"),
             "schema_version": str(raw.get("schema_version") or "scene_ready_contract"),
@@ -587,6 +588,7 @@ class SystemInitPayloadBuilder:
             "scene_channel": str(raw.get("scene_channel") or ""),
             "active_scene_key": str(raw.get("active_scene_key") or ""),
             "scenes": compact_scenes,
+            "scene_internal_actions": scene_internal_actions,
             "meta": compact_meta,
         }
 

@@ -13,6 +13,7 @@ except ModuleNotFoundError as exc:
 else:
     from .core_extension import (  # noqa: F401
         get_intent_handler_contributions,
+        smart_core_register,
         smart_core_extend_system_init,
         smart_core_get_schema_version,
         smart_core_get_scene_version,

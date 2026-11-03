@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="rule_sc_scene_company_enablement_allowed_company" model="ir.rule">
+            <field name="name">SC Scene Company Enablement - allowed companies</field>
+            <field name="model_id" ref="model_sc_scene_company_enablement"/>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="global" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -183,6 +183,34 @@ class ScProductPolicy(models.Model):
         return True
 
     @api.model
+    def apply_entry_group_rebinding(self):
+        """Rebind the 68 cross-domain menus to their entry exposure groups.
+
+        Idempotent: if a menu already carries exactly its target entry group,
+        it is skipped. Replaces the previous broad capability groups with the
+        single reusable entry group; it never grants data permissions.
+        """
+        import json
+        from pathlib import Path
+
+        mapping_path = Path(__file__).resolve().parents[2] / "data" / "menu_entry_group_rebinding.json"
+        mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
+        applied = 0
+        skipped = 0
+        for menu_xmlid, entry_key in mapping.items():
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+            entry = self.env.ref(f"smart_construction_core.group_sc_{entry_key}", raise_if_not_found=False)
+            if not menu or not entry:
+                raise ValueError(f"unresolved menu rebinding {menu_xmlid} -> {entry_key}")
+            current = set(menu.groups_id.ids)
+            if current == {entry.id}:
+                skipped += 1
+                continue
+            menu.write({"groups_id": [(6, 0, [entry.id])]})
+            applied += 1
+        return {"applied": applied, "skipped": skipped, "total": len(mapping)}
+
+    @api.model
     def _ensure_formal_product_navigation_runtime_params(self):
         Param = self.env["ir.config_parameter"].sudo()
         Param.set_param(NAV_USER_DATA_ACCEPTANCE_ONLY_PARAM, "0")

@@ -241,7 +241,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         for role in ("project_member", "pm"):
             with self.subTest(role=role):
-                primary = set(ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"])
+                primary = set(ROLE_SURFACE_OVERRIDES[role].get("primary_menu_xmlids") or [])
                 self.assertIn(released_contract, primary)
                 self.assertNotIn(unpublished_legacy_contract, primary)
 
@@ -252,11 +252,11 @@ class TestProjectMemberRoleSurface(TransactionCase):
         for role in ("finance", "executive", "business_config_admin", "project_member"):
             self.assertNotIn(
                 history_xmlid,
-                ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
+                (ROLE_SURFACE_OVERRIDES[role].get("primary_menu_xmlids") or []),
             )
 
     def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
-        primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"]["primary_menu_xmlids"])
+        primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"].get("primary_menu_xmlids") or [])
         self.assertTrue(
             {
                 "smart_construction_core.menu_sc_boq_version",

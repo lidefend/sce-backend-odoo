@@ -1866,3 +1866,16 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+
+- script: fact_layer_authority_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-03'
+  wire_or_retire: make
+  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
+- script: scenario_surface_projection_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-03'
+  wire_or_retire: make
+  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
