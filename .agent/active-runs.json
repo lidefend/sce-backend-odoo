@@ -65,6 +65,7 @@
     "fix/daily-main-namespace-delivery-20261103": ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
     "fix/nav01-admin-entry-recovery-20261103": ".agent/runs/NAV01-ADMIN-ENTRY-RECOVERY-20261103/run.json",
     "feature/enterprise-initialization-native-config-20261103": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
-    "fix/enterprise-activation-entry-20261104": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json"
+    "fix/enterprise-activation-entry-20261104": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
+    "fix/scene-fact-data-convergence-20261104": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json"
   }
 }

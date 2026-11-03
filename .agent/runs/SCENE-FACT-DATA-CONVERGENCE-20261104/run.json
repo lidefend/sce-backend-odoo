@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-FACT-DATA-CONVERGENCE-20261104",
+  "branch": "fix/scene-fact-data-convergence-20261104",
+  "baseline_sha": "8dbb8232227291caa353fb91ef33533353e78bad",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml",
+  "record": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
+  "scope": [
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
+    "addons/smart_scene/core/scene_registry_engine.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "blockers": [],
+  "next_exact_step": "Derive enterprise.setup scene entry from native action/view declarations; retire hardcoded registry entry and independent scene version XML"
+}
