@@ -26,6 +26,11 @@ class TestCompanyProjectRefundWorkspace(BusinessTransactionCase):
         self.env["ir.config_parameter"].sudo().set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
         EditionReleaseSnapshotService(self.env).freeze_release_surface(
             product_key="construction.standard", version="synthetic-workspace-test", replace_active=True)
+        # Product publication and company scenario choice are independent prerequisites.
+        self.env["sc.scene.company.enablement"].create({
+            "company_id": self.env.company.id,
+            "scene_key": "business.v1:payment.capital",
+        }).set_enabled(True)
         self.finance_user = self._user(
             "refund_workspace_finance_user",
             "smart_construction_core.group_sc_role_finance_user",

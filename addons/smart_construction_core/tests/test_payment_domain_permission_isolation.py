@@ -253,6 +253,12 @@ class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
             self.env.ref("smart_construction_core.menu_sc_settlement_order").id,
             self.env.ref("smart_construction_core.menu_sc_payment_execution").id,
         ]
+        # Capability-only principals retain ORM rights, but need an explicit entry grant.
+        before = self.env["ir.ui.menu"].with_user(self.finance_user)._visible_menu_ids()
+        self.assertNotIn(menu_ids[0], before)
+        self.finance_user.write({"groups_id": [
+            (4, self.env.ref("smart_construction_core.group_sc_entry_p02").id),
+        ]})
         finance_visible = self.env["ir.ui.menu"].with_user(self.finance_user)._visible_menu_ids()
         ordinary_visible = self.env["ir.ui.menu"].with_user(self.ordinary_user)._visible_menu_ids()
         self.assertTrue(

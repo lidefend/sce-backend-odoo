@@ -16,6 +16,10 @@
     "addons/smart_construction_acceptance_fixture/tests/__init__.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+    "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+    "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
     "addons/smart_construction_core/__init__.py",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/core_extension.py",
@@ -36,6 +40,8 @@
     "addons/smart_construction_core/services/product_menu_source.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "addons/smart_construction_core/views/core/workflow_views.xml",
     "addons/smart_construction_core/views/menu.xml",
@@ -115,11 +121,10 @@
     "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
   },
   "blockers": [
-    "Final exact-head Quick and deterministic carry-forward validation pending",
-    "Owner independent review of final candidate pending",
-    "Current-candidate remote required CI and protected merge pending"
+    "CI-fix candidate runtime evidence, exact-head Quick and owner independent delta review pending",
+    "PR794 remote checks failed on af6700; new head must pass required checks before merge"
   ],
-  "next_exact_step": "Remove obsolete unwired disposition for now-wired fixture unit target; run all three affected registries/coverage checks together, then frozen exact-head Quick and governed integration.",
+  "next_exact_step": "Commit reviewed CI repair checkpoint; refresh exact isolated acceptance artifact and affected browser evidence; final freeze/Quick and owner independent delta review before publishing.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -291,10 +296,72 @@
     }
   },
   "scope_delta": {
-    "layer": "P4",
-    "reason": "Register native lifecycle tag already executed (3 cases in 6-test fixture ORM suite); no product/test implementation/runtime changes",
-    "risk": "coverage metadata only",
-    "validation": "coverage audit then generated preflight and new exact-head Quick; unchanged runtime suite input fingerprints must pass carry-forward"
+    "layer": "P0 primitive presentation consumer; P4 isolated ORM test setup",
+    "reason": "PR794 frontend primitive chrome ownership failure and bundle tests missing explicit company scenario enablement; shard0 native menu tests conflate capability groups with Entry Groups; assert separate grants without widening model ACLs",
+    "risk": "No authorization relaxation; preserve all positive and negative assertions; test enablement transaction-rolled-back",
+    "validation": "Existing primitive adapter gate, frontend checks; isolated local.test bundle sc_gate ORM; remaining remote shard failures inspected before freeze"
   },
-  "live_state": ".runtime/nav01/integration-state.json"
+  "live_state": ".runtime/nav01/integration-state.json",
+  "ci_repair_results": {
+    "source_head": "af6700aee8da41c1534d12caa60c8d3b67ac16f6",
+    "frontend": {
+      "status": "passed",
+      "commands": [
+        "make verify.frontend.pr.unit verify.frontend.lint.src verify.frontend.typecheck.strict",
+        "make verify.frontend.style_system.guard"
+      ],
+      "logs": [
+        ".runtime/nav01/ci-frontend-r2.log",
+        ".runtime/nav01/ci-style-system.log"
+      ],
+      "generated_change": "component inventory inputDigest only"
+    },
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/ci-fix-iteration-r2.log"
+    },
+    "orm": {
+      "status": "affected_failures_resolved",
+      "environment": "Registered disposable sc-local-test / sc_test; private existing profile; fresh isolated DB per run, transaction rollback and exact carrier cleanup",
+      "first_run": {
+        "status": "failed",
+        "tests": 30,
+        "passing_cases": 29,
+        "log": ".runtime/test-baseline/1793701814698445185/odoo.log",
+        "remaining": "project_member capability-only principal lacks explicit entry"
+      },
+      "second_run": {
+        "status": "failed",
+        "tests": 8,
+        "passing_cases": 7,
+        "log": ".runtime/test-baseline/1793702048673281719/odoo.log",
+        "remaining": "replacing principal with full project role changes resolver role; corrected by retaining principal and granting only entry_p06"
+      },
+      "third_run": {
+        "status": "passed",
+        "tests": 1,
+        "receipt": ".runtime/test-baseline/1793702218750360707/receipt.json"
+      },
+      "incremental_scope": "37 distinct cases observed passing across three runs; first two suite receipts remain failed. Final change affects only TestPublishedRoleReplacementMenus actor setup; all remaining test bodies, fixtures and product inputs unchanged from their passing execution. Last affected class rerun through governed local.test. No assertion removed."
+    },
+    "remote_failures": {
+      "frontend": "primitive consumer chrome",
+      "bundle": "4 failures / 19 errors across 30 tests: company enablement and capability-only actor entry",
+      "core": "2 failures / 500 tests: capability groups incorrectly assumed to grant native entries"
+    },
+    "runtime_invalidation": "Binding registry assigns bundle test paths to list and relation suites; current rules require both browser receipts renewed. No gate weakened to reuse old receipts.",
+    "input_hashes": {
+      "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py": "27a9d99c784f245adaec90d67353fc9361a57522d233d02860c5ace4451a63f2",
+      "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py": "ca5dc4147a7bb8d68313f0da5bbeadb9e0ef2df75e122b3c6dd19b80f9d424dd",
+      "addons/smart_construction_bundle/tests/test_current_account_workspace.py": "81a8a0042a87ffb08bb203053a1160f28c08183194e2c1ed84fbfbcd0df9143f",
+      "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py": "20b0dfb3757e4463af86137eb1305db519bf7116a2b84016f61ab4913c692ee0",
+      "addons/smart_construction_bundle/tests/test_workspace_role_routes.py": "9794d1c934bc2a2bbb0957ae2b841760101f15b8d81de9a837f0b124b4440e0d",
+      "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py": "76376a4b9ce72b88d4635cdf5701f1bd64efeedfcfada9eaf3c660da48c16023",
+      "addons/smart_construction_core/tests/test_p1_funding_authority.py": "f4a0c64a761f7a82783cdd072a1c6a0200455efe15351c7604973ca3613914da",
+      "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py": "c842d679207dac8fd93ad712d68bda46ffd0b3235bef1ae0d50c87f6832f0a05",
+      "addons/smart_construction_core/tests/test_role_surface_project_member.py": "4f2a98874a147d3fbd738cc5de69a9c7188e8710d1cee8e41bc9306947e0494a",
+      "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py": "1995b885b84908398bef19d263764ce305d8f4b7cc36e649731c5bbe7dfc99a2",
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py": "3d365d40ffa481b124b7a8e319c21fe7dbc5f52132fff0eab43618ede0ba8004"
+    }
+  }
 }

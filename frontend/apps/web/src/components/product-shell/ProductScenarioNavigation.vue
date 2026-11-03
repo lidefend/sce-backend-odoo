@@ -15,7 +15,7 @@
               variant="ghost"
               appearance="menu-item"
               class="scenario-entry"
-              :class="{ 'scenario-entry--active': entry.menu_id === activeMenuId }"
+              :class="{ active: entry.menu_id === activeMenuId }"
               :aria-current="entry.menu_id === activeMenuId ? 'true' : undefined"
               @click="emit('select', entry)"
             >{{ entry.label }}</ScButton>
@@ -68,7 +68,7 @@
                       variant="ghost"
                       appearance="menu-item"
                       class="scenario-entry"
-                      :class="{ 'scenario-entry--active': entry.menu_id === activeMenuId }"
+                      :class="{ active: entry.menu_id === activeMenuId }"
                       :aria-current="entry.menu_id === activeMenuId ? 'true' : undefined"
                       @click="emit('select', entry)"
                     >{{ entry.label }}</ScButton>
@@ -185,19 +185,9 @@ function toggleScenario(key: string): void {
   align-items: center;
   gap: 6px;
   width: 100%;
-  border: 0;
-  background: transparent;
   text-align: left;
   cursor: pointer;
-  color: inherit;
   padding: 7px 8px;
-  border-radius: 6px;
-}
-
-.scenario-domain__toggle:hover,
-.scenario-scenario__toggle:hover,
-.scenario-entry:hover {
-  background: var(--sc-semantic-surface-hover);
 }
 
 .scenario-domain__toggle {
@@ -227,8 +217,7 @@ function toggleScenario(key: string): void {
   padding: 0;
 }
 
-.scenario-entry--active {
-  background: var(--sc-semantic-surface-selected);
+.scenario-entry.active {
   font-weight: 600;
 }
 </style>
