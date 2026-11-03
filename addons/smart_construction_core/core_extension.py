@@ -1350,7 +1350,7 @@ def smart_core_extend_system_init(data, env, user):
     return _system_init_rows.apply_system_init_profile_overrides(data)
 
 
-def smart_core_scenario_surface_projection(nav, route_authority=None):
+def smart_core_scenario_surface_projection(nav, route_authority=None, *, principal_env=None, available_scenes=None):
     """Project the scenario product surface over the final authorized navigation.
 
     Returns ``None`` on any failure so the caller keeps the legacy navigation
@@ -1360,9 +1360,15 @@ def smart_core_scenario_surface_projection(nav, route_authority=None):
     """
     try:
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
-            project_authorized_nav,
+            project_authorized_nav, project_management_workspaces,
         )
-        return project_authorized_nav(nav=nav, route_authority=route_authority)
+        projection = project_authorized_nav(nav=nav, route_authority=route_authority)
+        if projection.get("ok") and principal_env is not None:
+            projection["tree"]["management_actions"] = project_management_workspaces(
+                scenes=available_scenes or [],
+                check_access=lambda model, operation: principal_env[model].check_access_rights(operation, raise_exception=False),
+            )
+        return projection
     except Exception:
         return None
 

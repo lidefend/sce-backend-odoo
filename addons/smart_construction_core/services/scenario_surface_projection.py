@@ -179,6 +179,8 @@ def project_scenario_navigation(
             "domains": domains,
             "horizontal": horizontal,
             "platform": platform if include_platform else [],
+            "platform_label": _text(source.get("platform_support", {}).get("name")),
+            "management_actions": [],
         },
         "diagnostics": {
             "authorized_leaf_count": sum(1 for leaf in authorized_leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
@@ -266,5 +268,31 @@ def project_authorized_nav(
     return project_scenario_navigation(
         surface=surface,
         authorized_leaves=leaves,
-        include_platform=False,
+        # Leaves are already native-authorized; regrouping must not discard
+        # tenant configuration entries just because no business scene is enabled.
+        include_platform=True,
     )
+
+
+def project_management_workspaces(*, scenes, check_access, surface=None):
+    """Expose declared workspaces only when already delivered and native ACL allows.
+
+    This navigation affordance never enables a business scene or grants access;
+    the workspace and mutation handlers retain their native authorization checks.
+    """
+    source = surface if surface is not None else load_surface()
+    available = {row.get("key") or row.get("code"): row for row in scenes if isinstance(row, dict)}
+    actions = []
+    for declaration in source.get("platform_support", {}).get("workspace_entries", []):
+        scene = available.get(declaration.get("scene_key"))
+        operations = declaration.get("access_operations") or []
+        model = declaration.get("access_model")
+        if not scene or not model or not operations:
+            continue
+        if not all(check_access(model, operation) for operation in operations):
+            continue
+        route = _text((scene.get("target") or {}).get("route"))
+        label = _text(scene.get("name"))
+        if route.startswith("/s/") and label:
+            actions.append({"key": declaration["scene_key"], "label": label, "route": route})
+    return actions

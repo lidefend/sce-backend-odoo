@@ -177,8 +177,35 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["diagnostics"]["grouped_menu_count"], 91)
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(result["tree"]["platform"], [])
+        self.assertEqual(len(result["tree"]["platform"]), 7)
         self.assertEqual(len(result["tree"]["horizontal"]), 5)
+
+    def test_zero_business_scenes_keep_only_authorized_management_entries(self):
+        subset = self.surface["horizontal_work_center"]["menus"] + self.surface["platform_support"]["menus"]
+        result = PROJ.project_authorized_nav(nav=synthetic_nav(subset),
+            route_authority=synthetic_route_authority(subset), surface=self.surface)
+        self.assertEqual(result["tree"]["domains"], [])
+        self.assertEqual(len(result["tree"]["horizontal"]), 5)
+        self.assertEqual(len(result["tree"]["platform"]), 7)
+        self.assertEqual(result["tree"]["platform_label"], "产品配置")
+        authority = synthetic_route_authority(subset)
+        authority["primary_actions"] = authority["primary_actions"][:5]
+        revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5]), route_authority=authority, surface=self.surface)
+        self.assertEqual(revoked["tree"]["platform"], [])
+
+    def test_setup_workspace_uses_native_acl_and_delivered_scene(self):
+        scene = {"key": "enterprise.setup", "name": "企业初始化工作空间", "target": {"route": "/s/enterprise.setup"}}
+        seen = []
+        def allowed(model, operation):
+            seen.append((model, operation))
+            return True
+        rows = PROJ.project_management_workspaces(scenes=[scene], check_access=allowed, surface=self.surface)
+        self.assertEqual(rows, [{"key": "enterprise.setup", "label": scene["name"], "route": scene["target"]["route"]}])
+        self.assertEqual(seen, [("sc.scene.company.enablement", operation) for operation in ["read", "create", "write"]])
+        for denied_operation in ["read", "create", "write"]:
+            self.assertEqual(PROJ.project_management_workspaces(scenes=[scene], surface=self.surface,
+                check_access=lambda model, operation: operation != denied_operation), [])
+        self.assertEqual(PROJ.project_management_workspaces(scenes=[], check_access=allowed, surface=self.surface), [])
 
     def test_role_difference_only_authorized_scenarios_present(self):
         finance_only = [

@@ -79,13 +79,28 @@
           </section>
         </div>
       </section>
+      <section v-if="model.platform.length || model.managementActions.length" class="scenario-group scenario-group--management" data-management-navigation="true">
+        <h3 class="scenario-group__heading">{{ model.platformLabel }}</h3>
+        <ul class="scenario-entries">
+          <li v-for="action in model.managementActions" :key="action.key">
+            <ScButton type="button" variant="ghost" appearance="menu-item" class="scenario-entry"
+              @click="emit('select-management', action)">{{ action.label }}</ScButton>
+          </li>
+          <li v-for="entry in model.platform" :key="entry.menu_xmlid">
+            <ScButton type="button" variant="ghost" appearance="menu-item" class="scenario-entry"
+              :class="{ active: entry.menu_id === activeMenuId }"
+              :aria-current="entry.menu_id === activeMenuId ? 'page' : undefined"
+              @click="emit('select', entry)">{{ entry.label }}</ScButton>
+          </li>
+        </ul>
+      </section>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import type { ScenarioNavEntry, ScenarioNavigationModel } from '../../app/scenarioSurface';
+import type { ScenarioNavEntry, ScenarioNavigationModel, ScenarioManagementAction } from '../../app/scenarioSurface';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScButton from '../design-system/ScButton.vue';
 
@@ -100,6 +115,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (event: 'select', entry: ScenarioNavEntry): void;
+  (event: 'select-management', entry: ScenarioManagementAction): void;
 }>();
 
 const expandedDomains = ref<string[]>([]);

@@ -168,6 +168,7 @@
             :active-menu-id="activeMenuId"
             :collapsed="sidebarCompact"
             @select="handleScenarioSelect"
+            @select-management="handleScenarioSelect"
           />
           <ProductSideNavigation
             v-else-if="navigationReady"
@@ -1505,7 +1506,7 @@ function buildMenuSelectionQuery(): LocationQueryRaw {
   return next;
 }
 
-function handleScenarioSelect(entry: ScenarioNavEntry) {
+function handleScenarioSelect(entry: Pick<ScenarioNavEntry, 'route'>) {
   if (!navigationReady.value) return;
   const route = String(entry.route || '').trim();
   if (!route) return;
