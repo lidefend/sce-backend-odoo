@@ -39,8 +39,10 @@
     "kind": "runtime",
     "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
   },
-  "blockers": [],
-  "next_exact_step": "Refresh existing isolated backend/preview with corrected source and run management-only real login; no database reset or module upgrade.",
+  "blockers": [
+    "Independent review of final candidate and required remote CI before protected integration; daily deployment remains pending"
+  ],
+  "next_exact_step": "Independent owner review of corrected initialization-first-hop candidate; then governed publication and required remote CI.",
   "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
   "layer": {
     "formal_product_layer": "P1 plus P0 generic frontend consumer",
@@ -121,14 +123,33 @@
         "log": ".runtime/nav01/admin-entry-iteration-r3.log"
       },
       "browser": {
-        "status": "not_run",
-        "reason": "refresh corrected artifact first"
-      }
+        "status": "passed",
+        "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793714820388/report.json",
+        "source_sha": "5ba87b051dccad2cd7bb5d72eb9a0b20d7d340c0",
+        "dirty_scope": "browser response capture only; application and runtime inputs unchanged",
+        "landing": "/s/enterprise.setup",
+        "management": {
+          "visibleEntries": 7,
+          "scope": "native_configuration_and_existing_setup_first_hop",
+          "initializationEntry": "enterprise.setup",
+          "catalogCount": 17,
+          "mutationPerformed": false
+        },
+        "errors": [],
+        "blockedWrites": []
+      },
+      "browser_coverage_limit": "Existing fixture company has enabled scenes. Zero-enabled business navigation and native grant removal covered by pure projection tests; no daily server deployment or enablement mutation performed."
     },
     "landing_first_attempt": {
       "status": "failed",
       "log": ".runtime/nav01/admin-entry-landing-tests.log",
       "resolution": "Tests compared historical Python defaults instead of runtime contract overlays; verify the actual overlay, preserving exact group and precedence assertions. Project-member difference predates this delta."
+    },
+    "browser_third_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793714790948/report.json",
+      "failure_owner": "P4 probe response collection omitted catalog; actual first hop and ready panel succeeded",
+      "recovery": "Capture existing readonly catalog response; rerun browser only, reuse application build/backend."
     }
   },
   "checks": {},
@@ -137,7 +158,8 @@
     "removed": "workspace_entries, model-ACL-generated navigation links, extra P0 extension context and frontend management_actions",
     "retained": "Projection/consumer of seven existing native configuration menus",
     "native_carrier": "No new menu/action: reuse registered enterprise.setup as first-hop orchestration; native model/action permissions remain authoritative.",
-    "prototype_browser_evidence": "86e/f3 prototype succeeded for management catalog but is NOT final-architecture acceptance; isolated carrier still serves that prototype until next governed refresh, daily server unchanged"
+    "prototype_browser_evidence": "86e/f3 prototype succeeded for management catalog but is NOT final-architecture acceptance; isolated carrier still serves that prototype until next governed refresh, daily server unchanged",
+    "first_hop": "Existing product role landing orchestration only, no new menu list or authority. Two existing administrator identities prefer enterprise.setup, retain workspace.home fallback."
   },
   "validation_plan": {
     "risk": "P1 first-hop behavior and existing management navigation; native grants and company enablement unchanged",

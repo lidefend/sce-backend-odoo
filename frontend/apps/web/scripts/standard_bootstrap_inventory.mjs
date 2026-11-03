@@ -52,7 +52,7 @@ try {
       const intent = body?.intent;
       if (intent) {
         observed.calls.push({ intent, httpStatus: response.status() });
-        if (intent === 'system.init' || intent.startsWith('ui.contract')) {
+        if (intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
           const result = await response.json();
           observed.contracts.push({ intent, params: redact(body.params || {}), payload: redact(result) });
         }
