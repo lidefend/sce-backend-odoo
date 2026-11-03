@@ -98,7 +98,8 @@
     "scripts/verify/data_scope_declarations.json",
     "scripts/verify/fact_layer_authority_guard.py",
     "scripts/verify/registry.yaml",
-    "scripts/verify/scenario_surface_projection_guard.py"
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "frontend/apps/web/src/stores/navigationProjectionActions.ts"
   ],
   "environment": {
     "kind": "offline",
@@ -136,14 +137,26 @@
     "scene_entry": {
       "status": "passed",
       "log": ".runtime/nav01/integration-scene-entry.log"
+    },
+    "quick_4011d2db": {
+      "status": "failed",
+      "log": ".runtime/nav01/integration-quick.log",
+      "reason": "session.ts complexity baseline exceeded; no receipt; fixed by extracting projection state/actions"
+    },
+    "projection_extraction": {
+      "status": "passed",
+      "tests": ".runtime/nav01/integration-extract-tests-r2.log",
+      "typecheck": ".runtime/nav01/integration-extract-typecheck-r2.log",
+      "complexity": ".runtime/nav01/integration-extract-complexity-r2.log",
+      "freeze_prepare": ".runtime/nav01/integration-extract-freeze.log"
     }
   },
   "blockers": [
-    "Exact-head Quick pending",
+    "Replacement exact-head Quick pending",
     "Candidate-bound runtime contract and browser/role acceptance pending",
     "Owner independent review and current-head remote CI required before merge"
   ],
-  "next_exact_step": "Freeze clean integration candidate; run exact-head Quick then governed candidate runtime checks and owner review.",
+  "next_exact_step": "Run exact-head Quick for refactored candidate, then governed browser acceptance and owner independent review.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",

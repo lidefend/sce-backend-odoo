@@ -4,8 +4,7 @@ import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
-import type { ProductCapabilityCatalog } from '../api/productCapabilityCatalog';
-import { PRODUCT_CAPABILITY_INTENTS } from '../app/businessConfigBoundaries';
+import { navigationProjectionActions, navigationProjectionState, type NavigationProjectionState } from './navigationProjectionActions';
 import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
@@ -245,7 +244,7 @@ export interface SceneGovernancePayload {
   reasons?: Record<string, unknown>;
 }
 
-export interface SessionState {
+export interface SessionState extends NavigationProjectionState {
   token: string | null;
   sessionDb: string;
   user: AppInitResponse['user'] | null;
@@ -275,20 +274,6 @@ export interface SessionState {
     scene_key?: string;
     loaded?: boolean;
   } | null;
-  workspaceScenarioProjection: {
-    rows: Array<{
-      scene_key: string;
-      name: string;
-      product_released: boolean;
-      tenant_enabled: boolean;
-      role_assigned: boolean;
-      workspace_candidate: boolean;
-    }>;
-    workspace_candidate_count: number;
-  } | null;
-  workspaceScenarioRequestSequence: number;
-  productCapabilityCatalog: ProductCapabilityCatalog | null;
-  productCapabilityCatalogRequestSequence: number;
   errorStateContract: unknown;
   pageContracts: Record<string, PageContract>;
   publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
@@ -611,10 +596,7 @@ export const useSessionStore = defineStore('session', {
     },
     workspaceHome: null,
     workspaceHomeRef: null,
-    workspaceScenarioProjection: null,
-    workspaceScenarioRequestSequence: 0,
-    productCapabilityCatalog: null,
-    productCapabilityCatalogRequestSequence: 0,
+    ...navigationProjectionState(),
     errorStateContract: null,
     pageContracts: {},
     publicPageContractStatus: 'idle',
@@ -851,41 +833,7 @@ export const useSessionStore = defineStore('session', {
     },
   },
   actions: {
-    invalidateProductCapabilityCatalog() {
-      this.productCapabilityCatalogRequestSequence += 1;
-      this.productCapabilityCatalog = null;
-    },
-    invalidateWorkspaceScenarioProjection() {
-      this.workspaceScenarioRequestSequence += 1;
-      this.workspaceScenarioProjection = null;
-    },
-    async loadWorkspaceScenarioProjection() {
-      this.invalidateWorkspaceScenarioProjection();
-      const requestSequence = this.workspaceScenarioRequestSequence;
-      const requestEpoch = currentContextEpoch();
-      const result = await intentRequest<{
-        contract_version?: string;
-        rows?: Array<{
-          scene_key: string;
-          name: string;
-          product_released: boolean;
-          tenant_enabled: boolean;
-          role_assigned: boolean;
-          workspace_candidate: boolean;
-        }>;
-        workspace_candidate_count?: number;
-      }>({
-        intent: 'workspace.scenario.projection.get',
-        params: {},
-      });
-      if (!isCurrentContextEpoch(requestEpoch)
-        || requestSequence !== this.workspaceScenarioRequestSequence) return null;
-      this.workspaceScenarioProjection = {
-        rows: Array.isArray(result?.rows) ? result.rows : [],
-        workspace_candidate_count: Number(result?.workspace_candidate_count || 0),
-      };
-      return this.workspaceScenarioProjection;
-    },
+    ...navigationProjectionActions,
     setToken(token: string) {
       this.invalidateProductCapabilityCatalog();
       this.invalidateWorkspaceScenarioProjection();
@@ -1875,21 +1823,6 @@ export const useSessionStore = defineStore('session', {
       }
       this.persist();
       return this.workspaceHome;
-    },
-    async loadProductCapabilityCatalog(force = false) {
-      const requestEpoch = currentContextEpoch();
-      if (!force && this.productCapabilityCatalog) return this.productCapabilityCatalog;
-      if (!this.token) return null;
-      const token = this.token;
-      const requestSequence = ++this.productCapabilityCatalogRequestSequence;
-      const result = await intentRequest<ProductCapabilityCatalog>({
-        intent: PRODUCT_CAPABILITY_INTENTS.catalog,
-      });
-      if (!isCurrentContextEpoch(requestEpoch) || token !== this.token
-        || requestSequence !== this.productCapabilityCatalogRequestSequence) return null;
-      this.productCapabilityCatalog = result;
-      this.persist();
-      return this.productCapabilityCatalog;
     },
     async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
       const requestSequence = ++recordSearchRequestSequence;
