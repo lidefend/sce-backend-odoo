@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: TEST-INTEGRATION-PREFLIGHT-MAINLINE
+  status: active
+  formal_product_layer: P4
+  objective: Integrate PR768 early test checks on current main while preserving shared Quick receipts and real relation component compilation.

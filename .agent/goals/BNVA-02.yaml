@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: BNVA-02
   title: backend_configuration_facts_and_page_productization
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer:
     - P1
