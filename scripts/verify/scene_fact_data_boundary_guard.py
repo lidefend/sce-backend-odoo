@@ -24,6 +24,7 @@ LEDGER_PATH = ROOT / "docs/architecture/scene_fact_data_boundary_ledger.json"
 SCENE_REGISTRY = ROOT / "addons/smart_construction_scene/profiles/scene_registry_content.py"
 SCENE_SETUP_XML = ROOT / "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml"
 PROVIDER = ROOT / "addons/smart_construction_scene/providers/enterprise_setup_provider.py"
+SURFACE_JSON = ROOT / "addons/smart_construction_core/data/scenario_product_surface.json"
 ENABLEMENT_WRITERS = [
     ROOT / "addons/smart_construction_scene/handlers/scenario_activation.py",
     ROOT / "addons/smart_construction_scene/services/tenant_scene_activation.py",
@@ -63,16 +64,34 @@ def _scene_enablement_writes() -> str:
     return "\n".join(lines)
 
 
+def _hardcoded_surface_menu_lists() -> str:
+    """Hardcoded cross-scenario menu lists in the product surface JSON."""
+    if not SURFACE_JSON.is_file():
+        return ""
+    try:
+        data = json.loads(SURFACE_JSON.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    parts = []
+    for section in ("horizontal_work_center", "platform_support"):
+        menus = (data.get(section) or {}).get("menus") or []
+        if menus:
+            parts.append(f"{section}:" + "\n".join(sorted(str(m).strip() for m in menus if str(m).strip())))
+    return "\n".join(parts)
+
+
 def _current_violations() -> dict[str, str | None]:
     """Return the live violation signature. A missing carrier yields None."""
     registry_codes = _hardcoded_enterprise_codes()
     provider_layout = _hardcoded_provider_layout()
     enablement_writes = _scene_enablement_writes()
+    surface_menus = _hardcoded_surface_menu_lists()
     return {
         "hardcoded_scene_registry_enterprise_entries": _sha(registry_codes) if registry_codes else None,
         "independent_scene_version_payload": _sha(SCENE_SETUP_XML.read_text(encoding="utf-8")) if SCENE_SETUP_XML.is_file() else None,
         "scene_enablement_fact_writes": _sha(enablement_writes) if enablement_writes else None,
         "hardcoded_provider_layout": _sha(provider_layout) if provider_layout else None,
+        "hardcoded_scene_surface_menus": _sha(surface_menus) if surface_menus else None,
     }
 
 
