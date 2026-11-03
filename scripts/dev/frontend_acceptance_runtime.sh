@@ -78,7 +78,20 @@ validate_backend_resource_identity() {
     echo "[acceptance.runtime] DENY missing managed backend container: $container" >&2
     return 1
   }
-  expected_source="$(readlink -f "$ROOT_DIR/addons")"
+  # The recorded immutable artifact is the source authority across worktrees.
+  # Verification checks every file against its Git object before accepting it.
+  local artifact_revision artifact_root
+  artifact_revision="$(container_env_value "$container" SC_SOURCE_REVISION)"
+  artifact_root="$(python3 "$ROOT_DIR/scripts/dev/acceptance_artifact.py" path --source-sha "$artifact_revision")" || return 1
+  expected_source="$artifact_root/addons"
+  local artifact_mapping destination
+  for artifact_mapping in addons:/mnt/source-addons demo_addons:/mnt/demo-addons addons_external:/mnt/addons_external scripts:/mnt/scripts docs:/mnt/docs VERSION:/opt/sce-product/VERSION config/odoo.conf.template:/etc/odoo/odoo.conf.template scripts/render_odoo_conf.py:/usr/local/bin/render_odoo_conf.py scripts/odoo-entrypoint.sh:/usr/local/bin/odoo-entrypoint.sh; do
+    destination="${artifact_mapping#*:}"
+    [[ "$(mount_source_of "$container" "$destination")" == "$artifact_root/${artifact_mapping%%:*}" ]] || { echo "DENY artifact mount identity mismatch: $destination" >&2; return 1; }
+    [[ "$(docker inspect "$container" --format '{{range .Mounts}}{{if eq .Destination "'"$destination"'"}}{{.RW}}{{end}}{{end}}')" == false ]] || { echo "DENY writable artifact mount" >&2; return 1; }
+  done
+  git -C "$ROOT_DIR" diff --quiet "$artifact_revision" -- addons demo_addons addons_external VERSION config/odoo.conf.template scripts/odoo-entrypoint.sh scripts/render_odoo_conf.py || return 1
+  [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons demo_addons addons_external)" ]] || return 1
   expected_product_version="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
   published_port="$(docker port "$container" 8069/tcp 2>/dev/null || true)"
   [[ "$(mount_source_of "$container" /mnt/source-addons)" == "$expected_source" ]] || {
@@ -104,8 +117,8 @@ validate_backend_identity() {
   local container="$BACKEND_ACCEPTANCE_NAME"
   local expected_fingerprint expected_revision
   validate_backend_resource_identity || return 1
-  expected_revision="$(git -C "$ROOT_DIR" rev-parse HEAD)"
-  expected_fingerprint="$(ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/dev/acceptance_source_fingerprint.sh")"
+  expected_revision="${SC_ACCEPTANCE_SOURCE_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
+  expected_fingerprint="$(printf '%s\n' "$expected_revision" | sha256sum | cut -d' ' -f1)"
   require_container_env "$container" SC_SOURCE_REVISION "$expected_revision" || return 1
   require_container_env "$container" SC_SOURCE_FINGERPRINT "$expected_fingerprint" || return 1
 }
@@ -696,12 +709,11 @@ PYPROJECTDOM
     ;;
   backend-up)
     preflight
-    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
-      validate_backend_identity || {
-        echo "[backend.acceptance.up] replacing stale backend identity" >&2
-        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
-      }
+    if validate_backend_identity && [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == true ]]; then
+      echo "[backend.acceptance.up] REUSED exact healthy artifact carrier"
+      exit 0
     fi
+    echo "[backend.acceptance.up] replacing stale backend identity with rollback custody"
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
     ;;
@@ -721,18 +733,10 @@ PYPROJECTDOM
     ;;
   backend-replace-stale)
     preflight
-    if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
-      validate_backend_resource_identity || {
-        echo "[backend.acceptance.replace-stale] replacing stale backend resource identity" >&2
-        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
-      }
-      if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
-        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
-      fi
-    fi
+    validate_backend_resource_identity || echo "[backend.acceptance.replace-stale] replacing stale backend resource identity"
+    # The shared up path validates the artifact and retains the old container.
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
-    echo "[backend.acceptance.replace-stale] PASS backend=$BACKEND_ACCEPTANCE_NAME revision=$(git -C "$ROOT_DIR" rev-parse HEAD)"
     ;;
   backend-health)
     preflight

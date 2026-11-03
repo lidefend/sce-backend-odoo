@@ -111,6 +111,16 @@ class RuntimeTargetDeclarationTest(unittest.TestCase):
     def test_real_resolver_is_published(self):
         self.assertEqual(validate_runtime_targets(self.source, self.standard), [])
 
+    def test_professional_wrapper_target_must_be_published(self):
+        source = self.source.replace('menu_sc_p1_income_contract', 'menu_sc_project_contract_overview')
+        self.assertTrue(any('not formally released' in error
+                            for error in validate_runtime_targets(source, self.standard)))
+
+    def test_professional_wrapper_action_must_match(self):
+        source = self.source.replace('action_construction_contract_income', 'action_construction_contract_expense')
+        self.assertTrue(any('runtime action differs' in error
+                            for error in validate_runtime_targets(source, self.standard)))
+
     def test_retired_settlement_entry_fails(self):
         source = self.source.replace('menu_sc_p1_expense_settlement', 'menu_sc_expense_contract_settlement')
         self.assertTrue(validate_runtime_targets(source, self.standard))

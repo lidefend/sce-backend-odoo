@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-NAVIGATION-CLOSEOUT-20261103",
+  "branch": "fix/scheduled-navigation-closeout-20261103",
+  "baseline_sha": "2b27eb8cae10552009ac56adf1fda675ce394535",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-NAVIGATION-CLOSEOUT-20261103.yaml",
+  "record": ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-NAVIGATION-CLOSEOUT-20261103.yaml",
+    ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/",
+    "config/frontend/authoritative_navigation.json",
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "scripts/verify/frontend_release_navigation_policy_guard.py",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing Make verification and GitHub scheduled/full CI; no local runtime or database writes"
+  },
+  "checks": {},
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "release navigation evidence and target resolver",
+    "module": "config/frontend + scripts/verify",
+    "standard_vs_user_specific": "standard release verification",
+    "why_here": "Acceptance expectations drifted from unchanged P1 declarations",
+    "why_not_elsewhere": "Do not change product access or formal release policy to satisfy test expectations",
+    "blast_radius": "Role expectation snapshots and browser target resolution only"
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze clean candidate, run one exact-head Quick, collect owner-provided independent review, then publish through governed Make and verify full release lane.",
+  "authorization": "Owner: 继续收口改动并同步处理 定时ci",
+  "failure_evidence": ".runtime/mainline-preflight-delivery/scheduled-and-workspace-diagnosis.json",
+  "exclusions": [
+    "34 dirty paths in other worktrees pending separate closeout",
+    "environment/UUID/mount remediation",
+    "deployment"
+  ],
+  "rollback": "Revert bounded P4 candidate; no data migration",
+  "results": {
+    "stage": {
+      "head": "2b27eb8cae10552009ac56adf1fda675ce394535",
+      "dirty_scope": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCHEDULED-NAVIGATION-CLOSEOUT-20261103.yaml",
+        ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/",
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "docs/engineering_convergence/"
+      ]
+    },
+    "iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "layer": "L1",
+      "log": ".runtime/scheduled-navigation-iteration.log"
+    },
+    "navigation": {
+      "command": "make verify.frontend.release_navigation_policy.guard",
+      "status": "passed",
+      "layer": "L2",
+      "tests": 31,
+      "log": ".runtime/scheduled-navigation-targeted.log"
+    },
+    "hardening": {
+      "command": "make verify.frontend.delivery_hardening.guard",
+      "status": "passed",
+      "layer": "L2",
+      "tests": 15,
+      "log": ".runtime/scheduled-navigation-hardening.log"
+    },
+    "freeze_prepare": {
+      "command": "make ci.delivery.freeze.prepare",
+      "status": "passed",
+      "log": ".runtime/scheduled-navigation-freeze.log"
+    }
+  },
+  "validation_scope": {
+    "risk": "P4 expectation drift and obsolete resolver output",
+    "L3": "not required: no product/runtime/database changes",
+    "L4": "remote full release lane pending frozen candidate publication",
+    "evidence_reuse": "Metadata-only result recording does not alter tested code or tool inputs."
+  }
+}

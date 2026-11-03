@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "id": "P4-ACCEPTANCE-ARTIFACT-20261103",
+  "branch": "fix/p4-acceptance-artifact-20261103",
+  "baseline_sha": "f05eb7155387b8bc403881a3c89bd9577cbf0fca",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P4-ACCEPTANCE-ARTIFACT-20261103.yaml",
+  "record": ".agent/runs/P4-ACCEPTANCE-ARTIFACT-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P4-ACCEPTANCE-ARTIFACT-20261103.yaml",
+    ".agent/runs/P4-ACCEPTANCE-ARTIFACT-20261103/",
+    "scripts/dev/acceptance_artifact.py",
+    "scripts/verify/test_acceptance_artifact.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/dev/backend_acceptance_up.sh",
+    "scripts/dev/frontend_standard_preview.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "make/dev.mk",
+    "docs/ops/iterations/p4-acceptance-artifact-20261103.md",
+    "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+    "scripts/verify/test_frontend_release_ci_identity.py",
+    "docs/engineering_convergence/",
+    "docs/audit/test_coverage_registry/",
+    "contracts/generated/",
+    "config/frontend/authoritative_navigation.json",
+    "addons/smart_construction_core/views/core/settlement_views.xml",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+    "scripts/verify/frontend_page_identity_smoke.js"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Owner authorized independent P4 acceptance remediation. Registered local profile sc-fe-r2-p1-01, database sc_frontend_acceptance, filter ^sc_frontend_acceptance$, existing sc_fe_r2_p1_01_* volumes; no UUID/fixture/module changes.",
+    "before": ".runtime/p4-acceptance-artifact/before.json",
+    "candidate_source": "f05eb7155387b8bc403881a3c89bd9577cbf0fca",
+    "rollback": "Keep stopped previous container under exact ID-derived name; failed startup restores original name and original running state. Acquire probe-compatible exclusive locks before replacement."
+  },
+  "checks": {},
+  "blockers": [
+    "New exact candidate awaits Quick and independent delta review before publication",
+    "New probe needs remote full page-identity evidence; do not reuse old failed browser result"
+  ],
+  "next_exact_step": "Prepare frozen candidate and exact-head Quick; owner independent delta review then governed publication and new current-head CI.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "registered acceptance artifact and lifecycle",
+    "module": "scripts/dev + make/dev.mk",
+    "standard_vs_user_specific": "shared delivery infrastructure",
+    "why_here": "Environment identity must not depend on mutable topic worktrees",
+    "why_not_elsewhere": "No P0/P1 behavior or permissions changes",
+    "blast_radius": "local acceptance only; preserve existing DB and volumes"
+  },
+  "authorization": "启动独立 P4 验收环境整改",
+  "preserved_candidate": "fix/scheduled-navigation-closeout-20261103@f05eb7155387b8bc403881a3c89bd9577cbf0fca",
+  "exclusions": [
+    "production and daily runtime changes",
+    "database UUID reset",
+    "fixture reset",
+    "permission or gate weakening"
+  ],
+  "validation_plan": {
+    "L0": "frozen CI candidate preserved on original branch; new P4 branch",
+    "L1": "ci.local.iteration and syntax checks",
+    "L2": "artifact tamper, cross-worktree, dirty-input, extra-file, path traversal and lifecycle tests",
+    "L3": "readback and exclusive acceptance lifecycle only after L1/L2 pass",
+    "L4": "candidate contract prerequisite and list surface after correct environment identity",
+    "L5": "review new code separately from already approved CI candidate"
+  },
+  "findings": [
+    "Backend stopped; mounted pc01 and recorded cfd3d51cd97b6980819f898390cb3d4e7da2f9fc.",
+    "Artifact identity tied to mutable worktree; frontend 5175 health differs from actual standard-list 5180 preview.",
+    "Owning runtime test harness has 17 failures from private .env.dev dependency, one whitespace-sensitive source assertion and one incomplete isolated entry fixture.",
+    {
+      "owner": "P4 verification baseline",
+      "source": "GitHub Actions run 41588976540 at 359bd43f9f70fbb9672e7357e6ce2248aacf8bc9",
+      "failure": "PM browser expected 7, actual 8; project initiation is already declared by P1 role and formal publication",
+      "scope": "Verification expectation only; NAV-01 remains read-only; no authorization or runtime implementation change"
+    }
+  ],
+  "results": {
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/p4-acceptance-artifact/iteration-r4.log"
+    },
+    "artifact_and_rollback": {
+      "status": "passed",
+      "command": "make verify.acceptance.artifact.unit",
+      "tests": 10,
+      "log": ".runtime/p4-acceptance-artifact/unit-r6.log"
+    },
+    "runtime_profile": {
+      "status": "passed",
+      "command": "make verify.acceptance.runtime.baseline_rebuild.unit",
+      "tests": 96,
+      "log": ".runtime/p4-acceptance-artifact/runtime-unit-final.log"
+    },
+    "backend": {
+      "status": "passed",
+      "command": "make backend.acceptance.up; make backend.acceptance.health",
+      "readback": ".runtime/p4-acceptance-artifact/backend-readback.json",
+      "logs": [
+        ".runtime/p4-acceptance-artifact/backend-up-r2.log",
+        ".runtime/p4-acceptance-artifact/backend-health.log"
+      ],
+      "source_sha": "f05eb7155387b8bc403881a3c89bd9577cbf0fca"
+    },
+    "frontend": {
+      "status": "passed",
+      "command": "make frontend.standard.preview.build; make frontend.standard.preview.up",
+      "log": ".runtime/p4-acceptance-artifact/frontend-up.log",
+      "build": "reused unchanged input-bound artifact",
+      "port": 5180
+    },
+    "contract_receipt": {
+      "status": "not_run",
+      "reason": "Frozen-candidate guard correctly rejected dirty implementation tree",
+      "log": ".runtime/p4-acceptance-artifact/contract-receipt.log"
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/p4-acceptance-artifact/freeze-r2.log"
+    },
+    "initial_freeze": {
+      "status": "failed",
+      "owner": "P4 goal metadata missing goal mapping",
+      "recovery": "Reformatted goal to canonical schema; owning ledger and freeze preparation passed"
+    },
+    "compliance_fix": {
+      "status": "verification_pending",
+      "baseline_sha": "3249d583d66e8ab425160aa4a0a0884c48dfbaab",
+      "classification": "P1 native view capability mismatch",
+      "runtime_diagnosis": {
+        "status": "reproduced",
+        "log": ".runtime/p4-acceptance-artifact/modifier-diagnostic-r3.log",
+        "pm": "payment.request AccessError; compliance_state dependency present but value absent",
+        "finance": "native value warn; contract value warn",
+        "mutation": "none; probe always rolls back"
+      },
+      "static_regression": {
+        "status": "passed",
+        "tests": 33,
+        "added_cases": 4,
+        "command": "python3 scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "log": ".runtime/p4-acceptance-artifact/compliance-existing-suite.log"
+      },
+      "runtime_tools": {
+        "status": "passed",
+        "tests": 96,
+        "log": ".runtime/p4-acceptance-artifact/compliance-runtime-tools.log"
+      },
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/p4-acceptance-artifact/compliance-iteration-r2.log",
+        "previous_failed_attempt": ".runtime/p4-acceptance-artifact/compliance-iteration.log",
+        "recovery": "Retired temporary diagnostic target; merged regression into existing delivery hardening suite without baseline changes"
+      },
+      "post_fix_runtime": {
+        "status": "not_run",
+        "reason": "Candidate XML groups are not yet installed; immutable acceptance backend remains 3249. Governed module-upgrade source and carrier must be verified before DB changes."
+      },
+      "probe_harness_correction": "First diagnostic invocation used unsupported params constructor; corrected to payload and IntentResult.data, original log retained",
+      "diagnostic_tool": "Temporary governed runtime diagnostic retired after read-only root-cause proof; source archived in .runtime/p4-acceptance-artifact/acceptance_modifier_diagnostic.py",
+      "freeze_prepare": {
+        "status": "passed",
+        "log": ".runtime/p4-acceptance-artifact/compliance-freeze.log"
+      }
+    },
+    "atomic_identity_probe": {
+      "status": "passed",
+      "classification": "P4 validation-tool asynchronous mixed-snapshot defect",
+      "source_head": "9f61d0f1020acb843cb8e3367104c1fc35338fd5",
+      "source_ci_run": 41598849554,
+      "command": "make verify.frontend.page_identity",
+      "assertions": [
+        34,
+        28
+      ],
+      "guard": "writers=1 integrations=6",
+      "log": ".runtime/p4-acceptance-artifact/identity-atomic-tests.log",
+      "coverage": "Actual browser predicate executed in controlled DOM; loading/mixed titles and missing source rejected, settled snapshot retained after DOM changes; existing production identity and lifecycle assertions unchanged",
+      "limits": "No current-head remote/browser pass; unchanged application/runtime code does not require DB upgrade or fixture reset; changed browser probe requires new execution evidence"
+    }
+  },
+  "continuation_scope": {
+    "formal_product_layer": "P4 validation tool",
+    "module": "frontend_product_maturity_audit",
+    "standard_vs_user_specific": "Shared browser evidence collection",
+    "reason": "CI41598849554 sampled old action identity and transitioning create document title separately",
+    "blast_radius": "Identity readiness and atomic snapshot only; unchanged role counts, expected title assertions and product/ACL",
+    "baseline": "9f61d0f1020acb843cb8e3367104c1fc35338fd5"
+  }
+}

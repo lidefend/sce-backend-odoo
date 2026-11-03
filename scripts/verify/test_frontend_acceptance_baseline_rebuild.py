@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import subprocess
 import textwrap
+import tempfile
+import shlex
 import unittest
 from pathlib import Path
 
@@ -14,10 +16,13 @@ MAKE = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
 
 
 def run_library(body: str) -> subprocess.CompletedProcess[str]:
+    env_fixture = tempfile.NamedTemporaryFile(mode="w", suffix=".env")
+    env_fixture.write("DB_PASSWORD=synthetic-test-only\nADMIN_PASSWD=synthetic-test-only\nJWT_SECRET=synthetic-test-only\n")
+    env_fixture.flush()
     prefix = f"""
         export ROOT_DIR={ROOT}
         export ENV=dev
-        export ENV_FILE={ROOT / '.env.dev'}
+        export ENV_FILE={shlex.quote(env_fixture.name)}
         export COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01
         export PROJECT=sc-fe-r2-p1-01
         export DB_NAME=sc_frontend_acceptance
@@ -31,7 +36,7 @@ def run_library(body: str) -> subprocess.CompletedProcess[str]:
         source {SCRIPT_PATH}
         set +e
     """
-    return subprocess.run(
+    result = subprocess.run(
         ["bash", "-c", textwrap.dedent(prefix + body)],
         cwd=ROOT,
         text=True,
@@ -39,6 +44,8 @@ def run_library(body: str) -> subprocess.CompletedProcess[str]:
         stderr=subprocess.STDOUT,
         check=False,
     )
+    env_fixture.close()
+    return result
 
 
 def run_volume_scope(

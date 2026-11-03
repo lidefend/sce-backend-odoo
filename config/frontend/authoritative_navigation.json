@@ -8,7 +8,7 @@
   "identity": "menu_xmlid|action_xmlid|model",
   "roles": {
     "finance": {
-      "expected_count": 45,
+      "expected_count": 46,
       "leaf_keys": [
         "smart_construction_core.menu_payment_request_receive|smart_construction_core.action_payment_request_receive|payment.request",
         "smart_construction_core.menu_sc_bid_deposit_pay|smart_construction_core.action_sc_bid_deposit_pay|sc.expense.claim",
@@ -16,6 +16,7 @@
         "smart_construction_core.menu_sc_borrowing_request|smart_construction_core.action_sc_financing_loan_borrowing_request|sc.financing.loan",
         "smart_construction_core.menu_sc_company_contractor_responsibility_fact|smart_construction_core.action_sc_company_contractor_responsibility_fact|sc.company.contractor.responsibility.fact",
         "smart_construction_core.menu_sc_company_contractor_responsibility_summary|smart_construction_core.action_sc_company_contractor_responsibility_summary|sc.company.contractor.responsibility.summary",
+        "smart_construction_core.menu_sc_company_expense|smart_construction_core.action_sc_payment_execution|sc.payment.execution",
         "smart_construction_core.menu_sc_company_finance_expense|smart_construction_core.action_sc_payment_execution_company_finance_expense|sc.payment.execution",
         "smart_construction_core.menu_sc_contract_deposit_register|smart_construction_core.action_sc_contract_deposit_pay|sc.expense.claim",
         "smart_construction_core.menu_sc_contract_deposit_return|smart_construction_core.action_sc_contract_deposit_return|sc.expense.claim",
@@ -95,7 +96,7 @@
       ]
     },
     "pm": {
-      "expected_count": 24,
+      "expected_count": 25,
       "leaf_keys": [
         "smart_construction_core.menu_sc_boq_analysis|smart_construction_core.action_project_boq_analysis|project.boq.analysis",
         "smart_construction_core.menu_sc_boq_version|smart_construction_core.action_project_boq_version|project.boq.version",
@@ -112,6 +113,7 @@
         "smart_construction_core.menu_sc_project_boq_root|smart_construction_core.action_project_boq_line|project.boq.line",
         "smart_construction_core.menu_sc_project_contract_section|smart_construction_core.action_construction_contract_section|construction.contract.section",
         "smart_construction_core.menu_sc_project_execution_scope|smart_construction_core.action_construction_execution_scope|construction.execution.scope",
+        "smart_construction_core.menu_sc_project_initiation|smart_construction_core.action_project_initiation|project.project",
         "smart_construction_core.menu_sc_project_location_breakdown|smart_construction_core.action_construction_location_breakdown|construction.location.breakdown",
         "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project",
         "smart_construction_core.menu_sc_project_work_breakdown|smart_construction_core.action_work_breakdown|construction.work.breakdown",
@@ -122,13 +124,14 @@
         "smart_construction_core.menu_sc_wbs_plan_version|smart_construction_core.action_construction_wbs_plan|construction.wbs.plan",
         "smart_construction_core.menu_sc_workspace_home||"
       ],
-      "browser_expected_count": 7,
+      "browser_expected_count": 8,
       "browser_leaf_keys": [
         "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
         "smart_construction_core.menu_sc_p1_daily_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
         "smart_construction_core.menu_sc_p1_expense_settlement|smart_construction_core.action_sc_settlement_order_expense|sc.settlement.order",
         "smart_construction_core.menu_sc_p1_income_settlement|smart_construction_core.action_sc_settlement_order_income|sc.settlement.order",
         "smart_construction_core.menu_sc_p1_project_budget|smart_construction_core.action_project_budget|project.cost.plan",
+        "smart_construction_core.menu_sc_project_initiation|smart_construction_core.action_project_initiation|project.project",
         "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project",
         "smart_construction_core.menu_sc_workspace_home||"
       ]

@@ -120,7 +120,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             encoding="utf-8"
         )
         backend_route = "requestPath === '/web' || requestPath.startsWith('/web/')"
-        self.assertIn(backend_route, server)
+        self.assertIn(backend_route, " ".join(server.split()))
         self.assertLess(server.index("if (isBackendRoute)"), server.index("const raw ="))
 
     def test_runtime_mutators_validate_existing_resource_identity_before_change(self):
@@ -134,6 +134,8 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         frontend_up = runtime.split("  frontend-up)", 1)[1].split("    ;;", 1)[0]
         frontend_down = runtime.split("  frontend-down)", 1)[1].split("    ;;", 1)[0]
         self.assertNotIn("docker rm", backend_up)
+        self.assertNotIn("backend_acceptance_down.sh", backend_up)
+        self.assertNotIn("backend_acceptance_down.sh", backend_replace)
         self.assertLess(
             frontend_up.index("validate_frontend_launch_contract"),
             frontend_up.index("frontend_acceptance_up.sh"),
@@ -150,7 +152,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         self.assertIn("removing stale backend identity", backend_down)
         self.assertLess(
             backend_replace.index("validate_backend_resource_identity"),
-            backend_replace.index("backend_acceptance_down.sh"),
+            backend_replace.index("backend_acceptance_up.sh"),
         )
         self.assertIn("replacing stale backend resource identity", backend_replace)
         self.assertIn("validate_backend_runtime", backend_replace)
