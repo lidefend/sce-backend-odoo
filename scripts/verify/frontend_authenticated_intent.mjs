@@ -64,27 +64,67 @@ export async function bindAuthenticatedIntent(response, expectedPrincipal) {
 // Register before the login click so fast startup responses cannot be missed.
 // Both waits settle even when the submit action fails; no detached rejection.
 export async function authenticateBrowserProbe(page, expectedLogin, submit) {
-  const wait = (intent) => page.waitForResponse((response) => {
-    if (!response.url().includes('/api/v1/intent')) return false;
-    try { return JSON.parse(response.request().postData() || '{}').intent === intent; }
-    catch { return false; }
-  }, { timeout: 45000 }).then(response => ({ response }), () => ({ failed: true }));
-  const loginWait = wait('login');
-  const startupWait = wait('system.init');
-  await submit();
-  const login = await loginWait;
-  if (login.failed) throw new Error('login: response missing');
-  let loginRequest = {};
+  const cleanups = [];
+  const waitForIntent = intent => new Promise(resolve => {
+    const finish = result => {
+      page.off('response', onResponse);
+      clearTimeout(timer);
+      resolve(result);
+    };
+    const onResponse = response => {
+      try {
+        if (!new URL(response.url()).pathname.endsWith('/api/v1/intent')) return;
+        const request = response.request();
+        if (request.method() !== 'POST') return;
+        if (JSON.parse(request.postData() || '{}').intent !== intent) return;
+      } catch { return; }
+      finish({ response });
+    };
+    const timer = setTimeout(() => finish({ failed: true }), 45000);
+    cleanups.push(() => finish({ failed: true }));
+    page.on('response', onResponse);
+  });
+  const loginWait = waitForIntent('login');
+  const startupWait = waitForIntent('system.init');
   try {
-    loginRequest = JSON.parse(login.response.request()?.postData() || '{}');
-  } catch {
-    throw new Error('login: request payload is invalid');
+    await submit();
+    const login = await loginWait;
+    if (login.failed) throw new Error('login: response missing');
+    let loginRequest = {};
+    try {
+      loginRequest = JSON.parse(login.response.request()?.postData() || '{}');
+    } catch {
+      throw new Error('login: request payload is invalid');
+    }
+    if (String(loginRequest?.params?.login || '') !== expectedLogin) {
+      throw new Error('login: requested login mismatch');
+    }
+    successfulIntentData(login.response.status(), {}, 'login');
+    const startup = await startupWait;
+    if (startup.failed) throw new Error('system.init: response missing');
+    return await bindAuthenticatedIntent(startup.response);
+  } finally {
+    for (const cleanup of cleanups) cleanup();
   }
-  if (String(loginRequest?.params?.login || '') !== expectedLogin) {
-    throw new Error('login: requested login mismatch');
+}
+
+// Hydration can remount the login form; verify both values after settling.
+// Never include credentials or browser exception text in the failure message.
+export async function fillLoginCredentials(page, login, password, timeout = 45000) {
+  const deadline = Date.now() + timeout;
+  const username = () => page.locator('#login-username, input[autocomplete="username"]').first();
+  const secret = () => page.locator('#login-password, input[autocomplete="current-password"]').first();
+  const remaining = () => Math.max(1, Math.min(1000, deadline - Date.now()));
+  while (Date.now() < deadline) {
+    try {
+      await username().fill(login, { timeout: remaining() });
+      await secret().fill(password, { timeout: remaining() });
+      await page.waitForTimeout(Math.min(300, Math.max(0, deadline - Date.now())));
+      const observedLogin = await username().inputValue({ timeout: remaining() });
+      const observedPassword = await secret().inputValue({ timeout: remaining() });
+      if (Date.now() <= deadline && observedLogin === login && observedPassword === password) return;
+    } catch { /* Retry only within the bounded hydration deadline. */ }
+    await page.waitForTimeout(Math.min(100, Math.max(0, deadline - Date.now())));
   }
-  successfulIntentData(login.response.status(), {}, 'login');
-  const startup = await startupWait;
-  if (startup.failed) throw new Error('system.init: response missing');
-  return bindAuthenticatedIntent(startup.response);
+  throw new Error('login form did not stabilize within timeout');
 }

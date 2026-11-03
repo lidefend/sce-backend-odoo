@@ -28,7 +28,7 @@ let ENTRY_BASE_PATH;
 let LOGIN;
 let PASSWORD;
 let EXPECTED_SHA;
-let authenticateBrowserProbe;
+let authenticateBrowserProbe, fillLoginCredentials;
 function relativePathname(pathname) {
   if (!ENTRY_BASE_PATH) return pathname;
   if (pathname === ENTRY_BASE_PATH) return '/';
@@ -215,8 +215,7 @@ function layoutRelationEntriesFrom(contract) {
 
 async function login(page) {
   await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.locator('input').nth(0).fill(LOGIN);
-  await page.locator('input[type="password"]').fill(PASSWORD);
+  await fillLoginCredentials(page, LOGIN, PASSWORD, 60000);
   await authenticateBrowserProbe(page, LOGIN, () => page.locator('button[type="submit"]').click());
 }
 
@@ -402,7 +401,7 @@ async function clickAndClassify(page, field, sourcePath) {
 
 async function main() {
   const environment = await import('./lib/frontend_acceptance_environment.mjs');
-  ({ authenticateBrowserProbe } = await import('./frontend_authenticated_intent.mjs'));
+  ({ authenticateBrowserProbe, fillLoginCredentials } = await import('./frontend_authenticated_intent.mjs'));
   const acceptance = environment.resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', operation: 'readonly' });
   const { acquireAcceptanceLease } = await import('./lib/frontend_acceptance_lease.mjs');
   const lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'relation-roundtrip' } });

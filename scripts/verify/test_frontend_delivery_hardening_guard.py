@@ -19,10 +19,11 @@ class AuthenticatedIntentProbeTest(unittest.TestCase):
     def test_request_identity_and_failures(self):
         program = r"""
 import assert from 'node:assert/strict';
-import { bindAuthenticatedIntent, successfulIntentData, authenticateBrowserProbe, assertEntryRequest } from './scripts/verify/frontend_authenticated_intent.mjs';
+import { EventEmitter } from 'node:events';
+import { bindAuthenticatedIntent, successfulIntentData, authenticateBrowserProbe, assertEntryRequest, fillLoginCredentials } from './scripts/verify/frontend_authenticated_intent.mjs';
 const response = (id=7, status=200, body={data:{user:{id,login:'probe'}}}, headers={authorization:'Bearer test-only'}) => ({
  status:()=>status, json:async()=>body,
- request:()=>({url:()=> 'https://example.test/t/demo/api/v1/intent',
+ request:()=>({method:()=> 'POST',url:()=> 'https://example.test/t/demo/api/v1/intent',
  allHeaders:async()=>({...headers,'content-length':'99'}),
  postData:()=>JSON.stringify({intent:'system.init',context:{company_id:3},params:{}})})
 });
@@ -51,14 +52,13 @@ await next({request:{post:async()=>response(8)}},'system.init',{});
 // The shared login binder must observe fast responses emitted by the click,
 // reject the wrong actor, and never include the error body/password in failures.
 async function authenticate(body, status=200, login='probe') {
-  const listeners=[];
-  const page={waitForResponse:predicate=>new Promise(resolve=>listeners.push({predicate,resolve}))};
-  const emit=resp=>{for(const listener of listeners) if(listener.predicate(resp))listener.resolve(resp);};
-  return authenticateBrowserProbe(page,'probe',async()=>{
+  const page=new EventEmitter();
+  const emit=resp=>page.emit('response',resp);
+  try { return await authenticateBrowserProbe(page,'probe',async()=>{
     emit({url:()=> 'https://example.test/t/demo/api/v1/intent', status:()=>status,
-      request:()=>({postData:()=>JSON.stringify({intent:'login',params:{login}})})});
+      request:()=>({method:()=> 'POST',postData:()=>JSON.stringify({intent:'login',params:{login}})})});
     emit({...response(7,200,body), url:()=> 'https://example.test/t/demo/api/v1/intent'});
-  });
+  }); } finally { assert.equal(page.listenerCount('response'),0); }
 }
 const authenticated=await authenticate({data:{user:{id:7,login:'probe'}}});
 await authenticated(context,'system.init',{});
@@ -77,6 +77,28 @@ for (const [url,headers,payload] of [
  ['https://example.test/api/v1/intent',{}, {db:null}],
  ['https://example.test/api/v1/intent',{}, {context:{database:''}}],
 ]) assert.throws(()=>assertEntryRequest(url,headers,payload),/database routing is forbidden/);
+const failedSubmitPage = new EventEmitter();
+await assert.rejects(authenticateBrowserProbe(failedSubmitPage, 'probe', async () => { throw new Error('submit failed'); }), /submit failed/);
+assert.equal(failedSubmitPage.listenerCount('response'), 0);
+// Remount clears only the password on the first attempt. Both fields must stick.
+let attempts = 0, now = 0, values = {}, alwaysLosePassword = false;
+const realNow = Date.now;
+const form = {
+ locator: selector => { const field = selector.includes('username') ? 'username' : 'password'; return {
+  first() { return this; },
+  async fill(value) { if (field === 'username') attempts++; values[field] = value; },
+  async inputValue() { return values[field] || ''; },
+ }; },
+ async waitForTimeout(ms) { now += ms; if (attempts === 1 || alwaysLosePassword) values.password = ''; },
+};
+try {
+ Date.now = () => now;
+ await fillLoginCredentials(form, 'probe', 'synthetic-only', 2000);
+ assert.equal(attempts, 2);
+ alwaysLosePassword = true;
+ await assert.rejects(fillLoginCredentials(form, 'probe', 'synthetic-only', 500),
+   error => error.message === 'login form did not stabilize within timeout');
+} finally { Date.now = realNow; }
 console.log('authenticated probe boundaries PASS');
 """
         subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, check=True)
