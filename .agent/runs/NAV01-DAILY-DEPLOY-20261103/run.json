@@ -8,10 +8,12 @@
   "record": ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
   "scope": [
     ".agent/active-runs.json",
-    ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
     ".agent/goals/NAV01-DAILY-DEPLOY-20261103.yaml",
+    ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
     "config/ops/daily_runtime_duty_stack.env",
     "config/ops/daily_runtime_duty_stack.yml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "scripts/ops/daily_runtime_database_duty.py",
     "scripts/ops/test_daily_runtime_database_duty.py",
     "scripts/verify/daily_runtime_entry_guard.py"
@@ -41,5 +43,12 @@
     "published_face": ".runtime/nav01/daily-published-face.json",
     "db_recovery_points": ".runtime/nav01/daily-duty-upgrade.json",
     "runtime_repair": "Corrected local P4 renderer applied through governed Make; remote Git tree remains unchanged at deployed main."
+  },
+  "local_closeout": {
+    "scope_reconciliation": "Include the two reports refreshed by the governed pre-commit hook; no runtime/source changes",
+    "workspace_status": "All six existing worktrees clean before metadata reconciliation",
+    "preserved_p4": "0c5ea32aee9b6b6bfae5caa8f67760fb9377edb3; five probe paths still require affected browser verification",
+    "deployment": "aa28f842e778eb38541920d73cb67a60c1e72132 verified; no deployment replay",
+    "review": "Independent review pending; local closeout is not a review approval"
   }
 }
