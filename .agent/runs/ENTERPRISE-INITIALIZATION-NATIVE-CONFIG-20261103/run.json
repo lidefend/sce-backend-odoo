@@ -29,13 +29,32 @@
     "addons/smart_construction_core/tests/test_system_permission_separation.py",
     "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
     "addons/smart_core/utils/contract_governance_user_surface.py",
-    "addons/smart_core/tests/test_contract_governance_record_context_registry.py"
+    "addons/smart_core/tests/test_contract_governance_record_context_registry.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "Reuse registered local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180; daily read-only only; no new credentials or database"
   },
-  "checks": {
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
+    "standard_vs_user_specific": "Standard enterprise initialization, no customer-specific data",
+    "why_here": "Native declarations own entry metadata and access; scene only consumes projections",
+    "why_not_elsewhere": "No provider/frontend duplicate action/menu/role lists",
+    "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
+    "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
+    "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests"
+  },
+  "validation_plan": {
+    "earliest": "L1 native XML/semantic projection tests",
+    "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
+    "excluded": "No account/role or enterprise enablement changes on daily server; no full Quick or environment rebuild"
+  },
+  "next_exact_step": "Commit local implementation for immutable acceptance source, run affected module upgrade and exact company permission tests; then inspect initialization contracts and actual entries.",
+  "live_state_file": ".runtime/enterprise-init/state.json",
+  "results": {
     "native_projection": {
       "status": "passed",
       "command": "make verify.nav01.native_authority.unit",
@@ -70,23 +89,23 @@
       "status": "failed",
       "log": ".runtime/enterprise-init/bootstrap-browser.log",
       "reason": "P0 user surface sanitizer dropped declared native view source before scene projection; fixing explicit source transport"
+    },
+    "source_transport": {
+      "status": "passed",
+      "tests": 23,
+      "log": ".runtime/enterprise-init/source-transport-tests.log"
+    },
+    "iteration_metadata_attempt": {
+      "status": "failed",
+      "classification": "validation_metadata",
+      "reason": "Results were put in dependency-check declarations; moved to results without changing evidence",
+      "log": ".runtime/enterprise-init/iteration-final.log"
+    },
+    "initialization_journey_source_transport": {
+      "status": "failed",
+      "log": ".runtime/enterprise-init/bootstrap-browser-source-transport.log",
+      "reason": "All five native entries projected; company route wrongly treated as business scene requiring enablement. Add scene lifecycle classification, no action whitelist."
     }
   },
-  "blockers": [],
-  "layer": {
-    "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
-    "standard_vs_user_specific": "Standard enterprise initialization, no customer-specific data",
-    "why_here": "Native declarations own entry metadata and access; scene only consumes projections",
-    "why_not_elsewhere": "No provider/frontend duplicate action/menu/role lists",
-    "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
-    "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
-    "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests"
-  },
-  "validation_plan": {
-    "earliest": "L1 native XML/semantic projection tests",
-    "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
-    "excluded": "No account/role or enterprise enablement changes on daily server; no full Quick or environment rebuild"
-  },
-  "next_exact_step": "Commit local implementation for immutable acceptance source, run affected module upgrade and exact company permission tests; then inspect initialization contracts and actual entries.",
-  "live_state_file": ".runtime/enterprise-init/state.json"
+  "checks": {}
 }

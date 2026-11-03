@@ -85,6 +85,14 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
                 if locations:
                     allowed = any(item["location"] != "scenario"
                                   or enabled.get(item["scenario_key"]) is True for item in locations)
+            # Initialization precedes business-scene enablement. This lifecycle
+            # declaration preserves already-authorized internal actions only;
+            # it neither adds routes nor overrides an explicit business menu.
+            if (not location and legacy
+                    and legacy.get("enablement_scope") == "enterprise_initialization"
+                    and row.get("source") == "scene_internal_action_authority"
+                    and row.get("allowed") is True):
+                allowed = True
             if allowed:
                 kept.append(row)
             else:

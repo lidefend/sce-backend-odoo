@@ -127,6 +127,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         {
             "code": "enterprise.setup",
             "name": "企业初始化工作空间",
+            "enablement_scope": "enterprise_initialization",
             "target": {
                 "route": "/s/enterprise.setup",
             },
