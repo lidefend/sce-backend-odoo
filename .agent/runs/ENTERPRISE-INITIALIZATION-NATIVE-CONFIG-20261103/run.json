@@ -3,7 +3,7 @@
   "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
   "branch": "feature/enterprise-initialization-native-config-20261103",
   "baseline_sha": "852d7f2a2f448f84bbbe5b0df56875262de803fc",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
   "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
   "scope": [
@@ -68,15 +68,15 @@
     "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
     "excluded": "No full Quick, environment/database rebuild, daily server writes, or full multi-role browser matrix. Rebuild existing frontend preview because application source changed.",
     "dependency_analysis": {
-      "status": "superseded_by_continuation",
-      "runtime_source": "pending new committed artifact",
-      "orm_inputs": "Native onboarding, readiness and scoped scenario activation in existing rollback-bound ORM case",
-      "browser_inputs": "New frontend readiness consumer and backend native remediation projection",
-      "limitations": "Single config-admin browser identity; data mutations only in rollback-bound ORM."
+      "runtime_source": "aad035d32ec7e034ee96c036d97f0330125baf67",
+      "final_remaining_changes": "Final run evidence metadata only; addon/config/frontend application dependency diffs recorded in live state.",
+      "orm_inputs": "Native account/personnel creation, company-scoped readiness and native remediation metadata, actual business-scene activation",
+      "browser_inputs": "Frontend d3df25046; five route/action definitions and authority verified unchanged in final alias-only XML delta",
+      "limitations": "Actual write journey verified in rollback-bound ORM, browser read/navigation only. Full business role journeys remain explicitly NOT_EVALUATED; independent owner review and remote CI pending."
     },
     "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Finish readiness remediation, company-aware refresh and actual native onboarding/scene activation rollback-bound ORM journey.",
+  "next_exact_step": "Owner independently reviews the clean candidate fingerprint in live_state_file; after explicit approval use governed PR publication, current remote CI and protected integration/deployment. Local enterprise initialization implementation and focused acceptance complete.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -214,7 +214,7 @@
       "status": "passed",
       "tests": 19,
       "command": "make verify.nav01.native_authority.unit",
-      "log": ".runtime/enterprise-init/continuation-native-final.log"
+      "log": ".runtime/enterprise-init/continuation-native-binding-final.log"
     },
     "continuation_orm": {
       "status": "passed",
@@ -249,10 +249,42 @@
     },
     "continuation_frontend_build": {
       "status": "passed",
-      "build_log": ".runtime/enterprise-init/continuation-preview-2.log",
-      "serve_log": ".runtime/enterprise-init/continuation-preview-up.log",
-      "source_sha": "8b93ef61a",
-      "source_dependency_diff_to_runtime_head": "frontend application source unchanged"
+      "build_log": ".runtime/enterprise-init/continuation-preview-final.log",
+      "serve_log": ".runtime/enterprise-init/continuation-preview-up-final.log",
+      "source_sha": "d3df25046d2bc10c81a30bd15a2d1e401a2cf736"
+    },
+    "continuation_browser": {
+      "status": "passed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793719400705/report.json",
+      "log": ".runtime/enterprise-init/continuation-browser-final.log",
+      "scope": "config admin: 12 diagnostics, 5 native remediation routes, current-company editable profile with currency readonly, diagnosis anchor to 17 business scenarios",
+      "errors": [],
+      "blocked_writes": [],
+      "business_writes": false,
+      "frontend_source_sha": "d3df25046d2bc10c81a30bd15a2d1e401a2cf736",
+      "backend_source_sha": "2ca22fce7a867809cb808af27ba437da6c808c1d",
+      "reuse_boundary": "Final native metadata adds only project.member.permission alias to the same already-browser-proven permission action; focused final ORM verifies that binding. Frontend application/route definitions unchanged."
+    },
+    "continuation_typecheck_final": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/continuation-typecheck-final.log"
+    },
+    "continuation_final_preflight": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/continuation-final-preflight.log",
+      "command": "make ci.local.iteration ci.generated_evidence.preflight"
+    },
+    "continuation_orm_final_binding": {
+      "status": "passed",
+      "tests": 1,
+      "source_sha": "aad035d32ec7e034ee96c036d97f0330125baf67",
+      "log": ".runtime/enterprise-init/continuation-orm-final.log",
+      "result": "0 failed, 0 errors; full onboarding and scene enable/disable journey including native project-responsibility remediation",
+      "reuse": "Four negative/security ORM cases from continuation-orm-3 remain valid: only native remediation alias and test assertion changed; native personnel model unchanged."
+    },
+    "continuation_final_binding_l1": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/continuation-binding-iteration.log"
     }
   },
   "checks": {},
@@ -269,5 +301,15 @@
     "Product capability/menu baseline is unchanged; initialization is available before business scenario enablement without granting new scene permissions.",
     "Only business configuration admins gain bounded current-company profile write; native group/ACL/model guard remain server authority.",
     "P0 preserves the source reference through user contract compaction and projects native groups/action/model read ACL; missing declarations fail closed."
-  ]
+  ],
+  "closure": {
+    "local_implementation": "complete",
+    "local_acceptance": "passed",
+    "business_fact_authority": "native models/views/actions/ACL; scene projection only",
+    "frontend": "company/session-aware diagnostic lifecycle and native remediation; readable theme-based cards",
+    "remote_mutations": false,
+    "full_quick": "not_run_incremental_policy",
+    "business_data_mutations": "synthetic TransactionCase rollback only",
+    "pending": "owner independent review, governed PR/current CI/merge/deployment"
+  }
 }
