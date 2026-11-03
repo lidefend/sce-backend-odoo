@@ -9,12 +9,17 @@ class ScProductPolicy(models.Model):
     def _apply_company_route_scope(self, authority):
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import build_menu_index, load_surface
         from odoo.addons.smart_construction_scene.profiles.scene_registry_content import list_scene_entries
-        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_states, filter_business_authority
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key, business_states, filter_business_authority
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
 
         authority = super()._apply_company_route_scope(authority)
         index = build_menu_index(load_surface())
-        rows = self.env["sc.scene.company.enablement"].search([("company_id", "=", self.env.company.id)])
-        enabled = business_states({row.scene_key: bool(row.enabled) for row in rows})
+        stored = {}
+        for scene in load_surface().get("scenarios") or []:
+            key = str(scene.get("key") or "").strip()
+            if key:
+                stored[business_key(key)] = read_tenant_enablement(self.env, self.env.company.id, business_key(key))
+        enabled = business_states(stored)
         by_id = {}
         by_action = {}
         for xmlid in index:

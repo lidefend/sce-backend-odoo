@@ -49,14 +49,29 @@ def _hardcoded_provider_layout() -> str:
     return match.group(0) if match else ""
 
 
+def _scene_enablement_writes() -> str:
+    """Lines that write sc.scene.company.enablement as scene fact data."""
+    lines = []
+    for path in ENABLEMENT_WRITERS:
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if "sc.scene.company.enablement" in line and any(
+                token in line for token in ("create(", "write(", "set_enabled(")
+            ):
+                lines.append(line.strip())
+    return "\n".join(lines)
+
+
 def _current_violations() -> dict[str, str | None]:
     """Return the live violation signature. A missing carrier yields None."""
     registry_codes = _hardcoded_enterprise_codes()
     provider_layout = _hardcoded_provider_layout()
+    enablement_writes = _scene_enablement_writes()
     return {
         "hardcoded_scene_registry_enterprise_entries": _sha(registry_codes) if registry_codes else None,
         "independent_scene_version_payload": _sha(SCENE_SETUP_XML.read_text(encoding="utf-8")) if SCENE_SETUP_XML.is_file() else None,
-        "scene_enablement_fact_writes": _sha("\n".join(p.read_text(encoding="utf-8") for p in ENABLEMENT_WRITERS if p.is_file())) or None,
+        "scene_enablement_fact_writes": _sha(enablement_writes) if enablement_writes else None,
         "hardcoded_provider_layout": _sha(provider_layout) if provider_layout else None,
     }
 

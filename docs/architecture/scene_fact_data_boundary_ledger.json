@@ -22,7 +22,9 @@
         "addons/smart_construction_scene/services/tenant_scene_activation.py",
         "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py"
       ],
-      "sha256": "643d3865e0a166006e61f809ac885ba81c15b22bba943b7a1a1d99f6d9c12e45"
+      "sha256": null,
+      "converged": true,
+      "converged_by": "tenant enablement moved to governed native config parameter"
     },
     "hardcoded_provider_layout": {
       "file": "addons/smart_construction_scene/providers/enterprise_setup_provider.py",

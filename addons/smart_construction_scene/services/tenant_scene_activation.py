@@ -14,6 +14,33 @@ from typing import Any
 ENTERPRISE_SETUP_CODE = "enterprise.setup"
 ENTERPRISE_SETUP_MENU_XMLID = "smart_construction_core.menu_sc_enterprise_initialization"
 ENTERPRISE_SETUP_ACTION_XMLID = "smart_construction_core.action_sc_enterprise_initialization"
+ENABLEMENT_PARAM_PREFIX = "sc.scene.tenant.enablement."
+
+
+def _enablement_param_key(company_id, scene_key) -> str:
+    return f"{ENABLEMENT_PARAM_PREFIX}{int(company_id)}.{str(scene_key or '').strip()}"
+
+
+def read_tenant_enablement(env, company_id, scene_key) -> bool:
+    """Read the tenant enablement decision from the governed native config."""
+    if env is None:
+        return False
+    try:
+        value = env["ir.config_parameter"].sudo().get_param(
+            _enablement_param_key(company_id, scene_key), "0"
+        )
+    except Exception:
+        return False
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def write_tenant_enablement(env, company_id, scene_key, enabled: bool) -> None:
+    """Record the tenant enablement decision in the governed native config."""
+    if env is None:
+        return
+    env["ir.config_parameter"].sudo().set_param(
+        _enablement_param_key(company_id, scene_key), "1" if enabled else "0"
+    )
 
 
 def resolve_scene_menu(scene_key: str, entries: list[dict[str, Any]] | None = None) -> str:
