@@ -105,6 +105,7 @@
     "make/guards.mk",
     "make/runtime_ops.mk",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/ops/test_scene_internal_action_authority.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
@@ -362,6 +363,12 @@
       "addons/smart_construction_core/tests/test_role_surface_project_member.py": "4f2a98874a147d3fbd738cc5de69a9c7188e8710d1cee8e41bc9306947e0494a",
       "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py": "1995b885b84908398bef19d263764ce305d8f4b7cc36e649731c5bbe7dfc99a2",
       "addons/smart_construction_scene/tests/test_tenant_scene_activation.py": "3d365d40ffa481b124b7a8e319c21fe7dbc5f52132fff0eab43618ede0ba8004"
+    },
+    "quick_f98882a": {
+      "status": "failed",
+      "log": ".runtime/nav01/ci-fix-quick.log",
+      "reason": "Existing synthetic bank fixture exact-blob PD003 registration stale after six-line test setup change; RH018 consumes same registry; no new data values",
+      "recovery": "Append PD003 exact path and full blob 535c1cae1690f1973c62a12c4a34eb5c0ac6dcd8 only; preserve prior history entries; regex numeric values compared equal with approved af6700"
     }
   }
 }

@@ -560,6 +560,13 @@
       "blob_id": "8b1ff0319ff659a82158d60940737c117ed336d0",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "535c1cae1690f1973c62a12c4a34eb5c0ac6dcd8",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture_values_unchanged_from_reviewed_af6700_after_explicit_native_entry_grant_test_setup"
     }
   ]
 }
