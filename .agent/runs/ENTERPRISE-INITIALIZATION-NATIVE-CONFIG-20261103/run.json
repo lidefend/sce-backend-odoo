@@ -3,7 +3,7 @@
   "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
   "branch": "fix/enterprise-activation-entry-20261104",
   "baseline_sha": "251cde6c51a94754c717694af605a9a378886355",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
   "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
   "scope": [
@@ -56,7 +56,8 @@
     "authority": "Reuse registered local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180; daily read-only only; no new credentials or database"
   },
   "blockers": [
-    "Current candidate PR required checks, protected merge and daily deployment pending"
+    "Owner independent review pending (owner explicitly provides it); no review approval inferred from implementation authorization",
+    "Current fix has no PR/remote CI/merge/deployment; PR797 and deployed 251cde6c belong to previous release"
   ],
   "layer": {
     "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
@@ -85,7 +86,7 @@
     },
     "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Scoped native upgrade/ORM with published route assertion, then actual menu and activation HTTP journey with restoration.",
+  "next_exact_step": "Read this run and live_state_file, run make agent.run.resume; await owner independent review of current handoff HEAD (product diff equals d73c63ab), then governed PR/current CI/protected merge and daily deployment. Do not rerun unaffected acceptance.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -315,29 +316,38 @@
       "verification": "Targeted authorization and menu projection tests then governed scoped journey; no full Quick"
     },
     "activation_repair": {
-      "status": "verification_pending",
+      "status": "passed_local",
       "static": "passed",
       "unit": "passed",
       "logs": [
-        ".runtime/enterprise-init/activation-iteration.log",
-        ".runtime/enterprise-init/activation-unit.log"
+        ".runtime/enterprise-init/activation-final-iteration.log",
+        ".runtime/enterprise-init/activation-dispatch-orm.log",
+        ".runtime/enterprise-init/activation-scope-delivery.log",
+        ".runtime/enterprise-init/activation-scope-projection.log",
+        ".runtime/enterprise-init/activation-scope-native.log",
+        ".runtime/enterprise-init/activation-dispatch-unit.log",
+        ".runtime/enterprise-init/activation-browser-policy.log"
       ],
-      "orm": "passed: 1 real configuration journey, native menu visibility, authorization and state readback",
-      "browser": "failed: native menu omitted by closed-edition delivery; P0 explicit native admin surface delivery and P1 platform projection fixed, retest pending",
+      "orm": "passed: 1 real journey via BaseIntentHandler.run, native scope publication and ordinary-user denial",
+      "browser": "passed: persistent menu return, disable+enable HTTP 200, catalog readback, system.init refresh, baseline restored",
       "daily": "unchanged, user-reported failure confirmed",
       "independent_review": "pending_owner",
       "no_full_quick": "incremental policy; no frontend application changes",
       "architecture_resolution": "Explicit sc_delivery_scope=configuration on native action, distinct from sc_web_route. Same declaration feeds native config navigation and route publication classification; business catalogue unchanged. Native authorization remains mandatory.",
-      "dispatch_fix": "Actual browser now reaches persistent menu and passes authorization, but activation returned 400 because payload-named handlers received outer envelope. P1 handlers now use BaseIntentHandler params mapping; ORM journey invokes run() with actual envelope."
+      "dispatch_fix": "Actual browser now reaches persistent menu and passes authorization, but activation returned 400 because payload-named handlers received outer envelope. P1 handlers now use BaseIntentHandler params mapping; ORM journey invokes run() with actual envelope.",
+      "source_sha": "d73c63ab91bc24cd03c7ead0a1c8f5e0655838d4",
+      "browser_report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793724853163/report.json",
+      "browser_report_sha256": "5c368f05640029775318e79d48922790cc88c2cccc80efe65aff9e32557b3abb"
     }
   },
   "checks": {},
   "delivery_status": {
-    "implementation": "local_candidate",
+    "implementation": "local_fix_verified",
     "independent_review": "pending_owner",
-    "remote_ci": "not_run",
-    "mainline": "not_integrated",
-    "daily_runtime": "unchanged at 852d7f2a2f448f84bbbe5b0df56875262de803fc"
+    "remote_ci": "not_run_for_fix",
+    "mainline": "fix_not_integrated; prior PR797 merged at 251cde6c",
+    "daily_runtime": "unchanged at 251cde6c51a94754c717694af605a9a378886355",
+    "user_acceptance": "pending_after_fix_deployment"
   },
   "risk_and_rollback": "Company ACL expansion is restricted by native model write guard. Revert the entire initialization candidate and upgrade affected modules through governed targets; no customer facts or enablement rows migrated.",
   "review_summary": [
@@ -347,14 +357,77 @@
     "P0 preserves the source reference through user contract compaction and projects native groups/action/model read ACL; missing declarations fail closed."
   ],
   "closure": {
-    "local_implementation": "startup regression fixed; integration checks pending",
-    "local_acceptance": "passed",
-    "business_fact_authority": "native models/views/actions/ACL; scene projection only",
-    "frontend": "company/session-aware diagnostic lifecycle and native remediation; readable theme-based cards",
-    "remote_mutations": false,
+    "local_implementation": "passed_local",
+    "local_acceptance": "passed_for_scoped_fix",
+    "remote_mutations_this_fix": false,
     "full_quick": "not_run_incremental_policy",
-    "business_data_mutations": "synthetic TransactionCase rollback only",
-    "pending": "owner independent review, governed PR/current CI/merge/deployment",
-    "owner_authorization": "Current request: 先集成部署日常开发服务器"
+    "business_data_mutations": "registered acceptance ORM rollback and exact browser scene state restored; daily unchanged",
+    "pending": "owner independent review, current PR CI, merge and daily deployment"
+  },
+  "handoff": {
+    "reason": "Owner requested executor switch",
+    "repository": "/home/lidefend/workspace/sce-backend-odoo-pr-integration",
+    "branch": "fix/enterprise-activation-entry-20261104",
+    "product_candidate_sha": "d73c63ab91bc24cd03c7ead0a1c8f5e0655838d4",
+    "product_candidate_tree": "d081b4d43e605c1223a95c70febba01fd8ac9d9e",
+    "product_candidate_fingerprint": "4869585109d822324873a36610a96ced6672371586753273cf09298d66eef039",
+    "handoff_only_changes": "This handoff updates this run only; product, tests and runtime source remain d73c63ab. Verify git diff before reusing evidence. Current HEAD/fingerprint resolved in live_state_file after commit.",
+    "authoritative_live_state": ".runtime/enterprise-init/state.json",
+    "fixed_failures": [
+      "Missing persistent setup menu",
+      "Missing activation REQUIRED_GROUPS -> HTTP 403",
+      "Configuration route denied PRODUCT_ENTRY_NOT_RELEASED due inconsistent publication classification",
+      "Payload/params dispatch mismatch -> HTTP 400 enabled must be a boolean"
+    ],
+    "architecture": [
+      "P1 native menu/action/groups remain facts; no role-menu whitelist extension",
+      "sc_web_route describes destination; sc_delivery_scope=configuration explicitly declares independent configuration scope",
+      "P0 navigation and route publication consume the same native scope; native ACL and groups remain mandatory",
+      "P1 scenario projection consumes authorized config entries independently of 91 standard business capability catalogue",
+      "Existing legacy role_surface lists remain technical debt; this fix does not claim their complete retirement"
+    ],
+    "environment": {
+      "reuse_only": true,
+      "profile": "local",
+      "compose_project": "sc-fe-r2-p1-01",
+      "database": "sc_frontend_acceptance",
+      "backend_port": 18082,
+      "frontend_port": 5180,
+      "backend_source_sha": "d73c63ab91bc24cd03c7ead0a1c8f5e0655838d4",
+      "frontend": "unchanged application sources; existing d3df25046 preview reused with input identity verification",
+      "no_new_environment_or_credentials": true
+    },
+    "daily": {
+      "ssh_alias": "sc-root",
+      "root": "/opt/projects/repos/sce-product-odoo",
+      "sha": "251cde6c51a94754c717694af605a9a378886355",
+      "demo_url": "http://1.95.85.92:18081/t/demo/",
+      "duties": [
+        "demo",
+        "platform_control"
+      ],
+      "databases": [
+        "sc_demo",
+        "sc_platform_control"
+      ],
+      "deployment": "not performed for this fix"
+    },
+    "continuation_rules": [
+      "Use current worktree; do not create another or alter other worktrees/stashes",
+      "GH_CONFIG_DIR=/home/lidefend/.config/gh-new-account; remote writes only governed Make targets",
+      "Do not reuse PR797 CI as current fix CI",
+      "Do not rerun full Quick, all browser roles or rebuild acceptance environment",
+      "Preserve original failed browser reports as diagnosis, use activation-final-browser report for passing result",
+      "Owner independent review is not yet supplied; do not invent approval or bypass protected merge",
+      "After approval use registered integration/deployment runbook; native action/menu XML requires governed module upgrade and recovery point",
+      "Record merge, deployment and user acceptance separately; do not claim daily fix before deployed readback"
+    ],
+    "failure_reports": [
+      "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793723941245/report.json",
+      "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793724136134/report.json",
+      "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793724662856/report.json"
+    ],
+    "final_browser": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793724853163/report.json",
+    "final_screenshot": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793724853163/fixture_role_config_admin-scenario-toggled.png"
   }
 }
