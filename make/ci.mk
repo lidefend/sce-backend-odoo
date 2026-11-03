@@ -1015,6 +1015,18 @@ QUICK_RECEIPT_KEEP ?= 50
 QUICK_JOBS ?=
 
 ci.local.quick: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py run --require-incremental $(if $(strip $(QUICK_MAX_TARGETS)),--max-targets "$(QUICK_MAX_TARGETS)",) --shards "$(QUICK_SHARDS)" $(if $(strip $(QUICK_JOBS)),--jobs "$(QUICK_JOBS)",)
+
+# Bounded continuation: no implicit full gate when ancestor evidence is missing
+# or stale. Plan uses this same Make environment and never issues a receipt.
+.PHONY: ci.local.quick.plan ci.local.quick.incremental ci.local.quick.full
+ci.local.quick.plan: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py plan
+
+ci.local.quick.incremental: ci.local.quick
+
+# Explicit bootstrap/rebaseline lane; never selected as incremental fallback.
+ci.local.quick.full: guard.prod.forbid
 	@python3 scripts/ops/local_quick_evidence.py run --shards "$(QUICK_SHARDS)" $(if $(strip $(QUICK_JOBS)),--jobs "$(QUICK_JOBS)",)
 
 # Explicit receipt-free mode for a dirty development tree. It runs the suite and

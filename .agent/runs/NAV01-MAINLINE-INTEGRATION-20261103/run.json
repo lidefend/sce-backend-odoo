@@ -71,6 +71,7 @@
     "addons/smart_construction_scene/services/tenant_scene_activation.py",
     "addons/smart_construction_scene/services/workspace_scenario_projection.py",
     "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "addons/smart_core/core/scene_internal_action_authority.py",
     "addons/smart_core/core/scene_ready_contract_builder.py",
@@ -87,6 +88,7 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/codex_execution_allowlist.md",
     "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "frontend/apps/web/src/app/scenarioSurface.ts",
@@ -106,6 +108,12 @@
     "make/runtime_ops.mk",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/ci/personal_data_false_positives.json",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/quick_suite_fingerprint.py",
+    "scripts/ops/quick_suite_manifest.json",
+    "scripts/ops/test_local_quick_evidence.py",
+    "scripts/ops/test_quick_input_scope.py",
     "scripts/ops/test_scene_internal_action_authority.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
@@ -115,8 +123,7 @@
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
-    "scripts/verify/test_daily_acceptance_fixture_lane.py",
-    "addons/smart_construction_scene/tests/test_scene_data_ref_order.py"
+    "scripts/verify/test_daily_acceptance_fixture_lane.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -125,7 +132,7 @@
   "blockers": [
     "Current PR794 required CI failed before scene isolated execution; local corrected scene suite PASS145; new head remote checks pending."
   ],
-  "next_exact_step": "Commit bounded scene test-input correction; reuse unaffected frontend/browser/ORM evidence; use existing incremental Quick plan only for affected prerequisites, then publish to existing PR794. No full acceptance cycle.",
+  "next_exact_step": "Mechanism checkpoint: inspect committed read-only Quick plan and remaining source identity/dependency gaps before any bounded execution; no implicit full gate or PR publication claim.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -387,5 +394,57 @@
     },
     "reuse": "No product/frontend/ORM/runtime/probe inputs changed; their earlier observations retained with original identities, not relabeled as new-head remote successes.",
     "excluded": "Full browser/ORM/runtime refresh, deployment, P4 environment reconciliation branch, new approval/archive cycle"
+  },
+  "quick_mechanism_repair": {
+    "layer": "P4",
+    "module": "existing Quick evidence planner and runner",
+    "standard": "shared verification mechanism",
+    "why": "input declarations, identity diagnosis and full-run fallback are P4 responsibilities",
+    "blast_radius": "Quick planning and explicitly selected incremental execution; no product/runtime changes",
+    "baseline": "16c78bf39dbf7cbedff6cd1560d056ee3cd3fa53",
+    "validation": "existing focused Quick input/evidence unit targets; actual plans are diagnostic, not receipts",
+    "exclusions": "no fabricated historical identity, no automatic full gate, no runtime/browser/ORM replay",
+    "status": "focused_validation_passed",
+    "results": [
+      {
+        "suite": "Quick input scope",
+        "count": 15,
+        "log": ".runtime/nav01/quick-mechanism-input-r2.log"
+      },
+      {
+        "suite": "suite fingerprint",
+        "count": 4,
+        "log": ".runtime/nav01/quick-mechanism-input-r2.log"
+      },
+      {
+        "suite": "incremental evidence",
+        "count": 21,
+        "log": ".runtime/nav01/quick-mechanism-evidence-r3.log"
+      },
+      {
+        "suite": "existing runner compatibility",
+        "count": 66,
+        "log": ".runtime/nav01/quick-mechanism-runner-regression.log"
+      }
+    ],
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/nav01/quick-mechanism-iteration.log"
+    },
+    "read_only_plan": ".runtime/nav01/quick-mechanism-plan.log",
+    "guarantees": [
+      "Default Make Quick refuses implicit full fallback",
+      "Optional affected target admission budget",
+      "Same-head verified receipt reused without test execution",
+      "8 offline capability scopes bind complete platform and industry modules",
+      "Legacy environment digest never rewritten; new diagnostic key hashes contain no plaintext values",
+      "Security scans still require actual successful proof"
+    ],
+    "limits": [
+      "12 of 47 top-level targets have reviewed reusable scopes; remaining 35 remain conservative execution",
+      "Current legacy receipt identity mismatch is still rejected; no current-head Quick receipt fabricated",
+      "Changing Make/scanner authority legitimately invalidates affected evidence"
+    ],
+    "external_mutations": false
   }
 }

@@ -16,7 +16,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = "scripts/ops/quick_suite_manifest.json"
-REVIEWED_SUITES = frozenset({"verify.test.determinism", "verify.test.isolation"})
+# These recipes run Python with Odoo/transport stubs, not a live registry or DB.
+# Bind both complete platform/industry modules (including tests), not just the
+# entry script: helpers and dynamically loaded handlers are execution inputs.
+OFFLINE_CAPABILITY_SUITES = frozenset({
+    "verify.visualization.chart.capability", "verify.boq.export.capability",
+    "verify.write.idempotency.capability", "verify.boq.dangerous.import.capability",
+    "verify.boq.line.patch.capability", "verify.overview.rich.text.patch.capability",
+    "verify.ui_contract.delivery_surface.unit", "verify.smart_core.ui_base_asset_refresh.unit",
+})
+REVIEWED_SUITES = frozenset({"verify.test.determinism", "verify.test.isolation"}) | OFFLINE_CAPABILITY_SUITES
 
 
 def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, str]:
@@ -62,6 +71,10 @@ def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, 
                      ".github/workflows/", "frontend/apps/web/package.json"):
             if path not in inputs:
                 raise ValueError(f"suite missing execution authority: {path}")
+        if name in OFFLINE_CAPABILITY_SUITES:
+            for path in ("addons/smart_core/", "addons/smart_construction_core/"):
+                if path not in inputs:
+                    raise ValueError(f"suite missing module inputs: {path}")
         result[name] = hashlib.sha256(json.dumps(
             {"command": suite["command"], "files": selected}, sort_keys=True,
             separators=(",", ":")).encode()).hexdigest()

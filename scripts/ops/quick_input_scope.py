@@ -98,16 +98,28 @@ def target_fingerprint(head: str, target: str, inputs=None, *, root: Path = ROOT
     return _fingerprint_rows(rows, target, head)
 
 
+NON_INPUT_ENVIRONMENT = frozenset({
+    "PWD", "OLDPWD", "SHLVL", "_", "MAKELEVEL", "MAKEFLAGS", "MFLAGS",
+    "MAKEOVERRIDES", "SC_QUICK_SCAN_COVERAGE_DIR",
+    # Admission budget only; never changes a selected target's command/inputs.
+    "QUICK_MAX_TARGETS",
+})
+
+
 def execution_identity() -> dict:
     # Do not persist environment values (they can contain credentials). Bind
     # their digest, Python runtime, and executable instead. Make's process-local
     # recursion counters and working-directory aliases are not test inputs.
-    ignored = {"PWD", "OLDPWD", "SHLVL", "_", "MAKELEVEL", "MAKEFLAGS", "MFLAGS",
-               "MAKEOVERRIDES", "SC_QUICK_SCAN_COVERAGE_DIR"}
-    environment = {key: value for key, value in os.environ.items() if key not in ignored}
+    environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
     return {"python": sys.version, "executable": str(Path(sys.executable).resolve()),
             "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
             "environment_sha256": hashlib.sha256(json.dumps(environment, sort_keys=True).encode()).hexdigest()}
+
+
+def environment_hashes() -> dict[str, str]:
+    """Diagnostic key-level digests only; never weaken the identity comparison."""
+    return {key: hashlib.sha256(value.encode()).hexdigest()
+            for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
 
 
 def execution_units(root: Path, head: str, targets: list[str]) -> dict:

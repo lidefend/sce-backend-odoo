@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import os
 import json
 import subprocess
 import tempfile
@@ -25,6 +26,8 @@ class CommittedSuiteTest(unittest.TestCase):
         for name in ("Makefile", "make/check.mk", "scripts/probe.py",
                      ".github/workflows/check.yml", "frontend/apps/web/package.json",
                      "frontend/apps/web/scripts/check.js",
+                     "addons/smart_core/handlers/example.py",
+                     "addons/smart_construction_core/services/example.py",
                      "docs/engineering_convergence/test_inventory.csv"):
             self.write(name, "initial")
         self.write(suites.MANIFEST, json.dumps(self.manifest))
@@ -99,8 +102,33 @@ class CommittedSuiteTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.units(self.commit())
 
+    def test_scene_test_edit_reuses_offline_capabilities_but_module_edit_does_not(self):
+        targets = sorted(suites.OFFLINE_CAPABILITY_SUITES)
+        source = scope.execution_units(self.root, self.base, targets)
+        self.write('addons/smart_construction_scene/tests/test_scene.py', 'changed scene test')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['reusable'])
+        self.write('addons/smart_core/handlers/example.py', 'changed platform helper')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['affected'])
+
+    def test_capability_scope_cannot_drop_platform_module(self):
+        row = next(s for s in self.manifest['suites'] if s['id'] in suites.OFFLINE_CAPABILITY_SUITES)
+        row['inputs'].remove('addons/smart_core/')
+        self.write(suites.MANIFEST, json.dumps(self.manifest))
+        with self.assertRaisesRegex(ValueError, 'missing module inputs'):
+            self.units(self.commit())
+
 
 class QuickInputScopeTest(unittest.TestCase):
+    def test_execution_budget_is_not_a_test_input_but_unknown_environment_is(self):
+        before = scope.execution_identity()
+        with mock.patch.dict(os.environ, {'QUICK_MAX_TARGETS': '3'}):
+            self.assertEqual(before, scope.execution_identity())
+            self.assertNotIn('QUICK_MAX_TARGETS', scope.environment_hashes())
+        with mock.patch.dict(os.environ, {'ACTUAL_TEST_INPUT': 'changed'}):
+            self.assertNotEqual(before, scope.execution_identity())
+
     def test_quick_targets_contains_the_entry_and_is_bounded(self):
         targets = scope.quick_targets()
         self.assertIn(scope.QUICK_ENTRY, targets)

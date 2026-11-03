@@ -33,6 +33,150 @@
         ".github/workflows/",
         "frontend/apps/web/package.json"
       ]
+    },
+    {
+      "id": "verify.boq.dangerous.import.capability",
+      "command": [
+        "make",
+        "verify.boq.dangerous.import.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.boq.export.capability",
+      "command": [
+        "make",
+        "verify.boq.export.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.boq.line.patch.capability",
+      "command": [
+        "make",
+        "verify.boq.line.patch.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.overview.rich.text.patch.capability",
+      "command": [
+        "make",
+        "verify.overview.rich.text.patch.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.smart_core.ui_base_asset_refresh.unit",
+      "command": [
+        "make",
+        "verify.smart_core.ui_base_asset_refresh.unit"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.ui_contract.delivery_surface.unit",
+      "command": [
+        "make",
+        "verify.ui_contract.delivery_surface.unit"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.visualization.chart.capability",
+      "command": [
+        "make",
+        "verify.visualization.chart.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.write.idempotency.capability",
+      "command": [
+        "make",
+        "verify.write.idempotency.capability"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_core/",
+        "addons/smart_construction_core/"
+      ]
     }
   ]
 }

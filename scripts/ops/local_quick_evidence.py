@@ -363,6 +363,7 @@ def _save_target_scope(root: Path, head: str, receipt: Path,
         atomic_json(receipt.with_suffix(".scope.json"), {
             "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
             "document": document,
+            "environment_hashes": scope.environment_hashes(),
         })
         # The ledger is an audit of actual execution, not an alternative to
         # ancestor receipt/hash/scan validation in the planner.
@@ -388,7 +389,7 @@ def _save_target_scope(root: Path, head: str, receipt: Path,
         print(f"[local_quick_evidence] target reuse unavailable: {exc}")
 
 
-def _incremental_plan(root: Path, head: str) -> tuple[list[str], list[str], str] | None:
+def _incremental_plan(root: Path, head: str, rejected: list | None = None) -> tuple[list[str], list[str], str] | None:
     scope = _scope_module()
     folder = evidence_path(root, head).parent
     if not folder.is_dir():
@@ -426,6 +427,13 @@ def _incremental_plan(root: Path, head: str) -> tuple[list[str], list[str], str]
             # environment must equal the environment actually recorded at execution.
             source_units = scope.execution_units(root, source, manifest)
             if saved.get("document") != source_units:
+                if rejected is not None:
+                    old = saved.get("environment_hashes")
+                    new = scope.environment_hashes()
+                    rejected.append({"source": source, "reason": "source_scope_or_identity_changed",
+                                     "environment_changed_keys": sorted(k for k in set(old) | set(new)
+                                                                        if old.get(k) != new.get(k))
+                                     if isinstance(old, dict) else "legacy_receipt_has_no_key_digests"})
                 continue
             plan = scope.plan_execution(current, source_units)
             if not plan["reusable"]:
@@ -437,6 +445,25 @@ def _incremental_plan(root: Path, head: str) -> tuple[list[str], list[str], str]
                 subprocess.CalledProcessError):
             continue
     return None
+
+
+def incremental_report(root: Path) -> dict:
+    """Read-only explanation, not execution evidence or publication authority."""
+    head = git(root, "rev-parse", "HEAD")
+    rejected = []
+    plan = _incremental_plan(root, head, rejected)
+    targets = required_targets(root)
+    return {"head": head, "dirty": bool(git(root, "status", "--porcelain")),
+            "candidate_evidence": False, "source": plan[2] if plan else None,
+            "run": plan[0] if plan else targets, "reuse": plan[1] if plan else [],
+            "rejected": rejected, "full_fallback_required": plan is None}
+
+
+def require_incremental(plan, required: bool, max_targets: int | None = None) -> None:
+    if required and plan is None:
+        raise EvidenceError("incremental evidence unavailable; full fallback refused; inspect ci.local.quick.plan")
+    if max_targets is not None and (max_targets < 1 or plan is None or len(plan[0]) > max_targets):
+        raise EvidenceError("affected target budget exceeded; no checks started; inspect ci.local.quick.plan")
 
 
 def _require_clean_start(root: Path, purpose: str) -> str:
@@ -469,7 +496,8 @@ def _require_scan_proofs(root: Path, folder: Path, head: str, tree: str, coverag
             raise EvidenceError(f"actual successful scanner proof missing or invalid: {kind}") from exc
 
 
-def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Path | None:
+def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False,
+              require_incremental_only: bool = False, max_targets: int | None = None) -> Path | None:
     require_safe_make_environment()
     root = repository_root(root)
     start_status = git(root, "status", "--porcelain=v1", "--untracked-files=all")
@@ -492,6 +520,7 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
         return None
     root, tree = require_exact_clean_head(root, start_head)
     plan = _incremental_plan(root, start_head)
+    require_incremental(plan, require_incremental_only, max_targets)
     if plan is not None:
         run_targets, reuse_targets, base_head = plan
         assert_quick_recipe_covered(root)
@@ -1083,7 +1112,8 @@ def _observe_quick(root: Path, status: str, duration: float, degraded: list[str]
 
 def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
                 runner=subprocess.run, jobs: int | None = None,
-                popen=_shard_popen) -> Path | None:
+                popen=_shard_popen, require_incremental_only: bool = False,
+                max_targets: int | None = None) -> Path | None:
     """The default ci.local.quick entry.
 
     The primary worktree shards the declared target list so an interrupted
@@ -1095,15 +1125,23 @@ def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
     dirty development tree.
     """
     if diagnostic:
+        if require_incremental_only or max_targets is not None:
+            raise EvidenceError("diagnostic mode cannot enforce incremental evidence")
         return run_quick(root, runner=runner, diagnostic=True)
     root = repository_root(root)
     started = time.monotonic()
     status, owner, degraded = "passed", None, []
     try:
+        if require_incremental_only:
+            head = _require_clean_start(root, "the incremental quick lane")
+            if evidence_path(root, head).is_file():
+                return verify(root, head)
         if is_linked_worktree(root):
-            return run_quick(root, runner=runner)
+            return run_quick(root, runner=runner, require_incremental_only=require_incremental_only,
+                             max_targets=max_targets)
         head = _require_clean_start(root, "the incremental quick lane")
         plan = _incremental_plan(root, head)
+        require_incremental(plan, require_incremental_only, max_targets)
         shards = DEFAULT_SHARDS if shards is None else shards
         if plan is not None:
             _checked_shard_layout(shards, 0)
@@ -1142,7 +1180,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "mode",
-        choices=("run", "verify", "shard", "compose", "prune", "bookkeeping-delta", "preflight"),
+        choices=("run", "verify", "shard", "compose", "prune", "bookkeeping-delta", "preflight", "plan"),
     )
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--expected-head")
@@ -1153,8 +1191,19 @@ def main() -> int:
     parser.add_argument("--diagnostic", action="store_true")
     parser.add_argument("--jobs", type=int)
     parser.add_argument("--keep", type=int)
+    parser.add_argument("--require-incremental", action="store_true")
+    parser.add_argument("--max-targets", type=int)
     args = parser.parse_args()
     try:
+        if args.mode != "run" and (args.require_incremental or args.max_targets is not None):
+            raise EvidenceError("incremental execution controls require run mode")
+        if args.mode == "plan":
+            if (any(value is not None for value in (args.expected_head, args.base, args.shards,
+                                                     args.shard_index, args.jobs, args.keep))
+                    or args.defer_clean_check or args.diagnostic):
+                raise EvidenceError("plan accepts only --root")
+            print(json.dumps(incremental_report(repository_root(args.root)), indent=2))
+            return 0
         if args.mode == "preflight":
             if (any(value is not None for value in (args.expected_head, args.base, args.shards,
                                                      args.shard_index, args.jobs, args.keep))
@@ -1180,7 +1229,9 @@ def main() -> int:
             if (args.expected_head is not None or args.shard_index is not None
                     or args.keep is not None or args.defer_clean_check):
                 raise EvidenceError("run mode does not accept --expected-head, --shard or --keep")
-            path = run_default(args.root, args.shards, args.diagnostic, jobs=args.jobs)
+            path = run_default(args.root, args.shards, args.diagnostic, jobs=args.jobs,
+                               require_incremental_only=args.require_incremental,
+                               max_targets=args.max_targets)
         elif args.mode == "verify":
             if args.expected_head is None:
                 raise EvidenceError("verify mode requires --expected-head")

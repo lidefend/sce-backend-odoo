@@ -208,6 +208,13 @@ Codex 是一个 **被严格约束的工程执行单元**。
 拼装环境或替代入口。所有专题必须先盘点并消费仓库已登记的工作树、Make target、runtime
 profile、数据库锁、端口、卷、fixture、测试与证据工具。
 
+Quick 延续使用 `make ci.local.quick.plan` 先查看精确提交的执行/复用集合及凭据拒绝原因；
+该入口只读，不产生通过凭据。`make ci.local.quick`（或 `ci.local.quick.incremental`）
+禁止在增量证据缺失时自动退回全量；可用 `QUICK_MAX_TARGETS=<正整数>` 限定本次执行预算，
+超额在启动检查前拒绝。没有完整输入声明的检查仍执行；安全扫描的真实成功证明仍必需。
+初次建立基线或明确要求全量时才使用 `make ci.local.quick.full`，不得把该入口当作增量失败的
+自动重试。旧凭据缺少环境分项摘要时不能补写或假定环境一致，须保留拒绝事实。
+
 业务专题内禁止新增或派生 Compose project、数据库、端口、卷、凭据文件、runtime profile、
 fixture 体系。已授权验收范围内，允许以P4责任补齐既有工具及local.dev包装的最小能力，
 前提是复用登记环境、凭据和数据权威、保留硬门禁、绑定明确目标，对测试配置写入提供恢复及回读。
