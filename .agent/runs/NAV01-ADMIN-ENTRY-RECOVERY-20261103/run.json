@@ -24,7 +24,8 @@
     "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
     "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
     "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -74,6 +75,11 @@
       "status": "passed",
       "scope": "earlier product delta; final probe scope preflight pending",
       "log": ".runtime/nav01/admin-entry-iteration.log"
+    },
+    "browser_first_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793713257683/report.json",
+      "reason": "Management buttons rendered; enterprise.setup absent from effective product scene delivery policy; catalog not reached. Probe also missing readonly workspace.scenario.projection.get."
     }
   },
   "checks": {}

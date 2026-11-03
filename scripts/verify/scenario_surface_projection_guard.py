@@ -193,6 +193,13 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5]), route_authority=authority, surface=self.surface)
         self.assertEqual(revoked["tree"]["platform"], [])
 
+    def test_management_workspace_has_effective_scene_delivery_declaration(self):
+        policy = json.loads((ROOT / "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json").read_text())
+        surface_policy = policy["surfaces"][policy["default_surface"]]
+        published = set(surface_policy["nav_allowlist"] + surface_policy["deep_link_allowlist"])
+        for entry in self.surface["platform_support"]["workspace_entries"]:
+            self.assertIn(entry["scene_key"], published)
+
     def test_setup_workspace_uses_native_acl_and_delivered_scene(self):
         scene = {"key": "enterprise.setup", "name": "企业初始化工作空间", "target": {"route": "/s/enterprise.setup"}}
         seen = []

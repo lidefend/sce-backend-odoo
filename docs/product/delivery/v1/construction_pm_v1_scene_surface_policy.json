@@ -72,7 +72,8 @@
         "subcontract.register",
         "subcontract.request",
         "subcontract.settlement",
-        "task.center"
+        "task.center",
+        "enterprise.setup"
       ]
     },
     "construction_exec_v1": {
