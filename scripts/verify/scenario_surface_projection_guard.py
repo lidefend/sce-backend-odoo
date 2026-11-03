@@ -100,6 +100,21 @@ def synthetic_route_authority(menu_xmlids):
 
 
 class ScenarioSurfaceProjectionGuard(unittest.TestCase):
+    def test_native_config_surface_is_independent_of_released_business_catalog(self):
+        leaf = {'menu_xmlid': 'test.native_workspace', 'menu_id': 901, 'action_id': 902,
+                'label': 'Native workspace', 'route': '/s/test.workspace',
+                'delivery_bucket': 'delivery_business_config',
+                'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.workspace'}}
+        result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[leaf], include_platform=True)
+        self.assertEqual(result['tree']['platform'], [leaf])
+        self.assertEqual(result['tree']['domains'], [])
+        self.assertEqual(result['diagnostics']['unmapped_count'], 0)
+        self.assertEqual(PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[leaf])['tree']['platform'], [])
+        for delta in ({'delivery_bucket': 'released_product_policy'}, {'entry_target': {}}):
+            denied = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[dict(leaf, **delta)], include_platform=True)
+            self.assertEqual(denied['tree']['platform'], [])
+            self.assertEqual(denied['diagnostics']['unmapped_count'], 1)
+
     @classmethod
     def setUpClass(cls):
         cls.surface = PROJ.load_surface(SURFACE_PATH)

@@ -44,7 +44,11 @@
     "addons/smart_construction_core/models/support/formal_user_management.py",
     "addons/smart_construction_scene/handlers/scenario_activation.py",
     "addons/smart_core/delivery/native_config_menu_projection.py",
-    "addons/smart_core/tests/test_native_config_menu_projection.py"
+    "addons/smart_core/tests/test_native_config_menu_projection.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -317,8 +321,8 @@
         ".runtime/enterprise-init/activation-iteration.log",
         ".runtime/enterprise-init/activation-unit.log"
       ],
-      "orm": "running",
-      "browser": "pending",
+      "orm": "passed: 1 real configuration journey, native menu visibility, authorization and state readback",
+      "browser": "failed: native menu omitted by closed-edition delivery; P0 explicit native admin surface delivery and P1 platform projection fixed, retest pending",
       "daily": "unchanged, user-reported failure confirmed",
       "independent_review": "pending_owner",
       "no_full_quick": "incremental policy; no frontend application changes"

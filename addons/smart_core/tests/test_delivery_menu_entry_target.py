@@ -45,6 +45,20 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_closed_edition_retains_only_declared_native_config_surfaces(self):
+        service = menu_service.MenuService(object())
+        declared = {'menu_id': 501, 'action_id': 601, 'menu_xmlid': 'test.setup',
+                    'menu_key': 'test.setup', 'label': 'Setup', 'route': '/s/test.setup',
+                    'scene_source': 'native_business_config_menu_projection',
+                    'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.setup'}}
+        ordinary = dict(declared, menu_id=502, action_id=602, menu_xmlid='test.other', menu_key='test.other', entry_target={})
+        groups = [{'group_key': 'platform.config', 'group_label': 'Configuration', 'menus': [declared, ordinary]}]
+        with patch.object(menu_service, 'native_config_delivery_groups', return_value=groups), \
+             patch.object(service, '_authorization_native_nav', return_value=[]), \
+             patch.object(service, '_native_group_config_menu_ids_by_label', return_value={}):
+            nav = service.build_nav(policy={'menu_groups': []}, role_surface=self._runtime_role_surface('business_config_admin'), native_nav=[])
+        self.assertEqual(set(service._walk_nav_action_refs(nav)), {(501, 601)})
+
     def test_web_surface_entry_target_projects_only_declared_fields(self):
         target = menu_service.build_web_surface_entry_target(
             "{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config',"
