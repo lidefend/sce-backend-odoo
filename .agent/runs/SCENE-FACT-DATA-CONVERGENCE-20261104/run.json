@@ -15,6 +15,7 @@
     "make/ci.mk",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
     "addons/smart_construction_scene/providers/enterprise_setup_provider.py",
+    "addons/smart_construction_scene/scene_registry.py",
     "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
     "addons/smart_scene/core/scene_registry_engine.py",
     "addons/smart_construction_scene/handlers/scenario_activation.py",
