@@ -3151,6 +3151,30 @@ class ApplicationCredentialTests(unittest.TestCase):
         self.assertIn("SC_PLATFORM_ADMIN_PASSWORD=admin", text)
         self.assertIn("DB_PASSWORD=", text)
 
+    def test_default_namespace_is_rendered_from_entry_declaration(self):
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.platform_duty(root)
+            def run(namespace, ops_root):
+                namespace["ENV_TEMPLATE"] = ENV_TEMPLATE.read_text()
+                namespace["PAYLOAD"]["entry"] = copy.deepcopy(ENTRY_PAYLOAD)
+                entry = namespace["PAYLOAD"]["entry"]
+                serving = entry["public_entry"]["serving_duty"]
+                for row in entry["namespace_routes"]["namespaces"]:
+                    if row["duty"] == serving:
+                        row["alias"] = "renamed-demo"
+                rendered = namespace["render_env"](duty, self.render_credentials())
+                self.assertIn("SC_PROXY_DEFAULT_NAMESPACE=renamed-demo", rendered)
+                entry["namespace_routes"]["namespaces"] = []
+                with self.assertRaisesRegex(RuntimeError, "exactly one"):
+                    namespace["render_env"](duty, self.render_credentials())
+            self.carrier(run)
+        compose = COMPOSE_FILE.read_text()
+        self.assertIn("SC_PROXY_DEFAULT_NAMESPACE: ${SC_PROXY_DEFAULT_NAMESPACE}", compose)
+        import re
+        pattern = re.search(r"NGINX_ENVSUBST_FILTER: '([^']+)'", compose)[1]
+        self.assertIsNotNone(re.fullmatch(pattern, "SC_PROXY_DEFAULT_NAMESPACE"))
+        self.assertIsNone(re.fullmatch(pattern, "sc_uri_ns"))
+
     def test_the_platform_duty_renders_its_declared_credential(self):
         with tempfile.TemporaryDirectory() as root:
             duty = self.platform_duty(root)

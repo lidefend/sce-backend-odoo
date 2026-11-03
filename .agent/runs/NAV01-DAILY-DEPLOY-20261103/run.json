@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "NAV01-DAILY-DEPLOY-20261103",
+  "branch": "fix/daily-main-namespace-delivery-20261103",
+  "baseline_sha": "aa28f842e778eb38541920d73cb67a60c1e72132",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NAV01-DAILY-DEPLOY-20261103.yaml",
+  "record": ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
+    ".agent/goals/NAV01-DAILY-DEPLOY-20261103.yaml",
+    "config/ops/daily_runtime_duty_stack.env",
+    "config/ops/daily_runtime_duty_stack.yml",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/verify/daily_runtime_entry_guard.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered daily demo/platform_control duties on sc-root; declared credentials and storage"
+  },
+  "checks": {},
+  "blockers": [
+    "Deployment restored and verified; P4 namespace binding repair needs independent review and mainline integration."
+  ],
+  "next_exact_step": "Review and integrate P4 namespace delivery repair; deployed business source remains aa28f842e778eb38541920d73cb67a60c1e72132.",
+  "live_state_file": ".runtime/nav01/integration-state.json",
+  "results": {
+    "deployment": "daily demo/platform_control passed final entry verification",
+    "business_source": "aa28f842e778eb38541920d73cb67a60c1e72132",
+    "tool_tests": {
+      "entry": 65,
+      "entry_verify": 32,
+      "duty": 168
+    },
+    "iteration": "passed",
+    "original_failure": ".runtime/nav01/daily-duty-refresh.json",
+    "recovery": ".runtime/nav01/daily-duty-refresh-fixed.json",
+    "final_entry": ".runtime/nav01/daily-entry-final.json",
+    "published_face": ".runtime/nav01/daily-published-face.json",
+    "db_recovery_points": ".runtime/nav01/daily-duty-upgrade.json",
+    "runtime_repair": "Corrected local P4 renderer applied through governed Make; remote Git tree remains unchanged at deployed main."
+  }
+}

@@ -1856,6 +1856,11 @@ def render_env(duty, credentials):
         ))
     entry = PAYLOAD.get("entry") or {}
     serving = str((entry.get("public_entry") or {}).get("serving_duty") or "")
+    default_aliases = [row["alias"] for row in
+                       (entry.get("namespace_routes") or {}).get("namespaces", [])
+                       if row.get("duty") == serving]
+    if len(default_aliases) != 1:
+        raise RuntimeError("serving duty must resolve exactly one declared default namespace")
     platform_upstream = "odoo:8069"
     platform_duty = ""
     for route in entry.get("routes") or []:
@@ -1901,6 +1906,7 @@ def render_env(duty, credentials):
         "ODOO_BIND_HOST": declared_bind_host(duty, "odoo", serving),
         "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
         "NGINX_BIND_HOST": declared_bind_host(duty, "nginx", serving),
+        "SC_PROXY_DEFAULT_NAMESPACE": default_aliases[0],
         "SC_PROXY_DEFAULT_UPSTREAM": "odoo:8069",
         "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
         "SC_DECLARED_NAMESPACE_ALIASES": entry_namespace_alias_pattern(entry),
