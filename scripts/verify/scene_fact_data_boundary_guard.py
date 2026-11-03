@@ -42,14 +42,22 @@ def _hardcoded_enterprise_codes() -> str:
     return "\n".join(codes)
 
 
+def _hardcoded_provider_layout() -> str:
+    """The hardcoded layout block in the enterprise setup provider, if present."""
+    text = PROVIDER.read_text(encoding="utf-8") if PROVIDER.is_file() else ""
+    match = re.search(r'"layout"\s*:\s*\{[^}]*\}', text)
+    return match.group(0) if match else ""
+
+
 def _current_violations() -> dict[str, str | None]:
     """Return the live violation signature. A missing carrier yields None."""
     registry_codes = _hardcoded_enterprise_codes()
+    provider_layout = _hardcoded_provider_layout()
     return {
         "hardcoded_scene_registry_enterprise_entries": _sha(registry_codes) if registry_codes else None,
         "independent_scene_version_payload": _sha(SCENE_SETUP_XML.read_text(encoding="utf-8")) if SCENE_SETUP_XML.is_file() else None,
         "scene_enablement_fact_writes": _sha("\n".join(p.read_text(encoding="utf-8") for p in ENABLEMENT_WRITERS if p.is_file())) or None,
-        "hardcoded_provider_layout": _sha(PROVIDER.read_text(encoding="utf-8")) if PROVIDER.is_file() else None,
+        "hardcoded_provider_layout": _sha(provider_layout) if provider_layout else None,
     }
 
 

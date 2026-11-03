@@ -11,6 +11,5 @@ def build(scene_key: str = "enterprise.setup", runtime: dict | None = None, cont
             "title": "企业初始化工作空间",
             "message": "完善企业信息、组织架构、岗位、人员和业务权限，再选择启用业务场景。",
         },
-        "layout": {"kind": "workspace", "sidebar": "fixed", "header": "full"},
         "runtime": {"role_code": runtime.get("role_code"), "company_id": runtime.get("company_id")},
     }

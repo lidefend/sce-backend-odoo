@@ -24,7 +24,9 @@
     },
     "hardcoded_provider_layout": {
       "file": "addons/smart_construction_scene/providers/enterprise_setup_provider.py",
-      "sha256": "28bce7af960fa843cf8c722e2b008e2d75b39af547841cf2053d2af927054fca"
+      "sha256": null,
+      "converged": true,
+      "converged_by": "provider no longer hardcodes workspace layout"
     }
   }
 }
