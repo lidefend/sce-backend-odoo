@@ -834,7 +834,11 @@ refresh.contract_form_split_evidence: guard.prod.forbid
 ci.generated_evidence.preflight: guard.prod.forbid verify.frontend.decision_authority.guard ci.generated_reports.guard verify.frontend.component_driver_takeover.unit verify.contract_form_split_evidence
 	@echo "[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current"
 
-ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.daily.runtime.release_orchestration.unit
+.PHONY: verify.scene.fact_data.boundary.unit
+verify.scene.fact_data.boundary.unit: guard.prod.forbid
+	@python3 scripts/verify/scene_fact_data_boundary_guard.py
+
+ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.daily.runtime.release_orchestration.unit verify.scene.fact_data.boundary.unit
 	@$(MAKE) --no-print-directory ci.delivery.plan
 	@$(MAKE) --no-print-directory refresh.generated_evidence
 	@$(MAKE) --no-print-directory ci.generated_evidence.preflight

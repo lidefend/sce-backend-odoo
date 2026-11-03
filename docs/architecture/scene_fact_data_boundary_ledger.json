@@ -1,0 +1,28 @@
+{
+  "schema": "scene_fact_data_boundary.v1",
+  "rule": "fact_layer_is_the_single_maintenance_source",
+  "decision": "ARCH-DECISION-010",
+  "note": "Scenario entries, workspace layout and enablement must be read-only projections of native model/view/permission/group facts. Carriers below hold scene configuration fact data and are bound by exact content SHA until the governed convergence retires them.",
+  "violations": {
+    "hardcoded_scene_registry_enterprise_entries": {
+      "file": "addons/smart_construction_scene/profiles/scene_registry_content.py",
+      "sha256": "477f2b8be32faa7f5aa85eb14539010628da33e2c7ab0b8ea85c459279e577d7"
+    },
+    "independent_scene_version_payload": {
+      "file": "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
+      "sha256": "0e3aa76bf3bc1d7759f16f70e35c23a837cefc0bd7ed346610618b4e7d926997"
+    },
+    "scene_enablement_fact_writes": {
+      "files": [
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py"
+      ],
+      "sha256": "97d20980ad5fefc9d869fe02e8159881aebe4e9e1b323f2e517df34382cedd95"
+    },
+    "hardcoded_provider_layout": {
+      "file": "addons/smart_construction_scene/providers/enterprise_setup_provider.py",
+      "sha256": "28bce7af960fa843cf8c722e2b008e2d75b39af547841cf2053d2af927054fca"
+    }
+  }
+}
