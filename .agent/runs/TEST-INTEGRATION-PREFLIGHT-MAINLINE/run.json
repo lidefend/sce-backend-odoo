@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "id": "TEST-INTEGRATION-PREFLIGHT-MAINLINE",
+  "branch": "fix/test-integration-preflight-mainline",
+  "baseline_sha": "ba369139a3d102af9714fdae913238d54b52a031",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/TEST-INTEGRATION-PREFLIGHT-MAINLINE.yaml",
+    ".agent/runs/TEST-INTEGRATION-PREFLIGHT-MAINLINE/",
+    "make/ci.mk",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_local_quick_evidence.py",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "docs/engineering_convergence/",
+    ".agent/goals/BNVA-01.yaml",
+    ".agent/goals/BNVA-02.yaml",
+    ".agent/goals/BNVA-03.yaml",
+    ".agent/goals/PHASE5-01-SHADOW-CONTRACTION.yaml"
+  ],
+  "goal": ".agent/goals/TEST-INTEGRATION-PREFLIGHT-MAINLINE.yaml",
+  "record": ".agent/runs/TEST-INTEGRATION-PREFLIGHT-MAINLINE/run.json",
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Commit clean candidate, run exact-head Quick, obtain independent review bound to candidate and archive evidence before governed publication. Original PR768 remains Draft and unchanged.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "early test integration verification",
+    "module": "CI and verification tools",
+    "standard_vs_user_specific": "standard engineering mechanism",
+    "why_here": "test wiring and evidence boundary only",
+    "why_not_elsewhere": "no business semantics, runtime or permission changes",
+    "blast_radius": "iteration preflight and Quick dependency validation"
+  },
+  "results": {
+    "policy_tests": 19,
+    "quick_receipt_tests": 66,
+    "branch_guard_tests": 23,
+    "attachment_boundary_assertions": 5,
+    "attachment_mounted_assertions": 38,
+    "professional_relation": "passed: 18 scenarios/17 counterexamples, column 3, options 6, Python 10+40",
+    "typecheck": "passed",
+    "iteration": "passed: four early checks executed",
+    "freeze_first_attempt": "failed: four pre-existing goal/run status mismatches; original log retained",
+    "ledger": "passed: 18 tests and repository status consistency",
+    "freeze_second_attempt": "passed: ledger fixed; generated complexity report reviewed; no product/runtime inputs changed"
+  },
+  "provenance": {
+    "source_pr": 768,
+    "source_head": "466eb357534d174abf4b5164bcadacfaae205ec1",
+    "old_takeover_record_commit": "19b5a4f9e",
+    "reason": "Existing sync only resolves metadata; preserve original PR and reconcile overlapping test harness in a new candidate on exact main.",
+    "original_pr_mutations": "none"
+  },
+  "validation_plan": {
+    "risk": "P4 validation and evidence tooling; no P0-P3 runtime changes",
+    "L1": [
+      "verify.baseline.iteration.execution.policy",
+      "verify.branch.governance.consistency",
+      "ci.local.iteration"
+    ],
+    "L2": [
+      "verify.frontend.professional_relation_field.unit"
+    ],
+    "L3_L4": "No database or browser changes; remote lane classification retains required integration checks",
+    "L5": "New exact-head Quick, independent review, archive and protected publication required; no old receipt inherited"
+  },
+  "baseline_metadata_repair": {
+    "classification": "baseline_evidence_defect",
+    "evidence": "Existing exact-main run statuses and next_exact_step; already integrated through main ancestry",
+    "changes": {
+      "BNVA-01": "completed",
+      "BNVA-02": "completed",
+      "BNVA-03": "completed",
+      "PHASE5-01-SHADOW-CONTRACTION": "superseded"
+    },
+    "limits": "Status reconciliation only; no claim of runtime acceptance or new product completion"
+  },
+  "evidence": {
+    "targeted": {
+      "path": ".runtime/mainline-preflight-targeted.log",
+      "sha256": "6312bf183ba1a0bc1e14e69b2eea934652c813110b37378671c778c9bd1f2cc1"
+    },
+    "iteration": {
+      "path": ".runtime/mainline-preflight-iteration.log",
+      "sha256": "67b970c1f89a87ef64e59485acc0671a15fd7b40de0633818f51475d55096f6c"
+    },
+    "typecheck": {
+      "path": ".runtime/mainline-preflight-typecheck.log",
+      "sha256": "4571f62cad88f1a44921454e2b710b243f9abfe679d1a02b636989af58ff66ae"
+    },
+    "freeze": {
+      "path": ".runtime/mainline-preflight-freeze.log",
+      "sha256": "7fad49d15d7fa187aa7a5b428086b0ea546c02f10ab293df4d1548e1c1ec0d30"
+    },
+    "freeze-r2": {
+      "path": ".runtime/mainline-preflight-freeze-r2.log",
+      "sha256": "b4326770304e9605a315209b90e8e900b44cf0f67e630f2daf7a87ba8171d89b"
+    },
+    "ledger": {
+      "path": ".runtime/mainline-preflight-ledger.log",
+      "sha256": "9d186d7c4a5aa4407f9dccfcfc4833c6dc2ba915c30d8717bc499800dede7ea6"
+    },
+    "relation": {
+      "path": ".runtime/mainline-relation-targeted.log",
+      "sha256": "af210c9f832d5bd6426d88509b747835e741c091c6c4df3bed0c6b1eaa895fbc"
+    }
+  },
+  "reuse_rationale": "After targeted source tests passed, only four goal statuses and generated complexity line counts changed. No source/test/Make/runtime dependencies changed; targeted results retained. Ledger and freeze preparation were actually rerun.",
+  "rollback": "Revert the bounded successor commit through protected PR if published; original PR768 branch and source head remain unchanged. No data migration."
+}

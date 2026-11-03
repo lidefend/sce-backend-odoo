@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: BNVA-01
   title: backend_native_view_authority_optimization
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer: P1
   layer_target: backend_native_view_projection_and_contract_assembly

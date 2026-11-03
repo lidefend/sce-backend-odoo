@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PHASE5-01-SHADOW-CONTRACTION
   title: phase5_01_pc007_frontend_shadow_contraction_runtime_verification
-  status: active
+  status: superseded
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: frontend_formal_page_legacy_render_gating_and_shadow_diagnostics

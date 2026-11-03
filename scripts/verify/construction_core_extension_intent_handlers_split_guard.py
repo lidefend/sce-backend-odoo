@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
 import sys
 import types
 from pathlib import Path
@@ -129,6 +130,24 @@ def _install_stubs() -> None:
         sys.modules[module_name] = module
 
 
+def validate_handler_stubs(source: str) -> list[str]:
+    """Report missing standalone test imports before the loader returns no intents."""
+    errors = []
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        module = node.module or ""
+        if node.level:
+            module = importlib.util.resolve_name("." * node.level + module, "odoo.addons.smart_construction_core")
+        if not module.startswith("odoo.addons.smart_construction_core.handlers."):
+            continue
+        registered = HANDLER_MODULES.get(module, [])
+        for symbol in node.names:
+            if symbol.name not in registered:
+                errors.append(f"standalone handler stub missing: {module}.{symbol.name}; register the import and assert its intent before running acceptance")
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
     core_text = _read(CORE_EXTENSION)
@@ -155,6 +174,7 @@ def main() -> int:
             errors.append("core_extension.py should not keep approval policy intent constants after handler extraction")
 
     if handler_text:
+        errors.extend(validate_handler_stubs(handler_text))
         line_count = len(handler_text.splitlines())
         line_budgets.advise_size("addons/smart_construction_core/core_extension_intent_handlers.py", line_count, label="core_extension_intent_handlers.py")
         for token in [
