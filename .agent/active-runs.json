@@ -58,6 +58,7 @@
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/user-delivery-acceptance-20261025": ".agent/runs/USER-DELIVERY-ACCEPTANCE-20261025/run.json",
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
-    "fix/test-integration-preflight-mainline": ".agent/runs/TEST-INTEGRATION-PREFLIGHT-MAINLINE/run.json"
+    "fix/test-integration-preflight-mainline": ".agent/runs/TEST-INTEGRATION-PREFLIGHT-MAINLINE/run.json",
+    "fix/scheduled-navigation-closeout-20261103": ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/run.json"
   }
 }

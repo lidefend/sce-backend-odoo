@@ -122,7 +122,7 @@ def validate_runtime_targets(source: str, product: dict) -> list[str]:
     targets = {row["menu_xmlid"]: row for group in product["menu_groups"]
                for row in group.get("menus", []) if row.get("menu_xmlid")}
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
-             and isinstance(node.func, ast.Name) and node.func.id == "target"]
+             and isinstance(node.func, ast.Name) and node.func.id in {"target", "wrapper_target"}]
     if not calls:
         return ["runtime resolver has no declared target calls"]
     errors = []
