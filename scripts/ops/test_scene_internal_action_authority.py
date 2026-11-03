@@ -139,6 +139,13 @@ class TestNativeHandlingProjection(unittest.TestCase):
         self.assertEqual(item["target"], {"type": "action", "action_xmlid": "test.action"})
         self.assertEqual(item["model"], self.action.res_model)
 
+    def test_remediation_uses_only_authorized_native_metadata(self):
+        self.arch.find('.//button').set('data-sc-remediation', ' profile, personnel ')
+        item = self.project(self.env, self.scene)['groups'][0]['items'][0]
+        self.assertEqual(item['remediation_keys'], ['profile', 'personnel'])
+        self.action.groups_id = {'test.admin'}
+        self.assertEqual(self.project(self.env, self.scene)['item_count'], 0)
+
     def test_denied_view_never_falls_back_to_historical_catalog(self):
         self.scene["handling_entry_catalog"] = {"groups": [{"items": [{"key": "stale"}]}]}
         self.groups.clear()

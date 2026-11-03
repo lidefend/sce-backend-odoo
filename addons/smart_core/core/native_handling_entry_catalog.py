@@ -90,7 +90,8 @@ def project_native_handling_catalog(env, scene):
             seen.add(xmlid)
             label = button.get("string") or action.name
             items.append({"key": xmlid, "label": label, "model": action.res_model,
-                          "action_xmlid": xmlid, "target": {"type": "action", "action_xmlid": xmlid}})
+                          "action_xmlid": xmlid, "target": {"type": "action", "action_xmlid": xmlid},
+                          "remediation_keys": [key.strip() for key in (button.get("data-sc-remediation") or "").split(",") if key.strip()]})
         if items:
             catalog["groups"].append({"key": key, "title": title, "items": items})
     catalog["group_count"] = len(catalog["groups"])

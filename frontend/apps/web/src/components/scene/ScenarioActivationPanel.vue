@@ -1,5 +1,5 @@
 <template>
-  <section class="scenario-activation-panel" data-semantic-component="ScenarioActivationPanel" :data-state="state">
+  <section id="enterprise-scenario-activation" class="scenario-activation-panel" data-semantic-component="ScenarioActivationPanel" :data-state="state">
     <header class="scenario-activation-panel__header">
       <h3>企业业务场景管理</h3>
       <ScButton size="small" variant="ghost" type="button" :disabled="busy" @click="refresh">刷新</ScButton>

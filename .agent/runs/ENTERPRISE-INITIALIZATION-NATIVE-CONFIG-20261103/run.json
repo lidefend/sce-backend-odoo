@@ -3,7 +3,7 @@
   "id": "ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103",
   "branch": "feature/enterprise-initialization-native-config-20261103",
   "baseline_sha": "852d7f2a2f448f84bbbe5b0df56875262de803fc",
-  "status": "verification_pending",
+  "status": "active",
   "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103.yaml",
   "record": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
   "scope": [
@@ -33,7 +33,14 @@
     "addons/smart_construction_scene/services/business_scene_enablement.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
-    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs"
+    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_scene/handlers/enterprise_readiness.py",
+    "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -50,26 +57,23 @@
     "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
     "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
     "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests",
-    "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list."
+    "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list.",
+    "continuation": "P1 owns readiness rule labels, scoped fact diagnosis and native remediation bindings; P0 only projects declared native remediation metadata; frontend consumes contract and rejects stale company responses. P4 extends existing focused tests, no new environment."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
     "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
-    "excluded": "No full Quick, environment/database rebuild, frontend rebuild/typecheck (only .mjs acceptance tools changed), daily server writes, actual scene enable/disable mutation, or full multi-role browser matrix.",
+    "excluded": "No full Quick, environment/database rebuild, daily server writes, or full multi-role browser matrix. Rebuild existing frontend preview because application source changed.",
     "dependency_analysis": {
-      "runtime_source": "1ee5598ed6c99dbf0999e5b165554de36311bc74",
-      "final_remaining_changes": "run metadata and browser assertion only; no further addon/runtime input mutation",
-      "orm_inputs": [
-        "addons/smart_construction_core/models/support/res_company.py",
-        "addons/smart_construction_core/security/ir.model.access.csv",
-        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
-        "addons/smart_construction_core/tests/test_system_permission_separation.py"
-      ],
-      "browser_inputs": "All changed addon paths in scope, existing frontend artifact verified by governed preview identity, standard_bootstrap_inventory.mjs and bootstrap_inventory_policy.mjs/test",
-      "limitations": "Single registered config-admin browser identity; two-company switching covered by ORM. Actual tenant scenario enable/disable and end-to-end new employee onboarding are not claimed."
-    }
+      "status": "superseded_by_continuation",
+      "runtime_source": "pending new committed artifact",
+      "orm_inputs": "Native onboarding, readiness and scoped scenario activation in existing rollback-bound ORM case",
+      "browser_inputs": "New frontend readiness consumer and backend native remediation projection",
+      "limitations": "Single config-admin browser identity; data mutations only in rollback-bound ORM."
+    },
+    "continuation": "Native org/job/user/role writes and business scene activation tested in existing acceptance TransactionCase rollback; actual browser remediation links, same-company/company-switch response lifecycle; no daily data mutation."
   },
-  "next_exact_step": "Owner independently reviews aggregate diff and linked evidence; after passing review, archive exact candidate evidence and publish through governed PR entry.",
+  "next_exact_step": "Finish readiness remediation, company-aware refresh and actual native onboarding/scene activation rollback-bound ORM journey.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -188,6 +192,20 @@
       "log": ".runtime/enterprise-init/bootstrap-browser-readonly-final.log",
       "classification": "validation_tool_defect",
       "reason": "Test inspected base field metadata instead of native readonly modifier and effective widget status; final probe checks both authoritative status and rendered readonly behavior."
+    },
+    "continuation_local": {
+      "status": "passed",
+      "checks": [
+        "strict typecheck",
+        "native projection 15 cases plus owning authority suites",
+        "actual frontend readiness lifecycle 6 cases plus existing workspace/activation suites",
+        "ci.local.iteration"
+      ],
+      "logs": [
+        ".runtime/enterprise-init/continuation-typecheck.log",
+        ".runtime/enterprise-init/continuation-lifecycle.log",
+        ".runtime/enterprise-init/continuation-iteration.log"
+      ]
     }
   },
   "checks": {},

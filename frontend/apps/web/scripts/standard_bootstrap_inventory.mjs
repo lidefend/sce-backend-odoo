@@ -52,7 +52,7 @@ try {
       const intent = body?.intent;
       if (intent) {
         observed.calls.push({ intent, httpStatus: response.status() });
-        if (intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
+        if (intent === 'enterprise.readiness.diagnosis.get' || intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
           const result = await response.json();
           observed.contracts.push({ intent, params: redact(body.params || {}), payload: redact(result) });
         }
@@ -122,7 +122,13 @@ try {
           await button.waitFor();
           assert.equal(await button.isEnabled(), true, `${label} has native action authority`);
           const offset = observed.contracts.length;
-          await button.click();
+          const diagnosis = page.locator('.enterprise-readiness-panel[data-state="ready"]');
+          await diagnosis.waitFor();
+          assert.equal(await diagnosis.locator('li').count(), 12, 'twelve actual readiness results');
+          const readiness = observed.contracts.filter(row => row.intent === 'enterprise.readiness.diagnosis.get').at(-1)?.payload?.data;
+          assert.equal(readiness?.contract_version, 'enterprise_readiness.v2');
+          assert.ok(readiness.rules.some(row => row.remediation?.label === label), `${label} has native remediation`);
+          await diagnosis.getByRole('button', { name: label, exact: true }).first().click();
           await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));
           await page.locator('[data-list-composition="official-standard-list"]').waitFor();
           await page.waitForLoadState('networkidle');

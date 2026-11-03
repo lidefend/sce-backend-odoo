@@ -473,3 +473,58 @@ assert.equal(pending.filter(item => item.intent === 'scenario.activation.set').l
 managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
+
+// Readiness consumes native remediation and never displays another company's late response.
+const { useEnterpriseReadiness } = await import('../src/composables/useEnterpriseReadiness.ts');
+session.initStatus = 'ready';
+const diagnosisScope = effectScope();
+const diagnosis = diagnosisScope.run(() => useEnterpriseReadiness())!;
+await flush();
+const diagnosisResponse = (company: number, label = 'Native label') => ({
+  contract_version: 'enterprise_readiness.v2', company_id: company, rules: [{
+    rule_key: 'test', label, applicability: true, status: 'CONFIGURED', status_label: '已配置',
+    failure_reason: '', suggested_responsible_party: '',
+    remediation: { kind: 'handling_entry', key: 'native.action', label: 'Native entry' },
+  }],
+});
+const oldDiagnosis = pending.at(-1)!;
+assert.equal(oldDiagnosis.intent, 'enterprise.readiness.diagnosis.get');
+assert.equal(oldDiagnosis.params.company_id, 2);
+session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
+await flush();
+const currentDiagnosis = pending.at(-1)!;
+assert.equal(currentDiagnosis.params.company_id, 1);
+currentDiagnosis.settle(diagnosisResponse(1));
+await flush();
+assert.equal(diagnosis.state.value, 'ready');
+assert.equal(diagnosis.rules.value[0].remediation?.key, 'native.action');
+oldDiagnosis.settle(diagnosisResponse(2, 'Stale'));
+await flush();
+assert.equal(diagnosis.rules.value[0].label, 'Native label');
+const malformedDiagnosis = await nextRequest(diagnosis.load);
+malformedDiagnosis.request.settle({ company_id: 1, rules: [] });
+await malformedDiagnosis.result;
+assert.equal(diagnosis.state.value, 'error');
+assert.deepEqual(diagnosis.rules.value, []);
+const wrongCompany = await nextRequest(diagnosis.load);
+wrongCompany.request.settle(diagnosisResponse(2));
+await wrongCompany.result;
+assert.equal(diagnosis.state.value, 'error');
+const beforeActivation = await nextRequest(diagnosis.load);
+session.initStatus = 'loading';
+await flush();
+beforeActivation.request.settle(diagnosisResponse(1));
+await beforeActivation.result;
+assert.deepEqual(diagnosis.rules.value, []);
+session.initStatus = 'ready';
+await flush();
+assert.equal(pending.at(-1)!.intent, 'enterprise.readiness.diagnosis.get');
+pending.at(-1)!.settle(diagnosisResponse(1, 'After activation'));
+await flush();
+assert.equal(diagnosis.rules.value[0].label, 'After activation');
+const afterUnmount = await nextRequest(diagnosis.load);
+diagnosisScope.stop();
+afterUnmount.request.settle(diagnosisResponse(1));
+await afterUnmount.result;
+assert.deepEqual(diagnosis.rules.value, []);
+console.log('[enterprise_readiness_lifecycle_test] PASS cases=6 consumer=actual transport=controlled');

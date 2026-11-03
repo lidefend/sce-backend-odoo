@@ -166,7 +166,7 @@
     <ActionView v-else-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId > 0" />
     <EnterpriseReadinessPanel
       v-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId <= 0 && embeddedRecordActionId <= 0 && currentSceneKey === 'enterprise.setup'"
-      @remediate="openHandlingEntryByKey"
+      @remediate="openReadinessRemediation"
     />
     <ScenarioActivationPanel
       v-if="status === 'idle' && !sceneContractEntryIntent && embeddedActionId <= 0 && embeddedRecordActionId <= 0 && currentSceneKey === 'enterprise.setup'"
@@ -182,6 +182,7 @@ import SceneContractBlockGridView from './SceneContractBlockGridView.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
 import ScenarioActivationPanel from '../components/scene/ScenarioActivationPanel.vue';
 import EnterpriseReadinessPanel from '../components/scene/EnterpriseReadinessPanel.vue';
+import type { ReadinessRemediation } from '../composables/useEnterpriseReadiness';
 import ContractFormPage from '../pages/ContractFormPage.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -529,6 +530,11 @@ function openHandlingEntry(item: HandlingEntryItem) {
       business_category_code: item.business_category_code || undefined,
     }),
   });
+}
+
+function openReadinessRemediation(target: ReadinessRemediation) {
+  if (target.kind === 'handling_entry') openHandlingEntryByKey(target.key);
+  else if (target.kind === 'anchor') document.getElementById(target.key)?.scrollIntoView({ block: 'start' });
 }
 
 function openHandlingEntryByKey(entryKey: string) {
