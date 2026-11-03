@@ -23,7 +23,9 @@
     "docs/engineering_convergence/",
     "docs/audit/test_coverage_registry/",
     "contracts/generated/",
-    "config/frontend/authoritative_navigation.json"
+    "config/frontend/authoritative_navigation.json",
+    "addons/smart_construction_core/views/core/settlement_views.xml",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -34,10 +36,11 @@
   },
   "checks": {},
   "blockers": [
-    "PR793 full frontend gate: PM browser expectation omitted the already-published project initiation entry",
-    "New candidate requires exact-head evidence and independent review"
+    "Current PR793 frontend gate failed at dependency.compliance_state",
+    "Local XML fix not yet installed/verified in acceptance",
+    "New fingerprint requires independent delta review; previous review applies only to 3249"
   ],
-  "next_exact_step": "Correct only the PM browser verification expectation, replay the actual failed CI report with negative controls, run affected guards and freeze the corrected candidate.",
+  "next_exact_step": "Freeze native view capability correction, run exact-head Quick and upgrade only smart_construction_core through registered acceptance.module.upgrade; verify affected contracts then request owner independent delta review.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "registered acceptance artifact and lifecycle",
@@ -123,6 +126,52 @@
       "status": "failed",
       "owner": "P4 goal metadata missing goal mapping",
       "recovery": "Reformatted goal to canonical schema; owning ledger and freeze preparation passed"
+    },
+    "compliance_fix": {
+      "status": "verification_pending",
+      "baseline_sha": "3249d583d66e8ab425160aa4a0a0884c48dfbaab",
+      "classification": "P1 native view capability mismatch",
+      "runtime_diagnosis": {
+        "status": "reproduced",
+        "log": ".runtime/p4-acceptance-artifact/modifier-diagnostic-r3.log",
+        "pm": "payment.request AccessError; compliance_state dependency present but value absent",
+        "finance": "native value warn; contract value warn",
+        "mutation": "none; probe always rolls back"
+      },
+      "static_regression": {
+        "status": "passed",
+        "tests": 33,
+        "added_cases": 4,
+        "command": "python3 scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "log": ".runtime/p4-acceptance-artifact/compliance-existing-suite.log"
+      },
+      "runtime_tools": {
+        "status": "passed",
+        "tests": 96,
+        "log": ".runtime/p4-acceptance-artifact/compliance-runtime-tools.log"
+      },
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/p4-acceptance-artifact/compliance-iteration-r2.log",
+        "previous_failed_attempt": ".runtime/p4-acceptance-artifact/compliance-iteration.log",
+        "recovery": "Retired temporary diagnostic target; merged regression into existing delivery hardening suite without baseline changes"
+      },
+      "post_fix_runtime": {
+        "status": "not_run",
+        "reason": "Candidate XML groups are not yet installed; immutable acceptance backend remains 3249. Governed module-upgrade source and carrier must be verified before DB changes."
+      },
+      "probe_harness_correction": "First diagnostic invocation used unsupported params constructor; corrected to payload and IntentResult.data, original log retained",
+      "diagnostic_tool": "Temporary governed runtime diagnostic retired after read-only root-cause proof; source archived in .runtime/p4-acceptance-artifact/acceptance_modifier_diagnostic.py",
+      "freeze_prepare": {
+        "status": "passed",
+        "log": ".runtime/p4-acceptance-artifact/compliance-freeze.log"
+      }
     }
+  },
+  "continuation_scope": {
+    "formal_product_layer": "P1 native view group binding; P4 regression diagnostic",
+    "reason": "Ordinary PM lacks payment.request read ACL, so native compliance compute fails; finance read succeeds with warn",
+    "baseline": "3249d583d66e8ab425160aa4a0a0884c48dfbaab",
+    "blast_radius": "Only hidden compliance_state and three compliance_message occurrences; preserve computed method, data ACL and frontend fail-closed semantics"
   }
 }

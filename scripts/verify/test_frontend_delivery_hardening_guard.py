@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import ast
+import csv
+import xml.etree.ElementTree as ET
 import re
 import json
 import subprocess
@@ -469,6 +471,84 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             2,
         )
         self.assertNotIn("[data-list-status]:visible", performance)
+
+
+MODULE = ROOT / 'addons/smart_construction_core'
+
+
+def native_group_graph():
+    graph = {}
+    for filename in ('sc_capability_groups.xml', 'sc_role_groups.xml'):
+        for row in ET.parse(MODULE / 'security' / filename).findall('.//record[@model="res.groups"]'):
+            key = row.attrib['id']
+            key = key if '.' in key else 'smart_construction_core.' + key
+            edges = graph.setdefault(key, set())
+            for field in row.findall('./field[@name="implied_ids"]'):
+                expression = re.sub(r"ref\(['\"]([^'\"]+)['\"]\)", lambda m: repr(m.group(1)), field.attrib['eval'])
+                for command in ast.literal_eval(expression):
+                    if command[0] == 6:
+                        edges.clear()
+                        edges.update(command[2])
+                    elif command[0] == 4:
+                        edges.add(command[1])
+                    elif command[0] == 3:
+                        edges.discard(command[1])
+                    elif command[0] == 5:
+                        edges.clear()
+                    else:
+                        raise AssertionError(f'unhandled group command: {command}')
+    return graph
+
+
+class SettlementComplianceVisibilityTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.graph = native_group_graph()
+        with (MODULE / 'security/ir.model.access.csv').open() as stream:
+            cls.readers = {row['group_id:id'] for row in csv.DictReader(stream)
+                           if row['model_id:id'] == 'model_payment_request' and row['perm_read'] == '1'}
+        root = ET.parse(MODULE / 'views/core/settlement_views.xml')
+        cls.states = root.findall('.//field[@name="compliance_state"]')
+        cls.messages = root.findall('.//field[@name="compliance_message"]')
+
+    def closure(self, group):
+        result, pending = set(), [group]
+        while pending:
+            key = pending.pop()
+            if key not in result:
+                result.add(key)
+                pending.extend(self.graph.get(key, ()))
+        return result
+
+    def test_all_consumers_and_dependency_use_identical_native_groups(self):
+        self.assertEqual(len(self.states), 1)
+        self.assertEqual(len(self.messages), 3)
+        expected = set(self.states[0].attrib.get('groups', '').split(','))
+        self.assertNotIn('', expected)
+        for field in self.messages:
+            self.assertEqual(set(field.attrib.get('groups', '').split(',')), expected)
+            self.assertIn('compliance_state', field.attrib['modifiers'])
+
+    def test_group_closure_matches_payment_read_authority(self):
+        visibility = set(self.states[0].attrib.get('groups', '').split(','))
+        for group in self.graph.keys() | self.readers:
+            with self.subTest(group=group):
+                effective = self.closure(group)
+                self.assertEqual(bool(effective & visibility), bool(effective & self.readers))
+
+    def test_project_manager_without_finance_does_not_receive_predicate(self):
+        effective = self.closure('smart_construction_core.group_sc_role_project_manager')
+        self.assertFalse(effective & self.readers)
+        for field in self.states + self.messages:
+            self.assertFalse(effective & set(field.attrib.get('groups', '').split(',')))
+
+    def test_finance_and_combined_roles_keep_matching_indicators(self):
+        for group in ('group_sc_cap_finance_read', 'group_sc_cap_finance_user', 'group_sc_cap_finance_manager'):
+            effective = self.closure('smart_construction_core.' + group)
+            for extra in (set(), self.closure('smart_construction_core.group_sc_role_project_manager')):
+                for field in self.states + self.messages:
+                    self.assertTrue((effective | extra) & set(field.attrib.get('groups', '').split(',')))
+
 
 
 if __name__ == "__main__":
