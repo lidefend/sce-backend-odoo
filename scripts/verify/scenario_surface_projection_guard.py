@@ -177,8 +177,21 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["diagnostics"]["grouped_menu_count"], 91)
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(result["tree"]["platform"], [])
+        self.assertEqual(len(result["tree"]["platform"]), 7)
         self.assertEqual(len(result["tree"]["horizontal"]), 5)
+
+    def test_zero_business_scenes_keep_only_authorized_management_entries(self):
+        subset = self.surface["horizontal_work_center"]["menus"] + self.surface["platform_support"]["menus"]
+        result = PROJ.project_authorized_nav(nav=synthetic_nav(subset),
+            route_authority=synthetic_route_authority(subset), surface=self.surface)
+        self.assertEqual(result["tree"]["domains"], [])
+        self.assertEqual(len(result["tree"]["horizontal"]), 5)
+        self.assertEqual(len(result["tree"]["platform"]), 7)
+        self.assertEqual(result["tree"]["platform_label"], "产品配置")
+        authority = synthetic_route_authority(subset)
+        authority["primary_actions"] = authority["primary_actions"][:5]
+        revoked = PROJ.project_authorized_nav(nav=synthetic_nav(subset[:5]), route_authority=authority, surface=self.surface)
+        self.assertEqual(revoked["tree"]["platform"], [])
 
     def test_role_difference_only_authorized_scenarios_present(self):
         finance_only = [

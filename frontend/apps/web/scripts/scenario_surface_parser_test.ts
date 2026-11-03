@@ -44,7 +44,7 @@ assert.strictEqual(parseScenarioSurface(undefined), null);
 assert.strictEqual(parseScenarioSurface(null), null);
 assert.strictEqual(parseScenarioSurface({}), null);
 assert.strictEqual(parseScenarioSurface({ ok: false, tree: valid.tree }), null);
-assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [] } }), { domains: [], horizontal: [] });
+assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [] } }), { domains: [], horizontal: [], platform: [], platformLabel: '' });
 assert.strictEqual(parseScenarioSurface({ ok: true }), null);
 assert.strictEqual(parseScenarioSurface({ ok: true, tree: { domains: {}, horizontal: [] } }), null);
 
@@ -59,3 +59,10 @@ assert.strictEqual(entry.action_xmlid, 'smart_construction_core.action_payment_r
 assert.strictEqual(entry.route, '/a/11?menu_id=11');
 
 console.log('scenario_surface_parser_test PASS');
+
+const management = { ...entry, menu_xmlid: 'authorized.config', label: '菜单配置', route: '/admin/menu-config' };
+const adminOnly = parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [management], platform_label: '产品配置' } });
+assert.deepStrictEqual(adminOnly?.platform, [management]);
+assert.strictEqual(adminOnly?.platformLabel, '产品配置');
+assert.throws(() => parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [management] } }), /管理入口缺少/);
+assert.deepStrictEqual(parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [], platform: [] } })?.platform, []);

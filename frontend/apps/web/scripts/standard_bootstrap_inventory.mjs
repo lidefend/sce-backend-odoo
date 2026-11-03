@@ -9,6 +9,7 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
 const candidateStartup = process.env.BOOTSTRAP_SCOPE === 'candidate-startup';
+const managementOnly = process.env.BOOTSTRAP_MANAGEMENT_ONLY === '1';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `bootstrap-inventory-${Date.now()}`);
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
 const bytes = Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()));
@@ -26,6 +27,8 @@ const registeredRoles = ['fixture_role_finance', 'fixture_role_contract_operator
 const roles = process.env.BOOTSTRAP_ROLES?.split(',') || registeredRoles;
 assert.ok(roles.length && roles.every(role => registeredRoles.includes(role)), 'registered fixture role scope only');
 report.roleScope = roles;
+report.managementOnly = managementOnly;
+if (managementOnly) assert.ok(candidateStartup && roles.length === 1 && roles[0] === 'fixture_role_config_admin', 'management-only audit requires the registered config-admin candidate journey');
 try {
   for (const role of roles) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
@@ -49,7 +52,7 @@ try {
       const intent = body?.intent;
       if (intent) {
         observed.calls.push({ intent, httpStatus: response.status() });
-        if (intent === 'system.init' || intent.startsWith('ui.contract')) {
+        if (intent === 'system.init' || intent === 'scenario.activation.catalog.get' || intent.startsWith('ui.contract')) {
           const result = await response.json();
           observed.contracts.push({ intent, params: redact(body.params || {}), payload: redact(result) });
         }
@@ -89,6 +92,34 @@ try {
     assert.ok(observed.contracts.some(row => row.intent === 'system.init'), 'real initialization response required');
     await page.screenshot({ path: path.join(out, `${role}-landing.png`) });
     const init = observed.contracts.find(row => row.intent === 'system.init')?.payload?.data;
+    if (candidateStartup && role === 'fixture_role_config_admin') {
+      const surface = init?.navigation?.scenario_surface?.tree;
+      assert.ok(surface?.platform?.length, 'authorized configuration entries survive scenario projection');
+      const management = page.locator('[data-management-navigation="true"]');
+      await management.waitFor();
+      for (const entry of surface.platform) await management.getByRole('button', { name: entry.label, exact: true }).waitFor();
+      assert.equal(new URL(observed.landing, base).pathname, '/s/enterprise.setup', 'administrator first hop reaches existing initialization scene');
+      const catalogPanel = page.locator('[data-semantic-component="ScenarioActivationPanel"][data-state="ready"]');
+      await catalogPanel.waitFor();
+      const catalog = observed.contracts.find(row => row.intent === 'scenario.activation.catalog.get')?.payload?.data;
+      assert.equal(catalog?.business_scenarios?.length, 17, 'real business catalog delivered');
+      assert.equal(await catalogPanel.locator('li').count(), catalog.business_scenarios.length);
+      for (const row of catalog.business_scenarios) {
+        assert.ok(row.actions.length, 'native-authorized administrator can manage each released scene');
+        await catalogPanel.getByText(row.name, { exact: true }).waitFor();
+      }
+      observed.managementRecovery = { visibleEntries: surface.platform.length,
+        scope: 'native_configuration_and_existing_setup_first_hop', initializationEntry: 'enterprise.setup',
+        catalogCount: catalog.business_scenarios.length, mutationPerformed: false };
+      await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });
+      if (managementOnly) {
+        await page.unrouteAll({ behavior: 'wait' });
+        assert.deepEqual(observed.blockedWrites, [], 'no unregistered request in management recovery');
+        assert.deepEqual(observed.errors, [], 'no uncaught management recovery error');
+        await ctx.close();
+        continue;
+      }
+    }
     const leaves = [];
     const walk = (nodes) => { for (const node of nodes || []) {
       if (node.children?.length) walk(node.children);

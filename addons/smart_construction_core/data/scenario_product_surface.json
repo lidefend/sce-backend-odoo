@@ -92,6 +92,7 @@
     ]
   },
   "platform_support": {
+    "name": "产品配置",
     "note": "Platform configuration/diagnostics; excluded from ordinary business scenario surface.",
     "menus": [
       "smart_construction_core.menu_sc_business_config_workbench",

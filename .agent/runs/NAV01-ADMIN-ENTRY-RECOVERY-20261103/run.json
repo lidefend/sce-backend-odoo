@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "id": "NAV01-ADMIN-ENTRY-RECOVERY-20261103",
+  "branch": "fix/nav01-admin-entry-recovery-20261103",
+  "baseline_sha": "266762a35d651ff88fbc96eb54621f9c711913fc",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NAV01-ADMIN-ENTRY-RECOVERY-20261103.yaml",
+  "record": ".agent/runs/NAV01-ADMIN-ENTRY-RECOVERY-20261103/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/NAV01-ADMIN-ENTRY-RECOVERY-20261103/run.json",
+    ".agent/goals/NAV01-ADMIN-ENTRY-RECOVERY-20261103.yaml",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "frontend/apps/web/src/app/scenarioSurface.ts",
+    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+    "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_construction_core/core_extension.py",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "config/product_menu_contract_v1.json",
+    "scripts/release/test_locked_menu_policy_contract.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing isolated local acceptance profile; daily sc_demo read-only observation only"
+  },
+  "blockers": [
+    "Independent review of final candidate and required remote CI before protected integration; daily deployment remains pending"
+  ],
+  "next_exact_step": "Independent owner review of corrected initialization-first-hop candidate; then governed publication and required remote CI.",
+  "live_state_file": ".runtime/nav01/admin-entry-recovery-state.json",
+  "layer": {
+    "formal_product_layer": "P1 plus P0 generic frontend consumer",
+    "layer_target": "smart_construction_core scenario surface and frontend contract consumption",
+    "reason": "Native authorization already supplies seven config menus; scenario projection drops them; do not change user groups or enterprise scene enablement",
+    "initialization": "P1 existing product role landing declaration and scene delivery policy; no additional permission or menu whitelist, no frontend role inference."
+  },
+  "observed": {
+    "report": ".runtime/nav01/demo-wutao-menu-final.json",
+    "uid": 41,
+    "source": "aa28f842e778eb38541920d73cb67a60c1e72132",
+    "canonical_leaves": 12,
+    "scenario_visible_leaves": 5,
+    "configuration_leaves_dropped": 7
+  },
+  "results": {
+    "projection": {
+      "status": "passed",
+      "count": 14,
+      "log": ".runtime/nav01/admin-entry-projection-tests.log"
+    },
+    "parser": {
+      "status": "passed",
+      "log": ".runtime/nav01/admin-entry-parser-tests.log"
+    },
+    "lifecycle": {
+      "status": "passed",
+      "log": ".runtime/nav01/admin-entry-lifecycle.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": ".runtime/nav01/admin-entry-typecheck.log"
+    },
+    "probe_policy": {
+      "status": "passed",
+      "count": 12,
+      "log": ".runtime/nav01/admin-entry-bootstrap-policy.log"
+    },
+    "iteration": {
+      "status": "passed",
+      "scope": "earlier product delta; final probe scope preflight pending",
+      "log": ".runtime/nav01/admin-entry-iteration.log"
+    },
+    "browser_first_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793713257683/report.json",
+      "reason": "Management buttons rendered; enterprise.setup absent from effective product scene delivery policy; catalog not reached. Probe also missing readonly workspace.scenario.projection.get."
+    },
+    "browser_second_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793713445960/report.json",
+      "management_path": "7 entries visible, enterprise.setup opened, 17-scene catalog loaded without mutation",
+      "failure": "Later unrelated form inventory blocked api.onchange; do not broaden write policy",
+      "next": "Explicit config-admin management-only mode retains original navigation, real catalog and no-write assertions; default full probe unchanged"
+    },
+    "current_candidate": {
+      "identity": "49fc62611 plus declared dirty first-hop delta",
+      "landing_contract": {
+        "status": "passed",
+        "count": 33,
+        "log": ".runtime/nav01/admin-entry-landing-tests-r2.log"
+      },
+      "native_projection": {
+        "status": "passed",
+        "count": 13,
+        "log": ".runtime/nav01/admin-entry-native-tests-r3.log"
+      },
+      "lifecycle": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-lifecycle-r3.log"
+      },
+      "typecheck": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-typecheck-r3.log"
+      },
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/nav01/admin-entry-iteration-r3.log"
+      },
+      "browser": {
+        "status": "passed",
+        "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793714820388/report.json",
+        "source_sha": "5ba87b051dccad2cd7bb5d72eb9a0b20d7d340c0",
+        "dirty_scope": "browser response capture only; application and runtime inputs unchanged",
+        "landing": "/s/enterprise.setup",
+        "management": {
+          "visibleEntries": 7,
+          "scope": "native_configuration_and_existing_setup_first_hop",
+          "initializationEntry": "enterprise.setup",
+          "catalogCount": 17,
+          "mutationPerformed": false
+        },
+        "errors": [],
+        "blockedWrites": []
+      },
+      "browser_coverage_limit": "Existing fixture company has enabled scenes. Zero-enabled business navigation and native grant removal covered by pure projection tests; no daily server deployment or enablement mutation performed."
+    },
+    "landing_first_attempt": {
+      "status": "failed",
+      "log": ".runtime/nav01/admin-entry-landing-tests.log",
+      "resolution": "Tests compared historical Python defaults instead of runtime contract overlays; verify the actual overlay, preserving exact group and precedence assertions. Project-member difference predates this delta."
+    },
+    "browser_third_attempt": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793714790948/report.json",
+      "failure_owner": "P4 probe response collection omitted catalog; actual first hop and ready panel succeeded",
+      "recovery": "Capture existing readonly catalog response; rerun browser only, reuse application build/backend."
+    }
+  },
+  "checks": {},
+  "architecture_correction": {
+    "decision": "ARCH-DECISION-010",
+    "removed": "workspace_entries, model-ACL-generated navigation links, extra P0 extension context and frontend management_actions",
+    "retained": "Projection/consumer of seven existing native configuration menus",
+    "native_carrier": "No new menu/action: reuse registered enterprise.setup as first-hop orchestration; native model/action permissions remain authoritative.",
+    "prototype_browser_evidence": "86e/f3 prototype succeeded for management catalog but is NOT final-architecture acceptance; isolated carrier still serves that prototype until next governed refresh, daily server unchanged",
+    "first_hop": "Existing product role landing orchestration only, no new menu list or authority. Two existing administrator identities prefer enterprise.setup, retain workspace.home fallback."
+  },
+  "validation_plan": {
+    "risk": "P1 first-hop behavior and existing management navigation; native grants and company enablement unchanged",
+    "L1_L2": [
+      "verify.role_surface.landing.contract.unit",
+      "scenario projection and parser",
+      "bootstrap policy",
+      "ci.local.iteration"
+    ],
+    "L3": "No native XML/model changes; no module upgrade needed",
+    "L4": "Existing isolated config-admin startup browser; refresh changed source and frontend only",
+    "baseline_delta": "Config administrator and existing business_full composite prefer published enterprise.setup; all roles retain workspace.home fallback; 91 capabilities unchanged"
+  },
+  "exclusions": [
+    "No account/group or business-scene enablement writes",
+    "No expansion of the 91-capability publication baseline",
+    "Historical initialization provider/XML duplication not changed in this entry-delivery repair"
+  ]
+}

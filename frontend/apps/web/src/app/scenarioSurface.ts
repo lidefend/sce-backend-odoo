@@ -31,6 +31,8 @@ export interface ScenarioDomainNode {
 export interface ScenarioNavigationModel {
   domains: ScenarioDomainNode[];
   horizontal: ScenarioNavEntry[];
+  platform: ScenarioNavEntry[];
+  platformLabel: string;
 }
 
 export class ScenarioSurfaceError extends Error {
@@ -130,7 +132,13 @@ export function parseScenarioSurface(raw: unknown): ScenarioNavigationModel | nu
   const horizontal = asList(tree.horizontal)
     .map(parseEntry)
     .filter((entry): entry is ScenarioNavEntry => entry !== null);
+  const platform = asList(tree.platform).map(parseEntry)
+    .filter((entry): entry is ScenarioNavEntry => entry !== null);
+  const platformLabel = text(tree.platform_label);
+  if (platform.length && !platformLabel) {
+    throw new ScenarioSurfaceError('MANAGEMENT_LABEL_MISSING', '管理入口缺少服务端分组声明');
+  }
   // A valid empty projection is authoritative (for example after revocation).
   // It must not trigger legacy navigation fallback.
-  return { domains, horizontal };
+  return { domains, horizontal, platform, platformLabel };
 }

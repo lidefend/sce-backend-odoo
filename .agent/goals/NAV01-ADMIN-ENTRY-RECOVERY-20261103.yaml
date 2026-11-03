@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: NAV01-ADMIN-ENTRY-RECOVERY-20261103
+  status: active
+  formal_product_layer: P1
+  objective: Restore authorized configuration and enterprise initialization entry for zero-enabled-scene administrators.

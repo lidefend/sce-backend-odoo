@@ -179,6 +179,7 @@ def project_scenario_navigation(
             "domains": domains,
             "horizontal": horizontal,
             "platform": platform if include_platform else [],
+            "platform_label": _text(source.get("platform_support", {}).get("name")),
         },
         "diagnostics": {
             "authorized_leaf_count": sum(1 for leaf in authorized_leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
@@ -266,5 +267,7 @@ def project_authorized_nav(
     return project_scenario_navigation(
         surface=surface,
         authorized_leaves=leaves,
-        include_platform=False,
+        # Leaves are already native-authorized; regrouping must not discard
+        # tenant configuration entries just because no business scene is enabled.
+        include_platform=True,
     )

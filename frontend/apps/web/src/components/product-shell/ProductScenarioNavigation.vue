@@ -79,6 +79,17 @@
           </section>
         </div>
       </section>
+      <section v-if="model.platform.length" class="scenario-group scenario-group--management" data-management-navigation="true">
+        <h3 class="scenario-group__heading">{{ model.platformLabel }}</h3>
+        <ul class="scenario-entries">
+          <li v-for="entry in model.platform" :key="entry.menu_xmlid">
+            <ScButton type="button" variant="ghost" appearance="menu-item" class="scenario-entry"
+              :class="{ active: entry.menu_id === activeMenuId }"
+              :aria-current="entry.menu_id === activeMenuId ? 'page' : undefined"
+              @click="emit('select', entry)">{{ entry.label }}</ScButton>
+          </li>
+        </ul>
+      </section>
     </div>
   </nav>
 </template>
