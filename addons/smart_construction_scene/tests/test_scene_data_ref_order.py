@@ -41,7 +41,24 @@ def _iter_records(path: Path):
 
 class TestSceneDataRefOrder(unittest.TestCase):
     def test_all_module_local_refs_resolve_in_load_order(self):
-        defined = set()
+        # Odoo registers this Python model before processing manifest data.
+        # Bind the exception to the imported declaration, never a model_* prefix.
+        model_imports = ast.parse((SCENE_DIR / "models/__init__.py").read_text())
+        self.assertTrue(any(
+            isinstance(node, ast.ImportFrom) and node.level == 1
+            and any(alias.name == "scene_company_enablement" for alias in node.names)
+            for node in model_imports.body
+        ))
+        model_source = ast.parse((SCENE_DIR / "models/scene_company_enablement.py").read_text())
+        model_names = {
+            node.value.value
+            for cls in model_source.body if isinstance(cls, ast.ClassDef)
+            for node in cls.body if isinstance(node, ast.Assign)
+            if any(isinstance(target, ast.Name) and target.id == "_name" for target in node.targets)
+            and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+        }
+        self.assertEqual(model_names, {"sc.scene.company.enablement"})
+        defined = {"model_" + name.replace(".", "_") for name in model_names}
         problems = []
         for rel in _manifest_data_files():
             for rec in _iter_records(SCENE_DIR / rel):

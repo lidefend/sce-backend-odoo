@@ -82,7 +82,10 @@ class TestActualPublicationConsumers(unittest.TestCase):
     """Exercise real publication decoding; only the ORM transport is stubbed."""
 
     def setUp(self):
-        raw = json.loads(product_menu_source.SOURCE_PATH.read_text())
+        # Keep the raw fixture discoverable by the isolated receipt scanner.
+        source_path = SCENE_DIR.parent / "smart_construction_core/data/product_menu_source.json"
+        self.assertEqual(source_path, product_menu_source.SOURCE_PATH)
+        raw = json.loads(source_path.read_text())
         self.expected = {row["menu_xmlid"]: row["release_state"] for row in raw["entries"]}
         self.entries = scene_registry_content.list_scene_entries()
 

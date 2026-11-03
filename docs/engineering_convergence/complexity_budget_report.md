@@ -120,7 +120,7 @@ Generated from repository source files. This report is informational during the 
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1233 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
-| 1219 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1222 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |

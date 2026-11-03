@@ -115,17 +115,17 @@
     "scripts/verify/registry.yaml",
     "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
-    "scripts/verify/test_daily_acceptance_fixture_lane.py"
+    "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "addons/smart_construction_scene/tests/test_scene_data_ref_order.py"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "Registered isolated local acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance / 18082 and standard preview5180; artifact350ccd6c6. Fixture changes only owned synthetic companies; native ORM toggles transaction-rolled-back; persistent dev/prod untouched."
   },
   "blockers": [
-    "CI-fix candidate runtime evidence, exact-head Quick and owner independent delta review pending",
-    "PR794 remote checks failed on af6700; new head must pass required checks before merge"
+    "Current PR794 required CI failed before scene isolated execution; local corrected scene suite PASS145; new head remote checks pending."
   ],
-  "next_exact_step": "Commit reviewed CI repair checkpoint; refresh exact isolated acceptance artifact and affected browser evidence; final freeze/Quick and owner independent delta review before publishing.",
+  "next_exact_step": "Commit bounded scene test-input correction; reuse unaffected frontend/browser/ORM evidence; use existing incremental Quick plan only for affected prerequisites, then publish to existing PR794. No full acceptance cycle.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -370,5 +370,22 @@
       "reason": "Existing synthetic bank fixture exact-blob PD003 registration stale after six-line test setup change; RH018 consumes same registry; no new data values",
       "recovery": "Append PD003 exact path and full blob 535c1cae1690f1973c62a12c4a34eb5c0ac6dcd8 only; preserve prior history entries; regex numeric values compared equal with approved af6700"
     }
+  },
+  "ci_input_repair": {
+    "layer": "P4 test evidence and input declarations",
+    "base": "5388bb84b24aafe7041c5774f09d535fff60f1da",
+    "paths": [
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+      "addons/smart_construction_scene/tests/test_scene_data_ref_order.py"
+    ],
+    "reason": "Static receipt scanner cannot resolve imported module attributes; XML-order simulation omitted pre-data model registration. Product declarations and permission gates unchanged.",
+    "validation": {
+      "scene_python": "passed 145 tests; .runtime/nav01/ci-input-scene-tests-r2.log",
+      "discovery": "passed all 6 scene test files with zero unresolved reads; .runtime/nav01/ci-input-discovery.json",
+      "previous_scene_run": "failed one model registration simulation; preserved .runtime/nav01/ci-input-scene-tests.log",
+      "iteration_initial": "failed newly affected file not in run scope; scope explicitly added"
+    },
+    "reuse": "No product/frontend/ORM/runtime/probe inputs changed; their earlier observations retained with original identities, not relabeled as new-head remote successes.",
+    "excluded": "Full browser/ORM/runtime refresh, deployment, P4 environment reconciliation branch, new approval/archive cycle"
   }
 }
