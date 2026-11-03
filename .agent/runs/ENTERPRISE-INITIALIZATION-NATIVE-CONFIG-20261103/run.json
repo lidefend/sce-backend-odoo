@@ -39,7 +39,9 @@
     "kind": "runtime",
     "authority": "Reuse registered local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180; daily read-only only; no new credentials or database"
   },
-  "blockers": [],
+  "blockers": [
+    "Owner independent review of final clean candidate before governed PR publication; required remote CI, protected integration and daily deployment not yet performed."
+  ],
   "layer": {
     "formal_product_layer": "P1 native views/actions; P0 generic read-only native view projection if required",
     "standard_vs_user_specific": "Standard enterprise initialization, no customer-specific data",
@@ -47,14 +49,27 @@
     "why_not_elsewhere": "No provider/frontend duplicate action/menu/role lists",
     "blast_radius": "enterprise.setup internal entries and exact native organization/action views; no expansion of standard 91 sidebar entries",
     "company_boundary": "Native business-config ACL permits company profile write only; P1 model rejects privileged fields and any company other than current allowed company. No create/unlink or system administrator grant.",
-    "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests"
+    "acceptance_extension": "P4: opt-in read-only initialization entry traversal in existing registered bootstrap browser; no new runtime, credentials or write requests",
+    "readonly_fix": "P1 native res.company _get_view preserves stronger static readonly from the explicitly bound native profile, counteracting upstream delegated field rewriting; no second field policy list."
   },
   "validation_plan": {
     "earliest": "L1 native XML/semantic projection tests",
     "runtime": "Only affected native module upgrade and initialization journey after cheap tests; preserve existing data",
-    "excluded": "No account/role or enterprise enablement changes on daily server; no full Quick or environment rebuild"
+    "excluded": "No full Quick, environment/database rebuild, frontend rebuild/typecheck (only .mjs acceptance tools changed), daily server writes, actual scene enable/disable mutation, or full multi-role browser matrix.",
+    "dependency_analysis": {
+      "runtime_source": "1ee5598ed6c99dbf0999e5b165554de36311bc74",
+      "final_remaining_changes": "run metadata and browser assertion only; no further addon/runtime input mutation",
+      "orm_inputs": [
+        "addons/smart_construction_core/models/support/res_company.py",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+        "addons/smart_construction_core/tests/test_system_permission_separation.py"
+      ],
+      "browser_inputs": "All changed addon paths in scope, existing frontend artifact verified by governed preview identity, standard_bootstrap_inventory.mjs and bootstrap_inventory_policy.mjs/test",
+      "limitations": "Single registered config-admin browser identity; two-company switching covered by ORM. Actual tenant scenario enable/disable and end-to-end new employee onboarding are not claimed."
+    }
   },
-  "next_exact_step": "Commit local implementation for immutable acceptance source, run affected module upgrade and exact company permission tests; then inspect initialization contracts and actual entries.",
+  "next_exact_step": "Owner independently reviews aggregate diff and linked evidence; after passing review, archive exact candidate evidence and publish through governed PR entry.",
   "live_state_file": ".runtime/enterprise-init/state.json",
   "results": {
     "native_projection": {
@@ -68,7 +83,7 @@
       "status": "passed",
       "command": "python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
       "tests": 63,
-      "log": ".runtime/enterprise-init/scene-tests-2.log"
+      "log": ".runtime/enterprise-init/scene-tests-final.log"
     },
     "configuration_guard": {
       "status": "passed",
@@ -78,19 +93,39 @@
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/enterprise-init/iteration.log",
-      "limits": "Static only; runtime reuse planner flagged changed inputs; no runtime reuse claimed"
+      "log": ".runtime/enterprise-init/iteration-readonly.log",
+      "limits": "L1 only; affected product ORM and browser evidence recorded separately; no full Quick claimed"
     },
     "company_security_orm": {
       "status": "passed",
-      "tests": 2,
-      "log": ".runtime/enterprise-init/module-upgrade-orm.log",
-      "limits": "Exact two company boundary cases; transactions rolled back"
+      "tests": 3,
+      "source_sha": "1ee5598ed6c99dbf0999e5b165554de36311bc74",
+      "log": ".runtime/enterprise-init/module-upgrade-orm-final.log",
+      "assertions": [
+        "current company profile write",
+        "other allowed company denied until switching",
+        "ordinary user and system field writes denied",
+        "no create/unlink ACL",
+        "native readonly preserved through Odoo company delegation"
+      ],
+      "environment": "local/sc-fe-r2-p1-01/sc_frontend_acceptance",
+      "data_cleanup": "Odoo TransactionCase rollback"
     },
     "initialization_journey": {
-      "status": "failed",
-      "log": ".runtime/enterprise-init/bootstrap-browser.log",
-      "reason": "P0 user surface sanitizer dropped declared native view source before scene projection; fixing explicit source transport"
+      "status": "passed",
+      "command": "BOOTSTRAP_ROLES=fixture_role_config_admin BOOTSTRAP_MANAGEMENT_ONLY=1 BOOTSTRAP_ENTERPRISE_INITIALIZATION=1 make verify.frontend.standard_bootstrap.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "log": ".runtime/enterprise-init/bootstrap-browser-readonly-final-2.log",
+      "report": "artifacts/frontend-web-fix-20260928/bootstrap-inventory-1793718202927/report.json",
+      "backend_source_sha": "1ee5598ed6c99dbf0999e5b165554de36311bc74",
+      "assertions": [
+        "five native initialization actions open real list contracts",
+        "company action lists one current company",
+        "native company form opens with enabled save action",
+        "currency native modifier and effective widget status readonly; no editable DOM input",
+        "seven configuration entries and seventeen scene catalog items visible",
+        "no unregistered write request or page error"
+      ],
+      "business_mutation_performed": false
     },
     "source_transport": {
       "status": "passed",
@@ -107,7 +142,67 @@
       "status": "failed",
       "log": ".runtime/enterprise-init/bootstrap-browser-source-transport.log",
       "reason": "All five native entries projected; company route wrongly treated as business scene requiring enablement. Add scene lifecycle classification, no action whitelist."
+    },
+    "company_security_orm_initial": {
+      "status": "passed",
+      "tests": 2,
+      "log": ".runtime/enterprise-init/module-upgrade-orm.log",
+      "limits": "Exact two company boundary cases; transactions rolled back"
+    },
+    "enablement": {
+      "status": "passed",
+      "tests": 75,
+      "log": ".runtime/enterprise-init/enablement-tests.log"
+    },
+    "bootstrap_read_policy": {
+      "status": "passed",
+      "tests": 13,
+      "log": ".runtime/enterprise-init/bootstrap-policy-final-2.log"
+    },
+    "generated_evidence": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/generated-evidence-final.log"
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/enterprise-init/freeze-prepare.log",
+      "limits": "Preparation before final native readonly correction; generated evidence checked again afterward"
+    },
+    "company_form_probe_attempts": {
+      "status": "failed_then_corrected",
+      "logs": [
+        ".runtime/enterprise-init/bootstrap-browser-company-form.log",
+        ".runtime/enterprise-init/bootstrap-browser-company-form-2.log",
+        ".runtime/enterprise-init/bootstrap-browser-final.log"
+      ],
+      "classification": "validation_tool_defect",
+      "reason": "Waited on form shell before contract delivery; then native form required two audited readonly chatter requests. No mutation APIs permitted."
+    },
+    "initialization_journey_initial": {
+      "status": "failed",
+      "log": ".runtime/enterprise-init/bootstrap-browser.log",
+      "reason": "P0 user surface sanitizer dropped declared native view source before scene projection; fixing explicit source transport"
+    },
+    "readonly_probe_initial": {
+      "status": "failed_then_corrected",
+      "log": ".runtime/enterprise-init/bootstrap-browser-readonly-final.log",
+      "classification": "validation_tool_defect",
+      "reason": "Test inspected base field metadata instead of native readonly modifier and effective widget status; final probe checks both authoritative status and rendered readonly behavior."
     }
   },
-  "checks": {}
+  "checks": {},
+  "delivery_status": {
+    "implementation": "local_candidate",
+    "independent_review": "pending_owner",
+    "remote_ci": "not_run",
+    "mainline": "not_integrated",
+    "daily_runtime": "unchanged at 852d7f2a2f448f84bbbe5b0df56875262de803fc"
+  },
+  "risk_and_rollback": "Company ACL expansion is restricted by native model write guard. Revert the entire initialization candidate and upgrade affected modules through governed targets; no customer facts or enablement rows migrated.",
+  "review_summary": [
+    "Native form buttons are the sole maintained initialization entry list; scene v5 references one native view.",
+    "Product capability/menu baseline is unchanged; initialization is available before business scenario enablement without granting new scene permissions.",
+    "Only business configuration admins gain bounded current-company profile write; native group/ACL/model guard remain server authority.",
+    "P0 preserves the source reference through user contract compaction and projects native groups/action/model read ACL; missing declarations fail closed."
+  ]
 }

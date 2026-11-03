@@ -150,7 +150,12 @@ try {
               for (const child of Object.values(value)) collectCurrency(child);
             };
             collectCurrency(formContract.layoutContract.containerTree);
-            assert.ok(currencyFields.length && currencyFields.every(field => field.readonly === true), 'native currency readonly survives company delegation and contract projection');
+            assert.ok(currencyFields.length && currencyFields.every(field => field.modifiers?.readonly === true), 'native currency readonly modifier survives company delegation');
+            const currencyStatus = formContract.statusContract.widgetStatus.filter(row => row.widgetId.startsWith('field.currency_id.'));
+            assert.ok(currencyStatus.length && currencyStatus.every(row => row.readonly === true && row.auth === 'read'), 'effective currency contract is readonly');
+            const currencyControl = page.locator('[data-field-name="currency_id"]');
+            await currencyControl.waitFor();
+            assert.equal(await currencyControl.locator('input:not([readonly]):not([disabled]), select:not([disabled])').count(), 0, 'currency has no editable input');
             entryResult.formRoute = page.url().replace(base, '');
             await page.screenshot({ path: path.join(out, `${role}-enterprise-company-form.png`) });
           }
