@@ -177,6 +177,118 @@
         "addons/smart_core/",
         "addons/smart_construction_core/"
       ]
+    },
+    {
+      "id": "verify.tenant.data_responsibility_boundary",
+      "command": [
+        "make",
+        "verify.tenant.data_responsibility_boundary"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "config/tenant/module_sets.v1.json",
+        "docs/audit/tenant_pro_03_data_responsibility_inventory.csv"
+      ]
+    },
+    {
+      "id": "verify.tenant.module_set_matrix",
+      "command": [
+        "make",
+        "verify.tenant.module_set_matrix"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "config/tenant/module_sets.v1.json",
+        "config/product_addons_allowlist.txt",
+        "config/product_optional_addons_allowlist.txt",
+        "addons/*/__manifest__.py"
+      ]
+    },
+    {
+      "id": "verify.tenant.product_legacy_boundary",
+      "command": [
+        "make",
+        "verify.tenant.product_legacy_boundary"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.tenant.legacy_xmlid_boundary",
+      "command": [
+        "make",
+        "verify.tenant.legacy_xmlid_boundary"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.tenant.product_fresh_install",
+      "command": [
+        "make",
+        "verify.tenant.product_fresh_install"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/*/__manifest__.py",
+        "addons/smart_construction_core/"
+      ]
+    },
+    {
+      "id": "verify.tenant.payload_boundary",
+      "command": [
+        "make",
+        "verify.tenant.payload_boundary"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json",
+        "addons/",
+        "config/",
+        "Dockerfile",
+        "Dockerfile.production-candidate",
+        "schemas/tenant_delivery/",
+        "customer_addons/sce_customer_sample/"
+      ]
     }
   ]
 }

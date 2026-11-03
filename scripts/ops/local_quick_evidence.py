@@ -430,7 +430,12 @@ def _incremental_plan(root: Path, head: str, rejected: list | None = None) -> tu
                 if rejected is not None:
                     old = saved.get("environment_hashes")
                     new = scope.environment_hashes()
+                    old_identity = (saved.get('document') or {}).get('identity', {})
+                    new_identity = source_units['identity']
+                    changed_identity = sorted(k for k in set(old_identity) | set(new_identity)
+                                              if old_identity.get(k) != new_identity.get(k))
                     rejected.append({"source": source, "reason": "source_scope_or_identity_changed",
+                                     "identity_changed_fields": changed_identity,
                                      "environment_changed_keys": sorted(k for k in set(old) | set(new)
                                                                         if old.get(k) != new.get(k))
                                      if isinstance(old, dict) else "legacy_receipt_has_no_key_digests"})
@@ -455,6 +460,7 @@ def incremental_report(root: Path) -> dict:
     targets = required_targets(root)
     return {"head": head, "dirty": bool(git(root, "status", "--porcelain")),
             "candidate_evidence": False, "source": plan[2] if plan else None,
+            "scope_classes": _scope_module().scope_classes(root, head, targets),
             "run": plan[0] if plan else targets, "reuse": plan[1] if plan else [],
             "rejected": rejected, "full_fallback_required": plan is None}
 

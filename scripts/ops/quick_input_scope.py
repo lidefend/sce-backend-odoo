@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -24,6 +25,20 @@ import verification_lane_coverage as lanes
 
 
 QUICK_ENTRY = "ci.local.quick.run"
+ALWAYS_RUN = {
+    "guard.prod.forbid": "current_environment_guard",
+    "ci.generated_evidence.preflight": "current_generated_evidence",
+    "security.legacy_credential_guard": "current_security_scan",
+    "verify.repository.clean_history": "current_security_scan",
+}
+# A lockfile alone does not attest the installed Node/package bytes.
+TOOLCHAIN_UNBOUND = frozenset({
+    "verify.frontend.workspace_scenario_lifecycle.unit", "verify.frontend.chart_engine.guard",
+    "verify.frontend.chart_dataset.unit", "verify.frontend.boq_line_patch.unit",
+    "verify.frontend.overview_rich_text.unit", "verify.menu_config_tree_editor.behavior",
+    "verify.contract_form_runtime_state.behavior", "verify.action_view_runtime_smoke.behavior",
+    "verify.frontend.lint.src", "verify.frontend.scoped_preference.runtime.unit",
+})
 # Recipe arguments that name a repository file: --flag path or KEY=path.
 FLAG_PATH_RE = re.compile(r"(?:--[a-z-]+|(?:PATH|FILE|INPUT))=([A-Za-z0-9_./-]+)")
 
@@ -111,8 +126,16 @@ def execution_identity() -> dict:
     # their digest, Python runtime, and executable instead. Make's process-local
     # recursion counters and working-directory aliases are not test inputs.
     environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
+    tools = {}
+    for name in ('git', 'make', 'bash'):
+        location = shutil.which(name)
+        if not location:
+            raise ValueError(f'Quick execution tool missing: {name}')
+        path = Path(location).resolve()
+        tools[name] = {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
     return {"python": sys.version, "executable": str(Path(sys.executable).resolve()),
             "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+            "tools": tools,
             "environment_sha256": hashlib.sha256(json.dumps(environment, sort_keys=True).encode()).hexdigest()}
 
 
@@ -145,3 +168,13 @@ def affected_targets(base: str, head: str) -> dict[str, str]:
     targets = quick_targets()
     plan = plan_execution(execution_units(ROOT, head, targets), execution_units(ROOT, base, targets))
     return {target: "REUSE" if target in plan["reusable"] else "RUN" for target in targets}
+
+
+def scope_classes(root: Path, head: str, targets: list[str]) -> dict[str, str]:
+    import quick_suite_fingerprint
+    rows = git(root, 'ls-tree', '-r', '--full-tree', head).splitlines()
+    declared = quick_suite_fingerprint.committed_fingerprints(root, head, rows)
+    return {target: ALWAYS_RUN.get(target) or
+            ('reviewed_offline_scope' if target in declared or target in BOUNDED_TARGETS else
+             'installed_toolchain_not_bound' if target in TOOLCHAIN_UNBOUND else
+             'complete_scope_not_declared') for target in targets}

@@ -28,6 +28,11 @@ class CommittedSuiteTest(unittest.TestCase):
                      "frontend/apps/web/scripts/check.js",
                      "addons/smart_core/handlers/example.py",
                      "addons/smart_construction_core/services/example.py",
+                     "addons/smart_core/__manifest__.py", "Dockerfile", "Dockerfile.production-candidate",
+                     "config/tenant/module_sets.v1.json", "config/product_addons_allowlist.txt",
+                     "config/product_optional_addons_allowlist.txt",
+                     "docs/audit/tenant_pro_03_data_responsibility_inventory.csv",
+                     "schemas/tenant_delivery/schema.json", "customer_addons/sce_customer_sample/hooks.py",
                      "docs/engineering_convergence/test_inventory.csv"):
             self.write(name, "initial")
         self.write(suites.MANIFEST, json.dumps(self.manifest))
@@ -119,8 +124,61 @@ class CommittedSuiteTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing module inputs'):
             self.units(self.commit())
 
+    def test_module_inventory_tracks_manifests_not_unrelated_tests(self):
+        targets = ['verify.tenant.module_set_matrix', 'verify.tenant.product_fresh_install']
+        source = scope.execution_units(self.root, self.base, targets)
+        self.write('addons/smart_construction_scene/tests/test_scene.py', 'unrelated')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['reusable'])
+        self.write('addons/new_module/__manifest__.py', '{}')
+        added = self.commit()
+        current = scope.execution_units(self.root, added, targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['affected'])
+        (self.root / 'addons/new_module/__manifest__.py').unlink()
+        removed = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(removed, current)['affected'])
+
+    def test_tenant_required_inputs_and_glob_bounds_cannot_be_weakened(self):
+        original = json.loads(json.dumps(self.manifest))
+        for replacement in ('addons/**', '../addons/*/__manifest__.py', 'addons/*/../__manifest__.py'):
+            self.manifest = json.loads(json.dumps(original))
+            row = next(s for s in self.manifest['suites'] if s['id'] == 'verify.tenant.module_set_matrix')
+            row['inputs'].remove(suites.MODULE_MANIFESTS)
+            row['inputs'].append(replacement)
+            self.write(suites.MANIFEST, json.dumps(self.manifest))
+            with self.assertRaises(ValueError):
+                self.units(self.commit())
+
+    def test_prerequisite_reader_inputs_invalidate_the_parent_target(self):
+        targets = ['verify.tenant.product_fresh_install', 'verify.tenant.payload_boundary']
+        source = scope.execution_units(self.root, self.base, targets)
+        self.write('addons/smart_construction_core/services/example.py', 'changed inherited reader input')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['affected'])
+        source = current
+        self.write('customer_addons/sce_customer_sample/hooks.py', 'changed protocol dependency')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(['verify.tenant.payload_boundary'], scope.plan_execution(current, source)['affected'])
+
+    def test_security_and_current_state_checks_have_no_reuse_declaration(self):
+        targets = sorted(scope.ALWAYS_RUN)
+        source = scope.execution_units(self.root, self.base, targets)
+        self.write('docs/note.md', 'bookkeeping')
+        current = scope.execution_units(self.root, self.commit(), targets)
+        self.assertEqual(targets, scope.plan_execution(current, source)['affected'])
+        self.assertEqual(scope.ALWAYS_RUN, scope.scope_classes(self.root, self.base, targets))
+
 
 class QuickInputScopeTest(unittest.TestCase):
+    def test_changed_shell_bytes_invalidate_identity(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = Path(folder) / 'tool'
+            binary.write_bytes(b'old')
+            with mock.patch.object(scope.shutil, 'which', return_value=str(binary)):
+                before = scope.execution_identity()
+                binary.write_bytes(b'new')
+                self.assertNotEqual(before, scope.execution_identity())
+
     def test_execution_budget_is_not_a_test_input_but_unknown_environment_is(self):
         before = scope.execution_identity()
         with mock.patch.dict(os.environ, {'QUICK_MAX_TARGETS': '3'}):

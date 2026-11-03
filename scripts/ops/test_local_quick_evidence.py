@@ -64,6 +64,12 @@ class IncrementalEvidenceTests(unittest.TestCase):
         self.fixture.commit_change('docs/engineering_convergence/test_inventory.csv', 'fixture')
         self.fixture.commit_change('addons/smart_core/handlers/example.py', 'fixture')
         self.fixture.commit_change('addons/smart_construction_core/services/example.py', 'fixture')
+        for name in ('addons/smart_core/__manifest__.py', 'Dockerfile', 'Dockerfile.production-candidate',
+                     'config/tenant/module_sets.v1.json', 'config/product_addons_allowlist.txt',
+                     'config/product_optional_addons_allowlist.txt',
+                     'schemas/tenant_delivery/schema.json', 'customer_addons/sce_customer_sample/hooks.py',
+                     'docs/audit/tenant_pro_03_data_responsibility_inventory.csv'):
+            self.fixture.commit_change(name, 'fixture')
         source = self.fixture.commit_change('make/ci.mk', 'ci.local.quick.run: ' + ' '.join(manifest) + '\n\t@git diff --check\n')
         with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
             evidence.run_quick(self.root, runner=self.runner)

@@ -132,7 +132,7 @@
   "blockers": [
     "Current PR794 required CI failed before scene isolated execution; local corrected scene suite PASS145; new head remote checks pending."
   ],
-  "next_exact_step": "Mechanism checkpoint: inspect committed read-only Quick plan and remaining source identity/dependency gaps before any bounded execution; no implicit full gate or PR publication claim.",
+  "next_exact_step": "Read committed Quick plan classifications; address remaining 15 undeclared scopes and 10 installed-toolchain bindings before selecting bounded validation. Legacy identity proof remains unresolved; do not auto-run full.",
   "layer": {
     "formal_product_layer": "P1 native scenario authorization and enterprise enablement; P0 session/navigation consumers",
     "standard_vs_user_specific": "standard product",
@@ -446,5 +446,33 @@
       "Changing Make/scanner authority legitimately invalidates affected evidence"
     ],
     "external_mutations": false
+  },
+  "quick_mechanism_continuation": {
+    "layer": "P4",
+    "baseline": "6ddbdd704",
+    "scope": "Existing Quick declarations and read-only plan reasons",
+    "change": "Declare audited tenant file readers, manifest inventory patterns, and explicit non-reuse classifications",
+    "exclude": "No old identity rewrite, no full gate, no runtime changes",
+    "validation": "Existing input/evidence unit targets plus bounded static tenant guards",
+    "status": "focused_validation_passed",
+    "passed": {
+      "quick_input_scope": 20,
+      "suite_fingerprint": 4,
+      "quick_evidence": 21,
+      "tenant_boundary_entrypoints": 6,
+      "tenant_embedded_tests": 21,
+      "iteration": "passed"
+    },
+    "logs": [
+      ".runtime/nav01/quick-continuation-unit-r2.log",
+      ".runtime/nav01/quick-continuation-tenant.log",
+      ".runtime/nav01/quick-continuation-iteration.log"
+    ],
+    "reviewed_scope_count": 18,
+    "current_state_forced_targets": 4,
+    "installed_toolchain_unbound_targets": 10,
+    "remaining_undeclared_targets": 15,
+    "dependency_audit": "Manifest-only matrix fingerprints include additions/removals. Fresh-install inherits core runtime/XML readers; payload inherits tenant schema and customer sample readers. Imported or executed git/make/bash bytes bound in environment identity.",
+    "limits": "Old receipt has neither matching environment identity nor tool executable evidence. No inferred carry-forward, full Quick, browser/ORM replay or remote publication."
   }
 }
