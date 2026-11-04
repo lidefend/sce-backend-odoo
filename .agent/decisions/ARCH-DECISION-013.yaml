@@ -1,0 +1,70 @@
+decision:
+  id: ARCH-DECISION-013
+  topic: odoo_runtime_authority_and_sce_capability_governance_boundary
+  bnva_stage: CAP-02C-authority-boundary
+  owner_approval:
+    status: confirmed
+    date: "2026-11-05"
+  authority_matrix:
+    module_lifecycle:
+      authority: odoo
+      sce_role: read_module_state_and_change_events
+    module_dependencies_and_load_order:
+      authority: odoo
+      sce_role: track_capability_dependencies
+    model_and_field:
+      authority: odoo_registry
+      sce_role: associate_provider_and_capability
+    action_view_menu:
+      authority: odoo
+      sce_role: associate_contract_and_product_entry
+    acl_record_rules_groups:
+      authority: odoo
+      sce_role: identify_capability_impact_not_reauthorize
+    intent_handler:
+      authority: sce_handler_registry
+      sce_role: associate_capability_identity
+    provider_binding:
+      authority: sce
+      sce_role: associate_technical_execution_carrier
+    capability_identity:
+      authority: sce
+      sce_role: unify_capability_identity
+    contract:
+      authority: sce
+      sce_role: associate_consume_and_verify
+    maturity:
+      authority: sce
+      sce_role: manage_preview_and_standard
+    scene_and_product:
+      authority: sce
+      sce_role: organize_product_delivery
+  frozen_rules:
+    - odoo_is_the_sole_authority_for_module_lifecycle_and_technical_registration_facts
+    - sce_does_not_rebuild_module_registry_model_registry_or_field_registry
+    - sce_consumes_the_final_odoo_registry_and_owns_capability_identity_and_provider_binding
+    - sce_saves_only_necessary_historical_change_summaries_not_full_registry_state
+    - module_changes_enter_sce_impact_analysis_via_a_governed_observation_mechanism
+    - capability_qualification_and_product_release_remain_sce_managed_and_module_upgrade_does_not_directly_change_them
+  input_modes:
+    repository_mode:
+      source: static_source_scan
+      status: existing
+    runtime_mode:
+      source: odoo_registry_final_facts
+      status: to_be_designed
+    principle: >
+      both_modes_merge_into_the_same_sce_capability_relation_structure;
+      neither_overwrites_the_other_and_sources_are_never_confused
+  research_item:
+    id: registry_ready_observation_point
+    to_verify:
+      - real_execution_order
+      - transaction_commit_boundary
+      - multi_database_behavior
+      - upgrade_failure_rollback
+    note: >
+      post_load_is_not_the_core_trigger; it_is_a_server_level_hook_that_runs
+      before_model_and_data_initialization_and_is_not_a_reliable_final_registry
+      completion_notification_per_database
+  status: active
