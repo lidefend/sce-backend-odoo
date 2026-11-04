@@ -230,6 +230,29 @@ def _intent_registration_count(intent: str) -> int | None:
     return count
 
 
+def _handler_class_name(intent: str) -> str | None:
+    """Extract the BaseIntentHandler subclass name that declares this intent."""
+    decl = _rg_files([r'INTENT_TYPE\s*=\s*["\']' + re.escape(intent) + r'["\']'])
+    if not decl:
+        return None
+    handler_files = [f for f in decl if "/handlers/" in f and "/tests/" not in f]
+    if len(handler_files) != 1:
+        return None
+    text = (ROOT / handler_files[0]).read_text(encoding="utf-8")
+    m = re.search(r"class\s+(\w+)\s*\([^)]*BaseIntentHandler", text)
+    return m.group(1) if m else None
+
+
+def _intent_registration_binds_handler(intent: str, handler_class: str) -> bool | None:
+    """Verify the registration declaration binds the exact handler class."""
+    patterns = [
+        r'\(\s*["\']' + re.escape(intent) + r'["\']\s*,\s*' + re.escape(handler_class) + r'\s*\)',
+        r'registry\[["\']' + re.escape(intent) + r'["\']\]\s*=\s*' + re.escape(handler_class) + r'\b',
+    ]
+    files = _rg_files(patterns, "addons", ("*.py",))
+    return files is not None and bool(files)
+
+
 def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
     """Type-specific exact registration-fact verification."""
     if not provider_ref or provider_ref in {"tbd", "unknown"}:
@@ -246,8 +269,14 @@ def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
             return False
         if not _file_contains(handler_files, r"BaseIntentHandler"):
             return False
+        handler_class = _handler_class_name(provider_ref)
+        if not handler_class:
+            return False
         count = _intent_registration_count(provider_ref)
-        return count == 1
+        if count != 1:
+            return False
+        bound = _intent_registration_binds_handler(provider_ref, handler_class)
+        return bound is True
     if provider_type == "odoo_action":
         module = provider_ref.split(".")[0]
         local = provider_ref.rsplit(".", 1)[-1]
@@ -428,6 +457,12 @@ def _self_test() -> int:
     # smart_construction_core handlers) -> must FAIL.
     if mod._provider_ref_registered("odoo_intent", "app.catalog"):
         failures.append("duplicate intent identity passed registration-chain check")
+
+    # 11. registration binding must name the exact handler class.
+    if not mod._intent_registration_binds_handler("project.initiation.enter", "ProjectInitiationEnterHandler"):
+        failures.append("correct intent-handler binding rejected")
+    if mod._intent_registration_binds_handler("project.initiation.enter", "WrongHandler"):
+        failures.append("wrong intent-handler binding accepted")
 
     if failures:
         print("SELF-TEST FAIL")
