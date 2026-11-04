@@ -168,8 +168,14 @@ def _mechanism_dependencies(mod: dict) -> list[dict]:
                 key = (module, mixin)
                 if key not in seen:
                     seen.add(key)
-                    deps.append({"mechanism": mixin, "module": module, "module_source": source,
-                                 "evidence": str(f.relative_to(ROOT))})
+                    deps.append({
+                        "mechanism": mixin,
+                        "module": module,
+                        "module_source": source,
+                        "dependency_type": "mechanism",
+                        "evidence_type": "model_inherit",
+                        "evidence": str(f.relative_to(ROOT)),
+                    })
     return deps
 
 
@@ -282,6 +288,7 @@ def build() -> dict:
             "capabilities": reverse.get(name, []),
             "file_digests": _file_digests(mod),
             "fact_digest": _fact_digest(identity, models, security),
+            "field_completeness": "static_partial" if models else "none",
         }
     for name, mod in external.items():
         modules[name] = {**mod, "capabilities": reverse.get(name, [])}
@@ -326,6 +333,7 @@ def build() -> dict:
                 "models": mod.get("models", []),
                 "security": mod.get("security", {}),
                 "mechanism_dependencies": mod.get("mechanism_dependencies", []),
+                "field_completeness": mod.get("field_completeness", "none"),
                 "file_count": len(mod.get("file_digests", {})),
                 "fact_digest": mod.get("fact_digest", ""),
             }
