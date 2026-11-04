@@ -1,0 +1,14 @@
+schema_version: 1
+goal:
+  id: CAP01C-C1-PROJECT-INITIATION-20261104
+  status: active
+  title: C1 项目创建能力契约与证据闭环（CAP-01C 第一样板）
+  formal_product_layer: P1
+  layer_target: 能力验收契约 + 成熟度证据链（不修改业务行为）
+  standard_vs_user_specific: construction_industry_standard
+  objective: >
+    为 project.initiation.create 建立验收契约与证据闭环：Phase 1 契约声明与检查矩阵，
+    Phase 2 真实业务结果测试，Phase 3 受信 evidence bundle 生成与 preview/standard 评估。
+    不修改产品运行行为、不补发资格、不伪造 Receipt。
+  scope: [addons/smart_construction_core/data/, addons/smart_construction_core/tests/, docs/product/, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [产品运行代码行为, 正式能力目录资格, 产品发布状态, 发布写入链]
