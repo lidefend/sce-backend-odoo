@@ -53,12 +53,14 @@ def propagate(changed_assets: list[dict], *, reverse_index: dict[str, list[dict]
               capability_to_scenes: dict[str, list[str]], product_scene_keys: set[str],
               capability_dependencies: dict[str, list[str]] | None = None,
               repository_coverage: bool = True,
-              runtime_coverage: bool = True) -> dict:
+              runtime_coverage: bool = True,
+              handler_registry_complete: bool = True,
+              uncovered_runtime: list | None = None) -> dict:
     """Propagate changed assets into an impact report."""
     impacted: dict[str, dict] = {}
     unresolved: list[dict] = []
     capability_dependencies = capability_dependencies or {}
-    associations_complete = repository_coverage and runtime_coverage
+    associations_complete = repository_coverage and runtime_coverage and handler_registry_complete
 
     for asset in changed_assets:
         asset_id = asset.get("fact_identity") or asset.get("asset_type")
@@ -138,8 +140,10 @@ def propagate(changed_assets: list[dict], *, reverse_index: dict[str, list[dict]
         "association_coverage": {
             "repository_coverage": repository_coverage,
             "runtime_coverage": runtime_coverage,
+            "handler_registry_complete": handler_registry_complete,
             "associations_complete": associations_complete,
         },
+        "uncovered_runtime": uncovered_runtime or [],
     }
 
 
@@ -160,12 +164,13 @@ def build_context(reverse_index: dict | None = None,
             capability_to_scenes.setdefault(cap, set()).add(scene.get("scene_key"))
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))["capabilities"]
     runtime_coverage = False
+    handler_registry_complete = False
+    uncovered_runtime: list[dict] = []
     if runtime_snapshot is not None:
-        runtime_modules = set(
-            (runtime_snapshot.get("modules") or {}).get("items", {}).keys()
-        )
-        catalog_modules = set(reverse_index.keys()) | set((mechanism_impact or {}).keys())
-        runtime_coverage = catalog_modules.issubset(runtime_modules)
+        coverage = compute_runtime_coverage(reverse_index, mechanism_impact, runtime_snapshot)
+        runtime_coverage = coverage["runtime_coverage"]
+        handler_registry_complete = coverage["handler_registry_complete"]
+        uncovered_runtime = coverage["uncovered"]
     return {
         "reverse_index": reverse_index,
         "mechanism_impact": mechanism_impact or {},
@@ -174,7 +179,55 @@ def build_context(reverse_index: dict | None = None,
         "product_scene_keys": product_scene_keys,
         "repository_coverage": True,
         "runtime_coverage": runtime_coverage,
+        "handler_registry_complete": handler_registry_complete,
+        "uncovered_runtime": uncovered_runtime,
         "capability_dependencies": {
             c["capability_key"]: c.get("dependencies", []) for c in catalog
         },
+    }
+
+
+def compute_runtime_coverage(reverse_index: dict[str, list[dict]],
+                             mechanism_impact: dict[str, list[str]],
+                             runtime_snapshot: dict) -> dict:
+    """Coverage derived from actual provider/asset/handler facts, not module names."""
+    runtime_modules = set((runtime_snapshot.get("modules") or {}).get("items", {}).keys())
+    ownership = (runtime_snapshot.get("model_ownership") or {}).get("items", []) or []
+    runtime_models = {o.get("model") for o in ownership}
+    owner_by_model = {o.get("model"): o.get("model_owner") or "" for o in ownership}
+    runtime_actions = {a.get("xmlid") for a in (runtime_snapshot.get("actions") or {}).get("items", [])
+                       if a.get("xmlid")}
+    runtime_views = {v.get("xmlid") for v in (runtime_snapshot.get("views") or {}).get("items", [])
+                     if v.get("xmlid")}
+    runtime_intents = {h.get("intent") for h in (runtime_snapshot.get("intent_handlers") or {}).get("items", [])
+                       if h.get("registered")}
+    handler_complete = (runtime_snapshot.get("intent_handlers") or {}).get("completeness") == "complete"
+
+    uncovered: list[dict] = []
+    catalog_modules = set(reverse_index.keys()) | set((mechanism_impact or {}).keys())
+    for module in sorted(catalog_modules - runtime_modules):
+        uncovered.append({"module": module, "kind": "module_not_in_runtime"})
+    for module, entries in reverse_index.items():
+        for entry in entries:
+            provider_type = entry.get("provider_type")
+            provider_ref = entry.get("provider_ref") or ""
+            if not provider_ref:
+                continue
+            if provider_type == "odoo_model":
+                if provider_ref not in runtime_models:
+                    uncovered.append({"module": module, "kind": "provider_asset_missing",
+                                      "provider_type": provider_type, "provider_ref": provider_ref})
+                elif provider_ref in owner_by_model and not owner_by_model[provider_ref]:
+                    uncovered.append({"module": module, "kind": "owner_unresolved",
+                                      "provider_ref": provider_ref})
+            elif provider_type == "odoo_action" and provider_ref not in runtime_actions:
+                uncovered.append({"module": module, "kind": "provider_asset_missing",
+                                  "provider_type": provider_type, "provider_ref": provider_ref})
+            elif provider_type == "odoo_intent" and provider_ref not in runtime_intents:
+                uncovered.append({"module": module, "kind": "intent_handler_missing",
+                                  "provider_ref": provider_ref})
+    return {
+        "runtime_coverage": bool(not uncovered) and handler_complete,
+        "handler_registry_complete": handler_complete,
+        "uncovered": uncovered,
     }

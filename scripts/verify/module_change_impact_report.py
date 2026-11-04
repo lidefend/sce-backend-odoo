@@ -49,8 +49,23 @@ def _unique(items: list[Any]) -> list[Any]:
     return out
 
 
+def classify_change(phase1_gate: dict | None, technical_changes: list[dict]) -> str:
+    """D1 classification: unchanged / source_only / technical_asset / unresolved."""
+    if technical_changes:
+        return "technical_asset_change"
+    gate = phase1_gate or {}
+    file_changed = gate.get("file_digests_changed")
+    fact_changed = gate.get("fact_digest_changed")
+    version_changed = gate.get("version_changed")
+    if file_changed is False and not fact_changed and not version_changed:
+        return "unchanged"
+    if file_changed and not fact_changed and not version_changed:
+        return "source_only_change"
+    return "unresolved_impact"
+
+
 def build_report(module_summary: dict, technical_changes: list[dict],
-                 propagation: dict) -> dict:
+                 propagation: dict, change_class: str = "unresolved_impact") -> dict:
     """Build the five-section impact report."""
     added = [c for c in technical_changes if c.get("change") == "added"]
     removed = [c for c in technical_changes if c.get("change") == "removed"]
@@ -95,10 +110,14 @@ def build_report(module_summary: dict, technical_changes: list[dict],
         "schema": REPORT_SCHEMA,
         "module_summary": module_summary,
         "technical_assets": {
+            "change_class": change_class,
             "added": added,
             "removed": removed,
             "changed": changed,
-            "source_only_change": not technical_changes,
+            "unchanged": change_class == "unchanged",
+            "source_only_change": change_class == "source_only_change",
+            "technical_asset_change": change_class == "technical_asset_change",
+            "unresolved_impact": change_class == "unresolved_impact",
             "content_unresolved": content_unresolved,
         },
         "business_impact": {
@@ -128,15 +147,18 @@ def sample_assets(module_key: str) -> list[dict]:
     if module_key == "smart_construction_core":
         return [{"fact_identity": "field:project.boq.version:name", "asset_type": "field",
                  "asset_modules": ["smart_construction_core"], "model_owner": "project",
-                 "model_extensions": ["smart_construction_core"], "change": "changed"}]
+                 "model_extensions": ["smart_construction_core"], "change": "changed",
+                 "fact_class": "scenario_fixture"}]
     if module_key == "base_tier_validation":
         return [{"fact_identity": "mechanism:tier.validation", "asset_type": "mechanism",
                  "asset_modules": ["base_tier_validation"], "model_owner": "",
-                 "model_extensions": [], "change": "changed"}]
+                 "model_extensions": [], "change": "changed",
+                 "fact_class": "scenario_fixture"}]
     if module_key == "project":
         return [{"fact_identity": "model:project.project", "asset_type": "model",
                  "asset_modules": [], "model_owner": "project",
-                 "model_extensions": ["smart_construction_core"], "change": "changed"}]
+                 "model_extensions": ["smart_construction_core"], "change": "changed",
+                 "fact_class": "scenario_fixture"}]
     raise ValueError(f"unknown sample module: {module_key}")
 
 
@@ -148,9 +170,10 @@ def sample_report(module_key: str, source: str, change_type: str,
     propagation = d3.propagate(assets, **context)
     return build_report(
         {"module": module_key, "source": source, "change_type": change_type,
-         "fact_source": "runtime_registry"},
+         "fact_source": "scenario_fixture", "fact_class": "scenario_fixture"},
         assets,
         propagation,
+        change_class="scenario_fixture",
     )
 
 

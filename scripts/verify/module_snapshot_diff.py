@@ -286,15 +286,18 @@ def project_runtime(runtime: dict) -> dict:
         if not res_model:
             continue
         action_module = action.get("module") or ""
+        action_xmlid = action.get("xmlid") or ""
         model_owner = owner_by_model.get(res_model, "")
         asset_modules = _modules([action_module])
         fact = {
-            "fact_identity": f"action:{res_model}:{action.get('name', '')}",
+            "fact_identity": (f"action:{action_xmlid}" if action_xmlid
+                              else f"action__fallback__:{res_model}:{action.get('name', '')}"),
             "asset_type": "action",
             "asset_modules": asset_modules,
             "model_owner": model_owner,
             "model_extensions": _modules(ext_by_model.get(res_model)),
             "kind": "action",
+            "identity_completeness": "xmlid" if action_xmlid else "fallback",
             "source_mode": "runtime",
             "source_module": _source_module(asset_modules, model_owner),
             "source_ref": db_ref,
@@ -309,15 +312,18 @@ def project_runtime(runtime: dict) -> dict:
         if not view_model:
             continue
         view_module = view.get("module") or ""
+        view_xmlid = view.get("xmlid") or ""
         model_owner = owner_by_model.get(view_model, "")
         asset_modules = _modules([view_module])
         fact = {
-            "fact_identity": f"view:{view_model}:{view.get('name', '')}",
+            "fact_identity": (f"view:{view_xmlid}" if view_xmlid
+                              else f"view__fallback__:{view_model}:{view.get('name', '')}"),
             "asset_type": "view",
             "asset_modules": asset_modules,
             "model_owner": model_owner,
             "model_extensions": _modules(ext_by_model.get(view_model)),
             "kind": "view",
+            "identity_completeness": "xmlid" if view_xmlid else "fallback",
             "source_mode": "runtime",
             "source_module": _source_module(asset_modules, model_owner),
             "source_ref": db_ref,
@@ -331,13 +337,16 @@ def project_runtime(runtime: dict) -> dict:
         if not menu.get("name"):
             continue
         menu_module = menu.get("module") or ""
+        menu_xmlid = menu.get("xmlid") or ""
         fact = {
-            "fact_identity": f"menu:{menu.get('name', '')}:{menu.get('parent_id')}",
+            "fact_identity": (f"menu:{menu_xmlid}" if menu_xmlid
+                              else f"menu__fallback__:{menu.get('name', '')}:{menu.get('parent_id')}"),
             "asset_type": "menu",
             "asset_modules": _modules([menu_module]),
             "model_owner": "",
             "model_extensions": [],
             "kind": "menu",
+            "identity_completeness": "xmlid" if menu_xmlid else "fallback",
             "source_mode": "runtime",
             "source_module": menu_module or "__unowned__",
             "source_ref": db_ref,
@@ -353,15 +362,18 @@ def project_runtime(runtime: dict) -> dict:
         if not acl_model:
             continue
         acl_module = acl.get("module") or ""
+        acl_xmlid = acl.get("xmlid") or ""
         model_owner = owner_by_model.get(acl_model, "")
         asset_modules = _modules([acl_module])
         fact = {
-            "fact_identity": f"acl:{acl_model}:{acl.get('perm_read')},{acl.get('perm_write')},{acl.get('perm_create')},{acl.get('perm_unlink')}",
+            "fact_identity": (f"acl:{acl_xmlid}" if acl_xmlid
+                              else f"acl__fallback__:{acl_model}:{acl.get('perm_read')},{acl.get('perm_write')},{acl.get('perm_create')},{acl.get('perm_unlink')}"),
             "asset_type": "security",
             "asset_modules": asset_modules,
             "model_owner": model_owner,
             "model_extensions": _modules(ext_by_model.get(acl_model)),
             "kind": "security",
+            "identity_completeness": "xmlid" if acl_xmlid else "fallback",
             "source_mode": "runtime",
             "source_module": _source_module(asset_modules, model_owner),
             "source_ref": db_ref,
@@ -376,14 +388,17 @@ def project_runtime(runtime: dict) -> dict:
         if not rule_model:
             continue
         rule_module = rule.get("module") or ""
+        rule_xmlid = rule.get("xmlid") or ""
         model_owner = owner_by_model.get(rule_model, "")
         fact = {
-            "fact_identity": f"rule:{rule_model}:{rule_name}",
+            "fact_identity": (f"rule:{rule_xmlid}" if rule_xmlid
+                              else f"rule__fallback__:{rule_model}:{rule_name}"),
             "asset_type": "rule",
             "asset_modules": _modules([rule_module]),
             "model_owner": model_owner,
             "model_extensions": _modules(ext_by_model.get(rule_model)),
             "kind": "rule",
+            "identity_completeness": "xmlid" if rule_xmlid else "fallback",
             "source_mode": "runtime",
             "source_module": rule_module or model_owner,
             "source_ref": db_ref,

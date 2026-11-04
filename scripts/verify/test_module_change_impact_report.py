@@ -26,6 +26,7 @@ class RiskTests(unittest.TestCase):
              "change_type": "comment_only", "fact_source": "repository"},
             [],
             _propagation(),
+            change_class="source_only_change",
         )
         self.assertTrue(report["technical_assets"]["source_only_change"])
         self.assertEqual(report["risk"], "Low")
@@ -101,6 +102,25 @@ class RiskTests(unittest.TestCase):
         report = d4.build_report({"module": "m", "source": "sce", "change_type": "x",
                                   "fact_source": "repository"}, technical, prop)
         self.assertEqual(report["risk"], "Unresolved")
+
+
+class ChangeClassTests(unittest.TestCase):
+    def test_unchanged_vs_source_only_vs_technical_vs_unresolved(self):
+        self.assertEqual(d4.classify_change(
+            {"file_digests_changed": False, "fact_digest_changed": False, "version_changed": False}, []),
+            "unchanged")
+        self.assertEqual(d4.classify_change(
+            {"file_digests_changed": True, "fact_digest_changed": False, "version_changed": False}, []),
+            "source_only_change")
+        self.assertEqual(d4.classify_change(None, [{"fact_identity": "x"}]), "technical_asset_change")
+        self.assertEqual(d4.classify_change(
+            {"file_digests_changed": None, "fact_digest_changed": False, "version_changed": False}, []),
+            "unresolved_impact")
+
+    def test_sample_report_is_scenario_fixture_not_runtime_observed(self):
+        report = d4.sample_report("project", "odoo_native", "extension_change")
+        self.assertEqual(report["module_summary"]["fact_source"], "scenario_fixture")
+        self.assertEqual(report["technical_assets"]["change_class"], "scenario_fixture")
 
 
 if __name__ == "__main__":

@@ -134,5 +134,39 @@ class PropagationTests(unittest.TestCase):
                             for c in result["impacted_capabilities"]))
 
 
+class RuntimeCoverageTests(unittest.TestCase):
+    def test_detects_missing_provider_asset(self):
+        cov = d3.compute_runtime_coverage(
+            {"smart_construction_core": [{"capability_key": "c", "provider_type": "odoo_action",
+                                          "provider_ref": "smart_construction_core.action_x"}]},
+            {},
+            {"modules": {"items": {"smart_construction_core": {}}},
+             "model_ownership": {"items": []}, "actions": {"items": []}, "views": {"items": []},
+             "intent_handlers": {"completeness": "complete", "items": []}})
+        self.assertFalse(cov["runtime_coverage"])
+        self.assertTrue(any(u["kind"] == "provider_asset_missing" for u in cov["uncovered"]))
+
+    def test_detects_owner_unresolved(self):
+        cov = d3.compute_runtime_coverage(
+            {"m": [{"capability_key": "c", "provider_type": "odoo_model",
+                    "provider_ref": "project.project"}]},
+            {},
+            {"modules": {"items": {"m": {}}},
+             "model_ownership": {"items": [{"model": "project.project", "model_owner": ""}]},
+             "actions": {"items": []}, "views": {"items": []},
+             "intent_handlers": {"completeness": "complete", "items": []}})
+        self.assertTrue(any(u["kind"] == "owner_unresolved" for u in cov["uncovered"]))
+
+    def test_detects_intent_handler_missing(self):
+        cov = d3.compute_runtime_coverage(
+            {"m": [{"capability_key": "c", "provider_type": "odoo_intent",
+                    "provider_ref": "x.y.z"}]},
+            {},
+            {"modules": {"items": {"m": {}}},
+             "model_ownership": {"items": []}, "actions": {"items": []}, "views": {"items": []},
+             "intent_handlers": {"completeness": "complete", "items": []}})
+        self.assertTrue(any(u["kind"] == "intent_handler_missing" for u in cov["uncovered"]))
+
+
 if __name__ == "__main__":
     unittest.main()

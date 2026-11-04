@@ -73,15 +73,21 @@ def _snapshot(env, db_name):
         ],
     }
 
-    def _xmlid_module_map(model_name):
+    def _xmlid_map(model_name):
         mapping = {}
         for rec in env["ir.model.data"].search_read(
-                [("model", "=", model_name)], ["module", "res_id"]):
+                [("model", "=", model_name)], ["module", "name", "res_id"]):
             res_id = rec["res_id"]
             if isinstance(res_id, str):
                 res_id = int(res_id) if res_id.isdigit() else None
             if res_id is not None:
-                mapping.setdefault(res_id, rec["module"])
+                module = rec.get("module") or ""
+                name = rec.get("name") or ""
+                mapping.setdefault(res_id, {
+                    "module": module,
+                    "name": name,
+                    "xmlid": f"{module}.{name}" if module and name else (module or ""),
+                })
         return mapping
 
     fields = env["ir.model.fields"].search_read(
@@ -104,37 +110,41 @@ def _snapshot(env, db_name):
     ]
     result["fields"] = {"source": "runtime_registry", "completeness": "complete", "items": field_items}
 
-    action_module = _xmlid_module_map("ir.actions.act_window")
+    action_xid = _xmlid_map("ir.actions.act_window")
     actions = env["ir.actions.act_window"].search_read(
         [], ["name", "res_model", "view_mode", "context", "groups_id"])
     result["actions"] = {
         "source": "runtime_registry", "completeness": "complete",
         "items": [{"name": a["name"], "res_model": a["res_model"], "view_mode": a["view_mode"],
                    "context": a["context"], "groups_id": a["groups_id"] or [],
-                   "module": action_module.get(a["id"], "")} for a in actions],
+                   "xmlid": (action_xid.get(a["id"]) or {}).get("xmlid", ""),
+                   "module": (action_xid.get(a["id"]) or {}).get("module", "")} for a in actions],
     }
 
-    view_module = _xmlid_module_map("ir.ui.view")
+    view_xid = _xmlid_map("ir.ui.view")
     views = env["ir.ui.view"].search_read([], ["name", "model", "inherit_id", "arch_db"])
     result["views"] = {
         "source": "runtime_registry", "completeness": "complete",
         "items": [{"name": v["name"], "model": v["model"],
                    "inherit_id": v["inherit_id"] and v["inherit_id"][0],
                    "arch_digest": hashlib.sha256((v["arch_db"] or "").encode("utf-8")).hexdigest(),
-                   "module": view_module.get(v["id"], "")} for v in views],
+                   "xmlid": (view_xid.get(v["id"]) or {}).get("xmlid", ""),
+                   "module": (view_xid.get(v["id"]) or {}).get("module", "")} for v in views],
     }
 
-    menu_module = _xmlid_module_map("ir.ui.menu")
+    menu_xid = _xmlid_map("ir.ui.menu")
     menus = env["ir.ui.menu"].search_read(
         [], ["name", "parent_id", "action", "groups_id", "sequence"])
     result["menus"] = {
         "source": "runtime_registry", "completeness": "complete",
         "items": [{"name": m["name"], "parent_id": m["parent_id"] and m["parent_id"][0],
                    "action": m["action"], "groups_id": m["groups_id"] or [],
-                   "sequence": m["sequence"], "module": menu_module.get(m["id"], "")} for m in menus],
+                   "sequence": m["sequence"],
+                   "xmlid": (menu_xid.get(m["id"]) or {}).get("xmlid", ""),
+                   "module": (menu_xid.get(m["id"]) or {}).get("module", "")} for m in menus],
     }
 
-    access_module = _xmlid_module_map("ir.model.access")
+    access_xid = _xmlid_map("ir.model.access")
     access = env["ir.model.access"].search_read([], ["model_id", "group_id", "perm_read", "perm_write", "perm_create", "perm_unlink"])
     result["security"] = {
         "source": "runtime_registry",
@@ -142,16 +152,18 @@ def _snapshot(env, db_name):
         "acl": [{"model": model_names.get(a["model_id"][0]) if isinstance(a["model_id"], (list, tuple)) else model_names.get(a["model_id"]),
                  "perm_read": a["perm_read"], "perm_write": a["perm_write"],
                  "perm_create": a["perm_create"], "perm_unlink": a["perm_unlink"],
-                 "module": access_module.get(a["id"], ""),
+                 "xmlid": (access_xid.get(a["id"]) or {}).get("xmlid", ""),
+                 "module": (access_xid.get(a["id"]) or {}).get("module", ""),
                  "group_id": a["group_id"][0] if a["group_id"] else None} for a in access],
     }
 
-    rule_module = _xmlid_module_map("ir.rule")
+    rule_xid = _xmlid_map("ir.rule")
     rules = env["ir.rule"].search_read([], ["model_id", "domain_force", "name", "groups"])
     groups = env["res.groups"].search_read([], ["full_name"])
     result["security"]["record_rules"] = [
         {"model": model_names.get(r["model_id"][0]) if isinstance(r["model_id"], (list, tuple)) else model_names.get(r["model_id"]),
-         "name": r["name"], "module": rule_module.get(r["id"], ""),
+         "name": r["name"], "xmlid": (rule_xid.get(r["id"]) or {}).get("xmlid", ""),
+         "module": (rule_xid.get(r["id"]) or {}).get("module", ""),
          "domain": r["domain_force"], "groups": r["groups"] or []}
         for r in rules
     ]
