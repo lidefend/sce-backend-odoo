@@ -271,6 +271,197 @@
           "role_group_xmlid": "smart_construction_core.group_sc_role_project_manager"
         }
       }
+    },
+    "project.lifecycle.transition": {
+      "label": "项目生命周期流转",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "addons/smart_construction_core/models/core/project_initiation_approval.py",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "state_transition_contract": [
+            "state_enum_declared",
+            "transition_table_exhaustive",
+            "terminal_state_declared",
+            "every_transition_has_method"
+          ]
+        },
+        "standard": {
+          "state_transition_contract": [
+            "state_enum_declared",
+            "transition_table_exhaustive",
+            "terminal_state_declared",
+            "every_transition_has_method",
+            "server_guard_present",
+            "view_guard_consistent_with_state_machine"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "construction.plan.report": {
+      "label": "计划汇报",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/views/core/plan_management_views.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "write_contract": [
+            "input_required_fields_declared",
+            "output_record_shape_declared",
+            "error_codes_declared"
+          ]
+        },
+        "standard": {
+          "write_contract": [
+            "input_required_fields_declared",
+            "output_record_shape_declared",
+            "error_codes_declared",
+            "side_effect_declared"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "cost.progress.report": {
+      "label": "进度填报",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/core/progress_entry.py",
+        "addons/smart_construction_core/views/core/cost_domain_views.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "write_contract": [
+            "input_required_fields_declared",
+            "output_record_shape_declared",
+            "error_codes_declared"
+          ]
+        },
+        "standard": {
+          "write_contract": [
+            "input_required_fields_declared",
+            "output_record_shape_declared",
+            "error_codes_declared",
+            "side_effect_declared"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "contract.expense.track": {
+      "label": "支出合同跟踪",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/support/contract_professional.py",
+        "addons/smart_construction_core/views/core/contract_views.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "query_contract": [
+            "query_model_declared",
+            "result_columns_declared",
+            "read_side_effect_free"
+          ]
+        },
+        "standard": {
+          "query_contract": [
+            "query_model_declared",
+            "result_columns_declared",
+            "read_side_effect_free",
+            "data_scope_declared"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "contract.income.track": {
+      "label": "收入合同跟踪",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/support/contract_professional.py",
+        "addons/smart_construction_core/views/core/contract_views.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "query_contract": [
+            "query_model_declared",
+            "result_columns_declared",
+            "read_side_effect_free"
+          ]
+        },
+        "standard": {
+          "query_contract": [
+            "query_model_declared",
+            "result_columns_declared",
+            "read_side_effect_free",
+            "data_scope_declared"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "contract.settlement.audit": {
+      "label": "结算审核",
+      "product_dependencies": [
+        "addons/smart_construction_core/models/core/settlement_order.py",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "addons/smart_construction_core/views/menu_business_taxonomy.xml"
+      ],
+      "product_criteria": {
+        "preview": {
+          "audit_state_transition_contract": [
+            "audit_actions_declared",
+            "approval_state_declared"
+          ]
+        },
+        "standard": {
+          "audit_state_transition_contract": [
+            "audit_actions_declared",
+            "approval_state_declared",
+            "immutable_final_states_declared",
+            "contract_association_boundary_declared"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
     }
   }
 }
