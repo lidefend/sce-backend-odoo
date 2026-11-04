@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "MY-WORK-FACT-LAYER-CONVERGENCE-20261104",
+  "branch": "fix/my-work-fact-layer-convergence-20261104",
+  "baseline_sha": "948aa387b47450cf38b2615c476f656b0617a673",
+  "status": "active",
+  "goal": ".agent/goals/MY-WORK-FACT-LAYER-CONVERGENCE-20261104.yaml",
+  "record": ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MY-WORK-FACT-LAYER-CONVERGENCE-20261104.yaml",
+    ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",
+    "addons/smart_construction_core/views/support/my_work_views.xml",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Verify native XML loads and the my_work scene derives route/menu/action from it; run affected pure-Python scene tests, boundary guard, then govern pr.push."
+}

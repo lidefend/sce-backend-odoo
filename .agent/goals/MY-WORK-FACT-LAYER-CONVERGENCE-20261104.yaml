@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: MY-WORK-FACT-LAYER-CONVERGENCE-20261104
+  status: active
+  title: 我的工作入口回归事实层并落地场景化
+  formal_product_layer: P1
+  layer_target: smart_construction_core native menu/action + smart_construction_scene registry projection
+  standard_vs_user_specific: construction_industry_standard
+  objective: >
+    把“我的工作”工作台入口回归到原生 menu/action 事实层：原生 XML 声明
+    action_sc_my_work / menu_sc_my_work（含 sc_web_route=/my-work 与可见性分组），
+    场景条目 my_work.workspace 从该原生事实派生 route/menu/action，移除机制层的
+    CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES 硬编码路由，使侧边栏导航与场景投影
+    只读取同一份原生事实，不再维护第二事实源。
+  why_here: >
+    “我的工作”是建筑行业标准产品面，入口身份由原生 menu/action/group 事实拥有；
+    场景投影与侧边栏只做只读投影。
+  why_not_elsewhere:
+    - 不在 Python 或前端硬编码 /my-work 路由与入口清单。
+    - 不修改 ACL、record rule、角色或业务数据语义。
+  scope: [addons/smart_construction_core/, addons/smart_construction_scene/]
+  exclusions: [ACL/record rule, 业务数据, 角色权限语义变更, 部署与合并授权]

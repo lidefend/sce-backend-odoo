@@ -370,9 +370,7 @@ CRITICAL_SCENE_TARGET_OVERRIDES = {
     "subcontract.settlement",
 }
 
-CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = {
-    "my_work.workspace": "/my-work",
-}
+CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = {}
 
 _DERIVED_NAV_SCENE_MAP_CACHE: dict[str, dict[str, dict[Any, str]]] = {}
 
