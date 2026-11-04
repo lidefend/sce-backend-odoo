@@ -16,6 +16,7 @@
     "docs/product/capability_maturity_cap01c_baseline_v1.md",
     "docs/architecture/capability_authorization_model_v1.md",
     "docs/product/capability_c1_validation_scope_v1.md",
+    "docs/product/capability_c1_mechanism_reuse_matrix_v1.md",
     "docs/architecture/capability_verification_trigger_v1.md",
     ".agent/decisions/ARCH-DECISION-012.yaml",
     "addons/smart_construction_core/tests/test_capability_project_initiation_create.py",
