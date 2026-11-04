@@ -28,6 +28,26 @@ ODOO_NATIVE_MODULES = {
 }
 OCA_MODULES = {"base_tier_validation", "base_tier_validation_server_action"}
 
+# Curated native MODEL -> module mapping. Only these full model names are treated
+# as native; a model name prefix is never used to infer ownership.
+NATIVE_MODEL_MODULE = {
+    "project.project": "project",
+    "project.task": "project",
+    "project.project.stage": "project",
+    "account.move": "account",
+    "account.move.line": "account",
+    "account.tax": "account",
+    "purchase.order": "purchase",
+    "purchase.order.line": "purchase",
+    "stock.picking": "stock",
+    "stock.move": "stock",
+    "product.template": "product",
+    "product.product": "product",
+    "res.partner": "base",
+    "res.users": "base",
+    "res.company": "base",
+}
+
 FIELD_RE = re.compile(r'^\s*(\w+)\s*=\s*fields\.(\w+)\s*\((.*)\)', re.M)
 MECHANISM_MIXINS = {
     "tier.validation": ("base_tier_validation", "oca"),
@@ -164,7 +184,7 @@ def _mechanism_dependencies(mod: dict) -> list[dict]:
     for f in (ROOT / mod["directory"]).rglob("*.py"):
         text = f.read_text(encoding="utf-8", errors="ignore")
         for mixin, (module, source) in MECHANISM_MIXINS.items():
-            if re.search(rf'_inherit\s*=\s*.*["\']{re.escape(mixin)}["\']', text) or mixin in text:
+            if _inherit_declares(text, mixin):
                 key = (module, mixin)
                 if key not in seen:
                     seen.add(key)
@@ -179,6 +199,15 @@ def _mechanism_dependencies(mod: dict) -> list[dict]:
     return deps
 
 
+def _inherit_declares(text: str, mixin: str) -> bool:
+    """True only when an _inherit declaration lists mixin as a quoted element."""
+    for m in re.finditer(r'_inherit\s*=\s*(.*?)(?=\n\s*(?:\w+\s*=|def\s|class\s|@)|\Z)', text, re.S):
+        decl = m.group(1).strip()
+        if re.search(rf'["\']{re.escape(mixin)}["\']', decl):
+            return True
+    return False
+
+
 def _file_digests(mod: dict) -> dict[str, str]:
     digests: dict[str, str] = {}
     for f in sorted((ROOT / mod["directory"]).rglob("*")):
@@ -187,14 +216,21 @@ def _file_digests(mod: dict) -> dict[str, str]:
     return digests
 
 
-def _fact_digest(identity: dict, models: list[dict], security: dict) -> str:
-    payload = json.dumps({"identity": identity, "models": models, "security": security},
-                         sort_keys=True, ensure_ascii=False, default=str)
+def _fact_digest(identity: dict, models: list[dict], security: dict, facts: dict,
+                 mechanism_deps: list[dict], capabilities: list[dict]) -> str:
+    payload = json.dumps({
+        "identity": identity,
+        "models": models,
+        "security": security,
+        "facts": facts,
+        "mechanism_dependencies": mechanism_deps,
+        "capabilities": capabilities,
+    }, sort_keys=True, ensure_ascii=False, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _provider_module(provider_type: str, provider_ref: str) -> list[str]:
-    """Resolve the repo module(s) that own a provider ref (fail-safe, no guess)."""
+    """Resolve module ownership from _name/_inherit facts, never from name prefix."""
     if not provider_ref or provider_ref in {"", "tbd", "unknown"}:
         return []
     if provider_type == "odoo_action":
@@ -212,9 +248,9 @@ def _provider_module(provider_type: str, provider_ref: str) -> list[str]:
                 rel = Path(f.strip()).relative_to(ROOT).parts
                 if rel[0] == "addons" and len(rel) > 1:
                     modules.add(rel[1])
-        base = provider_ref.split(".")[0]
-        if base in ODOO_NATIVE_MODULES or base in OCA_MODULES:
-            modules.add(base)
+        native = NATIVE_MODEL_MODULE.get(provider_ref)
+        if native:
+            modules.add(native)
         return sorted(modules)
     return []
 
@@ -279,15 +315,18 @@ def build() -> dict:
         models = [_model_facts(f) for f in model_files if "_name" in f.read_text(encoding="utf-8", errors="ignore") or "_inherit" in f.read_text(encoding="utf-8", errors="ignore")]
         security = _security_assets(mod)
         identity = {k: mod[k] for k in ("technical_name", "version", "source", "category")}
+        facts = _module_facts(mod)
+        mech = _mechanism_dependencies(mod)
+        caps = reverse.get(name, [])
         modules[name] = {
             **mod,
-            "facts": _module_facts(mod),
+            "facts": facts,
             "models": models,
             "security": security,
-            "mechanism_dependencies": _mechanism_dependencies(mod),
-            "capabilities": reverse.get(name, []),
+            "mechanism_dependencies": mech,
+            "capabilities": caps,
             "file_digests": _file_digests(mod),
-            "fact_digest": _fact_digest(identity, models, security),
+            "fact_digest": _fact_digest(identity, models, security, facts, mech, caps),
             "field_completeness": "static_partial" if models else "none",
         }
     for name, mod in external.items():
@@ -334,7 +373,7 @@ def build() -> dict:
                 "security": mod.get("security", {}),
                 "mechanism_dependencies": mod.get("mechanism_dependencies", []),
                 "field_completeness": mod.get("field_completeness", "none"),
-                "file_count": len(mod.get("file_digests", {})),
+                "file_digests": mod.get("file_digests", {}),
                 "fact_digest": mod.get("fact_digest", ""),
             }
             for name, mod in modules.items()

@@ -38,6 +38,8 @@ class ReverseIndexTests(unittest.TestCase):
         self.assertIn("project", index)
         keys = {c["capability_key"] for c in index["project"]}
         self.assertIn("project.initiation.create", keys)
+        # project.progress.entry is SCE-owned, not native project
+        self.assertNotIn("cost.progress.report", keys)
 
     def test_smart_construction_core_is_the_primary_provider(self):
         index = idx._reverse_index()
@@ -59,7 +61,23 @@ class ReverseIndexTests(unittest.TestCase):
         core = payload["module_snapshot"]["smart_construction_core"]
         self.assertGreater(len(core["models"]), 100)
         self.assertTrue(core["fact_digest"])
-        self.assertGreater(core["file_count"], 100)
+        self.assertGreater(len(core["file_digests"]), 100)
+
+    def test_inherit_declares_is_precise(self):
+        # a comment/string mention is not an _inherit declaration
+        self.assertFalse(idx._inherit_declares("# tier.validation is used here\nname = fields.Char()", "tier.validation"))
+        self.assertFalse(idx._inherit_declares('x = "tier.validation"', "tier.validation"))
+        # a single-line declaration is recognized
+        self.assertTrue(idx._inherit_declares('_inherit = "tier.validation"', "tier.validation"))
+        # a multi-line list declaration is recognized
+        self.assertTrue(idx._inherit_declares('_inherit = [\n    "mail.thread",\n    "tier.validation",\n]', "tier.validation"))
+
+    def test_fact_digest_is_order_independent_and_content_sensitive(self):
+        a = idx._fact_digest({"name": "m", "version": "1"}, [{"name": "x", "fields": [{"name": "a"}]}], {"groups": 1}, {"models": 1}, [], [])
+        b = idx._fact_digest({"version": "1", "name": "m"}, [{"name": "x", "fields": [{"name": "a"}]}], {"groups": 1}, {"models": 1}, [], [])
+        self.assertEqual(a, b)
+        c = idx._fact_digest({"name": "m", "version": "1"}, [{"name": "x", "fields": [{"name": "a"}, {"name": "b"}]}], {"groups": 1}, {"models": 1}, [], [])
+        self.assertNotEqual(a, c)
 
 
 if __name__ == "__main__":
