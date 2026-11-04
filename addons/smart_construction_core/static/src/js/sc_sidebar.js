@@ -4,7 +4,7 @@ import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odo
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { ScCompanySwitcherSidebar } from "./sc_company_switcher_sidebar";
-import { DOMAIN_NAV_MAP, DEFAULT_DOMAIN_KEY, PINNED_ENTRIES } from "@smart_construction_core/config/domain_nav_map";
+import { DOMAIN_NAV_MAP, PINNED_ENTRIES } from "@smart_construction_core/config/domain_nav_map";
 import { ROLE_ENTRY_MAP } from "@smart_construction_core/config/role_entry_map";
 
 const mainComponents = registry.category("main_components");
@@ -811,88 +811,40 @@ function sortBySequenceThenName(a, b, menuMap) {
   return nameA.localeCompare(nameB, "zh-Hans-CN");
 }
 
-function normalizeDomainMap() {
-  const map = Array.isArray(DOMAIN_NAV_MAP) ? DOMAIN_NAV_MAP : [];
-  const normalized = map
-    .map((domain) => ({
-      key: domain.key,
-      name: domain.name_cn || domain.name || domain.key,
-      icon: domain.icon || "",
-      sequence: typeof domain.sequence === "number" ? domain.sequence : 0,
-      menu_xmlids: Array.isArray(domain.menu_xmlids) ? domain.menu_xmlids : [],
-      menu_name_keywords: Array.isArray(domain.menu_name_keywords) ? domain.menu_name_keywords : [],
-    }))
-    .sort((a, b) => a.sequence - b.sequence);
-  return ensureDefaultDomain(normalized);
+function buildDomainIconHints() {
+  const hints = {};
+  const entries = Array.isArray(DOMAIN_NAV_MAP) ? DOMAIN_NAV_MAP : [];
+  for (const entry of entries) {
+    if (!entry || !entry.icon) continue;
+    const xmlids = Array.isArray(entry.menu_xmlids) ? entry.menu_xmlids : [];
+    for (const xmlid of xmlids) {
+      if (xmlid) hints[xmlid] = entry.icon;
+    }
+  }
+  return hints;
 }
 
-function ensureDefaultDomain(domainMap) {
-  const out = Array.isArray(domainMap) ? domainMap.slice() : [];
-  if (!out.some((item) => item.key === DEFAULT_DOMAIN_KEY)) {
+const DOMAIN_ICON_HINTS = buildDomainIconHints();
+
+export function buildDomainSections(menuSections, menuMap) {
+  // Each native top-level menu section is its own scenario domain. The native
+  // menu xmlid/name/sequence own the identity; DOMAIN_NAV_MAP only contributes
+  // rendering icon hints and never decides membership or ordering.
+  const out = [];
+  for (const section of Array.isArray(menuSections) ? menuSections : []) {
+    if (!section) continue;
+    const xmlid = section.xmlid || "";
+    const key = xmlid || `menu:${section.id}`;
+    const menuRecord = menuMap && menuMap[section.id] ? menuMap[section.id] : section;
     out.push({
-      key: DEFAULT_DOMAIN_KEY,
-      name: "其他",
-      icon: "",
-      sequence: 9999,
-      menu_xmlids: [],
-      menu_name_keywords: [],
+      id: `domain:${key}`,
+      key,
+      name: resolveName(section.name),
+      icon: (xmlid && DOMAIN_ICON_HINTS[xmlid]) || "",
+      sequence: resolveMenuSequence(section, menuRecord),
+      sections: [section],
+      isOpen: false,
     });
-  }
-  return out;
-}
-
-function mapSectionToDomain(section, domainMap) {
-  if (!section) return null;
-  const xmlid = section.xmlid || section.menu_xmlid || "";
-  if (xmlid) {
-    for (const domain of domainMap) {
-      if (domain.menu_xmlids.includes(xmlid)) return domain;
-    }
-  }
-  const name = resolveName(section.name);
-  if (name) {
-    const hits = [];
-    for (const domain of domainMap) {
-      if (domain.menu_name_keywords.some((keyword) => name.includes(keyword))) {
-        hits.push(domain);
-      }
-    }
-    if (hits.length === 1) return hits[0];
-    if (hits.length > 1) {
-      console.warn("[sc_sidebar] domain keyword conflict", {
-        name,
-        xmlid,
-        hits: hits.map((hit) => hit.key),
-      });
-      return null;
-    }
-  }
-  return null;
-}
-
-function buildDomainSections(menuSections, menuMap) {
-  const domainMap = normalizeDomainMap();
-  const buckets = new Map();
-  const defaultDomain =
-    domainMap.find((item) => item.key === DEFAULT_DOMAIN_KEY) || ensureDefaultDomain([])[0];
-  for (const section of menuSections) {
-    const domain = mapSectionToDomain(section, domainMap) || defaultDomain;
-    if (!buckets.has(domain.key)) {
-      buckets.set(domain.key, {
-        id: `domain:${domain.key}`,
-        key: domain.key,
-        name: domain.name,
-        icon: domain.icon,
-        sequence: domain.sequence,
-        sections: [],
-        isOpen: false,
-      });
-    }
-    buckets.get(domain.key).sections.push(section);
-  }
-  const out = Array.from(buckets.values());
-  for (const domain of out) {
-    domain.sections.sort((a, b) => sortBySequenceThenName(a, b, menuMap));
   }
   out.sort((a, b) => a.sequence - b.sequence);
   return out;

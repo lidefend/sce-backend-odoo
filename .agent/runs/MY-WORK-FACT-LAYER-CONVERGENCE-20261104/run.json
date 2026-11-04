@@ -13,8 +13,11 @@
     "addons/smart_construction_core/views/support/my_work_views.xml",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/static/src/js/sc_sidebar.js",
+    "addons/smart_construction_core/static/tests/sc_sidebar_tests.js",
     "addons/smart_construction_scene/core_extension.py",
-    "addons/smart_construction_scene/profiles/scene_registry_content.py"
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
     "kind": "offline",
