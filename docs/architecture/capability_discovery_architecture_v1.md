@@ -44,16 +44,40 @@ Odoo 是第一个完整落地的适配器；其他来源只遵循统一 Discover
 
 | 资产 | 用途 | 复用方式 |
 |---|---|---|
+| Odoo 原生 `ir.model.data`（XMLID 注册表） | 所有原生记录（模型/动作/菜单/视图/组）的稳定身份 | 唯一技术事实源，直接查询 |
 | Odoo 原生 `ir.model` / `ir.model.fields` | 模型与字段技术事实 | 直接查询，不复制 |
-| Odoo 原生 `ir.actions.act_window` | Action 技术事实 | 直接查询，不复制 |
+| Odoo 原生 `ir.actions.act_window` / `ir.actions.client` / `ir.actions.server` | Action 技术事实 | 直接查询，不复制 |
+| Odoo 原生 `ir.ui.menu` / `ir.ui.view` | 菜单与视图技术事实 | 直接查询，不复制 |
+| Odoo 原生 `ir.model.access` / `ir.rule` / `res.groups` | ACL、记录规则、分组 | 直接读，作为授权事实 |
 | Intent handler 注册（`registered_handlers` + `INTENT_TYPE`） | Intent 事实 | 直接读，不复制 |
 | `ir.module.module`（state=installed） | 模块安装/升级状态 | 直接读 |
 | `extension_loader.py` / `hooks.py` | 模块生命周期钩子 | 挂接发现钩子 |
 | `scene_registry.py` / `scene_registry_content.py` | 已有场景身份 | 去重引用 |
-| `backend_impact_plan.py` | 文件依赖扫描模式 | 变化检测模式复用 |
 | `capability_candidate_catalog_check.py` | 候选目录校验 | 识别结果校验 |
 
 禁止新建第二套 Model Registry / Action Registry。
+
+## 5.1 充分利用 Odoo 自身能力（核心原则）
+
+Discovery 优先作为 Odoo 原生运行时注册表的只读投影，不另造文件扫描器：
+
+```text
+Odoo 原生注册表（已存在，无需新建）
+  ir.model.data   -> 稳定 XMLID 身份（模型/动作/菜单/视图/组/字段）
+  ir.actions.*    -> 动作（res_model/view_mode/context/groups_id）
+  ir.ui.menu      -> 菜单树（parent/action/groups/sequence）
+  ir.model.fields -> 字段（ttype/relation/required/readonly）
+  ir.model.access + ir.rule + res.groups -> 授权事实
+  ir.module.module -> 模块安装/升级/卸载状态
+```
+
+发现触发点复用 Odoo 模块钩子：
+
+- `_register_hook`：模型注册时读取 `ir.model.data` 增量。
+- `post_init_hook` / `post_load`：模块安装/加载后扫描该模块的 XMLID 记录。
+- `ir.module.module` 升级事件：升级后 diff 该模块 XMLID 变化。
+
+这样 Discovery 只是“读取 Odoo 已经维护的注册表”，不是重复扫描源码或重建注册表。
 
 ## 6. 从技术事实形成能力候选
 
@@ -73,7 +97,7 @@ Odoo 是第一个完整落地的适配器；其他来源只遵循统一 Discover
 
 ## 7. 变化检测
 
-模块升级触发：扫描 diff（新增/修改/删除的模型、字段、Action、Intent），
+模块升级触发：diff `ir.model.data` 中该模块 XMLID 的增删改（模型、字段、Action、Intent），
 对照已有候选身份，标记 Provider/契约变化；变化命中已发布能力时，触发依赖重新验证
 （对齐 DECISION-S2-06），不静默升级。
 
