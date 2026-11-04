@@ -363,26 +363,43 @@ def _settlement_immutable_states() -> set[str]:
 
 
 def _current_run_identity() -> dict:
-    """Resolve the current governed run record; only a completed run with check records is a valid source."""
+    """Resolve the current governed run record.
+
+    A valid evidence source is a completed run, with check records, whose frozen
+    head equals the current evaluation head. Anything else fails closed.
+    """
     branch = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True
     ).stdout.strip()
     active = json.loads((ROOT / ".agent/active-runs.json").read_text(encoding="utf-8"))
     run_rel = (active.get("branches") or {}).get(branch)
     if not run_rel:
-        return {"run_id": None, "run_record_sha256": None, "resolved": False}
+        return {"run_id": None, "resolved": False, "reason": "no_active_run"}
     run_path = ROOT / run_rel
     run_data = json.loads(run_path.read_text(encoding="utf-8"))
     status = run_data.get("status")
-    checks = run_data.get("checks") or {}
+    check_results = run_data.get("check_results") or {}
+    run_head = run_data.get("head")
+    current_head = _head()
     return {
         "run_id": run_rel.rsplit("/", 2)[-2],
         "run_record": run_rel,
         "run_record_sha256": hashlib.sha256(run_path.read_bytes()).hexdigest(),
         "status": status,
-        "check_count": len(checks),
-        "resolved": bool(checks),
+        "check_count": len(check_results),
+        "run_head": run_head,
+        "current_head": current_head,
+        "resolved": status == "completed" and bool(check_results) and run_head == current_head,
+        "reason": (
+            None if (status == "completed" and bool(check_results) and run_head == current_head)
+            else f"status={status} check_records={bool(check_results)} head_match={run_head == current_head}"
+        ),
     }
+
+
+def _run_identity_resolved(status: str, check_count: int, run_head: str, current_head: str) -> bool:
+    """Pure decision: only a completed run with records and a matching head resolves."""
+    return status == "completed" and check_count > 0 and run_head == current_head
 
 
 def _settlement_immutable_enforced() -> bool:
