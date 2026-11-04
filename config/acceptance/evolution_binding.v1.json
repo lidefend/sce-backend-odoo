@@ -529,6 +529,16 @@
       ]
     },
     {
+      "id": "capability-acceptance-contract",
+      "description": "Backend capability acceptance contract data; backend contract verification only, not frontend browser evidence.",
+      "paths": [
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
       "id": "construction-product-runtime",
       "paths": [
         "addons/smart_construction_core/**",
