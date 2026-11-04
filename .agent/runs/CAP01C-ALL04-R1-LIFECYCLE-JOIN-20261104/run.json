@@ -10,7 +10,15 @@
     ".agent/active-runs.json",
     ".agent/goals/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104.yaml",
     ".agent/runs/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104/run.json",
-    "scripts/verify/capability_contract_mapper.py"
+    "scripts/verify/capability_contract_mapper.py",
+    "scripts/verify/capability_candidate_catalog_check.py",
+    "docs/product/capability_candidate_catalog_v1.json",
+    "docs/product/capability_reconciliation_matrix_v1.md",
+    "docs/product/capability_catalog_migration_plan_v1.md",
+    "docs/product/capability_exclusion_register_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "offline",
@@ -18,5 +26,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "run read-only lifecycle Join exporter; review projection + unresolved; then batch the other five keep-atomic capabilities."
+  "next_exact_step": "sync candidate catalog providers for six keep-atomic capabilities; exclude governance.runtime.audit with provenance; verify checker generate/check/self-test; then batch contract declaration."
 }

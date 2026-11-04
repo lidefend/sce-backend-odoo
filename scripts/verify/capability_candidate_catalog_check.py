@@ -34,7 +34,7 @@ CLASSIFICATION = {
     "contract.settlement.audit": {"disposition": "keep", "layer": "atomic"},
     "equipment.plan.manage": {"disposition": "keep", "layer": "composite"},
     "labor.plan.manage": {"disposition": "keep", "layer": "composite"},
-    "governance.runtime.audit": {"disposition": "keep", "layer": "atomic"},
+    "governance.runtime.audit": {"disposition": "exclude", "layer": "atomic"},
     "project.list.open": {"disposition": "defer", "layer": "atomic"},
     "project.dashboard.enter": {"disposition": "defer", "layer": "atomic"},
     "project.risk.list": {"disposition": "defer", "layer": "atomic"},
@@ -98,7 +98,26 @@ PROVIDERS = {
         {"provider_type": "odoo_model", "provider_ref": "project.project", "contract_ref": "addons/smart_construction_core/models/core/project_core.py", "provider_status": "verified"},
     ],
     "project.lifecycle.transition": [
-        {"provider_type": "unknown", "provider_ref": "", "contract_ref": "", "provider_status": "unverified", "pending_reason": "lifecycle transition contract not yet located as a code asset"},
+        {"provider_type": "odoo_model", "provider_ref": "project.project", "contract_ref": "addons/smart_construction_core/models/core/project_core.py", "provider_status": "verified"},
+    ],
+    "construction.plan.report": [
+        {"provider_type": "odoo_action", "provider_ref": "smart_construction_core.action_sc_plan_report", "contract_ref": "addons/smart_construction_core/views/core/plan_management_views.xml", "provider_status": "verified"},
+        {"provider_type": "odoo_model", "provider_ref": "sc.plan.report", "contract_ref": "addons/smart_construction_core/models/core/plan_management.py", "provider_status": "verified"},
+    ],
+    "cost.progress.report": [
+        {"provider_type": "odoo_action", "provider_ref": "smart_construction_core.action_project_progress_entry", "contract_ref": "addons/smart_construction_core/views/core/cost_domain_views.xml", "provider_status": "verified"},
+        {"provider_type": "odoo_model", "provider_ref": "project.progress.entry", "contract_ref": "addons/smart_construction_core/models/core/progress_entry.py", "provider_status": "verified"},
+    ],
+    "contract.expense.track": [
+        {"provider_type": "odoo_action", "provider_ref": "smart_construction_core.action_construction_contract_expense", "contract_ref": "addons/smart_construction_core/views/core/contract_views.xml", "provider_status": "verified"},
+        {"provider_type": "odoo_model", "provider_ref": "construction.contract.expense", "contract_ref": "addons/smart_construction_core/models/support/contract_professional.py", "provider_status": "verified"},
+    ],
+    "contract.income.track": [
+        {"provider_type": "odoo_action", "provider_ref": "smart_construction_core.action_construction_contract_income", "contract_ref": "addons/smart_construction_core/views/core/contract_views.xml", "provider_status": "verified"},
+        {"provider_type": "odoo_model", "provider_ref": "construction.contract.income", "contract_ref": "addons/smart_construction_core/models/support/contract_professional.py", "provider_status": "verified"},
+    ],
+    "contract.settlement.audit": [
+        {"provider_type": "odoo_model", "provider_ref": "sc.settlement.order", "contract_ref": "addons/smart_construction_core/models/core/settlement_order.py", "provider_status": "verified"},
     ],
 }
 
