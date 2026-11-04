@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: CAP02C-STRUCTURED-DIFF-20261105
-  status: active
+  status: completed
   title: CAP-02C-04 结构化 Diff 与能力影响传播
   formal_product_layer: P4
   layer_target: scripts/verify/ 统一快照投影 + 两阶段 Diff（只读）

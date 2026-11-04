@@ -3,7 +3,7 @@
   "id": "CAP02C-STRUCTURED-DIFF-20261105",
   "branch": "codex/cap02c-structured-diff-20261105",
   "baseline_sha": "ed86f25c606fc7c897596987b3a8302d3574e6c2",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
   "record": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
   "scope": [
@@ -41,5 +41,5 @@
     "R3_scanner_ast_boundary": "PASS: _name/_inherit recognition now AST class-scope only; function-local _name/_inherit assignments no longer match; class-level declarations still recognized; 75 offline tests total (16 module_capability_index + 59 D1-D4)"
   },
   "blockers": [],
-  "next_exact_step": "R3 scanner fix + AST class-scope boundary complete (75 offline tests); commit + push; await owner final review of PR #808."
+  "next_exact_step": "CAP-02C D1-D4 frozen; PR #808 merged (a80af57d8); O-02 deferred to next natural module version bump; next CAP-02D full-platform module capability asset governance."
 }
