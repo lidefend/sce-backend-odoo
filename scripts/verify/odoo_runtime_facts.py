@@ -17,7 +17,14 @@ import odoo
 def _snapshot(env, db_name):
     registry = odoo.registry(env.cr.dbname)
     model_names = {m["id"]: m["model"] for m in env["ir.model"].search_read([], ["id", "model"])}
-    model_modules = {m["id"]: (m["modules"] or "").split(",") for m in env["ir.model"].search_read([], ["id", "modules"])}
+    model_modules = {
+        m["id"]: [x.strip() for x in (m["modules"] or "").split(",") if x.strip()]
+        for m in env["ir.model"].search_read([], ["id", "modules"])
+    }
+    model_owner_map = {}
+    for mid, model_name in model_names.items():
+        klass = registry.get(model_name)
+        model_owner_map[model_name] = getattr(klass, "_original_module", None) if klass else None
     result = {
         "schema": "module.runtime.facts.v1",
         "db_name": db_name,
@@ -42,14 +49,25 @@ def _snapshot(env, db_name):
     }
     result["modules"] = {"source": "runtime_registry", "completeness": "complete", "items": result["modules"]}
 
-    # ir.model.modules is the authoritative model owner + extension list.
+    # ir.model.modules is the raw module contribution set; _original_module is
+    # the authoritative model owner. Extensions are the contribution set minus
+    # the owner, never derived from a model name prefix.
     result["model_ownership"] = {
         "source": "runtime_registry",
         "completeness": "complete",
-        "items": {
-            model_names[mid]: sorted(m for m in mods if m)
+        "items": [
+            {
+                "model": model_names[mid],
+                "registry_modules": sorted(m for m in mods if m),
+                "model_owner": model_owner_map.get(model_names[mid]),
+                "model_extensions": sorted(
+                    m for m in (mods if mods else [])
+                    if m and m != model_owner_map.get(model_names[mid])
+                ),
+            }
             for mid, mods in model_modules.items()
-        },
+            if model_names.get(mid)
+        ],
     }
 
     fields = env["ir.model.fields"].search_read(
