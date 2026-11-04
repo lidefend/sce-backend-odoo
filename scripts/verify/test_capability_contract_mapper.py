@@ -111,11 +111,12 @@ class BatchCheckTests(unittest.TestCase):
         self.assertTrue(any(c["covers"] is False for c in edge["candidates"]))
 
     def test_run_identity_requires_completed_and_matching_head(self):
-        self.assertTrue(builder._run_identity_resolved("completed", 1, "a" * 40, "a" * 40))
-        self.assertFalse(builder._run_identity_resolved("active", 1, "a" * 40, "a" * 40))
-        self.assertFalse(builder._run_identity_resolved("blocked", 1, "a" * 40, "a" * 40))
-        self.assertFalse(builder._run_identity_resolved("completed", 0, "a" * 40, "a" * 40))
-        self.assertFalse(builder._run_identity_resolved("completed", 1, "a" * 40, "b" * 40))
+        self.assertTrue(builder._run_identity_resolved("completed", 1, True, False))
+        self.assertFalse(builder._run_identity_resolved("active", 1, True, False))
+        self.assertFalse(builder._run_identity_resolved("blocked", 1, True, False))
+        self.assertFalse(builder._run_identity_resolved("completed", 0, True, False))
+        self.assertFalse(builder._run_identity_resolved("completed", 1, False, False))
+        self.assertFalse(builder._run_identity_resolved("completed", 1, True, True))
 
     def test_semantic_cases_are_skip_not_pass(self):
         proj = {

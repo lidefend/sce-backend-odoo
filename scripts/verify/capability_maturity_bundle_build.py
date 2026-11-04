@@ -381,6 +381,9 @@ def _current_run_identity() -> dict:
     check_results = run_data.get("check_results") or {}
     run_head = run_data.get("head")
     current_head = _head()
+    ancestor = _is_ancestor(run_head, current_head) if run_head else False
+    code_changed, changed_files = _code_changed_between(run_head, current_head) if (run_head and ancestor) else (True, ["head_not_ancestor"])
+    resolved = status == "completed" and bool(check_results) and ancestor and not code_changed
     return {
         "run_id": run_rel.rsplit("/", 2)[-2],
         "run_record": run_rel,
@@ -389,17 +392,51 @@ def _current_run_identity() -> dict:
         "check_count": len(check_results),
         "run_head": run_head,
         "current_head": current_head,
-        "resolved": status == "completed" and bool(check_results) and run_head == current_head,
+        "head_is_ancestor": ancestor,
+        "code_changed_files": changed_files,
+        "resolved": resolved,
         "reason": (
-            None if (status == "completed" and bool(check_results) and run_head == current_head)
-            else f"status={status} check_records={bool(check_results)} head_match={run_head == current_head}"
+            None if resolved
+            else f"status={status} check_records={bool(check_results)} ancestor={ancestor} code_changed={changed_files}"
         ),
     }
 
 
-def _run_identity_resolved(status: str, check_count: int, run_head: str, current_head: str) -> bool:
-    """Pure decision: only a completed run with records and a matching head resolves."""
-    return status == "completed" and check_count > 0 and run_head == current_head
+def _run_identity_resolved(status: str, check_count: int, head_is_ancestor: bool, code_changed: bool) -> bool:
+    """Pure decision: completed + records + ancestor head + unchanged check code."""
+    return status == "completed" and check_count > 0 and head_is_ancestor and not code_changed
+
+
+def _is_ancestor(ancestor: str, descendant: str) -> bool:
+    proc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=ROOT, capture_output=True,
+    )
+    return proc.returncode == 0
+
+
+EVIDENCE_CODE_PREFIXES = (
+    "scripts/verify/capability_contract_mapper.py",
+    "scripts/verify/capability_maturity_bundle_build.py",
+    "scripts/verify/capability_candidate_catalog_check.py",
+    "scripts/verify/capability_maturity_evidence.py",
+    "addons/smart_core/core/capability_maturity.py",
+    "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+    "addons/smart_construction_core/models/",
+    "addons/smart_construction_core/views/",
+    "addons/smart_construction_core/handlers/",
+    "addons/smart_construction_core/services/",
+)
+
+
+def _code_changed_between(ancestor: str, descendant: str) -> tuple[bool, list[str]]:
+    """True when any check-code or dependency file changed between two commits."""
+    proc = subprocess.run(
+        ["git", "diff", "--name-only", ancestor, descendant],
+        cwd=ROOT, text=True, capture_output=True, check=True,
+    )
+    changed = [f for f in proc.stdout.splitlines() if f.strip() and f.startswith(EVIDENCE_CODE_PREFIXES)]
+    return bool(changed), changed
 
 
 def _settlement_immutable_enforced() -> bool:

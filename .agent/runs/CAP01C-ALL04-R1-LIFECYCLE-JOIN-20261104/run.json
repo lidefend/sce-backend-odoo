@@ -39,5 +39,5 @@
     "ci_local_iteration": "PASS L1_only"
   },
   "blockers": [],
-  "next_exact_step": "revise evidence authenticity (Join facts vs check separation, unresolved hard block) and tighten check rules; then regenerate six-capability evaluation and submit for review."
+  "next_exact_step": "ALL-04/05 closed: six capabilities joined and batch-certified (2 standard, 4 preview, lifecycle blocked on draft->paused). Await final PR review and merge."
 }

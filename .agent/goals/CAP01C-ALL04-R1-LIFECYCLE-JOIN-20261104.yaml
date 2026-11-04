@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104
-  status: active
+  status: completed
   title: CAP-01C ALL-04/05 现有资产 Join 与六项 Keep 原子能力批量认证
   formal_product_layer: P4
   layer_target: scripts/verify/ 能力契约 Join 导出器（只读，不回写正式目录）
