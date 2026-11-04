@@ -198,31 +198,65 @@ def _file_contains(paths: list[str] | None, pattern: str) -> bool:
     return result.returncode == 0
 
 
+def _intent_registration_count(intent: str) -> int | None:
+    """Count registration-chain declarations for an intent (fail-closed)."""
+    patterns = [
+        r'\(\s*["\']' + re.escape(intent) + r'["\']\s*,',      # ("intent", Handler) tuple
+        r'registry\[["\']' + re.escape(intent) + r'["\']\]\s*=',  # registry["intent"] = Handler
+    ]
+    reg_files = [
+        ROOT / "addons/smart_construction_core/core_extension_intent_handlers.py",
+        ROOT / "addons/smart_construction_core/core_extension.py",
+    ]
+    count = 0
+    for f in reg_files:
+        if not f.is_file():
+            continue
+        for pattern in patterns:
+            try:
+                result = subprocess.run(["rg", "-c", "-e", pattern, str(f)], cwd=ROOT, text=True, capture_output=True, timeout=30)
+            except (OSError, subprocess.TimeoutExpired):
+                return None
+            if result.returncode == 0:
+                for line in result.stdout.splitlines():
+                    n = line.rsplit(":", 1)[-1].strip()
+                    if n.isdigit():
+                        count += int(n)
+    # smart_core native handlers are auto-registered via register_all_handlers.
+    if count == 0:
+        native = _rg_files([r'INTENT_TYPE\s*=\s*["\']' + re.escape(intent) + r'["\']'], "addons/smart_core/handlers", ("*.py",))
+        if native:
+            count = 1
+    return count
+
+
 def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
     """Type-specific exact registration-fact verification."""
     if not provider_ref or provider_ref in {"tbd", "unknown"}:
         return False
     if provider_type == "odoo_intent":
         # Must be a real handler: declared INTENT_TYPE inside a handlers/
-        # package file that subclasses BaseIntentHandler (not a stray string).
-        files = _rg_files([r'INTENT_TYPE\s*=\s*["\']' + re.escape(provider_ref) + r'["\']'])
-        if files is None:
+        # package file that subclasses BaseIntentHandler, declared exactly once,
+        # and actually wired into the runtime registration chain.
+        decl = _rg_files([r'INTENT_TYPE\s*=\s*["\']' + re.escape(provider_ref) + r'["\']'])
+        if decl is None:
             return False
-        handler_files = [f for f in files if "/handlers/" in f and "/tests/" not in f]
-        if not handler_files:
+        handler_files = [f for f in decl if "/handlers/" in f and "/tests/" not in f]
+        if len(handler_files) != 1:
             return False
-        return _file_contains(handler_files, r"BaseIntentHandler")
+        if not _file_contains(handler_files, r"BaseIntentHandler"):
+            return False
+        count = _intent_registration_count(provider_ref)
+        return count == 1
     if provider_type == "odoo_action":
         module = provider_ref.split(".")[0]
         local = provider_ref.rsplit(".", 1)[-1]
         # The action record must be defined in the same module, as an
         # ir.actions record (not merely an id= string somewhere else).
-        files = _rg_files([r'id="' + re.escape(local) + r'"'], f"addons/{module}")
+        files = _rg_files([r'id="' + re.escape(local) + r'"\s+model="ir\.actions\.(act_window|client|server)"'], f"addons/{module}")
         if files is None:
             return False
-        if not files:
-            return False
-        return _file_contains(files, r'model="ir\.actions\.(act_window|client|server)"')
+        return bool(files)
     if provider_type == "odoo_model":
         files = _rg_files([
             r'_name\s*=\s*["\']' + re.escape(provider_ref) + r'["\']',
@@ -389,6 +423,11 @@ def _self_test() -> int:
             failures.append("rg failure not fail-closed")
     finally:
         mod.subprocess.run = original
+
+    # 10. duplicate intent identity (app.catalog declared in both smart_core and
+    # smart_construction_core handlers) -> must FAIL.
+    if mod._provider_ref_registered("odoo_intent", "app.catalog"):
+        failures.append("duplicate intent identity passed registration-chain check")
 
     if failures:
         print("SELF-TEST FAIL")
