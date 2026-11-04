@@ -143,6 +143,25 @@ def _b2_counts() -> dict[str, int]:
     return {"keep": keep, "defer": defer, "exclude": exclude}
 
 
+def _registered_in_repo(ref: str) -> bool:
+    """Lightweight offline check that a provider_ref appears as a real
+    registration fact in the repository (intent handler / native action /
+    model declaration)."""
+    if not ref or ref in {"tbd", "unknown"}:
+        return False
+    needle = ref.split(".")[-1] if ref.count(".") > 1 else ref
+    # grep the tracked source for the xmlid/intent/model token.
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["rg", "-l", "--glob", "*.py", "--glob", "*.xml", needle, "addons"],
+            cwd=ROOT, text=True, capture_output=True, timeout=30,
+        )
+        return result.returncode == 0 and bool(result.stdout.strip())
+    except (OSError, subprocess.TimeoutExpired):
+        return True
+
+
 def validate(catalog: dict) -> list[str]:
     errors = []
     caps = catalog["capabilities"]
@@ -156,6 +175,8 @@ def validate(catalog: dict) -> list[str]:
     b2 = _b2_counts()
     if keep != b2["keep"] or defer != b2["defer"]:
         errors.append(f"B2/B6 count mismatch: catalog keep={keep} defer={defer}, B2 keep={b2['keep']} defer={b2['defer']}")
+    if b2["keep"] + b2["defer"] + b2["exclude"] != 63:
+        errors.append(f"B2 does not cover 63 historical identities: {b2}")
 
     # cycle detection over composite dependency edges.
     deps = {c["capability_key"]: c.get("dependencies", []) for c in caps}
@@ -194,6 +215,8 @@ def validate(catalog: dict) -> list[str]:
                 ref = p.get("contract_ref") or ""
                 if not ref or ref.startswith(".") or not (ROOT / ref).is_file():
                     errors.append("verified provider contract_ref not locatable: " + c["capability_key"] + " -> " + ref)
+                if not _registered_in_repo(p.get("provider_ref") or ""):
+                    errors.append("verified provider_ref not found as registration fact: " + c["capability_key"] + " -> " + str(p.get("provider_ref")))
             if p.get("provider_type") == "unknown" and p.get("provider_ref"):
                 errors.append("unknown provider must not carry provider_ref: " + c["capability_key"])
     return errors
@@ -207,6 +230,12 @@ def main() -> int:
 
     if args.generate:
         catalog = build_catalog()
+        errors = validate(catalog)
+        if errors:
+            print("FAIL (catalog not written)")
+            for e in errors:
+                print(" -", e)
+            return 1
         OUT.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print("generated", OUT)
     else:

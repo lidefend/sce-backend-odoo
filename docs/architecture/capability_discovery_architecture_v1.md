@@ -79,6 +79,20 @@ Odoo 原生注册表（已存在，无需新建）
 
 这样 Discovery 只是“读取 Odoo 已经维护的注册表”，不是重复扫描源码或重建注册表。
 
+## 5.2 技术事实的三类来源（XMLID 不是完整变化记录）
+
+| 类别 | 事实来源 | 完整反映变化 |
+|---|---|---|
+| 数据库原生注册事实 | `ir.model` / `ir.model.fields` / `ir.actions.*` / `ir.ui.menu` / `ir.ui.view` / `ir.model.access` / `ir.rule` / `res.groups` / `ir.module.module` | 部分（Model/Field/ACL 不一定有 XMLID 变化） |
+| Python 运行时注册事实 | Odoo Registry 模型定义、`_register_hook`、Intent Handler 注册、Manifest 版本 | 不能仅靠 XMLID |
+| 实现及契约变化事实 | Git 对象、文件摘要、`maturity_fingerprint`、Provider 版本 | 需受控版本证据 |
+
+`ir.model.data` 的 XMLID 增删改只能覆盖 Action/Menu/View 等部分事实；模型字段、ACL、Record Rules、
+Intent Handler 实现、Python 业务方法即使无 XMLID 变化也可能改变能力行为。因此变化检测必须结合
+三类证据，不能只比 XMLID。
+
+数据库 Registry 回答“当前有什么”，受控版本与依赖证据回答“它发生了什么变化”，两者不混用。
+
 ## 6. 从技术事实形成能力候选
 
 发现到的模型/字段/Action/Intent 只是技术事实，必须经过 B0 五条件过滤：
@@ -97,9 +111,17 @@ Odoo 原生注册表（已存在，无需新建）
 
 ## 7. 变化检测
 
-模块升级触发：diff `ir.model.data` 中该模块 XMLID 的增删改（模型、字段、Action、Intent），
-对照已有候选身份，标记 Provider/契约变化；变化命中已发布能力时，触发依赖重新验证
-（对齐 DECISION-S2-06），不静默升级。
+模块升级/Registry 重建触发：
+
+1. diff 数据库原生注册事实（XMLID + `ir.model.fields` + `ir.model.access` + `ir.rule`）。
+2. 对照 Python 运行时注册事实（Registry 模型定义、Intent Handler、Manifest 版本）。
+3. 结合实现版本证据（Git 对象 / 文件摘要 / `maturity_fingerprint`）判定 Provider/契约是否变化。
+
+变化命中已发布能力时，触发依赖重新验证（对齐 DECISION-S2-06），不静默升级。
+
+Odoo 生命周期钩子需按当前版本核实：`post_load` 是服务器级加载钩子，不等同于每个数据库的
+模块升级回调；`post_init_hook` 不能代替完整升级事件。Registry 重建后执行一次全量重新发现，
+增量发现只用于明确的模块安装/升级/卸载事件。
 
 ## 8. 非 Odoo Provider 接入协议
 
