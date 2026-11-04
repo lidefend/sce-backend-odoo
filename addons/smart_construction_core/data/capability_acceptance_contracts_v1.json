@@ -123,7 +123,8 @@
         "addons/smart_construction_core/handlers/project_initiation_enter.py",
         "addons/smart_construction_core/services/project_creation_service.py",
         "addons/smart_construction_core/models/core/project_core.py",
-        "addons/smart_construction_core/views/menu.xml"
+        "addons/smart_construction_core/views/menu.xml",
+        "addons/smart_construction_core/core_extension_intent_handlers.py"
       ],
       "product_criteria": {
         "preview": {
@@ -178,7 +179,6 @@
       "business_scenarios": {
         "creator_with_create_capability": {
           "role_code": "pm",
-          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
           "capability_profile": "project_create",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
@@ -194,11 +194,12 @@
               "lifecycle_state_draft": true,
               "bootstrap_message_posted": true
             }
-          }
+          },
+          "capability_group_xmlid": "smart_construction_core.group_sc_cap_project_manager",
+          "role_group_xmlid": "smart_construction_core.group_sc_role_project_manager"
         },
         "creator_missing_name": {
           "role_code": "pm",
-          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
           "capability_profile": "project_create",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
@@ -211,11 +212,12 @@
               "project_record_created": false,
               "records_changed": 0
             }
-          }
+          },
+          "capability_group_xmlid": "smart_construction_core.group_sc_cap_project_manager",
+          "role_group_xmlid": "smart_construction_core.group_sc_role_project_manager"
         },
         "readonly_user_without_create_capability": {
           "role_code": "general_user",
-          "group_xmlid": "smart_construction_core.group_sc_role_general_user",
           "capability_profile": "project_read_only",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
@@ -228,11 +230,12 @@
               "project_record_created": false,
               "records_changed": 0
             }
-          }
+          },
+          "capability_group_xmlid": "smart_construction_core.group_sc_cap_project_read",
+          "role_group_xmlid": "smart_construction_core.group_sc_role_general_user"
         },
         "user_without_project_capability": {
           "role_code": "experience",
-          "group_xmlid": "smart_construction_core.group_sc_role_experience",
           "capability_profile": "none",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
@@ -245,11 +248,12 @@
               "project_record_created": false,
               "records_changed": 0
             }
-          }
+          },
+          "capability_group_xmlid": "",
+          "role_group_xmlid": "smart_construction_core.group_sc_role_experience"
         },
         "creator_outside_resource_scope": {
           "role_code": "pm",
-          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
           "capability_profile": "project_create",
           "company_scope": "outside_actor_allowed_companies",
           "data_scope": "other_company_project_fixture",
@@ -262,7 +266,9 @@
               "project_record_created": false,
               "records_changed": 0
             }
-          }
+          },
+          "capability_group_xmlid": "smart_construction_core.group_sc_cap_project_manager",
+          "role_group_xmlid": "smart_construction_core.group_sc_role_project_manager"
         }
       }
     }

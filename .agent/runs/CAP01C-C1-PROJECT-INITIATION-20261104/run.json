@@ -27,5 +27,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Await architecture review of C1 contract declaration before Phase 2 test implementation."
+  "next_exact_step": "C1-01 contract certification (five consistency checks); C1-02 evidence generation from reused platform results; C1-03 preview/standard evaluation; C1-04 reuse verification."
 }

@@ -60,33 +60,22 @@ Standard 必须包含 Preview 全部用例（已满足）。
 2. `native_resource_authorization`：原生 ACL（create=1）与 Record Rules（公司/数据范围）。
 3. `execution_authorization`：真实服务端请求是否通过全部授权。
 
-## 4. 六类真实业务结果测试（Phase 2 实施）
+## 4. 五项契约检查（轻量认证标准，替代旧六项业务测试）
 
-| 测试 | 预期 | 判定 |
+| 检查 | 要证明的事实 | 方式 |
 |---|---|---|
-| C1-01 正常创建 | 数据库产生真实 project 记录 | ORM 创建成功 |
-| C1-02 默认值 | manager/phase/lifecycle 符合规则 | 归一化结果正确 |
-| C1-03 初始化 | 条件性任务根节点 + 初始化消息 | bootstrap 结果正确 |
-| C1-04 缺名称 | 拒绝，不产生记录 | MISSING_PARAMS |
-| C1-05 权限不足 | 拒绝，无业务副作用 | PERMISSION_DENIED |
-| C1-06 数据异常 | 业务校验失败，数据一致 | BUSINESS_RULE_FAILED |
+| Identity | 能力身份与真实 Provider 对应 | Provider Registry + 注册链 |
+| I/O | 输入、输出、错误表达完整 | 契约 JSON Schema |
+| Dependency | 依赖及版本范围完整 | 依赖指纹 |
+| Promise | 默认值、条件性行为、错误语义与 Provider 一致 | 契约语义比对 |
+| Scope | 契约没有承诺 Provider 实际不具备的功能 | 契约-Provider 一致性 |
 
-必须区分：接口返回成功 ≠ ORM 创建成功 ≠ 初始化成功 ≠ 完整业务结果正确。
-写入能力必须验证失败时不留不完整业务数据。
+这些检查通过现有 Python、JSON Schema、Provider Registry 完成，不逐能力跑浏览器。
 
-C1-03 初始化必须覆盖全部条件分支（不得只断言“任务根节点存在”）：
-
-1. 满足条件（project.task 模型可用 + 有 create 权限 + 项目无现有任务）→ 创建任务根节点。
-2. 不满足模型条件（project.task 不可用）→ 不创建。
-3. 不满足权限条件（无 create 权限）→ 不创建。
-4. 项目已存在任务 → 不重复创建。
-5. 初始化消息内容与实际执行结果一致。
-
-C1-06 数据异常必须明确：
-
-- 服务端业务校验失败时，事务回滚范围；
-- 不得残留不完整 project 记录、孤儿任务根节点或半写消息；
-- 部分副作用（如 message_post 在 create 之后失败）的回滚边界需单独验证。
+`business_scenarios` 是契约元数据（声明的授权期望），不是资格证据；资格证据由
+`capability_maturity_evidence.py` 的 receipts + artifacts 承载，两者不得混淆。
+场景中的 `role_group_xmlid` 是测试主体身份元数据，`capability_group_xmlid` 才是
+实际授权输入；执行器不得根据角色组自行推断能力分组。
 
 ## 5. 依赖文件与指纹范围
 
