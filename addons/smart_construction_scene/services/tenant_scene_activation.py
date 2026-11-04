@@ -27,7 +27,7 @@ def read_tenant_enablement(env, company_id, scene_key) -> bool:
         return False
     try:
         value = env["ir.config_parameter"].sudo().get_param(_enablement_param_key(company_id, scene_key))
-        if value is not None:
+        if value:
             return str(value or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         pass
