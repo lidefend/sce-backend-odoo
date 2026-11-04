@@ -55,7 +55,7 @@ The pair was restored only to the isolated
 - production frontend SHA256:
   `144fbd0b6607fde04836f83ccf657db7e9c378e058fb83ec8a17884a7a3668ae`
 - runtime base:
-  `odoo:17.0@sha256:94afce4bda54095b67f1040e3e12847776d22ad8591d977f480dabb7dc9a4a04`
+  `odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb97d18e5`
 - frontend builder:
   `node:22.17.0-bookworm-slim@sha256:b04ce4ae4e95b522112c2e5c52f781471a5cbc3b594527bcddedee9bc48c03a0`
 - Node purpose: build-only

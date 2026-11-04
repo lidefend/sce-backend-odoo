@@ -86,7 +86,7 @@ build_time="${CANDIDATE_BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 source_tree_sha="$(git rev-parse "${source_sha}^{tree}")"
 node_version="v22.17.0-build-only"
 pnpm_version="9.12.3-build-only"
-runtime_base="odoo:17.0@sha256:94afce4bda54095b67f1040e3e12847776d22ad8591d977f480dabb7dc9a4a04"
+runtime_base="odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb97d18e5"
 frontend_builder_base="$(awk '$1 == "FROM" {print $2; exit}' Dockerfile.production-frontend-builder)"
 [[ "$frontend_builder_base" =~ @sha256:[0-9a-f]{64}$ ]] || {
   echo "[candidate.build] frontend builder base must be digest pinned" >&2

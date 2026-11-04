@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
       args:
         APT_MIRROR: ${APT_MIRROR:-default}
-        ODOO_BASE_IMAGE: ${ODOO_BASE_IMAGE:-odoo:17.0@sha256:94afce4bda54095b67f1040e3e12847776d22ad8591d977f480dabb7dc9a4a04}
+        ODOO_BASE_IMAGE: ${ODOO_BASE_IMAGE:-odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb97d18e5}
         SOURCE_SHA: ${SOURCE_SHA:-unknown}
     image: ${ODOO_IMAGE:-odoo17-odoo:latest}
     restart: unless-stopped
