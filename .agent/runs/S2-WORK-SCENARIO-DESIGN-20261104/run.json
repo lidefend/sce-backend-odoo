@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "S2-WORK-SCENARIO-DESIGN-20261104",
+  "branch": "codex/s2-work-scenario-design-20261104",
+  "baseline_sha": "6e674745ae1c6e957ae933c8dddeb1b753fce251",
+  "status": "active",
+  "goal": ".agent/goals/S2-WORK-SCENARIO-DESIGN-20261104.yaml",
+  "record": ".agent/runs/S2-WORK-SCENARIO-DESIGN-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/S2-WORK-SCENARIO-DESIGN-20261104.yaml",
+    ".agent/runs/S2-WORK-SCENARIO-DESIGN-20261104/run.json",
+    ".agent/decisions/ARCH-DECISION-011.yaml",
+    "docs/architecture/work_scenario_spec_v1.md",
+    "docs/architecture/work_scenario_schema_v1.json",
+    "docs/architecture/work_scenario_authority_matrix_v1.md",
+    "docs/architecture/work_scenario_conflict_report.md",
+    "docs/product/ws01_project_establish_maintain_scenario_v1.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Await owner review of the five S2-02 design artifacts before any S2-04 implementation."
+}

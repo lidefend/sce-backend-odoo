@@ -1,0 +1,13 @@
+schema_version: 1
+goal:
+  id: S2-WORK-SCENARIO-DESIGN-20261104
+  status: active
+  title: 冻结两层发布决策并交付工作场景统一规范（S2-02 设计）
+  formal_product_layer: P0
+  layer_target: 架构决策与设计文档（docs/ + .agent/decisions/）
+  standard_vs_user_specific: platform_standard
+  objective: >
+    冻结 ARCH-DECISION-011（能力发布与产品发布分离，S2-01..07），交付统一工作场景规范、
+    JSON Schema、WS-01 完整定义、权威矩阵与冲突报告。纯设计产物，不修改产品运行代码。
+  scope: [docs/architecture/, docs/product/, .agent/decisions/, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [产品运行代码, ACL/record rule, 业务数据, 部署与合并授权]
