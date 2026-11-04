@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import importlib.util
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -65,8 +66,14 @@ def _runtime_snapshot(db: str) -> dict:
 def _upgrade(db: str, modules: list[str]) -> int:
     cmd = ["docker", "exec", CONTAINER, "odoo", "-d", db, "-c", CONF,
            "--stop-after-init", "-u", ",".join(modules)]
-    proc = subprocess.run(cmd, text=True, capture_output=True, timeout=1800)
-    return proc.returncode
+    try:
+        proc = subprocess.run(cmd, text=True, capture_output=True, timeout=1800)
+        return proc.returncode
+    except subprocess.TimeoutExpired:
+        return 124
+    except OSError as exc:
+        print(f"[upgrade] OSError: {exc}", file=sys.stderr)
+        return 125
 
 
 def _module_versions(snapshot: dict, modules: list[str]) -> dict:
@@ -77,12 +84,15 @@ def _module_versions(snapshot: dict, modules: list[str]) -> dict:
 def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
             outdir: Path) -> dict:
     outdir.mkdir(parents=True, exist_ok=True)
-    operation_id = f"cap02c-{int(time.time())}"
+    operation_id = f"cap02c-{db}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     before = _runtime_snapshot(db)
     before_sha = hashlib.sha256(json.dumps(before, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     before_versions = _module_versions(before, modules)
+    before_path = outdir / f"runtime_snapshot_before_{operation_id}.json"
+    before_path.write_text(json.dumps(before, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    before_sha = hashlib.sha256(before_path.read_bytes()).hexdigest()
 
     exit_code = 0
     upgrade_ok = True
@@ -114,6 +124,19 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
     else:
         result = "success"
 
+    version_changed = any(
+        before_versions.get(m) != after_versions.get(m) for m in modules
+    )
+    # partial: some target modules are not in an installed state after upgrade
+    module_states = {
+        m: after.get("modules", {}).get("items", {}).get(m, {}).get("state")
+        for m in modules
+    } if after else {}
+    if result == "success" and do_upgrade and any(
+        module_states.get(m) != "installed" for m in modules
+    ):
+        result = "partial"
+
     # save after snapshot artifact when present
     artifact_sha = after_sha
 
@@ -125,6 +148,7 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
         "timestamp": started,
         "target_modules": modules,
         "result": result,
+        "version_changed": version_changed,
         "registry": {"ready": registry_ready, "rebuilt": do_upgrade, "db_matches": db_matches},
         "observer": {"name": "module_upgrade_observation", "version": "1", "odoo_version": "17.0", "schema_version": "1"},
         "module_versions": [
