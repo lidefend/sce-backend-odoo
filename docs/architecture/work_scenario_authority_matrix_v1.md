@@ -10,7 +10,10 @@
 | 业务域 Domain | 原生顶级菜单 | `menu_business_taxonomy.xml` / `menu_product_navigation_v2.xml` | 侧边栏、场景投影 |
 | 菜单 Menu | 原生 `ir.ui.menu` | `menu_*.xml` | 导航投影、场景注册、侧边栏 |
 | 场景 Scene | 原生 menu/action/model/view/group + 产品发布 | `scene_registry_content.py` 等（多载体，S2-03 待收敛） | `scene_provider.py`、nav maps |
-| 能力 Capability | 原生 model/action + 能力成熟度 | `capability_maturity.py` + `sc_capability_group_seed.xml` + 目录 JSON | 场景组合引用 |
+| 能力 Capability | 原生 model/action/intent + 能力成熟度 | `capability_maturity.py` + 真实 intent handler + 原生 action | 场景组合引用 |
+
+> 注：`capability_catalog_v1.json` 已过期（42 条、intent 统一 `ui.contract`、无 maturity_fingerprint），
+> 不作为能力身份权威；能力身份以真实 intent/action/model 为准，目录修订列为独立任务。
 | 角色 Role | 原生 `res.groups` + ACL/record rules | `sc_role_groups.xml` | 角色表面投影、前端 |
 | 导航 Navigation | 版本化产品策略 ∩ 原生事实 | `final_menu_navigation_service.py` + route authority | 前端纯渲染 |
 | 产品策略 Product Policy | `product_menu_source.json` + `product_navigation_authority_v1.md` | 131 条 entry release_state | 发布、导航、交付契约 |

@@ -1,6 +1,8 @@
 {
   "schema": "work_scenario_definition.v1",
+  "title": "工作场景定义结构 v1（来源中立）",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "scenario_key",
     "scenario_version",
@@ -17,54 +19,33 @@
     "lifecycle"
   ],
   "properties": {
-    "scenario_key": { "type": "string", "pattern": "^ws\\.[a-z][a-z0-9_.-]+$" },
-    "scenario_version": { "type": "string", "pattern": "^v[0-9]+$" },
-    "domain_ref": { "type": "string", "pattern": "^smart_construction_core\\.menu_[a-z0-9_]+$" },
-    "entry_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-    "actor_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "scenario_key": { "$ref": "#/$defs/scenario_key" },
+    "scenario_version": { "$ref": "#/$defs/version_ref" },
+    "domain_ref": {
+      "type": "string",
+      "pattern": "^[a-z_][a-z0-9_]+\\.menu_[a-z0-9_]+$"
+    },
+    "entry_refs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/native_entry_ref" },
+      "minItems": 1
+    },
+    "actor_refs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/actor_ref" },
+      "minItems": 1
+    },
     "goal": { "type": "string", "minLength": 1 },
     "steps": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "key",
-          "label",
-          "actor_refs",
-          "preconditions",
-          "operations",
-          "capability_refs",
-          "success_outcome",
-          "failure_handling",
-          "next_steps",
-          "acceptance"
-        ],
-        "properties": {
-          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
-          "label": { "type": "string", "minLength": 1 },
-          "entry_ref": { "type": ["string", "null"] },
-          "actor_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-          "preconditions": { "type": "array", "items": { "type": "string" } },
-          "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-          "capability_refs": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/capability_ref" },
-            "minItems": 1
-          },
-          "page_scene_ref": { "type": ["string", "null"] },
-          "success_outcome": { "type": "string", "minLength": 1 },
-          "failure_handling": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/failure_rule" },
-            "minItems": 1
-          },
-          "next_steps": { "type": "array", "items": { "type": "string" } },
-          "acceptance": { "type": "string", "minLength": 1 }
-        }
-      },
+      "items": { "$ref": "#/$defs/step" },
       "minItems": 1
     },
-    "page_scene_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "page_scene_refs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scene_key" },
+      "minItems": 1
+    },
     "capability_refs": {
       "type": "array",
       "items": { "$ref": "#/$defs/capability_ref" },
@@ -83,26 +64,129 @@
     },
     "lifecycle": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": { "enum": ["draft", "published", "deprecated", "retired"] },
       "minItems": 1
     }
   },
   "$defs": {
+    "scenario_key": {
+      "type": "string",
+      "pattern": "^ws\\.[a-z][a-z0-9_.-]+$"
+    },
+    "scene_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]+$"
+    },
+    "version_ref": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "native_entry_ref": {
+      "type": "object",
+      "required": ["entry_kind", "entry_xmlid"],
+      "properties": {
+        "entry_kind": { "enum": ["domain", "menu", "action", "record_target", "list_context"] },
+        "entry_xmlid": { "type": "string" },
+        "resolution": {
+          "enum": ["domain_entry", "menu_action_entry", "record_context_scene", "list_context_return"]
+        }
+      }
+    },
+    "actor_ref": {
+      "type": "object",
+      "required": ["role_code", "group_xmlid"],
+      "properties": {
+        "role_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "group_xmlid": { "type": "string", "pattern": "^[a-z_][a-z0-9_]+\\.[a-z_][a-z0-9_]+$" }
+      }
+    },
     "capability_ref": {
       "type": "object",
-      "required": ["capability_key", "carrier", "capability_version", "evidence_binding"],
+      "required": [
+        "capability_key",
+        "capability_version",
+        "qualification",
+        "evidence_binding",
+        "provider"
+      ],
+      "additionalProperties": false,
       "properties": {
-        "capability_key": { "type": "string", "minLength": 1 },
-        "carrier": {
-          "type": "string",
-          "pattern": "^(model:|action:|intent:)[a-zA-Z0-9_.]+$"
-        },
+        "capability_key": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]+$" },
         "capability_version": { "type": "string", "minLength": 1 },
-        "evidence_binding": { "type": "string", "minLength": 1 }
+        "qualification": {
+          "enum": ["unreleased", "preview", "standard", "disabled", "retired"]
+        },
+        "evidence_binding": {
+          "type": "string",
+          "description": "复用 capability_maturity.maturity_fingerprint；禁止第二套指纹算法"
+        },
+        "provider": { "$ref": "#/$defs/capability_provider" }
+      }
+    },
+    "capability_provider": {
+      "type": "object",
+      "required": ["provider_type", "provider_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "provider_type": {
+          "enum": [
+            "odoo_model",
+            "odoo_action",
+            "odoo_intent",
+            "service",
+            "api",
+            "ai_provider",
+            "domain_provider"
+          ]
+        },
+        "provider_ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "label",
+        "actor_refs",
+        "preconditions",
+        "operations",
+        "capability_refs",
+        "success_outcome",
+        "failure_handling",
+        "next_steps",
+        "acceptance"
+      ],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "label": { "type": "string", "minLength": 1 },
+        "entry_ref": { "$ref": "#/$defs/native_entry_ref" },
+        "actor_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/actor_ref" },
+          "minItems": 1
+        },
+        "preconditions": { "type": "array", "items": { "type": "string" } },
+        "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "capability_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capability_ref" },
+          "minItems": 1
+        },
+        "page_scene_ref": { "$ref": "#/$defs/scene_key" },
+        "success_outcome": { "type": "string", "minLength": 1 },
+        "failure_handling": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/failure_rule" },
+          "minItems": 1
+        },
+        "next_steps": { "type": "array", "items": { "type": "string" } },
+        "acceptance": { "type": "string", "minLength": 1 }
       }
     },
     "transition": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["from", "to", "trigger"],
       "properties": {
         "from": { "type": "string" },
@@ -112,6 +196,7 @@
     },
     "failure_rule": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["failure_type", "handling", "authority"],
       "properties": {
         "failure_type": { "type": "string", "minLength": 1 },
@@ -120,15 +205,15 @@
       }
     }
   },
-  "validation_rules": [
-    "actor_refs 只能引用已有角色 code，场景内不得新增角色定义",
-    "actor_refs 必须使用 IdentityResolver 规范角色编码并映射到 res.groups XMLID（DECISION-S2-07）",
-    "page_scene_refs 必须存在于现有 Scene Registry",
-    "capability_refs 只能引用已发布且未退役的能力版本（DECISION-S2-02 资格矩阵）",
-    "capability_ref.evidence_binding 必须复用 capability_maturity.maturity_fingerprint，禁止第二套指纹算法（DECISION-S2-06）",
-    "capability_ref.evidence_binding 必须绑定 能力身份 + 发布版本/回执 + maturity fingerprint + 资格状态 + 产品快照版本（DECISION-S2-04/06）",
-    "entry_refs 与 page_scene_refs 必须区分入口场景与记录上下文场景；记录场景必须携带真实 model + record_id，禁止先到先得（DECISION-S2-05）",
-    "transition_rules 的 from/to 必须引用 steps 中已声明的 step.key",
-    "domain_ref 与 entry_refs 必须指向原生菜单/action xmlid，不得使用中文名称或关键词"
-  ]
+  "semantic_guard_contract": {
+    "description": "机器校验器必须执行的语义检查（S2-04 实现）",
+    "checks": [
+      "page_scene_refs 与 step.page_scene_ref 必须存在于现有 Scene Registry（scene_registry_content.list_scene_entries）",
+      "capability_ref.capability_key 必须存在于能力目录，且 qualification 与目录 status 一致",
+      "capability_ref.evidence_binding 必须等于 capability_maturity.maturity_fingerprint 输出",
+      "actor_ref.role_code 必须属于 IdentityResolver 规范角色编码，group_xmlid 必须是存在的 res.groups XMLID",
+      "entry_refs 的 entry_kind/resolution 必须与菜单/记录解析权威一致，禁止中文名称或关键词推断",
+      "transition_rules 的 from/to 必须引用 steps 中已声明的 step.key"
+    ]
+  }
 }

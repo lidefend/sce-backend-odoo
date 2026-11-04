@@ -27,4 +27,12 @@
 
 ## 3. 未解决风险
 
-1. 场景 `name` 口径仍有两套（场景注册表 `name` vs 原生菜单 `name`），留 S3 收敛。
+1. 能力目录过期（P0）：`capability_catalog_v1.json` 42 条、`main_action.intent` 统一为通用兜底
+   `ui.contract`、`status` 全部 ready、`maturity_fingerprint` 全部缺失；而
+   `product_capability_matrix_v2.md` 声称 63 个能力。WS-01 已改用真实 intent/action/model 为能力身份，
+   能力目录修订列为独立任务。
+2. 角色编码三套并存（P1）：`IdentityResolver`（pm/owner/finance...）、`ROLE_SURFACE_OVERRIDES`
+   （project_member/business_config_admin...）、能力目录 `required_roles`
+   （project_manager/construction_manager...）。WS-01 按 DECISION-S2-07 使用 IdentityResolver 规范编码 +
+   res.groups XMLID，其余两套待收敛。
+3. 场景 `name` 口径仍有两套（场景注册表 `name` vs 原生菜单 `name`），留 S3 收敛。
