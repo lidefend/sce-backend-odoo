@@ -9,6 +9,7 @@
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/CAP01C-C1-PROJECT-INITIATION-20261104.yaml",
+    ".agent/goals/VERIFICATION-GATE-01.yaml",
     ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
     "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
     "docs/product/capability_c1_project_initiation_evidence_design_v1.md",
@@ -18,6 +19,8 @@
     "docs/architecture/capability_verification_trigger_v1.md",
     ".agent/decisions/ARCH-DECISION-012.yaml",
     "addons/smart_construction_core/tests/test_capability_project_initiation_create.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],
