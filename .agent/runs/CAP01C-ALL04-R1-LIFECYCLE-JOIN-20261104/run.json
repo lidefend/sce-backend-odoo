@@ -12,6 +12,7 @@
     ".agent/runs/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104/run.json",
     "scripts/verify/capability_contract_mapper.py",
     "scripts/verify/capability_maturity_bundle_build.py",
+    "scripts/verify/test_capability_contract_mapper.py",
     "scripts/verify/capability_candidate_catalog_check.py",
     "scripts/verify/test_capability_maturity_evidence.py",
     "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
@@ -29,5 +30,5 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "sync candidate catalog providers for six keep-atomic capabilities; exclude governance.runtime.audit with provenance; verify checker generate/check/self-test; then batch contract declaration."
+  "next_exact_step": "revise evidence authenticity (Join facts vs check separation, unresolved hard block) and tighten check rules; then regenerate six-capability evaluation and submit for review."
 }

@@ -112,8 +112,11 @@ def _catalog_map() -> dict[str, dict]:
 
 def _join_binding(key: str) -> tuple[dict, str]:
     for line in BINDING.read_text(encoding="utf-8").splitlines():
-        if line.strip().startswith("|") and key in line:
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if cells and cells[0] == key:
             return {
                 "capability_key": cells[0],
                 "provider_type": cells[1],
@@ -181,11 +184,15 @@ def _join_methods(paths: list[Path]) -> tuple[list[dict], list[str]]:
     unresolved: list[str] = []
     for path in paths:
         text = path.read_text(encoding="utf-8")
-        for match in re.finditer(r"def (action_(?:sc_)?\w+)\(self[^)]*\):", text):
-            name = match.group(1)
+        for match in re.finditer(r"(?m)^(\s*)def (action_(?:sc_)?\w+)\(self[^)]*\):", text):
+            name = match.group(2)
+            indent = match.group(1)
             if name in {"action_sc_stage_sync", "action_sc_submit"}:
                 continue
-            body = text[match.end(): match.end() + 1000]
+            # Bound the method body by the next same-or-shallower indentation.
+            rest = text[match.end():]
+            boundary = re.search(rf"(?m)^{indent}(?:def |class |@)", rest)
+            body = rest[: boundary.start()] if boundary else rest
             target = re.search(r'action_set_lifecycle_state\("([a-z_]+)"\)', body)
             server_guard = bool(re.search(r"raise UserError|_assert_|_check_|_validate_|_ensure_", body))
             line = text[: match.start()].count("\n") + 1
@@ -225,38 +232,56 @@ def _find_action_res_model(action: str) -> tuple[str, str]:
         return "", "action_not_found"
     for f in files:
         text = Path(f).read_text(encoding="utf-8")
-        m = re.search(rf'id="{re.escape(action)}"[^>]*>.*?<field name="res_model">([^<]+)</field>', text, re.S)
-        if not m:
-            m = re.search(rf'<field name="res_model">([^<]+)</field>.*?id="{re.escape(action)}"', text, re.S)
+        m = re.search(
+            rf'<record id="{re.escape(action)}"[^>]*>(?:(?!</record>).)*?<field name="res_model">([^<]+)</field>',
+            text, re.S,
+        )
         if m:
             return m.group(1).strip(), f"{Path(f).relative_to(ROOT)}"
     return "", "res_model_not_found_in_action_record"
 
 
 def _find_model_facts(model: str) -> tuple[dict, str]:
-    try:
-        proc = subprocess.run(
-            ["rg", "-l", f'_name\\s*=\\s*["\']{re.escape(model)}["\']', str(ROOT / "addons")],
-            cwd=ROOT, text=True, capture_output=True, timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+    def _rg(pattern: str) -> list[str] | None:
+        try:
+            proc = subprocess.run(
+                ["rg", "-l", pattern, str(ROOT / "addons")],
+                cwd=ROOT, text=True, capture_output=True, timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        return [f for f in proc.stdout.splitlines() if f.strip()]
+
+    name_files = _rg(f'_name\\s*=\\s*["\']{re.escape(model)}["\']')
+    if name_files is None:
         return {}, "model_resolution_tool_failure"
-    files = [f for f in proc.stdout.splitlines() if f.strip()]
-    if not files:
-        return {}, "model_not_found"
-    path = Path(files[0])
+    if len(name_files) > 1:
+        return {"model": model, "multiple_definitions": name_files}, "ambiguous_model_definition"
+    if name_files:
+        path = Path(name_files[0])
+    else:
+        inherit_files = _rg(f'_inherit\\s*=\\s*["\']{re.escape(model)}["\']')
+        if inherit_files is None:
+            return {}, "model_resolution_tool_failure"
+        if not inherit_files:
+            return {}, "model_not_found"
+        path = Path(inherit_files[0])
+        extensions = [str(Path(f).relative_to(ROOT)) for f in inherit_files]
     text = path.read_text(encoding="utf-8")
     required = sorted(set(re.findall(r'^\s+(\w+)\s*=\s*fields\.\w+\([^)]*required=True[^)]*\)', text, re.M)))
     inherit = re.findall(r'_inherit\s*=\s*\[([^\]]+)\]', text)
     inherits = re.findall(r'_inherits\s*=\s*\{([^}]+)\}', text)
     mail_thread = "mail.thread" in text
-    return {
+    facts = {
         "model": model,
         "required_fields": required,
         "inherit": inherit[0] if inherit else "",
         "inherits": inherits[0] if inherits else "",
         "mail_thread": mail_thread,
-    }, str(path.relative_to(ROOT))
+    }
+    if not name_files:
+        facts["extension_sources"] = extensions
+    return facts, str(path.relative_to(ROOT))
 
 
 def _projection_for(key: str, spec: dict) -> dict:
@@ -307,7 +332,11 @@ def _projection_for(key: str, spec: dict) -> dict:
         res_model, action_src = _find_action_res_model(action)
         if res_model != spec["provider_model"]:
             unresolved.append(f"{key}: action {action} resolves to {res_model or 'NOT_FOUND'}, expected model {spec['provider_model']}")
+        if action_src in {"action_resolution_tool_failure", "action_not_found", "res_model_not_found_in_action_record"}:
+            unresolved.append(f"{key}: action resolution failed: {action_src}")
         model_facts, model_src = _find_model_facts(spec["provider_model"])
+        if model_src in {"model_resolution_tool_failure", "ambiguous_model_definition", "model_not_found"}:
+            unresolved.append(f"{key}: model resolution failed: {model_src}")
         provider = {
             "provider_type": "odoo_action + odoo_model",
             "action": action,

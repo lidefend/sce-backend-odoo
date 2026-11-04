@@ -377,8 +377,7 @@
       "product_criteria": {
         "preview": {
           "query_contract": [
-            "query_model_declared",
-            "result_columns_declared"
+            "query_model_declared"
           ]
         },
         "standard": {
@@ -407,8 +406,7 @@
       "product_criteria": {
         "preview": {
           "query_contract": [
-            "query_model_declared",
-            "result_columns_declared"
+            "query_model_declared"
           ]
         },
         "standard": {

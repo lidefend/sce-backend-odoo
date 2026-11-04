@@ -2,13 +2,14 @@ schema_version: 1
 goal:
   id: CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104
   status: active
-  title: ALL-04-R1 现有资产到能力契约的只读 Join 投影（生命周期样板）
+  title: CAP-01C ALL-04/05 现有资产 Join 与六项 Keep 原子能力批量认证
   formal_product_layer: P4
   layer_target: scripts/verify/ 能力契约 Join 导出器（只读，不回写正式目录）
   standard_vs_user_specific: platform_verification_mechanism
   objective: >
-    以 project.lifecycle.transition 为样板，验证已有权威资产（候选目录、Provider Binding、
-    状态机、模型方法、视图按钮、依赖摘要）能否被一个薄只读导出器自动关联成标准化能力契约投影。
-    Join 只关联事实、不创造事实；投影带反向追溯，来源缺失即标 unresolved。
-  scope: [scripts/verify/capability_contract_mapper.py, .agent/goals/, .agent/runs/, .agent/active-runs.json]
-  exclusions: [业务运行代码, 正式能力目录回写, Provider/能力 Registry, 成熟度资格, 产品发布状态, 浏览器验收]
+    以 project.lifecycle.transition 为样板跑通只读 Join，随后扩展到六项 Keep 原子能力：
+    Provider 回写候选目录、governance.runtime.audit 排除、四类契约模板声明、批量证据投影与评估。
+    Join 只关联事实、不创造事实；投影带反向追溯；unresolved 硬阻断证据生成；结构检查 gate Preview、
+    语义检查 gate Standard。
+  scope: [scripts/verify/capability_contract_mapper.py, scripts/verify/capability_maturity_bundle_build.py, scripts/verify/test_capability_contract_mapper.py, scripts/verify/test_capability_maturity_evidence.py, scripts/verify/capability_candidate_catalog_check.py, addons/smart_construction_core/data/capability_acceptance_contracts_v1.json, docs/product/, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [业务运行代码, Provider/能力 Registry, 成熟度指纹算法, 正式产品发布状态, 浏览器验收]

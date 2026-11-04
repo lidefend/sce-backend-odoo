@@ -274,20 +274,30 @@ BATCH_CHECK_IDS = {
 
 
 def _batch_cases(template: str, proj: dict) -> list[dict]:
-    """Evaluate structural/semantic cases per template from joined facts."""
+    """Verify template cases from joined facts (real, reviewable logic).
+
+    Structural conditions are verified against the joined facts; semantic
+    conditions without static source evidence are recorded as ``skip`` (not
+    executed), never inferred as pass.
+    """
     if template == "state-transition":
         sm = proj["state_machine"]["value"]
         methods = proj["transition_methods"]
         guard = (proj.get("server_guard") or {}).get("value", {})
         view_guards = proj["view_guards"] or []
         states, transitions, terminal = sm["states"], sm["transitions"], sm["terminal_states"]
+        state_set = set(states)
+        all_targets = {t for targets in transitions.values() for t in targets}
+        method_targets = {m["target_state"] for m in methods if m["target_state"]}
+        method_names = {m["method"] for m in methods}
+        button_names = {g["button"] for g in view_guards}
         return [
-            _case("state_enum_declared", "pass" if states else "fail", f"{len(states)} states"),
-            _case("transition_table_exhaustive", "pass" if len(transitions) == len(states) else "fail", f"{len(transitions)}/{len(states)} states"),
-            _case("terminal_state_declared", "pass" if terminal else "fail", f"terminal={terminal}"),
-            _case("every_transition_has_method", "pass" if methods and all(m["target_state"] for m in methods) else "fail", f"{len(methods)} methods"),
+            _case("state_enum_declared", "pass" if states and len(states) == len(state_set) else "fail", f"{len(states)} unique states"),
+            _case("transition_table_exhaustive", "pass" if state_set <= set(transitions) and all_targets <= state_set else "fail", f"states={len(states)} table={len(transitions)} targets_valid={all_targets <= state_set}"),
+            _case("terminal_state_declared", "pass" if terminal and all(transitions.get(t) == [] for t in terminal) else "fail", f"terminal={terminal}"),
+            _case("every_transition_has_method", "pass" if all_targets <= method_targets else "fail", f"targets_without_method={sorted(all_targets - method_targets)}"),
             _case("server_guard_present", "pass" if guard.get("checks") else "fail", f"checks={guard.get('checks')}"),
-            _case("view_guard_consistent_with_state_machine", "pass" if len(view_guards) == len(methods) else "fail", f"{len(view_guards)} buttons vs {len(methods)} methods"),
+            _case("view_guard_consistent_with_state_machine", "pass" if button_names == method_names else "fail", f"buttons_only={sorted(button_names - method_names)} methods_only={sorted(method_names - button_names)}"),
         ]
     if template == "business-write":
         model = proj["provider"]["model_facts"]
@@ -296,13 +306,13 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
             _case("input_required_fields_declared", "pass" if required else "fail", f"required={required}"),
             _case("output_record_shape_declared", "pass" if model.get("model") else "fail", f"model={model.get('model')}"),
             _case("error_codes_declared", "skip", "semantic check: no declared error-code registry evidence"),
-            _case("side_effect_declared", "pass" if model.get("mail_thread") else "fail", f"mail_thread={model.get('mail_thread')}"),
+            _case("side_effect_declared", "skip", "semantic check: mail.thread is not business side-effect evidence"),
         ]
     if template == "read-only-query":
         provider = proj["provider"]
         return [
             _case("query_model_declared", "pass" if provider.get("action_res_model") else "fail", f"res_model={provider.get('action_res_model')}"),
-            _case("result_columns_declared", "pass" if provider.get("model_facts", {}).get("model") else "fail", f"model={provider.get('model_facts', {}).get('model')}"),
+            _case("result_columns_declared", "skip", "semantic check: model presence is not return-column evidence"),
             _case("read_side_effect_free", "skip", "semantic check: requires ACL/operation-policy evidence"),
             _case("data_scope_declared", "skip", "semantic check: requires record-rule/data-scope evidence"),
         ]
@@ -312,13 +322,22 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         states, terminal = sm["states"], sm["terminal_states"]
         audit = [m for m in methods if m["method"] in {"action_submit", "action_approve", "action_done", "action_cancel"}]
         bind = [m for m in methods if m["method"] in {"action_bind_contract", "action_unbind_contract"}]
+        immutable = _settlement_immutable_states()
         return [
             _case("audit_actions_declared", "pass" if len(audit) == 4 else "fail", f"audit={[m['method'] for m in audit]}"),
             _case("approval_state_declared", "pass" if "approve" in states else "fail", f"states={states}"),
-            _case("immutable_final_states_declared", "pass" if terminal and set(terminal) >= {"done", "cancel"} else "fail", f"terminal={terminal}"),
-            _case("contract_association_boundary_declared", "pass" if len(bind) == 2 else "fail", f"bind={[m['method'] for m in bind]}"),
+            _case("immutable_final_states_declared", "pass" if immutable and immutable >= {"done", "cancel"} else "fail", f"immutable={immutable}"),
+            _case("contract_association_boundary_declared", "pass" if len(bind) == 2 and all(m["server_guard"] for m in bind) else "fail", f"bind={[(m['method'], m['server_guard']) for m in bind]}"),
         ]
     return []
+
+
+def _settlement_immutable_states() -> set[str]:
+    text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text(encoding="utf-8")
+    m = re.search(r'_IMMUTABLE_FACT_STATES\s*=\s*frozenset\(\{(.*?)\}\)', text)
+    if not m:
+        return set()
+    return {s.strip().strip('"').strip("'") for s in m.group(1).split(",") if s.strip()}
 
 
 def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
@@ -339,8 +358,12 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
         criteria = contract["product_criteria"]
         fingerprint = maturity.maturity_fingerprint(key, dependencies, criteria)
         proj = mapper._projection_for(key, spec)
-        cases = _batch_cases(spec["template"], proj)
         check_id = BATCH_CHECK_IDS[spec["template"]]
+        if proj["unresolved"]:
+            required_cases = criteria["standard"][check_id]
+            cases = [_case(cid, "error", "join_unresolved:" + ";".join(proj["unresolved"])) for cid in required_cases]
+        else:
+            cases = _batch_cases(spec["template"], proj)
         artifact = {
             "capability_key": key,
             "fingerprint": fingerprint,
