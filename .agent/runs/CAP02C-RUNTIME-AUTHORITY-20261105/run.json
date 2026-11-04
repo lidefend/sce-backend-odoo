@@ -2,6 +2,7 @@
   "schema_version": 1,
   "id": "CAP02C-RUNTIME-AUTHORITY-20261105",
   "branch": "codex/cap02c-authority-boundary-20261105",
+  "head": "fc6423d2ddd4562c25fcf371f791d9497854bbdf",
   "baseline_sha": "4f5ad8381c35c8deaf566f34ad9d82d2404edea0",
   "status": "active",
   "goal": ".agent/goals/CAP02C-RUNTIME-AUTHORITY-20261105.yaml",
@@ -13,15 +14,28 @@
     ".agent/decisions/ARCH-DECISION-013.yaml",
     "scripts/verify/odoo_runtime_facts.py",
     "scripts/verify/module_change_observation.py",
+    "scripts/verify/module_upgrade_observation.py",
     "scripts/verify/test_module_change_observation.py",
+    "scripts/verify/test_module_upgrade_observation.py",
     "contracts/schemas/module.change.observation.v1.schema.json",
-    "docs/engineering_convergence/complexity_budget_report.md"
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing local Make tools and live Odoo shell read-only access"
   },
   "checks": {},
-  "blockers": [],
-  "next_exact_step": "freeze observation schema + offline validator; then implement the minimal command wrapper + observation record."
+  "check_results": {
+    "O-01_no_upgrade_observation": "PASS runtime_readonly sc_dev_demo: result=success, baseline_admissible=true, version unchanged 17.0.0.172, artifact sha verified",
+    "O-03_failure_handling": "PASS offline: 8 negative tests (test_module_change_observation.py)",
+    "upgrade_delegation_unit": "PASS offline: 5 tests (test_module_upgrade_observation.py)",
+    "O-02_real_upgrade_version_change": "DEFERRED: source=installed=17.0.0.172 across sc_dev_demo/sc_clean/sc_test (no version delta); dev profile single-DB dbfilter=^sc_dev_demo$; no registered disposable-copy lane; runs at next natural version bump",
+    "sc_obs_o02_disposition": "KEPT orphaned_test_database cluster=sc-local-dev container=sc-local-dev-db-1 db=sc_obs_o02 owner_role=odoo source=CAP-02C-O-02 connections=0; deferred to database governance, no auto-delete"
+  },
+  "blockers": [
+    "O-02 real-version-change deferred to next natural smart_construction_core version bump (owner decision B)."
+  ],
+  "next_exact_step": "commit + push CAP-02C-03 wrapper fix; then start CAP-02C-04 structured diff + impact propagation."
 }

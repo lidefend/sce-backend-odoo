@@ -5,6 +5,10 @@ Orchestrates: before runtime snapshot -> (optional) module upgrade -> after
 runtime snapshot -> ir.module.module version reconciliation -> observation
 record -> baseline admission. It is a governance side-channel: observation
 failure never rolls back or retries an Odoo upgrade.
+
+The upgrade step delegates to the governed ``make mod.upgrade`` entry
+(``scripts/mod/upgrade.sh``); it never assembles the Odoo CLI by hand. Read-only
+snapshots use the live Odoo shell access authorized by the active run.
 """
 from __future__ import annotations
 
@@ -70,17 +74,29 @@ def _runtime_snapshot(db: str) -> dict:
     raise RuntimeError("runtime facts JSON not found in shell output")
 
 
-def _upgrade(db: str, modules: list[str]) -> int:
-    cmd = ["docker", "exec", CONTAINER, "odoo", "-d", db, "-c", CONF,
-           "--stop-after-init", "-u", ",".join(modules)]
+def _upgrade(db: str, modules: list[str], env: str = "dev",
+             env_file: str | None = None) -> tuple[int, list[str]]:
+    """Run a module upgrade through the governed ``make mod.upgrade`` lane.
+
+    The governed target owns compose project selection, credential authority,
+    env-file resolution and the production/demo guards. We only pass explicit
+    module/database/profile knobs and return the exact command plus exit code.
+    """
+    cmd = ["make", "--no-print-directory", "mod.upgrade",
+           "CODEX_NEED_UPGRADE=1",
+           "MODULE=" + ",".join(modules),
+           "DB_NAME=" + db,
+           "ENV=" + env]
+    if env_file:
+        cmd.append("ENV_FILE=" + env_file)
     try:
         proc = subprocess.run(cmd, text=True, capture_output=True, timeout=1800)
-        return proc.returncode
+        return proc.returncode, cmd
     except subprocess.TimeoutExpired:
-        return 124
+        return 124, cmd
     except OSError as exc:
         print(f"[upgrade] OSError: {exc}", file=sys.stderr)
-        return 125
+        return 125, cmd
 
 
 def _module_versions(snapshot: dict, modules: list[str]) -> dict:
@@ -89,7 +105,7 @@ def _module_versions(snapshot: dict, modules: list[str]) -> dict:
 
 
 def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
-            outdir: Path) -> dict:
+            outdir: Path, env: str = "dev", env_file: str | None = None) -> dict:
     outdir.mkdir(parents=True, exist_ok=True)
     operation_id = f"cap02c-{db}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -103,8 +119,9 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
 
     exit_code = 0
     upgrade_ok = True
+    upgrade_command: list[str] = []
     if do_upgrade:
-        exit_code = _upgrade(db, modules)
+        exit_code, upgrade_command = _upgrade(db, modules, env=env, env_file=env_file)
         upgrade_ok = exit_code == 0
 
     after = None
@@ -175,6 +192,7 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
         "snapshot_artifact": {"path": str(artifact_path.relative_to(ROOT)), "sha256": artifact_sha} if after is not None else {},
     }
     observation["_upgrade_exit_code"] = exit_code
+    observation["_upgrade_command"] = upgrade_command
     obs_path = outdir / f"observation_{operation_id}.json"
     _atomic_write(obs_path, json.dumps(observation, ensure_ascii=False, indent=2) + "\n")
     return observation
@@ -186,10 +204,13 @@ def main() -> int:
     parser.add_argument("--modules", required=True, help="comma-separated module names")
     parser.add_argument("--upgrade", action="store_true")
     parser.add_argument("--origin", default="cli_wrapper")
+    parser.add_argument("--env", default="dev", help="governed profile name (passed to make mod.upgrade)")
+    parser.add_argument("--env-file", default=None, help="optional exact env file for the governed entry")
     parser.add_argument("--outdir", type=Path, default=ROOT / "artifacts/backend/module_observations")
     args = parser.parse_args()
     modules = [m for m in args.modules.split(",") if m]
-    observation = observe(args.db, modules, do_upgrade=args.upgrade, origin=args.origin, outdir=args.outdir)
+    observation = observe(args.db, modules, do_upgrade=args.upgrade, origin=args.origin,
+                          outdir=args.outdir, env=args.env, env_file=args.env_file)
     assessment = obsmod.assess(observation)
     print(json.dumps({
         "operation_id": observation["operation_id"],
