@@ -11,7 +11,8 @@
     ".agent/goals/CAP01C-C1-PROJECT-INITIATION-20261104.yaml",
     ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
     "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
-    "docs/product/capability_c1_project_initiation_evidence_design_v1.md"
+    "docs/product/capability_c1_project_initiation_evidence_design_v1.md",
+    "docs/product/capability_maturity_cap01c_baseline_v1.md"
   ],
   "environment": {
     "kind": "offline",
