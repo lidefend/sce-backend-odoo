@@ -11,11 +11,54 @@ from __future__ import annotations
 from typing import Any
 
 
+ENTERPRISE_SETUP_CODE = "enterprise.setup"
+ENTERPRISE_SETUP_MENU_XMLID = "smart_construction_core.menu_sc_enterprise_initialization"
+ENTERPRISE_SETUP_ACTION_XMLID = "smart_construction_core.action_sc_enterprise_initialization"
+ENABLEMENT_PARAM_PREFIX = "sc.scene.tenant.enablement."
+
+
+def _enablement_param_key(company_id, scene_key) -> str:
+    return f"{ENABLEMENT_PARAM_PREFIX}{int(company_id)}.{str(scene_key or '').strip()}"
+
+
+def read_tenant_enablement(env, company_id, scene_key) -> bool:
+    """Read the tenant enablement decision from the governed native config."""
+    if env is None:
+        return False
+    try:
+        value = env["ir.config_parameter"].sudo().get_param(_enablement_param_key(company_id, scene_key))
+        if value:
+            return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        pass
+    # Legacy compatibility read: existing enablement records remain authoritative
+    # until they are migrated to the native config carrier. Read-only.
+    try:
+        record = env["sc.scene.company.enablement"].sudo().search(
+            [("company_id", "=", int(company_id)), ("scene_key", "=", str(scene_key or "").strip())],
+            limit=1,
+        )
+        return bool(record.enabled) if record else False
+    except Exception:
+        return False
+
+
+def write_tenant_enablement(env, company_id, scene_key, enabled: bool) -> None:
+    """Record the tenant enablement decision in the governed native config."""
+    if env is None:
+        return
+    env["ir.config_parameter"].sudo().set_param(
+        _enablement_param_key(company_id, scene_key), "1" if enabled else "0"
+    )
+
+
 def resolve_scene_menu(scene_key: str, entries: list[dict[str, Any]] | None = None) -> str:
     """Map a scene key to its menu xmlid via the scene registry content."""
     key = str(scene_key or "").strip()
     if not key:
         return ""
+    if key == ENTERPRISE_SETUP_CODE:
+        return ENTERPRISE_SETUP_MENU_XMLID
     if entries is None:
         from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
             list_scene_entries,

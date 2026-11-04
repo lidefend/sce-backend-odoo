@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5057`
 - Files requiring split plan: `72`
-- Files above warning threshold: `145`
+- Files above warning threshold: `146`
 
 ## Split Plan Required
 
@@ -112,10 +112,10 @@ Generated from repository source files. This report is informational during the 
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1315 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1291 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
-| 1274 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
@@ -209,6 +209,7 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 828 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
+| 823 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |

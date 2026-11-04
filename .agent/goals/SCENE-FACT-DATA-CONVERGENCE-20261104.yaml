@@ -1,0 +1,19 @@
+schema_version: 1
+goal:
+  id: SCENE-FACT-DATA-CONVERGENCE-20261104
+  status: active
+  formal_product_layer: P0
+  objective: >
+    Converge the enterprise initialization scenario surface so scenario
+    entries, workspace layout and enablement are read-only projections of the
+    native model/view/permission/group fact layer, and stop maintaining
+    hardcoded scene registry entries, independent per-scenario scene XML and
+    scene configuration fact data. First increment: derive enterprise.setup
+    from its native action/view declarations.
+  layer:
+    formal_product_layer: P0
+    layer_target: smart_scene scene registry + smart_construction_scene content
+    standard_vs_user_specific: standard
+    why_here: fact layer (model/view/permission/group) is the only maintained source
+    why_not_elsewhere: no hardcoded registry, no independent scene XML, no scene fact data
+    blast_radius: enterprise initialization scene surface and scene navigation; no business facts duplicated

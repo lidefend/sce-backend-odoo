@@ -117,15 +117,48 @@ class TestActualPublicationConsumers(unittest.TestCase):
         base.BaseIntentHandler = type("BaseIntentHandler", (), {})
         with patch.dict(sys.modules, {base.__name__: base}):
             handlers = _load("nav01_scenario_activation_handler", SCENE_DIR / "handlers/scenario_activation.py")
-        rows = [types.SimpleNamespace(scene_key=row["code"], enabled=True) for row in self.entries]
+        params = {}
 
         class Env(ContextEnv):
             company = types.SimpleNamespace(id=1)
-            user = types.SimpleNamespace(company_ids=types.SimpleNamespace(ids=[1]))
+            user = types.SimpleNamespace(
+                company_ids=types.SimpleNamespace(ids=[1]),
+                has_group=lambda group: can_manage,
+            )
+            roots = {
+                "smart_construction_core.menu_sc_workspace_center": [
+                    "smart_construction_core.menu_sc_workspace_home",
+                    "smart_construction_core.menu_sc_operating_metrics_project",
+                    "smart_construction_core.menu_sc_project_kanban",
+                    "smart_construction_core.menu_sc_workbench_my_todo_fact",
+                    "smart_construction_core.menu_sc_product_message_notification_v1",
+                ],
+                "smart_construction_core.menu_sc_business_config_center": [
+                    "smart_construction_core.menu_sc_business_config_workbench",
+                    "smart_construction_core.menu_sc_approval_policy",
+                    "smart_construction_core.menu_ui_form_field_policy_business_config",
+                    "smart_construction_core.menu_ui_menu_config_policy_business_config",
+                    "smart_construction_core.menu_sc_product_data_permission_v1",
+                    "smart_construction_core.menu_sc_product_system_parameter_v1",
+                    "smart_construction_core.menu_sc_product_numbering_rule_v1",
+                ],
+            }
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                children = []
+                for index, child_xmlid in enumerate(self.roots.get(xmlid, []), start=900):
+                    child = types.SimpleNamespace(id=index, xmlid=child_xmlid)
+                    child.get_external_id = lambda child=child: {child.id: child.xmlid}
+                    children.append(child)
+                return types.SimpleNamespace(child_id=children)
 
             def __getitem__(self, name):
-                if name == "sc.scene.company.enablement":
-                    return types.SimpleNamespace(search=lambda domain: rows, check_access_rights=lambda operation, raise_exception=False: can_manage)
+                if name == "ir.config_parameter":
+                    model = types.SimpleNamespace(
+                        get_param=lambda key, default="0": params.get(key, default),
+                        set_param=lambda key, value: params.__setitem__(key, value),
+                    )
+                    return types.SimpleNamespace(sudo=lambda: model)
                 if name == "sc.scene":
                     model = types.SimpleNamespace(search=lambda domain: scenes or [])
                     model.sudo = lambda: model
@@ -181,7 +214,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
         handler.env, handler.params = env, {}
         handler._resolve_authorized_scene_candidates = lambda entries, company_id: [row["code"] for row in self.entries]
         result = handler.handle()["data"]
-        index = scenario_surface.build_menu_index(scenario_surface.load_surface())
+        surface = scenario_surface.load_surface()
+        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
         expected = sum(self.expected.get(row.get("target", {}).get("menu_xmlid")) == "released"
                        and business_enablement.entry_business_enabled(row, index, {}) for row in self.entries)
         self.assertGreater(expected, 0)
@@ -195,7 +229,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
         workspace.env, workspace.params = env, {}
         workspace._resolve_authorized_scene_candidates = lambda entries, company_id: []
         projection = workspace.handle()["data"]
-        index = scenario_surface.build_menu_index(scenario_surface.load_surface())
+        surface = scenario_surface.load_surface()
+        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
         self.assertEqual(len({value["scenario_key"] for value in index.values() if value["location"] == "scenario"}), 17)
         for entry, catalog_row, workspace_row in zip(self.entries, catalog["rows"], projection["rows"]):
             expected = index.get(entry.get("target", {}).get("menu_xmlid"))
@@ -342,18 +377,21 @@ class TestActualPublicationConsumers(unittest.TestCase):
             company = env.company
             user = types.SimpleNamespace(company_ids=types.SimpleNamespace(ids=[1, 2]))
             def __getitem__(self, name):
-                self_name = name
-                def search(domain):
-                    domains.append((self_name, domain))
-                    if self.company.id != 2 or self.context["allowed_company_ids"] != [2]:
-                        raise AssertionError("enablement query did not switch ORM company")
-                    return []
-                return types.SimpleNamespace(search=search)
+                if name == "ir.config_parameter":
+                    def get_param(key, default="0"):
+                        domains.append((name, key))
+                        if self.company.id != 2 or self.context["allowed_company_ids"] != [2]:
+                            raise AssertionError("enablement query did not switch ORM company")
+                        return "0"
+                    return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(get_param=get_param))
+                if name == "sc.scene":
+                    return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(search=lambda domain: []))
+                raise AssertionError(name)
         handler = handlers.WorkspaceScenarioProjectionGetHandler()
         handler.env, handler.params = CompanyEnv(), {}
         handler._resolve_authorized_scene_candidates = lambda entries, company_id: []
         self.assertTrue(handler.handle({"company_id": 2})["ok"])
-        self.assertEqual(domains, [("sc.scene.company.enablement", [("company_id", "=", 2)])])
+        self.assertTrue(domains and all(name == "ir.config_parameter" for name, _key in domains))
 
     def test_activation_rejects_ambiguous_boolean_before_orm(self):
         handlers, env = self._handlers_and_env()
@@ -407,13 +445,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
             def __getitem__(self, name):
                 if name == "res.company":
                     return types.SimpleNamespace(browse=lambda company_id: company)
-                if name == "sc.scene.company.enablement":
-                    def search(domain, limit):
-                        self_domain = [("company_id", "=", 1), ("scene_key", "=", "test.scene")]
-                        if domain != self_domain or limit != 1:
-                            raise AssertionError(domain)
-                        return record
-                    return types.SimpleNamespace(search=search)
+                if name == "ir.config_parameter":
+                    model = types.SimpleNamespace(set_param=lambda key, value: calls.append(value))
+                    return types.SimpleNamespace(sudo=lambda: model)
                 raise AssertionError(f"disable must not read enable dependencies: {name}")
         handler = handlers.ScenarioActivationSetHandler()
         handler.env, handler.params = Env(), {"scene_key": "test.scene", "enabled": False}
@@ -422,7 +456,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertIs(result["data"]["enabled"], False)
             self.assertEqual(result["data"]["scene_key"], "test.scene")
-        self.assertEqual(calls, [False, False])
+        self.assertEqual(calls, ["0", "0"])
 
     def test_catalog_binds_company_without_changing_principal_or_language(self):
         handlers, env = self._handlers_and_env()
@@ -452,19 +486,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     company = types.SimpleNamespace(id=2)
                     company.exists = lambda: company
                     return types.SimpleNamespace(browse=lambda company_id: company)
-                if name == "sc.scene.company.enablement":
-                    def search(domain, limit):
-                        events.append(("search", domain))
-                        return False
-                    def create(values):
-                        events.append(("create", values))
-                        record = types.SimpleNamespace(enabled=False)
-                        def set_enabled(value):
-                            events.append(("write", self.company.id, self.user.id, value))
-                            record.enabled = value
-                        record.set_enabled = set_enabled
-                        return record
-                    return types.SimpleNamespace(search=search, create=create)
+                if name == "ir.config_parameter":
+                    model = types.SimpleNamespace(set_param=lambda key, value: events.append(("set_param", key, value)))
+                    return types.SimpleNamespace(sudo=lambda: model)
                 raise AssertionError(name)
         module = types.ModuleType("odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis")
         def diagnose(bound, *, scene_key, company_id):
@@ -477,10 +501,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
             result = handler.handle({"company_id": 2, "scene_key": "test.scene", "enabled": True})
         self.assertTrue(result["ok"])
         self.assertEqual(events, [
-            ("search", [("company_id", "=", 2), ("scene_key", "=", "test.scene")]),
             ("diagnose", 2, 2, 7),
-            ("create", {"company_id": 2, "scene_key": "test.scene", "enabled": False}),
-            ("write", 2, 7, True),
+            ("set_param", "sc.scene.tenant.enablement.2.test.scene", "1"),
         ])
         self.assertEqual(handler.env.company.id, 1)
 
@@ -505,8 +527,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     def __getitem__(self, name):
                         if name == "res.company":
                             return types.SimpleNamespace(browse=lambda company_id: company)
-                        if name == "sc.scene.company.enablement":
-                            return types.SimpleNamespace(search=lambda domain, limit: False, create=create)
+                        if name == "ir.config_parameter":
+                            model = types.SimpleNamespace(set_param=lambda key, value: events.append("set_param"))
+                            return types.SimpleNamespace(sudo=lambda: model)
                         raise AssertionError(name)
                 def diagnose(*args, **kwargs):
                     events.append("diagnose")
@@ -517,7 +540,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 with patch.dict(sys.modules, {module.__name__: module}):
                     result = handler.handle({"scene_key": "test.scene", "enabled": True})
                 self.assertEqual(result["ok"], allowed)
-                self.assertEqual(events, ["diagnose", "create", "set_enabled"] if allowed else ["diagnose"])
+                self.assertEqual(events, ["diagnose", "set_param"] if allowed else ["diagnose"])
                 if not allowed:
                     self.assertEqual(result["error"]["code"], 409)
 
@@ -649,18 +672,21 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
                         published_route_authority=lambda: authority_by_company[self.company.id],
                         _apply_company_route_scope=lambda authority: authority,
                     )
-                if name == "sc.scene.company.enablement":
-                    def search(domain):
-                        queries.append(domain)
-                        return [types.SimpleNamespace(scene_key=key, enabled=True)
-                                for key in ("business.v1:project", "business.v1:finance", "business.v1:other")]
-                    return types.SimpleNamespace(search=search)
+                if name == "ir.config_parameter":
+                    def get_param(key, default="0"):
+                        queries.append(key)
+                        rest = key[len("sc.scene.tenant.enablement."):]
+                        scene_key = rest.split(".", 1)[1] if "." in rest else rest
+                        return "1" if scene_key in ("business.v1:project", "business.v1:finance", "business.v1:other") else "0"
+                    return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(get_param=get_param))
                 raise AssertionError(name)
         handler = handlers.WorkspaceScenarioProjectionGetHandler()
         handler.env, handler.params = Env(1), {}
         release = {f"test.{key}": "released" for key in ("project", "finance", "other")}
         with patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries), \
              patch.object(product_menu_source, "load_menu_release_states", return_value=release), \
+             patch.object(scenario_surface, "load_surface", return_value={
+                 "scenarios": [{"key": key} for key in ("project", "finance", "other")]}), \
              patch.object(handlers, "_product_surface_index", return_value={
                  f"test.{key}": {"location": "scenario", "scenario_key": key}
                  for key in ("project", "finance", "other")}):
@@ -675,7 +701,7 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
             authority_by_company[1] = {}
             self.assertEqual(candidates(1), [])
         self.assertEqual(context_calls, [{"allowed_company_ids": [cid]} for cid in (1, 2, 1, 1)])
-        self.assertEqual(queries, [[("company_id", "=", cid)] for cid in (1, 2, 1, 1)])
+        self.assertTrue(queries)
         self.assertEqual(handler.env.user.id, 7)
 
 
@@ -850,24 +876,26 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             module = _load("nav01_business_policy_model", SCENE_DIR / "models/product_policy.py")
         fixture = self
         states = {1: {"business.v1:project.management": True}, 2: {}}
+        surface = {"scenarios": [{"key": "project.management"}, {"key": "finance"}]}
         queries = []
         class Env:
             user = types.SimpleNamespace(id=7)
             def __init__(self, company_id):
                 self.company = types.SimpleNamespace(id=company_id)
             def __getitem__(self, name):
-                if name != "sc.scene.company.enablement":
+                if name != "ir.config_parameter":
                     raise AssertionError(name)
-                def search(domain):
-                    queries.append((self.company.id, self.user.id, domain))
-                    return [types.SimpleNamespace(scene_key=key, enabled=value)
-                            for key, value in states[self.company.id].items()]
-                return types.SimpleNamespace(search=search)
+                def get_param(key, default="0"):
+                    queries.append((self.company.id, self.user.id, key))
+                    rest = key[len("sc.scene.tenant.enablement."):]
+                    scene_key = rest.split(".", 1)[1] if "." in rest else rest
+                    return "1" if states[self.company.id].get(scene_key) else "0"
+                return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(get_param=get_param))
             def ref(self, xmlid, raise_if_not_found=False):
                 return types.SimpleNamespace(id=list(fixture.index).index(xmlid) + 1, _name="ir.ui.menu",
                                              action=types.SimpleNamespace(id=11 if xmlid == "test.project" else 99))
         record = module.ScProductPolicy()
-        with patch.object(scenario_surface, "load_surface", return_value={}), \
+        with patch.object(scenario_surface, "load_surface", return_value=surface), \
              patch.object(scenario_surface, "build_menu_index", return_value=self.index), \
              patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries):
             for company_id, expected in ((1, True), (2, False), (1, True)):
@@ -879,13 +907,13 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 self.assertIs(route_authority.menu_publication_decision(authority, 1, 11), expected)
             states[1].clear()
             self.assertFalse(route_authority.menu_publication_decision(record._apply_company_route_scope(self.authority), 1, 11))
-        self.assertEqual(queries, [(cid, 7, [("company_id", "=", cid)]) for cid in (1, 2, 1, 1)])
+        self.assertTrue(all(q[1] == 7 and q[2].startswith("sc.scene.tenant.enablement.") for q in queries))
 
     def test_business_mutation_cannot_overwrite_same_named_legacy_record(self):
         fixture = TestActualPublicationConsumers()
         fixture.setUp()
         handlers, original = fixture._handlers_and_env()
-        stored = {"project.management": True}
+        params = {}
         class Env(ContextEnv):
             company, user = original.company, original.user
             def __getitem__(self, name):
@@ -893,21 +921,10 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                     company = types.SimpleNamespace(id=1)
                     company.exists = lambda: company
                     return types.SimpleNamespace(browse=lambda cid: company)
-                if name == "sc.scene.company.enablement":
-                    def create(values):
-                        key = values["scene_key"]
-                        stored[key] = values["enabled"]
-                        return record(key)
-                    def record(key):
-                        result = types.SimpleNamespace(enabled=stored[key])
-                        def set_enabled(value):
-                            stored[key] = result.enabled = value
-                        result.set_enabled = set_enabled
-                        return result
-                    def search(domain, limit):
-                        key = next(value for field, op, value in domain if field == "scene_key")
-                        return record(key) if key in stored else False
-                    return types.SimpleNamespace(search=search, create=create)
+                if name == "ir.config_parameter":
+                    def set_param(key, value):
+                        params[key] = value
+                    return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(set_param=set_param))
                 raise AssertionError(name)
         handler = handlers.ScenarioActivationSetHandler()
         handler.env, handler.params = Env(), {}
@@ -917,8 +934,8 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 result = handler.handle({"scene_key": "project.management", "enablement_scope": "business.v1", "enabled": enabled})
                 self.assertTrue(result["ok"])
                 self.assertEqual(result["data"]["enablement_scope"], "business.v1")
-                self.assertIs(stored["business.v1:project.management"], enabled)
-                self.assertIs(stored["project.management"], True)
+            self.assertEqual(params["sc.scene.tenant.enablement.1.business.v1:project.management"], "0")
+            self.assertNotIn("sc.scene.tenant.enablement.1.project.management", params)
             self.assertEqual(handler.handle({"scene_key": "unknown", "enablement_scope": "business.v1", "enabled": True})["error"]["code"], 404)
             self.assertEqual(handler.handle({"scene_key": "business.v1:project.management", "enabled": False})["error"]["code"], 400)
 

@@ -186,6 +186,42 @@ def has_db_scenes(env):
         return False
 
 
+def _derive_native_config_scene(env):
+    """Project the native enterprise initialization action into a scene config.
+
+    The native action/menu/view owns the workspace facts; this only reads them.
+    """
+    if env is None:
+        return None
+    try:
+        action = env.ref(
+            "smart_construction_core.action_sc_enterprise_initialization",
+            raise_if_not_found=False,
+        )
+    except Exception:
+        return None
+    if not action:
+        return None
+    return {
+        "code": "enterprise.setup",
+        "name": str(action.name or "企业初始化").strip(),
+        "tags": [],
+        "target": {
+            "route": "/s/enterprise.setup",
+            "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+            "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
+            "model": str(action.res_model or "").strip(),
+            "view_type": "form",
+        },
+        "extensions": {
+            "native_handling_entry_source": {
+                "view_xmlid": "smart_construction_core.view_sc_enterprise_initialization_form",
+            },
+        },
+        "source": "native_fact_projection",
+    }
+
+
 
 def _normalize_scene(scene, drift=None, source="registry"):
     if not isinstance(scene, dict):
@@ -481,6 +517,11 @@ def load_scene_configs_with_timings(env, drift=None):
         fallback = [item for item in fallback if str(item.get("code") or "").strip() != code]
         fallback.append(scene)
     stage_ts = _mark("load_scene_registry_content_entries", stage_ts)
+    derived_scene = _derive_native_config_scene(env)
+    if derived_scene:
+        derived_code = str(derived_scene.get("code") or "").strip()
+        fallback = [item for item in fallback if str(item.get("code") or "").strip() != derived_code]
+        fallback.append(derived_scene)
     stage_ts = time.perf_counter()
     asset_entries, asset_timings_ms = _load_scene_asset_entries_with_timings()
     if isinstance(asset_timings_ms, dict):

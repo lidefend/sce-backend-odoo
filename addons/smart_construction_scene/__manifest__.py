@@ -17,7 +17,6 @@
         "data/sc_scene_layout.xml",
         "data/sc_scene_tiles.xml",
         "data/sc_scene_list_profile.xml",
-        "data/sc_scene_enterprise_setup.xml",
         "data/project_management_scene.xml",
     ],
     "installable": True,
