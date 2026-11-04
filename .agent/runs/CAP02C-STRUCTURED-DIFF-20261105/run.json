@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "CAP02C-STRUCTURED-DIFF-20261105",
+  "branch": "codex/cap02c-structured-diff-20261105",
+  "baseline_sha": "ed86f25c606fc7c897596987b3a8302d3574e6c2",
+  "status": "active",
+  "goal": ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
+  "record": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
+    ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
+    "scripts/verify/odoo_runtime_facts.py",
+    "scripts/verify/module_snapshot_diff.py",
+    "scripts/verify/test_module_snapshot_diff.py",
+    "scripts/verify/capability_impact_propagation.py",
+    "scripts/verify/test_capability_impact_propagation.py",
+    "scripts/verify/module_change_impact_report.py",
+    "scripts/verify/test_module_change_impact_report.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "check_results": {
+    "D1_projection_and_diff_unit": "PASS offline: 20 tests (test_module_snapshot_diff.py), incl. 4 asset-ownership negatives",
+    "D2_semantic_diff_unit": "PASS offline: 28 tests (test_module_snapshot_diff.py); adds menu/record-rule/intent/action-context/view-arch + model_extensions-from-inherit + model_extensions_incomplete negatives",
+    "D3_impact_propagation_unit": "PASS offline: 13 tests (test_capability_impact_propagation.py): multi-module/multi-capability/multi-scene, provider-missing (confirmed vs unresolved), intent (resolved/missing/runtime_unverified), contract-missing, historical-scene, unrelated-no-propagate, incomplete-extensions",
+    "D4_impact_report_unit": "PASS offline: 5 tests (test_module_change_impact_report.py): source-only-Low, removed-provider-Critical, contract-missing-Unresolved, scene-Medium, recommendation-counts-derived"
+  },
+  "blockers": [],
+  "next_exact_step": "D1-D4 implemented (48 offline tests); three sample module impact reports generated with real association data; confirmed/unresolved impact split + association_coverage added; commit + Draft PR + one Runtime Smoke."
+}
