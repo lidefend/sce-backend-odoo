@@ -134,9 +134,18 @@
             "permission_denied_contract",
             "missing_param_contract"
           ],
-          "authorization_contract": [
-            "create_requires_native_access",
+          "capability_entitlement": [
+            "project_create_capability_required",
+            "capability_grant_does_not_bypass_native_acl"
+          ],
+          "native_resource_authorization": [
+            "create_requires_native_acl",
             "record_rule_scope_applied"
+          ],
+          "execution_authorization": [
+            "server_request_passes_all_authorization",
+            "missing_capability_denied",
+            "missing_acl_denied"
           ]
         },
         "standard": {
@@ -155,9 +164,19 @@
             "permission_denied_no_side_effect",
             "validation_failure_data_consistent"
           ],
-          "authorization_contract": [
-            "create_requires_native_access",
+          "capability_entitlement": [
+            "project_create_capability_required",
+            "capability_grant_does_not_bypass_native_acl"
+          ],
+          "native_resource_authorization": [
+            "create_requires_native_acl",
             "record_rule_scope_applied"
+          ],
+          "execution_authorization": [
+            "server_request_passes_all_authorization",
+            "missing_capability_denied",
+            "missing_acl_denied",
+            "resource_scope_outside_denied"
           ]
         }
       },
@@ -169,9 +188,10 @@
         "addons/smart_construction_core/core_extension_policy_maps.py"
       ],
       "business_scenarios": {
-        "project_creator_creates_project": {
+        "creator_with_create_capability": {
           "role_code": "pm",
           "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
+          "capability_profile": "project_create",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
@@ -188,9 +208,10 @@
             }
           }
         },
-        "project_creator_missing_name": {
+        "creator_missing_name": {
           "role_code": "pm",
           "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
+          "capability_profile": "project_create",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
@@ -204,9 +225,10 @@
             }
           }
         },
-        "project_readonly_cannot_create": {
+        "readonly_user_without_create_capability": {
           "role_code": "general_user",
           "group_xmlid": "smart_construction_core.group_sc_role_general_user",
+          "capability_profile": "project_read_only",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
@@ -214,6 +236,40 @@
           "expected": {
             "decision": "deny",
             "reason_code": "PERMISSION_DENIED",
+            "business_effect": {
+              "project_record_created": false,
+              "records_changed": 0
+            }
+          }
+        },
+        "user_without_project_capability": {
+          "role_code": "experience",
+          "group_xmlid": "smart_construction_core.group_sc_role_experience",
+          "capability_profile": "none",
+          "company_scope": "actor_current_company",
+          "data_scope": "project_creation_fixture",
+          "record_state": "none",
+          "operation": "create",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "PERMISSION_DENIED",
+            "business_effect": {
+              "project_record_created": false,
+              "records_changed": 0
+            }
+          }
+        },
+        "creator_outside_resource_scope": {
+          "role_code": "pm",
+          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
+          "capability_profile": "project_create",
+          "company_scope": "outside_actor_allowed_companies",
+          "data_scope": "other_company_project_fixture",
+          "record_state": "none",
+          "operation": "create",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "RECORD_RULE_DENIED",
             "business_effect": {
               "project_record_created": false,
               "records_changed": 0

@@ -31,6 +31,9 @@ project.initiation.create
 - `general_user` → `group_sc_role_general_user` → `group_sc_cap_project_read` = 1,0,0,0（只读，不可建）。
 - `project_member`/`group_sc_cap_project_user` = 1,1,1,0（可建），**不是创建拒绝角色**。
 
+授权判定遵循 `capability_authorization_model_v1.md`：角色只是测试主体标识，授权判据是
+能力配置（`capability_profile`）+ 原生 ACL/Record Rules + 服务端执行结果。
+
 ## 3. Preview / Standard 检查矩阵
 
 | 检查 | 用例 | Preview | Standard |
@@ -50,6 +53,12 @@ project.initiation.create
 | write_regression | validation_failure_data_consistent | — | ✅ |
 
 Standard 必须包含 Preview 全部用例（已满足）。
+
+授权检查拆为三个独立维度（已写入契约）：
+
+1. `capability_entitlement`：项目创建能力是否被授予。
+2. `native_resource_authorization`：原生 ACL（create=1）与 Record Rules（公司/数据范围）。
+3. `execution_authorization`：真实服务端请求是否通过全部授权。
 
 ## 4. 六类真实业务结果测试（Phase 2 实施）
 
