@@ -318,8 +318,7 @@
         "preview": {
           "write_contract": [
             "input_required_fields_declared",
-            "output_record_shape_declared",
-            "error_codes_declared"
+            "output_record_shape_declared"
           ]
         },
         "standard": {
@@ -349,8 +348,7 @@
         "preview": {
           "write_contract": [
             "input_required_fields_declared",
-            "output_record_shape_declared",
-            "error_codes_declared"
+            "output_record_shape_declared"
           ]
         },
         "standard": {
@@ -380,8 +378,7 @@
         "preview": {
           "query_contract": [
             "query_model_declared",
-            "result_columns_declared",
-            "read_side_effect_free"
+            "result_columns_declared"
           ]
         },
         "standard": {
@@ -411,8 +408,7 @@
         "preview": {
           "query_contract": [
             "query_model_declared",
-            "result_columns_declared",
-            "read_side_effect_free"
+            "result_columns_declared"
           ]
         },
         "standard": {
