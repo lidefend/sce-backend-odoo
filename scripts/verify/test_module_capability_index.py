@@ -48,7 +48,18 @@ class ReverseIndexTests(unittest.TestCase):
         diff = payload["candidate_scene_diff"]
         self.assertTrue(diff["candidate_not_in_scene"])
         self.assertTrue(diff["scene_not_in_candidate"])
-        self.assertEqual(set(diff["both"]), set(diff["both"]) & set(diff["both"]))
+
+    def test_mechanism_impact_maps_oca_to_capabilities(self):
+        impact = idx._mechanism_impact()
+        self.assertIn("base_tier_validation", impact)
+        self.assertIn("contract.settlement.audit", impact["base_tier_validation"])
+
+    def test_module_snapshot_has_field_facts_and_digests(self):
+        payload = idx.build()
+        core = payload["module_snapshot"]["smart_construction_core"]
+        self.assertGreater(len(core["models"]), 100)
+        self.assertTrue(core["fact_digest"])
+        self.assertGreater(core["file_count"], 100)
 
 
 if __name__ == "__main__":

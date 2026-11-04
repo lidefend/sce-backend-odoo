@@ -11,7 +11,10 @@
     ".agent/goals/CAP02B-MODULE-CAPABILITY-INDEX-20261104.yaml",
     ".agent/runs/CAP02B-MODULE-CAPABILITY-INDEX-20261104/run.json",
     "scripts/verify/module_capability_index.py",
-    "scripts/verify/test_module_capability_index.py"
+    "scripts/verify/test_module_capability_index.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "offline",
