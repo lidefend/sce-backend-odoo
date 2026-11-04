@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import importlib.util
+import os
 import uuid
 from pathlib import Path
 
@@ -34,6 +35,12 @@ obsmod = _load_obsmod()
 
 CONTAINER = "sc-local-dev-odoo-1"
 CONF = "/var/lib/odoo/odoo.conf"
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _odoo_shell(db: str, script: str) -> str:
@@ -91,7 +98,7 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
     before_sha = hashlib.sha256(json.dumps(before, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     before_versions = _module_versions(before, modules)
     before_path = outdir / f"runtime_snapshot_before_{operation_id}.json"
-    before_path.write_text(json.dumps(before, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _atomic_write(before_path, json.dumps(before, ensure_ascii=False, indent=2) + "\n")
     before_sha = hashlib.sha256(before_path.read_bytes()).hexdigest()
 
     exit_code = 0
@@ -106,7 +113,7 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
     artifact_path = outdir / f"runtime_snapshot_{operation_id}.json"
     try:
         after = _runtime_snapshot(db)
-        artifact_path.write_text(json.dumps(after, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        _atomic_write(artifact_path, json.dumps(after, ensure_ascii=False, indent=2) + "\n")
         after_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
         after_versions = _module_versions(after, modules)
         registry_ready = bool(after.get("registry", {}).get("ready"))
@@ -169,7 +176,7 @@ def observe(db: str, modules: list[str], *, do_upgrade: bool, origin: str,
     }
     observation["_upgrade_exit_code"] = exit_code
     obs_path = outdir / f"observation_{operation_id}.json"
-    obs_path.write_text(json.dumps(observation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _atomic_write(obs_path, json.dumps(observation, ensure_ascii=False, indent=2) + "\n")
     return observation
 
 
