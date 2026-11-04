@@ -1,0 +1,15 @@
+schema_version: 1
+goal:
+  id: CAP02B-MODULE-CAPABILITY-INDEX-20261104
+  status: completed
+  title: CAP-02B 模块能力反向索引与技术事实基线（只读）
+  formal_product_layer: P4
+  layer_target: scripts/verify/ 模块→能力反向索引 + 仓库技术事实基线
+  standard_vs_user_specific: platform_verification_mechanism
+  objective: >
+    复用 CAP-01C Join Mapper，建立四类模块来源分类，生成
+    Module -> Provider -> Capability -> Contract -> Scene 反向索引，
+    输出 Candidate/Scene 双向差异和模块级仓库技术事实基线。
+    不新建 Registry，不虚构外部模块安装状态，运行时事实单独标注。
+  scope: [scripts/verify/module_capability_index.py, scripts/verify/test_module_capability_index.py, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [业务运行代码, Odoo 原生模块, 能力资格, 产品发布状态, 浏览器验收]
