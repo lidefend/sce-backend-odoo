@@ -68,6 +68,7 @@
     "fix/scene-fact-data-convergence-20261104": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "fix/my-work-fact-layer-convergence-20261104": ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",
     "codex/cap01b-capability-reconciliation-20261104": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
-    "codex/cap01c-c1-project-initiation-20261104": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json"
+    "codex/cap01c-c1-project-initiation-20261104": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
+    "codex/cap01c-all04-contract-mapping-20261104": ".agent/runs/CAP01C-FINAL-VERIFY-01-20261104/run.json"
   }
 }

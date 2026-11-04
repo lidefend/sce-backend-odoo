@@ -1,0 +1,30 @@
+{
+  "schema": "capability.exclusion.register.v1",
+  "stage": "CAP-01C ALL-03 governance review",
+  "exclusions": [
+    {
+      "capability_key": "governance.runtime.audit",
+      "historical_identity": "governance.runtime.audit",
+      "registry_projection": {
+        "source": "addons/smart_construction_core/services/capability_registry.py",
+        "label": "运行态审计",
+        "hint": "查看运行态治理审计",
+        "group": "governance",
+        "required_roles": ["executive"],
+        "access_action": "",
+        "required_groups": []
+      },
+      "exclusion_reason": "no real execution carrier: no model _name/_inherit, no Action XMLID, no Intent Handler and no Service implement governance.runtime.audit; only the capability registry projection and unified-page-contract fixture/test strings reference it",
+      "b0_verdict": {
+        "purpose": "partial",
+        "stable_identity": "not_satisfied",
+        "input_output": "not_satisfied",
+        "verifiable_result": "not_satisfied",
+        "independent_lifecycle": "not_satisfied"
+      },
+      "future_category": "P0 platform mechanism (runtime audit events), not a P1 construction product capability",
+      "disposition_change": "keep -> exclude",
+      "recorded_head": "815eb9fde493cb7e69004daa4503b875c4658c20"
+    }
+  ]
+}

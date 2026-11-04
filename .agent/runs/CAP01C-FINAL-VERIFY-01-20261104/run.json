@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "CAP01C-FINAL-VERIFY-01-20261104",
+  "branch": "codex/cap01c-all04-contract-mapping-20261104",
+  "baseline_sha": "815eb9fde493cb7e69004daa4503b875c4658c20",
+  "status": "completed",
+  "head": "cb0a2da1cfd67d20ad6df36d3b9239ef0774711a",
+  "goal": ".agent/goals/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104.yaml",
+  "record": ".agent/runs/CAP01C-FINAL-VERIFY-01-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/CAP01C-FINAL-VERIFY-01-20261104/run.json",
+    "scripts/verify/capability_contract_mapper.py",
+    "scripts/verify/capability_maturity_bundle_build.py",
+    "scripts/verify/capability_candidate_catalog_check.py",
+    "scripts/verify/test_capability_contract_mapper.py",
+    "scripts/verify/test_capability_maturity_evidence.py",
+    "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+    "docs/product/capability_candidate_catalog_v1.json",
+    "docs/product/capability_reconciliation_matrix_v1.md",
+    "docs/product/capability_catalog_migration_plan_v1.md",
+    "docs/product/capability_exclusion_register_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "check_results": {
+    "capability_candidate_catalog_check": "PASS keep=13 defer=26 total=39",
+    "capability_candidate_catalog_self_test": "PASS",
+    "capability_contract_mapper_tests": "15 tests PASS",
+    "capability_maturity_unit": "42 tests PASS",
+    "capability_maturity_batch_preview": "blocked: lifecycle=blocked, settlement=standard, write/query=preview",
+    "capability_maturity_batch_standard": "blocked"
+  },
+  "blockers": [],
+  "next_exact_step": "final verification run closed on the latest code head; evidence bound to run id + frozen head."
+}

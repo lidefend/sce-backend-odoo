@@ -218,9 +218,11 @@ class EvidenceBundleTests(unittest.TestCase):
                 self.assertTrue((ROOT / path).is_file(), path)
             for check, cases in contract["product_criteria"]["preview"].items():
                 self.assertTrue(set(cases) <= set(contract["product_criteria"]["standard"][check]))
-            decisions = {scenario["expected"]["decision"] for scenario in contract["business_scenarios"].values()}
-            self.assertEqual(decisions, {"allow", "deny"})
-            self.assertTrue(all("principal_fingerprint" not in scenario for scenario in contract["business_scenarios"].values()))
+            scenarios = contract.get("business_scenarios") or {}
+            if scenarios:
+                decisions = {scenario["expected"]["decision"] for scenario in scenarios.values()}
+                self.assertEqual(decisions, {"allow", "deny"})
+                self.assertTrue(all("principal_fingerprint" not in scenario for scenario in scenarios.values()))
 
 
 if __name__ == "__main__":

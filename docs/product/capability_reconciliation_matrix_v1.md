@@ -72,18 +72,18 @@
 | analytics.lifecycle.monitor | defer | 生命周期监控，可能为监控能力 |
 | analytics.project.focus | exclude | 项目聚焦（页面） |
 | governance.capability.matrix | exclude | 能力矩阵（页面） |
-| governance.runtime.audit | keep | 运行时审计，有可验证产出 |
+| governance.runtime.audit | exclude | 运行态审计（无真实执行载体，平台机制/导航投影） |
 | governance.scene.openability | defer | 场景可开性治理，需核实 |
 | workspace.project.watch | exclude | 项目关注（工作台页面） |
 | workspace.today.focus | exclude | 今日焦点（工作台页面） |
 
 ## 3. 统计
 
-- keep（原子/组合候选）：14
+- keep（原子/组合候选）：13
 - defer（待核实）：26
-- exclude（页面/入口）：23
+- exclude（页面/入口）：24
 - 合计 63
 
-B6 候选目录与此表一一对应（40 条 = 14 keep + 26 defer），exclude 23 条不进入候选目录。
+B6 候选目录与此表一一对应（39 条 = 13 keep + 26 defer），exclude 24 条不进入候选目录。
 
 最终正式能力数量以 CAP-01C 真实证据评估为准，不预设 63。
