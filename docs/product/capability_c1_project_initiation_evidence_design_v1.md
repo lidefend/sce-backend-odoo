@@ -23,7 +23,13 @@ project.initiation.create
 | 输出 | 真实 project ID + 创建结果 + 初始化结果 |
 | 业务规则 | name 非空；manager_id 缺省=user_id/当前用户；phase_key 缺省=initiation；lifecycle_state 缺省=draft |
 | 副作用 | project.project 记录（成功必然）；project.task 根节点（条件性）；mail.message 初始化消息 |
-| 错误 | MISSING_PARAMS / PERMISSION_DENIED / BUSINESS_RULE_FAILED |
+| 错误 | MISSING_PARAMS（pm）/ PERMISSION_DENIED（只读角色 general_user）/ BUSINESS_RULE_FAILED |
+
+角色事实（ACL 四个权限位 = 读/写/建/删）：
+
+- `pm` → `group_sc_role_project_manager` → `group_sc_cap_project_manager` = 1,1,1,1（可建）。
+- `general_user` → `group_sc_role_general_user` → `group_sc_cap_project_read` = 1,0,0,0（只读，不可建）。
+- `project_member`/`group_sc_cap_project_user` = 1,1,1,0（可建），**不是创建拒绝角色**。
 
 ## 3. Preview / Standard 检查矩阵
 
@@ -58,6 +64,20 @@ Standard 必须包含 Preview 全部用例（已满足）。
 
 必须区分：接口返回成功 ≠ ORM 创建成功 ≠ 初始化成功 ≠ 完整业务结果正确。
 写入能力必须验证失败时不留不完整业务数据。
+
+C1-03 初始化必须覆盖全部条件分支（不得只断言“任务根节点存在”）：
+
+1. 满足条件（project.task 模型可用 + 有 create 权限 + 项目无现有任务）→ 创建任务根节点。
+2. 不满足模型条件（project.task 不可用）→ 不创建。
+3. 不满足权限条件（无 create 权限）→ 不创建。
+4. 项目已存在任务 → 不重复创建。
+5. 初始化消息内容与实际执行结果一致。
+
+C1-06 数据异常必须明确：
+
+- 服务端业务校验失败时，事务回滚范围；
+- 不得残留不完整 project 记录、孤儿任务根节点或半写消息；
+- 部分副作用（如 message_post 在 create 之后失败）的回滚边界需单独验证。
 
 ## 5. 依赖文件与指纹范围
 

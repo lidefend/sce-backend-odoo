@@ -122,7 +122,8 @@
       "product_dependencies": [
         "addons/smart_construction_core/handlers/project_initiation_enter.py",
         "addons/smart_construction_core/services/project_creation_service.py",
-        "addons/smart_construction_core/models/core/project_core.py"
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/views/menu.xml"
       ],
       "product_criteria": {
         "preview": {
@@ -169,7 +170,8 @@
       ],
       "business_scenarios": {
         "project_creator_creates_project": {
-          "role_code": "project_manager",
+          "role_code": "pm",
+          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
@@ -187,7 +189,8 @@
           }
         },
         "project_creator_missing_name": {
-          "role_code": "project_manager",
+          "role_code": "pm",
+          "group_xmlid": "smart_construction_core.group_sc_role_project_manager",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
@@ -201,8 +204,9 @@
             }
           }
         },
-        "project_reader_cannot_create": {
-          "role_code": "project_member",
+        "project_readonly_cannot_create": {
+          "role_code": "general_user",
+          "group_xmlid": "smart_construction_core.group_sc_role_general_user",
           "company_scope": "actor_current_company",
           "data_scope": "project_creation_fixture",
           "record_state": "none",
