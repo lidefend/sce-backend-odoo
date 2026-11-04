@@ -7,7 +7,7 @@
 ## 1. 正式定义
 
 > 能力（Capability）是一个具有明确业务或技术目的、稳定身份、确定输入输出、可验证执行结果，
-> 并且能够独立管理生命周期的最小可交付功能单元。
+> 并且能够独立管理生命周期的可管理、可交付功能单元。
 
 五个必要条件（任一不满足，不构成能力）：
 
@@ -21,11 +21,12 @@
 
 | 层 | 名称 | 定义 | 归属 |
 |---|---|---|---|
-| L1 | Atomic Capability | 最小独立业务操作或技术功能 | 能力发布体系 |
-| L2 | Composite Capability | 多个能力按明确依赖组合的可复用功能，有稳定身份但不重复实现底层逻辑 | 能力发布体系 |
-| L3 | Work Scenario | 面向用户目标的完整工作过程，组织组合能力、页面和入口 | 产品发布体系 |
+| L1 | Atomic Capability | 不可再合理拆分的最小独立功能单元 | 能力发布体系 |
+| L2 | Composite Capability | 由一个或多个已发布能力组成，具有独立契约、复用价值和可验证结果的组合功能 | 能力发布体系 |
+| L3 | Work Scenario | 面向用户目标的工作过程，组织组合能力、页面和入口 | 产品发布体系（Product Composition） |
 
-边界：L1/L2 属于 Capability，进入能力发布；L3 属于 Product Composition，进入产品发布。
+边界：L1/L2 属于 Capability，进入能力发布；L3 属于 Product Composition，不属于 Capability。
+组合能力不是“最小单元”，因此正式定义不出现“最小”，避免与 L2 矛盾。
 
 ## 3. 哪些不是能力
 
@@ -63,16 +64,20 @@ intent handler、原生 action、多个校验规则，但它们是四个载体�
 3. 组合能力成熟度必须验证依赖版本、兼容性和组合行为，不能把子能力资格简单相加。
 4. 原子能力变更（版本/资格/退役）触发所有引用它的组合能力重新验证（DECISION-S2-04/06）。
 
-## 6. 发布资格与证据要求
+## 6. 四个正交维度（身份 / 契约 / 资格 / 生命周期）
 
-对齐 `capability_maturity.evaluate_maturity`，状态仅 preview / standard：
+能力状态不是单一维度，必须拆成四个正交维度，避免“已退役但仍具历史 Standard 资格”
+被误判为可交付：
 
-| 资格 | 要求 |
-|---|---|
-| preview | 通过 preview 版 criteria 的全部必测用例，receipt 绑定依赖指纹 |
-| standard | 通过 standard 版 criteria（含 preview 全部用例），receipt + artifact 有效 |
-| unreleased | 未通过任何资格评估 |
-| retired | 已停用/退役，禁止新交付引用 |
+| 维度 | 状态或内容 | 权威 |
+|---|---|---|
+| 身份 Identity | 已登记 / 未登记 | 能力身份目录 |
+| 契约 Contract | 已契约化 / 未完成 | 能力契约 |
+| 资格 Qualification | 无资格 / Preview / Standard | `capability_maturity.py` |
+| 生命周期 Lifecycle | 候选 / 已发布 / 已停用 / 已退役 | 现有发布治理机制 |
+
+资格维度的 preview / standard 由 `capability_maturity.evaluate_maturity` 返回，不负责退役状态；
+生命周期由发布治理机制管理。两个维度独立更新。
 
 证据要求（不可伪造）：
 - `maturity_fingerprint` = f(capability_key, dependencies, criteria)
@@ -91,13 +96,15 @@ intent handler、原生 action、多个校验规则，但它们是四个载体�
 | 反例 | `menu_sc_project_project` | 入口，非能力 |
 | 边界 | `project.dashboard.enter`（intent） | 需有独立功能语义与契约才可作原子能力 |
 | 边界 | 工程图纸识别 AI 服务 | 有独立契约与验证时可为原子能力 |
+| 反例 | “打开项目列表页” | 若只是导航行为、无独立查询功能与可验证结果，不构成原子能力 |
+| 正例 | “查询项目（按条件/分页/权限）” | 有输入（查询条件）、输出（结果集）、可验证，构成原子能力 |
 
 ## 8. 对现有 42 / 63 条资产的抽样分类验证
 
 | 现有 capability_key | 本体分类 | 说明 |
 |---|---|---|
 | `project.initiation.enter` | Atomic（项目立项） | 满足五条件，身份可稳定 |
-| `project.list.open` | Atomic（项目查询/列表） | 满足五条件 |
+| `project.list.open` | 待核实 | 需判定是“查询能力”还是仅“打开列表页”的导航行为 |
 | `project.structure.manage` | 待定（更接近入口而非原子业务操作） | 需补契约与可验证结果 |
 | `construction.plan.manage` | Composite（计划管理） | 依赖多个原子操作 |
 | `project.dashboard.enter` | 边界（进入驾驶舱是入口语义，非完整业务操作） | 需判定是否独立功能 |
@@ -137,3 +144,15 @@ intent handler、原生 action、多个校验规则，但它们是四个载体�
 - 一个原子能力可被多个组合能力使用，一个组合能力可被多个工作场景使用。
 - 某个产品停用/退役，不得误退役仍被其他产品引用的能力；能力退役必须确认无存活引用。
 - 能力退役由“引用闭合检查”驱动，不由任何单一产品发布状态驱动。
+
+### 9.5 Provider 变化与能力身份变化
+
+- 换 Provider 不必然改变能力身份；判据是输入输出与业务语义是否兼容：
+  - 语义兼容：保持能力身份，升级 Provider 版本并重新验证。
+  - 语义不兼容：需要新能力版本或新能力身份，不能只改 Provider。
+
+### 9.6 独立生命周期 ≠ 独立部署
+
+- 一个原子能力可以与其他能力共用同一个服务、模块或部署单元。
+- 独立生命周期指能独立管理资格、版本、引用、停用和退役，不要求物理独立部署。
+- 禁止为了满足能力定义而过度拆分微服务。
