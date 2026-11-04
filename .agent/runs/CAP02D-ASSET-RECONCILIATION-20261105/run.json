@@ -11,7 +11,12 @@
     ".agent/goals/CAP02D-ASSET-RECONCILIATION-20261105.yaml",
     ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "scripts/verify/capability_asset_reconciliation.py",
-    "scripts/verify/test_capability_asset_reconciliation.py"
+    "scripts/verify/test_capability_asset_reconciliation.py",
+    "scripts/verify/capability_asset_gap_classification.py",
+    "scripts/verify/test_capability_asset_gap_classification.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -20,8 +25,10 @@
   "checks": {},
   "check_results": {
     "reconciliation_unit": "PASS offline: 2 tests (test_capability_asset_reconciliation.py)",
-    "reconciliation_data": "29 repo modules (24 installed); 681 runtime modules (15 odoo_native curated + 14 sce + 2 oca + 650 unknown); 39 capabilities -> provider_only=31, contract_ready=6, scene_missing=2, unresolved=0; scene diff candidate_not_in_scene=22, scene_not_in_candidate=25, multi_scene=33, product_scenes=31; priority P0=25, P1=31, P2=2, P3=6"
+    "reconciliation_data": "29 repo modules (24 installed); 681 runtime modules (15 odoo_native curated + 14 sce + 2 oca + 650 unknown); 39 capabilities -> provider_only=31, contract_ready=6, scene_missing=2, unresolved=0; scene diff candidate_not_in_scene=22, scene_not_in_candidate=25, multi_scene=33, product_scenes=31; priority P0=25, P1=31, P2=2, P3=6",
+    "gap_classification_unit": "PASS offline: 2 tests (test_capability_asset_gap_classification.py)",
+    "gap_classification_data": "workflow A (31 provider_only): composite=7, platform_mechanism=1, unresolved=23, contract_candidate=0; workflow B (25 scene_only): candidate_missing=20, retired=2, platform=2, identity_migration=1"
   },
   "blockers": [],
-  "next_exact_step": "reconciliation data emitted (artifacts/backend/capability_asset_reconciliation.json); await owner review of real data before further governance"
+  "next_exact_step": "CAP-02D-02 classification emitted (artifacts/backend/capability_asset_gap_classification.json); await owner review of A/B matrices before productization admission decisions"
 }
