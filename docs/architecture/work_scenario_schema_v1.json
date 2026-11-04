@@ -1,0 +1,134 @@
+{
+  "schema": "work_scenario_definition.v1",
+  "type": "object",
+  "required": [
+    "scenario_key",
+    "scenario_version",
+    "domain_ref",
+    "entry_refs",
+    "actor_refs",
+    "goal",
+    "steps",
+    "page_scene_refs",
+    "capability_refs",
+    "transition_rules",
+    "completion",
+    "failure_handling",
+    "lifecycle"
+  ],
+  "properties": {
+    "scenario_key": { "type": "string", "pattern": "^ws\\.[a-z][a-z0-9_.-]+$" },
+    "scenario_version": { "type": "string", "pattern": "^v[0-9]+$" },
+    "domain_ref": { "type": "string", "pattern": "^smart_construction_core\\.menu_[a-z0-9_]+$" },
+    "entry_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "actor_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "actor_refs",
+          "preconditions",
+          "operations",
+          "capability_refs",
+          "success_outcome",
+          "failure_handling",
+          "next_steps",
+          "acceptance"
+        ],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+          "label": { "type": "string", "minLength": 1 },
+          "entry_ref": { "type": ["string", "null"] },
+          "actor_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "preconditions": { "type": "array", "items": { "type": "string" } },
+          "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "capability_refs": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/capability_ref" },
+            "minItems": 1
+          },
+          "page_scene_ref": { "type": ["string", "null"] },
+          "success_outcome": { "type": "string", "minLength": 1 },
+          "failure_handling": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/failure_rule" },
+            "minItems": 1
+          },
+          "next_steps": { "type": "array", "items": { "type": "string" } },
+          "acceptance": { "type": "string", "minLength": 1 }
+        }
+      },
+      "minItems": 1
+    },
+    "page_scene_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "capability_refs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability_ref" },
+      "minItems": 1
+    },
+    "transition_rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/transition" },
+      "minItems": 1
+    },
+    "completion": { "type": "string", "minLength": 1 },
+    "failure_handling": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/failure_rule" },
+      "minItems": 1
+    },
+    "lifecycle": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "capability_ref": {
+      "type": "object",
+      "required": ["capability_key", "carrier", "capability_version", "evidence_binding"],
+      "properties": {
+        "capability_key": { "type": "string", "minLength": 1 },
+        "carrier": {
+          "type": "string",
+          "pattern": "^(model:|action:|intent:)[a-zA-Z0-9_.]+$"
+        },
+        "capability_version": { "type": "string", "minLength": 1 },
+        "evidence_binding": { "type": "string", "minLength": 1 }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "required": ["from", "to", "trigger"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "trigger": { "type": "string", "minLength": 1 }
+      }
+    },
+    "failure_rule": {
+      "type": "object",
+      "required": ["failure_type", "handling", "authority"],
+      "properties": {
+        "failure_type": { "type": "string", "minLength": 1 },
+        "handling": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "validation_rules": [
+    "actor_refs 只能引用已有角色 code，场景内不得新增角色定义",
+    "actor_refs 必须使用 IdentityResolver 规范角色编码并映射到 res.groups XMLID（DECISION-S2-07）",
+    "page_scene_refs 必须存在于现有 Scene Registry",
+    "capability_refs 只能引用已发布且未退役的能力版本（DECISION-S2-02 资格矩阵）",
+    "capability_ref.evidence_binding 必须复用 capability_maturity.maturity_fingerprint，禁止第二套指纹算法（DECISION-S2-06）",
+    "capability_ref.evidence_binding 必须绑定 能力身份 + 发布版本/回执 + maturity fingerprint + 资格状态 + 产品快照版本（DECISION-S2-04/06）",
+    "entry_refs 与 page_scene_refs 必须区分入口场景与记录上下文场景；记录场景必须携带真实 model + record_id，禁止先到先得（DECISION-S2-05）",
+    "transition_rules 的 from/to 必须引用 steps 中已声明的 step.key",
+    "domain_ref 与 entry_refs 必须指向原生菜单/action xmlid，不得使用中文名称或关键词"
+  ]
+}

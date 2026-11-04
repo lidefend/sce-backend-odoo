@@ -1,0 +1,125 @@
+decision:
+  id: ARCH-DECISION-011
+  topic: capability_release_and_product_release_are_separate_layers
+  bnva_stage: S2-02-design-precondition
+  owner_approval:
+    status: confirmed
+    date: "2026-11-04"
+  decision:
+    two_layer_model:
+      layer_one:
+        name: capability_release
+        question: 平台有哪些可以使用的能力
+        objects:
+          - Odoo native models and actions
+          - self-built business models and services
+          - third-party APIs / microservices
+          - AI and professional software capabilities
+          - atomic capabilities (data, relations, validation, actions)
+        result: verified, referenceable formal capability assets
+        lifecycle: [discover, integrate, contract, verify, capability_release, upgrade, disable, retire]
+      layer_two:
+        name: product_release
+        question: 用户可以通过什么工作场景使用这些能力
+        objects:
+          - work scenarios
+          - user journeys
+          - page scene composition
+          - business domains and formal entries
+          - role applicability scope
+          - product delivery configuration
+        result: authorizable, enableable, deliverable formal products
+        lifecycle: [scenario_design, capability_composition, page_organization, role_and_entry_configuration, product_validation, product_release, enterprise_enablement, upgrade, disable, retire]
+    frozen_decisions:
+      DECISION-S2-01:
+        statement: capability_release_and_product_release_are_separate_objects
+        rule: platform capability and product delivery are different release objects with their own lifecycle and version identity
+      DECISION-S2-02:
+        statement: product_may_only_reference_released_capabilities
+        rule: product scenarios may only reference qualified, released capabilities
+        qualification_matrix:
+          unreleased:
+            preview_product: forbidden
+            standard_product: forbidden
+          preview_released:
+            preview_product: allowed_within_preview_scope
+            standard_product: forbidden
+          standard_released:
+            preview_product: allowed
+            standard_product: allowed
+          disabled_or_retired:
+            preview_product: forbidden_for_new_delivery
+            standard_product: forbidden_for_new_delivery
+        note: use the actual states of the existing maturity mechanism; do not invent states
+      DECISION-S2-03:
+        statement: product_release_does_not_grant_business_permission
+        rule: product release controls delivery scope; native permission and backend authorization control actual access and execution
+      DECISION-S2-04:
+        statement: product_release_must_bind_capability_dependency_evidence
+        rule: a product release snapshot must trace its dependency capability identity, release qualification, maturity fingerprint and verification receipt; incompatible upgrade or retirement of a dependency requires re-validation, never silent adoption
+      DECISION-S2-05:
+        statement: entry_resolution_and_record_context_resolution_are_separate
+        rule: entry resolution binds one unique entry scene from native menu/action; record context resolution derives the record scene from real model + record_id with explicit record target rules; a shared menu/action must add an explicit entry binding identity instead of first-claim-wins
+      DECISION-S2-06:
+        statement: capability_evidence_fingerprint_reuses_maturity_fingerprint
+        rule: reuse capability_maturity.maturity_fingerprint; no second fingerprint algorithm; product dependency evidence binds capability identity + release version or receipt + maturity fingerprint + qualification state + product snapshot version; fingerprint change triggers product dependency re-validation
+      DECISION-S2-07:
+        statement: actor_refs_use_canonical_role_codes
+        rule: actor_refs reference IdentityResolver canonical role codes and res.groups XMLIDs; ROLE_SURFACE_OVERRIDES keys must align with canonical role codes; ROLE_SURFACE_OVERRIDES is not an authorization authority and its menu/deny/home lists converge per ARCH-DECISION-010
+    authority_ownership:
+      capability_release:
+        carrier: addons/smart_core/core/capability_maturity.py
+        responsibility: capability eligibility, maturity, evidence, release fingerprint
+      capability_catalog:
+        carrier: docs/product/capability_catalog_v1.json
+        responsibility: capability identity and catalog
+      product_release:
+        carrier: addons/smart_construction_core/data/product_menu_source.json
+        responsibility: product entries and release states
+      product_policy:
+        carrier: addons/smart_core/delivery/product_policy_service.py
+        responsibility: standard / preview product scope
+      scene_release:
+        carrier: addons/smart_core/delivery/scene_snapshot_service.py
+        responsibility: beta / stable scene snapshots
+      product_delivery:
+        carrier: addons/smart_core/core/scene_contract_builder.py
+        responsibility: formal delivery contract generation
+      version_promotion:
+        carrier: addons/smart_core/delivery/edition_release_snapshot_promotion_service.py
+        responsibility: product version promotion
+    prohibition:
+        - do not build a second release database, release center or lifecycle engine
+        - do not rename product menu release into capability release
+        - express both layers through the existing mechanisms above
+  responsibility_boundary:
+    capability_release:
+      model_exists: responsible
+      capability_executable: responsible
+      contract_valid: responsible
+      business_action_correct: responsible
+      work_scenario_design: not_responsible
+      page_and_entry_composition: not_responsible
+      product_delivery: not_responsible
+      user_permission: native_authorization_and_backend_permission
+    product_release:
+      model_exists: reference
+      capability_executable: reference
+      contract_valid: consume
+      business_action_correct: organize
+      work_scenario_design: responsible
+      page_and_entry_composition: responsible
+      product_delivery: responsible
+      user_permission: must_not_grant
+  sample_mapping_ws01:
+    capability_assets:
+      project_project_model: capability_release
+      project_fields_and_relations: capability_release
+      project_create_action: capability_release
+      project_read_and_update: capability_release
+      project_form_and_list_contract: capability_release
+    product_assets:
+      ws01_project_establish_and_maintain: product_release
+      ws01_six_work_stages: product_release
+      project_management_entry_and_role_scope: product_release
+  status: active
