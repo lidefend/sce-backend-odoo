@@ -290,6 +290,25 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(plan["required_suites"], ["backend_contract", "daily_runtime_entry"])
         self.assertEqual(plan["required_evidence_suites"], ["daily_runtime_entry"])
 
+    def test_capability_acceptance_contract_uses_backend_contract_lane(self):
+        """The backend capability contract file must not trigger browser evidence."""
+        path = "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json"
+        plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "capability-acceptance-contract")
+        self.assertEqual(plan["required_suites"], ["backend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+        self.assertNotIn("list_surface_structure", plan["required_suites"])
+        self.assertNotIn("relation_roundtrip", plan["required_suites"])
+
+    def test_capability_contract_rule_does_not_shadow_other_construction_files(self):
+        """Other smart_construction_core files keep the full construction rule."""
+        handler = "addons/smart_construction_core/handlers/project_initiation_enter.py"
+        plan = guard.build_plan(self.registry, [handler], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][handler], "construction-product-runtime")
+        self.assertIn("backend_contract", plan["required_suites"])
+        self.assertIn("list_surface_structure", plan["required_suites"])
+        self.assertIn("relation_roundtrip", plan["required_suites"])
+
     def test_plan_keeps_docs_only_changes_out_of_runtime_evidence(self):
         plan = guard.build_plan(self.registry, ["docs/ops/readme.md"], "base", HEAD)
         self.assertEqual(plan["status"], "PASS")

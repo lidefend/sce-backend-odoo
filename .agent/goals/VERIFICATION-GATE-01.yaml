@@ -1,0 +1,18 @@
+schema_version: 1
+goal:
+  id: VERIFICATION-GATE-01
+  status: planned
+  title: 契约文件与运行时影响文件分离（验收门禁粒度治理）
+  formal_product_layer: P4
+  layer_target: acceptance evolution binding registry 规则粒度
+  standard_vs_user_specific: platform_standard
+  objective: >
+    把当前目录级验收规则（addons/smart_construction_core/** -> 浏览器套件）精化为
+    文件及实际影响范围级规则：后端能力契约数据、后端业务实现、前端运行时/Renderer/Widget、
+    纯文档/架构决策分别触发对应验证，验证成本与变化范围成正比。
+  schedule: [CAP-01D, S2]
+  exclusions:
+    - 不简单排除整个 addons/ 目录
+    - 不降低质量标准
+    - 不影响既有门禁安全性
+  principle: 平台机制测试一次；能力契约逐项检查；前端变化才启动浏览器。

@@ -1,0 +1,28 @@
+decision:
+  id: ARCH-DECISION-012
+  topic: capability_verification_cost_proportional_to_change_scope
+  bnva_stage: CAP-01C-execution-standard
+  owner_approval:
+    status: confirmed
+    date: "2026-11-04"
+  decision:
+    default_no_browser: true
+    verification_types:
+      contract_correctness:
+        method: Python / JSON Schema / Provider Registry / contract parsing
+        browser: false
+      execution_semantics:
+        method: backend test / real provider call / result comparison
+        browser: false
+      frontend_runtime_compatibility:
+        method: browser / real page and interaction acceptance
+        browser: true
+    browser_trigger_conditions:
+      - frontend runtime changed
+      - renderer added or modified
+      - widget or interaction protocol added
+      - contract change uses unverified frontend expression capability
+      - real page compatibility issue
+    principle: verification cost is proportional to change scope, not to the number of new capabilities
+    rule: platform mechanism tested once; capability contract checked per capability; browser regression only when runtime changes
+  status: active
