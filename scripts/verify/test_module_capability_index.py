@@ -67,6 +67,8 @@ class ReverseIndexTests(unittest.TestCase):
         # a comment/string mention is not an _inherit declaration
         self.assertFalse(idx._inherit_declares("# tier.validation is used here\nname = fields.Char()", "tier.validation"))
         self.assertFalse(idx._inherit_declares('x = "tier.validation"', "tier.validation"))
+        # a comment containing the literal _inherit = "..." text is still not a declaration
+        self.assertFalse(idx._inherit_declares('# _inherit = "tier.validation"', "tier.validation"))
         # a single-line declaration is recognized
         self.assertTrue(idx._inherit_declares('_inherit = "tier.validation"', "tier.validation"))
         # a multi-line list declaration is recognized
@@ -77,6 +79,22 @@ class ReverseIndexTests(unittest.TestCase):
         b = idx._fact_digest({"version": "1", "name": "m"}, [{"name": "x", "fields": [{"name": "a"}]}], {"groups": 1}, {"models": 1}, [], [])
         self.assertEqual(a, b)
         c = idx._fact_digest({"name": "m", "version": "1"}, [{"name": "x", "fields": [{"name": "a"}, {"name": "b"}]}], {"groups": 1}, {"models": 1}, [], [])
+        self.assertNotEqual(a, c)
+
+    def test_fact_digest_covers_manifest_depends(self):
+        def digest(depends):
+            return idx._fact_digest(
+                {"name": "m", "version": "1", "depends": depends},
+                [{"name": "x", "fields": []}],
+                {"groups": 0},
+                {"models": 1},
+                [],
+                [],
+            )
+        a = digest(["a", "b"])
+        b = digest(["b", "a"])
+        self.assertEqual(a, b)
+        c = digest(["a"])
         self.assertNotEqual(a, c)
 
 

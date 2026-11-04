@@ -201,7 +201,7 @@ def _mechanism_dependencies(mod: dict) -> list[dict]:
 
 def _inherit_declares(text: str, mixin: str) -> bool:
     """True only when an _inherit declaration lists mixin as a quoted element."""
-    for m in re.finditer(r'_inherit\s*=\s*(.*?)(?=\n\s*(?:\w+\s*=|def\s|class\s|@)|\Z)', text, re.S):
+    for m in re.finditer(r'(?m)^\s*_inherit\s*=\s*(.*?)(?=\n\s*(?:\w+\s*=|def\s|class\s|@)|\Z)', text, re.S):
         decl = m.group(1).strip()
         if re.search(rf'["\']{re.escape(mixin)}["\']', decl):
             return True
@@ -218,8 +218,11 @@ def _file_digests(mod: dict) -> dict[str, str]:
 
 def _fact_digest(identity: dict, models: list[dict], security: dict, facts: dict,
                  mechanism_deps: list[dict], capabilities: list[dict]) -> str:
+    normalized_identity = dict(identity)
+    if "depends" in normalized_identity:
+        normalized_identity["depends"] = sorted(normalized_identity["depends"])
     payload = json.dumps({
-        "identity": identity,
+        "identity": normalized_identity,
         "models": models,
         "security": security,
         "facts": facts,
@@ -287,7 +290,7 @@ def _mechanism_impact() -> dict[str, list[str]]:
             for f in proc.stdout.splitlines():
                 text = Path(f.strip()).read_text(encoding="utf-8", errors="ignore")
                 for mixin, (module, _source) in MECHANISM_MIXINS.items():
-                    if re.search(rf'_inherit\s*=\s*.*["\']{re.escape(mixin)}["\']', text):
+                    if _inherit_declares(text, mixin):
                         impact.setdefault(module, set()).add(c["capability_key"])
     return {m: sorted(caps) for m, caps in impact.items()}
 
@@ -315,6 +318,7 @@ def build() -> dict:
         models = [_model_facts(f) for f in model_files if "_name" in f.read_text(encoding="utf-8", errors="ignore") or "_inherit" in f.read_text(encoding="utf-8", errors="ignore")]
         security = _security_assets(mod)
         identity = {k: mod[k] for k in ("technical_name", "version", "source", "category")}
+        identity["depends"] = sorted(mod.get("depends", []))
         facts = _module_facts(mod)
         mech = _mechanism_dependencies(mod)
         caps = reverse.get(name, [])
