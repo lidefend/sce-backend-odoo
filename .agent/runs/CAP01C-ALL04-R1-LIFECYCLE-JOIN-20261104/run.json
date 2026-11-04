@@ -11,6 +11,7 @@
     ".agent/goals/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104.yaml",
     ".agent/runs/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104/run.json",
     "scripts/verify/capability_contract_mapper.py",
+    "scripts/verify/capability_maturity_bundle_build.py",
     "scripts/verify/capability_candidate_catalog_check.py",
     "scripts/verify/test_capability_maturity_evidence.py",
     "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",

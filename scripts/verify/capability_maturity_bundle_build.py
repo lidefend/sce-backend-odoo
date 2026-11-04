@@ -31,6 +31,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+
+def _load_mapper():
+    spec = importlib.util.spec_from_file_location(
+        "capability_contract_mapper", ROOT / "scripts/verify/capability_contract_mapper.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+mapper = _load_mapper()
+
 CAPABILITY_KEY = "project.initiation.create"
 PROVIDER_INTENT = "project.initiation.enter"
 
@@ -253,14 +265,140 @@ def _run_check(check_id: str, contract: dict) -> list[dict]:
     return case_fn()
 
 
+BATCH_CHECK_IDS = {
+    "state-transition": "state_transition_contract",
+    "business-write": "write_contract",
+    "read-only-query": "query_contract",
+    "audit-state-transition": "audit_state_transition_contract",
+}
+
+
+def _batch_cases(template: str, proj: dict) -> list[dict]:
+    """Evaluate structural/semantic cases per template from joined facts."""
+    if template == "state-transition":
+        sm = proj["state_machine"]["value"]
+        methods = proj["transition_methods"]
+        guard = (proj.get("server_guard") or {}).get("value", {})
+        view_guards = proj["view_guards"] or []
+        states, transitions, terminal = sm["states"], sm["transitions"], sm["terminal_states"]
+        return [
+            _case("state_enum_declared", "pass" if states else "fail", f"{len(states)} states"),
+            _case("transition_table_exhaustive", "pass" if len(transitions) == len(states) else "fail", f"{len(transitions)}/{len(states)} states"),
+            _case("terminal_state_declared", "pass" if terminal else "fail", f"terminal={terminal}"),
+            _case("every_transition_has_method", "pass" if methods and all(m["target_state"] for m in methods) else "fail", f"{len(methods)} methods"),
+            _case("server_guard_present", "pass" if guard.get("checks") else "fail", f"checks={guard.get('checks')}"),
+            _case("view_guard_consistent_with_state_machine", "pass" if len(view_guards) == len(methods) else "fail", f"{len(view_guards)} buttons vs {len(methods)} methods"),
+        ]
+    if template == "business-write":
+        model = proj["provider"]["model_facts"]
+        required = model.get("required_fields") or []
+        return [
+            _case("input_required_fields_declared", "pass" if required else "fail", f"required={required}"),
+            _case("output_record_shape_declared", "pass" if model.get("model") else "fail", f"model={model.get('model')}"),
+            _case("error_codes_declared", "fail", "no declared error-code registry in model"),
+            _case("side_effect_declared", "pass" if model.get("mail_thread") else "fail", f"mail_thread={model.get('mail_thread')}"),
+        ]
+    if template == "read-only-query":
+        provider = proj["provider"]
+        return [
+            _case("query_model_declared", "pass" if provider.get("action_res_model") else "fail", f"res_model={provider.get('action_res_model')}"),
+            _case("result_columns_declared", "pass" if provider.get("model_facts", {}).get("model") else "fail", f"model={provider.get('model_facts', {}).get('model')}"),
+            _case("read_side_effect_free", "fail", "provider model is writable; no static read-only proof"),
+            _case("data_scope_declared", "fail", "no static data-scope/record-rule evidence extracted"),
+        ]
+    if template == "audit-state-transition":
+        sm = proj["state_machine"]["value"]
+        methods = proj["transition_methods"]
+        states, terminal = sm["states"], sm["terminal_states"]
+        audit = [m for m in methods if m["method"] in {"action_submit", "action_approve", "action_done", "action_cancel"}]
+        bind = [m for m in methods if m["method"] in {"action_bind_contract", "action_unbind_contract"}]
+        return [
+            _case("audit_actions_declared", "pass" if len(audit) == 4 else "fail", f"audit={[m['method'] for m in audit]}"),
+            _case("approval_state_declared", "pass" if "approve" in states else "fail", f"states={states}"),
+            _case("immutable_final_states_declared", "pass" if terminal and set(terminal) >= {"done", "cancel"} else "fail", f"terminal={terminal}"),
+            _case("contract_association_boundary_declared", "pass" if len(bind) == 2 else "fail", f"bind={[m['method'] for m in bind]}"),
+        ]
+    return []
+
+
+def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
+    """Build one capability.maturity.evidence.v2 bundle for the six keep-atomic."""
+    contract_data = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+    contracts = contract_data["capabilities"]
+    head = _head()
+    started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    artifacts: dict[str, str] = {}
+    payloads: list[tuple[str, bytes]] = []
+    capabilities = []
+
+    for key, spec in mapper.SPECS.items():
+        contract = contracts[key]
+        dependencies = {rel: hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
+                        for rel in contract["product_dependencies"]}
+        criteria = contract["product_criteria"]
+        fingerprint = maturity.maturity_fingerprint(key, dependencies, criteria)
+        proj = mapper._projection_for(key, spec)
+        cases = _batch_cases(spec["template"], proj)
+        check_id = BATCH_CHECK_IDS[spec["template"]]
+        artifact = {
+            "capability_key": key,
+            "fingerprint": fingerprint,
+            "check_id": check_id,
+            "cases": cases,
+            "provenance": {"head": head, "executed_at": started, "mechanism": "capability_contract_mapper.join"},
+        }
+        raw = json.dumps(artifact, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        digest = hashlib.sha256(raw).hexdigest()
+        relative = f"artifact_{key}.json"
+        artifacts[digest] = relative
+        payloads.append((relative, raw))
+        capabilities.append({
+            "capability_key": key,
+            "dependencies": dependencies,
+            "criteria": criteria,
+            "receipts": [{
+                "check_id": check_id,
+                "capability_key": key,
+                "fingerprint": fingerprint,
+                "artifact_sha256": digest,
+            }],
+        })
+
+    bundle = {
+        "schema": "capability.maturity.evidence.v2",
+        "artifacts": artifacts,
+        "capabilities": capabilities,
+    }
+    return bundle, payloads
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--batch", action="store_true", help="build a batch bundle for the six keep-atomic capabilities")
     parser.add_argument(
         "--outdir",
         type=Path,
         default=ROOT / "artifacts/backend/capability_maturity_bundle_project_initiation_create",
     )
     args = parser.parse_args()
+
+    if args.batch:
+        outdir = ROOT / "artifacts/backend/capability_maturity_bundle_batch"
+        bundle, payloads = build_batch_bundle()
+        outdir.mkdir(parents=True, exist_ok=True)
+        for relative, raw in payloads:
+            (outdir / relative).write_bytes(raw)
+        bundle_path = outdir / "bundle.json"
+        bundle_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        summary = {
+            "status": "PROJECTED",
+            "head": bundle["capabilities"][0]["receipts"][0]["fingerprint"][:8] if bundle["capabilities"] else "",
+            "bundle": str(bundle_path),
+            "capabilities": [c["capability_key"] for c in bundle["capabilities"]],
+        }
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+        return 0
 
     contract = _load_contract()
     head = _head()

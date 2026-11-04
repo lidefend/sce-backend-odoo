@@ -198,6 +198,19 @@ def _join_methods(paths: list[Path]) -> tuple[list[dict], list[str]]:
     return methods, unresolved
 
 
+def _join_server_guard() -> tuple[dict, str]:
+    line = _find_line(PROJECT_CORE, "def action_set_lifecycle_state")
+    text = PROJECT_CORE.read_text(encoding="utf-8")
+    m = re.search(r"def action_set_lifecycle_state\(self, target_state\):(.*?)def \w+", text, re.S)
+    body = m.group(1) if m else ""
+    checks = ["_check_lifecycle_transition_permission", "_validate_lifecycle_transition"]
+    return {
+        "method": "action_set_lifecycle_state",
+        "checks": [c for c in checks if c in body],
+        "writes": "lifecycle_state",
+    }, f"{PROJECT_CORE.relative_to(ROOT)}:{line}"
+
+
 def _find_action_res_model(action: str) -> tuple[str, str]:
     """Find an ir.actions.act_window record's res_model via rg (fail-closed)."""
     try:
@@ -258,6 +271,7 @@ def _projection_for(key: str, spec: dict) -> dict:
     machine: dict = {}
     methods: list[dict] = []
     view_guards: list[dict] = []
+    server_guard: dict | None = None
 
     if template in {"state-transition", "audit-state-transition"}:
         machine, machine_src = _join_state_machine(spec["state_machine"])
@@ -274,6 +288,8 @@ def _projection_for(key: str, spec: dict) -> dict:
             dependencies[str(p.relative_to(ROOT))] = _sha256(p)
         dependencies[str(STATE_MACHINE.relative_to(ROOT))] = _sha256(STATE_MACHINE)
         if template == "state-transition":
+            guard, guard_src = _join_server_guard()
+            server_guard = {"value": guard, "source": guard_src}
             text = spec["view"].read_text(encoding="utf-8")
             for match in re.finditer(r'<button name="(action_sc_\w+)"[^>]*invisible="([^"]*)"[^>]*>', text):
                 if match.group(1) not in LIFECYCLE_BUTTONS:
@@ -325,6 +341,7 @@ def _projection_for(key: str, spec: dict) -> dict:
         "state_machine": {"value": machine, "source": machine_src} if machine else None,
         "transition_methods": methods if methods else None,
         "view_guards": view_guards if view_guards else None,
+        "server_guard": server_guard,
         "provider": provider if provider else None,
         "dependencies": dependencies,
         "criteria": criteria,
