@@ -15,7 +15,8 @@
     "docs/product/capability_provider_binding_v1.md",
     "docs/product/capability_catalog_migration_plan_v1.md",
     "docs/product/capability_candidate_catalog_v1.json",
-    "scripts/verify/capability_candidate_catalog_check.py"
+    "scripts/verify/capability_candidate_catalog_check.py",
+    "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
     "kind": "offline",
