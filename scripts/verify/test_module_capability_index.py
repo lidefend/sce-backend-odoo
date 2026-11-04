@@ -69,10 +69,12 @@ class ReverseIndexTests(unittest.TestCase):
         self.assertFalse(idx._inherit_declares('x = "tier.validation"', "tier.validation"))
         # a comment containing the literal _inherit = "..." text is still not a declaration
         self.assertFalse(idx._inherit_declares('# _inherit = "tier.validation"', "tier.validation"))
-        # a single-line declaration is recognized
-        self.assertTrue(idx._inherit_declares('_inherit = "tier.validation"', "tier.validation"))
-        # a multi-line list declaration is recognized
-        self.assertTrue(idx._inherit_declares('_inherit = [\n    "mail.thread",\n    "tier.validation",\n]', "tier.validation"))
+        # a class-level single-line declaration is recognized
+        self.assertTrue(idx._inherit_declares('class M(models.Model):\n    _inherit = "tier.validation"', "tier.validation"))
+        # a class-level multi-line list declaration is recognized
+        self.assertTrue(idx._inherit_declares('class M(models.Model):\n    _inherit = [\n        "mail.thread",\n        "tier.validation",\n    ]', "tier.validation"))
+        # function-local assignment is not a class declaration
+        self.assertFalse(idx._inherit_declares('def f():\n    _inherit = "tier.validation"', "tier.validation"))
 
     def test_fact_digest_is_order_independent_and_content_sensitive(self):
         a = idx._fact_digest({"name": "m", "version": "1"}, [{"name": "x", "fields": [{"name": "a"}]}], {"groups": 1}, {"models": 1}, [], [])
@@ -96,6 +98,37 @@ class ReverseIndexTests(unittest.TestCase):
         self.assertEqual(a, b)
         c = digest(["a"])
         self.assertNotEqual(a, c)
+
+
+class NameDeclarationTests(unittest.TestCase):
+    def test_model_name_kwarg_does_not_declare_name(self):
+        self.assertFalse(idx._name_declares('model_name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('some_model_name = "project.project"', "project.project"))
+
+    def test_comment_and_string_mentions_are_not_declarations(self):
+        self.assertFalse(idx._name_declares('# _name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('x = "_name = \\"project.project\\""', "project.project"))
+        self.assertFalse(idx._inherit_declares('x = "_inherit = \\"project.project\\""', "project.project"))
+
+    def test_class_level_name_declaration_is_recognized(self):
+        self.assertTrue(idx._name_declares('class M(models.Model):\n    _name = "project.project"', "project.project"))
+        self.assertTrue(idx._name_declares('class M(models.Model):\n        _name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('class M(models.Model):\n    _name = "project.task"', "project.project"))
+
+    def test_multi_line_inherit_list_is_recognized(self):
+        self.assertTrue(idx._inherit_declares(
+            'class M(models.Model):\n    _inherit = [\n        "mail.thread",\n        "project.project",\n    ]', "project.project"))
+
+    def test_function_local_name_and_inherit_assignment_do_not_match(self):
+        self.assertFalse(idx._name_declares('def f():\n    _name = "project.project"', "project.project"))
+        self.assertFalse(idx._inherit_declares('def f():\n    _inherit = "project.project"', "project.project"))
+
+    def test_provider_module_has_no_false_positive_for_model_name(self):
+        modules = idx._provider_module("odoo_model", "project.project")
+        self.assertNotIn("smart_core", modules)
+        self.assertNotIn("smart_construction_scene", modules)
+        self.assertIn("smart_construction_core", modules)
+        self.assertIn("project", modules)
 
 
 if __name__ == "__main__":

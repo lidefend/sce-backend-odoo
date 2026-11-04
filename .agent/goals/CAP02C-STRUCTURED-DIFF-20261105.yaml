@@ -1,0 +1,26 @@
+schema_version: 1
+goal:
+  id: CAP02C-STRUCTURED-DIFF-20261105
+  status: active
+  title: CAP-02C-04 结构化 Diff 与能力影响传播
+  formal_product_layer: P4
+  layer_target: scripts/verify/ 统一快照投影 + 两阶段 Diff（只读）
+  standard_vs_user_specific: platform_verification_mechanism
+  objective: >
+    D1：把 Repository Mode（module.capability.index.v1）与 Runtime Mode
+    （module.runtime.facts.v1）投影为统一、可追溯的 module.snapshot.projection.v1，
+    并实现两阶段 Diff（摘要门 + 结构化事实）。每项事实保留 source_mode、
+    source_module、source_ref、completeness、fact_identity；无法判定影响时标记
+    unresolved_impact，不推断为无影响。不触发重新认证、不修改资格或发布状态。
+  scope:
+    - .agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml
+    - .agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json
+    - .agent/active-runs.json
+    - scripts/verify/module_snapshot_diff.py
+    - scripts/verify/test_module_snapshot_diff.py
+  exclusions:
+    - 自动重新认证
+    - 能力资格修改
+    - 产品发布状态修改
+    - 自动升级观察触发
+    - 快照服务或 Registry 新建

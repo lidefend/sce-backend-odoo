@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "CAP02C-STRUCTURED-DIFF-20261105",
+  "branch": "codex/cap02c-structured-diff-20261105",
+  "baseline_sha": "ed86f25c606fc7c897596987b3a8302d3574e6c2",
+  "status": "active",
+  "goal": ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
+  "record": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
+    ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
+    "scripts/verify/odoo_runtime_facts.py",
+    "scripts/verify/module_capability_index.py",
+    "scripts/verify/module_snapshot_diff.py",
+    "scripts/verify/test_module_capability_index.py",
+    "scripts/verify/test_module_snapshot_diff.py",
+    "scripts/verify/capability_impact_propagation.py",
+    "scripts/verify/test_capability_impact_propagation.py",
+    "scripts/verify/module_change_impact_report.py",
+    "scripts/verify/test_module_change_impact_report.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "read-only Odoo shell (sc_dev_demo) + SCE Handler Registry + existing local Make tools"
+  },
+  "checks": {},
+  "check_results": {
+    "D1_projection_and_diff_unit": "PASS offline: 20 tests (test_module_snapshot_diff.py), incl. 4 asset-ownership negatives",
+    "D2_semantic_diff_unit": "PASS offline: 28 tests (test_module_snapshot_diff.py); adds menu/record-rule/intent/action-context/view-arch + model_extensions-from-inherit + model_extensions_incomplete negatives",
+    "D3_impact_propagation_unit": "PASS offline: 13 tests (test_capability_impact_propagation.py): multi-module/multi-capability/multi-scene, provider-missing (confirmed vs unresolved), intent (resolved/missing/runtime_unverified), contract-missing, historical-scene, unrelated-no-propagate, incomplete-extensions",
+    "D4_impact_report_unit": "PASS offline: 5 tests (test_module_change_impact_report.py): source-only-Low, removed-provider-Critical, contract-missing-Unresolved, scene-Medium, recommendation-counts-derived",
+    "runtime_smoke": "PASS read-only: sc_dev_demo Odoo 17.0-20260630 registry ready; 681 modules/754 models/18965 fields/740 actions/2091 views/204 menus/1567 acl/675 rules/59 intent handlers; 740/740 actions full XMLID; strict runtime_coverage derived true (0 uncovered); base_tier_validation -> 5 capabilities; evidence .runtime/cap02c-runtime-smoke/evidence.json",
+    "R1_final_unit": "PASS offline: 55 tests total (xmlid identity + fallback, strict runtime coverage provider/owner/intent, change_class unchanged/source_only/technical/unresolved, scenario_fixture not runtime_observed)",
+    "R2_final_unit": "PASS offline: 59 tests total (provider attribution consistency, action type coverage declaration, XMLID multi-identity, field-change no over-propagation)",
+    "R2_final_runtime_finding": "strict coverage now flags 6 provider attribution mismatches: smart_core x3 + smart_construction_scene x3 declared as odoo_model provider of project.project in reverse_index, but project.project runtime registry_modules does not contain either module; runtime_coverage=false is the honest fail-closed result, not a smoke failure",
+    "R3_scanner_fix": "PASS: _provider_module now syntax-verifies _name/_inherit (line-start declaration); model_name/some_model_name/comments/strings no longer match; 6 false positives -> 0; smart_construction_core retained; runtime_coverage recomputed true (0 uncovered); 74 offline tests total (15 module_capability_index + 59 D1-D4)",
+    "R3_scanner_ast_boundary": "PASS: _name/_inherit recognition now AST class-scope only; function-local _name/_inherit assignments no longer match; class-level declarations still recognized; 75 offline tests total (16 module_capability_index + 59 D1-D4)"
+  },
+  "blockers": [],
+  "next_exact_step": "R3 scanner fix + AST class-scope boundary complete (75 offline tests); commit + push; await owner final review of PR #808."
+}
