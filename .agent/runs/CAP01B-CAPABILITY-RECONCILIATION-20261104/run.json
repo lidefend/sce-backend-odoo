@@ -16,6 +16,7 @@
     "docs/product/capability_catalog_migration_plan_v1.md",
     "docs/product/capability_candidate_catalog_v1.json",
     "scripts/verify/capability_candidate_catalog_check.py",
+    "docs/architecture/capability_discovery_architecture_v1.md",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
