@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Generate and/or validate the CAP-01B capability candidate catalog.
 
-Offline verification tool. By default it is a pure read-only checker: it reads
-the candidate catalog and B2 reconciliation matrix and reports violations with a
-non-zero exit code, without writing anything. ``--generate`` explicitly writes
-the candidate catalog; ``--check`` runs the full semantic gates (also used in CI).
-It never modifies the formal catalog, release states, qualifications or runtime.
+Read-only checker by default. ``--generate`` writes only after the in-memory
+catalog passes every gate. ``--self-test`` runs negative test cases against the
+gates to prove they fail closed. It never modifies the formal catalog, release
+states, qualifications or runtime.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,10 +61,32 @@ CLASSIFICATION = {
     "finance.settlement.order": {"disposition": "defer", "layer": "atomic"},
     "analytics.lifecycle.monitor": {"disposition": "defer", "layer": "atomic"},
     "governance.scene.openability": {"disposition": "defer", "layer": "atomic"},
+    # --- exclude (not capabilities; page/navigation entries) ---
+    "project.lifecycle.open": {"disposition": "exclude", "layer": "atomic"},
+    "project.dashboard.open": {"disposition": "exclude", "layer": "atomic"},
+    "project.board.open": {"disposition": "exclude", "layer": "atomic"},
+    "project.task.list": {"disposition": "exclude", "layer": "atomic"},
+    "project.task.board": {"disposition": "exclude", "layer": "atomic"},
+    "project.document.open": {"disposition": "exclude", "layer": "atomic"},
+    "project.weekly_report.open": {"disposition": "exclude", "layer": "atomic"},
+    "contract.center.open": {"disposition": "exclude", "layer": "atomic"},
+    "cost.ledger.open": {"disposition": "exclude", "layer": "atomic"},
+    "finance.approval.center": {"disposition": "exclude", "layer": "atomic"},
+    "finance.invoice.list": {"disposition": "exclude", "layer": "atomic"},
+    "finance.ledger.payment": {"disposition": "exclude", "layer": "atomic"},
+    "finance.ledger.treasury": {"disposition": "exclude", "layer": "atomic"},
+    "finance.metrics.operating": {"disposition": "exclude", "layer": "atomic"},
+    "finance.payment_request.form": {"disposition": "exclude", "layer": "atomic"},
+    "finance.payment_request.list": {"disposition": "exclude", "layer": "atomic"},
+    "material.catalog.open": {"disposition": "exclude", "layer": "atomic"},
+    "analytics.dashboard.executive": {"disposition": "exclude", "layer": "atomic"},
+    "analytics.exception.list": {"disposition": "exclude", "layer": "atomic"},
+    "analytics.project.focus": {"disposition": "exclude", "layer": "atomic"},
+    "governance.capability.matrix": {"disposition": "exclude", "layer": "atomic"},
+    "workspace.project.watch": {"disposition": "exclude", "layer": "atomic"},
+    "workspace.today.focus": {"disposition": "exclude", "layer": "atomic"},
 }
 
-# Verified providers must point to locatable repository assets. Descriptive text
-# (e.g. "project lifecycle rules") is NOT verified evidence.
 PROVIDERS = {
     "project.initiation.create": [
         {"provider_type": "odoo_intent", "provider_ref": "project.initiation.enter", "contract_ref": "addons/smart_construction_core/handlers/project_initiation_enter.py", "provider_status": "verified"},
@@ -75,7 +97,6 @@ PROVIDERS = {
         {"provider_type": "odoo_action", "provider_ref": "smart_construction_core.action_sc_project_list", "contract_ref": "addons/smart_construction_core/actions/project_list_actions.xml", "provider_status": "verified"},
         {"provider_type": "odoo_model", "provider_ref": "project.project", "contract_ref": "addons/smart_construction_core/models/core/project_core.py", "provider_status": "verified"},
     ],
-    # model existence alone does not prove a full business capability.
     "project.lifecycle.transition": [
         {"provider_type": "unknown", "provider_ref": "", "contract_ref": "", "provider_status": "unverified", "pending_reason": "lifecycle transition contract not yet located as a code asset"},
     ],
@@ -135,31 +156,65 @@ def build_catalog() -> dict:
     }
 
 
-def _b2_counts() -> dict[str, int]:
+def _b2_classification() -> dict[str, set[str]]:
+    """Parse B2 markdown into per-disposition historical identity sets."""
     text = B2.read_text(encoding="utf-8")
-    keep = len(re.findall(r"^\| (?:[a-z][a-z0-9_.-]+) \| keep", text, re.M))
-    defer = len(re.findall(r"^\| (?:[a-z][a-z0-9_.-]+) \| defer", text, re.M))
-    exclude = len(re.findall(r"^\| (?:[a-z][a-z0-9_.-]+) \| exclude", text, re.M))
-    return {"keep": keep, "defer": defer, "exclude": exclude}
+    result = {"keep": set(), "defer": set(), "exclude": set()}
+    for line in text.splitlines():
+        m = re.match(r"^\| ([a-z][a-z0-9_.-]+) \| (keep|defer|exclude)", line.strip())
+        if m:
+            result[m.group(2)].add(m.group(1))
+    return result
 
 
-def _registered_in_repo(ref: str) -> bool:
-    """Lightweight offline check that a provider_ref appears as a real
-    registration fact in the repository (intent handler / native action /
-    model declaration)."""
-    if not ref or ref in {"tbd", "unknown"}:
+def _rg_patterns(patterns: list[str]) -> bool:
+    """Return True only when at least one exact pattern matches a tracked file.
+    A missing or failing rg is a FAIL, never a PASS."""
+    if not patterns:
         return False
-    needle = ref.split(".")[-1] if ref.count(".") > 1 else ref
-    # grep the tracked source for the xmlid/intent/model token.
-    import subprocess
+    args = ["rg", "-l", "--glob", "*.py", "--glob", "*.xml"]
+    for pat in patterns:
+        args.extend(["-e", pat])
+    args.append("addons")
     try:
-        result = subprocess.run(
-            ["rg", "-l", "--glob", "*.py", "--glob", "*.xml", needle, "addons"],
-            cwd=ROOT, text=True, capture_output=True, timeout=30,
-        )
-        return result.returncode == 0 and bool(result.stdout.strip())
+        result = subprocess.run(args, cwd=ROOT, text=True, capture_output=True, timeout=30)
     except (OSError, subprocess.TimeoutExpired):
-        return True
+        return False
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
+    """Type-specific exact registration-fact verification."""
+    if not provider_ref or provider_ref in {"tbd", "unknown"}:
+        return False
+    if provider_type == "odoo_intent":
+        return _rg_patterns([r'INTENT_TYPE\s*=\s*["\']' + re.escape(provider_ref) + r'["\']'])
+    if provider_type == "odoo_action":
+        local = provider_ref.rsplit(".", 1)[-1]
+        full = provider_ref
+        return _rg_patterns([
+            r'id="' + re.escape(local) + r'"',
+            r'action="' + re.escape(full) + r'"',
+            r"ref=\"" + re.escape(full) + r"\"",
+        ])
+    if provider_type == "odoo_model":
+        return _rg_patterns([
+            r'_name\s*=\s*["\']' + re.escape(provider_ref) + r'["\']',
+            r'_inherit\s*=\s*["\']' + re.escape(provider_ref) + r'["\']',
+        ])
+    # service / api / ai_provider / domain_provider have no offline registry in
+    # this repository yet; they cannot be verified offline.
+    return False
+
+
+def _catalog_from_classification() -> dict[str, dict]:
+    out = {}
+    for old_key, meta in CLASSIFICATION.items():
+        if meta["disposition"] == "exclude":
+            continue
+        canonical = _canonical(old_key, meta)
+        out[canonical] = {"source_refs": [old_key], "aliases": [old_key] if old_key != canonical else []}
+    return out
 
 
 def validate(catalog: dict) -> list[str]:
@@ -170,13 +225,24 @@ def validate(catalog: dict) -> list[str]:
         errors.append("duplicate capability_key")
     key_set = set(keys)
 
-    keep = sum(1 for c in caps if c["disposition"] == "keep")
-    defer = sum(1 for c in caps if c["disposition"] == "defer")
-    b2 = _b2_counts()
-    if keep != b2["keep"] or defer != b2["defer"]:
-        errors.append(f"B2/B6 count mismatch: catalog keep={keep} defer={defer}, B2 keep={b2['keep']} defer={b2['defer']}")
-    if b2["keep"] + b2["defer"] + b2["exclude"] != 63:
-        errors.append(f"B2 does not cover 63 historical identities: {b2}")
+    # identity-level B2/B6 closure over all 63 historical identities.
+    b2 = _b2_classification()
+    expected_sources = {k for k, m in CLASSIFICATION.items() if m["disposition"] in {"keep", "defer"}}
+    actual_sources = set()
+    for c in caps:
+        actual_sources.update(c.get("source_refs", []))
+        actual_sources.update(c.get("compatibility_aliases", []))
+    if actual_sources != expected_sources:
+        errors.append("source identity set mismatch: missing=" + str(sorted(expected_sources - actual_sources))
+                      + " extra=" + str(sorted(actual_sources - expected_sources)))
+    if b2["keep"] != {k for k, m in CLASSIFICATION.items() if m["disposition"] == "keep"}:
+        errors.append("B2 keep identities do not match classification")
+    if b2["defer"] != {k for k, m in CLASSIFICATION.items() if m["disposition"] == "defer"}:
+        errors.append("B2 defer identities do not match classification")
+    if b2["exclude"] != {k for k, m in CLASSIFICATION.items() if m["disposition"] == "exclude"}:
+        errors.append("B2 exclude identities do not match classification")
+    if len(CLASSIFICATION) != 63:
+        errors.append("classification must cover exactly 63 historical identities: " + str(len(CLASSIFICATION)))
 
     # cycle detection over composite dependency edges.
     deps = {c["capability_key"]: c.get("dependencies", []) for c in caps}
@@ -215,18 +281,67 @@ def validate(catalog: dict) -> list[str]:
                 ref = p.get("contract_ref") or ""
                 if not ref or ref.startswith(".") or not (ROOT / ref).is_file():
                     errors.append("verified provider contract_ref not locatable: " + c["capability_key"] + " -> " + ref)
-                if not _registered_in_repo(p.get("provider_ref") or ""):
-                    errors.append("verified provider_ref not found as registration fact: " + c["capability_key"] + " -> " + str(p.get("provider_ref")))
+                if not _provider_ref_registered(p.get("provider_type") or "", p.get("provider_ref") or ""):
+                    errors.append("verified provider_ref not found as exact registration fact: " + c["capability_key"]
+                                  + " -> " + str(p.get("provider_type")) + ":" + str(p.get("provider_ref")))
             if p.get("provider_type") == "unknown" and p.get("provider_ref"):
                 errors.append("unknown provider must not carry provider_ref: " + c["capability_key"])
     return errors
 
 
+def _self_test() -> int:
+    """Negative cases prove the gates fail closed."""
+    failures = []
+    base = build_catalog()
+
+    # 1. duplicate canonical key.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"].append(dict(bad["capabilities"][0]))
+    if not validate(bad):
+        failures.append("duplicate key not caught")
+
+    # 2. missing source_ref.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["source_refs"] = []
+    if not validate(bad):
+        failures.append("missing source_ref not caught")
+
+    # 3. non-unreleased qualification.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["qualification"] = "standard"
+    if not validate(bad):
+        failures.append("non-unreleased qualification not caught")
+
+    # 4. wrong provider alias.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["compatibility_aliases"] = ["fake.old.key"]
+    if not validate(bad):
+        failures.append("wrong alias not caught")
+
+    # 5. extra source identity.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["source_refs"] = ["invented.identity"]
+    if not validate(bad):
+        failures.append("invented source identity not caught")
+
+    if failures:
+        print("SELF-TEST FAIL")
+        for f in failures:
+            print(" -", f)
+        return 1
+    print("SELF-TEST PASS")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--generate", action="store_true", help="write the candidate catalog (default: read-only check)")
-    parser.add_argument("--check", action="store_true", help="run full semantic gates")
+    parser.add_argument("--generate", action="store_true", help="write the candidate catalog after full in-memory validation")
+    parser.add_argument("--check", action="store_true", help="run full semantic gates (read-only)")
+    parser.add_argument("--self-test", action="store_true", help="run negative gate cases")
     args = parser.parse_args()
+
+    if args.self_test:
+        return _self_test()
 
     if args.generate:
         catalog = build_catalog()
@@ -238,9 +353,9 @@ def main() -> int:
             return 1
         OUT.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print("generated", OUT)
-    else:
-        catalog = json.loads(OUT.read_text(encoding="utf-8"))
+        return 0
 
+    catalog = json.loads(OUT.read_text(encoding="utf-8"))
     errors = validate(catalog)
     if errors:
         print("FAIL")
