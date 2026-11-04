@@ -158,7 +158,46 @@ def _snapshot(env, db_name):
     result["security"]["record_rules_count"] = len(rules)
     result["security"]["groups_count"] = len(groups)
 
+    result["intent_handlers"] = _intent_handlers()
+
     return result
+
+
+def _intent_handlers():
+    """Read the actual SCE Handler Registry contribution chain (read-only)."""
+    base = {"source": "sce_handler_registry", "completeness": "complete", "items": []}
+    try:
+        from odoo.addons.smart_construction_core.core_extension_intent_handlers import (
+            get_intent_handler_contributions,
+        )
+        contributions = get_intent_handler_contributions() or []
+    except Exception as exc:
+        base["completeness"] = "incomplete"
+        base["error"] = str(exc)[:200]
+        return base
+    for entry in contributions:
+        intent = entry.get("intent")
+        handler_cls = entry.get("handler")
+        source_module = entry.get("source_module") or "smart_construction_core"
+        if not intent:
+            continue
+        if handler_cls is None:
+            base["items"].append({"intent": intent, "handler": None,
+                                  "module": source_module,
+                                  "registered": False,
+                                  "status": entry.get("status"), "version": None})
+            continue
+        module = handler_cls.__module__ or ""
+        module = module.split(".")[2] if module.startswith("odoo.addons.") else module
+        base["items"].append({
+            "intent": intent,
+            "handler": getattr(handler_cls, "__name__", str(handler_cls)),
+            "module": module,
+            "registered": True,
+            "status": entry.get("status"),
+            "version": getattr(handler_cls, "VERSION", None),
+        })
+    return base
 
 
 # Executed inside `odoo shell`; the shell exposes a global `env`.

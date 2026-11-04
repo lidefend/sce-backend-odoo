@@ -144,7 +144,8 @@ def propagate(changed_assets: list[dict], *, reverse_index: dict[str, list[dict]
 
 
 def build_context(reverse_index: dict | None = None,
-                  mechanism_impact: dict | None = None) -> dict:
+                  mechanism_impact: dict | None = None,
+                  runtime_snapshot: dict | None = None) -> dict:
     """Load the real SCE associations for a concrete propagation run."""
     if reverse_index is None:
         from scripts.verify import module_capability_index as mci
@@ -158,6 +159,13 @@ def build_context(reverse_index: dict | None = None,
         for cap in scene.get("primary_capabilities", []) or []:
             capability_to_scenes.setdefault(cap, set()).add(scene.get("scene_key"))
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))["capabilities"]
+    runtime_coverage = False
+    if runtime_snapshot is not None:
+        runtime_modules = set(
+            (runtime_snapshot.get("modules") or {}).get("items", {}).keys()
+        )
+        catalog_modules = set(reverse_index.keys()) | set((mechanism_impact or {}).keys())
+        runtime_coverage = catalog_modules.issubset(runtime_modules)
     return {
         "reverse_index": reverse_index,
         "mechanism_impact": mechanism_impact or {},
@@ -165,7 +173,7 @@ def build_context(reverse_index: dict | None = None,
         "capability_to_scenes": {k: sorted(v) for k, v in capability_to_scenes.items()},
         "product_scene_keys": product_scene_keys,
         "repository_coverage": True,
-        "runtime_coverage": False,
+        "runtime_coverage": runtime_coverage,
         "capability_dependencies": {
             c["capability_key"]: c.get("dependencies", []) for c in catalog
         },

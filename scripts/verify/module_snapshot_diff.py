@@ -393,6 +393,30 @@ def project_runtime(runtime: dict) -> dict:
         }
         _slot(rule_module or model_owner)["facts"].append(fact)
 
+    for handler in (runtime.get("intent_handlers") or {}).get("items", []) or []:
+        intent = handler.get("intent")
+        if not intent:
+            continue
+        h_module = handler.get("module") or ""
+        registered = bool(handler.get("registered"))
+        fact = {
+            "fact_identity": f"intent:{intent}",
+            "asset_type": "intent",
+            "asset_modules": _modules([h_module]),
+            "model_owner": "",
+            "model_extensions": [],
+            "handler_missing": not registered,
+            "kind": "intent",
+            "source_mode": "runtime",
+            "source_module": h_module or "__unowned__",
+            "source_ref": db_ref,
+            "completeness": "complete" if registered else "handler_missing",
+            "value": {"intent": intent, "handler": handler.get("handler"),
+                      "module": h_module, "registered": registered,
+                      "version": handler.get("version")},
+        }
+        _slot(h_module)["facts"].append(fact)
+
     for name, module in modules.items():
         module["facts"].sort(key=lambda f: f["fact_identity"])
         module["fact_digest"] = _sha256([(f["fact_identity"], f["value"]) for f in module["facts"]])

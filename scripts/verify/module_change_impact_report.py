@@ -140,9 +140,10 @@ def sample_assets(module_key: str) -> list[dict]:
     raise ValueError(f"unknown sample module: {module_key}")
 
 
-def sample_report(module_key: str, source: str, change_type: str) -> dict:
+def sample_report(module_key: str, source: str, change_type: str,
+                  runtime_snapshot: dict | None = None) -> dict:
     """Produce a real-data impact report for one sample module."""
-    context = d3.build_context()
+    context = d3.build_context(runtime_snapshot=runtime_snapshot)
     assets = sample_assets(module_key)
     propagation = d3.propagate(assets, **context)
     return build_report(

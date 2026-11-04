@@ -22,16 +22,17 @@
     "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing local Make tools; no database or service access"
+    "kind": "runtime",
+    "authority": "read-only Odoo shell (sc_dev_demo) + SCE Handler Registry + existing local Make tools"
   },
   "checks": {},
   "check_results": {
     "D1_projection_and_diff_unit": "PASS offline: 20 tests (test_module_snapshot_diff.py), incl. 4 asset-ownership negatives",
     "D2_semantic_diff_unit": "PASS offline: 28 tests (test_module_snapshot_diff.py); adds menu/record-rule/intent/action-context/view-arch + model_extensions-from-inherit + model_extensions_incomplete negatives",
     "D3_impact_propagation_unit": "PASS offline: 13 tests (test_capability_impact_propagation.py): multi-module/multi-capability/multi-scene, provider-missing (confirmed vs unresolved), intent (resolved/missing/runtime_unverified), contract-missing, historical-scene, unrelated-no-propagate, incomplete-extensions",
-    "D4_impact_report_unit": "PASS offline: 5 tests (test_module_change_impact_report.py): source-only-Low, removed-provider-Critical, contract-missing-Unresolved, scene-Medium, recommendation-counts-derived"
+    "D4_impact_report_unit": "PASS offline: 5 tests (test_module_change_impact_report.py): source-only-Low, removed-provider-Critical, contract-missing-Unresolved, scene-Medium, recommendation-counts-derived",
+    "runtime_smoke": "PASS read-only: sc_dev_demo Odoo 17.0-20260630 registry ready; 681 modules/754 models/18965 fields/740 actions/2091 views/204 menus/1567 acl/675 rules/59 intent handlers; project.project owner=project extensions=[smart_construction_core,smart_construction_demo]; project.progress.entry owner=smart_construction_core; base_tier_validation mechanism -> 5 capabilities; runtime_coverage derived true; evidence .runtime/cap02c-runtime-smoke/evidence.json"
   },
   "blockers": [],
-  "next_exact_step": "D1-D4 implemented (48 offline tests); three sample module impact reports generated with real association data; confirmed/unresolved impact split + association_coverage added; commit + Draft PR + one Runtime Smoke."
+  "next_exact_step": "D1-D4 implemented (48 offline tests) + Runtime Smoke passed (read-only, real Registry + Handler Registry); commit Runtime Smoke enablement, push, and await owner decision on PR #808."
 }
