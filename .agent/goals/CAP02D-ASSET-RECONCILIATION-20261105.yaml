@@ -1,0 +1,27 @@
+schema_version: 1
+goal:
+  id: CAP02D-ASSET-RECONCILIATION-20261105
+  status: active
+  title: CAP-02D-01 全平台模块能力资产只读对账
+  formal_product_layer: P4
+  layer_target: 全平台模块/Provider/Capability/Contract/Scene 只读对账
+  standard_vs_user_specific: platform_governance_reconciliation
+  objective: >
+    只读盘清家底：四类模块全量清单、模块与 Provider 关联矩阵、
+    Capability/Contract 对账、Scene/Product 双向差异、治理优先级报告。
+    复用 CAP-01B/01C/02B/02C 与 Odoo Runtime Registry，不新建 Registry/扫描引擎。
+  scope:
+    - .agent/goals/CAP02D-ASSET-RECONCILIATION-20261105.yaml
+    - .agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json
+    - .agent/active-runs.json
+    - scripts/verify/capability_asset_reconciliation.py
+  exclusions:
+    - 新建 Registry
+    - 新建扫描引擎
+    - 重复实现 CAP-02C
+    - 将 Model 当作原子能力
+    - 将模型扩展模块当作 Provider
+    - 推断未安装模块运行时能力
+    - 自动补契约
+    - 修改 Candidate/Scene
+    - 修改资格和产品发布状态
