@@ -308,9 +308,9 @@ def flatten_authorized_nav_leaves(
                 menu_id, action_id = 0, 0
             children = node.get("children") or []
             route = _text(carrier.get("route") or node.get("route") or meta.get("route"))
+            entry = authority_by_pair.get((menu_id, action_id), {})
+            menu_xmlid = _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid"))
             if menu_id > 0 and (action_id > 0 or route):
-                entry = authority_by_pair.get((menu_id, action_id), {})
-                menu_xmlid = _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid"))
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
                     "menu_xmlid": menu_xmlid,

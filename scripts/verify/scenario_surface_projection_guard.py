@@ -219,6 +219,27 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(leaves[0]["action_xmlid"], "action.1")
         self.assertEqual(leaves[0]["route"], "/a/1?menu_id=1")
 
+    def test_flatten_actionless_parent_preserves_native_parent(self):
+        nav = [{"menu_id": 1, "xmlid": "core.root", "children": [
+            {"menu_id": 2, "xmlid": "core.group", "children": [
+                {"menu_id": 3, "action_id": 30, "xmlid": "core.leaf"},
+            ]},
+        ]}]
+        leaves = PROJ.flatten_authorized_nav_leaves(nav, {})
+        self.assertEqual(len(leaves), 1)
+        self.assertEqual(leaves[0]["menu_xmlid"], "core.leaf")
+        self.assertEqual(leaves[0]["parent_menu_xmlid"], "core.group")
+
+    def test_flatten_actionless_sibling_does_not_inherit_previous_identity(self):
+        nav = [
+            {"menu_id": 1, "action_id": 10, "xmlid": "core.previous"},
+            {"menu_id": 2, "meta": {"menu_xmlid": "core.group"}, "children": [
+                {"menu_id": 3, "action_id": 30, "xmlid": "core.leaf"},
+            ]},
+        ]
+        leaves = PROJ.flatten_authorized_nav_leaves(nav, {})
+        self.assertEqual(leaves[1]["parent_menu_xmlid"], "core.group")
+
     def test_project_authorized_nav_end_to_end(self):
         nav = synthetic_nav(self.released, native_parent_by_menu())
         authority = synthetic_route_authority(self.released)

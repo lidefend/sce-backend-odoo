@@ -3,7 +3,7 @@
   "id": "SCENE-FACT-DATA-CONVERGENCE-20261104",
   "branch": "fix/scene-fact-data-convergence-20261104",
   "baseline_sha": "8dbb8232227291caa353fb91ef33533353e78bad",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml",
   "record": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
   "scope": [
@@ -39,5 +39,18 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Derive enterprise.setup scene entry from native action/view declarations; retire hardcoded registry entry and independent scene version XML"
+  "next_exact_step": "Freeze navigation-parent regression fix; refresh local acceptance backend and affected list/relation evidence; independent review then governed pr.push.",
+  "publication_recovery": {
+    "source_head": "5aa68d73df00f96277c6c6d8f61323a85d9fcd8f",
+    "layer": "P1 smart_construction_core navigation projection; P4 validation evidence",
+    "failure_classification": "product_defect",
+    "finding": "Actionless parent raises UnboundLocalError; actionless sibling inherits previous menu identity.",
+    "risk": "navigation parent identity only; no schema, ACL, fixture or daily deployment changes",
+    "targeted_result": "40 fixture governance + 16 projection + 21 action authority + 1 scene boundary tests passed; added 2 regression cases failed before fix",
+    "logs": ".runtime/agent-runs/SCENE-FACT-DATA-CONVERGENCE-20261104/publish-recovery/",
+    "evidence_impact": "Core projection input change invalidates list_surface_structure and relation_roundtrip. Old-head relation passed; list cancelled after confirmed product failure. Re-run only these suites after freeze. Frontend inputs unchanged; governed build reuse passed.",
+    "environment": "local sc-fe-r2-p1-01 / sc_frontend_acceptance; backend 18082 / preview 5180; existing fixture and credential authority",
+    "rollback": "Revert this bounded navigation commit; governed backend replacement preserves prior carrier.",
+    "governance_fix": "Removed stale feature/enterprise-initialization-native-config-20261103 alias pointing to a run that declares fix/enterprise-activation-entry-20261104; canonical mapping and run preserved."
+  }
 }
