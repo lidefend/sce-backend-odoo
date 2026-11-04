@@ -218,6 +218,48 @@ def _join_server_guard() -> tuple[dict, str]:
     }, f"{PROJECT_CORE.relative_to(ROOT)}:{line}"
 
 
+def _build_transition_edges(states: list[str], transitions: dict, methods: list[dict], view_guards: list[dict]) -> list[dict]:
+    """Produce source -> target -> method -> view_guard mapping for every edge."""
+    all_states = set(states)
+    method_map = {m["method"]: m for m in methods}
+    guard_map = {g["button"]: g for g in view_guards}
+
+    def _from_states(invisible: str) -> set[str]:
+        m = re.search(r"lifecycle_state\s*!=\s*'([a-z_]+)'", invisible)
+        if m:
+            return {m.group(1)}
+        m = re.search(r"lifecycle_state\s*not\s+in\s*\[([^\]]+)\]", invisible)
+        if m:
+            return {s.strip().strip("'") for s in m.group(1).split(",") if s.strip()}
+        m = re.search(r"lifecycle_state\s*==\s*'([a-z_]+)'", invisible)
+        if m:
+            return all_states - {m.group(1)}
+        return set()
+
+    edges = []
+    for source, targets in transitions.items():
+        for target in targets:
+            covering = []
+            for name, method in method_map.items():
+                if method["target_state"] != target:
+                    continue
+                guard = guard_map.get(name)
+                from_states = _from_states(guard["invisible"]) if guard else set()
+                covering.append({
+                    "method": name,
+                    "view_guard": guard["invisible"] if guard else None,
+                    "from_states": sorted(from_states),
+                    "covers": source in from_states,
+                })
+            edges.append({
+                "source": source,
+                "target": target,
+                "candidates": covering,
+                "resolved": any(c["covers"] for c in covering),
+            })
+    return edges
+
+
 def _find_action_res_model(action: str) -> tuple[str, str]:
     """Find an ir.actions.act_window record's res_model via rg (fail-closed)."""
     try:
@@ -297,6 +339,7 @@ def _projection_for(key: str, spec: dict) -> dict:
     methods: list[dict] = []
     view_guards: list[dict] = []
     server_guard: dict | None = None
+    transition_edges: list[dict] | None = None
 
     if template in {"state-transition", "audit-state-transition"}:
         machine, machine_src = _join_state_machine(spec["state_machine"])
@@ -327,6 +370,9 @@ def _projection_for(key: str, spec: dict) -> dict:
                     "source": f"{spec['view'].relative_to(ROOT)}:{text[:match.start()].count(chr(10)) + 1}",
                 })
             dependencies[str(spec["view"].relative_to(ROOT))] = _sha256(spec["view"])
+            transition_edges = _build_transition_edges(
+                machine["states"], machine["transitions"], methods, view_guards
+            )
     else:
         action = spec["action"]
         res_model, action_src = _find_action_res_model(action)
@@ -370,6 +416,7 @@ def _projection_for(key: str, spec: dict) -> dict:
         "state_machine": {"value": machine, "source": machine_src} if machine else None,
         "transition_methods": methods if methods else None,
         "view_guards": view_guards if view_guards else None,
+        "transition_edges": transition_edges,
         "server_guard": server_guard,
         "provider": provider if provider else None,
         "dependencies": dependencies,

@@ -93,6 +93,20 @@ class BatchCheckTests(unittest.TestCase):
     def test_settlement_immutable_states_include_done_and_cancel(self):
         self.assertGreaterEqual(builder._settlement_immutable_states(), {"done", "cancel"})
 
+    def test_settlement_immutable_is_actually_enforced_in_write(self):
+        self.assertTrue(builder._settlement_immutable_enforced())
+
+    def test_audit_actions_are_individually_guarded(self):
+        guards = builder._audit_methods_guarded()
+        self.assertEqual(set(guards), {"action_submit", "action_approve", "action_done", "action_cancel"})
+        self.assertTrue(all(guards.values()))
+
+    def test_lifecycle_draft_to_paused_edge_is_unresolved(self):
+        proj = mapper._projection_for("project.lifecycle.transition", mapper.SPECS["project.lifecycle.transition"])
+        edge = next(e for e in proj["transition_edges"] if e["source"] == "draft" and e["target"] == "paused")
+        self.assertFalse(edge["resolved"])
+        self.assertTrue(any(c["covers"] is False for c in edge["candidates"]))
+
     def test_semantic_cases_are_skip_not_pass(self):
         proj = {
             "provider": {

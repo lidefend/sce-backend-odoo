@@ -327,9 +327,10 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         bind = [m for m in methods if m["method"] in {"action_bind_contract", "action_unbind_contract"}]
         immutable = _settlement_immutable_states()
         immutable_enforced = _settlement_immutable_enforced()
-        audit_guarded = all(m["server_guard"] for m in audit) if len(audit) == 4 else False
+        audit_guards = _audit_methods_guarded()
+        audit_guarded = len(audit) == 4 and all(audit_guards.values())
         return [
-            _case("audit_actions_declared", "pass" if len(audit) == 4 and audit_guarded else ("fail" if len(audit) != 4 else "skip"), f"audit={[(m['method'], m['server_guard']) for m in audit]}"),
+            _case("audit_actions_declared", "pass" if audit_guarded else ("fail" if len(audit) != 4 else "fail"), f"guards={audit_guards}"),
             _case("approval_state_declared", "pass" if "approve" in states else "fail", f"states={states}"),
             _case("immutable_final_states_declared", "pass" if immutable and immutable >= {"done", "cancel"} and immutable_enforced else "fail", f"immutable={immutable} enforced={immutable_enforced}"),
             _case("contract_association_boundary_declared", "pass" if len(bind) == 2 and all(m["server_guard"] for m in bind) else "fail", f"bind={[(m['method'], m['server_guard']) for m in bind]}"),
@@ -345,12 +346,47 @@ def _settlement_immutable_states() -> set[str]:
     return {s.strip().strip('"').strip("'") for s in m.group(1).split(",") if s.strip()}
 
 
+def _current_run_identity() -> dict:
+    """Resolve the current governed run record identity (not a self-made id)."""
+    branch = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True
+    ).stdout.strip()
+    active = json.loads((ROOT / ".agent/active-runs.json").read_text(encoding="utf-8"))
+    run_rel = (active.get("branches") or {}).get(branch)
+    if not run_rel:
+        return {"run_id": None, "run_record_sha256": None, "resolved": False}
+    run_path = ROOT / run_rel
+    return {
+        "run_id": run_rel.rsplit("/", 2)[-2],
+        "run_record": run_rel,
+        "run_record_sha256": hashlib.sha256(run_path.read_bytes()).hexdigest(),
+        "resolved": True,
+    }
+
+
 def _settlement_immutable_enforced() -> bool:
-    """True only when _IMMUTABLE_FACT_STATES is used in a write guard, not merely declared."""
+    """True only when write() actually filters immutable records and raises."""
     text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text(encoding="utf-8")
-    return bool(re.search(r'\._IMMUTABLE_FACT_STATES\b', text)) or bool(
-        re.search(r'in\s+self\._IMMUTABLE_FACT_STATES\b', text)
-    )
+    has_filter = bool(re.search(
+        r"immutable\s*=\s*self\.filtered\(lambda rec: rec\.state in self\._IMMUTABLE_FACT_STATES\)", text
+    ))
+    has_raise = bool(re.search(r"if immutable and disallowed:\s*\n\s+raise\s+AccessError", text))
+    return has_filter and has_raise
+
+
+def _audit_methods_guarded() -> dict[str, bool]:
+    """Verify each audit action carries a specific state/role guard, not just a name."""
+    text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text(encoding="utf-8")
+    result: dict[str, bool] = {}
+    for method in ("action_submit", "action_approve", "action_done", "action_cancel"):
+        m = re.search(rf"\n    def {method}\(self\):(.*?)(?=\n    def |\n    @|\Z)", text, re.S)
+        body = m.group(1) if m else ""
+        guarded = bool(re.search(
+            r"_assert_lifecycle_role|raise_guard|raise\s+UserError|raise\s+AccessError|rec\.state\s*(==|!=|not in)",
+            body,
+        ))
+        result[method] = guarded
+    return result
 
 
 def _parse_from_states(invisible: str, all_states: set[str]) -> set[str]:
@@ -402,6 +438,7 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     check_source = inspect.getsource(_batch_cases)
     check_digest = hashlib.sha256(check_source.encode("utf-8")).hexdigest()
+    run_identity = _current_run_identity()
 
     artifacts: dict[str, str] = {}
     payloads: list[tuple[str, bytes]] = []
@@ -432,7 +469,9 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
                 "check_module": "capability_maturity_bundle_build",
                 "check_function": "_batch_cases",
                 "check_digest": check_digest,
-                "execution_id": hashlib.sha256(f"{head}:{check_digest}:{key}".encode("utf-8")).hexdigest()[:16],
+                "run_id": run_identity.get("run_id"),
+                "run_record": run_identity.get("run_record"),
+                "run_record_sha256": run_identity.get("run_record_sha256"),
             },
         }
         raw = json.dumps(artifact, ensure_ascii=False, sort_keys=True).encode("utf-8")
