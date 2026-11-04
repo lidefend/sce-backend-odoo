@@ -11,9 +11,9 @@
 
 1. 以 63 条矩阵为主集合，42 条目录为子集（42 ⊆ 63）。
 2. 131 条产品菜单入口整体不迁入能力目录，保留在产品发布层。
-3. 按 B2 分类执行：keep 12、defer 24、exclude 27。
-4. keep 项直接进入候选目录；defer 项标记 `status=candidate_unverified`；exclude 项不进入。
-5. 改名项建立兼容别名（本轮暂无改名，保留原 key）。
+3. 按 B2 分类执行：keep 14、defer 26、exclude 23。
+4. keep 项直接进入候选目录；defer 项标记 `qualification=unreleased, contract_status=unverified`；exclude 项不进入。
+5. 改名项建立兼容别名：`project.initiation.enter` → `project.initiation.create`（旧 key 保留为 alias）。
 6. 不补发资格：所有候选 `qualification=unreleased`，待 CAP-01C。
 
 ## 3. 兼容映射

@@ -18,6 +18,7 @@
     "workspace"
   ],
   "domain_policy": "extensible via identity governance, not a permanently closed enum",
+  "closure_note": "reference closure is verified here; qualification closure is deferred to CAP-01C",
   "capabilities": [
     {
       "capability_key": "project.initiation.create",
@@ -63,10 +64,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "project.project",
-          "contract_ref": "project lifecycle rules",
-          "provider_status": "verified"
+          "provider_type": "unknown",
+          "provider_ref": "",
+          "contract_ref": "",
+          "provider_status": "unverified",
+          "pending_reason": "lifecycle transition contract not yet located as a code asset"
         }
       ],
       "dependencies": [],
@@ -84,10 +86,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -108,10 +111,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -129,10 +133,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -152,10 +157,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -175,10 +181,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -198,10 +205,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -219,10 +227,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -240,10 +249,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -261,10 +271,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -282,10 +293,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -305,10 +317,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [
@@ -328,10 +341,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -376,10 +390,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -397,10 +412,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -418,10 +434,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -439,10 +456,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -460,10 +478,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -481,10 +500,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -502,10 +522,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -523,10 +544,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -544,10 +566,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -565,10 +588,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -586,10 +610,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -607,10 +632,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -628,10 +654,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -649,10 +676,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -670,10 +698,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -691,10 +720,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -712,10 +742,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -733,10 +764,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -754,10 +786,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -775,10 +808,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -796,10 +830,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -817,10 +852,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -838,10 +874,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -859,10 +896,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
@@ -880,10 +918,11 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "odoo_model",
-          "provider_ref": "tbd",
+          "provider_type": "unknown",
+          "provider_ref": "",
           "contract_ref": "",
-          "provider_status": "unverified"
+          "provider_status": "unverified",
+          "pending_reason": "provider not yet reconciled"
         }
       ],
       "dependencies": [],
