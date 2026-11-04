@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104",
+  "branch": "codex/cap01c-all04-contract-mapping-20261104",
+  "baseline_sha": "815eb9fde493cb7e69004daa4503b875c4658c20",
+  "status": "active",
+  "goal": ".agent/goals/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104.yaml",
+  "record": ".agent/runs/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104.yaml",
+    ".agent/runs/CAP01C-ALL04-R1-LIFECYCLE-JOIN-20261104/run.json",
+    "scripts/verify/capability_contract_mapper.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "run read-only lifecycle Join exporter; review projection + unresolved; then batch the other five keep-atomic capabilities."
+}
