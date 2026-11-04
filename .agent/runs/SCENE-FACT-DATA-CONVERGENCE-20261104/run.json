@@ -11,6 +11,7 @@
     ".agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml",
     ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "scripts/verify/scene_fact_data_boundary_guard.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
     "docs/architecture/scene_fact_data_boundary_ledger.json",
     "make/ci.mk",
     "addons/smart_construction_core/data/scenario_product_surface.json",

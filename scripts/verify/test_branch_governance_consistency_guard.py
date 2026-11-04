@@ -16,6 +16,8 @@ import branch_governance_consistency_guard as guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 FULL_SHA = "a" * 40
 OTHER_SHA = "b" * 40
 MAKE = shutil.which("make") or "make"
