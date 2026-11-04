@@ -26,12 +26,21 @@ def read_tenant_enablement(env, company_id, scene_key) -> bool:
     if env is None:
         return False
     try:
-        value = env["ir.config_parameter"].sudo().get_param(
-            _enablement_param_key(company_id, scene_key), "0"
+        value = env["ir.config_parameter"].sudo().get_param(_enablement_param_key(company_id, scene_key))
+        if value is not None:
+            return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        pass
+    # Legacy compatibility read: existing enablement records remain authoritative
+    # until they are migrated to the native config carrier. Read-only.
+    try:
+        record = env["sc.scene.company.enablement"].sudo().search(
+            [("company_id", "=", int(company_id)), ("scene_key", "=", str(scene_key or "").strip())],
+            limit=1,
         )
+        return bool(record.enabled) if record else False
     except Exception:
         return False
-    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def write_tenant_enablement(env, company_id, scene_key, enabled: bool) -> None:
