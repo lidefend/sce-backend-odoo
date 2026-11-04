@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "CAP01B-CAPABILITY-RECONCILIATION-20261104",
+  "branch": "codex/cap01b-capability-reconciliation-20261104",
+  "baseline_sha": "6e674745ae1c6e957ae933c8dddeb1b753fce251",
+  "status": "active",
+  "goal": ".agent/goals/CAP01B-CAPABILITY-RECONCILIATION-20261104.yaml",
+  "record": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP01B-CAPABILITY-RECONCILIATION-20261104.yaml",
+    ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
+    "docs/architecture/capability_identity_spec_v1.md",
+    "docs/product/capability_reconciliation_matrix_v1.md",
+    "docs/product/capability_provider_binding_v1.md",
+    "docs/product/capability_catalog_migration_plan_v1.md",
+    "docs/product/capability_candidate_catalog_v1.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Await architecture review of B1..B6 before CAP-01C maturity qualification."
+}

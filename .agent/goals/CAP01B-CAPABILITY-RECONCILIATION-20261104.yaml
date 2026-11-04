@@ -1,0 +1,14 @@
+schema_version: 1
+goal:
+  id: CAP01B-CAPABILITY-RECONCILIATION-20261104
+  status: active
+  title: 能力身份与目录收敛（CAP-01B）
+  formal_product_layer: P0
+  layer_target: 能力身份规范与候选目录（docs/）
+  standard_vs_user_specific: platform_standard
+  objective: >
+    按 B0 本体定义执行能力身份与目录收敛：B1 身份规范、B2 42/63 候选分类、
+    B3 Provider 契约映射、B4 组合依赖图、B5 迁移方案、B6 机器可读候选目录。
+    只改设计文档，不改正式目录、不补发资格、不接发布链。
+  scope: [docs/architecture/, docs/product/, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [正式能力目录, 产品发布状态, 成熟度资格, 发布写入链, 第二套 Registry/引擎]
