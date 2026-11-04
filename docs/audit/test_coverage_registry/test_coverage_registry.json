@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 206,
+    "odoo_tags": 207,
     "gated": 5,
     "on_demand": 53,
-    "unwired": 148,
-    "odoo_tag_declarations": 425,
+    "unwired": 149,
+    "odoo_tag_declarations": 426,
     "gated_declarations": 97,
-    "uncovered_declarations": 328,
+    "uncovered_declarations": 329,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -700,6 +700,17 @@
         "make:verify.local.dev.canonical_navigation_projection.orm :: /TestCanonicalNavigationProjection (class selection)"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "cap01c_project_initiation_create",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_project_initiation_create.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "capability_contract_backend",
