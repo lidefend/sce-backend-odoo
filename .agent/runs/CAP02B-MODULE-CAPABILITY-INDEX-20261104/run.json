@@ -3,7 +3,7 @@
   "id": "CAP02B-MODULE-CAPABILITY-INDEX-20261104",
   "branch": "codex/cap02b-module-capability-index-20261104",
   "baseline_sha": "c29e4e35696dcf5bcd7dbfa3784fc5435ef33632",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/CAP02B-MODULE-CAPABILITY-INDEX-20261104.yaml",
   "record": ".agent/runs/CAP02B-MODULE-CAPABILITY-INDEX-20261104/run.json",
   "scope": [
@@ -26,5 +26,6 @@
     "ci_local_iteration": "PASS L1_only"
   },
   "blockers": [],
-  "next_exact_step": "R2: unify mechanism inherit detection and include manifest depends in fact_digest; then re-close the run."
+  "next_exact_step": "CAP-02B closed with R2 corrections; await PR review and merge.",
+  "head": "1db23884edfc5b177ed68740f23a40381bb22d5c"
 }
