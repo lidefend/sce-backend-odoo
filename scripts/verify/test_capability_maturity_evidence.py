@@ -199,8 +199,21 @@ class EvidenceBundleTests(unittest.TestCase):
         implemented = {node.args[0].value for node in ast.walk(tree)
                        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
                        and node.func.id == "_cap" and node.args and isinstance(node.args[0], ast.Constant)}
+        catalog = json.loads((ROOT / "docs/product/capability_candidate_catalog_v1.json").read_text())
+        canonical_to_runtime = {
+            cap["capability_key"]: (
+                {cap["capability_key"]}
+                | set(cap.get("source_refs") or [])
+                | set(cap.get("compatibility_aliases") or [])
+            )
+            for cap in catalog["capabilities"]
+        }
         for key, contract in authority["capabilities"].items():
-            self.assertIn(key, implemented)
+            runtime_identities = canonical_to_runtime.get(key, {key})
+            self.assertTrue(
+                bool(runtime_identities & implemented),
+                f"{key} has no implemented runtime identity (checked {sorted(runtime_identities)})",
+            )
             for path in contract["product_dependencies"] + contract["authorization_dependencies"]:
                 self.assertTrue((ROOT / path).is_file(), path)
             for check, cases in contract["product_criteria"]["preview"].items():

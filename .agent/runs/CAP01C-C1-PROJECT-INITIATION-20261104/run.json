@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CAP01C-C1-PROJECT-INITIATION-20261104",
   "branch": "codex/cap01c-c1-project-initiation-20261104",
-  "baseline_sha": "6e674745ae1c6e957ae933c8dddeb1b753fce251",
+  "baseline_sha": "ea9ce1588c49e55390e44565d21494be38792941",
   "status": "active",
   "goal": ".agent/goals/CAP01C-C1-PROJECT-INITIATION-20261104.yaml",
   "record": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
@@ -23,6 +23,7 @@
     "config/acceptance/evolution_binding.v1.json",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/capability_maturity_bundle_build.py",
+    "scripts/verify/test_capability_maturity_evidence.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md"
   ],

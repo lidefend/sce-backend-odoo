@@ -25,6 +25,7 @@ import importlib.util
 import json
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -111,20 +112,36 @@ def _case(case_id: str, status: str, reason: str = "") -> dict:
     return result
 
 
-def _identity_cases() -> list[dict]:
-    """Provider registration identity.
+def _run_catalog_check() -> tuple[str, str]:
+    """Run the CAP-01B catalog checker and return (status, reason).
 
-    The authoritative check is ``capability_candidate_catalog_check.py`` from the
-    CAP-01B branch. This adapter must not re-derive the intent->handler
-    registration chain itself, so when the checker is absent the cases fail
-    closed instead of being marked pass.
+    This invokes the existing governed entrypoint as a real subprocess and maps
+    its exit code to pass/fail/error. It never re-derives the provider
+    registration chain itself and fails closed on tool failure.
     """
-    reason = (
-        "provider_registration_checker_unavailable_on_branch"
-        if not CATALOG_CHECK_PATH.is_file()
-        else ""
-    )
-    status = "error" if reason else "pass"
+    if not CATALOG_CHECK_PATH.is_file():
+        return "error", "provider_registration_checker_unavailable_on_branch"
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(CATALOG_CHECK_PATH), "--check"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return "error", "catalog_check_tool_failure:" + type(exc).__name__
+    stdout = (proc.stdout or "").strip()
+    stderr = (proc.stderr or "").strip()
+    detail = stdout.splitlines()[0] if stdout else stderr
+    if proc.returncode == 0:
+        return "pass", "catalog_check_pass:" + (detail or "exit=0")
+    return "fail", "catalog_check_fail:" + (detail or f"exit={proc.returncode}")
+
+
+def _identity_cases() -> list[dict]:
+    """Provider registration identity, sourced from the CAP-01B catalog checker."""
+    status, reason = _run_catalog_check()
     return [
         _case("capability_key_matches_provider", status, reason),
         _case("provider_chain_resolves", status, reason),
