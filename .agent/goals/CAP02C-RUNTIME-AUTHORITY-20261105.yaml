@@ -1,0 +1,14 @@
+schema_version: 1
+goal:
+  id: CAP02C-RUNTIME-AUTHORITY-20261105
+  status: active
+  title: CAP-02C Odoo 运行时权威与能力治理边界
+  formal_product_layer: P4
+  layer_target: scripts/verify/ 运行时事实读取 + 历史观察校验（只读）
+  standard_vs_user_specific: platform_verification_mechanism
+  objective: >
+    冻结 Odoo/SCE 权威边界（ARCH-DECISION-013），实现只读 Runtime Adapter
+    （读取 Odoo 最终 Registry），并定义 module.change.observation.v1 历史摘要
+    Schema 与离线校验。不修改 Odoo 核心、不新建 Registry、不触发认证。
+  scope: [.agent/decisions/ARCH-DECISION-013.yaml, scripts/verify/odoo_runtime_facts.py, scripts/verify/module_change_observation.py, scripts/verify/test_module_change_observation.py, contracts/schemas/module.change.observation.v1.schema.json, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [Odoo 核心, Module Registry, 能力资格, 产品发布状态, 浏览器验收, 自动重新认证]

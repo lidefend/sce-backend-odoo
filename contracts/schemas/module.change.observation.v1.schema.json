@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Module Change Observation v1",
+  "type": "object",
+  "required": [
+    "schema", "operation_id", "db_name", "operation_origin", "timestamp",
+    "result", "observer", "before", "after"
+  ],
+  "properties": {
+    "schema": {"const": "module.change.observation.v1"},
+    "operation_id": {"type": "string", "minLength": 1},
+    "db_name": {"type": "string", "minLength": 1},
+    "operation_origin": {"enum": ["cli_wrapper", "scheduled_observer", "unknown"]},
+    "timestamp": {"type": "string"},
+    "target_modules": {"type": "array", "items": {"type": "string"}},
+    "result": {"enum": ["success", "partial", "failed"]},
+    "registry": {
+      "type": "object",
+      "properties": {
+        "ready": {"type": "boolean"},
+        "rebuilt": {"type": "boolean"},
+        "db_matches": {"type": "boolean"}
+      }
+    },
+    "observer": {
+      "type": "object",
+      "required": ["name", "version", "odoo_version", "schema_version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "odoo_version": {"type": "string"},
+        "schema_version": {"type": "string"}
+      }
+    },
+    "module_versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module", "before", "after"],
+        "properties": {
+          "module": {"type": "string"},
+          "before": {"type": "string"},
+          "after": {"type": "string"}
+        }
+      }
+    },
+    "before": {
+      "type": "object",
+      "required": ["snapshot_sha256", "fact_digest", "module_digests"],
+      "properties": {
+        "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "fact_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "module_digests": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "after": {
+      "type": "object",
+      "required": ["snapshot_sha256", "fact_digest", "module_digests"],
+      "properties": {
+        "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "fact_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "module_digests": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "snapshot_artifact": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "impact": {
+      "type": "object",
+      "properties": {
+        "capabilities": {"type": "array", "items": {"type": "string"}},
+        "contracts": {"type": "array", "items": {"type": "string"}},
+        "scenes": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  },
+  "additionalProperties": false
+}
