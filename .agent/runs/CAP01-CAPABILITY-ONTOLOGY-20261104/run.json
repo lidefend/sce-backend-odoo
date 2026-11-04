@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "CAP01-CAPABILITY-ONTOLOGY-20261104",
+  "branch": "codex/cap01-capability-ontology-20261104",
+  "baseline_sha": "6e674745ae1c6e957ae933c8dddeb1b753fce251",
+  "status": "active",
+  "goal": ".agent/goals/CAP01-CAPABILITY-ONTOLOGY-20261104.yaml",
+  "record": ".agent/runs/CAP01-CAPABILITY-ONTOLOGY-20261104/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP01-CAPABILITY-ONTOLOGY-20261104.yaml",
+    ".agent/runs/CAP01-CAPABILITY-ONTOLOGY-20261104/run.json",
+    "docs/architecture/capability_ontology_v1.md",
+    "docs/product/capability_asset_audit_cap01a_v1.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Await owner review of B0 capability ontology before CAP-01B catalog rebuild."
+}

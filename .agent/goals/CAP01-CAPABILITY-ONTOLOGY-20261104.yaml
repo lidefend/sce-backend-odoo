@@ -1,0 +1,13 @@
+schema_version: 1
+goal:
+  id: CAP01-CAPABILITY-ONTOLOGY-20261104
+  status: active
+  title: 能力资产审计与能力本体定义（CAP-01A + B0）
+  formal_product_layer: P0
+  layer_target: 能力本体与资产审计文档（docs/）
+  standard_vs_user_specific: platform_standard
+  objective: >
+    只读盘点能力资产全集（CAP-01A）并冻结 SCE 能力本体与定义 v1（B0），
+    为 CAP-01B 能力身份与目录重建提供统一语义基础。
+  scope: [docs/architecture/, docs/product/, .agent/goals/, .agent/runs/, .agent/active-runs.json]
+  exclusions: [产品运行代码, 能力目录重建, 成熟度资格补发, 产品发布状态, Registry/发布引擎]
