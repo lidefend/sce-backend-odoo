@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "CAP02C-RUNTIME-AUTHORITY-20261105",
+  "branch": "codex/cap02c-authority-boundary-20261105",
+  "baseline_sha": "4f5ad8381c35c8deaf566f34ad9d82d2404edea0",
+  "status": "active",
+  "goal": ".agent/goals/CAP02C-RUNTIME-AUTHORITY-20261105.yaml",
+  "record": ".agent/runs/CAP02C-RUNTIME-AUTHORITY-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAP02C-RUNTIME-AUTHORITY-20261105.yaml",
+    ".agent/runs/CAP02C-RUNTIME-AUTHORITY-20261105/run.json",
+    ".agent/decisions/ARCH-DECISION-013.yaml",
+    "scripts/verify/odoo_runtime_facts.py",
+    "scripts/verify/module_change_observation.py",
+    "scripts/verify/test_module_change_observation.py",
+    "contracts/schemas/module.change.observation.v1.schema.json",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and live Odoo shell read-only access"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "freeze observation schema + offline validator; then implement the minimal command wrapper + observation record."
+}
