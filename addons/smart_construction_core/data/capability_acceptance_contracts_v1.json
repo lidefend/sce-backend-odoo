@@ -116,6 +116,107 @@
           }
         }
       }
+    },
+    "project.initiation.create": {
+      "label": "项目创建",
+      "product_dependencies": [
+        "addons/smart_construction_core/handlers/project_initiation_enter.py",
+        "addons/smart_construction_core/services/project_creation_service.py",
+        "addons/smart_construction_core/models/core/project_core.py"
+      ],
+      "product_criteria": {
+        "preview": {
+          "write_contract": [
+            "native_action_target",
+            "required_name_validation",
+            "allowed_field_whitelist",
+            "permission_denied_contract",
+            "missing_param_contract"
+          ],
+          "authorization_contract": [
+            "create_requires_native_access",
+            "record_rule_scope_applied"
+          ]
+        },
+        "standard": {
+          "write_contract": [
+            "native_action_target",
+            "required_name_validation",
+            "allowed_field_whitelist",
+            "permission_denied_contract",
+            "missing_param_contract"
+          ],
+          "write_regression": [
+            "create_produces_project_record",
+            "default_manager_phase_lifecycle",
+            "bootstrap_conditional_task_root",
+            "missing_name_rejected_no_record",
+            "permission_denied_no_side_effect",
+            "validation_failure_data_consistent"
+          ],
+          "authorization_contract": [
+            "create_requires_native_access",
+            "record_rule_scope_applied"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ],
+      "business_scenarios": {
+        "project_creator_creates_project": {
+          "role_code": "project_manager",
+          "company_scope": "actor_current_company",
+          "data_scope": "project_creation_fixture",
+          "record_state": "none",
+          "operation": "create",
+          "expected": {
+            "decision": "allow",
+            "reason_code": "",
+            "business_effect": {
+              "project_record_created": true,
+              "manager_id_defaulted": true,
+              "phase_key_initiation": true,
+              "lifecycle_state_draft": true,
+              "bootstrap_message_posted": true
+            }
+          }
+        },
+        "project_creator_missing_name": {
+          "role_code": "project_manager",
+          "company_scope": "actor_current_company",
+          "data_scope": "project_creation_fixture",
+          "record_state": "none",
+          "operation": "create",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "MISSING_PARAMS",
+            "business_effect": {
+              "project_record_created": false,
+              "records_changed": 0
+            }
+          }
+        },
+        "project_reader_cannot_create": {
+          "role_code": "project_member",
+          "company_scope": "actor_current_company",
+          "data_scope": "project_creation_fixture",
+          "record_state": "none",
+          "operation": "create",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "PERMISSION_DENIED",
+            "business_effect": {
+              "project_record_created": false,
+              "records_changed": 0
+            }
+          }
+        }
+      }
     }
   }
 }
