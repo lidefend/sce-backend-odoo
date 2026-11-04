@@ -25,7 +25,7 @@ RUN if [ "${APT_MIRROR}" = "huaweicloud" ]; then \
                 "${source}"; \
         done; \
     fi \
-    && apt-get purge -y nodejs npm node-less libnode-dev libnode72 \
+    && (apt-get purge -y nodejs npm node-less libnode-dev libnode72 || true) \
     && apt-get autoremove -y --purge \
     && rm -rf /usr/local/bin/rtlcss /usr/local/lib/node_modules/rtlcss \
     && rm -f /usr/share/java/libintl-*.jar \
