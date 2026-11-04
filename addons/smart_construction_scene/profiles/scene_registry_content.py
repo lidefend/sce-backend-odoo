@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 from xml.etree import ElementTree as ET
@@ -58,8 +59,8 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
 
 
 def _read_native_action_fact(relative_path: str, action_id: str) -> Dict[str, str]:
-    """Read name/res_model from a native ir.actions.act_window record."""
-    fact: Dict[str, str] = {"name": "", "model": ""}
+    """Read name/res_model/sc_web_route from a native act_window record."""
+    fact: Dict[str, str] = {"name": "", "model": "", "route": ""}
     try:
         root = ET.parse(str(_CORE_DIR / relative_path)).getroot()
     except (OSError, ET.ParseError):
@@ -73,6 +74,13 @@ def _read_native_action_fact(relative_path: str, action_id: str) -> Dict[str, st
                 fact["name"] = str(field.text or "").strip()
             elif field_name == "res_model":
                 fact["model"] = str(field.text or "").strip()
+            elif field_name == "context":
+                match = re.search(
+                    r"""['"]sc_web_route['"]\s*:\s*['"]([^'"]+)['"]""",
+                    str(field.text or ""),
+                )
+                if match:
+                    fact["route"] = match.group(1).strip()
         break
     return fact
 
@@ -104,6 +112,23 @@ def _derive_enterprise_bootstrap_entries() -> List[Dict[str, Any]]:
             entry["enablement_scope"] = projection["enablement_scope"]
         entries.append(entry)
     return entries
+
+
+def _derive_my_work_entry() -> Dict[str, Any]:
+    """Project the native my-work action/menu into the my-work scene entry."""
+    fact = _read_native_action_fact(
+        "views/support/my_work_views.xml",
+        "action_sc_my_work",
+    )
+    return {
+        "code": "my_work.workspace",
+        "name": fact.get("name") or "我的工作",
+        "target": {
+            "route": fact.get("route") or "/my-work",
+            "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+            "action_xmlid": "smart_construction_core.action_sc_my_work",
+        },
+    }
 
 
 def list_scene_entries() -> List[Dict[str, Any]]:
@@ -731,11 +756,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             },
         },
         {
-            "code": "my_work.workspace",
-            "name": "我的工作",
-            "target": {"route": "/my-work"},
-        },
-        {
             "code": "projects.detail",
             "name": "项目详情",
             "target": {
@@ -820,4 +840,5 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         },
     ]
     entries.extend(_derive_enterprise_bootstrap_entries())
+    entries.append(_derive_my_work_entry())
     return entries

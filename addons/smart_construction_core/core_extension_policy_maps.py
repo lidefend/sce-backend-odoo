@@ -1277,9 +1277,7 @@ CRITICAL_SCENE_TARGET_OVERRIDES = {
     "finance.payment_requests",
 }
 
-CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = {
-    "my_work.workspace": "/my-work",
-}
+CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = {}
 
 INDUSTRY_CREATE_FIELD_FALLBACKS = {
     "project.project": {

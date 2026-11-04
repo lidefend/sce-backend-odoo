@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- The unified "我的工作" workspace is a frontend-only surface. Its entry
+       facts (route, surface, visibility groups) live here in the native
+       action/menu layer so scene projection and navigation stay read-only
+       consumers instead of maintaining a second hardcoded entry source. -->
+  <record id="action_sc_my_work" model="ir.actions.act_window">
+    <field name="name">我的工作</field>
+    <field name="res_model">project.project</field>
+    <field name="view_mode">tree,form</field>
+    <field name="target">current</field>
+    <field name="context">{'sc_web_route': '/my-work', 'sc_web_surface': 'my_work', 'create': False, 'edit': False}</field>
+    <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
+  </record>
+
+  <menuitem id="menu_sc_my_work"
+            name="我的工作"
+            parent="smart_construction_core.menu_sc_workspace_center"
+            action="smart_construction_core.action_sc_my_work"
+            sequence="1"
+            groups="base.group_user"/>
+</odoo>
