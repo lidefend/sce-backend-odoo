@@ -3,7 +3,8 @@
   "id": "CAP02B-MODULE-CAPABILITY-INDEX-20261104",
   "branch": "codex/cap02b-module-capability-index-20261104",
   "baseline_sha": "c29e4e35696dcf5bcd7dbfa3784fc5435ef33632",
-  "status": "active",
+  "status": "completed",
+  "head": "085c8b9d45a2daf796163b2899265fdc4011902c",
   "goal": ".agent/goals/CAP02B-MODULE-CAPABILITY-INDEX-20261104.yaml",
   "record": ".agent/runs/CAP02B-MODULE-CAPABILITY-INDEX-20261104/run.json",
   "scope": [
@@ -21,6 +22,10 @@
     "authority": "existing local Make tools; no database or service access"
   },
   "checks": {},
+  "check_results": {
+    "module_capability_index_tests": "9 tests PASS",
+    "ci_local_iteration": "PASS L1_only"
+  },
   "blockers": [],
-  "next_exact_step": "run module reverse index; review four-source classification, reverse index and candidate/scene diff; then decide module baseline refinement."
+  "next_exact_step": "CAP-02B closed: reverse index + technical facts baseline delivered with R1 corrections; await PR review."
 }

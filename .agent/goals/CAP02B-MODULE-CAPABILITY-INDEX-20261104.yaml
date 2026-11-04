@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: CAP02B-MODULE-CAPABILITY-INDEX-20261104
-  status: active
+  status: completed
   title: CAP-02B 模块能力反向索引与技术事实基线（只读）
   formal_product_layer: P4
   layer_target: scripts/verify/ 模块→能力反向索引 + 仓库技术事实基线
