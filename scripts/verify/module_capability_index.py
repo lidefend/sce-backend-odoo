@@ -199,25 +199,50 @@ def _mechanism_dependencies(mod: dict) -> list[dict]:
     return deps
 
 
+def _class_declarations(text: str) -> tuple[set[str], set[str]]:
+    """Class-level ``_name`` / ``_inherit`` values, ignoring function-local
+    assignments. AST class-scope recognition: a statement is only a declaration
+    when it sits directly in a ``ClassDef`` body.
+    """
+    names: set[str] = set()
+    inherits: set[str] = set()
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return names, inherits
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for stmt in node.body:
+            if not isinstance(stmt, ast.Assign):
+                continue
+            for target in stmt.targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                if target.id == "_name" and isinstance(stmt.value, ast.Constant) \
+                        and isinstance(stmt.value.value, str):
+                    names.add(stmt.value.value)
+                elif target.id == "_inherit":
+                    value = stmt.value
+                    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                        inherits.add(value.value)
+                    elif isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                        for elt in value.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                inherits.add(elt.value)
+    return names, inherits
+
+
 def _inherit_declares(text: str, mixin: str) -> bool:
-    """True only when an _inherit declaration lists mixin as a quoted element."""
-    for m in re.finditer(r'(?m)^\s*_inherit\s*=\s*(.*?)(?=\n\s*(?:\w+\s*=|def\s|class\s|@)|\Z)', text, re.S):
-        decl = m.group(1).strip()
-        if re.search(rf'["\']{re.escape(mixin)}["\']', decl):
-            return True
-    return False
+    """True only when a class-level ``_inherit`` declaration lists ``mixin``."""
+    _, inherits = _class_declarations(text)
+    return mixin in inherits
 
 
 def _name_declares(text: str, name: str) -> bool:
-    """True only when a class-level ``_name`` declaration equals ``name``.
-
-    Requires a line-start declaration so ``model_name=``, comments, strings and
-    test-call keyword arguments never match.
-    """
-    return any(
-        m.group(1) == name
-        for m in re.finditer(r'(?m)^\s*_name\s*=\s*["\']([^"\']+)["\']', text)
-    )
+    """True only when a class-level ``_name`` declaration equals ``name``."""
+    names, _ = _class_declarations(text)
+    return name in names
 
 def _file_digests(mod: dict) -> dict[str, str]:
     digests: dict[str, str] = {}

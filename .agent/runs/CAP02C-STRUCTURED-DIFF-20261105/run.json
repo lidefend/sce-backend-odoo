@@ -37,8 +37,9 @@
     "R1_final_unit": "PASS offline: 55 tests total (xmlid identity + fallback, strict runtime coverage provider/owner/intent, change_class unchanged/source_only/technical/unresolved, scenario_fixture not runtime_observed)",
     "R2_final_unit": "PASS offline: 59 tests total (provider attribution consistency, action type coverage declaration, XMLID multi-identity, field-change no over-propagation)",
     "R2_final_runtime_finding": "strict coverage now flags 6 provider attribution mismatches: smart_core x3 + smart_construction_scene x3 declared as odoo_model provider of project.project in reverse_index, but project.project runtime registry_modules does not contain either module; runtime_coverage=false is the honest fail-closed result, not a smoke failure",
-    "R3_scanner_fix": "PASS: _provider_module now syntax-verifies _name/_inherit (line-start declaration); model_name/some_model_name/comments/strings no longer match; 6 false positives -> 0; smart_construction_core retained; runtime_coverage recomputed true (0 uncovered); 74 offline tests total (15 module_capability_index + 59 D1-D4)"
+    "R3_scanner_fix": "PASS: _provider_module now syntax-verifies _name/_inherit (line-start declaration); model_name/some_model_name/comments/strings no longer match; 6 false positives -> 0; smart_construction_core retained; runtime_coverage recomputed true (0 uncovered); 74 offline tests total (15 module_capability_index + 59 D1-D4)",
+    "R3_scanner_ast_boundary": "PASS: _name/_inherit recognition now AST class-scope only; function-local _name/_inherit assignments no longer match; class-level declarations still recognized; 75 offline tests total (16 module_capability_index + 59 D1-D4)"
   },
   "blockers": [],
-  "next_exact_step": "R3 scanner fix complete (74 offline tests); 6 provider false positives eliminated; runtime_coverage recomputed true; commit + push; await owner final review of PR #808."
+  "next_exact_step": "R3 scanner fix + AST class-scope boundary complete (75 offline tests); commit + push; await owner final review of PR #808."
 }
