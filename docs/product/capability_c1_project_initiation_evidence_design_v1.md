@@ -34,31 +34,21 @@ project.initiation.create
 授权判定遵循 `capability_authorization_model_v1.md`：角色只是测试主体标识，授权判据是
 能力配置（`capability_profile`）+ 原生 ACL/Record Rules + 服务端执行结果。
 
-## 3. Preview / Standard 检查矩阵
+## 3. Preview / Standard 检查矩阵（五项契约检查为唯一有效标准）
 
-| 检查 | 用例 | Preview | Standard |
-|---|---|---|---|
-| write_contract | native_action_target | ✅ | ✅ |
-| write_contract | required_name_validation | ✅ | ✅ |
-| write_contract | allowed_field_whitelist | ✅ | ✅ |
-| write_contract | permission_denied_contract | ✅ | ✅ |
-| write_contract | missing_param_contract | ✅ | ✅ |
-| authorization_contract | create_requires_native_access | ✅ | ✅ |
-| authorization_contract | record_rule_scope_applied | ✅ | ✅ |
-| write_regression | create_produces_project_record | — | ✅ |
-| write_regression | default_manager_phase_lifecycle | — | ✅ |
-| write_regression | bootstrap_conditional_task_root | — | ✅ |
-| write_regression | missing_name_rejected_no_record | — | ✅ |
-| write_regression | permission_denied_no_side_effect | — | ✅ |
-| write_regression | validation_failure_data_consistent | — | ✅ |
+| 检查 | Preview | Standard |
+|---|---|---|
+| contract_identity_consistency | ✅ | ✅ |
+| contract_io_consistency | ✅ | ✅ |
+| contract_dependency_consistency | ✅ | ✅ |
+| contract_scope_consistency | ✅ | ✅ |
+| contract_promise_consistency | — | ✅ |
 
-Standard 必须包含 Preview 全部用例（已满足）。
+Standard 包含 Preview 全部用例（contract_promise_consistency 为 Standard 新增）。
 
-授权检查拆为三个独立维度（已写入契约）：
-
-1. `capability_entitlement`：项目创建能力是否被授予。
-2. `native_resource_authorization`：原生 ACL（create=1）与 Record Rules（公司/数据范围）。
-3. `execution_authorization`：真实服务端请求是否通过全部授权。
+> 历史记录：早先的 write_contract / authorization_contract / write_regression 六项
+> 业务测试矩阵与三链授权检查矩阵均已废止，不再作为 CAP-01C 的资格条件；仅作为设计
+> 历史保留。C1 的授权事实由契约元数据与平台 Provider 注册验证承载，不逐项重测 Odoo ACL。
 
 ## 4. 五项契约检查（轻量认证标准，替代旧六项业务测试）
 
@@ -77,6 +67,12 @@ Standard 必须包含 Preview 全部用例（已满足）。
 场景中的 `role_group_xmlid` 是测试主体身份元数据，`capability_group_xmlid` 才是
 实际授权输入；执行器不得根据角色组自行推断能力分组。
 
+`business_scenarios` 的字段（role_code / capability_profile / capability_group_xmlid /
+role_group_xmlid / expected）不直接传入 `capability_maturity.evaluate_business_handling`，
+后者采用严格的场景字段集合校验。若未来需要角色业务处理证据，必须用明确的字段投影适配器
+把场景元数据映射为评估器接受的字段，不得修改评估器迁就新结构。本项不影响当前五项契约认证，
+只明确边界以避免 C1-02/03 生成错误证据包。
+
 ## 5. 依赖文件与指纹范围
 
 product_dependencies（candidate_fingerprint 输入）：
@@ -85,6 +81,8 @@ product_dependencies（candidate_fingerprint 输入）：
 addons/smart_construction_core/handlers/project_initiation_enter.py
 addons/smart_construction_core/services/project_creation_service.py
 addons/smart_construction_core/models/core/project_core.py
+addons/smart_construction_core/views/menu.xml
+addons/smart_construction_core/core_extension_intent_handlers.py
 ```
 
 authorization_dependencies（业务授权验证输入）：
@@ -95,6 +93,8 @@ identity_resolver.py / core_extension_policy_maps.py
 ```
 
 任一依赖文件变化 → candidate_fingerprint / maturity_fingerprint 变化 → 旧证据失效。
+
+本清单与 `capability_acceptance_contracts_v1.json` 的 `product_dependencies` 完全一致。
 
 ## 6. Receipt 与 Artifact 可信来源链
 
