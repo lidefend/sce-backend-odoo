@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
+import inspect
 import json
 import re
 import subprocess
@@ -288,14 +289,16 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         states, transitions, terminal = sm["states"], sm["transitions"], sm["terminal_states"]
         state_set = set(states)
         all_targets = {t for targets in transitions.values() for t in targets}
-        method_targets = {m["target_state"] for m in methods if m["target_state"]}
         method_names = {m["method"] for m in methods}
         button_names = {g["button"] for g in view_guards}
+        uncovered, unresolved_edges = _transition_edge_coverage(methods, view_guards, states, transitions)
+        edge_status = "fail" if uncovered else ("error" if unresolved_edges else "pass")
+        edge_reason = f"uncovered={uncovered} unresolved={unresolved_edges}" if (uncovered or unresolved_edges) else f"{sum(len(v) for v in transitions.values())} edges covered"
         return [
             _case("state_enum_declared", "pass" if states and len(states) == len(state_set) else "fail", f"{len(states)} unique states"),
             _case("transition_table_exhaustive", "pass" if state_set <= set(transitions) and all_targets <= state_set else "fail", f"states={len(states)} table={len(transitions)} targets_valid={all_targets <= state_set}"),
             _case("terminal_state_declared", "pass" if terminal and all(transitions.get(t) == [] for t in terminal) else "fail", f"terminal={terminal}"),
-            _case("every_transition_has_method", "pass" if all_targets <= method_targets else "fail", f"targets_without_method={sorted(all_targets - method_targets)}"),
+            _case("every_transition_has_method", edge_status, edge_reason),
             _case("server_guard_present", "pass" if guard.get("checks") else "fail", f"checks={guard.get('checks')}"),
             _case("view_guard_consistent_with_state_machine", "pass" if button_names == method_names else "fail", f"buttons_only={sorted(button_names - method_names)} methods_only={sorted(method_names - button_names)}"),
         ]
@@ -323,10 +326,12 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         audit = [m for m in methods if m["method"] in {"action_submit", "action_approve", "action_done", "action_cancel"}]
         bind = [m for m in methods if m["method"] in {"action_bind_contract", "action_unbind_contract"}]
         immutable = _settlement_immutable_states()
+        immutable_enforced = _settlement_immutable_enforced()
+        audit_guarded = all(m["server_guard"] for m in audit) if len(audit) == 4 else False
         return [
-            _case("audit_actions_declared", "pass" if len(audit) == 4 else "fail", f"audit={[m['method'] for m in audit]}"),
+            _case("audit_actions_declared", "pass" if len(audit) == 4 and audit_guarded else ("fail" if len(audit) != 4 else "skip"), f"audit={[(m['method'], m['server_guard']) for m in audit]}"),
             _case("approval_state_declared", "pass" if "approve" in states else "fail", f"states={states}"),
-            _case("immutable_final_states_declared", "pass" if immutable and immutable >= {"done", "cancel"} else "fail", f"immutable={immutable}"),
+            _case("immutable_final_states_declared", "pass" if immutable and immutable >= {"done", "cancel"} and immutable_enforced else "fail", f"immutable={immutable} enforced={immutable_enforced}"),
             _case("contract_association_boundary_declared", "pass" if len(bind) == 2 and all(m["server_guard"] for m in bind) else "fail", f"bind={[(m['method'], m['server_guard']) for m in bind]}"),
         ]
     return []
@@ -340,12 +345,63 @@ def _settlement_immutable_states() -> set[str]:
     return {s.strip().strip('"').strip("'") for s in m.group(1).split(",") if s.strip()}
 
 
+def _settlement_immutable_enforced() -> bool:
+    """True only when _IMMUTABLE_FACT_STATES is used in a write guard, not merely declared."""
+    text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text(encoding="utf-8")
+    return bool(re.search(r'\._IMMUTABLE_FACT_STATES\b', text)) or bool(
+        re.search(r'in\s+self\._IMMUTABLE_FACT_STATES\b', text)
+    )
+
+
+def _parse_from_states(invisible: str, all_states: set[str]) -> set[str]:
+    """Derive the set of source states a button guard allows."""
+    m = re.search(r"lifecycle_state\s*!=\s*'([a-z_]+)'", invisible)
+    if m:
+        return {m.group(1)}
+    m = re.search(r"lifecycle_state\s*not\s+in\s*\[([^\]]+)\]", invisible)
+    if m:
+        return {s.strip().strip("'") for s in m.group(1).split(",") if s.strip()}
+    m = re.search(r"lifecycle_state\s*==\s*'([a-z_]+)'", invisible)
+    if m:
+        return all_states - {m.group(1)}
+    return set()
+
+
+def _transition_edge_coverage(methods: list[dict], view_guards: list[dict], states: list[str], transitions: dict) -> tuple[list[str], list[str]]:
+    """Return (uncovered_edges, unresolved_edges) for source->target coverage."""
+    all_states = set(states)
+    method_map: dict[str, dict] = {}
+    for m in methods:
+        method_map[m["method"]] = {"target": m["target_state"], "from": set()}
+    for g in view_guards:
+        if g["button"] in method_map:
+            method_map[g["button"]]["from"] = _parse_from_states(g["invisible"], all_states)
+
+    uncovered: list[str] = []
+    unresolved: list[str] = []
+    for source, targets in transitions.items():
+        for target in targets:
+            candidates = [mm for mm in method_map.values() if mm["target"] == target]
+            if not candidates:
+                unresolved.append(f"{source}->{target}:no_method_for_target")
+                continue
+            if any(source in mm["from"] for mm in candidates):
+                continue
+            if all(not mm["from"] for mm in candidates):
+                unresolved.append(f"{source}->{target}:source_guard_unparseable")
+            else:
+                uncovered.append(f"{source}->{target}")
+    return uncovered, unresolved
+
+
 def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
     """Build one capability.maturity.evidence.v2 bundle for the six keep-atomic."""
     contract_data = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     contracts = contract_data["capabilities"]
     head = _head()
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    check_source = inspect.getsource(_batch_cases)
+    check_digest = hashlib.sha256(check_source.encode("utf-8")).hexdigest()
 
     artifacts: dict[str, str] = {}
     payloads: list[tuple[str, bytes]] = []
@@ -369,7 +425,15 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
             "fingerprint": fingerprint,
             "check_id": check_id,
             "cases": cases,
-            "provenance": {"head": head, "executed_at": started, "mechanism": "capability_contract_mapper.join"},
+            "provenance": {
+                "head": head,
+                "executed_at": started,
+                "mechanism": "capability_contract_mapper.join",
+                "check_module": "capability_maturity_bundle_build",
+                "check_function": "_batch_cases",
+                "check_digest": check_digest,
+                "execution_id": hashlib.sha256(f"{head}:{check_digest}:{key}".encode("utf-8")).hexdigest()[:16],
+            },
         }
         raw = json.dumps(artifact, ensure_ascii=False, sort_keys=True).encode("utf-8")
         digest = hashlib.sha256(raw).hexdigest()

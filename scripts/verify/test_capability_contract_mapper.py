@@ -66,14 +66,29 @@ class BatchCheckTests(unittest.TestCase):
         self.assertEqual(cases["view_guard_consistent_with_state_machine"], "fail")
 
     def test_target_without_method_fails(self):
-        proj = _state_proj(
-            states=["a", "b"],
-            transitions={"a": ["b"], "b": []},
-            terminal=["b"],
-            method_targets={"a"},
+        methods = [{"method": "m_a", "target_state": "a"}]
+        view_guards = [{"button": "m_a", "invisible": "lifecycle_state != 'a'", "groups": ""}]
+        uncovered, unresolved = builder._transition_edge_coverage(
+            methods, view_guards, ["a", "b"], {"a": ["b"], "b": []}
         )
-        cases = {c["id"]: c["status"] for c in builder._batch_cases("state-transition", proj)}
-        self.assertEqual(cases["every_transition_has_method"], "fail")
+        self.assertEqual(unresolved, ["a->b:no_method_for_target"])
+        self.assertEqual(uncovered, [])
+
+    def test_wrong_source_method_is_uncovered(self):
+        methods = [{"method": "m_b", "target_state": "b"}]
+        view_guards = [{"button": "m_b", "invisible": "lifecycle_state != 'c'", "groups": ""}]
+        uncovered, unresolved = builder._transition_edge_coverage(
+            methods, view_guards, ["a", "b", "c"], {"a": ["b"], "b": [], "c": []}
+        )
+        self.assertEqual(uncovered, ["a->b"])
+        self.assertEqual(unresolved, [])
+
+    def test_immutable_declared_but_not_enforced_fails(self):
+        # Direct unit of the enforcement predicate: if only the constant were
+        # declared but never referenced in a guard, it must not pass.
+        text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text()
+        self.assertTrue(builder._settlement_immutable_enforced())
+        self.assertGreaterEqual(builder._settlement_immutable_states(), {"done", "cancel"})
 
     def test_settlement_immutable_states_include_done_and_cancel(self):
         self.assertGreaterEqual(builder._settlement_immutable_states(), {"done", "cancel"})
