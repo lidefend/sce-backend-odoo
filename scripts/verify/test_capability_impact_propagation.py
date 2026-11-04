@@ -84,10 +84,17 @@ class PropagationTests(unittest.TestCase):
         self.assertTrue(any(u["reason"] == "runtime_unverified" for u in result["unresolved"]))
 
     def test_model_extension_multi_module_contributes(self):
-        result = _run(_asset(model_extensions=["smart_construction_core", "customer_custom"]))
+        result = _run(_asset(asset_type="model", asset_modules=[],
+                             model_extensions=["smart_construction_core", "customer_custom"]))
         cap = next(c for c in result["impacted_capabilities"] if c["capability_key"] == "project.list.open")
         modules = {p["module"] for p in cap["providers"]}
         self.assertEqual(modules, {"smart_construction_core", "customer_custom"})
+
+    def test_field_change_does_not_propagate_to_unrelated_extensions(self):
+        result = _run(_asset(asset_type="field", asset_modules=["smart_construction_core"],
+                             model_owner="project", model_extensions=["customer_custom"]))
+        modules = {p["module"] for c in result["impacted_capabilities"] for p in c["providers"]}
+        self.assertNotIn("customer_custom", modules)
 
     def test_contract_missing_is_unresolved_but_scene_kept(self):
         result = _run(_asset(asset_modules=["legacy_module"]))
@@ -166,6 +173,33 @@ class RuntimeCoverageTests(unittest.TestCase):
              "model_ownership": {"items": []}, "actions": {"items": []}, "views": {"items": []},
              "intent_handlers": {"completeness": "complete", "items": []}})
         self.assertTrue(any(u["kind"] == "intent_handler_missing" for u in cov["uncovered"]))
+
+    def test_detects_provider_module_not_in_model_contributions(self):
+        cov = d3.compute_runtime_coverage(
+            {"wrong_module": [{"capability_key": "c", "provider_type": "odoo_model",
+                               "provider_ref": "project.project"}]},
+            {},
+            {"modules": {"items": {"wrong_module": {}}},
+             "model_ownership": {"items": [{"model": "project.project", "model_owner": "project",
+                                            "registry_modules": ["project", "smart_construction_core"]}]},
+             "actions": {"items": []}, "views": {"items": []},
+             "intent_handlers": {"completeness": "complete", "items": []}})
+        self.assertTrue(any(u["kind"] == "provider_module_not_in_model_contributions"
+                            for u in cov["uncovered"]))
+
+    def test_detects_action_module_mismatch(self):
+        cov = d3.compute_runtime_coverage(
+            {"smart_construction_core": [{"capability_key": "c", "provider_type": "odoo_action",
+                                          "provider_ref": "smart_construction_core.action_x"}]},
+            {},
+            {"modules": {"items": {"smart_construction_core": {}}},
+             "model_ownership": {"items": []},
+             "actions": {"items": [{"xmlid": "smart_construction_core.action_x",
+                                    "module": "other_module"}]},
+             "views": {"items": []},
+             "intent_handlers": {"completeness": "complete", "items": []}})
+        self.assertTrue(any(u["kind"] == "provider_action_module_mismatch"
+                            for u in cov["uncovered"]))
 
 
 if __name__ == "__main__":

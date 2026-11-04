@@ -32,8 +32,10 @@
     "D3_impact_propagation_unit": "PASS offline: 13 tests (test_capability_impact_propagation.py): multi-module/multi-capability/multi-scene, provider-missing (confirmed vs unresolved), intent (resolved/missing/runtime_unverified), contract-missing, historical-scene, unrelated-no-propagate, incomplete-extensions",
     "D4_impact_report_unit": "PASS offline: 5 tests (test_module_change_impact_report.py): source-only-Low, removed-provider-Critical, contract-missing-Unresolved, scene-Medium, recommendation-counts-derived",
     "runtime_smoke": "PASS read-only: sc_dev_demo Odoo 17.0-20260630 registry ready; 681 modules/754 models/18965 fields/740 actions/2091 views/204 menus/1567 acl/675 rules/59 intent handlers; 740/740 actions full XMLID; strict runtime_coverage derived true (0 uncovered); base_tier_validation -> 5 capabilities; evidence .runtime/cap02c-runtime-smoke/evidence.json",
-    "R1_final_unit": "PASS offline: 55 tests total (xmlid identity + fallback, strict runtime coverage provider/owner/intent, change_class unchanged/source_only/technical/unresolved, scenario_fixture not runtime_observed)"
+    "R1_final_unit": "PASS offline: 55 tests total (xmlid identity + fallback, strict runtime coverage provider/owner/intent, change_class unchanged/source_only/technical/unresolved, scenario_fixture not runtime_observed)",
+    "R2_final_unit": "PASS offline: 59 tests total (provider attribution consistency, action type coverage declaration, XMLID multi-identity, field-change no over-propagation)",
+    "R2_final_runtime_finding": "strict coverage now flags 6 provider attribution mismatches: smart_core x3 + smart_construction_scene x3 declared as odoo_model provider of project.project in reverse_index, but project.project runtime registry_modules does not contain either module; runtime_coverage=false is the honest fail-closed result, not a smoke failure"
   },
   "blockers": [],
-  "next_exact_step": "R1-FINAL complete (55 offline tests + strict Runtime Smoke); commit + push; await owner review of PR #808."
+  "next_exact_step": "R2-FINAL complete (59 offline tests); strict coverage surfaced 6 Repository-vs-Runtime provider attribution mismatches; commit + push; await owner review of PR #808."
 }

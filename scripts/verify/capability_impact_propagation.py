@@ -32,8 +32,11 @@ def _affected_modules(asset: dict) -> set[str]:
     mods = set(asset.get("asset_modules") or [])
     if asset.get("model_owner"):
         mods.add(asset["model_owner"])
-    for m in (asset.get("model_extensions") or []):
-        mods.add(m)
+    # Model-level changes propagate to extensions; field-level changes must not
+    # over-propagate to unrelated extensions without explicit dependency evidence.
+    if asset.get("asset_type") == "model":
+        for m in (asset.get("model_extensions") or []):
+            mods.add(m)
     return {m for m in mods if m}
 
 
@@ -193,13 +196,10 @@ def compute_runtime_coverage(reverse_index: dict[str, list[dict]],
     """Coverage derived from actual provider/asset/handler facts, not module names."""
     runtime_modules = set((runtime_snapshot.get("modules") or {}).get("items", {}).keys())
     ownership = (runtime_snapshot.get("model_ownership") or {}).get("items", []) or []
-    runtime_models = {o.get("model") for o in ownership}
-    owner_by_model = {o.get("model"): o.get("model_owner") or "" for o in ownership}
-    runtime_actions = {a.get("xmlid") for a in (runtime_snapshot.get("actions") or {}).get("items", [])
+    model_by_name = {o.get("model"): o for o in ownership if o.get("model")}
+    runtime_actions = {a.get("xmlid"): a for a in (runtime_snapshot.get("actions") or {}).get("items", [])
                        if a.get("xmlid")}
-    runtime_views = {v.get("xmlid") for v in (runtime_snapshot.get("views") or {}).get("items", [])
-                     if v.get("xmlid")}
-    runtime_intents = {h.get("intent") for h in (runtime_snapshot.get("intent_handlers") or {}).get("items", [])
+    runtime_intents = {h.get("intent"): h for h in (runtime_snapshot.get("intent_handlers") or {}).get("items", [])
                        if h.get("registered")}
     handler_complete = (runtime_snapshot.get("intent_handlers") or {}).get("completeness") == "complete"
 
@@ -214,18 +214,40 @@ def compute_runtime_coverage(reverse_index: dict[str, list[dict]],
             if not provider_ref:
                 continue
             if provider_type == "odoo_model":
-                if provider_ref not in runtime_models:
+                model_entry = model_by_name.get(provider_ref)
+                if model_entry is None:
                     uncovered.append({"module": module, "kind": "provider_asset_missing",
                                       "provider_type": provider_type, "provider_ref": provider_ref})
-                elif provider_ref in owner_by_model and not owner_by_model[provider_ref]:
+                    continue
+                registry_modules = set(model_entry.get("registry_modules") or [])
+                if module not in registry_modules:
+                    uncovered.append({"module": module, "kind": "provider_module_not_in_model_contributions",
+                                      "provider_ref": provider_ref,
+                                      "model_contributions": sorted(registry_modules)})
+                if not (model_entry.get("model_owner") or ""):
                     uncovered.append({"module": module, "kind": "owner_unresolved",
                                       "provider_ref": provider_ref})
-            elif provider_type == "odoo_action" and provider_ref not in runtime_actions:
-                uncovered.append({"module": module, "kind": "provider_asset_missing",
+            elif provider_type == "odoo_action":
+                action = runtime_actions.get(provider_ref)
+                if action is None:
+                    uncovered.append({"module": module, "kind": "provider_asset_missing",
+                                      "provider_type": provider_type, "provider_ref": provider_ref})
+                elif (action.get("module") or "") != module:
+                    uncovered.append({"module": module, "kind": "provider_action_module_mismatch",
+                                      "provider_ref": provider_ref,
+                                      "action_module": action.get("module")})
+            elif provider_type == "odoo_intent":
+                handler = runtime_intents.get(provider_ref)
+                if handler is None:
+                    uncovered.append({"module": module, "kind": "intent_handler_missing",
+                                      "provider_ref": provider_ref})
+                elif (handler.get("module") or "") != module:
+                    uncovered.append({"module": module, "kind": "intent_module_mismatch",
+                                      "provider_ref": provider_ref,
+                                      "intent_module": handler.get("module")})
+            else:
+                uncovered.append({"module": module, "kind": "provider_type_uncovered",
                                   "provider_type": provider_type, "provider_ref": provider_ref})
-            elif provider_type == "odoo_intent" and provider_ref not in runtime_intents:
-                uncovered.append({"module": module, "kind": "intent_handler_missing",
-                                  "provider_ref": provider_ref})
     return {
         "runtime_coverage": bool(not uncovered) and handler_complete,
         "handler_registry_complete": handler_complete,

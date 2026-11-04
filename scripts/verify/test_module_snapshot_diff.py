@@ -390,6 +390,18 @@ class SemanticDiffTests(unittest.TestCase):
         self.assertTrue(fact["fact_identity"].startswith("action__fallback__"))
         self.assertEqual(fact["identity_completeness"], "fallback")
 
+    def test_action_xmlids_preserve_full_multi_identity_set(self):
+        proj = d1.project_runtime(_runtime(
+            ownership=[{"model": "project.project", "registry_modules": ["project"],
+                        "model_owner": "project", "model_extensions": []}],
+            actions=[{"name": "列表", "res_model": "project.project", "view_mode": "tree",
+                      "module": "smart_construction_core", "xmlid": "smart_construction_core.action_x",
+                      "xmlids": ["project.action_alias", "smart_construction_core.action_x"]}]))
+        fact = next(f for f in proj["modules"]["smart_construction_core"]["facts"] if f["kind"] == "action")
+        self.assertEqual(fact["fact_identity"], "action:smart_construction_core.action_x")
+        self.assertEqual(set(fact["xmlids"]),
+                         {"project.action_alias", "smart_construction_core.action_x"})
+
 
 if __name__ == "__main__":
     unittest.main()

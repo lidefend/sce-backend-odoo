@@ -80,15 +80,19 @@ def _snapshot(env, db_name):
             res_id = rec["res_id"]
             if isinstance(res_id, str):
                 res_id = int(res_id) if res_id.isdigit() else None
-            if res_id is not None:
-                module = rec.get("module") or ""
-                name = rec.get("name") or ""
-                mapping.setdefault(res_id, {
-                    "module": module,
-                    "name": name,
-                    "xmlid": f"{module}.{name}" if module and name else (module or ""),
-                })
-        return mapping
+            if res_id is None:
+                continue
+            module = rec.get("module") or ""
+            name = rec.get("name") or ""
+            xmlid = f"{module}.{name}" if module and name else (module or "")
+            mapping.setdefault(res_id, []).append(xmlid)
+        return {rid: sorted(set(xids)) for rid, xids in mapping.items()}
+
+    def _identity(xids):
+        xids = sorted(xids or [])
+        primary = xids[0] if xids else ""
+        primary_module = primary.split(".")[0] if "." in primary else ""
+        return primary, primary_module, xids
 
     fields = env["ir.model.fields"].search_read(
         [], ["model_id", "name", "ttype", "relation", "required", "readonly",
@@ -115,21 +119,34 @@ def _snapshot(env, db_name):
         [], ["name", "res_model", "view_mode", "context", "groups_id"])
     result["actions"] = {
         "source": "runtime_registry", "completeness": "complete",
-        "items": [{"name": a["name"], "res_model": a["res_model"], "view_mode": a["view_mode"],
-                   "context": a["context"], "groups_id": a["groups_id"] or [],
-                   "xmlid": (action_xid.get(a["id"]) or {}).get("xmlid", ""),
-                   "module": (action_xid.get(a["id"]) or {}).get("module", "")} for a in actions],
+        "items": [
+            (lambda primary, module, xids: {
+                "name": a["name"], "res_model": a["res_model"], "view_mode": a["view_mode"],
+                "context": a["context"], "groups_id": a["groups_id"] or [],
+                "xmlid": primary, "xmlids": xids, "module": module,
+            })(*_identity(action_xid.get(a["id"])))
+            for a in actions
+        ],
+    }
+    result["action_coverage"] = {
+        "covered_types": ["ir.actions.act_window"],
+        "not_covered_types": ["ir.actions.client", "ir.actions.server", "ir.actions.report"],
+        "note": "this round reads act_window only; other action types remain unresolved",
     }
 
     view_xid = _xmlid_map("ir.ui.view")
     views = env["ir.ui.view"].search_read([], ["name", "model", "inherit_id", "arch_db"])
     result["views"] = {
         "source": "runtime_registry", "completeness": "complete",
-        "items": [{"name": v["name"], "model": v["model"],
-                   "inherit_id": v["inherit_id"] and v["inherit_id"][0],
-                   "arch_digest": hashlib.sha256((v["arch_db"] or "").encode("utf-8")).hexdigest(),
-                   "xmlid": (view_xid.get(v["id"]) or {}).get("xmlid", ""),
-                   "module": (view_xid.get(v["id"]) or {}).get("module", "")} for v in views],
+        "items": [
+            (lambda primary, module, xids: {
+                "name": v["name"], "model": v["model"],
+                "inherit_id": v["inherit_id"] and v["inherit_id"][0],
+                "arch_digest": hashlib.sha256((v["arch_db"] or "").encode("utf-8")).hexdigest(),
+                "xmlid": primary, "xmlids": xids, "module": module,
+            })(*_identity(view_xid.get(v["id"])))
+            for v in views
+        ],
     }
 
     menu_xid = _xmlid_map("ir.ui.menu")
@@ -137,11 +154,15 @@ def _snapshot(env, db_name):
         [], ["name", "parent_id", "action", "groups_id", "sequence"])
     result["menus"] = {
         "source": "runtime_registry", "completeness": "complete",
-        "items": [{"name": m["name"], "parent_id": m["parent_id"] and m["parent_id"][0],
-                   "action": m["action"], "groups_id": m["groups_id"] or [],
-                   "sequence": m["sequence"],
-                   "xmlid": (menu_xid.get(m["id"]) or {}).get("xmlid", ""),
-                   "module": (menu_xid.get(m["id"]) or {}).get("module", "")} for m in menus],
+        "items": [
+            (lambda primary, module, xids: {
+                "name": m["name"], "parent_id": m["parent_id"] and m["parent_id"][0],
+                "action": m["action"], "groups_id": m["groups_id"] or [],
+                "sequence": m["sequence"],
+                "xmlid": primary, "xmlids": xids, "module": module,
+            })(*_identity(menu_xid.get(m["id"])))
+            for m in menus
+        ],
     }
 
     access_xid = _xmlid_map("ir.model.access")
@@ -149,22 +170,27 @@ def _snapshot(env, db_name):
     result["security"] = {
         "source": "runtime_registry",
         "completeness": "declared_acl_not_final_effective_authorization",
-        "acl": [{"model": model_names.get(a["model_id"][0]) if isinstance(a["model_id"], (list, tuple)) else model_names.get(a["model_id"]),
-                 "perm_read": a["perm_read"], "perm_write": a["perm_write"],
-                 "perm_create": a["perm_create"], "perm_unlink": a["perm_unlink"],
-                 "xmlid": (access_xid.get(a["id"]) or {}).get("xmlid", ""),
-                 "module": (access_xid.get(a["id"]) or {}).get("module", ""),
-                 "group_id": a["group_id"][0] if a["group_id"] else None} for a in access],
+        "acl": [
+            (lambda primary, module, xids: {
+                "model": model_names.get(a["model_id"][0]) if isinstance(a["model_id"], (list, tuple)) else model_names.get(a["model_id"]),
+                "perm_read": a["perm_read"], "perm_write": a["perm_write"],
+                "perm_create": a["perm_create"], "perm_unlink": a["perm_unlink"],
+                "xmlid": primary, "xmlids": xids, "module": module,
+                "group_id": a["group_id"][0] if a["group_id"] else None,
+            })(*_identity(access_xid.get(a["id"])))
+            for a in access
+        ],
     }
 
     rule_xid = _xmlid_map("ir.rule")
     rules = env["ir.rule"].search_read([], ["model_id", "domain_force", "name", "groups"])
     groups = env["res.groups"].search_read([], ["full_name"])
     result["security"]["record_rules"] = [
-        {"model": model_names.get(r["model_id"][0]) if isinstance(r["model_id"], (list, tuple)) else model_names.get(r["model_id"]),
-         "name": r["name"], "xmlid": (rule_xid.get(r["id"]) or {}).get("xmlid", ""),
-         "module": (rule_xid.get(r["id"]) or {}).get("module", ""),
-         "domain": r["domain_force"], "groups": r["groups"] or []}
+        (lambda primary, module, xids: {
+            "model": model_names.get(r["model_id"][0]) if isinstance(r["model_id"], (list, tuple)) else model_names.get(r["model_id"]),
+            "name": r["name"], "xmlid": primary, "xmlids": xids, "module": module,
+            "domain": r["domain_force"], "groups": r["groups"] or [],
+        })(*_identity(rule_xid.get(r["id"])))
         for r in rules
     ]
     result["security"]["record_rules_count"] = len(rules)
