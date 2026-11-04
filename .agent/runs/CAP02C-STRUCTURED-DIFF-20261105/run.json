@@ -11,7 +11,9 @@
     ".agent/goals/CAP02C-STRUCTURED-DIFF-20261105.yaml",
     ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "scripts/verify/odoo_runtime_facts.py",
+    "scripts/verify/module_capability_index.py",
     "scripts/verify/module_snapshot_diff.py",
+    "scripts/verify/test_module_capability_index.py",
     "scripts/verify/test_module_snapshot_diff.py",
     "scripts/verify/capability_impact_propagation.py",
     "scripts/verify/test_capability_impact_propagation.py",
@@ -34,8 +36,9 @@
     "runtime_smoke": "PASS read-only: sc_dev_demo Odoo 17.0-20260630 registry ready; 681 modules/754 models/18965 fields/740 actions/2091 views/204 menus/1567 acl/675 rules/59 intent handlers; 740/740 actions full XMLID; strict runtime_coverage derived true (0 uncovered); base_tier_validation -> 5 capabilities; evidence .runtime/cap02c-runtime-smoke/evidence.json",
     "R1_final_unit": "PASS offline: 55 tests total (xmlid identity + fallback, strict runtime coverage provider/owner/intent, change_class unchanged/source_only/technical/unresolved, scenario_fixture not runtime_observed)",
     "R2_final_unit": "PASS offline: 59 tests total (provider attribution consistency, action type coverage declaration, XMLID multi-identity, field-change no over-propagation)",
-    "R2_final_runtime_finding": "strict coverage now flags 6 provider attribution mismatches: smart_core x3 + smart_construction_scene x3 declared as odoo_model provider of project.project in reverse_index, but project.project runtime registry_modules does not contain either module; runtime_coverage=false is the honest fail-closed result, not a smoke failure"
+    "R2_final_runtime_finding": "strict coverage now flags 6 provider attribution mismatches: smart_core x3 + smart_construction_scene x3 declared as odoo_model provider of project.project in reverse_index, but project.project runtime registry_modules does not contain either module; runtime_coverage=false is the honest fail-closed result, not a smoke failure",
+    "R3_scanner_fix": "PASS: _provider_module now syntax-verifies _name/_inherit (line-start declaration); model_name/some_model_name/comments/strings no longer match; 6 false positives -> 0; smart_construction_core retained; runtime_coverage recomputed true (0 uncovered); 74 offline tests total (15 module_capability_index + 59 D1-D4)"
   },
   "blockers": [],
-  "next_exact_step": "R2-FINAL complete (59 offline tests); strict coverage surfaced 6 Repository-vs-Runtime provider attribution mismatches; commit + push; await owner review of PR #808."
+  "next_exact_step": "R3 scanner fix complete (74 offline tests); 6 provider false positives eliminated; runtime_coverage recomputed true; commit + push; await owner final review of PR #808."
 }

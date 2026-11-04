@@ -208,6 +208,17 @@ def _inherit_declares(text: str, mixin: str) -> bool:
     return False
 
 
+def _name_declares(text: str, name: str) -> bool:
+    """True only when a class-level ``_name`` declaration equals ``name``.
+
+    Requires a line-start declaration so ``model_name=``, comments, strings and
+    test-call keyword arguments never match.
+    """
+    return any(
+        m.group(1) == name
+        for m in re.finditer(r'(?m)^\s*_name\s*=\s*["\']([^"\']+)["\']', text)
+    )
+
 def _file_digests(mod: dict) -> dict[str, str]:
     digests: dict[str, str] = {}
     for f in sorted((ROOT / mod["directory"]).rglob("*")):
@@ -241,14 +252,19 @@ def _provider_module(provider_type: str, provider_ref: str) -> list[str]:
         return [module] if (ROOT / "addons" / module).is_dir() else []
     if provider_type == "odoo_model":
         modules = set()
-        for pattern in (rf'_name\s*=\s*["\']{re.escape(provider_ref)}["\']',
-                        rf'_inherit\s*=\s*["\']{re.escape(provider_ref)}["\']'):
-            proc = subprocess.run(
-                ["rg", "-l", pattern, str(ROOT / "addons")],
-                cwd=ROOT, text=True, capture_output=True, timeout=30,
-            )
-            for f in proc.stdout.splitlines():
-                rel = Path(f.strip()).relative_to(ROOT).parts
+        proc = subprocess.run(
+            ["rg", "-l", "-e", rf'_name\s*=\s*["\']{re.escape(provider_ref)}["\']',
+             "-e", rf'_inherit\s*=\s*["\']{re.escape(provider_ref)}["\']',
+             str(ROOT / "addons")],
+            cwd=ROOT, text=True, capture_output=True, timeout=30,
+        )
+        for f in proc.stdout.splitlines():
+            path = ROOT / f.strip()
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            if _name_declares(text, provider_ref) or _inherit_declares(text, provider_ref):
+                rel = path.relative_to(ROOT).parts
                 if rel[0] == "addons" and len(rel) > 1:
                     modules.add(rel[1])
         native = NATIVE_MODEL_MODULE.get(provider_ref)

@@ -98,5 +98,32 @@ class ReverseIndexTests(unittest.TestCase):
         self.assertNotEqual(a, c)
 
 
+class NameDeclarationTests(unittest.TestCase):
+    def test_model_name_kwarg_does_not_declare_name(self):
+        self.assertFalse(idx._name_declares('model_name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('some_model_name = "project.project"', "project.project"))
+
+    def test_comment_and_string_mentions_are_not_declarations(self):
+        self.assertFalse(idx._name_declares('# _name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('x = "_name = \\"project.project\\""', "project.project"))
+        self.assertFalse(idx._inherit_declares('x = "_inherit = \\"project.project\\""', "project.project"))
+
+    def test_class_level_name_declaration_is_recognized(self):
+        self.assertTrue(idx._name_declares('_name = "project.project"', "project.project"))
+        self.assertTrue(idx._name_declares('    _name = "project.project"', "project.project"))
+        self.assertFalse(idx._name_declares('_name = "project.task"', "project.project"))
+
+    def test_multi_line_inherit_list_is_recognized(self):
+        self.assertTrue(idx._inherit_declares(
+            '_inherit = [\n    "mail.thread",\n    "project.project",\n]', "project.project"))
+
+    def test_provider_module_has_no_false_positive_for_model_name(self):
+        modules = idx._provider_module("odoo_model", "project.project")
+        self.assertNotIn("smart_core", modules)
+        self.assertNotIn("smart_construction_scene", modules)
+        self.assertIn("smart_construction_core", modules)
+        self.assertIn("project", modules)
+
+
 if __name__ == "__main__":
     unittest.main()
