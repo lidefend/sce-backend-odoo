@@ -127,56 +127,44 @@
       ],
       "product_criteria": {
         "preview": {
-          "write_contract": [
-            "native_action_target",
-            "required_name_validation",
-            "allowed_field_whitelist",
-            "permission_denied_contract",
-            "missing_param_contract"
+          "contract_identity_consistency": [
+            "capability_key_matches_provider",
+            "provider_chain_resolves"
           ],
-          "capability_entitlement": [
-            "project_create_capability_required",
-            "capability_grant_does_not_bypass_native_acl"
+          "contract_io_consistency": [
+            "input_fields_whitelist_declared",
+            "output_record_shape_declared",
+            "error_codes_declared"
           ],
-          "native_resource_authorization": [
-            "create_requires_native_acl",
-            "record_rule_scope_applied"
+          "contract_dependency_consistency": [
+            "product_dependencies_complete",
+            "authorization_dependencies_complete"
           ],
-          "execution_authorization": [
-            "server_request_passes_all_authorization",
-            "missing_capability_denied",
-            "missing_acl_denied"
+          "contract_scope_consistency": [
+            "contract_does_not_exceed_provider_capability"
           ]
         },
         "standard": {
-          "write_contract": [
-            "native_action_target",
-            "required_name_validation",
-            "allowed_field_whitelist",
-            "permission_denied_contract",
-            "missing_param_contract"
+          "contract_identity_consistency": [
+            "capability_key_matches_provider",
+            "provider_chain_resolves"
           ],
-          "write_regression": [
-            "create_produces_project_record",
-            "default_manager_phase_lifecycle",
-            "bootstrap_conditional_task_root",
-            "missing_name_rejected_no_record",
-            "permission_denied_no_side_effect",
-            "validation_failure_data_consistent"
+          "contract_io_consistency": [
+            "input_fields_whitelist_declared",
+            "output_record_shape_declared",
+            "error_codes_declared"
           ],
-          "capability_entitlement": [
-            "project_create_capability_required",
-            "capability_grant_does_not_bypass_native_acl"
+          "contract_dependency_consistency": [
+            "product_dependencies_complete",
+            "authorization_dependencies_complete"
           ],
-          "native_resource_authorization": [
-            "create_requires_native_acl",
-            "record_rule_scope_applied"
+          "contract_promise_consistency": [
+            "defaults_contract_consistent",
+            "conditional_bootstrap_contract_consistent",
+            "error_mapping_contract_consistent"
           ],
-          "execution_authorization": [
-            "server_request_passes_all_authorization",
-            "missing_capability_denied",
-            "missing_acl_denied",
-            "resource_scope_outside_denied"
+          "contract_scope_consistency": [
+            "contract_does_not_exceed_provider_capability"
           ]
         }
       },
