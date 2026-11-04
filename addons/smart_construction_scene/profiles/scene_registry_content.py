@@ -1,7 +1,109 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List
+from xml.etree import ElementTree as ET
+
+
+_CORE_DIR = Path(__file__).resolve().parents[2] / "smart_construction_core"
+
+# Enterprise bootstrap scene identities are projections of the native
+# ir.actions.act_window / ir.ui.menu facts owned by smart_construction_core.
+# Only the scene-key -> native xmlid mapping lives here; the mutable facts
+# (action name, res_model) are read from the native XML records below.
+_ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
+    {
+        "scene_key": "enterprise.company",
+        "route": "/s/enterprise.company",
+        "action_xmlid": "smart_construction_core.action_sc_enterprise_company",
+        "menu_xmlid": None,
+        "action_file": "views/support/enterprise_initialization_views.xml",
+        "view_type": "form",
+    },
+    {
+        "scene_key": "enterprise.department",
+        "route": "/s/enterprise.department",
+        "action_xmlid": "smart_construction_core.action_sc_organization_department",
+        "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
+        "action_file": "views/support/organization_department_views.xml",
+        "view_type": "tree",
+    },
+    {
+        "scene_key": "enterprise.user",
+        "route": "/s/enterprise.user",
+        "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+        "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+        "action_file": "views/support/runtime_user_management_views.xml",
+        "view_type": "tree",
+    },
+    {
+        "scene_key": "enterprise.post",
+        "route": "/s/enterprise.post",
+        "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
+        "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1",
+        "action_file": "views/menu_product_contract_completion_v1.xml",
+        "view_type": "tree",
+    },
+    {
+        "scene_key": "enterprise.setup",
+        "route": "/s/enterprise.setup",
+        "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
+        "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+        "action_file": "views/support/enterprise_initialization_views.xml",
+        "view_type": "form",
+        "enablement_scope": "enterprise_initialization",
+    },
+]
+
+
+def _read_native_action_fact(relative_path: str, action_id: str) -> Dict[str, str]:
+    """Read name/res_model from a native ir.actions.act_window record."""
+    fact: Dict[str, str] = {"name": "", "model": ""}
+    try:
+        root = ET.parse(str(_CORE_DIR / relative_path)).getroot()
+    except (OSError, ET.ParseError):
+        return fact
+    for record in root.iter("record"):
+        if record.get("id") != action_id or record.get("model") != "ir.actions.act_window":
+            continue
+        for field in record.iter("field"):
+            field_name = field.get("name")
+            if field_name == "name":
+                fact["name"] = str(field.text or "").strip()
+            elif field_name == "res_model":
+                fact["model"] = str(field.text or "").strip()
+        break
+    return fact
+
+
+def _derive_enterprise_bootstrap_entries() -> List[Dict[str, Any]]:
+    """Project native enterprise actions/menus into scene registry entries."""
+    entries: List[Dict[str, Any]] = []
+    for projection in _ENTERPRISE_BOOTSTRAP_PROJECTION:
+        fact = _read_native_action_fact(
+            projection["action_file"],
+            projection["action_xmlid"].rsplit(".", 1)[-1],
+        )
+        target: Dict[str, Any] = {
+            "route": projection["route"],
+            "action_xmlid": projection["action_xmlid"],
+        }
+        if projection.get("menu_xmlid"):
+            target["menu_xmlid"] = projection["menu_xmlid"]
+        if fact.get("model"):
+            target["model"] = fact["model"]
+        if projection.get("view_type"):
+            target["view_type"] = projection["view_type"]
+        entry: Dict[str, Any] = {
+            "code": projection["scene_key"],
+            "name": fact.get("name") or projection["scene_key"],
+            "target": target,
+        }
+        if projection.get("enablement_scope"):
+            entry["enablement_scope"] = projection["enablement_scope"]
+        entries.append(entry)
+    return entries
 
 
 def list_scene_entries() -> List[Dict[str, Any]]:
@@ -10,7 +112,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
     Complete migration target: keep industry scene facts in industry layer,
     while registry keeps only platform minimum defaults.
     """
-    return [
+    entries = [
         {
             "code": "data.dictionary",
             "name": "业务字典",
@@ -717,3 +819,5 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             },
         },
     ]
+    entries.extend(_derive_enterprise_bootstrap_entries())
+    return entries

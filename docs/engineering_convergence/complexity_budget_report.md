@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5057`
 - Files requiring split plan: `72`
-- Files above warning threshold: `145`
+- Files above warning threshold: `146`
 
 ## Split Plan Required
 
@@ -209,6 +209,7 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 828 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
+| 823 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |

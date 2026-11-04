@@ -8,7 +8,7 @@
       "file": "addons/smart_construction_scene/profiles/scene_registry_content.py",
       "sha256": null,
       "converged": true,
-      "converged_by": "derive enterprise.setup from native action/menu facts"
+      "converged_by": "derive enterprise bootstrap scenes from native action/menu facts"
     },
     "independent_scene_version_payload": {
       "file": "addons/smart_construction_scene/data/sc_scene_enterprise_setup.xml",
