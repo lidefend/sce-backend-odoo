@@ -23,6 +23,10 @@
 
 同名异义必须并域或更名，不允许 `project_center` 与 `project` 并存表达同一业务域。
 
+13 域是当前建筑施工行业标准域词汇，不是永久封闭枚举。未来新增域（BIM / document /
+engineering / ai / supply_chain / human_resources 等）必须经过统一身份治理、命名冲突检查
+和兼容性审查，不允许随意创建同义域。
+
 ## 3. 身份稳定性规则
 
 1. 身份由“业务目的 + 对象 + 动作”决定，不随 Provider 变化。
@@ -40,6 +44,14 @@
 | 更名 rename | 身份不稳定或命名不规范，更名并保留兼容映射 |
 | 排除 exclude | 非能力（菜单/页面/模型/字段/入口），排除出能力目录 |
 | 暂缓 defer | 是否构成能力待核实，暂不正式登记 |
+
+正式迁移时，每条旧身份必须记录迁移档案：
+
+```text
+old_key, canonical_key, disposition, migration_reason, compatibility_alias, affected_consumers
+```
+
+旧产品、历史配置和场景引用据此安全迁移，不被静默丢弃或误指向。
 
 ## 5. 非能力判定
 

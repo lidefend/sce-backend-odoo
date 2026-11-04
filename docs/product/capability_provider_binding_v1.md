@@ -6,7 +6,7 @@
 
 | capability_key | Provider 类型 | Provider 引用 | 契约来源 |
 |---|---|---|---|
-| project.initiation.enter | odoo_intent + odoo_action + odoo_model | `project.initiation.enter` + `action_project_initiation` + `project.project` | 立项 form/list 契约 |
+| project.initiation.create | odoo_intent + odoo_action + odoo_model | `project.initiation.enter` + `action_project_initiation` + `project.project` | 立项 form/list 契约；旧 key 为兼容别名 |
 | project.list.open | odoo_action + odoo_model | `action_sc_project_list` + `project.project` | 项目列表契约 |
 | project.lifecycle.transition | odoo_model + 生命周期 action | `project.project` | 生命周期流转规则 |
 | construction.plan.manage | odoo_model + 计划 actions | `project.plan` 相关 | 计划管理契约 |
@@ -26,36 +26,29 @@
 
 ## 2. 组合能力依赖图（B4）
 
-组合能力只依赖引用已发布原子能力，不复制实现：
+组合能力只依赖引用候选目录中已存在的原子能力，不复制实现。模型内部读写
+（project.read / budget.read / boq.line.read / compare.calc 等）是 Provider 内部操作，
+不单独发布，也不作为依赖引用：
 
 ```text
 construction.plan.manage
-  -> project.read
-  -> plan.read / plan.update
-  -> plan.report
+  -> project.list.open          # 项目读取（查询能力）
+  -> construction.plan.report   # 计划汇报
 
 cost.budget.manage
-  -> project.read
-  -> budget.read / budget.update
-  -> cost.read
+  -> project.list.open
 
 cost.boq.manage
-  -> project.read
-  -> boq.line.read / boq.line.write
+  -> project.list.open
 
 cost.profit.compare
-  -> project.read
-  -> cost.read
-  -> revenue.read
-  -> compare.calc
+  -> project.list.open
 
 equipment.plan.manage
-  -> project.read
-  -> equipment.read / equipment.update
+  -> project.list.open
 
 labor.plan.manage
-  -> project.read
-  -> labor.read / labor.update
+  -> project.list.open
 ```
 
 ## 3. 组合能力判定原则（防过度设计）

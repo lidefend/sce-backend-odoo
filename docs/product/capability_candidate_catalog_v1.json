@@ -1,51 +1,896 @@
 {
   "schema": "capability.candidate.catalog.v1",
-  "version": "v1",
-  "stage": "CAP-01B candidate (not published; qualification=unreleased until CAP-01C)",
+  "version": "v2",
+  "stage": "CAP-01B candidate (not published)",
   "domain_vocabulary": [
-    "project", "contract", "cost", "finance", "material", "construction",
-    "quality", "safety", "labor", "equipment", "analytics", "governance", "workspace"
+    "project",
+    "contract",
+    "cost",
+    "finance",
+    "material",
+    "construction",
+    "quality",
+    "safety",
+    "labor",
+    "equipment",
+    "analytics",
+    "governance",
+    "workspace"
   ],
+  "domain_policy": "extensible via identity governance, not a permanently closed enum",
   "capabilities": [
-    { "capability_key": "project.initiation.enter", "domain": "project", "classification": "keep", "layer": "atomic", "provider": "odoo_intent:project.initiation.enter + odoo_action:smart_construction_core.action_project_initiation + odoo_model:project.project", "qualification": "unreleased" },
-    { "capability_key": "project.list.open", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "odoo_action:smart_construction_core.action_sc_project_list + odoo_model:project.project", "qualification": "unreleased" },
-    { "capability_key": "project.lifecycle.transition", "domain": "project", "classification": "keep", "layer": "atomic", "provider": "odoo_model:project.project + lifecycle action", "qualification": "unreleased" },
-    { "capability_key": "project.dashboard.enter", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "odoo_intent:project.dashboard.enter", "qualification": "unreleased" },
-    { "capability_key": "project.risk.list", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "odoo_model:project.project", "qualification": "unreleased" },
-    { "capability_key": "project.structure.manage", "domain": "project", "classification": "defer", "layer": "composite", "provider": "odoo_model:project.project + WBS actions", "qualification": "unreleased" },
-    { "capability_key": "project.plan_bootstrap.enter", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "tbd", "qualification": "unreleased" },
-    { "capability_key": "project.execution.enter", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "tbd", "qualification": "unreleased" },
-    { "capability_key": "project.execution.advance", "domain": "project", "classification": "defer", "layer": "atomic", "provider": "tbd", "qualification": "unreleased" },
-    { "capability_key": "construction.plan.manage", "domain": "construction", "classification": "keep", "layer": "composite", "provider": "odoo_model:project.plan + plan actions", "qualification": "unreleased" },
-    { "capability_key": "construction.plan.report", "domain": "construction", "classification": "keep", "layer": "atomic", "provider": "odoo_action + project.plan", "qualification": "unreleased" },
-    { "capability_key": "construction.diary.open", "domain": "construction", "classification": "defer", "layer": "atomic", "provider": "odoo_model + diary action", "qualification": "unreleased" },
-    { "capability_key": "cost.budget.manage", "domain": "cost", "classification": "keep", "layer": "composite", "provider": "odoo_model + budget actions", "qualification": "unreleased" },
-    { "capability_key": "cost.boq.manage", "domain": "cost", "classification": "keep", "layer": "composite", "provider": "odoo_model + BOQ actions", "qualification": "unreleased" },
-    { "capability_key": "cost.profit.compare", "domain": "cost", "classification": "keep", "layer": "composite", "provider": "odoo_model + compare calc", "qualification": "unreleased" },
-    { "capability_key": "cost.progress.report", "domain": "cost", "classification": "keep", "layer": "atomic", "provider": "odoo_action + progress model", "qualification": "unreleased" },
-    { "capability_key": "contract.expense.track", "domain": "contract", "classification": "keep", "layer": "atomic", "provider": "odoo_model + expense contract actions", "qualification": "unreleased" },
-    { "capability_key": "contract.income.track", "domain": "contract", "classification": "keep", "layer": "atomic", "provider": "odoo_model + income contract actions", "qualification": "unreleased" },
-    { "capability_key": "contract.settlement.audit", "domain": "contract", "classification": "keep", "layer": "atomic", "provider": "odoo_model + settlement actions", "qualification": "unreleased" },
-    { "capability_key": "equipment.plan.manage", "domain": "equipment", "classification": "keep", "layer": "composite", "provider": "odoo_model + equipment actions", "qualification": "unreleased" },
-    { "capability_key": "equipment.request.list", "domain": "equipment", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "equipment.settlement.list", "domain": "equipment", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "equipment.usage.list", "domain": "equipment", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "labor.plan.manage", "domain": "labor", "classification": "keep", "layer": "composite", "provider": "odoo_model + labor actions", "qualification": "unreleased" },
-    { "capability_key": "labor.attendance.list", "domain": "labor", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "labor.request.list", "domain": "labor", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "labor.settlement.list", "domain": "labor", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "quality.issue.list", "domain": "quality", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "quality.recheck.list", "domain": "quality", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "quality.rectification.list", "domain": "quality", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "safety.issue.list", "domain": "safety", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "safety.recheck.list", "domain": "safety", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "safety.rectification.list", "domain": "safety", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "material.procurement.list", "domain": "material", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "finance.exception.monitor", "domain": "finance", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "finance.plan.funding", "domain": "finance", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "finance.settlement.order", "domain": "finance", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "analytics.lifecycle.monitor", "domain": "analytics", "classification": "defer", "layer": "atomic", "provider": "odoo_model", "qualification": "unreleased" },
-    { "capability_key": "governance.runtime.audit", "domain": "governance", "classification": "keep", "layer": "atomic", "provider": "odoo_model + audit actions", "qualification": "unreleased" },
-    { "capability_key": "governance.scene.openability", "domain": "governance", "classification": "defer", "layer": "atomic", "provider": "tbd", "qualification": "unreleased" }
+    {
+      "capability_key": "project.initiation.create",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_intent",
+          "provider_ref": "project.initiation.enter",
+          "contract_ref": "addons/smart_construction_core/handlers/project_initiation_enter.py",
+          "provider_status": "verified"
+        },
+        {
+          "provider_type": "odoo_action",
+          "provider_ref": "smart_construction_core.action_project_initiation",
+          "contract_ref": "addons/smart_construction_core/views/menu.xml",
+          "provider_status": "verified"
+        },
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "project.project",
+          "contract_ref": "addons/smart_construction_core/models/core/project_core.py",
+          "provider_status": "verified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.initiation.enter"
+      ],
+      "compatibility_aliases": [
+        "project.initiation.enter"
+      ]
+    },
+    {
+      "capability_key": "project.lifecycle.transition",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "project.project",
+          "contract_ref": "project lifecycle rules",
+          "provider_status": "verified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.lifecycle.transition"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "construction.plan.manage",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open",
+        "construction.plan.report"
+      ],
+      "source_refs": [
+        "construction.plan.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "construction.plan.report",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "construction.plan.report"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "cost.budget.manage",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open"
+      ],
+      "source_refs": [
+        "cost.budget.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "cost.boq.manage",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open"
+      ],
+      "source_refs": [
+        "cost.boq.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "cost.profit.compare",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open"
+      ],
+      "source_refs": [
+        "cost.profit.compare"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "cost.progress.report",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "cost.progress.report"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "contract.expense.track",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "contract.expense.track"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "contract.income.track",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "contract.income.track"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "contract.settlement.audit",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "contract.settlement.audit"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "equipment.plan.manage",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open"
+      ],
+      "source_refs": [
+        "equipment.plan.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "labor.plan.manage",
+      "layer": "composite",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [
+        "project.list.open"
+      ],
+      "source_refs": [
+        "labor.plan.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "governance.runtime.audit",
+      "layer": "atomic",
+      "disposition": "keep",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "governance.runtime.audit"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.list.open",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_action",
+          "provider_ref": "smart_construction_core.action_sc_project_list",
+          "contract_ref": "addons/smart_construction_core/actions/project_list_actions.xml",
+          "provider_status": "verified"
+        },
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "project.project",
+          "contract_ref": "addons/smart_construction_core/models/core/project_core.py",
+          "provider_status": "verified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.list.open"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.dashboard.enter",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.dashboard.enter"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.risk.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.risk.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.structure.manage",
+      "layer": "composite",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.structure.manage"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.plan_bootstrap.enter",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.plan_bootstrap.enter"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.execution.enter",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.execution.enter"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "project.execution.advance",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "project.execution.advance"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "construction.diary.open",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "construction.diary.open"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "equipment.request.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "equipment.request.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "equipment.settlement.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "equipment.settlement.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "equipment.usage.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "equipment.usage.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "labor.attendance.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "labor.attendance.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "labor.request.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "labor.request.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "labor.settlement.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "labor.settlement.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "quality.issue.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "quality.issue.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "quality.recheck.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "quality.recheck.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "quality.rectification.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "quality.rectification.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "safety.issue.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "safety.issue.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "safety.recheck.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "safety.recheck.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "safety.rectification.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "safety.rectification.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "material.procurement.list",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "material.procurement.list"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "finance.exception.monitor",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "finance.exception.monitor"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "finance.plan.funding",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "finance.plan.funding"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "finance.settlement.order",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "finance.settlement.order"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "analytics.lifecycle.monitor",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "analytics.lifecycle.monitor"
+      ],
+      "compatibility_aliases": []
+    },
+    {
+      "capability_key": "governance.scene.openability",
+      "layer": "atomic",
+      "disposition": "defer",
+      "qualification": "unreleased",
+      "contract_status": "unverified",
+      "release_state": "candidate",
+      "providers": [
+        {
+          "provider_type": "odoo_model",
+          "provider_ref": "tbd",
+          "contract_ref": "",
+          "provider_status": "unverified"
+        }
+      ],
+      "dependencies": [],
+      "source_refs": [
+        "governance.scene.openability"
+      ],
+      "compatibility_aliases": []
+    }
   ]
 }

@@ -13,7 +13,7 @@
 
 | capability_key | 分类 | 说明 |
 |---|---|---|
-| project.initiation.enter | keep | 项目立项/创建，有真实 intent handler |
+| project.initiation.enter | keep（rename → project.initiation.create） | 项目创建，有真实 intent handler；旧 key 保留为兼容别名 |
 | project.list.open | defer | 需核实是查询能力还是打开列表页 |
 | project.lifecycle.transition | keep | 生命周期流转，真实动作 |
 | project.lifecycle.open | exclude | 打开生命周期视图（页面） |
@@ -79,9 +79,11 @@
 
 ## 3. 统计
 
-- keep（原子/组合候选）：12
-- defer（待核实）：24
-- exclude（页面/入口）：27
+- keep（原子/组合候选）：14
+- defer（待核实）：26
+- exclude（页面/入口）：23
 - 合计 63
+
+B6 候选目录与此表一一对应（40 条 = 14 keep + 26 defer），exclude 23 条不进入候选目录。
 
 最终正式能力数量以 CAP-01C 真实证据评估为准，不预设 63。
