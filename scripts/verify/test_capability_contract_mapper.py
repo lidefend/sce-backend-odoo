@@ -97,9 +97,12 @@ class BatchCheckTests(unittest.TestCase):
         self.assertTrue(builder._settlement_immutable_enforced())
 
     def test_audit_actions_are_individually_guarded(self):
-        guards = builder._audit_methods_guarded()
-        self.assertEqual(set(guards), {"action_submit", "action_approve", "action_done", "action_cancel"})
-        self.assertTrue(all(guards.values()))
+        facts = builder._audit_action_facts()
+        self.assertEqual(set(facts), {"action_submit", "action_approve", "action_done", "action_cancel",
+                                      "action_bind_contract", "action_unbind_contract"})
+        for method in ("action_submit", "action_approve", "action_done", "action_cancel"):
+            self.assertTrue(facts[method]["role"], method)
+            self.assertTrue(facts[method]["state_guard"], method)
 
     def test_lifecycle_draft_to_paused_edge_is_unresolved(self):
         proj = mapper._projection_for("project.lifecycle.transition", mapper.SPECS["project.lifecycle.transition"])

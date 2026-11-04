@@ -28,7 +28,26 @@
     "kind": "offline",
     "authority": "existing local Make tools; no database or service access"
   },
-  "checks": {},
+  "checks": {
+    "focused": {
+      "target": "verify.capability.maturity",
+      "inputs": [
+        "scripts/verify/capability_contract_mapper.py",
+        "scripts/verify/capability_maturity_bundle_build.py",
+        "scripts/verify/capability_candidate_catalog_check.py",
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json"
+      ],
+      "kind": "offline",
+      "result": "blocked",
+      "details": {
+        "catalog_check": "PASS keep=13 defer=26 total=39",
+        "mapper_tests": "14 tests PASS",
+        "maturity_unit": "42 tests PASS",
+        "batch_preview": "blocked: lifecycle=blocked, settlement=standard, write/query=preview",
+        "batch_standard": "blocked"
+      }
+    }
+  },
   "blockers": [],
   "next_exact_step": "revise evidence authenticity (Join facts vs check separation, unresolved hard block) and tighten check rules; then regenerate six-capability evaluation and submit for review."
 }

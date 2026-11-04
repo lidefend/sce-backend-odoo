@@ -291,9 +291,14 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         all_targets = {t for targets in transitions.values() for t in targets}
         method_names = {m["method"] for m in methods}
         button_names = {g["button"] for g in view_guards}
-        uncovered, unresolved_edges = _transition_edge_coverage(methods, view_guards, states, transitions)
-        edge_status = "fail" if uncovered else ("error" if unresolved_edges else "pass")
-        edge_reason = f"uncovered={uncovered} unresolved={unresolved_edges}" if (uncovered or unresolved_edges) else f"{sum(len(v) for v in transitions.values())} edges covered"
+        edges = proj.get("transition_edges") or []
+        unresolved_edges = [e for e in edges if not e["resolved"]]
+        edge_status = "error" if unresolved_edges else "pass"
+        edge_reason = (
+            f"unresolved={[e['source'] + '->' + e['target'] for e in unresolved_edges]}"
+            if unresolved_edges
+            else f"{len(edges)} edges resolved"
+        )
         return [
             _case("state_enum_declared", "pass" if states and len(states) == len(state_set) else "fail", f"{len(states)} unique states"),
             _case("transition_table_exhaustive", "pass" if state_set <= set(transitions) and all_targets <= state_set else "fail", f"states={len(states)} table={len(transitions)} targets_valid={all_targets <= state_set}"),
@@ -327,13 +332,24 @@ def _batch_cases(template: str, proj: dict) -> list[dict]:
         bind = [m for m in methods if m["method"] in {"action_bind_contract", "action_unbind_contract"}]
         immutable = _settlement_immutable_states()
         immutable_enforced = _settlement_immutable_enforced()
-        audit_guards = _audit_methods_guarded()
-        audit_guarded = len(audit) == 4 and all(audit_guards.values())
+        facts = _audit_action_facts()
+        audit_complete = len(audit) == 4 and all(
+            facts.get(m["method"], {}).get("role") and facts.get(m["method"], {}).get("state_guard")
+            and (facts.get(m["method"], {}).get("business_checks") or facts.get(m["method"], {}).get("payment_check"))
+            for m in audit
+        )
+        bind_fact = facts.get("action_bind_contract", {})
+        unbind_fact = facts.get("action_unbind_contract", {})
+        bind_complete = (
+            len(bind) == 2
+            and bind_fact.get("project_match") and bind_fact.get("reason_required") and bind_fact.get("audit_log")
+            and unbind_fact.get("manager_role") and unbind_fact.get("reason_required") and unbind_fact.get("audit_log")
+        )
         return [
-            _case("audit_actions_declared", "pass" if audit_guarded else ("fail" if len(audit) != 4 else "fail"), f"guards={audit_guards}"),
+            _case("audit_actions_declared", "pass" if audit_complete else ("error" if len(audit) != 4 else "fail"), f"facts={ {m: facts.get(m, {}) for m in ('action_submit','action_approve','action_done','action_cancel')} }"),
             _case("approval_state_declared", "pass" if "approve" in states else "fail", f"states={states}"),
             _case("immutable_final_states_declared", "pass" if immutable and immutable >= {"done", "cancel"} and immutable_enforced else "fail", f"immutable={immutable} enforced={immutable_enforced}"),
-            _case("contract_association_boundary_declared", "pass" if len(bind) == 2 and all(m["server_guard"] for m in bind) else "fail", f"bind={[(m['method'], m['server_guard']) for m in bind]}"),
+            _case("contract_association_boundary_declared", "pass" if bind_complete else ("error" if len(bind) != 2 else "fail"), f"facts={ {m: facts.get(m, {}) for m in ('action_bind_contract','action_unbind_contract')} }"),
         ]
     return []
 
@@ -347,7 +363,7 @@ def _settlement_immutable_states() -> set[str]:
 
 
 def _current_run_identity() -> dict:
-    """Resolve the current governed run record identity (not a self-made id)."""
+    """Resolve the current governed run record; only a completed run with check records is a valid source."""
     branch = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True
     ).stdout.strip()
@@ -356,11 +372,16 @@ def _current_run_identity() -> dict:
     if not run_rel:
         return {"run_id": None, "run_record_sha256": None, "resolved": False}
     run_path = ROOT / run_rel
+    run_data = json.loads(run_path.read_text(encoding="utf-8"))
+    status = run_data.get("status")
+    checks = run_data.get("checks") or {}
     return {
         "run_id": run_rel.rsplit("/", 2)[-2],
         "run_record": run_rel,
         "run_record_sha256": hashlib.sha256(run_path.read_bytes()).hexdigest(),
-        "resolved": True,
+        "status": status,
+        "check_count": len(checks),
+        "resolved": bool(checks),
     }
 
 
@@ -374,18 +395,28 @@ def _settlement_immutable_enforced() -> bool:
     return has_filter and has_raise
 
 
-def _audit_methods_guarded() -> dict[str, bool]:
-    """Verify each audit action carries a specific state/role guard, not just a name."""
+def _audit_action_facts() -> dict[str, dict]:
+    """Project each audit/association action's specific guards; missing fact = unresolved."""
     text = (ROOT / "addons/smart_construction_core/models/core/settlement_order.py").read_text(encoding="utf-8")
-    result: dict[str, bool] = {}
-    for method in ("action_submit", "action_approve", "action_done", "action_cancel"):
-        m = re.search(rf"\n    def {method}\(self\):(.*?)(?=\n    def |\n    @|\Z)", text, re.S)
+    result: dict[str, dict] = {}
+    for method in ("action_submit", "action_approve", "action_done", "action_cancel",
+                   "action_bind_contract", "action_unbind_contract"):
+        m = re.search(rf"\n    def {method}\(self[^)]*\):(.*?)(?=\n    def |\n    @|\Z)", text, re.S)
         body = m.group(1) if m else ""
-        guarded = bool(re.search(
-            r"_assert_lifecycle_role|raise_guard|raise\s+UserError|raise\s+AccessError|rec\.state\s*(==|!=|not in)",
-            body,
-        ))
-        result[method] = guarded
+        role = re.search(r"_assert_lifecycle_role\(\s*[\"'](\w+)[\"']\s*\)", body)
+        state_guard = re.search(r"rec\.state\s*!=\s*[\"'](\w+)[\"']", body) or re.search(
+            r"rec\.state\s*not in\s*\(([^)]+)\)", body
+        )
+        result[method] = {
+            "role": role.group(1) if role else "",
+            "state_guard": state_guard.group(0).strip() if state_guard else "",
+            "business_checks": sorted(set(re.findall(r"_check_(\w+)_or_raise", body))),
+            "payment_check": "_check_payments_before_cancel" in body,
+            "project_match": "_ensure_contract_match" in body,
+            "manager_role": "_ensure_manager_role" in body,
+            "reason_required": "AUDIT_REASON_REQUIRED" in body or "require_reason" in body,
+            "audit_log": "_audit_contract" in body,
+        }
     return result
 
 
@@ -439,6 +470,7 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
     check_source = inspect.getsource(_batch_cases)
     check_digest = hashlib.sha256(check_source.encode("utf-8")).hexdigest()
     run_identity = _current_run_identity()
+    run_blocked = not run_identity.get("resolved")
 
     artifacts: dict[str, str] = {}
     payloads: list[tuple[str, bytes]] = []
@@ -452,9 +484,13 @@ def build_batch_bundle() -> tuple[dict, dict[str, bytes]]:
         fingerprint = maturity.maturity_fingerprint(key, dependencies, criteria)
         proj = mapper._projection_for(key, spec)
         check_id = BATCH_CHECK_IDS[spec["template"]]
-        if proj["unresolved"]:
+        if proj["unresolved"] or run_blocked:
             required_cases = criteria["standard"][check_id]
-            cases = [_case(cid, "error", "join_unresolved:" + ";".join(proj["unresolved"])) for cid in required_cases]
+            if proj["unresolved"]:
+                reason = "join_unresolved:" + ";".join(proj["unresolved"])
+            else:
+                reason = f"run_not_completed:status={run_identity.get('status')} checks={run_identity.get('check_count')}"
+            cases = [_case(cid, "error", reason) for cid in required_cases]
         else:
             cases = _batch_cases(spec["template"], proj)
         artifact = {
