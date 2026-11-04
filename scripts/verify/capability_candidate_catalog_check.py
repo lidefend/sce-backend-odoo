@@ -167,20 +167,35 @@ def _b2_classification() -> dict[str, set[str]]:
     return result
 
 
-def _rg_patterns(patterns: list[str]) -> bool:
-    """Return True only when at least one exact pattern matches a tracked file.
-    A missing or failing rg is a FAIL, never a PASS."""
+def _rg_files(patterns: list[str], path: str = "addons", globs: tuple[str, ...] = ("*.py", "*.xml")) -> list[str] | None:
+    """Return matching file list, or None on tool failure (fail-closed)."""
     if not patterns:
-        return False
-    args = ["rg", "-l", "--glob", "*.py", "--glob", "*.xml"]
+        return []
+    args = ["rg", "-l"]
+    for g in globs:
+        args.extend(["--glob", g])
     for pat in patterns:
         args.extend(["-e", pat])
-    args.append("addons")
+    args.append(path)
     try:
         result = subprocess.run(args, cwd=ROOT, text=True, capture_output=True, timeout=30)
     except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return []
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
+def _file_contains(paths: list[str] | None, pattern: str) -> bool:
+    if not paths:
         return False
-    return result.returncode == 0 and bool(result.stdout.strip())
+    try:
+        result = subprocess.run(
+            ["rg", "-q", "-e", pattern, *paths], cwd=ROOT, text=True, capture_output=True, timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
 
 
 def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
@@ -188,20 +203,34 @@ def _provider_ref_registered(provider_type: str, provider_ref: str) -> bool:
     if not provider_ref or provider_ref in {"tbd", "unknown"}:
         return False
     if provider_type == "odoo_intent":
-        return _rg_patterns([r'INTENT_TYPE\s*=\s*["\']' + re.escape(provider_ref) + r'["\']'])
+        # Must be a real handler: declared INTENT_TYPE inside a handlers/
+        # package file that subclasses BaseIntentHandler (not a stray string).
+        files = _rg_files([r'INTENT_TYPE\s*=\s*["\']' + re.escape(provider_ref) + r'["\']'])
+        if files is None:
+            return False
+        handler_files = [f for f in files if "/handlers/" in f and "/tests/" not in f]
+        if not handler_files:
+            return False
+        return _file_contains(handler_files, r"BaseIntentHandler")
     if provider_type == "odoo_action":
+        module = provider_ref.split(".")[0]
         local = provider_ref.rsplit(".", 1)[-1]
-        full = provider_ref
-        return _rg_patterns([
-            r'id="' + re.escape(local) + r'"',
-            r'action="' + re.escape(full) + r'"',
-            r"ref=\"" + re.escape(full) + r"\"",
-        ])
+        # The action record must be defined in the same module, as an
+        # ir.actions record (not merely an id= string somewhere else).
+        files = _rg_files([r'id="' + re.escape(local) + r'"'], f"addons/{module}")
+        if files is None:
+            return False
+        if not files:
+            return False
+        return _file_contains(files, r'model="ir\.actions\.(act_window|client|server)"')
     if provider_type == "odoo_model":
-        return _rg_patterns([
+        files = _rg_files([
             r'_name\s*=\s*["\']' + re.escape(provider_ref) + r'["\']',
             r'_inherit\s*=\s*["\']' + re.escape(provider_ref) + r'["\']',
-        ])
+        ], "addons", ("*.py",))
+        if files is None:
+            return False
+        return any("/models/" in f and "/tests/" not in f for f in files)
     # service / api / ai_provider / domain_provider have no offline registry in
     # this repository yet; they cannot be verified offline.
     return False
@@ -323,6 +352,43 @@ def _self_test() -> int:
     bad["capabilities"][0]["source_refs"] = ["invented.identity"]
     if not validate(bad):
         failures.append("invented source identity not caught")
+
+    # 6. non-existent intent provider.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["providers"] = [
+        {"provider_type": "odoo_intent", "provider_ref": "no.such.intent", "contract_ref": "addons/smart_construction_core/handlers/project_initiation_enter.py", "provider_status": "verified"}
+    ]
+    if not validate(bad):
+        failures.append("non-existent intent provider not caught")
+
+    # 7. action in wrong module.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["providers"] = [
+        {"provider_type": "odoo_action", "provider_ref": "smart_core.action_project_initiation", "contract_ref": "addons/smart_construction_core/views/menu.xml", "provider_status": "verified"}
+    ]
+    if not validate(bad):
+        failures.append("wrong-module action provider not caught")
+
+    # 8. non-existent model provider.
+    bad = json.loads(json.dumps(base))
+    bad["capabilities"][0]["providers"] = [
+        {"provider_type": "odoo_model", "provider_ref": "no.such.model", "contract_ref": "addons/smart_construction_core/models/core/project_core.py", "provider_status": "verified"}
+    ]
+    if not validate(bad):
+        failures.append("non-existent model provider not caught")
+
+    # 9. rg tool failure must fail closed (verified provider becomes unverifiable).
+    import sys
+    mod = sys.modules[__name__]
+    original = mod.subprocess.run
+    def _boom(*a, **k):
+        raise OSError("rg unavailable")
+    mod.subprocess.run = _boom
+    try:
+        if not validate(base):
+            failures.append("rg failure not fail-closed")
+    finally:
+        mod.subprocess.run = original
 
     if failures:
         print("SELF-TEST FAIL")
