@@ -103,24 +103,27 @@ def resolve_native_parent_by_menu(env, surface: dict[str, Any]) -> dict[str, str
     mapping: dict[str, str] = {}
     if env is None:
         return mapping
-    for section in ("horizontal_work_center", "platform_support"):
-        root_xmlid = _text((surface.get(section) or {}).get("root_menu_xmlid"))
-        if not root_xmlid:
-            continue
-        try:
-            root = env.ref(root_xmlid, raise_if_not_found=False)
-        except Exception:
-            continue
-        if not root:
-            continue
-        for child in getattr(root, "child_id", []) or []:
+    try:
+        for section in ("horizontal_work_center", "platform_support"):
+            root_xmlid = _text((surface.get(section) or {}).get("root_menu_xmlid"))
+            if not root_xmlid:
+                continue
             try:
-                ext = child.get_external_id().get(child.id)
-                child_xmlid = _text(ext) if ext else ""
+                root = env.ref(root_xmlid, raise_if_not_found=False)
             except Exception:
-                child_xmlid = ""
-            if child_xmlid:
-                mapping[child_xmlid] = root_xmlid
+                continue
+            if not root:
+                continue
+            for child in getattr(root, "child_id", []) or []:
+                try:
+                    ext = child.get_external_id().get(child.id)
+                    child_xmlid = _text(ext) if ext else ""
+                except Exception:
+                    child_xmlid = ""
+                if child_xmlid:
+                    mapping[child_xmlid] = root_xmlid
+    except Exception:
+        return {}
     return mapping
 
 
