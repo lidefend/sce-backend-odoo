@@ -151,6 +151,7 @@ jobs:
 
       - name: Resolve module list
         env:
+          GH_TOKEN: ${{ github.token }}
           PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
         run: |
           set -euo pipefail

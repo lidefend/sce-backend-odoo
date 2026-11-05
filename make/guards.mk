@@ -358,3 +358,23 @@ verify.test.baseline: verify.test.baseline.unit
 
 verify.test.baseline.ready: guard.prod.forbid
 	@python3 -m scripts.verify.test_baseline_contract --verify
+
+# Offline capability/observation tools: execute tests, never their runtime CLIs.
+.PHONY: verify.capability.module_tooling.unit verify.construction.diary.list_contract.unit
+verify.capability.module_tooling.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_capability_asset_evidence_verification \
+	  scripts.verify.test_capability_asset_gap_classification \
+	  scripts.verify.test_capability_asset_reconciliation \
+	  scripts.verify.test_capability_composite_and_decision \
+	  scripts.verify.test_capability_contract_mapper \
+	  scripts.verify.test_capability_impact_propagation \
+	  scripts.verify.test_capability_provider_reconciliation \
+	  scripts.verify.test_capability_unresolved_execution_chain \
+	  scripts.verify.test_module_capability_index \
+	  scripts.verify.test_module_change_impact_report \
+	  scripts.verify.test_module_change_observation \
+	  scripts.verify.test_module_snapshot_diff \
+	  scripts.verify.test_module_upgrade_observation
+
+verify.construction.diary.list_contract.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_construction_diary_list_contract

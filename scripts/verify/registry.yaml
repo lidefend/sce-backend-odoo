@@ -21,6 +21,20 @@ gate_required:
 - frontend_decision_authority.py
 - frontend_decision_authority_guard.py
 - test_frontend_decision_authority_guard.py
+- test_capability_asset_evidence_verification.py
+- test_capability_asset_gap_classification.py
+- test_capability_asset_reconciliation.py
+- test_capability_composite_and_decision.py
+- test_capability_contract_mapper.py
+- test_capability_impact_propagation.py
+- test_capability_provider_reconciliation.py
+- test_capability_unresolved_execution_chain.py
+- test_construction_diary_list_contract.py
+- test_module_capability_index.py
+- test_module_change_impact_report.py
+- test_module_change_observation.py
+- test_module_snapshot_diff.py
+- test_module_upgrade_observation.py
 entries:
 - script: __init__.py
   status: active
@@ -155,18 +169,96 @@ entries:
   date: '2026-11-01'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: capability_asset_evidence_verification.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_asset_evidence_verification.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_asset_gap_classification.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_asset_gap_classification.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_asset_reconciliation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_asset_reconciliation.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_candidate_catalog_check.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/capability_maturity_bundle_build.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_composite_and_decision.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_composite_and_decision.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_contract_mapper.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/capability_maturity_bundle_build.py,
+    scripts/verify/test_capability_contract_mapper.py. No claim of live ORM or release
+    execution from this registration.
+- script: capability_d03_conclusion.py
+  status: retired
+  date: '2026-11-05'
+  reason: CAP-02D-03 one-shot conclusion writer has no executable consumer; its historical
+    deliverables are retained, while maintained reconciliation modules and tests remain
+    active. Retired after clean-main registry audit, not to mask a live gate.
+- script: capability_impact_propagation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/module_change_impact_report.py,
+    scripts/verify/test_capability_impact_propagation.py. No claim of live ORM or
+    release execution from this registration.
 - script: capability_lint.py
   status: active
   owner: platform-team
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: capability_maturity_bundle_build.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_contract_mapper.py.
+    No claim of live ORM or release execution from this registration.
+- script: capability_provider_reconciliation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_provider_reconciliation.py.
+    No claim of live ORM or release execution from this registration.
 - script: capability_smoke.py
   status: active
   owner: platform-team
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: capability_unresolved_execution_chain.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_capability_unresolved_execution_chain.py.
+    No claim of live ORM or release execution from this registration.
 - script: collection_view_semantics_runtime_ids.py
   status: orphan
   owner: platform-team
@@ -257,6 +349,11 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: fact_layer_authority_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-03'
+  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
 - script: field_operation_action_audit.py
   status: active
   owner: platform-team
@@ -908,6 +1005,43 @@ entries:
   wire_or_retire: file-consumed
   reason: Fingerprint helper consumed by production_blocker_fresh_and_rollback.sh
     to verify isolated failure rollback; not business migration replay.
+- script: module_capability_index.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/capability_asset_reconciliation.py,
+    scripts/verify/capability_impact_propagation.py, scripts/verify/test_module_capability_index.py.
+    No claim of live ORM or release execution from this registration.
+- script: module_change_impact_report.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_module_change_impact_report.py.
+    No claim of live ORM or release execution from this registration.
+- script: module_change_observation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/module_upgrade_observation.py,
+    scripts/verify/test_module_change_observation.py. No claim of live ORM or release
+    execution from this registration.
+- script: module_snapshot_diff.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_module_snapshot_diff.py.
+    No claim of live ORM or release execution from this registration.
+- script: module_upgrade_observation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/test_module_upgrade_observation.py.
+    No claim of live ORM or release execution from this registration.
 - script: native_parser_capability_audit.py
   status: active
   owner: platform-team
@@ -932,6 +1066,13 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: odoo_runtime_facts.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  wire_or_retire: file-consumed
+  reason: Maintained module consumed by scripts/verify/module_upgrade_observation.py.
+    No claim of live ORM or release execution from this registration.
 - script: operation_strategy_contract_surface_audit.py
   status: active
   owner: platform-team
@@ -1116,6 +1257,17 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: scenario_center_projection_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-05'
+  reason: scenario-center navigation projection (native centers + maintainable scenario
+    model) in verify.nav01.native_authority.unit
+- script: scenario_surface_projection_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-03'
+  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
 - script: scene_admin_smoke.py
   status: active
   owner: platform-team
@@ -1217,6 +1369,54 @@ entries:
   owner: platform-team
   date: '2026-10-08'
   reason: 'Governed unittest module invocation in: verify.frontend.business_entry.evidence_scope.unit'
+- script: test_capability_asset_evidence_verification.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_asset_gap_classification.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_asset_reconciliation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_composite_and_decision.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_contract_mapper.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_impact_propagation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_provider_reconciliation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_capability_unresolved_execution_chain.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
 - script: test_codex_preflight.py
   status: orphan
   owner: platform-team
@@ -1229,6 +1429,13 @@ entries:
   date: '2026-09-30'
   reason: 'Governed unittest module invocation in: verify.construction.create_defaults.unit,
     verify.contract.architecture.suite'
+- script: test_construction_diary_list_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.construction.diary.list_contract.unit in local Quick
+    and professional backend lanes. Pure tests only; runtime upgrade subprocesses
+    are mocked.
 - script: test_contract_export_resume.py
   status: orphan
   owner: platform-team
@@ -1557,6 +1764,36 @@ entries:
   date: '2026-08-07'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_module_capability_index.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_module_change_impact_report.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_module_change_observation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_module_snapshot_diff.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_module_upgrade_observation.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
+    backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
 - script: test_native_view_capability_taxonomy.py
   status: orphan
   owner: platform-team
@@ -1626,11 +1863,11 @@ entries:
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_pr_publish_preflight.py
-  status: orphan
+  status: active
   owner: platform-team
-  date: '2026-10-30'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-11-06'
+  reason: Already executed by verify.pr.push.unit and verify.ci.workflow.contract;
+    remove stale orphan acknowledgement.
 - script: test_product_customer_runtime_decoupling_guard.py
   status: active
   owner: platform-team
@@ -1866,19 +2103,3 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-
-- script: fact_layer_authority_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-11-03'
-  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
-- script: scenario_surface_projection_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-11-03'
-  reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
-- script: scenario_center_projection_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-11-05'
-  reason: scenario-center navigation projection (native centers + maintainable scenario model) in verify.nav01.native_authority.unit

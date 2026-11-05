@@ -34,6 +34,44 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         self.assertIn('if [ -n "${TOOL_CHECKS}" ]; then', enforce['run'])
         self.assertIn('test "${TOOL_CHECKS_RAN}" = true', enforce['run'])
 
+    def test_frozen_plan_worker_passes_authentication_to_reuse_validation(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        step = next(s for s in workflow['jobs']['backend_suite']['steps']
+                    if s.get('name') == 'Resolve module list')
+        self.assertEqual(step['env']['GH_TOKEN'], '${{ github.token }}')
+        self.assertEqual(step['env']['PLAN_SHA256'], '${{ needs.plan.outputs.plan_sha256 }}')
+        # Execute the real workflow shell; stub only external git/planner calls.
+        # The planner reauthenticates historical receipts when consuming this
+        # frozen plan, so the token must be inherited by that exact invocation.
+        stubs = r"""
+git() { printf '%s\n' "$HEAD_SHA"; }
+python3() {
+  if [ "$1" = scripts/ci/backend_suite_plan.py ]; then
+    [ "${GH_TOKEN:-}" = fixture-token ] || return 4
+    case " $* " in
+      *" --frozen-plan $RUNNER_TEMP/frozen-plan/backend-plan.json --plan-sha256 fixture-digest --shard 0 "*) ;;
+      *) return 9 ;;
+    esac
+    printf 'smart_construction_scene\n'
+  fi
+}
+"""
+        for authenticated in (True, False):
+            with self.subTest(authenticated=authenticated), tempfile.TemporaryDirectory() as tmp:
+                env = {**os.environ, 'HEAD_SHA': 'a' * 40, 'IMPACT_BASE': '',
+                       'MODULE_OVERRIDE': '', 'RUNNER_TEMP': tmp,
+                       'PLAN_SHA256': 'fixture-digest', 'SHARD_INDEX': '0',
+                       'GITHUB_ENV': str(Path(tmp) / 'env'),
+                       'GITHUB_STEP_SUMMARY': str(Path(tmp) / 'summary')}
+                env.pop('GH_TOKEN', None)
+                if authenticated:
+                    env['GH_TOKEN'] = 'fixture-token'
+                result = subprocess.run(['bash', '-e', '-c', stubs + step['run']],
+                                        cwd=ROOT, env=env, text=True, capture_output=True)
+                self.assertEqual(0 if authenticated else 4, result.returncode,
+                                 result.stdout + result.stderr)
+                self.assertEqual(authenticated, (Path(tmp) / 'env').exists())
+
     def test_verify_coverage_enforces_run_success_and_reuse_authority(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         plan = workflow['jobs']['plan']

@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: GUARD-REGISTRY-GOVERNANCE-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 从干净主线复现并逐项关闭 guard registry 接线与生命周期缺口
