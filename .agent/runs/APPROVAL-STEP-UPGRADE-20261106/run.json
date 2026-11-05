@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "APPROVAL-STEP-UPGRADE-20261106",
   "branch": "fix/approval-step-maintenance-upgrade-20261106",
-  "baseline_sha": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+  "baseline_sha": "ef3851c103f74a10a767d30156561d4d015489e6",
   "status": "verification_pending",
   "goal": ".agent/goals/APPROVAL-STEP-UPGRADE-20261106.yaml",
   "record": ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
@@ -45,25 +45,25 @@
       "PR814/815 source"
     ]
   },
-  "next_exact_step": "Synchronize preserved approval candidate onto exact current main; validate bounded environment option and rerun governed isolated upgrade scenario against current integration inputs; publish independent PR.",
+  "next_exact_step": "publish independent PR via make pr.push; then report PR/CI status.",
   "execution_results": {
     "runner_unit": {
       "status": "passed",
-      "count": 13,
-      "log": ".runtime/approval-upgrade-runner-unit-seed-fix.log"
+      "count": 14,
+      "log": ".runtime/approval-upgrade-runner-unit-rebase.log"
     },
     "lightweight": {
       "status": "passed",
-      "log": ".runtime/approval-upgrade-l1-seed-fix.log"
+      "log": ".runtime/approval-upgrade-l1-rebase.log"
     },
     "orm_and_real_upgrades": {
       "status": "passed",
       "orm_tests": 5,
       "actual_upgrades": 2,
-      "receipt": ".runtime/test-baseline/1793907825876145032/receipt.json",
-      "comparison": ".runtime/approval-upgrade-final-comparison.json",
-      "tested_input_hashes": ".runtime/approval-upgrade-tested-input-hashes.json",
-      "initial_source_identity": "f79d29f55a22 + declared dirty candidate; receipt proves source unchanged throughout attempt",
+      "receipt": ".runtime/test-baseline/1793920598531059656/receipt.json",
+      "base": "ef3851c103f74a10a767d30156561d4d015489e6",
+      "initial_source_identity": "origin/main ef3851c10 + candidate a1de5de26 (clean); receipt proves source/profile/image unchanged throughout attempt",
+      "comparison": "embedded in receipt.upgrade_rehearsal (prepare/after_upgrade_1/after_upgrade_2 all passed)",
       "database": "sc_test",
       "limits": "synthetic test company; no daily deployment, payment or reversal"
     },
@@ -88,14 +88,27 @@
     "runner_environment_option": {
       "status": "passed",
       "count": 14,
-      "log": ".runtime/approval-current-runner-unit.log"
-    }
+      "log": ".runtime/approval-upgrade-runner-unit-rebase.log"
+    },
+    "pre_existing_out_of_scope_failures": [
+      {
+        "target": "verify.local.development_lifecycle.unit",
+        "failures": 2,
+        "tests": [
+          "scripts.verify.test_local_development_lifecycle.LocalDevelopmentLifecycleTest.test_fresh_prepare_creates_restricted_canonical_identity",
+          "scripts.verify.test_local_development_lifecycle.LocalDevelopmentLifecycleTest.test_exact_rebuild_authority_allows_prepare_over_isolated_volumes"
+        ],
+        "classification": "validation_tool_defect (P4 local.clean tooling), pre-existing on origin/main",
+        "reason": "local_clean_env_prepare.sh exits 1 under set -euo pipefail when SOURCE_ENV_FILE lacks SC_ENTRY_SHARED_SECRET; files byte-identical to origin/main and outside candidate scope",
+        "owned_runner_test": "scripts.verify.test_local_test_runner passed 14/14"
+      }
+    ]
   },
   "sync_attempt": {
     "main": "ef3851c103f74a10a767d30156561d4d015489e6",
-    "status": "safely_restored",
+    "status": "synced",
     "log": ".runtime/approval-current-main-sync.log",
     "reason": "candidate make/dev.mk parameter-only change rejected by exact generator Make authority",
-    "resolution": "keep Make recipe unchanged; existing runner reads explicit LOCAL_TEST_UPGRADE_SCENARIO with original module/scenario checks"
+    "resolution": "keep Make recipe unchanged; candidate re-based onto exact origin/main ef3851c10 with 4 owned commits; run baseline_sha updated to ef3851c10"
   }
 }
