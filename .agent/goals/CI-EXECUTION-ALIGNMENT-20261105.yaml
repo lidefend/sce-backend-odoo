@@ -1,0 +1,9 @@
+goal:
+  id: CI-EXECUTION-ALIGNMENT-20261105
+  title: Align remote CI required scope, execution and evidence
+  status: active
+  layer: P4
+  scope:
+    - immutable backend plan and changed-test coverage
+    - affected ORM selection and shared preparation
+    - truthful execution summaries and certified reuse only

@@ -2,6 +2,7 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createScenarioSelectionSnapshot } from '../../frontend/apps/web/src/app/scenarioSurface.ts';
 import { createNavigationSelectionSnapshot } from '../../frontend/apps/web/src/app/navigationSelectionCore.js';
 
 const authority = {
@@ -10,6 +11,7 @@ const authority = {
   primary_actions: [],
   role_home_actions: [],
   contextual_actions: [],
+  menu_containers: [],
   admin_actions: [{
     route_kind: 'ADMIN_ROUTE',
     menu_id: 438,
@@ -73,12 +75,64 @@ assert.equal(createNavigationSelectionSnapshot(node, null), null);
 
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
-assert.match(appShell, /<ProductSideNavigation[\s\S]*v-if="navigationReady"/);
+assert.match(appShell, /<ProductScenarioNavigation\s+v-if="navigationReady && scenarioNavigation"/);
+assert.match(appShell, /v-else-if="scenarioNavigationBroken"/);
+assert.doesNotMatch(appShell, /<ProductSideNavigation\b/, 'missing scenario authority must not expose a legacy fallback');
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
-assert.match(appShell, /createNavigationSelectionSnapshot\(node\.source, session\.routeAuthority\)/);
+assert.match(appShell, /createScenarioSelectionSnapshot\(entry, session\.routeAuthority\)/);
 assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);
 assert.doesNotMatch(appShell, /findRouteAuthority\(session\.routeAuthority/, 'menu click must not re-read mutable route authority');
 assert.doesNotMatch(appShell, /node\.menu_id\s*=(?!=)/, 'menu click must not mutate the selected node');
+
+// Execute the current consumer's readiness expression and click handler with
+// controlled dependencies. A source spelling match alone cannot prove that a
+// loading/stale/unauthorized click is rejected before router navigation.
+const readiness = appShell.match(/const navigationReady = computed\(\(\) => \(([\s\S]*?)\)\);/);
+assert.ok(readiness, 'readiness must remain explicit and testable');
+const ready = new Function('session', `return (${readiness[1]});`);
+for (const [state, expected] of [
+  [{ isReady: false, initStatus: 'loading', routeAuthority: authority }, false],
+  [{ isReady: true, initStatus: 'loading', routeAuthority: authority }, false],
+  [{ isReady: true, initStatus: 'error', routeAuthority: authority }, false],
+  [{ isReady: true, initStatus: 'ready', routeAuthority: null }, false],
+  [{ isReady: true, initStatus: 'ready', routeAuthority: authority }, true],
+]) assert.equal(ready(state), expected);
+
+const clickBody = appShell.match(/function handleScenarioSelect\(entry: ScenarioNavEntry\) \{([\s\S]*?)\n\}/);
+assert.ok(clickBody);
+const makeClick = new Function('navigationReady', 'session', 'router', 'createScenarioSelectionSnapshot',
+  'routeAuthorityContextAllowed', 'query', 'closeMobileSidebar', `return function(entry) {${clickBody[1]}};`);
+const scenarioAuthority = {
+  ...authority,
+  admin_actions: [{ ...authority.admin_actions[0], route: '/a/723?menu_id=438' }],
+};
+const entry = { menu_id: 438, action_id: 723,
+  menu_xmlid: 'smart_construction_core.menu_sc_runtime_user_management', route: '/a/723?menu_id=438' };
+const immutableScenario = createScenarioSelectionSnapshot(new Proxy(entry, {}), scenarioAuthority);
+assert.ok(immutableScenario);
+assert.ok(Object.isFrozen(immutableScenario));
+assert.ok(Object.isFrozen(immutableScenario.authority));
+for (const changed of [
+  { menu_id: 506 }, { action_id: 506 }, { menu_xmlid: 'wrong.menu' }, { route: '/a/506' },
+]) assert.equal(createScenarioSelectionSnapshot({ ...entry, ...changed }, scenarioAuthority), null);
+assert.equal(createScenarioSelectionSnapshot(entry, null), null);
+for (const [isReady, routeAuthority, contextAllowed, expected] of [
+  [false, scenarioAuthority, true, []], [true, null, true, []],
+  [true, scenarioAuthority, false, []], [true, scenarioAuthority, true, [entry.route]],
+]) {
+  const pushed = [];
+  let closed = 0;
+  const query = { value: 'search' };
+  const selected = { ...entry };
+  const click = makeClick({ value: isReady }, { routeAuthority, recordContext: {} },
+    { resolve: () => ({ query: {} }), push: (route) => { pushed.push(route); return Promise.resolve(); } },
+    createScenarioSelectionSnapshot,
+    () => { selected.route = '/a/stale'; return contextAllowed; }, query, () => { closed += 1; });
+  click(selected);
+  assert.deepEqual(pushed, expected, 'click must use the authorized immutable snapshot only');
+  assert.equal(closed, expected.length);
+  assert.equal(query.value, expected.length ? '' : 'search');
+}
 
 const session = fs.readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8');
 assert.match(session, /this\.isReady = false;[\s\S]*this\.routeAuthority = null;[\s\S]*this\.menuTree = \[\];[\s\S]*this\.currentAction = null;/);

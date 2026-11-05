@@ -2,7 +2,7 @@ name: backend_test_suite
 
 # R9 (productization audit): automated entry for the backend Odoo test
 # suite, which needs a live database. Runs nightly on the default branch
-# and on demand; each module with a tests/ directory is tested in an
+# via professional_quality_gate and on demand; each module with a tests/ directory is tested in an
 # isolated per-run database. Odoo tests and repository-level Python unit
 # tests use their respective governed runners; a zero-test Odoo invocation
 # is never accepted as a passing result.
@@ -19,8 +19,6 @@ on:
       head_ref:
         required: true
         type: string
-  schedule:
-    - cron: "37 19 * * *"  # 03:37 Asia/Shanghai nightly
   workflow_dispatch:
     inputs:
       head_ref:
@@ -56,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
+      plan_sha256: ${{ steps.scope.outputs.plan_sha256 }}
       matrix: ${{ steps.scope.outputs.matrix }}
       head: ${{ steps.scope.outputs.head }}
       required: ${{ steps.scope.outputs.required }}
@@ -87,6 +86,13 @@ jobs:
             --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}" \
             ${discover_args}
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload immutable execution plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: backend-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/backend-plan.json
+          if-no-files-found: error
 
   backend_suite:
     needs: plan
@@ -137,7 +143,15 @@ jobs:
           echo "GitHub checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
           exit 1
 
+      - name: Download immutable execution plan
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: backend-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/frozen-plan
+
       - name: Resolve module list
+        env:
+          PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
         run: |
           set -euo pipefail
           if [ -n "${IMPACT_BASE}" ]; then
@@ -146,10 +160,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           MODULES=""
           PYTHON_MODULES=""
-          # Recompute the partition from exact trees; a matrix value cannot
-          # supply or silently shrink the module list.
+          # Verify required scope from exact trees, then consume the frozen partition.
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
-            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" --shard "${SHARD_INDEX}" --input-inventory \
+            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
+            --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" --plan-sha256 "${PLAN_SHA256}" --shard "${SHARD_INDEX}" --input-inventory \
             --output "${RUNNER_TEMP}/backend-plan.json")"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
@@ -233,52 +247,8 @@ jobs:
           docker buildx inspect --bootstrap
           echo "BUILDX_BUILDER=${CI_PROJECT_NAME}-builder" >> "${GITHUB_ENV}"
 
-      - name: Restore frontend build layers
-        id: frontend_layers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ${{ runner.temp }}/backend-frontend-buildkit
-          key: backend-frontend-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile.production-frontend-builder', '.dockerignore', 'frontend/**', '.github/workflows/backend_test_suite.yml') }}
-          restore-keys: |
-            backend-frontend-v2-${{ runner.os }}-${{ runner.arch }}-
-
-      # The frontend is a separate static carrier: the Odoo Dockerfile no
-      # longer has any frontend/nginx stage. Build the dist from the dedicated
-      # builder export stage and derive the immutable fingerprint from those
-      # files. The exported directory is also what the local-dev nginx service
-      # mounts, so it stays available for the compose build below.
-      - name: Calculate frontend build fingerprint
-        run: |
-          set -euo pipefail
-          dist_dir="${RUNNER_TEMP}/frontend-dist-${GITHUB_RUN_ID}"
-          rm -rf "${dist_dir}"
-          docker buildx build \
-            --file Dockerfile.production-frontend-builder \
-            --target frontend-dist \
-            --cache-from "type=local,src=${RUNNER_TEMP}/backend-frontend-buildkit" \
-            --cache-to "type=local,dest=${RUNNER_TEMP}/backend-frontend-buildkit-next,mode=max" \
-            --output "type=local,dest=${dist_dir}" \
-            --build-arg "VITE_ODOO_DB=${DB_NAME}" \
-            .
-          # Export into a fresh directory so old cache blobs cannot accumulate.
-          python3 - <<'PY_CACHE'
-          import os, pathlib, shutil
-          root = pathlib.Path(os.environ['RUNNER_TEMP'])
-          previous = root / 'backend-frontend-buildkit'
-          if previous.exists():
-              shutil.rmtree(previous)
-          (root / 'backend-frontend-buildkit-next').rename(previous)
-          PY_CACHE
-          printf 'frontend layers exact-key-hit=%s; output hash revalidated below\n' '${{ steps.frontend_layers.outputs.cache-hit }}' >> "${GITHUB_STEP_SUMMARY}"
-          test -s "${dist_dir}/index.html"
-          calculated_hash="$(cd "${dist_dir}" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-          test -n "${calculated_hash}"
-          if [ -n "${EXPECTED_FRONTEND_BUILD_SHA256:-}" ]; then
-            test "${calculated_hash}" = "${EXPECTED_FRONTEND_BUILD_SHA256}"
-          fi
-          echo "FRONTEND_BUILD_SHA256=${calculated_hash}" >> "${GITHUB_ENV}"
-          echo "FRONTEND_DIST_DIR=${dist_dir}" >> "${GITHUB_ENV}"
-          echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
+      - name: Bind backend source identity
+        run: echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
 
       # Dependency downloads only; no test result or database is cached.
       - name: Restore backend test pip downloads
@@ -309,8 +279,8 @@ jobs:
           set -euo pipefail
           docker --version
           docker compose version
-          docker compose pull || true
-          docker compose build --builder "${BUILDX_BUILDER}"
+          docker compose pull db redis || true
+          docker compose build --builder "${BUILDX_BUILDER}" odoo
           docker compose up -d db redis
           for i in $(seq 1 60); do
             if docker compose exec -T db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
@@ -360,6 +330,10 @@ jobs:
               # tags also select dependency tests and made wrapper modules run
               # smart_construction_core's suite repeatedly.
               module_test_tags="sc_smoke/${module},sc_gate/${module}"
+              changed_tags="$(python3 scripts/ci/backend_changed_test_coverage.py --plan "${RUNNER_TEMP}/backend-plan.json" --module "${module}")" || exit 1
+              if [ -n "${changed_tags}" ]; then
+                module_test_tags="${module_test_tags},${changed_tags}"
+              fi
               if [ "${module}" = smart_core ]; then
                 module_test_tags="${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_write_authority/${module}"
               fi
@@ -473,10 +447,8 @@ jobs:
             attempted=$((attempted + 1))
             echo "===== backend Python unit suite: ${module} ====="
             if [ "${SC_BACKEND_ISOLATED_PYTHON:-0}" = 1 ] && [ "${module}" = smart_construction_scene ]; then
-              full_args=()
-              if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then
-                full_args=(--force-full)
-              fi
+              # Reuse is decided once by the plan job, never by a worker.
+              full_args=(--force-full)
               if ! python3 scripts/ci/backend_test_receipt.py isolated-python \
                   --head "${HEAD_SHA}" --base "${receipt_base}" --output "${receipt_dir}" \
                   --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" \
@@ -506,7 +478,7 @@ jobs:
             test -n "${test_dir}" || { echo "::error::missing Python test directory for ${module}"; failed=1; continue; }
             python_log="${RUNNER_TEMP}/backend-suite-python-${module}-${GITHUB_RUN_ID}.log"
             python_started=${SECONDS}
-            python3 -m unittest discover -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"
+            python3 -m unittest discover -v -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"
             pipeline_status=("${PIPESTATUS[@]}")
             python_duration=$((SECONDS - python_started))
             python_status="${pipeline_status[0]}"
@@ -587,8 +559,53 @@ jobs:
     needs: [plan, backend_suite]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 125
     steps:
+      - name: Checkout candidate for coverage verification
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.plan.outputs.head }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download coverage evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: backend-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/frozen-plan
+      - name: Download coverage evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.plan.outputs.required == 'true'
+        with:
+          pattern: backend-execution-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: ${{ runner.temp }}/execution-receipts
+      - name: Reconcile module identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ needs.plan.outputs.head }}
+          PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
+          IMPACT_BASE: ${{ inputs.base_sha }}
+          MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+        run: |
+          python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
+            --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+            --plan-sha256 "${PLAN_SHA256}" --receipts "${RUNNER_TEMP}/execution-receipts" \
+            --output "${RUNNER_TEMP}/verified-plan.json"
+          python3 -c 'import json,os; print(json.dumps(json.load(open(os.environ["RUNNER_TEMP"]+"/verified-plan.json"))["execution_summary"], indent=2))' >> "${GITHUB_STEP_SUMMARY}"
+      - name: Verify changed test execution identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANAGED_WAIT_SECONDS: ${{ '7200' }}
+        run: |
+          python3 scripts/ci/backend_changed_test_coverage.py \
+            --discover-managed --wait-managed-seconds "${MANAGED_WAIT_SECONDS}" --plan "${RUNNER_TEMP}/verified-plan.json" --receipts "${RUNNER_TEMP}/execution-receipts" \
+            --output "${RUNNER_TEMP}/changed-test-coverage.json"
+      - name: Publish changed test coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: changed-test-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/changed-test-coverage.json
+          if-no-files-found: error
       - name: Enforce complete backend coverage
         env:
           REQUIRED: ${{ needs.plan.outputs.required }}

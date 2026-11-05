@@ -14,8 +14,14 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Iterable
+
+# One scope-plan invocation only. Never memoize mutable worktree bytes, refs,
+# receipt verdicts or scan results. Exact historical commits are immutable.
+_history_authorities: ContextVar[dict | None] = ContextVar('history_authorities', default=None)
+_make_parses: ContextVar[dict | None] = ContextVar('make_parses', default=None)
 
 AUTHORITY = {
     'secrets': ('scripts/ci/secret_scan.py', 'config/security/legacy_credential_fingerprints.json',
@@ -267,8 +273,17 @@ def make_execution_surface(root: Path, kind: str, revision: str | None = None) -
     merged: dict[str, dict] = {}
     assignments: dict[str, list[str]] = {}
     macro_fragments: list[str] = []
+    parsed = _make_parses.get()
     for name in fragments:
-        rules, fragment_assignments, macros = parse_fragment(texts[name])
+        # Text, not a filename or mtime, is the key. Current files are still
+        # reread; edits (including same-size edits) cannot inherit old parsing.
+        text = texts[name]
+        if parsed is not None:
+            if text not in parsed:
+                parsed[text] = parse_fragment(text)
+            rules, fragment_assignments, macros = parsed[text]
+        else:
+            rules, fragment_assignments, macros = parse_fragment(text)
         for target, rule in rules.items():
             entry = merged.setdefault(target, {'prereqs': [], 'recipe': []})
             entry['prereqs'].extend(p for p in rule['prereqs'] if p not in entry['prereqs'])
@@ -315,12 +330,20 @@ def authority_digest(root: Path, kind: str, revision: str | None = None) -> str:
     decide scope and coverage (``COMMON_AUTHORITY``), and the make slice that
     decides this kind's command (``make_execution_surface``).
     """
+    cache = _history_authorities.get()
+    key = (root.resolve(), kind, revision)
+    cacheable = cache is not None and revision is not None and SHA.fullmatch(revision)
+    if cacheable and key in cache:
+        return cache[key]
     ordered = sorted(set(COMMON_AUTHORITY + AUTHORITY[kind]))
     digests = ({relative: hashlib.sha256((root / relative).read_bytes()).hexdigest() for relative in ordered}
                if revision is None else revision_blob_sha256(root, revision, ordered))
     rows: list[list] = [[relative, digests[relative]] for relative in ordered]
     rows.append(['make.execution.surface', make_execution_surface(root, kind, revision)])
-    return hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
+    digest = hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
+    if cacheable:
+        cache[key] = digest
+    return digest
 
 
 def ref_snapshot(root: Path, kind: str) -> list[list[str]]:
@@ -448,7 +471,11 @@ def select_scope(root: Path, kind: str) -> Scope:
         git(root, 'merge-base', '--is-ancestor', main, 'HEAD')
         if git(root, 'rev-parse', '--is-shallow-repository').strip() != 'false':
             return Scope(None, 'shallow_history')
-        for _, oid, _ in ref_snapshot(root, kind):
+        types = ref_object_types(root, (oid for _, oid, _ in ref_snapshot(root, kind)))
+        for oid, typ in types.items():
+            if typ == 'commit':
+                continue
+            # Preserve annotated-tag peeling and rejection of blob/tree tips.
             try: git(root, 'cat-file', '-e', oid + '^{commit}')
             except subprocess.CalledProcessError: return Scope(None, 'noncommit_ref_requires_full')
         order = {head: index for index, head in enumerate(git(root, 'rev-list', '--topo-order', 'HEAD').splitlines())}
@@ -523,10 +550,19 @@ def candidate_blobs(root: Path, base: str | None, revisions: tuple[str, ...] = (
     return sorted((oid, path, sizes[oid]) for oid, path in occurrences)
 
 
+def plan_scopes(root: Path) -> dict[str, Scope]:
+    token = _history_authorities.set({})
+    parse_token = _make_parses.set({})
+    try:
+        return {kind: select_scope(root, kind) for kind in AUTHORITY}
+    finally:
+        _make_parses.reset(parse_token)
+        _history_authorities.reset(token)
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
-    for kind in AUTHORITY:
-        selected = select_scope(root, kind)
+    for kind, selected in plan_scopes(root).items():
         selected.report(kind)
         if selected.base:
             print(f"[trusted_scan_scope] kind={kind} changed_worktree_paths={len(changed_paths(root, selected.base))} history_scope=candidate_commits")

@@ -1237,6 +1237,60 @@ class NonvisualIntegrationArchiveTest(unittest.TestCase):
         with self.assertRaisesRegex(cleanup.CleanupError, "schemaVersion 1"):
             cleanup.verify_evidence_receipt(SimpleNamespace(path=self.root, head=self.head), receipt)
 
+    def test_identical_archive_retry_verifies_without_copying_or_rewriting(self):
+        from unittest.mock import patch
+        plan = self.plan()
+        receipt = self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+        before = {p: (p.read_bytes(), p.stat().st_mtime_ns)
+                  for p in plan['destination'].rglob('*') if p.is_file()}
+        with patch.object(self.evidence.shutil, 'copy2', side_effect=AssertionError('must not recopy')):
+            result = self.evidence.archive(self.plan(), apply=True, confirmation=self.evidence.CONFIRMATION)
+        self.assertEqual(receipt, result)
+        self.assertEqual(before, {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before})
+
+    def test_existing_archive_tampering_is_rejected_without_overwrite_or_cleanup(self):
+        plan = self.plan()
+        receipt = self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+        original = receipt.read_bytes()
+        target = plan['destination'] / 'audit.json'
+        target_original = target.read_bytes()
+        for kind in ('head', 'manifest', 'role', 'hash', 'provenance', 'path', 'missing', 'extra', 'bytes', 'symlink', 'json'):
+            with self.subTest(kind=kind):
+                data = json.loads(original)
+                if kind == 'head': data['candidateHead'] = 'b' * 40
+                elif kind == 'manifest': data['manifestSha256'] = '0' * 64
+                elif kind == 'role': data['files'][0]['role'] = 'review'
+                elif kind == 'hash': data['files'][0]['sha256'] = '0' * 64
+                elif kind == 'provenance': data['files'][-1]['provenance'] = 'different origin'
+                elif kind == 'path': data['files'][0]['archivePath'] = '/foreign/file'
+                receipt.write_text('invalid' if kind == 'json' else json.dumps(data))
+                if kind == 'missing': target.unlink()
+                elif kind == 'extra': (plan['destination'] / 'extra.txt').write_text('extra')
+                elif kind == 'bytes': target.write_text('changed')
+                elif kind == 'symlink':
+                    target.unlink()
+                    target.symlink_to(self.artifact)
+                before = receipt.read_bytes()
+                with self.assertRaises(self.evidence.ArchiveError):
+                    self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+                self.assertEqual(before, receipt.read_bytes())
+                self.assertTrue(plan['destination'].is_dir())
+                (plan['destination'] / 'extra.txt').unlink(missing_ok=True)
+                if target.is_symlink(): target.unlink()
+                target.write_bytes(target_original)
+                receipt.write_bytes(original)
+
+    def test_archive_retry_rejects_source_drift_and_still_requires_confirmation(self):
+        plan = self.plan()
+        receipt = self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+        before = receipt.read_bytes()
+        with self.assertRaises(self.evidence.ArchiveError):
+            self.evidence.archive(plan, apply=True, confirmation='')
+        self.artifact.write_text('{"changed": true}')
+        with self.assertRaises(self.evidence.ArchiveError):
+            self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+        self.assertEqual(before, receipt.read_bytes())
+
     def test_v1_still_requires_real_screenshot(self):
         self.payload["schemaVersion"] = 1
         with self.assertRaisesRegex(self.evidence.ArchiveError, "missing required roles: screenshot"):

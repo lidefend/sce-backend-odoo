@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1658`
+- Total assets: `1660`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `226`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1207`
+- PR dedupe candidates: `1209`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 620 |
 | contract | 417 |
-| unit | 327 |
+| unit | 329 |
 | odoo_integration | 147 |
 | security | 52 |
 | e2e | 50 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1426 |
+| pr_candidate | 1428 |
 | integration_candidate | 175 |
 | release_candidate | 48 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1207 |
+| deduplicate_before_required | 1209 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 174 |
 | keep_release_only | 48 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1428 |
+| <5m | 1430 |
 | 10-30m | 176 |
 | 30-60m | 50 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 620 |
 | platform owner | 417 |
-| test owner | 328 |
+| test owner | 330 |
 | backend owner | 147 |
 | security owner | 52 |
 | qa owner | 50 |
@@ -168,7 +168,7 @@ Generated from `test_inventory.csv`.
 | scripts/verify | 1439 |
 | scripts/ops | 112 |
 | frontend/apps/web/scripts | 48 |
-| scripts/ci | 33 |
+| scripts/ci | 35 |
 | scripts/audit | 10 |
 | make | 5 |
 | scripts/e2e | 5 |
@@ -242,6 +242,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-768b0a5d | unit | `scripts/audit/test_generate_frontend_visual_projection_inventory.py` | test owner |
 | T-ASSET-73b723f2 | unit | `scripts/audit/test_verification_lane_coverage.py` | test owner |
 | T-ASSET-1ba143bf | governance | `scripts/ci/assert_audit_tp08.py` | architecture owner |
+| T-ASSET-72aae83a | unit | `scripts/ci/backend_changed_test_coverage.py` | test owner |
 | T-ASSET-c0d084cf | unit | `scripts/ci/backend_test_receipt.py` | test owner |
 | T-ASSET-c7dce78f | contract | `scripts/ci/enforce_contract_structure_lock.py` | platform owner |
 | T-ASSET-0998f4e2 | governance | `scripts/ci/frontend_professional_extension_guard.py` | architecture owner |
@@ -253,6 +254,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-ef22b02b | unit | `scripts/ci/gitee_ci_acceptance.py` | test owner |
 | T-ASSET-1215d178 | unit | `scripts/ci/gitee_ci_acceptance_check.py` | test owner |
 | T-ASSET-ac0ebfd4 | unit | `scripts/ci/summarize_test_inventory.py` | test owner |
+| T-ASSET-1e42886c | unit | `scripts/ci/test_backend_changed_test_coverage.py` | test owner |
 | T-ASSET-197bfe6a | unit | `scripts/ci/test_backend_impact_plan.py` | test owner |
 | T-ASSET-ed18de8c | unit | `scripts/ci/test_backend_suite_plan.py` | test owner |
 | T-ASSET-33ece664 | unit | `scripts/ci/test_backend_test_receipt.py` | test owner |
@@ -274,9 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-7cd524e7 | contract | `scripts/ops/contract_product_acceptance_policy_restore.py` | platform owner |
 | T-ASSET-03995c68 | contract | `scripts/ops/formal_list_surface_test_contract_cleanup.py` | platform owner |
 | T-ASSET-800856cc | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
-| T-ASSET-e9de3f62 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-95bca637 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| ... | ... | 1127 more | ... |
+| ... | ... | 1129 more | ... |
 
 ## Dedupe Hotspots
 

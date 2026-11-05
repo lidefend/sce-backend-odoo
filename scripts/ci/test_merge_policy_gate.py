@@ -36,7 +36,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("professional_quality_gate.yml", wait_job)
         self.assertIn("frontend_release_gate.yml", wait_job)
         self.assertIn("sleep 20", wait_job)
-        self.assertIn("timeout-minutes: 150", wait_job)
+        self.assertIn("timeout-minutes: 360", wait_job)
 
     def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)

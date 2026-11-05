@@ -79,7 +79,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertNotIn("inputs.expected_head", text)
             self.assertNotIn("inputs.expected_base", text)
         candidate_gate = self.text("release_candidate_gate.yml")
-        self.assertIn('test "$result" = success || test "$result" = skipped', candidate_gate)
+        self.assertIn('Candidate validation: not applicable (not executed)', candidate_gate)
+        self.assertIn('exit 1', candidate_gate)
 
         makefile = (ROOT / "make/codex.mk").read_text(encoding="utf-8")
         dispatch = makefile.split("candidate.required_checks.dispatch:", 1)[1].split(
@@ -188,7 +189,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/main'", text)
         self.assertIn("make ci.professional.backend", text)
         self.assertNotIn("run: make ci\n", text)
-        self.assertIn("env.ORM_REQUIRED == 'true'", text)
+        self.assertIn("env.PAYMENT_ORM_REQUIRED == 'true'", text)
         authorization_section = text.split("  professional_authorization:", 1)[1].split(
             "  python310_runtime_compatibility:", 1
         )[0]
@@ -254,7 +255,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn('orm_required: ${{ steps.risk.outputs.orm_required }}', text)
         self.assertIn("ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}", text)
         block = text.split('- name: Prove settlement component profile with real ORM', 1)[1].split('- name:', 1)[0]
-        self.assertIn("if: env.ORM_REQUIRED == 'true'", block)
+        self.assertIn("if: env.PAYMENT_ORM_REQUIRED == 'true'", block)
         self.assertNotIn('env.BACKEND_CHANGED', block)
         self.assertIn('make test.payment-settlement.component-profile.orm', block)
         self.assertIn('Report ORM verification selection', text)
@@ -484,6 +485,88 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("make/frontend.mk", owned)
         self.assertNotIn("make/**", overrides)
 
+    def test_ordinary_managed_orm_has_independent_producer_without_browser(self):
+        workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
+        job = workflow['jobs']['managed_orm']
+        self.assertIn("github.event.action == 'labeled' && github.event.label.name != 'ci:candidate'", workflow['concurrency']['group'])
+        self.assertIn("'ignored-label' || 'validation'", workflow['concurrency']['group'])
+        self.assertNotIn('needs', job)
+        self.assertIn("github.event.action != 'labeled'", job['if'])
+        steps = job['steps']
+        setup = next(s for s in steps if s.get('name') == 'Prepare isolated ORM fixture without frontend build')
+        self.assertEqual(setup['if'], "steps.risk.outputs.managed_orm_required == 'true'")
+        script = setup['run']
+        previous = -1
+        for command in ('docker compose build odoo', 'make db.frontend.acceptance.ensure',
+                        'make acceptance.frontend.fixture'):
+            at = script.index(command)
+            self.assertGreater(at, previous)
+            previous = at
+        self.assertIn('export SC_ACCEPTANCE_FIXTURE_PASSWORD=', script)
+        self.assertIn('::add-mask::', script)
+        self.assertNotIn('pnpm', str(job))
+        self.assertNotIn('playwright', str(job))
+        self.assertNotIn('make acceptance.frontend.release_snapshot', str(job))
+        execute = next(s for s in steps if s.get('name') == 'Execute governed managed ORM regressions')
+        upload = next(s for s in steps if s.get('name') == 'Upload managed ORM execution identities')
+        for step in (execute, upload):
+            self.assertEqual(step['if'], setup['if'])
+        self.assertIn('--head "${CHECKOUT_SHA}"', execute['run'])
+        self.assertIn('env.CHECKOUT_SHA', upload['with']['name'])
+        self.assertEqual(steps[-1]['env']['FRONTEND_MODE'], 'full')
+        backend = yaml.safe_load(self.text('backend_test_suite.yml'))
+        verify = next(s for s in backend['jobs']['verify_coverage']['steps']
+                      if s.get('name') == 'Verify changed test execution identities')
+        self.assertEqual(verify['env']['MANAGED_WAIT_SECONDS'], "${{ '7200' }}")
+
+    def test_browser_install_matches_selected_test_dependencies(self):
+        workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
+        steps = next(iter(workflow['jobs'].values()))['steps']
+        install = next(s for s in steps if s.get('name') == 'Install locked frontend toolchain')['run']
+        cache = next(s for s in steps if s.get('id') == 'playwright-cache')
+        self.assertEqual("steps.effective_lane.outputs.frontend_mode != 'skip'", cache['if'])
+        for mode, expected in [('skip', False), ('standard', True), ('full', True)]:
+            script = install.replace("${{ steps.effective_lane.outputs.frontend_mode }}", mode).replace(
+                "${{ steps.playwright-cache.outputs.cache-hit }}", 'false')
+            stubs = 'python3() { :; }; corepack() { :; }; pnpm() { printf "%s\\n" "$*"; };\n'
+            result = subprocess.run(['bash', '-c', stubs + script], text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(expected, 'playwright install --with-deps chromium' in result.stdout)
+
+    def test_merge_summary_matches_backend_and_mainline_execution(self):
+        workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
+        step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
+                    if s.get('name') == 'Publish lane summary')
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / 'summary'
+            env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary), 'RISK_LANE': 'HIGH_RISK',
+                   'FRONTEND_MODE': 'skip', 'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': 'true',
+                   'FRONTEND_CHANGED': 'false', 'MANAGED_ORM_REQUIRED': 'false',
+                   'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
+                   'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
+            for event, expected in [('pull_request', 'standard_backend'), ('push', 'mainline'), ('schedule', 'full')]:
+                summary.write_text('')
+                result = subprocess.run(['bash', '-c', step['run']], env={**env, 'EVENT_NAME': event,
+                    'REF': 'refs/heads/main' if event == 'push' else env['REF']}, capture_output=True, text=True)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertIn('| Effective professional lane | ' + expected + ' |', summary.read_text())
+
+    def test_candidate_summary_distinguishes_skip_from_pass_and_rejects_failure(self):
+        workflow = yaml.safe_load(self.text('release_candidate_gate.yml'))
+        script = workflow['jobs']['release_candidate_gate']['steps'][0]['run']
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / 'summary'
+            for result, code, expected in [('success', 0, 'executed and passed'),
+                                           ('skipped', 0, 'not applicable (not executed)'),
+                                           ('failure', 1, 'pending or failed'),
+                                           ('cancelled', 1, 'pending or failed')]:
+                summary.write_text('')
+                run = subprocess.run(['bash', '-c', script.replace(
+                    '${{ needs.wait_for_candidate_checks.result }}', result)],
+                    env={**os.environ, 'GITHUB_STEP_SUMMARY': str(summary)}, capture_output=True)
+                self.assertEqual(code, run.returncode)
+                self.assertIn(expected, summary.read_text())
+
     def test_high_risk_policy_contains_mandatory_surfaces(self) -> None:
         policy = json.loads(
             (ROOT / "config/ci/risk_tiering_v1.json").read_text(encoding="utf-8")
@@ -532,6 +615,31 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertNotIn('always()', jobs['professional_quality_checks']['if'])
         self.assertTrue(all('checkout' not in step.get('name', '').lower()
                             for step in jobs['professional_quality_gate']['steps']))
+
+    def test_scheduled_backend_cannot_be_skipped_by_empty_impact(self):
+        step = next(s for s in self.jobs()['professional_quality_gate']['steps']
+                    if s['name'] == 'Enforce affected backend execution')
+        for impact in ('true', 'false', ''):
+            for result in ('success', 'failure', 'cancelled', 'skipped', ''):
+                outcome = subprocess.run(['bash', '-c', step['run']], capture_output=True,
+                    env={**os.environ, 'EVENT_NAME': 'schedule', 'AUTHORIZATION_RESULT': 'success',
+                         'IMPACT_REQUIRED': impact, 'IMPACT_RESULT': result})
+                self.assertEqual(result == 'success', outcome.returncode == 0)
+        quality = self.jobs()['professional_quality_checks']
+        baseline = next(s for s in quality['steps'] if s.get('run') == 'make verify.test.baseline')
+        self.assertEqual("github.event_name == 'schedule'", baseline['if'])
+        evidence = next(s for s in quality['steps'] if s.get('name') == 'Preserve scheduled offline baseline evidence')
+        self.assertEqual('.runtime/test-baseline/offline/', evidence['with']['path'])
+        self.assertIn('always()', evidence['if'])
+        self.assertIn("github.event_name == 'schedule' ||", self.jobs()['backend_impact_suite']['if'])
+        for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',
+                     'merge_policy_gate', 'release_candidate_gate'):
+            text = (ROOT / '.github/workflows' / (name + '.yml')).read_text()
+            self.assertIn("cron: '30 18 * * *'", text)
+            self.assertIn('python3 scripts/ci/scheduled_validation.py', text)
+        backend = (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        self.assertNotIn('  schedule:', backend)
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then', backend)
 
     def test_actual_aggregate_script_rejects_missing_failed_cancelled_and_skipped(self):
         steps = self.jobs()['professional_quality_gate']['steps']

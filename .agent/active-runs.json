@@ -72,6 +72,7 @@
     "codex/cap01c-c1-project-initiation-20261104": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
     "codex/cap02c-authority-boundary-20261105": ".agent/runs/CAP02C-RUNTIME-AUTHORITY-20261105/run.json",
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
-    "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json"
+    "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
+    "fix/ci-execution-alignment-20261105": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json"
   }
 }

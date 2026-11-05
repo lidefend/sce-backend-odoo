@@ -34,6 +34,8 @@ jobs:
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
       orm_required: ${{ steps.risk.outputs.orm_required }}
+      orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
+      payment_orm_required: ${{ steps.risk.outputs.payment_orm_required }}
       tool_checks: ${{ steps.backend_impact.outputs.tool_checks }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
@@ -70,6 +72,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Observe scheduled validation time
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/scheduled_validation.py
+
       - name: Classify change risk
         id: risk
         run: |
@@ -93,12 +101,12 @@ jobs:
 
   backend_impact_suite:
     needs: professional_authorization
-    if: github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true'
+    if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true')
     uses: ./.github/workflows/backend_test_suite.yml
     with:
-      base_sha: ${{ github.event.pull_request.base.sha }}
-      head_sha: ${{ github.event.pull_request.head.sha }}
-      head_ref: ${{ github.event.pull_request.head.ref }}
+      base_sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+      head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      head_ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -190,6 +198,8 @@ jobs:
       PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
+      ORM_SCOPES: ${{ needs.professional_authorization.outputs.orm_scopes }}
+      PAYMENT_ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.payment_orm_required != 'false' }}
       ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}
       TOOL_CHECKS: ${{ needs.professional_authorization.outputs.tool_checks }}
 
@@ -244,12 +254,29 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Run complete registered offline baseline for schedule
+        id: scheduled_baseline
+        if: github.event_name == 'schedule'
+        run: make verify.test.baseline
+
+      - name: Preserve scheduled offline baseline evidence
+        if: always() && github.event_name == 'schedule' && steps.scheduled_baseline.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scheduled-offline-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: .runtime/test-baseline/offline/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run owning tool checks for changed control plane
         id: tool_checks
         if: env.TOOL_CHECKS != ''
         run: |
           set -euo pipefail
           make ${TOOL_CHECKS}
+          case " ${TOOL_CHECKS} " in
+            *" verify.ci.workflow.contract "*) make verify.ci.execution_alignment.orders ;;
+          esac
           echo "ran=true" >> "${GITHUB_OUTPUT}"
 
       - name: Bind code evolution to acceptance impact
@@ -267,10 +294,11 @@ jobs:
       # BACKEND_CHANGED flag which also includes pure verification scripts.
       - name: Report ORM verification selection
         run: |
+          printf 'Selected ORM scopes: %s; payment profile required: %s\n' "${ORM_SCOPES}" "${PAYMENT_ORM_REQUIRED}" >> "${GITHUB_STEP_SUMMARY}"
           printf 'ORM_REQUIRED=%s BACKEND_CHANGED=%s PROFESSIONAL_MODE=%s\n' "${ORM_REQUIRED}" "${BACKEND_CHANGED}" "${PROFESSIONAL_MODE}"
 
       - name: Prove settlement component profile with real ORM
-        if: env.ORM_REQUIRED == 'true'
+        if: env.PAYMENT_ORM_REQUIRED == 'true' || (env.CANDIDATE_REQUESTED == 'true' && env.PROFESSIONAL_MODE == 'full')
         run: |
           if [ "${CANDIDATE_REQUESTED}" = true ] && [ "${PROFESSIONAL_MODE}" = full ]; then
             make test.candidate.contract-profiles.orm
@@ -302,7 +330,7 @@ jobs:
           # Determine which shards to run based on change type
           # If only docs/config changed (no frontend/backend code), skip test shard
           RUN_TESTS=1
-          if [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
             echo "Change detected: docs/config only - skipping test shard"
             RUN_TESTS=0
           fi
@@ -426,7 +454,7 @@ jobs:
           if [ "${EVENT_NAME}" = pull_request ]; then
             test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false
           fi
-          if [ "${IMPACT_REQUIRED}" = "true" ]; then
+          if [ "${EVENT_NAME}" = schedule ] || [ "${IMPACT_REQUIRED}" = "true" ]; then
             test "${IMPACT_RESULT}" = success
           else
             test "${IMPACT_RESULT}" = skipped

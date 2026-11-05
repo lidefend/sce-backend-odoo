@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import unittest
+import subprocess
+import tempfile
+import os
+import yaml
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,9 +45,25 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("release_candidate_gate", self.workflow)
 
-    def test_non_candidate_pull_request_skip_is_treated_as_success(self) -> None:
-        self.assertIn('result="${{ needs.wait_for_candidate_checks.result }}"', self.workflow)
-        self.assertIn('test "$result" = success || test "$result" = skipped', self.workflow)
+    def test_candidate_summary_distinguishes_pass_skip_and_failure(self) -> None:
+        workflow = yaml.safe_load(self.workflow)
+        script = workflow['jobs']['release_candidate_gate']['steps'][0]['run']
+        with tempfile.TemporaryDirectory() as directory:
+            summary = Path(directory) / 'summary'
+            for result, passed, message in [
+                ('success', True, 'executed and passed'),
+                ('skipped', True, 'not applicable (not executed)'),
+                ('failure', False, 'pending or failed'),
+                ('cancelled', False, 'pending or failed'),
+            ]:
+                with self.subTest(result=result):
+                    summary.unlink(missing_ok=True)
+                    proc = subprocess.run(['bash', '-ec', script.replace(
+                        '${{ needs.wait_for_candidate_checks.result }}', result)],
+                        env=dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)),
+                        text=True, capture_output=True)
+                    self.assertEqual(proc.returncode == 0, passed, proc.stderr)
+                    self.assertIn(message, summary.read_text())
 
 
 if __name__ == "__main__":

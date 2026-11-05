@@ -47,6 +47,33 @@ class Classification:
             return "standard_frontend"
         return "fast"
 
+    @property
+    def orm_scopes(self) -> tuple[str, ...]:
+        if not self.orm_required:
+            return ()
+        # Preserve the whole-PR module suite; dedicated regressions are additive.
+        scopes = {'module_suite'}
+        shared = ('addons/smart_core/**', 'Dockerfile*', 'docker-compose*',
+                  'requirements*', 'config/requirements*', 'scripts/test/**',
+                  'scripts/ci/*orm*', 'make/dev_test.mk', 'Makefile')
+        payment = ('addons/smart_construction_core/**/*payment*',
+                   'addons/smart_construction_core/**/*settlement*',
+                   'addons/smart_construction_core/**/*component*profile*')
+        navigation = ('addons/**/*navigation*', 'addons/**/*scenario*',
+                      'addons/**/*menu*', 'addons/**/*business_scene*')
+        expand = (self.lane == 'RELEASE' or 'unknown_path_fail_closed' in self.reasons
+                  or 'invalid_path' in self.reasons or any(_matches(p, shared) for p in self.paths))
+        if expand or any(_matches(p, payment) for p in self.paths):
+            scopes.add('payment_settlement')
+        if expand or any(_matches(p, navigation) for p in self.paths):
+            scopes.add('navigation_maintenance')
+        return tuple(sorted(scopes))
+
+    @property
+    def managed_orm_required(self) -> bool:
+        return ('navigation_maintenance' in self.orm_scopes or any(
+            path.startswith('addons/smart_construction_acceptance_fixture/tests/') for path in self.paths))
+
     def outputs(self) -> dict[str, str]:
         return {
             "lane": self.lane,
@@ -55,6 +82,9 @@ class Classification:
             "frontend_changed": str(self.frontend_changed).lower(),
             "backend_changed": str(self.backend_changed).lower(),
             "orm_required": str(self.orm_required).lower(),
+            "orm_scopes": ",".join(self.orm_scopes),
+            "managed_orm_required": str(self.managed_orm_required).lower(),
+            "payment_orm_required": str("payment_settlement" in self.orm_scopes).lower(),
             "frontend_full_required": str(self.frontend_full_required).lower(),
             "changed_path_count": str(len(self.paths)),
             "changed_paths_json": json.dumps(self.paths, separators=(",", ":")),

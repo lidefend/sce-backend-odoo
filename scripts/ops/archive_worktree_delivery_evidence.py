@@ -160,6 +160,50 @@ def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
     }
 
 
+def verify_existing_archive(plan: dict, receipt_path: Path) -> Path:
+    """Retry an identical archive without rewriting originals or its receipt.
+
+    Existence is never evidence. Bind every receipt field and rehash both sides;
+    changed, partial, foreign or unsafe archives remain untouched and fail.
+    """
+    destination = plan["destination"]
+    if any(p.is_symlink() for p in (destination, *destination.parents)):
+        raise ArchiveError("archive destination is unsafe")
+    expected_files = {Path("archive-receipt.json"), *(row["relative"] for row in plan["sources"])}
+    actual_files = set()
+    for path in destination.rglob("*"):
+        if path.is_symlink() or not (path.is_file() or path.is_dir()):
+            raise ArchiveError("archive contains unsafe paths")
+        if path.is_file():
+            actual_files.add(path.relative_to(destination))
+    if actual_files != expected_files:
+        raise ArchiveError("existing archive file set differs from plan")
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ArchiveError("existing archive receipt is unreadable") from exc
+    identity = {"schemaVersion": plan["schemaVersion"], "purpose": plan["purpose"],
+                "nonvisualReason": plan["nonvisualReason"], "status": "verified",
+                "topic": plan["topic"], "candidateWorktree": str(plan["worktree"]),
+                "candidateHead": plan["head"], "manifestPath": str(plan["manifest"]),
+                "manifestSha256": plan["manifestSha256"]}
+    if not isinstance(receipt, dict) or any(receipt.get(k) != v for k, v in identity.items()):
+        raise ArchiveError("existing archive identity differs from plan")
+    expected_rows = []
+    for row in plan["sources"]:
+        source, target = row["source"], destination / row["relative"]
+        if any(p.is_symlink() for p in (source, *source.parents)):
+            raise ArchiveError("evidence source became unsafe")
+        if sha256(source) != row["sha256"] or sha256(target) != row["sha256"]:
+            raise ArchiveError(f"existing archive content differs from plan: {row['relative']}")
+        expected_rows.append({"role": row["role"], "sourcePath": row["relative"].as_posix(),
+                              "archivePath": str(target.resolve()), "sha256": row["sha256"],
+                              "size": target.stat().st_size, "provenance": row.get("provenance")})
+    if receipt.get("files") != expected_rows:
+        raise ArchiveError("existing archive receipt files differ from plan")
+    return receipt_path
+
+
 def archive(plan: dict, *, apply: bool, confirmation: str) -> Path:
     receipt_path = plan["destination"] / "archive-receipt.json"
     if not apply:
@@ -169,8 +213,8 @@ def archive(plan: dict, *, apply: bool, confirmation: str) -> Path:
     if (git(plan["worktree"], "rev-parse", "HEAD") != plan["head"]
             or sha256(plan["manifest"]) != plan["manifestSha256"]):
         raise ArchiveError("candidate or manifest changed after planning")
-    if plan["destination"].exists():
-        raise ArchiveError(f"archive destination already exists: {plan['destination']}")
+    if plan["destination"].exists() or plan["destination"].is_symlink():
+        return verify_existing_archive(plan, receipt_path)
     plan["destination"].mkdir(parents=True)
     archived = []
     try:
@@ -227,11 +271,12 @@ def main() -> int:
             else worktree.parent / ".codex-evidence" / "workspace-archives"
         )
         plan = load_plan(worktree, Path(args.manifest), archive_root)
+        existing = plan["destination"].exists()
         receipt = archive(plan, apply=args.apply, confirmation=args.confirm)
     except (ArchiveError, OSError) as exc:
         print(f"[workspace.evidence.archive] DENY {exc}", file=sys.stderr)
         return 2
-    mode = "APPLIED" if args.apply else "DRY_RUN"
+    mode = ("VERIFIED_REUSE" if existing else "APPLIED") if args.apply else "DRY_RUN"
     print(
         f"[workspace.evidence.archive] {mode} topic={plan['topic']} "
         f"head={plan['head']} files={len(plan['sources'])} receipt={receipt}"

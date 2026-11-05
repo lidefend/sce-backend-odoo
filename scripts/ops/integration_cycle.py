@@ -364,7 +364,8 @@ def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, s
     return not failed and not pending, failed, pending
 
 
-def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[int, dict]:
+def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False,
+                    inspect_local_quick: bool = False) -> tuple[int, dict]:
     result = subprocess.run(
         [
             "gh",
@@ -386,7 +387,9 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
     ready_checks, failed, pending = checks_ready(
         payload.get("statusCheckRollup") or [], required_checks=REQUIRED_MERGE_IDENTITIES
     )
-    quick_verified = _receipt_verified(root, head)
+    # Optional diagnostic only: ordinary merge eligibility is owned by the
+    # affected evidence preflight and current remote checks, not full Quick.
+    quick_verified = _receipt_verified(root, head) if inspect_local_quick else None
     ready = (
         payload.get("state") == "OPEN"
         and payload.get("headRefOid") == head
@@ -404,6 +407,7 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
         "merge_state": payload.get("mergeStateStatus"),
         "mergeable": payload.get("mergeable"),
         "quick_verified": quick_verified,
+        "local_quick_inspection": "checked" if inspect_local_quick else "not_requested",
         "local_quick_required": False,
         "validation_policy": "incremental_local_remote_integration",
         "allow_no_quick": allow_no_quick,
@@ -431,6 +435,8 @@ def main(argv: list[str] | None = None) -> int:
     merge = sub.add_parser("merge-readiness")
     merge.add_argument("--pr", type=int, required=True)
     merge.add_argument("--allow-no-quick", action="store_true")
+    merge.add_argument("--inspect-local-quick", action="store_true",
+                       help="Explicitly inspect optional full Quick evidence; never changes merge eligibility")
 
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
@@ -464,7 +470,8 @@ def main(argv: list[str] | None = None) -> int:
         return code
 
     if args.command == "merge-readiness":
-        code, payload = merge_readiness(root, args.pr, allow_no_quick=args.allow_no_quick)
+        code, payload = merge_readiness(root, args.pr, allow_no_quick=args.allow_no_quick,
+                                       inspect_local_quick=args.inspect_local_quick)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return code
 

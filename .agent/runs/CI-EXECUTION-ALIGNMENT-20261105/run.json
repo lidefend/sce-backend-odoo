@@ -1,0 +1,498 @@
+{
+  "schema_version": 1,
+  "id": "CI-EXECUTION-ALIGNMENT-20261105",
+  "branch": "fix/ci-execution-alignment-20261105",
+  "baseline_sha": "fe719728b99cae761d50eb14eabcefc4df307adf",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-EXECUTION-ALIGNMENT-20261105.yaml",
+  "record": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-EXECUTION-ALIGNMENT-20261105.yaml",
+    ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/public_guard.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "config/acceptance/evolution_binding.v1.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "make/ci.mk",
+    "make/codex.mk",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/frontend_fixture_orm_entry.sh",
+    "scripts/ci/scheduled_validation.py",
+    "scripts/ci/select_authoritative_workflow_run.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py",
+    "scripts/ci/test_trusted_scan_scope.py",
+    "scripts/ci/trusted_scan_scope.py",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/ops/archive_worktree_delivery_evidence.py",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+    "scripts/verify/frontend_release_ci_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_baseline_manifest.json",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_release_ci_guard.py",
+    "scripts/verify/test_frontend_release_ci_identity.py",
+    "scripts/verify/test_pr_publish_preflight.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed Make tools; no database or service mutation"
+  },
+  "checks": {
+    "ci_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/",
+        "Dockerfile",
+        "Makefile",
+        "addons/",
+        "config/",
+        "config/ci/risk_tiering_v1.json",
+        "make/",
+        "make/ci.mk",
+        "scripts/_lib/",
+        "scripts/ci/",
+        "scripts/common/",
+        "scripts/ops/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/test/",
+        "scripts/verify/"
+      ]
+    },
+    "local_scope": {
+      "target": "verify.trusted_scan.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/test_secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/parallel_scan.py",
+        "scripts/ci/test_parallel_scan.py",
+        "scripts/verify/repository_clean_history_guard.py",
+        "config/security/",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ops/agent_run_context.py"
+      ]
+    },
+    "integration_tools": {
+      "target": "verify.integration.cycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py",
+        ".github/workflows/"
+      ]
+    },
+    "archive_tools": {
+      "target": "verify.workspace.worktree.guard",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/",
+        "config/",
+        "docs/ops/"
+      ]
+    },
+    "pr_publication": {
+      "target": "verify.pr.push.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ]
+    }
+  },
+  "blockers": [
+    "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
+  ],
+  "next_exact_step": "Freeze data-space isolation tests, independent exact-head review, archive/push PR811, verify actual ORM and all required CI before protected merge.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "remote CI selection and execution evidence",
+    "module": "scripts/ci, GitHub workflows, rollback-only acceptance test setup",
+    "standard_vs_user_specific": "repository delivery mechanism",
+    "why_here": "Selection and evidence are delivery tooling",
+    "why_not_elsewhere": "No change to business assertions or runtime semantics",
+    "blast_radius": "backend suite, professional and frontend CI lanes"
+  },
+  "validation": {
+    "L0": "clean main baseline then explicit dirty scope",
+    "L1": "283 affected CI contract tests and ci.local.iteration passed; historical focused test logs retain original identities.",
+    "L2_L4": "remote execution verification required; no local product/runtime changes",
+    "L5": "independent review and exact candidate checks before integration"
+  },
+  "exclusions": [
+    "business runtime implementations and product assertions",
+    "general ORM reuse without closure proof",
+    "deployment",
+    "unrelated worktrees"
+  ],
+  "stage_identity": {
+    "head": "d33b63647720f51c6476e4df44f1e84e0de8dcc9",
+    "dirty_scope": "P4 ORM runner impact isolation; preserves shared runtime/browser gates",
+    "phase": "validated before final commit"
+  },
+  "results": {
+    "ci_contract": {
+      "status": "passed",
+      "command": "make verify.ci.workflow.contract",
+      "tests": 278,
+      "log": ".runtime/ci-execution-alignment/pr-publication-wiring-tests-final.log"
+    },
+    "scheduled_contract": {
+      "status": "passed",
+      "command": "make verify.ci.scheduled_gates",
+      "tests": 81,
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
+    },
+    "affected_orders": {
+      "status": "passed",
+      "command": "make verify.ci.execution_alignment.orders",
+      "cases_per_order": 223,
+      "orders": [
+        "forward",
+        "reverse",
+        "random"
+      ],
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log",
+      "note": "All three independent processes passed the final affected CI test surface; no ORM or all-repository claim."
+    },
+    "registry": {
+      "status": "passed",
+      "command": "make test.coverage.registry.export verify.test.coverage.registry verify.test.baseline.unit",
+      "tests": 30,
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/ci-execution-alignment/pr-publication-iteration-final.log",
+      "coverage": "L1 only"
+    },
+    "frontend_release": {
+      "status": "passed",
+      "command": "make verify.frontend.release.unit",
+      "log": ".runtime/ci-execution-alignment/frontend-release-fixed.log",
+      "scope": "Current scenario navigation readiness, immutable authorized tuple and click consumer; complete registered release unit entry. No product runtime mutation."
+    },
+    "remote_execution": {
+      "status": "pending",
+      "reason": "Round2 standard frontend and public_guard passed; managed ORM preparation failed. New candidate must rerun required remote checks."
+    },
+    "iteration_initial_new_target": {
+      "status": "failed",
+      "owner": "P4 new Make entry lacked a remote consumer",
+      "log": ".runtime/ci-execution-alignment/iteration-checkpoint.log",
+      "recovery": "Owning control-plane CI branch now invokes the registered three-order entry; subsequent ci.local.iteration passed."
+    },
+    "cli_plan": {
+      "status": "passed",
+      "cases": 2,
+      "command": "Actual backend_suite_plan.py CLI against exact baseline tree; valid digest consumes scene shard; altered digest rejects",
+      "log": ".runtime/ci-execution-alignment/cli-results.json",
+      "limits": "Development tool bytes plus exact baseline source tree; no remote execution."
+    },
+    "frontend_release_previous": {
+      "status": "failed",
+      "command": "make verify.frontend.release.unit",
+      "owner": "pre-existing P4 validation-tool assertion against AppShell source",
+      "log": ".runtime/ci-execution-alignment/frontend-release-unit.log",
+      "unchanged_inputs": [
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "reason": "test line 76 expects ProductSideNavigation v-if=\"navigationReady\"; both files match baseline HEAD"
+    },
+    "scheduled_offline_baseline": {
+      "status": "passed",
+      "command": "make verify.test.baseline",
+      "cases_per_order": 297,
+      "orders": [
+        "forward",
+        "reverse",
+        "random"
+      ],
+      "log": ".runtime/ci-execution-alignment/scheduled-offline-baseline.log",
+      "limits": "Registered offline baseline, not all repository tests or ORM acceptance; dirty development stage, no exact-head remote claim."
+    },
+    "artifact_wiring": {
+      "status": "passed",
+      "command": "make verify.ci.scheduled_gates ci.local.iteration",
+      "log": ".runtime/ci-execution-alignment/continuation-artifact-wiring.log",
+      "note": "Final artifact-persistence-only addition checked after three-order offline baseline."
+    },
+    "local_incremental_reuse": {
+      "status": "passed",
+      "command": "make agent.run.begin AGENT_CHECK=ci_contract; make verify.ci.workflow.contract; make agent.run.record; make agent.run.resume",
+      "tests": 272,
+      "test_wall_seconds": 9.7,
+      "unchanged_resume_wall_seconds": 2.9,
+      "test_log": ".runtime/ci-execution-alignment/efficiency-contract.log",
+      "receipt": ".runtime/agent-runs/CI-EXECUTION-ALIGNMENT-20261105/ci_contract.json",
+      "readback": ".runtime/ci-execution-alignment/efficiency-resume-after.json",
+      "observed": "ci_contract=reusable; planner lists verify.ci.workflow.contract under reusedTargets; no test execution on resume.",
+      "limits": "Local advisory evidence only; conservative inputs and manual handling of unmapped paths remain."
+    },
+    "local_scope_optimization": {
+      "status": "passed",
+      "command": "make verify.trusted_scan.unit; make ci.local.iteration",
+      "tests": 80,
+      "test_log": ".runtime/ci-execution-alignment/local-perf-unit-passed.log",
+      "receipt": ".runtime/agent-runs/CI-EXECUTION-ALIGNMENT-20261105/local_scope.json",
+      "iteration_log": ".runtime/ci-execution-alignment/local-iteration-after.log",
+      "measurement": {
+        "iteration_before_wall_seconds": 29.4,
+        "iteration_after_wall_seconds": 15.7,
+        "scope_before_wall_seconds": 17.4538,
+        "scope_after_wall_seconds": 3.72,
+        "limits": "Same local workspace, warm filesystem, individual observations rather than statistical benchmark; before scope measured via shell timing wrapper. No runtime workload or gate removed."
+      },
+      "profile": ".runtime/ci-execution-alignment/local-step-times.jsonl",
+      "semantics": "Exact historical SHA authority digests cached only inside one plan; Make parsing keyed by full text with fresh file reads; commit-tip types batched, annotated tags still peeled. Test parity and invalidation within/across calls, moving HEAD, noncommit tags, and exception cleanup.",
+      "recovery": "One added test initially mutated a prerequisite outside its selected scan closure; corrected to exercise history whose dependency includes that guard. Initial receipt registration used security.*; switched to the existing verify.trusted_scan.unit alias before the passing recorded run."
+    },
+    "delivery_flow_optimization": {
+      "status": "passed",
+      "commands": [
+        "make verify.integration.cycle.unit",
+        "make verify.workspace.worktree.guard",
+        "make verify.ci.workflow.contract",
+        "make ci.local.iteration"
+      ],
+      "tests": {
+        "integration_tools": 24,
+        "archive_and_worktree_tools": 152,
+        "ci_contract": 273
+      },
+      "logs": [
+        ".runtime/ci-execution-alignment/delivery-integration-tests.log",
+        ".runtime/ci-execution-alignment/delivery-archive-tests.log",
+        ".runtime/ci-execution-alignment/delivery-wiring-tests.log",
+        ".runtime/ci-execution-alignment/delivery-iteration-final.log"
+      ],
+      "changes": [
+        "Ordinary merge-readiness no longer invokes optional full Quick verification; explicit --inspect-local-quick retains diagnostics. Missing/failed/head-drift/dirty remote merge conditions unchanged.",
+        "Identical same-destination archive retry revalidates candidate/manifest, exact receipt file rows and hashes of source plus archive, then returns without copy or receipt rewrite. Mismatch refuses without cleanup or overwrite.",
+        "Changed archive/integration tools and their test files now select existing owning remote tool targets; removed only the obsolete zero-reference disposition after actual wiring."
+      ],
+      "measurements": {
+        "optional_quick_verification_before_seconds": 0.55,
+        "optional_quick_verification_default_calls_after": 0,
+        "archive_repeat_copy_calls_after": 0,
+        "archive_repeat_bytes_and_mtimes": "unchanged in regression test",
+        "scope": "No end-to-end CI/merge latency claim; main gain is safe retry and removal of unnecessary diagnostics. Committed fingerprint collection measured 0.261 seconds for 16 suites and was left unchanged."
+      },
+      "recovery": "First ci.local.iteration rejected the now-stale zero-reference disposition for verify.integration.cycle.unit. Existing governed unregister command removed that one obsolete entry; final guard passed without baseline relaxation.",
+      "limitations": [
+        "Archive reuse is limited to the same destination (date/topic/head); no cross-date archive search or content-verification bypass.",
+        "No real external evidence archive, remote publication, merge or runtime mutation executed."
+      ]
+    },
+    "pr_publication": {
+      "status": "passed",
+      "command": "make verify.pr.push.unit",
+      "tests": 23,
+      "log": ".runtime/ci-execution-alignment/pr-publication-tests-record.log",
+      "scope": "18 safe-push cases and 5 publication tests, including recursive make under -j4 -k; shared preflight once, push-before-create, stop on either failure."
+    },
+    "orm_entry_scope": {
+      "status": "passed",
+      "tests": {
+        "acceptance_binding": 56,
+        "ci_security_identity_scheduled": 82,
+        "ci_contract": 278
+      },
+      "logs": [
+        ".runtime/ci-execution-alignment/orm-entry-scope-tests.log",
+        ".runtime/ci-execution-alignment/orm-entry-wiring-tests.log",
+        ".runtime/ci-execution-alignment/orm-entry-ci-contract-final.log",
+        ".runtime/ci-execution-alignment/orm-entry-iteration-final.log",
+        ".runtime/ci-execution-alignment/orm-entry-freeze.log"
+      ],
+      "reason": "ORM-only CI entry is structurally separate from unchanged local/browser operation entry; fixture ORM runner maps to backend_contract plus governance_static. Shared entry and release-snapshot mutations still require browser evidence.",
+      "recovery": "Corrected nonexistent identity Make target to existing scheduled gate; removed stale zero-reference disposition after wiring; updated moved-entry regression test. All applicable final tests passed."
+    },
+    "remote_pr_811_round1": {
+      "status": "failed",
+      "head": "53ab11fe4201aecad469f972d81c2536f66bb676",
+      "public_guard": "outdated candidate summary string assertion; replaced by executed success/skip/failure/cancelled behavior assertions",
+      "frontend": "standard pnpm test includes offline Chromium project detail component test; browser executable missing because full-only provisioning was incorrect",
+      "merge_policy": "correctly blocked on failed fact workflows",
+      "fix_validation": {
+        "scheduled_guard_tests": 86,
+        "offline_component_checks": 28,
+        "log": ".runtime/ci-execution-alignment/remote-fixes-tests.log"
+      },
+      "limits": "Browser dependency optimization cannot omit Chromium while selected standard tests consume it; no test removed."
+    },
+    "managed_orm_producer": {
+      "status": "local_passed_remote_pending",
+      "tests": {
+        "ci_security_identity_scheduled": 88,
+        "ci_contract": 280
+      },
+      "log": ".runtime/ci-execution-alignment/managed-producer-tests-final.log",
+      "behavior": "ordinary same-repository PR/push gets independent impact-selected managed ORM producer; candidate/schedule keeps mutually exclusive existing producer. No Node/frontend build/browser in ordinary ORM job. Frozen env and source identity, per-job export checks, artifact origin/digest verification remain required.",
+      "waiting": "7200-second upper bound, only pending producers wait; latest eligible failed/cancelled/unsupported-attempt/missing-artifact producer fails immediately with run URL; scheduled total deadline retained",
+      "review_finding": "User and independent agent S1: ordinary navigation PR had managed_orm_required with no producer and zero-second wait; now addressed for re-review"
+    },
+    "managed_orm_label_isolation": {
+      "status": "passed",
+      "tests": {
+        "ci_security_identity_scheduled": 88,
+        "ci_contract": 281
+      },
+      "log": ".runtime/ci-execution-alignment/managed-label-tests.log",
+      "scope": "unrelated label events have separate concurrency; all-skipped producer jobs cannot shadow authenticated earlier actual producer; real terminal failures remain fail-fast",
+      "remote_round1": "all four backend shards and professional checks passed at53ab; final coverage failed for missingmanagedORM as predicted, addressed in newproducer"
+    },
+    "managed_orm_rerun_authentication": {
+      "status": "local_passed_remote_pending",
+      "ci_contract_tests": 283,
+      "log": ".runtime/ci-execution-alignment/managed-rerun-tests.log",
+      "scope": "Positive integer run_attempt binds artifact name, returned metadata and attempt-specific jobs endpoint; selected jobs bind run id, head, attempt and completed success; repository, digest and outcome checks preserved",
+      "independent_review": "18 coverage cases passed; reviewer checked live GitHub job metadata fields; exact frozen identity pending"
+    },
+    "managed_orm_preparation": {
+      "status": "local_passed_remote_pending",
+      "remote_head": "1a92d2d964555ae766ef10e24c1aeb1203357d83",
+      "failed_job": 127195003515,
+      "failure": "Independent ORM prep unnecessarily called full release snapshot: expected91 actual274 missing6 additions189. Remove release snapshot from this lane; lifecycle tests establish released policy inside rollback-only transaction. Full release assertions unchanged.",
+      "validation": "283 CI contract tests and local iteration passed",
+      "log": ".runtime/ci-execution-alignment/orm-prerequisite-tests.log",
+      "independent_prerequisite_review": "Readonly reviewer confirmed real policy setup, acceptance DB resolution, and absence of snapshot requirement; actual ORM execution remains required"
+    },
+    "managed_orm_round3": {
+      "head": "bd47254ec8f795b13c8228926828378bce6ca143",
+      "job": 127201606655,
+      "status": "failed",
+      "tests": 34,
+      "failed": 2,
+      "errors": 2,
+      "finding": "Data-space creation tests collided with populated activity XMLIDs; empty foreign draft negative case also predates permitted empty draft convergence. Repair rollback-only preconditions; retain protected history negative assertion and cover allowed empty draft convergence.",
+      "repair": "Transactional exact XMLID isolation; negative protected nonempty accounting entry plus positive empty-draft convergence test",
+      "local_validation": "283 CI contract tests, syntax and ci.local.iteration passed; direct unittest module invocation failed import due to wrong entrypoint, corrected via governed Make",
+      "log": ".runtime/ci-execution-alignment/round3-bd47254ec/managed-orm.log",
+      "independent_review": "Dirty code review passed; frozen review and remote ORM required"
+    }
+  },
+  "review_resolution": {
+    "changed_tests": "Method selectors plus final successful receipt logs; managed acceptance requires same-head authenticated platform artifact. Missing proof blocks coverage. Explicit ci:candidate selects managed full lane and waits up to 30 minutes; first-attempt evidence only.",
+    "shards": "Workers consume digest-bound fixed plan; aggregation verifies each successful module receipt and disjoint execution/reuse union.",
+    "orm_routing": "Payment and navigation selected separately; shared/unknown runtime inputs expand; whole-PR module impact retained.",
+    "incremental_reuse": "Existing certified isolated Python reuse moved before partition; decision/config inputs added to recipe. Ordinary ORM closure remains uncertified. No test-only reverse-dependency narrowing without proof.",
+    "frontend_builds": "Backend does not consume frontend output; removed shard builds and limited Compose build/pull to owning services. No unverified shared result cache.",
+    "browsers": "Only full frontend lane restores/installs browser; standard lane still runs lint/type/unit/build.",
+    "summaries": "Professional backend/mainline/full summaries aligned; candidate skip explicitly not applicable; module executed_passed and valid_reuse statuses separate.",
+    "scheduled_full": "Schedule invokes all registered backend module suites without incremental receipt discovery, full professional/profile checks, full frontend/browser and all declared managed fixture methods, and complete registered offline baseline with retained logs/receipts. Empty impact cannot skip scheduled execution. Historical unwired test groups remain outside this registered scope."
+  },
+  "rollback": "Revert this standalone CI checkpoint through the protected PR flow if integrated; no database/service/environment changes were executed.",
+  "completion": {
+    "batch": "Local implementation and scoped validation complete; independent review and remote validation pending.",
+    "mainline": "not integrated",
+    "deployment": "not performed",
+    "user_acceptance": "not claimed"
+  },
+  "external_state": "PR811 published at1a92d2d964555ae766ef10e24c1aeb1203357d83; earlier registered local acceptance diagnostics retained below. No merge or deployment.",
+  "coverage_limitations": [
+    "Static declared test-method identities; dynamic factories/inherited generated cases are not a complete inventory proof.",
+    "Managed evidence binds successful selected frontend workflow and actual attempt on the same head; failed, missing, mismatched evidence blocks coverage.",
+    "No narrowing of test-only reverse dependencies or general ORM history reuse without complete dependency proof."
+  ],
+  "generated_evidence": {
+    "producer": "repository commit hook refresh.generated_evidence",
+    "reviewed_paths": [
+      "docs/engineering_convergence/complexity_budget_report.md",
+      "docs/engineering_convergence/split_plan_queue.md",
+      "docs/engineering_convergence/test_inventory.csv",
+      "docs/engineering_convergence/test_inventory_summary.md"
+    ],
+    "review_result": "Only source-size/line-count and two new CI validation-asset inventory entries; no product/source changes.",
+    "evidence_reuse": "Documentation-only generated refresh does not alter test/executor inputs; previously passed scoped results retained."
+  },
+  "authorization_continuation": "Owner requested fixing stale navigation assertions, complete wiring, full scheduled verification and investigation/fix of changing observed start times.",
+  "schedule_observation": {
+    "cron": "30 18 * * *",
+    "timezone_display": "Asia/Shanghai 02:30 daily",
+    "history_log": ".runtime/ci-execution-alignment/scheduled-runs-observed.json",
+    "examples": [
+      {
+        "run": 41740050673,
+        "created_at": "2026-11-03T23:33:12Z",
+        "attempt": 1
+      },
+      {
+        "run": 41936911986,
+        "created_at": "2026-11-04T23:51:01Z",
+        "run_started_at": "2026-11-05T02:49:40Z",
+        "attempt": 2
+      }
+    ],
+    "finding": "Fixed UTC cron; actual event creation delayed hours. Latest run_started_at belongs to a retry, not original queue delay.",
+    "fix": "Unified backend nightly under professional full run; display nominal UTC/Shanghai slot, actual creation, trigger delay and attempt. Bind aggregate and managed evidence to exact head plus same nominal slot.",
+    "limit": "GitHub schedule is best effort; occurrence inferred from preceding daily boundary, delays >=24h cannot be disambiguated from schedule payload. No punctuality guarantee or new external scheduler.",
+    "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule"
+  },
+  "local_iteration_policy": {
+    "daily": "Run required lightweight iteration guards and affected nonzero tests. Begin/record declared checks so unchanged passing input evidence is reusable. Never infer pass from prose in results.",
+    "reproducibility": "Three-order affected tests and full offline baseline remain explicit convergence/nightly checks, not mandatory after every small edit. Original passed results and remote entrypoints retained.",
+    "repeat_rule": "Re-run the failed item or changed dependency surface first. An unchanged passing check requires a concrete reverify reason. No automatic local full Quick, full frontend release, browser or ORM fallback.",
+    "limitation": "Existing planner is advisory; unmapped paths still need explicit impact analysis. This correction enables this batch CI receipt; it does not implement universal fine-grained dependency closure.",
+    "observed_costs": {
+      "registered_baseline_test_seconds_three_orders": 53.404,
+      "affected_orders_test_seconds_three_orders": 15.459,
+      "iteration_entry_wall_seconds": 29.4,
+      "interpretation": "Test-runner durations exclude command/planning overhead. Daily entry still has material fixed cost; its individual steps have not been profiled, so no attributed bottleneck claim."
+    },
+    "optimization_scope": "P4 scan planning: per-invocation historical SHA digest memoization, full-text Make parse memoization, and batched commit-type verification; mutable refs, worktree reads and all scan gates preserved."
+  },
+  "delivery_optimization_scope": "P4 evidence archive retries and merge-readiness diagnostics; preserve source/target rechecks, required remote checks and verified archive content. No real archive or merge operation authorized/executed by this optimization.",
+  "integration_runtime": {
+    "status": "passed_on_prior_candidate",
+    "candidate": "803f60c66d373138603a8602555b0dbb13435821",
+    "upgrade": "existing acceptance smart_construction_core upgraded through governed entry; schema mismatch resolved",
+    "contract": "passed",
+    "browser": "passed phase=full rows=18 failures=0",
+    "relevance": "Not required for final ORM-only CI candidate; historical proof retained, not relabeled or reused as current-head acceptance"
+  }
+}

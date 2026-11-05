@@ -155,11 +155,30 @@ class GateTests(unittest.TestCase):
                                      ({"statusCheckRollup": rows[:-1]}, True, 1)):
             with self.subTest(delta=delta, quick=quick), \
                     patch.object(cycle, "git", side_effect=lambda root, *args: "" if args[0] == "status" else head), \
-                    patch.object(cycle, "_receipt_verified", return_value=quick), \
+                    patch.object(cycle, "_receipt_verified", return_value=quick) as inspect, \
                     patch.object(cycle.subprocess, "run", return_value=subprocess.CompletedProcess(
                         [], 0, stdout=json.dumps({**base, **delta}), stderr="")):
-                code, _ = cycle.merge_readiness(Path("/unused"), 769)
+                code, report = cycle.merge_readiness(Path("/unused"), 769)
                 self.assertEqual(code, expected)
+                inspect.assert_not_called()
+                self.assertIsNone(report['quick_verified'])
+                self.assertEqual('not_requested', report['local_quick_inspection'])
+
+    def test_explicit_quick_diagnostic_is_reported_but_not_a_merge_gate(self):
+        head = 'a' * 40
+        payload = {'state': 'OPEN', 'headRefOid': head, 'mergeable': 'MERGEABLE',
+                   'mergeStateStatus': 'CLEAN', 'statusCheckRollup': [
+                       self.check(10, 100, 'SUCCESS', workflow=name, name=name)
+                       for name in cycle.REQUIRED_MERGE_CHECKS]}
+        with patch.object(cycle, 'git', side_effect=lambda root, *args: '' if args[0] == 'status' else head), \
+             patch.object(cycle, '_receipt_verified', return_value=False) as inspect, \
+             patch.object(cycle.subprocess, 'run', return_value=subprocess.CompletedProcess(
+                 [], 0, stdout=json.dumps(payload), stderr='')):
+            code, report = cycle.merge_readiness(Path('/unused'), 769, inspect_local_quick=True)
+        inspect.assert_called_once_with(Path('/unused'), head)
+        self.assertEqual(0, code)
+        self.assertIs(False, report['quick_verified'])
+        self.assertEqual('checked', report['local_quick_inspection'])
 
     def test_dirty_checkout_blocks_merge_even_with_successful_remote_checks(self):
         head = "a" * 40

@@ -17,6 +17,14 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.company_b = self.env.ref('smart_construction_acceptance_fixture.fe_company_b')
         self.menu = self.env.ref('smart_construction_core.menu_sc_user_payment_apply')
         self.states = self.env['sc.scene.company.enablement'].sudo()
+        # These cases verify company revocation against a released policy.
+        # Build that prerequisite inside TransactionCase, independently of
+        # maintained policy rows or a full product release snapshot.
+        policy = self.env['sc.product.policy'].sudo()
+        policy.search([('product_key', 'in', [
+            'construction.standard', 'construction.preview',
+        ])]).unlink()
+        policy.sync_construction_menu_product_policies()
 
     def _state(self, company):
         row = self.states.search([('company_id', '=', company.id),

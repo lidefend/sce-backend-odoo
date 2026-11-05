@@ -1615,11 +1615,6 @@
       "owner": "platform-team",
       "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.capability.maturity.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
-    "verify.ci.scheduled_gates": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.clean_product_tree": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -2462,12 +2457,6 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.integration.cycle.unit": {
-      "disposition": "ops_tooling",
-      "owner": "platform-team",
-      "reason": "unit coverage for the integration cycle helper",
-      "review_by": "2026-12-31"
     },
     "verify.intent_group.authorization.unit": {
       "disposition": "local_diagnostic",

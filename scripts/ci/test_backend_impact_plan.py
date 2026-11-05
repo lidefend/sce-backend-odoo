@@ -49,6 +49,13 @@ class ImpactSelectionTest(unittest.TestCase):
                 self.assertEqual([target], plan['tool_checks'])
                 self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
 
+    def test_delivery_evidence_tools_and_tests_reach_their_remote_owners(self):
+        paths = ['scripts/ops/integration_cycle.py', 'scripts/ops/test_integration_cycle.py',
+                 'scripts/ops/archive_worktree_delivery_evidence.py', 'scripts/ops/test_safe_worktree_cleanup.py']
+        plan = planner.select(paths, self.graph, self.graph)
+        self.assertEqual(['verify.integration.cycle.unit', 'verify.workspace.worktree.guard'], plan['tool_checks'])
+        self.assertEqual([], plan['modules'])
+
     def test_control_plane_file_read_by_test_still_selects_reader(self):
         path = 'scripts/ci/backend_suite_plan.py'
         graph = {**self.graph, 'reader': {**module(), 'file_inputs': [path]}}
@@ -334,7 +341,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         self.assertIn('--base "${IMPACT_BASE}"', suite)
         self.assertIn('module_test_tags="sc_smoke/${module},sc_gate/${module}"', suite)
         self.assertIn('if ! evaluate_orm_outcome', suite)
-        self.assertIn('cron: "37 19 * * *"', suite)
+        self.assertNotIn("  schedule:", suite)
 
 
 class ImportAndSqlClosureTest(unittest.TestCase):

@@ -1178,7 +1178,7 @@ acceptance.frontend.fixture_guard: guard.prod.forbid
 # module is in forbidden_implicit_modules, so no product/demo profile installs
 # it; selecting its tag anywhere else runs zero tests and still exits zero.
 acceptance.frontend.fixture_orm: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh fixture-orm
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/ci/frontend_fixture_orm_entry.sh
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot
@@ -1451,7 +1451,9 @@ verify.frontend.contract_render_profile.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.navigation_initialization_race.unit
 verify.frontend.navigation_initialization_race.unit: guard.prod.forbid
-	@node scripts/verify/frontend_navigation_initialization_race.test.mjs
+	@mkdir -p .runtime/ci-execution-alignment
+	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_navigation_initialization_race.test.mjs --bundle --platform=node --format=esm --outfile=.runtime/ci-execution-alignment/navigation-initialization-test.mjs >/dev/null
+	@node .runtime/ci-execution-alignment/navigation-initialization-test.mjs
 
 .PHONY: verify.frontend.action_view_route_lease_race.unit
 verify.frontend.action_view_route_lease_race.unit: guard.prod.forbid

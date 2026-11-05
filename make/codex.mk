@@ -405,6 +405,12 @@ pr.publish.preflight: guard.prod.forbid
 pr.push: guard.prod.forbid pr.publish.preflight
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
+# One invocation shares the exact same preflight prerequisite. Explicit serial
+# execution preserves push-before-create even when the caller uses make -j.
+.PHONY: pr.publish
+pr.publish: guard.prod.forbid
+	@$(MAKE) --no-print-directory --jobs=1 --no-keep-going pr.push pr.create
+
 # Temporary outage lane. The default is read-only; origin is never rewritten.
 .PHONY: gitee.integration.inspect main.gitee.catchup pr.push.gitee verify.gitee.integration.unit
 gitee.integration.inspect: guard.prod.forbid
@@ -426,6 +432,7 @@ verify.gitee.publication_gate.unit: guard.prod.forbid
 
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
+	@python3 scripts/verify/test_pr_publish_preflight.py
 
 # Exact-head local quick evidence gate before pr.merge.
 #

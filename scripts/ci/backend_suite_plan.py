@@ -10,10 +10,12 @@ import re
 import sys
 import functools
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 import backend_impact_plan as impact
+import backend_changed_test_coverage as changed_coverage
 import backend_test_receipt as execution_receipt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ops'))
 import evidence_scope
@@ -38,7 +40,8 @@ def partition(modules: list[str], limit: int = 4) -> list[dict]:
 # Known execution dependencies supplement the existing selector; this inventory
 # does not certify imports, external packages, dynamic contracts or SQL reads.
 EXECUTION_INPUTS = impact.GLOBAL + ('scripts/ci/backend_suite_plan.py',
-    'scripts/ops/evidence_scope.py',
+    'scripts/ops/evidence_scope.py', 'scripts/ci/backend_changed_test_coverage.py', 'scripts/ci/scheduled_validation.py',
+    'scripts/ci/ci_risk_classifier.py', 'config/ci/risk_tiering_v1.json',
     'scripts/ci/backend_test_receipt.py', 'scripts/common/**', 'scripts/_lib/**',
     'scripts/render_odoo_conf.py', 'config/requirements-test.txt')
 
@@ -137,6 +140,9 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
                 raise ValueError('override contains a module without runnable tests')
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
     plan = {**selected, 'base': base, 'head': head, 'shards': partition(selected['modules']) if selected['modules'] else []}
+    plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
+    if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
+        plan['changed_test_coverage'] = changed_coverage.managed_tests(head)
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan
@@ -324,6 +330,33 @@ def select_historical_receipts(plan: dict, locators: list[dict]) -> dict:
             'reuse_authority': any(row['decision'] == 'REUSE' for row in decisions)}
 
 
+def isolated_plan_reuse(plan: dict, image_id: str | None = None) -> dict | None:
+    """Move the existing certified isolated reuse decision before partitioning."""
+    if execution_receipt.ISOLATED_MODULE not in plan['modules']:
+        return None
+    if image_id is None:
+        dockerfile = impact.git('show', plan['head'] + ':Dockerfile')
+        match = re.search(r'^ARG ODOO_BASE_IMAGE=(odoo:[^\s]+@sha256:[0-9a-f]{64})$', dockerfile, re.M)
+        if not match:
+            raise ValueError('isolated runtime must be pinned')
+        image = match[1]
+        try:
+            image_id = execution_receipt.command('docker', 'image', 'inspect', '--format', '{{.Id}}', image)
+        except subprocess.CalledProcessError:
+            subprocess.run(['docker', 'pull', image], check=True, timeout=300)
+            image_id = execution_receipt.command('docker', 'image', 'inspect', '--format', '{{.Id}}', image)
+    with tempfile.TemporaryDirectory() as tmp:
+        bound = execution_receipt.isolated_snapshot(impact.ROOT, plan['head'], Path(tmp), image_id)
+        previous, _ = execution_receipt.isolated_history(bound['fingerprint'], recipe=bound['recipe'])
+    if previous is None:
+        return None
+    return {'target': execution_receipt.ISOLATED_MODULE, 'decision': 'REUSE',
+            'authority': 'isolated_python', 'image_id': image_id,
+            'input_fingerprint': bound['fingerprint'],
+            'reason': 'matching_authenticated_isolated_inputs',
+            'previous_receipt': {'locator': previous['locator'], 'sha256': previous['receipt_sha256']}}
+
+
 def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
     """Partition only RUN targets; REUSE/BLOCK are carried, never executed.
 
@@ -358,8 +391,55 @@ def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
     return result
 
 
+def validate_execution_plan(plan: dict, required: dict) -> dict:
+    """Consume the frozen partition, proving identity and disjoint coverage."""
+    for key in ('base', 'head', 'modules', 'changed_test_coverage'):
+        if plan.get(key) != required.get(key):
+            raise ValueError('frozen plan differs from required ' + key)
+    shards = plan.get('shards', [])
+    executed = [name for shard in shards for name in shard['modules']]
+    reused = plan.get('reuse_decision', {}).get('reuse', [])
+    if (len(executed) != len(set(executed)) or len(reused) != len(set(reused))
+            or set(executed) & set(reused)
+            or set(executed) | set(reused) != set(required['modules'])
+            or [s['index'] for s in shards] != list(range(len(shards)))
+            or any(not s['modules'] for s in shards) or len(shards) > 4):
+        raise ValueError('execution and reuse must partition required module identities')
+    if reused:
+        decisions = plan['reuse_decision']['decisions']
+        isolated = [row for row in decisions if row.get('authority') == 'isolated_python' and row['target'] in reused]
+        for row in isolated:
+            if isolated_plan_reuse(required, row['image_id']) != row:
+                raise ValueError('isolated frozen reuse evidence no longer matches')
+        locators = [row['previous_receipt']['locator'] for row in decisions
+                    if row['target'] in reused and row not in isolated]
+        verified = select_historical_receipts(required, locators)
+        authorized = {row['target'] for row in verified['decisions'] if row['decision'] == 'REUSE'}
+        authorized.update(row['target'] for row in isolated)
+        if authorized != set(reused):
+            raise ValueError('frozen reuse evidence is no longer valid')
+    return plan
+
+
+def verify_execution_coverage(plan: dict, receipts: list[dict]) -> None:
+    expected = {name for shard in plan['shards'] for name in shard['modules']}
+    actual = []
+    for receipt in receipts:
+        if (receipt.get('source_head') != plan['head']
+                or receipt.get('integration_base') != plan['base']
+                or receipt.get('exit_code') != 0
+                or type(receipt.get('test_count')) is not int or receipt['test_count'] <= 0):
+            raise ValueError('invalid execution receipt identity or outcome')
+        actual.append(receipt['module'])
+    if len(actual) != len(set(actual)) or set(actual) != expected:
+        raise ValueError('actual receipt modules differ from frozen execution scope')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument('--frozen-plan', type=Path)
+    parser.add_argument('--plan-sha256')
+    parser.add_argument('--receipts', type=Path)
     parser.add_argument('--base', default='')
     parser.add_argument('--head', required=True)
     parser.add_argument('--modules', default='')
@@ -372,6 +452,30 @@ def main() -> None:
     parser.add_argument('--discover-receipts', action='store_true', help='Discover recent successful remote receipts and apply authenticated reuse before partition')
     args = parser.parse_args()
     plan = build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
+    if args.frozen_plan:
+        raw = args.frozen_plan.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != args.plan_sha256:
+            raise ValueError('frozen plan digest mismatch')
+        plan = validate_execution_plan(json.loads(raw), plan)
+        if args.input_inventory:
+            plan['input_inventory'] = target_input_inventory(plan['head'], impact.snapshot(plan['head']), plan['modules'])
+    if args.receipts:
+        receipts = []
+        for path in args.receipts.rglob('receipt.json'):
+            raw = path.read_bytes()
+            shard_plan = path.parent.parent / 'scope-plan.json'
+            validate_execution_plan(json.loads(shard_plan.read_text()), plan)
+            execution_receipt.verify(path.parent, expected_head=plan['head'],
+                expected_digest=hashlib.sha256(raw).hexdigest(), scope_plan=shard_plan)
+            receipts.append(json.loads(raw))
+        verify_execution_coverage(plan, receipts)
+        plan['execution_summary'] = [
+            {'module': row['module'], 'status': 'executed_passed', 'tests': row['test_count']}
+            for row in receipts] + [
+            {'module': module, 'status': 'valid_reuse'}
+            for module in plan.get('reuse_decision', {}).get('reuse', [])]
+        if not plan['modules']:
+            plan['execution_summary'] = [{'status': 'not_applicable'}]
     if args.previous_candidate:
         plan['candidate_comparison'] = compare_candidate_history(plan, args.previous_candidate)
     if args.discover_receipts or args.receipt_history:
@@ -389,7 +493,20 @@ def main() -> None:
                       'counts': {key: sum(row['decision'] == key for row in decisions)
                                  for key in ('RUN', 'REUSE', 'BLOCK')},
                       'reuse_authority': any(row['decision'] == 'REUSE' for row in decisions)}
-        plan = apply_reuse_decision(plan, result['decisions'])
+        if args.discover_receipts and execution_receipt.ISOLATED_MODULE in plan['modules']:
+            try:
+                isolated = isolated_plan_reuse(plan)
+            except (ValueError, KeyError, OSError, subprocess.SubprocessError) as exc:
+                plan['isolated_reuse_fallback'] = str(exc)
+                isolated = None
+            if isolated:
+                result['decisions'] = [isolated if row['target'] == isolated['target'] else row
+                                       for row in result['decisions']]
+                result['counts'] = {key: sum(row['decision'] == key for row in result['decisions'])
+                                    for key in ('RUN', 'REUSE', 'BLOCK')}
+                result['reuse_authority'] = True
+        if plan['modules']:
+            plan = apply_reuse_decision(plan, result['decisions'])
         plan['receipt_history'] = result
     args.output.write_text(json.dumps(plan, indent=2) + '\n')
     if args.shard is not None:
@@ -402,6 +519,7 @@ def main() -> None:
         matrix = {'include': [{'index': shard['index']} for shard in plan['shards']]}
         with args.github_output.open('a') as output:
             output.write('matrix=' + json.dumps(matrix, separators=(',', ':')) + '\n')
+            output.write('plan_sha256=' + hashlib.sha256(args.output.read_bytes()).hexdigest() + '\n')
             output.write('head=' + plan['head'] + '\n')
             output.write('required=' + str(bool(plan['shards'])).lower() + '\n')
             output.write('reuse_authority=' + str(bool(plan.get('reuse_decision', {}).get('reuse'))).lower() + '\n')
