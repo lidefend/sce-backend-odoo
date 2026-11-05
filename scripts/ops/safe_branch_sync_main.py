@@ -88,6 +88,7 @@ class SyncResult:
     metadata_conflicts: tuple[str, ...] = ()
     main_equivalent_paths: tuple[str, ...] = ()
     generated_commit: str | None = None
+    generated_evidence_replay_paths: tuple[str, ...] = ()
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -700,13 +701,19 @@ def sync(plan: SyncPlan) -> SyncResult:
         new_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
         new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
-        excluded_paths = tuple(sorted({*generated_evidence_conflicts, *metadata_conflicts}))
-        old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
         new_paths = commit_paths(plan.root, plan.new_main, new_head)
+        # Replaying a generated change and later revert may create drift even
+        # without a Git conflict (main may already contain the first change).
+        # Only explicit regeneration lets the original producer replace these
+        # derived diffs; all other responsibility paths keep exact comparison.
+        rebuild_paths = set(GENERATED_EVIDENCE_CONFLICT_PATHS) if plan.regenerate_evidence else set()
+        generated_replay_paths = tuple(sorted((set(plan.paths) | set(new_paths)) & rebuild_paths))
+        excluded_paths = tuple(sorted({*generated_evidence_conflicts, *metadata_conflicts, *rebuild_paths}))
+        old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
         new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
         extra_paths = sorted(set(new_stable_paths) - set(old_stable_paths))
         if extra_paths:
-            raise SyncError("responsibility path set changed after sync")
+            raise SyncError("responsibility path set changed after sync: " + ", ".join(extra_paths[:8]))
         main_equivalent_paths = tuple(
             path
             for path in old_stable_paths
@@ -727,6 +734,7 @@ def sync(plan: SyncPlan) -> SyncResult:
                 sorted(
                     {
                         *generated_evidence_conflicts,
+                        *rebuild_paths,
                         *metadata_conflicts,
                         *main_equivalent_paths,
                     }
@@ -765,7 +773,8 @@ def sync(plan: SyncPlan) -> SyncResult:
         if isinstance(exc, SyncError):
             raise SyncError(f"{exc}; original HEAD restored") from exc
         raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
-    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths, generated_commit)
+    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths,
+                      generated_commit, generated_replay_paths)
 
 
 def main() -> int:
@@ -822,6 +831,7 @@ def main() -> int:
         f"common_base={plan.old_base} replay_base={plan.replay_base} "
         f"generated_evidence_invalidated={invalidated} "
         f"generated_commit={result.generated_commit or 'none'} "
+        f"generated_evidence_replay_paths={','.join(result.generated_evidence_replay_paths) or 'none'} "
         f"candidate_evidence=false next={next_validation}"
     )
     return 0

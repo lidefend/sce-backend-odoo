@@ -478,6 +478,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   普通入口仍只接受 1—12 个责任提交，无旧 HEAD Quick 前置；不制造提交凑 extended。
   仅 `GENERATED_EVIDENCE_CONFLICT_PATHS` 中可重建报告允许临时取 main 解决冲突。
   登记表、验证基线、G1 验收证据不是生成物，不允许自动覆盖或 seed。
+  显式重建模式也处理无 Git 冲突的生成报告重放漂移（例如分支先改后撤销，
+  main 已包含中间改动）：已登记可重建报告不冒充产品责任 patch，必须由原生成器
+  重建并通过生成证据检查。输出分别列出实际冲突与生成报告重放路径；未知路径、
+  产品代码和登记权威的路径/patch 校验不变，未选择重建时也不增加豁免。
 
   责任路径、patch 和提交数核对后，工具调用原 `refresh.generated_evidence` 和
   `ci.generated_evidence.preflight`，生成物变化以独立提交记录；原提交 hooks 照常执行。

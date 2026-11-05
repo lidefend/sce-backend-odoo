@@ -174,6 +174,7 @@ Generated from repository source files. This report is informational during the 
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 945 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 923 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 919 | Python source | `scripts/verify/test_local_quick_evidence.py` |
@@ -190,7 +191,6 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
-| 866 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
@@ -205,11 +205,11 @@ Generated from repository source files. This report is informational during the 
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
+| 841 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
-| 831 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |

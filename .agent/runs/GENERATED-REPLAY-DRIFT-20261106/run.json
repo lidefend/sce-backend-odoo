@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "GENERATED-REPLAY-DRIFT-20261106",
+  "branch": "fix/generated-replay-drift-sync-20261106",
+  "baseline_sha": "4f05724f75e1ed22ff3190f664341720efc7e980",
+  "status": "verification_pending",
+  "goal": ".agent/goals/GENERATED-REPLAY-DRIFT-20261106.yaml",
+  "record": ".agent/runs/GENERATED-REPLAY-DRIFT-20261106/run.json",
+  "scope": [
+    ".agent/runs/GENERATED-REPLAY-DRIFT-20261106/run.json",
+    ".agent/goals/GENERATED-REPLAY-DRIFT-20261106.yaml",
+    ".agent/active-runs.json",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "generated replay drift in explicit rebuild mode",
+    "exclusions": [
+      "frontend mutation",
+      "product/metadata exemptions",
+      "Quick proof changes",
+      "runtime/database"
+    ]
+  },
+  "execution_results": {
+    "pre_fix_reproduction": {
+      "status": "failed",
+      "log": ".runtime/generated-replay-drift/reproduction.log",
+      "case": "net-zero generated report changes replay with no conflict onto main, creating generated-only diff before original generator"
+    },
+    "targeted": {
+      "status": "passed",
+      "tests": 47,
+      "entry": "make verify.workspace.branch.sync-main",
+      "log": ".runtime/generated-replay-drift/targeted-final.log",
+      "cases": "real conflict-free replay drift rebuilt by original generator; unknown/product path and metadata drift denied; explicit regeneration remains required; existing rollback/hook/symlink/Quick regressions pass"
+    },
+    "iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/generated-replay-drift/iteration.log"
+    }
+  },
+  "next_exact_step": "Bound generated replay exclusions, run real Git positive/negative tests, independent review and governed PR; root alone owns frontend sync"
+}

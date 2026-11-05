@@ -102,6 +102,85 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         git(self.root, "push", "origin", "HEAD:main")
         git(self.root, "switch", "feature/local-sync")
 
+    def prepare_conflict_free_replay_drift(self, path=None):
+        relative = path or syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
+        target = self.root / relative
+        original = target.read_text()
+        # Topic changes and restores a file: no net responsibility diff there.
+        target.write_text('main\n')
+        git(self.root, 'add', relative)
+        git(self.root, 'commit', '-m', 'intermediate derived value')
+        target.write_text(original)
+        git(self.root, 'add', relative)
+        git(self.root, 'commit', '-m', 'restore prior derived value')
+        self.head = git(self.root, 'rev-parse', 'HEAD').stdout.strip()
+        git(self.root, 'switch', 'main')
+        target.write_text('main\n')
+        report = syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
+        (self.root / 'Makefile').write_text(
+            f'refresh.generated_evidence:\n\t@cat main.txt > {report}\n'
+            f'ci.generated_evidence.preflight:\n\t@cmp main.txt {report}\n')
+        git(self.root, 'add', relative, 'Makefile')
+        git(self.root, 'commit', '-m', 'main already contains intermediate value')
+        self.new_main = git(self.root, 'rev-parse', 'HEAD').stdout.strip()
+        git(self.root, 'push', 'origin', 'HEAD:main')
+        git(self.root, 'switch', 'feature/local-sync')
+        return relative
+
+    def test_net_unchanged_report_replay_drift_is_rebuilt_without_conflict(self):
+        report = self.prepare_conflict_free_replay_drift()
+        plan = self.plan(regenerate_evidence=True, quick_evidence_checker=lambda *_: False)
+        self.assertNotIn(report, plan.paths)
+        regenerate = syncer.regenerate_reports
+
+        def observe_then_regenerate(current):
+            self.assertIn(report, syncer.commit_paths(self.root, self.new_main,
+                                                     git(self.root, 'rev-parse', 'HEAD').stdout.strip()))
+            self.assertEqual('base-generated\n', self.generated_evidence.read_text())
+            return regenerate(current)
+
+        with mock.patch.object(syncer, 'regenerate_reports', side_effect=observe_then_regenerate) as runner:
+            result = syncer.sync(plan)
+        runner.assert_called_once()
+        self.assertEqual((), result.generated_evidence_conflicts)
+        self.assertEqual((report,), result.generated_evidence_replay_paths)
+        self.assertEqual('main\n', self.generated_evidence.read_text())
+        self.assertEqual(('feature.txt',), syncer.commit_paths(self.root, self.new_main, result.head))
+        self.assertEqual(result.head, result.generated_commit)
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_same_conflict_free_drift_in_unknown_path_is_not_exempted(self):
+        relative = self.prepare_conflict_free_replay_drift('base.txt')
+        plan = self.plan(regenerate_evidence=True)
+        self.assertNotIn(relative, plan.paths)
+        with mock.patch.object(syncer, 'regenerate_reports') as runner:
+            with self.assertRaisesRegex(syncer.SyncError, 'responsibility path set changed'):
+                syncer.sync(plan)
+        runner.assert_not_called()
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertEqual('base\n', (self.root / relative).read_text())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_conflict_free_metadata_replay_drift_keeps_responsibility_checks(self):
+        relative = syncer.ACTIVE_RUNS_INDEX_PATH
+        original = self.active_runs.read_text()
+        self.prepare_conflict_free_replay_drift(relative)
+        plan = self.plan(regenerate_evidence=True)
+        self.assertNotIn(relative, plan.paths)
+        with mock.patch.object(syncer, 'regenerate_reports') as runner:
+            with self.assertRaisesRegex(syncer.SyncError, r'responsibility path set changed.*active-runs'):
+                syncer.sync(plan)
+        runner.assert_not_called()
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertEqual(original, self.active_runs.read_text())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_report_replay_drift_without_explicit_regeneration_stays_denied(self):
+        self.prepare_conflict_free_replay_drift()
+        with self.assertRaisesRegex(syncer.SyncError, 'responsibility path set changed'):
+            syncer.sync(self.plan())
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+
     def test_small_branch_rebuilds_from_combined_inputs_without_old_quick(self):
         self.prepare_generated_conflict()
         hook = self.root / '.git/hooks/pre-commit'
