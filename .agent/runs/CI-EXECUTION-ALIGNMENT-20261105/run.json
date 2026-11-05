@@ -22,6 +22,7 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "make/ci.mk",
+    "make/codex.mk",
     "make/runtime_ops.mk",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/ci/backend_changed_test_coverage.py",
@@ -50,7 +51,8 @@
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/frontend_navigation_initialization_race.test.mjs",
     "scripts/verify/test_baseline_manifest.json",
-    "scripts/verify/test_coverage_registry.yaml"
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_pr_publish_preflight.py"
   ],
   "environment": {
     "kind": "offline",
@@ -119,12 +121,22 @@
         "config/",
         "docs/ops/"
       ]
+    },
+    "pr_publication": {
+      "target": "verify.pr.push.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ]
     }
   },
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Independent review of the frozen continuation candidate, followed by governed PR publication and exact-head/base remote verification. Reuse unchanged local tool receipts; no full local Quick/browser/ORM rerun without affected inputs.",
+  "next_exact_step": "Freeze PR publication optimization; refresh required list_surface_structure evidence in registered acceptance profile; independent review, external archive, protected PR publication and main integration.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -136,7 +148,7 @@
   },
   "validation": {
     "L0": "clean main baseline then explicit dirty scope",
-    "L1": "Current delivery continuation: 24 integration tool tests, 152 archive/worktree tool tests, 273 CI contract tests, final ci.local.iteration and diff checks passed. Existing begin/record receipts confirm reusable scoped evidence.",
+    "L1": "278 CI contract tests and 23 safe-push/publication tests passed; ci.local.iteration and ci.delivery.freeze.prepare passed. Prior unrelated targeted logs retained with their original input identities.",
     "L2_L4": "remote execution verification required; no local product/runtime changes",
     "L5": "independent review and exact candidate checks before integration"
   },
@@ -147,16 +159,16 @@
     "unrelated worktrees"
   ],
   "stage_identity": {
-    "head": "4b87458c1454d37dde10123d6758b0919a30caed",
-    "dirty_scope": "P4 evidence archive retry, optional Quick inspection, owning remote tool selection and regression tests",
-    "phase": "local validated continuation"
+    "head": "d33b63647720f51c6476e4df44f1e84e0de8dcc9",
+    "dirty_scope": "P4 shared serial PR publication preflight and remote test selection wiring",
+    "phase": "validated before final commit"
   },
   "results": {
     "ci_contract": {
       "status": "passed",
       "command": "make verify.ci.workflow.contract",
-      "tests": 273,
-      "log": ".runtime/ci-execution-alignment/delivery-wiring-tests.log"
+      "tests": 278,
+      "log": ".runtime/ci-execution-alignment/pr-publication-wiring-tests-final.log"
     },
     "scheduled_contract": {
       "status": "passed",
@@ -185,7 +197,7 @@
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/ci-execution-alignment/delivery-iteration-final.log",
+      "log": ".runtime/ci-execution-alignment/pr-publication-iteration-final.log",
       "coverage": "L1 only"
     },
     "frontend_release": {
@@ -306,6 +318,13 @@
         "Archive reuse is limited to the same destination (date/topic/head); no cross-date archive search or content-verification bypass.",
         "No real external evidence archive, remote publication, merge or runtime mutation executed."
       ]
+    },
+    "pr_publication": {
+      "status": "passed",
+      "command": "make verify.pr.push.unit",
+      "tests": 23,
+      "log": ".runtime/ci-execution-alignment/pr-publication-tests-record.log",
+      "scope": "18 safe-push cases and 5 publication tests, including recursive make under -j4 -k; shared preflight once, push-before-create, stop on either failure."
     }
   },
   "review_resolution": {
@@ -378,5 +397,10 @@
     },
     "optimization_scope": "P4 scan planning: per-invocation historical SHA digest memoization, full-text Make parse memoization, and batched commit-type verification; mutable refs, worktree reads and all scan gates preserved."
   },
-  "delivery_optimization_scope": "P4 evidence archive retries and merge-readiness diagnostics; preserve source/target rechecks, required remote checks and verified archive content. No real archive or merge operation authorized/executed by this optimization."
+  "delivery_optimization_scope": "P4 evidence archive retries and merge-readiness diagnostics; preserve source/target rechecks, required remote checks and verified archive content. No real archive or merge operation authorized/executed by this optimization.",
+  "integration_runtime": {
+    "reason": "merge evidence planner requires list_surface_structure for changed acceptance entry scripts; existing evidence exceeds 72h",
+    "authority": "existing registered local acceptance profile only; governed artifact/backend/preview/contract/browser entrypoints; no new database, credentials or fixture reset",
+    "status": "not_run"
+  }
 }

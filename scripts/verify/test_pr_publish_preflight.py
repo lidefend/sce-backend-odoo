@@ -1,4 +1,6 @@
 import subprocess
+import tempfile
+import re
 import unittest
 from pathlib import Path
 
@@ -7,6 +9,36 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class PrPublishPreflightTest(unittest.TestCase):
+    def test_serial_publish_shares_preflight_and_stops_before_create_on_failure(self):
+        source = (ROOT / 'make/codex.mk').read_text()
+        block = re.search(r'(?m)^pr\.publish:[^\n]*\n(?:\t[^\n]*\n)+', source)
+        self.assertIsNotNone(block)
+        # Run the real orchestration recipe against non-mutating fake stages;
+        # this exercises recursive make and shared phony prerequisites under -j.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'Makefile').write_text(block.group() + '''
+.PHONY: guard.prod.forbid pr.publish.preflight pr.push pr.create
+guard.prod.forbid:
+\t@:
+pr.publish.preflight:
+\t@echo preflight >> trace
+\t@test "$(FAIL_PREFLIGHT)" != 1
+pr.push: pr.publish.preflight
+\t@echo push >> trace
+\t@test "$(FAIL_PUSH)" != 1
+pr.create: pr.publish.preflight
+\t@echo create >> trace
+''')
+            for flags, expected, success in [([], ['preflight', 'push', 'create'], True),
+                    (['FAIL_PREFLIGHT=1'], ['preflight'], False),
+                    (['FAIL_PUSH=1'], ['preflight', 'push'], False)]:
+                (root / 'trace').unlink(missing_ok=True)
+                result = subprocess.run(['make', '--no-print-directory', '-j4', '-k', 'pr.publish', *flags],
+                                        cwd=root, text=True, capture_output=True)
+                self.assertEqual(success, result.returncode == 0, result.stderr)
+                self.assertEqual(expected, (root / 'trace').read_text().splitlines())
+
     def test_head_mismatch_blocks_push_preflight(self):
         proc = subprocess.run(
             ["make", "--no-print-directory", "pr.publish.preflight", "EXPECTED_HEAD=" + "a" * 40],

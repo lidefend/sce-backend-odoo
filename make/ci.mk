@@ -777,6 +777,7 @@ verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
 	@python3 scripts/ci/test_backend_suite_plan.py
 	@python3 scripts/ci/test_backend_changed_test_coverage.py
 	@python3 scripts/ci/test_select_authoritative_workflow_run.py
+	@python3 scripts/verify/test_pr_publish_preflight.py
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@python3 scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@echo "[verify.ci.workflow.contract] PASS"
