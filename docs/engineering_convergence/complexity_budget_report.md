@@ -101,11 +101,11 @@ Generated from repository source files. This report is informational during the 
 | 1402 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1400 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
+| 1396 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
-| 1361 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
@@ -121,6 +121,7 @@ Generated from repository source files. This report is informational during the 
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1229 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
@@ -128,7 +129,6 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1191 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |

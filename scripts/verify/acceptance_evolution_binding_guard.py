@@ -210,7 +210,7 @@ def load_registry(path: Path) -> dict:
         paths = rule.get("paths")
         if not isinstance(paths, list) or not paths or not all(isinstance(p, str) and p for p in paths):
             raise BindingError(f"rule {rule_id!r} needs non-empty path globs")
-        if rule.get("condition") not in (None, "manifest_version_only"):
+        if rule.get("condition") not in (None, "manifest_version_only", "payment_approval_audit_copy_only"):
             raise BindingError(f"unsupported rule condition: {rule.get('condition')!r}")
         suites_for_rule = rule.get("suites")
         if not isinstance(suites_for_rule, list):
@@ -432,10 +432,46 @@ def manifest_version_only(before: str, after: str) -> bool:
             == {k: v for k, v in new.items() if k != "version"})
 
 
+def payment_approval_audit_copy_only(before: str, after: str) -> bool:
+    """Only the automatic approval chatter literal may differ, never execution."""
+    def normalized(source):
+        tree = ast.parse(source)
+        matches = []
+        for method in ast.walk(tree):
+            if not isinstance(method, ast.FunctionDef) or method.name != "_complete_payment_approval":
+                continue
+            for statement in ast.walk(method):
+                if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+                    continue
+                call = statement.value
+                if not (isinstance(call.func, ast.Attribute)
+                        and call.func.attr == "_message_post_non_blocking"
+                        and len(call.args) == 1 and not call.keywords
+                        and isinstance(call.args[0], ast.IfExp)):
+                    continue
+                translated = call.args[0].body
+                if (isinstance(translated, ast.Call)
+                        and isinstance(translated.func, ast.Name) and translated.func.id == "_"
+                        and len(translated.args) == 1 and not translated.keywords
+                        and isinstance(translated.args[0], ast.Constant)
+                        and isinstance(translated.args[0].value, str)
+                        and translated.args[0].value.strip()):
+                    matches.append(translated.args[0])
+        if len(matches) != 1:
+            return None
+        matches[0].value = "__automatic_approval_audit_copy__"
+        return ast.dump(tree, include_attributes=False)
+    try:
+        old, new = normalized(before), normalized(after)
+        return old is not None and old == new
+    except (SyntaxError, ValueError, TypeError, RecursionError):
+        return False
+
+
 def rule_condition_matches(rule: dict, path: str, base: str, head: str) -> bool:
     if not rule.get("condition"):
         return True
-    if rule["condition"] != "manifest_version_only":
+    if rule["condition"] not in ("manifest_version_only", "payment_approval_audit_copy_only"):
         return False
     try:
         before = str(_git("show", f"{base}:{path}"))
@@ -443,7 +479,9 @@ def rule_condition_matches(rule: dict, path: str, base: str, head: str) -> bool:
         # dependency edits using the older committed manifest.
         after = ((ROOT / path).read_text() if head == str(_git("rev-parse", "HEAD"))
                  else str(_git("show", f"{head}:{path}")))
-        return manifest_version_only(before, after)
+        return (payment_approval_audit_copy_only(before, after)
+                if rule["condition"] == "payment_approval_audit_copy_only"
+                else manifest_version_only(before, after))
     except (OSError, ValueError, BindingError, subprocess.CalledProcessError):
         return False
 
