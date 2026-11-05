@@ -158,6 +158,8 @@ verify.backend.navigation_delivery.unit: guard.prod.forbid
 verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit verify.backend.navigation_delivery.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
 	@node /tmp/canonical-navigation-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scenario_surface_parser_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scenario-surface-parser-test.mjs >/dev/null
+	@node /tmp/scenario-surface-parser-test.mjs
 	@python3 addons/smart_construction_core/tests/test_business_category_entry_policy.py
 	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py

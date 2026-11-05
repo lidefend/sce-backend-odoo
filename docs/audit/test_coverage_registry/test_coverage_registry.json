@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 206,
+    "odoo_tags": 207,
     "gated": 5,
     "on_demand": 53,
-    "unwired": 148,
-    "odoo_tag_declarations": 425,
+    "unwired": 149,
+    "odoo_tag_declarations": 427,
     "gated_declarations": 97,
-    "uncovered_declarations": 328,
+    "uncovered_declarations": 330,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -343,6 +343,21 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "acceptance_business_scene_lifecycle",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "acceptance_fixture_gate",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -510,20 +525,6 @@
       "disposition": "wire-pending"
     },
     {
-      "group": "acceptance_business_scene_lifecycle",
-      "status": "on-demand",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
-      ],
-      "owner": "construction-product",
-      "evidence": [
-        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
-      ],
-      "disposition": "class-selected"
-    },
-    {
       "group": "acceptance_fixture_data_space",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -560,6 +561,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "acceptance_scenario_navigation_maintenance",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "acl_gate",

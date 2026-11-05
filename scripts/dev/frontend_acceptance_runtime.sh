@@ -312,7 +312,7 @@ preflight() {
 standard_profile_name() {
   local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
   case "$profile" in
-    local|candidate|navux_branch) echo "$profile" ;;
+    local|candidate) echo "$profile" ;;
     *) echo "DENY: unknown acceptance runtime profile: $profile" >&2; return 2 ;;
   esac
 }
@@ -326,9 +326,7 @@ standard_profile_is_candidate() {
 standard_preview_url() {
   local profile
   profile="$(standard_profile_name)" || return 2
-  if [[ "$profile" == navux_branch ]]; then
-    echo "http://127.0.0.1:18091"
-  elif [[ "$profile" == candidate ]]; then
+  if [[ "$profile" == candidate ]]; then
     echo "http://127.0.0.1:${FRONTEND_ACCEPTANCE_PORT:-5178}"
   else
     echo "http://127.0.0.1:5180"
@@ -338,9 +336,7 @@ standard_preview_url() {
 standard_api_url() {
   local profile
   profile="$(standard_profile_name)" || return 2
-  if [[ "$profile" == navux_branch ]]; then
-    echo "http://127.0.0.1:8074"
-  elif [[ "$profile" == candidate ]]; then
+  if [[ "$profile" == candidate ]]; then
     echo "${VITE_API_PROXY_TARGET:-http://127.0.0.1:18088}"
   else
     echo "http://127.0.0.1:18082"
@@ -350,7 +346,7 @@ standard_api_url() {
 standard_expected_db() {
   local profile
   profile="$(standard_profile_name)" || return 2
-  if [[ "$profile" == candidate || "$profile" == navux_branch ]]; then
+  if [[ "$profile" == candidate ]]; then
     echo "sc_frontend_acceptance_candidate"
   else
     echo "sc_frontend_acceptance"
@@ -519,7 +515,7 @@ PYPROBE
         node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
         ;;
       standard-contract-prerequisite)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
@@ -550,7 +546,7 @@ PYRESOLUTION
           --output artifacts/backend/dev_acceptance_release_probe.json
         ;;
       standard-presentation-browser)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: presentation requires frozen candidate" >&2; exit 2; }
@@ -588,7 +584,7 @@ PYPRESENTATION
           node "$ROOT_DIR/scripts/verify/frontend_product_page_header_browser.mjs"
         ;;
       standard-contract-form-presentation)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract form presentation requires frozen candidate" >&2; exit 2; }
@@ -623,7 +619,7 @@ PYCONTRACTFORM
           node "$ROOT_DIR/scripts/verify/frontend_contract_form_presentation_browser.mjs"
         ;;
       standard-project-workspace-dom)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: project workspace DOM audit requires frozen candidate" >&2; exit 2; }
@@ -657,7 +653,7 @@ PYPROJECTDOM
           node "$ROOT_DIR/scripts/verify/frontend_project_workspace_dom_audit.mjs"
         ;;
       standard-relation-roundtrip-browser)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
@@ -670,7 +666,7 @@ PYPROJECTDOM
           node "$ROOT_DIR/scripts/verify/record_relation_roundtrip_acceptance.js"
         ;;
       standard-list-surface-browser)
-        [[ ( "$PROFILE" == local || "$PROFILE" == candidate || "$PROFILE" == navux_branch ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         candidate_identity_guard
         candidate_db_uuid_guard
         [[ -z "$standard_list_requested_password" || "$standard_list_requested_password" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]] || { echo "DENY: standard list fixture password mismatch" >&2; exit 2; }

@@ -51,3 +51,19 @@
 - 遇到被吞掉的异常，先补脱敏诊断拿到真实 message，再修，不猜。
 - 书签/台账改动与产品提交合并，避免单独提交触发 SHA 循环。
 - 前端浏览器验收必须用宿主标准预览（`frontend_standard_preview.py build/up` + `release_static_server.mjs`），不用 docker nginx 顶替。
+
+
+## PR #810 审查及远端 CI 修复（2026-11-05）
+
+审查基点 `0b11950407ef6a622228183ba9767fda0e120012`。本轮修复由同一工作树完成，未创建环境或执行 daily 发布。
+
+- 场景种子增加事务内版本初始化标记，17.0.0.174 预迁移先接纳既有配置（包括全部删除）；首次导入包含归档场景，并按全局 menu_id 检查已有改绑。升级不会补回人工删除。
+- 投影以当前原生父链为中心依据。业务根外入口使用独立 `ir.ui.menu.sc_product_center_id`，初始关联来自原声明 XMLID，一次初始化，管理员后续编辑/清空不被升级覆盖。菜单原生表单可维护该关联。
+- 场景入口使用维护的 sequence，直连入口使用原生菜单 sequence，同序按 XMLID / menu_id 稳定排序，保留 0 值。
+- 远端 frontend_release_gate 的导航守卫仍要求旧组件；更新到统一场景导航，同时补回点击时的当前菜单/action/XMLID/route 授权快照和上下文校验。session.ts 的展开状态操作拆入独立模块，1998 行低于原 2005 行上限。
+- 远端 backend_suite shard 0 的三个失败均指向新增 action 缺少 groups_id；补上与管理菜单一致的业务配置管理员组。
+- 删除上一轮未真正撤回的 navux_branch 配置和入口分支，恢复 local-clean 的精确身份守卫；移除活动索引内两条已完成 run，不改写它们的历史记录。
+
+验证：原投影回归先复现 3 failures / 1 error，修复后 6 个中心投影测试通过；既有原生事实/场景投影/内部动作测试通过。真实候选库的 9 个维护回归通过；接回原 fixture 入口后共 15 个测试、0 failures / 0 errors。远端失败对应的 TestInstallGate + TestActionGroupsGate 共 7 个真实 ORM 测试通过。完整 `verify.frontend.pr.unit`、严格类型检查、导航守卫、场景生命周期、标准预览回归、复杂度及 L1 通过；原始日志统一位于 `.runtime/nav-ux-01/review810/`，具体结果索引见当前 run。
+
+范围限制：候选库既有 construction policy 的 menu_groups 为空；维护回归在 TransactionCase 内初始化明确的发布策略夹具后调用真实 system.init，所有测试配置修改回滚，不据此声称持久候选的会计入口已发布。新提交的远端 CI、独立复核和受影响浏览器证据须单独完成；旧 SHA 的浏览器/CI 结果不继承。

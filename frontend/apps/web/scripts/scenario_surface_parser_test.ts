@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { parseScenarioSurface, searchScenarioSurface } from '../src/app/scenarioSurface';
+import { createScenarioSelectionSnapshot, parseScenarioSurface, searchScenarioSurface } from '../src/app/scenarioSurface';
 
 const valid = {
   ok: true,
@@ -81,4 +81,19 @@ const unconfiguredHits = searchScenarioSurface(model, '未配置入口');
 assert.strictEqual(unconfiguredHits.length, 1);
 assert.strictEqual(unconfiguredHits[0].scenarioName, '');
 
-console.log('scenario_surface_parser_test PASS');
+const authority = {
+  primary_actions: [{ ...entry, context_requirements: { required_query: ['menu_id'] } }],
+  role_home_actions: [], contextual_actions: [], admin_actions: [], menu_containers: [],
+} as unknown as NonNullable<Parameters<typeof createScenarioSelectionSnapshot>[1]>;
+const selection = createScenarioSelectionSnapshot(entry, authority);
+assert.ok(selection);
+assert.ok(Object.isFrozen(selection.authority.context_requirements));
+authority.primary_actions[0].route = '/changed';
+assert.strictEqual(selection.route, entry.route);
+assert.strictEqual(createScenarioSelectionSnapshot(entry, authority), null);
+authority.primary_actions[0].route = entry.route;
+assert.strictEqual(createScenarioSelectionSnapshot({ ...entry, menu_id: 999 }, authority), null);
+assert.strictEqual(createScenarioSelectionSnapshot({ ...entry, action_id: 999 }, authority), null);
+assert.strictEqual(createScenarioSelectionSnapshot({ ...entry, menu_xmlid: 'other' }, authority), null);
+assert.strictEqual(createScenarioSelectionSnapshot(entry, null), null);
+console.log('scenario_surface_parser_test PASS authority_cases=7');

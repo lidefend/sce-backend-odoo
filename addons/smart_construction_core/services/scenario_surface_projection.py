@@ -412,7 +412,7 @@ def _menu_external_id(env, menu) -> str:
 
 
 def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str, Any]]:
-    """Map menu id -> native center identity (direct child of the business root).
+    """Map menu id to its native center, or its persisted external placement.
 
     The center identity is the stable native menu XMLID; its display name is
     only a projection. The original JSON alias consolidation is intentionally
@@ -435,35 +435,17 @@ def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str
                 center = current
                 break
             current = parent
+        if center is None:
+            candidate = getattr(menu, "sc_product_center_id", None)
+            if candidate and candidate.parent_id and _menu_external_id(env, candidate.parent_id) == BUSINESS_ROOT_XMLID:
+                center = candidate
         if center is not None:
             result[int(menu.id)] = {
                 "key": _menu_external_id(env, center),
                 "name": _text(center.name),
-                "sequence": int(getattr(center, "sequence", 10) or 10),
+                "sequence": int(center.sequence),
+                "entry_sequence": int(menu.sequence),
             }
-    return result
-
-
-def _center_identity_by_menu_id(env, center_menu_ids: Iterable[int]) -> dict[int, dict[str, Any]]:
-    """Map native center menu id -> stable center identity (XMLID + display name).
-
-    The delivery tree carries the native center menu id on its grouping node;
-    resolving it back to the XMLID is stable against name edits.
-    """
-    if env is None:
-        return {}
-    Menu = env["ir.ui.menu"].sudo()
-    ids = sorted({int(i) for i in center_menu_ids if int(i or 0) > 0})
-    result: dict[int, dict[str, Any]] = {}
-    for menu in Menu.browse(ids).exists():
-        key = _menu_external_id(env, menu)
-        if not key:
-            continue
-        result[int(menu.id)] = {
-            "key": key,
-            "name": _text(menu.name),
-            "sequence": int(getattr(menu, "sequence", 10) or 10),
-        }
     return result
 
 
@@ -481,7 +463,8 @@ def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
             "scenario_key": _text(entry.scenario_id.code),
             "scenario_name": _text(entry.scenario_id.name),
             "scenario_active": bool(entry.scenario_id.active),
-            "scenario_sequence": int(getattr(entry.scenario_id, "sequence", 10) or 10),
+            "scenario_sequence": int(entry.scenario_id.sequence),
+            "sequence": int(entry.sequence),
             "intent": intent,
             "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
         }
@@ -499,7 +482,6 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     center_by_id = _native_center_for_menus(env, [leaf.get("menu_id") for leaf in leaves])
-    center_by_native_id = _center_identity_by_menu_id(env, [leaf.get("center_menu_id") for leaf in leaves])
     scenario_by_menu = _scenario_entries_by_menu(env)
     centers: dict[str, dict[str, Any]] = {}
     for leaf in leaves:
@@ -509,7 +491,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         # re-attached as children of themselves.
         if not _text(leaf.get("menu_xmlid")):
             continue
-        center = center_by_native_id.get(int(leaf.get("center_menu_id") or 0)) or center_by_id.get(menu_id)
+        center = center_by_id.get(menu_id)
         if not center:
             continue
         node = centers.setdefault(center["key"], {
@@ -521,6 +503,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         })
         entry = dict(leaf)
         binding = scenario_by_menu.get(menu_id)
+        entry["sequence"] = binding["sequence"] if binding and binding["scenario_active"] else center["entry_sequence"]
         if binding and binding["scenario_active"]:
             entry["intent"] = binding["intent"]
             entry["intent_label"] = binding["intent_label"]
@@ -542,9 +525,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     for center in sorted(centers.values(), key=lambda item: (item["sequence"], item["key"])):
         scenarios = []
         for scenario in sorted(center["scenarios"].values(), key=lambda item: (item["sequence"], item["key"])):
-            scenario["entries"].sort(key=lambda item: (item.get("label") or "", item.get("menu_id") or 0))
+            scenario["entries"].sort(key=lambda item: (item["sequence"], item["menu_xmlid"], item["menu_id"]))
             scenarios.append(scenario)
-        center["entries"].sort(key=lambda item: (item.get("label") or "", item.get("menu_id") or 0))
+        center["entries"].sort(key=lambda item: (item["sequence"], item["menu_xmlid"], item["menu_id"]))
         center_rows.append({
             "key": center["key"],
             "name": center["name"],

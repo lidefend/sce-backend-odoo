@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5095`
+- Scanned files: `5098`
 - Files requiring split plan: `72`
 - Files above warning threshold: `146`
 
@@ -46,8 +46,8 @@ Generated from repository source files. This report is informational during the 
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 2058 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 1998 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1956 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
@@ -74,13 +74,13 @@ Generated from repository source files. This report is informational during the 
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1577 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1558 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1564 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 963 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 959 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 604 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -274,8 +274,8 @@ Generated from repository source files. This report is informational during the 
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 2058 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 1998 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1956 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
@@ -303,7 +303,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1577 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1558 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1564 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |

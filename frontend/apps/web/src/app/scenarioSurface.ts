@@ -1,3 +1,5 @@
+import { routeAuthorityEntries, type RouteAuthorityContract } from './routeAuthority';
+
 export interface ScenarioNavEntry {
   menu_xmlid: string;
   menu_id: number;
@@ -169,4 +171,22 @@ export function searchScenarioSurface(
     }
   }
   return hits;
+}
+
+/** Snapshot only an exact entry still present in the current principal authority. */
+export function createScenarioSelectionSnapshot(entry: ScenarioNavEntry, authority: RouteAuthorityContract | null) {
+  const row = routeAuthorityEntries(authority).find((candidate) => (
+    candidate.menu_id === entry.menu_id && candidate.action_id === entry.action_id
+    && candidate.menu_xmlid === entry.menu_xmlid && candidate.route === entry.route
+  ));
+  if (!row || !entry.route) return null;
+  const snapshot = JSON.parse(JSON.stringify({ route: row.route, authority: row }));
+  const freeze = (value: Record<string, unknown>): void => {
+    Object.values(value).forEach((child) => {
+      if (child && typeof child === 'object') freeze(child as Record<string, unknown>);
+    });
+    Object.freeze(value);
+  };
+  freeze(snapshot);
+  return snapshot as Readonly<{ route: string; authority: typeof row }>;
 }

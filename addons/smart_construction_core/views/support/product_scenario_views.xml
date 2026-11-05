@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <record id="view_menu_external_product_center" model="ir.ui.view">
+    <field name="name">ir.ui.menu.external.product.center</field>
+    <field name="model">ir.ui.menu</field>
+    <field name="inherit_id" ref="base.edit_menu_access"/>
+    <field name="arch" type="xml">
+      <field name="parent_id" position="after">
+        <field name="sc_product_center_id"/>
+      </field>
+    </field>
+  </record>
   <record id="view_sc_product_scenario_tree" model="ir.ui.view">
     <field name="name">sc.product.scenario.tree</field>
     <field name="model">sc.product.scenario</field>
@@ -48,6 +58,7 @@
     <field name="res_model">sc.product.scenario</field>
     <field name="view_mode">tree,form</field>
     <field name="view_id" ref="view_sc_product_scenario_tree"/>
+    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
   </record>
 
   <menuitem id="menu_sc_product_scenario_business_config"

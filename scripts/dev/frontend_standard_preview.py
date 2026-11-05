@@ -37,13 +37,9 @@ _PREVIEW_ROOT = _preview_workspace_root()
 # profile-resolved frontend port and API proxy target plus a distinct artifact
 # directory so a candidate build can never overwrite shared acceptance evidence.
 _PROFILE = os.environ.get('SC_ACCEPTANCE_RUNTIME_PROFILE') or 'local'
-if _PROFILE not in ('local', 'candidate', 'navux_branch'):
+if _PROFILE not in ('local', 'candidate'):
     raise RuntimeError(f'unknown acceptance runtime profile: {_PROFILE}')
-if _PROFILE == 'navux_branch':
-    PREVIEW_PORT = os.environ.get('FRONTEND_ACCEPTANCE_PORT') or '18091'
-    API_PROXY_TARGET = os.environ.get('VITE_API_PROXY_TARGET') or 'http://127.0.0.1:8074'
-    OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929-navux'
-elif _PROFILE == 'candidate':
+if _PROFILE == 'candidate':
     PREVIEW_PORT = os.environ.get('FRONTEND_ACCEPTANCE_PORT') or '5178'
     API_PROXY_TARGET = os.environ.get('VITE_API_PROXY_TARGET') or 'http://127.0.0.1:18088'
     OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929-candidate'
@@ -212,15 +208,8 @@ def run_operation(operation):
 def main():
     if os.environ.get('SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY') != 'operation_entry_v1':
         raise RuntimeError('use the governed Make entry')
-    if _PROFILE == 'navux_branch':
-        expected_db = 'sc_frontend_acceptance_candidate'
-        expected_project = 'sc-navux-verify'
-    elif _PROFILE == 'candidate':
-        expected_db = 'sc_frontend_acceptance_candidate'
-        expected_project = 'sc-fe-candidate-770'
-    else:
-        expected_db = 'sc_frontend_acceptance'
-        expected_project = 'sc-fe-r2-p1-01'
+    expected_db = 'sc_frontend_acceptance_candidate' if _PROFILE == 'candidate' else 'sc_frontend_acceptance'
+    expected_project = 'sc-fe-candidate-770' if _PROFILE == 'candidate' else 'sc-fe-r2-p1-01'
     if os.environ.get('DB_NAME') != expected_db or os.environ.get('COMPOSE_PROJECT_NAME') != expected_project:
         raise RuntimeError('managed profile mismatch')
     OUTPUT.mkdir(parents=True, exist_ok=True)

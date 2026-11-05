@@ -31,6 +31,7 @@ class _Menu:
         self.name = name
         self.xmlid = xmlid
         self.sequence = sequence
+        self.sc_product_center_id = None
 
     def get_external_id(self):
         return {self.id: self.xmlid}
@@ -68,9 +69,10 @@ class _Recordset(list):
 
 
 class _Entry:
-    def __init__(self, menu, scenario):
+    def __init__(self, menu, scenario, sequence=10):
         self.menu_id = menu
         self.scenario_id = scenario
+        self.sequence = sequence
 
     @property
     def intent(self):
@@ -169,19 +171,21 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         self.assertEqual(finance["entries"][0]["configured"], False)
 
     def test_stable_center_identity_fallback_for_native_core_menus(self):
-        # Simulates Odoo core menus (e.g. account) natively parented outside
-        # the business root but grouped by the delivery tree under a center.
+        # External menus retain a database association even after center rename
+        # makes the legacy delivery group's label lookup return no center ID.
         env = _Env()
         account_root = _Menu(999, None, "Invoicing", "account.menu_finance")
         account_menu = _Menu(1001, account_root, "Journal Entries", "account.menu_action_move_journal_line_form")
         env.menus[999] = account_root
         env.menus[1001] = account_menu
+        account_menu.sc_product_center_id = env.menus[10]
+        env.menus[10].name = "Renamed accounting center"
         env.entries = _Entries([_Entry(account_menu, _Scenario("accounting.management", "会计核算"))])
         leaf = dict(_leaf(1001, 10011, "日记账分录", "account.menu_action_move_journal_line_form"))
         center_group = {
             "label": "财务账款",
             "menu_id": 900,
-            "canonical_navigation": {"menu_id": 10},  # stable native center menu id
+            "canonical_navigation": {"menu_id": 0},
             "children": [leaf],
         }
         nav = [{"label": "系统菜单", "children": [center_group]}]
@@ -189,6 +193,40 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         centers = result["tree"]["centers"]
         finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
         self.assertEqual(finance["scenarios"][0]["key"], "accounting.management")
+        self.assertEqual(finance["name"], "Renamed accounting center")
+
+    def test_moved_menu_ignores_stale_delivery_center(self):
+        env = _Env()
+        env.menus[101].parent_id = env.menus[20]
+        env.menus[101].sc_product_center_id = env.menus[10]
+        nav = [{"label": "System", "children": [{
+            "label": "Old center", "canonical_navigation": {"menu_id": 10},
+            "children": [_leaf(101, 1011, "Payment", env.menus[101].xmlid)],
+        }]}]
+        centers = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"]
+        self.assertEqual([c["key"] for c in centers], [env.menus[20].xmlid])
+
+    def test_entry_sequence_and_stable_tie_breaker(self):
+        env = _Env()
+        env.menus[201].parent_id = env.menus[10]
+        scenario = env.entries.entries[0].scenario_id
+        env.entries = _Entries([_Entry(env.menus[101], scenario, 9), _Entry(env.menus[201], scenario, 0)])
+        nav = [_leaf(101, 1011, "A", env.menus[101].xmlid), _leaf(201, 2011, "Z", env.menus[201].xmlid)]
+        def entries():
+            return PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["scenarios"][0]["entries"]
+        self.assertEqual([e["menu_id"] for e in entries()], [201, 101])
+        self.assertEqual(entries()[0]["sequence"], 0)
+        env.entries.entries[0].sequence = 0
+        self.assertEqual([e["menu_id"] for e in entries()], [201, 101])  # XMLID, not label
+
+    def test_direct_entry_order_uses_native_menu_sequence(self):
+        env = _Env()
+        env.entries = _Entries([])
+        env.menus[201].parent_id = env.menus[10]
+        env.menus[201].sequence = 0
+        nav = [_leaf(101, 1011, "A", env.menus[101].xmlid), _leaf(201, 2011, "Z", env.menus[201].xmlid)]
+        entries = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["entries"]
+        self.assertEqual([e["menu_id"] for e in entries], [201, 101])
 
 
 if __name__ == "__main__":

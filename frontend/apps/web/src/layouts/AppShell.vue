@@ -390,7 +390,7 @@
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ProductScenarioNavigation from '../components/product-shell/ProductScenarioNavigation.vue';
-import type { ScenarioNavEntry, ScenarioNavigationModel } from '../app/scenarioSurface';
+import { createScenarioSelectionSnapshot, type ScenarioNavEntry, type ScenarioNavigationModel } from '../app/scenarioSurface';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
 import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcrumb.vue';
@@ -432,7 +432,7 @@ import {
 } from '../styles/theme';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
-import { routeAuthorityEntries } from '../app/routeAuthority';
+import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { isAuthorizedSceneNavigation, isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
 import type { BusinessScopeOperationOption, NavNode, RecordContextOption } from '@sc/schema';
 import {
@@ -1471,11 +1471,17 @@ function focusMainContent() {
 
 function handleScenarioSelect(entry: ScenarioNavEntry) {
   if (!navigationReady.value) return;
-  const route = String(entry.route || '').trim();
-  if (!route) return;
+  const selection = createScenarioSelectionSnapshot(entry, session.routeAuthority);
+  if (!selection) return;
+  const target = router.resolve(selection.route);
+  const scope = {
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+    selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+  };
+  if (!routeAuthorityContextAllowed(selection.authority, target.query, scope)) return;
   query.value = '';
   closeMobileSidebar();
-  router.push(route).catch(() => {});
+  router.push(selection.route).catch(() => {});
 }
 
 function handleScenarioEnsureExpanded(centerKey: string, scenarioKey: string) {

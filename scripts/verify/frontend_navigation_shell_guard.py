@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMPONENTS = (
     "ProductAppShell",
     "ProductSideNavigation",
+    "ProductScenarioNavigation",
     "ProductMobileNavigationDrawer",
     "NavigationBreadcrumb",
     "WorkspaceContextIndicator",
@@ -53,8 +54,8 @@ def validate(root: Path = ROOT) -> list[str]:
         if f"<{component}" not in shell and component != "ProductSideNavigation":
             errors.append(f"AppShell does not consume {component}")
 
-    if "<ProductSideNavigation" not in shell or ':nodes="filteredNavigation"' not in shell:
-        errors.append("AppShell must render ProductSideNavigation from the canonical filtered model")
+    if "<ProductScenarioNavigation" not in shell or ':model="scenarioNavigation"' not in shell or "<ProductSideNavigation" in shell:
+        errors.append("AppShell must render only ProductScenarioNavigation from the server scenario model")
     context_indicator = read(root, "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue")
     context_projection = shell.split("<WorkspaceContextIndicator", 1)[-1].split("/>", 1)[0]
     if ':show-record="showRecordContext"' not in context_projection or "v-if=" in context_projection:
@@ -134,8 +135,11 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:
         errors.append("AppShell must consume the normalized session navigation model")
-    if "createNavigationSelectionSnapshot(node.source, session.routeAuthority)" not in shell:
+    if "createScenarioSelectionSnapshot(entry, session.routeAuthority)" not in shell:
         errors.append("canonical menu selection must retain the immutable authority snapshot chain")
+
+    if "routeAuthorityContextAllowed(selection.authority, target.query, scope)" not in shell or "router.push(selection.route)" not in shell:
+        errors.append("scenario selection must consume the checked authority snapshot")
 
     for forbidden in ("useSessionStore", "evaluateCapabilityPolicy", "capabilityTooltip", "console.info"):
         if forbidden in tree + menu_node:

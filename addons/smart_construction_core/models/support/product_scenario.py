@@ -2,14 +2,15 @@
 """Maintainable business-scenario organization for the scenario center navigation.
 
 The scenario is an organization layer over already-authorized navigation
-entries. Center ownership is derived from the native ``ir.ui.menu`` tree and is
-never duplicated here; a scenario may span centers, while a navigation entry
+entries. Center ownership is derived from the native ``ir.ui.menu`` tree, with
+a separate menu relation for external entries; a scenario may span centers, while an entry
 binds to exactly one scenario. This model is the runtime maintenance source
 that ``system.init`` projects; the P1 JSON surface is only a seed input.
 """
 from __future__ import annotations
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 SCENARIO_INTENTS = [
@@ -20,6 +21,8 @@ SCENARIO_INTENTS = [
     ("master_data", "基础信息维护"),
 ]
 SCENARIO_INTENT_CODES = tuple(item[0] for item in SCENARIO_INTENTS)
+SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
+EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
 
 
 class ScProductScenario(models.Model):
@@ -40,18 +43,19 @@ class ScProductScenario(models.Model):
 
     @api.model
     def import_scenario_product_surface(self):
-        """Idempotent, create-only seed from the P1 scenario surface JSON.
+        """Initialize once, atomically; later upgrades preserve even deletions.
 
-        Runs on both fresh install and module upgrade through the data file
-        ``data/product_scenario_seed.xml``. It never rewrites an existing
-        scenario or entry, so operator edits survive later upgrades.
+        A versioned migration marks legacy installations initialized before
+        this method is called. Future seed changes require explicit migrations.
         """
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_surface
 
+        Param = self.env["ir.config_parameter"].sudo()
+        if Param.get_param(SCENARIO_SEED_KEY):
+            return {"created_scenarios": 0, "skipped_scenarios": 0, "created_entries": 0}
         surface = load_surface()
-        Scenario = self.sudo()
+        Scenario = self.sudo().with_context(active_test=False)
         Entry = self.env["sc.product.scenario.entry"].sudo()
-        Menu = self.env["ir.ui.menu"].sudo()
         existing_codes = {rec.code: rec for rec in Scenario.search([])}
         created_scenarios = 0
         skipped_scenarios = 0
@@ -75,7 +79,7 @@ class ScProductScenario(models.Model):
                     if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
                         continue
                     exists = Entry.search(
-                        [("scenario_id", "=", record.id), ("menu_id", "=", menu.id)], limit=1
+                        [("menu_id", "=", menu.id)], limit=1
                     )
                     if not exists:
                         Entry.create({
@@ -85,11 +89,50 @@ class ScProductScenario(models.Model):
                             "sequence": 10,
                         })
                         created_entries += 1
+        Param.set_param(SCENARIO_SEED_KEY, "1")
         return {
             "created_scenarios": created_scenarios,
             "skipped_scenarios": skipped_scenarios,
             "created_entries": created_entries,
         }
+
+    @api.model
+    def initialize_external_navigation_centers(self):
+        """Seed stable external-menu placement once, independently of scenarios."""
+        import json
+        from odoo.addons.smart_construction_core.services.product_menu_source import SOURCE_PATH
+
+        Param = self.env["ir.config_parameter"].sudo()
+        if Param.get_param(EXTERNAL_CENTER_SEED_KEY):
+            return
+        source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+        for entry in source.get("entries", []):
+            placement = entry.get("external_presentation")
+            if not placement:
+                continue
+            menu = self.env.ref(entry["menu_xmlid"], raise_if_not_found=False)
+            center = self.env.ref(placement["center_xmlid"], raise_if_not_found=False)
+            if not menu or not center:
+                raise ValidationError("External navigation seed references an unavailable menu or center.")
+            if not menu.sc_product_center_id:
+                menu.sudo().sc_product_center_id = center
+        Param.set_param(EXTERNAL_CENTER_SEED_KEY, "1")
+
+
+class IrUiMenu(models.Model):
+    _inherit = "ir.ui.menu"
+
+    sc_product_center_id = fields.Many2one(
+        "ir.ui.menu", string="External Product Center", ondelete="restrict",
+        help="Placement for entries outside the business root. A native business parent chain takes precedence.",
+    )
+
+    @api.constrains("sc_product_center_id", "parent_id")
+    def _check_product_center(self):
+        root = self.env.ref("smart_construction_core.menu_sc_root", raise_if_not_found=False)
+        for menu in self:
+            if menu.sc_product_center_id and (not root or menu.sc_product_center_id.parent_id != root):
+                raise ValidationError("External Product Center must be a direct child of the business root.")
 
 
 class ScProductScenarioEntry(models.Model):
