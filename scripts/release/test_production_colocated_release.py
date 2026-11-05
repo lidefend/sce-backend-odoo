@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -18,6 +21,72 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC and SPEC.loader
 BACKUP = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BACKUP)
+
+
+class AcceptanceSnapshotExecutionTests(unittest.TestCase):
+    def setUp(self):
+        tree = ast.parse((ROOT / "scripts/test/frontend_acceptance_release_snapshot.py").read_text())
+        # Execute the actual producer with fake ORM transport, without importing Odoo.
+        tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))
+                     and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call))]
+        self.env = mock.MagicMock()
+        self.env.cr.dbname = "sc_frontend_acceptance"
+        self.policy = mock.Mock(id=11)
+        self.env.__getitem__.return_value.sudo.return_value.synchronize_locked_formal_menu_policy.return_value = {
+            "policy": self.policy, "changed": False, "contract": None,
+        }
+        self.snapshot = mock.Mock(id=22, source_policy_id=self.policy)
+        self.snapshot.meta_json = {"release_draft": {"fingerprint": "frozen"}}
+        self.snapshot.snapshot_json = {"policy_snapshot_schema": "maintained_product_policy.v1"}
+        model = self.env.__getitem__.return_value.sudo.return_value
+        model.search.return_value = self.snapshot
+        model.browse.return_value = self.snapshot
+        self.service = mock.Mock(spec=["build_policy_draft_contract", "freeze_release_surface", "assert_frozen_release_integrity"])
+        self.service.build_policy_draft_contract.return_value = {"fingerprint": "frozen", "blocking_issue_count": 0}
+        self.service.freeze_release_surface.return_value = {"id": 22}
+        self.service.assert_frozen_release_integrity.return_value = {"effective_count": 3}
+        self.namespace = {"env": self.env, "os": os, "json": json,
+                          "hashlib": __import__("hashlib"),
+                          "EditionReleaseSnapshotService": mock.Mock(return_value=self.service)}
+        exec(compile(tree, "acceptance_snapshot", "exec"), self.namespace)
+        self.env.reset_mock()
+
+    def run_producer(self):
+        with mock.patch.dict(os.environ, {"SC_ENVIRONMENT": "acceptance", "SC_ALLOW_DEMO_DATA": "1",
+                                          "SC_ACCEPTANCE_SOURCE_REVISION": "a" * 40}), contextlib.redirect_stdout(io.StringIO()):
+            self.namespace["main"]()
+
+    def test_current_snapshot_reuses_only_after_integrity_validation(self):
+        self.run_producer()
+        self.service.freeze_release_surface.assert_not_called()
+        self.service.assert_frozen_release_integrity.assert_called_once_with(self.snapshot)
+        self.env.cr.commit.assert_called_once()
+
+    def test_legacy_snapshot_is_refrozen_even_with_matching_fingerprint(self):
+        self.snapshot.snapshot_json = {}
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+        self.service.assert_frozen_release_integrity.assert_called_once_with(self.snapshot)
+
+    def test_tampered_current_snapshot_never_commits(self):
+        self.service.assert_frozen_release_integrity.side_effect = ValueError("digest mismatch")
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            self.run_producer()
+        self.env.cr.commit.assert_not_called()
+
+    def test_invalid_draft_never_freezes_or_commits(self):
+        self.service.build_policy_draft_contract.return_value = {"blocking_issue_count": 1}
+        with self.assertRaisesRegex(RuntimeError, "PREFLIGHT_BLOCKED"):
+            self.run_producer()
+        self.service.freeze_release_surface.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+    def test_wrong_database_never_writes(self):
+        self.env.cr.dbname = "other_database"
+        with self.assertRaisesRegex(RuntimeError, "DATABASE_DENIED"):
+            self.run_producer()
+        self.env.__getitem__.assert_not_called()
+        self.env.cr.commit.assert_not_called()
 
 
 class ColocatedReleaseStaticTests(unittest.TestCase):

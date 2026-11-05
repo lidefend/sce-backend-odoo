@@ -32,7 +32,11 @@
     "addons/smart_core/models/release_management.py",
     "scripts/test/frontend_acceptance_release_snapshot.py",
     "scripts/release/test_locked_menu_policy_contract.py",
-    "scripts/ops/formal_product_menu_policy_restore.py"
+    "scripts/ops/formal_product_menu_policy_restore.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -47,7 +51,8 @@
       "ACL expansion",
       "role catalog defaults",
       "BE03 payment/page hooks"
-    ]
+    ],
+    "validation_scope_delta": "P4 exact native publication path classification; backend contract retained, mixed list/relation changes remain required. Generated hook outputs registered."
   },
   "next_exact_step": "Publish the reviewed BE01+BE02 candidate through governed PR; after required CI/integration, migrate legacy catalog snapshot then maintain/publish the business-scenario entry on daily server",
   "preexisting_generated": "complexity_budget_report.md from BE01 required commit hook; owned generated output, preserve",
@@ -70,7 +75,7 @@
     "independent_review": {
       "status": "passed",
       "reviewer": "independent_ci_review",
-      "limits": "code review only; final ORM pending"
+      "limits": "code review and final11 ORM receipt verified; final remote CI still pending"
     },
     "orm_attempts": [
       {
@@ -107,11 +112,27 @@
         ".runtime/be02-integration-offline.log",
         ".runtime/be02-focused.log"
       ]
+    },
+    "classification_final": {
+      "status": "passed",
+      "tests": 64,
+      "log": ".runtime/be02-binding-final.log",
+      "reason": "Exact native publication and snapshot producers own backend tests; mixed browser/entry changes retain their suites."
+    },
+    "snapshot_producer_final": {
+      "status": "passed",
+      "tests": 32,
+      "log": ".runtime/be02-producer-final.log",
+      "limits": "5 actual producer branch tests with mocked ORM transport; not browser or deployed environment evidence. Initial mock assertion attribute setup corrected before successful rerun."
+    },
+    "orm_carry_forward": {
+      "source_head": "481934ee58cb1e67a8e3a1ff1b7e12e5e5c8f3af",
+      "reason": "Only P4 classification registry, its test, offline release test and run/docs changed after final11 ORM; no ORM source, test or runtime inputs changed. Original receipt retained."
     }
   },
   "completion_dimensions": {
     "batch": "implementation and selected local validation passed; rollout pending",
-    "mainline": "BE01 record committed locally; BE02 not committed/published",
+    "mainline": "BE01 and BE02 committed locally; not published or merged",
     "deployment": "daily remains c819, five exemptions maintained; no BE02 deployment",
     "user_acceptance": "business scenario native publication pending integration and governed rollout"
   },
