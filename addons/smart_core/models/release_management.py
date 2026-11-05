@@ -82,6 +82,29 @@ class ScProductPolicy(models.Model):
         return records
 
     def write(self, vals):
+        draft_fields = {"menu_groups", "scenes", "capabilities", "scene_version_bindings", "state",
+                        "access_level", "allowed_role_codes", "label", "version", "active",
+                        "product_key", "base_product_key", "edition_key"} & set(vals)
+        if draft_fields:
+            from odoo.exceptions import ValidationError
+            for rec in self:
+                if all(rec[name] == vals[name] for name in draft_fields):
+                    continue
+                configured = self.env["ir.config_parameter"].sudo().get_param("smart_core.platform_release_db", "")
+                if configured:
+                    from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+                    try:
+                        ProductPolicyService(self.env)._load_published_policy(
+                            product_key=rec.product_key, require_current_schema=True)
+                    except Exception as exc:
+                        raise ValidationError("Re-freeze and publish the existing catalog before editing; release identity could not be verified: %s" % exc) from exc
+                else:
+                    published = self.env["sc.edition.release.snapshot"].sudo().search([
+                        ("product_key", "=", rec.product_key), ("active", "=", True),
+                        ("state", "=", "released"), ("is_active", "=", True)], limit=1)
+                    payload = published.snapshot_json if published else {}
+                    if published and (not isinstance(payload, dict) or payload.get("policy_snapshot_schema") != "maintained_product_policy.v1"):
+                        raise ValidationError("Re-freeze and publish the existing catalog before editing a legacy published policy.")
         result = super().write(vals)
         self.env.registry.clear_cache()
         return result
@@ -109,6 +132,8 @@ class ScProductPolicy(models.Model):
             ("platform.preview", "平台内核预览版"),
         ]
         for product_key, label in defaults:
+            if self.sudo().with_context(active_test=False).search([("product_key", "=", product_key)], limit=1):
+                continue  # Existing empty/archived records are deliberate maintenance.
             identity_base = product_key.split(".", 1)[0] if "." in product_key else product_key
             if catalog_sync._is_catalog_backed_product(
                 identity={

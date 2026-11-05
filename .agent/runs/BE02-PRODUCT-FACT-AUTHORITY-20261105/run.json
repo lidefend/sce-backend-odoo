@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "id": "BE02-PRODUCT-FACT-AUTHORITY-20261105",
+  "branch": "refactor/be02-product-fact-authority-20261105",
+  "baseline_sha": "7babe7f5b03f9b8e8e1b71d3721761440558741d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BE02-PRODUCT-FACT-AUTHORITY-20261105.yaml",
+  "record": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
+  "scope": [
+    ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
+    ".agent/goals/BE02-PRODUCT-FACT-AUTHORITY-20261105.yaml",
+    ".agent/active-runs.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/architecture/backend_product_catalog_authority_be02_20261105.md",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "scripts/release/initialize_colocated_platform_snapshot.py",
+    "scripts/verify/production_menu_release_gate_guard.py",
+    "scripts/verify/test_product_menu_release_gate_contract.py",
+    "scripts/release/test_production_colocated_release.py",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_core/delivery/product_policy_service.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/models/release_management.py",
+    "scripts/test/frontend_acceptance_release_snapshot.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/ops/formal_product_menu_policy_restore.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/test/frontend_productization_fixture.sh",
+    "scripts/verify/test_frontend_release_local_entry.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing governed local test profile; no unmerged daily deployment"
+  },
+  "checks": {},
+  "layer": {
+    "formal_product_layer": "P1 with P0 reference validation and P4 release verification",
+    "why_here": "Existing Odoo product policy and edition snapshot are maintenance and publication authorities",
+    "exclusions": [
+      "frontend",
+      "ACL expansion",
+      "role catalog defaults",
+      "BE03 payment/page hooks"
+    ],
+    "validation_scope_delta": "P4 exact native publication path classification; backend contract retained, mixed list/relation changes remain required. Generated hook outputs registered."
+  },
+  "next_exact_step": "Push reviewed fix to PR813 and verify new SHA managed_orm initialization plus required remote checks; no merge before all required checks pass",
+  "preexisting_generated": "complexity_budget_report.md from BE01 required commit hook; owned generated output, preserve",
+  "evidence": {
+    "offline_activation": {
+      "status": "passed",
+      "tests": 87,
+      "log": ".runtime/be02-activation.log"
+    },
+    "offline_release": {
+      "status": "passed",
+      "tests": 69,
+      "log": ".runtime/be02-release-tests.log"
+    },
+    "name_binding": {
+      "status": "passed",
+      "files": 3289,
+      "log": ".runtime/be02-name-binding.log"
+    },
+    "independent_review": {
+      "status": "passed",
+      "reviewer": "independent_ci_review",
+      "limits": "code review and final11 ORM receipt verified; final remote CI still pending"
+    },
+    "orm_attempts": [
+      {
+        "status": "failed",
+        "reason": "test expected [] whereas Odoo empty JSON reads False; corrected assertion",
+        "receipt": ".runtime/test-baseline/1793891078156473088/receipt.json"
+      },
+      {
+        "status": "invalidated",
+        "reason": "8 assertions passed but concurrent source changes invalidated the receipt; not reused as final proof",
+        "receipt": ".runtime/test-baseline/1793891550982169004/receipt.json"
+      }
+    ],
+    "offline_invocation_limits": "Two Odoo-only tests invoked without Odoo failed import; no product failure inferred and not counted as pass",
+    "final_orm": {
+      "status": "passed",
+      "tests": 11,
+      "source_unchanged": true,
+      "receipt": ".runtime/test-baseline/1793892349712953874/receipt.json",
+      "log": ".runtime/be02-orm-frozen.log"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/be02-iteration.log"
+    },
+    "additional_offline": {
+      "delivery_menu_targets": 50,
+      "acceptance_evolution_binding": 61,
+      "daily_published_face_orchestration": 32,
+      "serialization_boundaries": 5,
+      "release_preflight": 3,
+      "runtime_identity": 2,
+      "logs": [
+        ".runtime/be02-integration-offline.log",
+        ".runtime/be02-focused.log"
+      ]
+    },
+    "classification_final": {
+      "status": "passed",
+      "tests": 64,
+      "log": ".runtime/be02-binding-final.log",
+      "reason": "Exact native publication and snapshot producers own backend tests; mixed browser/entry changes retain their suites."
+    },
+    "snapshot_producer_final": {
+      "status": "passed",
+      "tests": 32,
+      "log": ".runtime/be02-producer-final.log",
+      "limits": "5 actual producer branch tests with mocked ORM transport; not browser or deployed environment evidence. Initial mock assertion attribute setup corrected before successful rerun."
+    },
+    "orm_carry_forward": {
+      "source_head": "481934ee58cb1e67a8e3a1ff1b7e12e5e5c8f3af",
+      "reason": "Only P4 classification registry, its test, offline release test and run/docs changed after final11 ORM; no ORM source, test or runtime inputs changed. Original receipt retained."
+    },
+    "review_813": {
+      "status": "failed",
+      "head": "5f16eadfc9d42e67dc9aca08e99c7aebfc57ff88",
+      "log": ".runtime/be02-review-managed-failure.log",
+      "issues": [
+        "fixture enables before first publication",
+        "reuse and candidate identity omit full policy"
+      ]
+    },
+    "review_813_fix": {
+      "status": "locally_passed_remote_pending",
+      "source_head": "5f16eadfc9d42e67dc9aca08e99c7aebfc57ff88",
+      "orm_tests": 12,
+      "receipt": ".runtime/test-baseline/1793902245592961519/receipt.json",
+      "source_unchanged": true,
+      "producer_tests": 41,
+      "entry_tests": 17,
+      "fixture_lane_tests": 40,
+      "scene_tests": 87,
+      "locked_tests": 33,
+      "release_gate_tests": 9,
+      "logs": [
+        ".runtime/be02-review-orm.log",
+        ".runtime/be02-review-producers.log",
+        ".runtime/be02-review-bootstrap.log",
+        ".runtime/be02-review-fixture-lane-module.log",
+        ".runtime/be02-review-scene.log",
+        ".runtime/be02-review-locked.log",
+        ".runtime/be02-review-release-gate.log"
+      ],
+      "limits": "Producer/shell unit tests use mocked transports. Actual first fixture initialization requires new remote managed_orm. Direct script fixture-lane invocation lacked package path, then module invocation passed40."
+    }
+  },
+  "completion_dimensions": {
+    "batch": "implementation and selected local validation passed; rollout pending",
+    "mainline": "PR813 open; review fixes locally validated, remote rerun pending",
+    "deployment": "daily remains c819, five exemptions maintained; no BE02 deployment",
+    "user_acceptance": "business scenario native publication pending integration and governed rollout"
+  },
+  "remaining_gaps": [
+    "Legacy full policy snapshots must be re-frozen before editing; no BE02 source deployed to daily",
+    "Business-scenario menu still requires explicit native catalog maintenance and publication after integration",
+    "Role default catalog and initialization/default-provider compatibility remain file-backed; no general claim that all JSON consumers are removed",
+    "No browser acceptance in this batch; Odoo policy form still uses JSON widget"
+  ]
+}

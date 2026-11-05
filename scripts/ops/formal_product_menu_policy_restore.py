@@ -114,6 +114,9 @@ def _write_snapshot(read_env, product_key: str, pages: list[dict], *, platform_d
     )
     if not snapshot:
         return {"status": "SKIP", "reason": "active_release_snapshot_not_found", "platform_db": platform_db}
+    frozen = snapshot.snapshot_json if isinstance(snapshot.snapshot_json, dict) else {}
+    if frozen.get("policy_snapshot_schema") == "maintained_product_policy.v1":
+        raise RuntimeError("MAINTAINED_CATALOG_REQUIRES_FORMAL_FREEZE_AND_PUBLICATION")
     meta = dict(snapshot.meta_json if isinstance(snapshot.meta_json, dict) else {})
     draft = dict(meta.get("release_draft") if isinstance(meta.get("release_draft"), dict) else {})
     draft["pages"] = pages

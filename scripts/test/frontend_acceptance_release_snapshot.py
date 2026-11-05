@@ -14,10 +14,7 @@ import os
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
     EditionReleaseSnapshotService,
 )
-from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
-    assert_policy_matches_locked_contract,
-    assert_snapshot_matches_locked_contract,
-)
+
 
 
 EXPECTED_DATABASE = "sc_frontend_acceptance"
@@ -58,13 +55,6 @@ def main() -> None:
         PRODUCT_KEY
     )
     policy = sync["policy"]
-    contract = sync["contract"]
-    policy_match = assert_policy_matches_locked_contract(
-        contract,
-        PRODUCT_KEY,
-        policy.menu_groups,
-    )
-
     service = EditionReleaseSnapshotService(env)  # noqa: F821
     draft = service.build_policy_draft_contract(product_key=PRODUCT_KEY)
     if int(draft.get("blocking_issue_count") or 0):
@@ -94,7 +84,11 @@ def main() -> None:
         if isinstance(existing_meta.get("release_draft"), dict)
         else {}
     )
-    if snapshot and _text(existing_draft.get("fingerprint")) == fingerprint:
+    if (snapshot and _text(existing_draft.get("fingerprint")) == fingerprint
+            and draft.get("policy_sha256")
+                    and existing_draft.get("policy_sha256") == draft["policy_sha256"]
+                    and isinstance(snapshot.snapshot_json, dict)
+            and snapshot.snapshot_json.get("policy_snapshot_schema") == "maintained_product_policy.v1"):
         changed = False
     else:
         result = service.freeze_release_surface(
@@ -116,11 +110,11 @@ def main() -> None:
         if isinstance(snapshot_meta.get("release_draft"), dict)
         else {}
     )
-    snapshot_match = assert_snapshot_matches_locked_contract(
-        contract,
-        PRODUCT_KEY,
-        snapshot_draft.get("pages"),
-    )
+    if (_text(snapshot_draft.get("fingerprint")) != fingerprint
+                    or not draft.get("policy_sha256")
+                    or snapshot_draft.get("policy_sha256") != draft["policy_sha256"]):
+        raise RuntimeError("FRONTEND_ACCEPTANCE_SNAPSHOT_DRAFT_MISMATCH")
+    snapshot_match = service.assert_frozen_release_integrity(snapshot)
     evidence = {
         "schema": "frontend_acceptance_release_snapshot.v1",
         "database": database,
@@ -131,9 +125,9 @@ def main() -> None:
         "fingerprint": fingerprint,
         "changed": changed,
         "policy_changed": bool(sync.get("changed")),
-        "policy_menu_count": int(policy_match.get("menu_count") or 0),
-        "snapshot_menu_count": int(snapshot_match.get("menu_count") or 0),
-        "contract_sha256": _text(contract.get("sha256")),
+        "policy_menu_count": int(snapshot_match.get("effective_count") or 0),
+        "snapshot_menu_count": int(snapshot_match.get("effective_count") or 0),
+        "policy_authority": "sc.product.policy",
         "evidence_sha256": hashlib.sha256(
             json.dumps(
                 {

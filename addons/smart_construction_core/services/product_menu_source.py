@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Pure projections of P1-owned product menu metadata. No runtime/database reads."""
+"""Product seed projections and explicit published-snapshot qualification.
+
+load_menu_release_states is seed-only; runtime consumers use the published API.
+"""
 from __future__ import annotations
 
 import ast
@@ -32,6 +35,25 @@ def load_menu_release_states():
         for item in center["level_two"]
         for leaf in (item.get("children") or [item])
     }
+
+def load_published_menu_release_states(env):
+    """Use the same active platform snapshots as navigation, never draft/seed.
+
+    Standard-edition qualification can only come from its released snapshot.
+    Preview-only entries stay preview even when a preview snapshot labels them
+    released. Missing publication denies enablement; it never falls back to JSON.
+    """
+    if env is None:
+        raise ValueError("Published menu qualification requires an Odoo environment")
+    from odoo.addons.smart_core.handlers.system_init import _load_platform_release_gate
+    standard = _load_platform_release_gate(env, product_key="construction.standard")
+    preview = _load_platform_release_gate(env, product_key="construction.preview")
+    states = dict(standard.get("menu_release_states") or {}) if standard.get("applied") else {}
+    if preview.get("applied"):
+        for key in (preview.get("menu_release_states") or {}):
+            states.setdefault(key, "preview")
+    return states
+
 
 def native_facts(module_root=None, _visiting=None, _loaded=None, _facts=None):
     """Resolve shipped Odoo XML in manifest order; never infer from labels."""

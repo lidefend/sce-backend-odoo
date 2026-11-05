@@ -235,6 +235,7 @@ class DeliveryEngine:
         edition_key: str | None = None,
         base_product_key: str | None = None,
         native_nav: list[dict] | None = None,
+        use_published_policy: bool = True,
     ) -> dict:
         runtime = data if isinstance(data, dict) else {}
         role_surface = self._runtime_role_surface(runtime)
@@ -245,6 +246,7 @@ class DeliveryEngine:
             role_code=str(role_surface.get("role_code") or "").strip(),
             enforce_release=True,
             enforce_access=True,
+            use_published_policy=use_published_policy,
         )
         nav = self.menu_service.build_nav(
             policy=policy,

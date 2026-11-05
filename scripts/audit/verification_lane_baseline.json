@@ -51,9 +51,16 @@
       "observed_after_correction": 226,
       "batch": "B3",
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
+    },
+    {
+      "metric": "max_targets_zero_reference",
+      "previous_reading": 675,
+      "observed_after_correction": 676,
+      "batch": "BE00-BE01-FACT-CLOSURE-20261105",
+      "defect": "Deliberate reviewed addition of one operator-only exact-checkpoint maintenance entry; user explicitly approved five menu exemptions. No CI gate or unrelated allowance relaxed."
     }
   ],
-  "max_targets_zero_reference": 675,
+  "max_targets_zero_reference": 676,
   "max_scripts_unreferenced_anywhere": 104,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -68,8 +75,8 @@
   "max_unregistered_remote_only_scripts": 0,
   "max_stale_local_only_exemptions": 0,
   "max_stale_remote_only_exemptions": 0,
-  "recorded_targets_defined": 2343,
-  "recorded_targets_unreached_from_anchor": 2134,
+  "recorded_targets_defined": 2344,
+  "recorded_targets_unreached_from_anchor": 2135,
   "recorded_anchor_union_targets": 215,
   "max_registrations_missing_owner": 0,
   "max_registrations_missing_basis": 0,
@@ -147,6 +154,7 @@
       "daily.demo.contract.write_acceptance",
       "daily.demo.filestore.preserve",
       "daily.demo.project_manager.repair",
+      "daily.demo.scenario.configure",
       "daily.demo.walkthrough.contract_flow",
       "daily.demo.walkthrough.ui",
       "daily.personnel_views",

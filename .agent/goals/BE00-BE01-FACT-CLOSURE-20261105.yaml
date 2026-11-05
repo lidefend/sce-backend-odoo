@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: BE00-BE01-FACT-CLOSURE-20261105
+  status: active
+  formal_product_layer: P1
+  objective: 固定正式事实维护边界，完成场景三态及目标库升级对账；不改变公共契约

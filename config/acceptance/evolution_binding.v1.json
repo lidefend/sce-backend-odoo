@@ -400,6 +400,18 @@
       ]
     },
     {
+      "id": "native-release-snapshot-producers",
+      "description": "Exact backend snapshot producers: validate freeze/reuse/integrity in backend tests; deployed entry validation remains deployment-scoped. Other acceptance entry scripts retain browser and namespace requirements.",
+      "paths": [
+        "scripts/test/frontend_acceptance_release_snapshot.py",
+        "scripts/release/initialize_colocated_platform_snapshot.py"
+      ],
+      "suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ]
+    },
+    {
       "id": "isolated-acceptance-entry-identity",
       "paths": [
         "config/acceptance/**",
@@ -578,6 +590,18 @@
         "addons/smart_construction_core/__manifest__.py"
       ],
       "condition": "manifest_version_only",
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "native-product-publication",
+      "description": "Native catalog maintenance, publication qualification and its ORM regression. Backend contract coverage; no list layout or relation-field behavior. Exact paths only; mixed business changes retain their own suites.",
+      "paths": [
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+      ],
       "suites": [
         "backend_contract"
       ]

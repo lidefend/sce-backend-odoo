@@ -3409,6 +3409,11 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
+    },
+    "daily.demo.scenario.configure": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "BE00-BE01 owner-approved five-menu scenario exemption maintenance; exact demo UUID, source SHA and menu IDs, default readback. Operator-only, not automatic initialization or CI. Independent implementation review passed; remove after this database reconciliation is retired."
     }
   },
   "scripts": {

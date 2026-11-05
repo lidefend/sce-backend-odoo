@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 208,
+    "odoo_tags": 209,
     "gated": 5,
     "on_demand": 56,
-    "unwired": 147,
-    "odoo_tag_declarations": 429,
-    "gated_declarations": 98,
-    "uncovered_declarations": 331,
+    "unwired": 148,
+    "odoo_tag_declarations": 431,
+    "gated_declarations": 99,
+    "uncovered_declarations": 332,
     "ci_unit_scripts": 18,
     "ci_unit_scripts_wired": 18,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 69,
+      "declarations": 70,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -59,6 +59,7 @@
         "addons/smart_construction_core/tests/test_product_job.py",
         "addons/smart_construction_core/tests/test_product_message_notification.py",
         "addons/smart_construction_core/tests/test_product_numbering_rule.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
         "addons/smart_construction_core/tests/test_product_reports.py",
         "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
         "addons/smart_construction_core/tests/test_product_system_settings.py",
@@ -1831,6 +1832,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "product_policy_fact_authority",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "product_reports",

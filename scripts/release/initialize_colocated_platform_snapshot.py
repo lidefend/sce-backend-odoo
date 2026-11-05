@@ -1,4 +1,4 @@
-"""Create an active release snapshot from version-controlled product policy.
+"""Create an active release snapshot from the maintained database product policy.
 
 Run only through the governed Make target against an isolated clone first.
 The service owns snapshot creation and promotion; this script never inserts
@@ -11,10 +11,7 @@ import json
 import os
 
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
-from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
-    assert_policy_matches_locked_contract,
-    assert_snapshot_matches_policy_release_states,
-)
+
 
 
 ACK = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION"
@@ -45,13 +42,6 @@ def main():
                 product_key,
             )
             policy = sync["policy"]
-            contract = sync["contract"]
-            pre_snapshot_match = assert_policy_matches_locked_contract(
-                contract,
-                product_key,
-                policy.menu_groups,
-            )
-
             service = EditionReleaseSnapshotService(env)  # noqa: F821
             draft = service.build_policy_draft_contract(product_key=product_key)
             if int(draft.get("blocking_issue_count") or 0):
@@ -66,7 +56,11 @@ def main():
             ], limit=1)
             existing_meta = existing.meta_json if existing and isinstance(existing.meta_json, dict) else {}
             existing_draft = existing_meta.get("release_draft") if isinstance(existing_meta.get("release_draft"), dict) else {}
-            if existing and _text(existing_draft.get("fingerprint")) == fingerprint:
+            if (existing and _text(existing_draft.get("fingerprint")) == fingerprint
+                    and draft.get("policy_sha256")
+                    and existing_draft.get("policy_sha256") == draft["policy_sha256"]
+                    and isinstance(existing.snapshot_json, dict)
+                    and existing.snapshot_json.get("policy_snapshot_schema") == "maintained_product_policy.v1"):
                 result = existing.to_runtime_dict()
                 changed = False
             else:
@@ -83,21 +77,12 @@ def main():
                 raise RuntimeError("LOCKED_MENU_SNAPSHOT_SOURCE_POLICY_MISMATCH")
             snapshot_meta = snapshot.meta_json if isinstance(snapshot.meta_json, dict) else {}
             snapshot_draft = snapshot_meta.get("release_draft") if isinstance(snapshot_meta.get("release_draft"), dict) else {}
-            # The locked P1 product definition owns the delivery rule: the
-            # released surface must equal the locked baseline exactly, and a
-            # product profile may additionally declare ``preview`` entries. The
-            # post-freeze gate therefore compares the frozen snapshot on that
-            # declared caliber - released pages equal to the baseline, preview
-            # pages equal to the policy's declared preview set, no other state -
-            # instead of retracting the declared preview widening. The release
-            # gate guard that decides whether an entry may be opened uses the
-            # same assertion, so initialization and runtime cannot disagree.
-            post_snapshot_match = assert_snapshot_matches_policy_release_states(
-                contract,
-                product_key,
-                snapshot_draft.get("pages"),
-                policy.menu_groups,
-            )
+            if (_text(snapshot_draft.get("fingerprint")) != fingerprint
+                    or not draft.get("policy_sha256")
+                    or snapshot_draft.get("policy_sha256") != draft["policy_sha256"]):
+                raise RuntimeError("RELEASE_SNAPSHOT_DRAFT_MISMATCH")
+            post_snapshot_match = service.assert_frozen_release_integrity(snapshot)
+
     except Exception:
         env.cr.rollback()  # noqa: F821
         raise
@@ -111,13 +96,13 @@ def main():
         "fingerprint": fingerprint,
         "changed": changed,
         "policy_changed": bool(sync.get("changed")),
-        "locked_baseline_sha256": _text(contract.get("sha256")),
-        "policy_menu_count": int(pre_snapshot_match.get("menu_count") or 0),
+        "policy_authority": "sc.product.policy",
+        "policy_menu_count": int(post_snapshot_match.get("released_count") or 0),
         "snapshot_menu_count": int(post_snapshot_match.get("released_count") or 0),
         "snapshot_preview_page_count": int(post_snapshot_match.get("preview_count") or 0),
         "snapshot_effective_page_count": int(post_snapshot_match.get("effective_count") or 0),
-        "policy_normalized_sha256": _text(pre_snapshot_match.get("normalized_sha256")),
-        "snapshot_normalized_sha256": _text(post_snapshot_match.get("released_normalized_sha256")),
+        "policy_normalized_sha256": fingerprint,
+        "snapshot_normalized_sha256": _text(post_snapshot_match.get("fingerprint")),
         "idempotent": True,
     }, sort_keys=True))
 

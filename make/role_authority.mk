@@ -84,11 +84,13 @@ audit.daily.demo.business_readiness: guard.prod.forbid verify.daily.demo.busines
 	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo' \
 	  < scripts/verify/daily_demo_business_readiness.py
 
+DAILY_DEMO_OBSERVATION ?= inventory
 .PHONY: audit.daily.demo.data_inventory
 audit.daily.demo.data_inventory: guard.prod.forbid verify.daily.demo.business_readiness.unit
+	@[[ "$(DAILY_DEMO_OBSERVATION)" = inventory || "$(DAILY_DEMO_OBSERVATION)" = scenario || "$(DAILY_DEMO_OBSERVATION)" = scenario_delivery ]] || { echo "Unsupported observation mode" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
-	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env DAILY_DEMO_OBSERVATION=inventory' \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env DAILY_DEMO_OBSERVATION=$(DAILY_DEMO_OBSERVATION)' \
 	  < scripts/verify/daily_demo_business_readiness.py
 
 audit.system.permission_role.demo_observation: guard.prod.forbid
@@ -168,3 +170,14 @@ daily.demo.walkthrough.contract_flow: verify.daily.demo.walkthrough.policy daily
 	@test "$${SC_DEMO_WALK_CONFIRM:-}" = EXECUTE_RECORDED_DEMO_JOURNEY
 	@node --check scripts/verify/daily_demo_walkthrough_contract_flow.mjs
 	@node scripts/verify/daily_demo_walkthrough_contract_flow.mjs
+
+# Explicit owner-selected configuration, not initialization or inferred migration.
+SC_SCENARIO_CONFIGURATION_PHASE ?= readback
+.PHONY: daily.demo.scenario.configure
+daily.demo.scenario.configure: guard.prod.forbid verify.daily.demo.business_readiness.unit
+	@[[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@[[ "$(SC_SCENARIO_CONFIGURATION_PHASE)" = apply || "$(SC_SCENARIO_CONFIGURATION_PHASE)" = readback ]]
+	@test "$(SC_SCENARIO_CONFIGURATION_PHASE)" != apply || test "$${SC_SCENARIO_CONFIGURATION_CONFIRM:-}" = EXEMPT_FIVE_APPROVED_DEMO_MAINTENANCE_MENUS
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env SC_SCENARIO_CONFIGURATION_PHASE=$(SC_SCENARIO_CONFIGURATION_PHASE) --env SC_SCENARIO_CONFIGURATION_CONFIRM=EXEMPT_FIVE_APPROVED_DEMO_MAINTENANCE_MENUS' \
+	  < scripts/ops/daily_demo_scenario_configuration.py

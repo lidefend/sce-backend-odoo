@@ -227,6 +227,46 @@ load_profile
         self.assertIn("requestCompanyId === expectedCompanyId", helper)
         self.assertIn("name: `切换公司：${label}`, exact: true", helper)
 
+    def test_fixture_publishes_before_enablement_and_stops_on_publication_failure(self) -> None:
+        # Execute the real shell orchestrator with transport and guards stubbed.
+        source = ROOT / "scripts/test/frontend_productization_fixture.sh"
+        for database, fail, expected in (
+            ('sc_frontend_acceptance', False, ['snapshot', 'fixture']),
+            ('sc_frontend_acceptance', True, ['snapshot']),
+            ('sc_demo', False, ['fixture']),
+        ):
+            with self.subTest(database=database, fail=fail), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                common = root / 'scripts/common'
+                common.mkdir(parents=True)
+                (common / 'frontend_acceptance_guard.sh').write_text(
+                    'guard_frontend_acceptance_scope() { :; }\nacquire_frontend_acceptance_lock() { :; }\n')
+                (common / 'guard_prod.sh').write_text('guard_prod_forbid() { :; }\n')
+                (common / 'env.sh').write_text('')
+                ops = root / 'scripts/ops'
+                ops.mkdir()
+                (ops / 'odoo_shell_exec.sh').write_text(
+                    'body=$(cat)\n'
+                    'if [[ "$body" == snapshot-marker ]]; then\n'
+                    '  echo snapshot >> "$CALLS"\n'
+                    '  [[ "$FAIL_SNAPSHOT" != 1 ]] || exit 9\n'
+                    'else echo fixture >> "$CALLS"; fi\n')
+                tests = root / 'scripts/test'
+                tests.mkdir()
+                (tests / 'frontend_acceptance_release_snapshot.py').write_text('snapshot-marker')
+                binaries = root / 'bin'
+                binaries.mkdir()
+                git = binaries / 'git'
+                git.write_text('#!/bin/sh\nprintf "%040d\\n" 0\n')
+                git.chmod(0o755)
+                calls = root / 'calls'
+                result = subprocess.run(['bash', str(source)], cwd=root, env={**os.environ,
+                    'ROOT_DIR': str(root), 'DB_NAME': database, 'SC_ACCEPTANCE_FIXTURE_PASSWORD': 'synthetic-test',
+                    'CALLS': str(calls), 'FAIL_SNAPSHOT': '1' if fail else '0',
+                    'PATH': str(binaries) + os.pathsep + os.environ['PATH']}, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 9 if fail else 0, result.stderr)
+                self.assertEqual(calls.read_text().splitlines(), expected)
+
     def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
         fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
             encoding="utf-8"

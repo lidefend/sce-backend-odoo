@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -18,6 +21,120 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC and SPEC.loader
 BACKUP = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BACKUP)
+
+
+class AcceptanceSnapshotExecutionTests(unittest.TestCase):
+    def setUp(self):
+        tree = ast.parse((ROOT / "scripts/test/frontend_acceptance_release_snapshot.py").read_text())
+        # Execute the actual producer with fake ORM transport, without importing Odoo.
+        tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))
+                     and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call))]
+        self.env = mock.MagicMock()
+        self.env.cr.dbname = "sc_frontend_acceptance"
+        self.policy = mock.Mock(id=11)
+        self.env.__getitem__.return_value.sudo.return_value.synchronize_locked_formal_menu_policy.return_value = {
+            "policy": self.policy, "changed": False, "contract": None,
+        }
+        self.snapshot = mock.Mock(id=22, source_policy_id=self.policy)
+        self.snapshot.meta_json = {"release_draft": {"fingerprint": "frozen", "policy_sha256": "policy-before"}}
+        self.snapshot.snapshot_json = {"policy_snapshot_schema": "maintained_product_policy.v1"}
+        model = self.env.__getitem__.return_value.sudo.return_value
+        model.search.return_value = self.snapshot
+        model.browse.return_value = self.snapshot
+        self.service = mock.Mock(spec=["build_policy_draft_contract", "freeze_release_surface", "assert_frozen_release_integrity"])
+        self.service.build_policy_draft_contract.return_value = {"fingerprint": "frozen", "policy_sha256": "policy-before", "blocking_issue_count": 0}
+        self.service.freeze_release_surface.return_value = {"id": 22}
+        self.service.assert_frozen_release_integrity.return_value = {"effective_count": 3}
+        self.namespace = {"env": self.env, "os": os, "json": json,
+                          "hashlib": __import__("hashlib"),
+                          "EditionReleaseSnapshotService": mock.Mock(return_value=self.service)}
+        exec(compile(tree, "acceptance_snapshot", "exec"), self.namespace)
+        self.env.reset_mock()
+
+    def run_producer(self):
+        with mock.patch.dict(os.environ, {"SC_ENVIRONMENT": "acceptance", "SC_ALLOW_DEMO_DATA": "1",
+                                          "SC_ACCEPTANCE_SOURCE_REVISION": "a" * 40}), contextlib.redirect_stdout(io.StringIO()):
+            self.namespace["main"]()
+
+    def test_current_snapshot_reuses_only_after_integrity_validation(self):
+        self.run_producer()
+        self.service.freeze_release_surface.assert_not_called()
+        self.service.assert_frozen_release_integrity.assert_called_once_with(self.snapshot)
+        self.env.cr.commit.assert_called_once()
+
+    def test_legacy_snapshot_is_refrozen_even_with_matching_fingerprint(self):
+        self.snapshot.snapshot_json = {}
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+        self.service.assert_frozen_release_integrity.assert_called_once_with(self.snapshot)
+
+    def test_policy_only_change_forces_new_freeze(self):
+        self.service.build_policy_draft_contract.return_value['policy_sha256'] = 'policy-after'
+        def freeze(**kwargs):
+            self.snapshot.meta_json['release_draft']['policy_sha256'] = 'policy-after'
+            return {'id': 22}
+        self.service.freeze_release_surface.side_effect = freeze
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+        self.env.cr.commit.assert_called_once()
+
+    def test_missing_policy_digest_forces_refreeze(self):
+        self.snapshot.meta_json['release_draft'].pop('policy_sha256')
+        def freeze(**kwargs):
+            self.snapshot.meta_json['release_draft']['policy_sha256'] = 'policy-before'
+            return {'id': 22}
+        self.service.freeze_release_surface.side_effect = freeze
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+
+    def test_tampered_current_snapshot_never_commits(self):
+        self.service.assert_frozen_release_integrity.side_effect = ValueError("digest mismatch")
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            self.run_producer()
+        self.env.cr.commit.assert_not_called()
+
+    def test_invalid_draft_never_freezes_or_commits(self):
+        self.service.build_policy_draft_contract.return_value = {"blocking_issue_count": 1}
+        with self.assertRaisesRegex(RuntimeError, "PREFLIGHT_BLOCKED"):
+            self.run_producer()
+        self.service.freeze_release_surface.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+    def test_wrong_database_never_writes(self):
+        self.env.cr.dbname = "other_database"
+        with self.assertRaisesRegex(RuntimeError, "DATABASE_DENIED"):
+            self.run_producer()
+        self.env.__getitem__.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+
+class ColocatedSnapshotExecutionTests(AcceptanceSnapshotExecutionTests):
+    def setUp(self):
+        super().setUp()
+        tree = ast.parse((ROOT / "scripts/release/initialize_colocated_platform_snapshot.py").read_text())
+        tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))
+                     and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call))]
+        exec(compile(tree, "colocated_snapshot", "exec"), self.namespace)
+        self.env.__getitem__.return_value.sudo.return_value.get_param.return_value = self.env.cr.dbname
+        self.snapshot.to_runtime_dict.return_value = {'id': 22}
+        self.service.assert_frozen_release_integrity.return_value = {'effective_count': 3, 'fingerprint': 'frozen'}
+        self.env.reset_mock()
+
+    def run_producer(self):
+        with mock.patch.dict(os.environ, {
+            'PLATFORM_RELEASE_DB': 'sc_frontend_acceptance',
+            'PLATFORM_RELEASE_PRODUCT_KEY': 'construction.standard',
+            'PLATFORM_RELEASE_VERSION': 'test',
+            'SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY': 'I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION',
+        }), contextlib.redirect_stdout(io.StringIO()):
+            self.namespace['main']()
+
+    def test_wrong_database_never_writes(self):
+        self.env.cr.dbname = 'other_database'
+        with self.assertRaisesRegex(RuntimeError, 'DB_MUST_MATCH_CURRENT'):
+            self.run_producer()
+        self.env.__getitem__.assert_not_called()
+        self.env.cr.commit.assert_not_called()
 
 
 class ColocatedReleaseStaticTests(unittest.TestCase):
@@ -41,22 +158,14 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
         self.assertIn("_text(existing_draft.get(\"fingerprint\")) == fingerprint", self.snapshot)
         self.assertIn('"idempotent": True', self.snapshot)
 
-    def test_snapshot_synchronizes_and_gates_locked_policy_before_freeze(self):
+    def test_snapshot_gates_database_draft_and_frozen_native_references(self):
         body = self.snapshot.split("def main():", 1)[1]
-        sync_at = body.index("synchronize_locked_formal_menu_policy")
-        pre_gate_at = body.index("assert_policy_matches_locked_contract")
-        freeze_at = body.index("freeze_release_surface")
-        # The frozen snapshot is compared on the delivery caliber the locked P1
-        # product definition declares: released pages equal the locked baseline,
-        # declared preview pages equal the policy's preview set, nothing else.
-        # Reverting to the released-only gate would silently retract the
-        # declared preview widening and block the published face from converging.
-        post_gate_at = body.index("assert_snapshot_matches_policy_release_states")
-        self.assertLess(sync_at, pre_gate_at)
-        self.assertLess(pre_gate_at, freeze_at)
-        self.assertLess(freeze_at, post_gate_at)
-        self.assertIn("policy.menu_groups", body[post_gate_at:])
-        self.assertIn("env.cr.rollback()", self.snapshot)
+        self.assertLess(body.index("build_policy_draft_contract"), body.index("freeze_release_surface"))
+        self.assertLess(body.index("freeze_release_surface"), body.index("assert_frozen_release_integrity"))
+        self.assertIn('snapshot.source_policy_id', body)
+        self.assertIn('RELEASE_SNAPSHOT_DRAFT_MISMATCH', body)
+        self.assertNotIn('assert_policy_matches_locked_contract', body)
+        self.assertIn("env.cr.rollback()", body)
 
     def test_formal_synchronization_has_no_catalog_fallback(self):
         method = self.policy_sync.split("def synchronize_locked_formal_menu_policy", 1)[1].split(

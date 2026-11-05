@@ -19,9 +19,6 @@ from odoo.addons.smart_core.handlers.system_init import (
 )
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
-    assert_policy_matches_locked_contract,
-    assert_snapshot_matches_policy_release_states,
-    load_locked_menu_policy_contract,
     normalized_page_release_state,
     resolve_declared_product_keys,
 )
@@ -33,23 +30,6 @@ EXPECTED_PLATFORM_RELEASE_DB_MATCH_CURRENT = True
 MIN_RELEASED_POLICY_MENU_COUNT = 1
 FORBIDDEN_RUNTIME_LABEL_TOKENS = ("用户核对菜单",)
 FORBIDDEN_POLICY_PATH_TOKENS = ("用户核对菜单", "旧业务数据核对", "直营项目数据核对")
-EXPECTED_FORMAL_TOP_GROUPS = (
-    "工作台",
-    "项目中心",
-    "合同中心",
-    "成本中心",
-    "财务中心",
-    "税务中心",
-    "会计账务中心",
-    "报表中心",
-    "行政中心",
-    "产品配置",
-)
-REQUIRED_FORMAL_MENU_XMLIDS = (
-    "smart_construction_core.menu_ui_menu_config_policy_business_config",
-    "smart_construction_core.menu_sc_customer_partner",
-    "smart_construction_core.menu_sc_supplier_partner",
-)
 FORMAL_MENU_CONFIG_MAX_EXTRA_MENU_COUNT = 80
 FULL_PRODUCT_LOGIN = str(os.getenv("PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN", "") or "").strip()
 def _text(value):
@@ -94,10 +74,6 @@ def _formal_group_nodes(nav: list[dict]) -> list[dict]:
     return nav
 
 
-def _load_formal_baseline() -> dict:
-    return load_locked_menu_policy_contract()
-
-
 def _policy_menus_by_state(product_key: str, state: str) -> list[dict]:
     policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
     if not policy:
@@ -137,18 +113,16 @@ def _preview_policy_menus(product_key: str) -> list[dict]:
     return _policy_menus_by_state(product_key, "preview")
 
 
-def _assert_policy_matches_formal_baseline(product_key: str, baseline: dict) -> dict:
-    released_rows = _released_policy_menus(product_key)
-    preview_rows = _preview_policy_menus(product_key)
-    policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
-    match = assert_policy_matches_locked_contract(baseline, product_key, policy.menu_groups)
-    return {
-        "baseline_menu_count": int(match["menu_count"]),
-        "locked_released_menu_count": int(match.get("locked_menu_count") or 0),
-        "policy_released_menu_count": len(released_rows),
-        "policy_preview_menu_count": len(preview_rows),
-        "policy_effective_menu_count": len(released_rows) + len(preview_rows),
-    }
+def _published_policy_metadata(product_key: str) -> dict:
+    from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+    snapshot = _active_snapshot(product_key)
+    if not snapshot:
+        raise AssertionError(f"{product_key} active released snapshot not found")
+    match = EditionReleaseSnapshotService(env).assert_frozen_release_integrity(snapshot)
+    return {"policy_released_menu_count": match["released_count"],
+            "policy_preview_menu_count": match["preview_count"],
+            "policy_effective_menu_count": match["effective_count"],
+            "frozen_policy_match": match}
 
 
 def _active_snapshot(product_key: str):
@@ -207,7 +181,7 @@ def _assert_platform_release_db() -> str:
     return configured
 
 
-def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) -> dict:
+def _assert_runtime_gate(product_key: str, policy_meta: dict) -> dict:
     if not FULL_PRODUCT_LOGIN:
         raise AssertionError(
             "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN must explicitly name the release acceptance principal"
@@ -228,13 +202,7 @@ def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) ->
         raise AssertionError(
             f"{product_key} snapshot declared-preview drift: snapshot={len(preview_pages)} policy={preview_policy_count}"
         )
-    policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
-    contract_match = assert_snapshot_matches_policy_release_states(
-        baseline,
-        product_key,
-        _snapshot_meta_pages(snapshot),
-        policy.menu_groups,
-    )
+    contract_match = policy_meta["frozen_policy_match"]
     snapshot_page_count = _snapshot_page_count(snapshot)
     if snapshot_page_count != effective_policy_count:
         raise AssertionError(
@@ -305,17 +273,12 @@ def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) ->
             f"{product_key} published face fails the canonical navigation projection: {exc}"
         ) from exc
     top_groups = [_node_label(node) for node in _formal_group_nodes(gated_nav) if isinstance(node, dict)]
-    missing_groups = [label for label in EXPECTED_FORMAL_TOP_GROUPS if label not in top_groups]
-    if missing_groups:
-        raise AssertionError(f"{product_key} missing formal top groups: {missing_groups}; actual={top_groups}")
-    leaf_xmlids = {
-        _node_menu_xmlid(node)
-        for _path, node in _walk(gated_nav)
-        if isinstance(node, dict) and not node.get("children")
-    }
-    missing_xmlids = [xmlid for xmlid in REQUIRED_FORMAL_MENU_XMLIDS if xmlid not in leaf_xmlids]
+    native_xmlids = {_node_menu_xmlid(node) for _path, node in _walk(native_nav)}
+    delivered_xmlids = {_node_menu_xmlid(node) for _path, node in _walk(gated_nav)}
+    expected_xmlids = {_text(page.get("menu_xmlid")) for page in released_pages + preview_pages} & native_xmlids
+    missing_xmlids = sorted(expected_xmlids - delivered_xmlids - {""})
     if missing_xmlids:
-        raise AssertionError(f"{product_key} missing required formal menu xmlids: {missing_xmlids}")
+        raise AssertionError(f"{product_key} published native entries missing from delivery: {missing_xmlids}")
     return {
         "product_key": product_key,
         "snapshot_id": int(snapshot.id),
@@ -398,11 +361,10 @@ def _assert_menu_config_scope(released_policy_count: int) -> dict:
 def main():
     identity = _assert_startup_identity()
     platform_release_db = _assert_platform_release_db()
-    baseline = _load_formal_baseline()
     products = []
     for product_key in PRODUCT_KEYS:
-        policy_meta = _assert_policy_matches_formal_baseline(product_key, baseline)
-        runtime_meta = _assert_runtime_gate(product_key, policy_meta, baseline)
+        policy_meta = _published_policy_metadata(product_key)
+        runtime_meta = _assert_runtime_gate(product_key, policy_meta)
         runtime_meta.update(policy_meta)
         products.append(runtime_meta)
     menu_config_scope = _assert_menu_config_scope(

@@ -30,13 +30,13 @@ def _catalog(env, company_id=0):
         list_scene_entries,
     )
     from odoo.addons.smart_construction_core.services.product_menu_source import (
-        load_menu_release_states,
+        load_published_menu_release_states,
     )
     from odoo.addons.smart_construction_scene.services.scenario_activation_catalog import (
         build_scenario_activation_catalog,
     )
     entries = list_scene_entries()
-    release_state_by_menu = load_menu_release_states()
+    release_state_by_menu = load_published_menu_release_states(env)
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
     from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_catalog, business_key
     from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
@@ -172,7 +172,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "workspace_scenario_projection",
-        "authorities": ["sc.scene.company.enablement", "product_menu_source", "published_route_authority"],
+        "authorities": ["sc.scene.company.enablement", "sc.edition.release.snapshot", "published_route_authority"],
         "projection_only": True,
         "no_business_fact_authority": True,
     }
@@ -182,7 +182,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
             list_scene_entries,
         )
         from odoo.addons.smart_construction_core.services.product_menu_source import (
-            load_menu_release_states,
+            load_published_menu_release_states,
         )
         from odoo.addons.smart_construction_scene.services.workspace_scenario_projection import (
             project_workspace_scenes,
@@ -195,7 +195,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
         env = bind_company_context(self.env, company_id)
         entries = list_scene_entries()
         role_scene_candidates = self._resolve_authorized_scene_candidates(entries, company_id)
-        release_state_by_menu = load_menu_release_states()
+        release_state_by_menu = load_published_menu_release_states(env)
         enablement = {}
         if company_id:
             from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
