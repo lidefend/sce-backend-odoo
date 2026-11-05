@@ -57,7 +57,7 @@
     "iteration": {
       "status": "passed",
       "entry": "make ci.local.iteration",
-      "log": ".runtime/acceptance-module-upgrade/iteration-custody-final.log"
+      "log": ".runtime/acceptance-module-upgrade/iteration-prestart-final.log"
     },
     "runtime": {
       "status": "not_run",
@@ -70,14 +70,14 @@
     },
     "review_fix": {
       "status": "verification_pending",
-      "detail": "S1 fixes: exact attempt Docker identity/readback, atomic persistent pending marker and explicit no-replay recovery; interrupted attempts always retain pending. Snapshot holds same dual leases and custody through full isolated shell lifecycle."
+      "detail": "S1 fixes: exact attempt Docker identity/readback, atomic persistent pending marker and explicit no-replay recovery; interrupted attempts always retain pending. Snapshot holds same dual leases and custody through full isolated shell lifecycle. S2 pre-spawn failures restore original writers; interruption with pending custody never takes pre-start recovery even before callback."
     },
     "final_profile": {
       "status": "passed",
       "entry": "python3 -m unittest scripts.verify.test_frontend_acceptance_runtime_profile",
-      "tests": 38,
-      "log": ".runtime/acceptance-module-upgrade/profile-custody-final.log",
-      "detail": "After one additional actual backend shell lease-loop negative test; includes 25 new custody/lifecycle tests"
+      "tests": 42,
+      "log": ".runtime/acceptance-module-upgrade/prestart-final.log",
+      "detail": "Final S2 regression: pre-spawn ps/marker/Popen failure restores prior writer state; spawn-callback interruption preserves stopped state and pending. 29 new tests total."
     }
   },
   "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback",

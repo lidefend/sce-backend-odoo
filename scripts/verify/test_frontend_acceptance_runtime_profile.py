@@ -351,6 +351,8 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
             self.rows[args[2]]["State"]["Running"] = True
             return ""
         if args[0] == "bash":
+            if kwargs.get("on_started"):
+                kwargs["on_started"]()
             self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
             self.assertEqual(args[1], str(ROOT / "scripts/mod/upgrade.sh"))
             if self.fail_upgrade:
@@ -387,6 +389,54 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
         self.assertFalse(any(args[:2] == ["docker", "start"] for args in self.events))
         self.assertFalse(self.attempt["State"]["Running"])
         self.assertIn(["docker", "stop", "3" * 64], self.events)
+
+    def test_attempt_inspection_failure_before_spawn_restores_writers(self):
+        original = self.command
+        def failed(args, **kwargs):
+            if args[:4] == ['docker', 'ps', '-a', '--no-trunc']:
+                raise subprocess.CalledProcessError(1, args)
+            return original(args, **kwargs)
+        with mock.patch.object(self, 'command', side_effect=failed):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.run_upgrade()
+        self.assertTrue(all(row['State']['Running'] for row in self.rows.values()))
+        self.assertFalse(any(args[0] == 'bash' for args in self.events))
+
+    def test_pending_write_failure_before_spawn_restores_writers(self):
+        with mock.patch.object(self.tool, 'write_pending', side_effect=OSError('read-only')):
+            with self.assertRaises(OSError):
+                self.run_upgrade()
+        self.assertTrue(all(row['State']['Running'] for row in self.rows.values()))
+        self.assertFalse(any(args[0] == 'bash' for args in self.events))
+
+    def test_interrupt_after_spawn_before_callback_never_restores_old_registry(self):
+        original = self.command
+        def interrupted(args, **kwargs):
+            if args[0] == 'bash':
+                # Simulate a child launched, signal delivered before on_started.
+                raise InterruptedError('signal-before-start-callback')
+            return original(args, **kwargs)
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            with mock.patch.object(self.tool, 'command', side_effect=interrupted), \
+                 mock.patch.object(self.tool, 'inspect', side_effect=self.inspect), \
+                 mock.patch.object(self.tool, 'source_identity', return_value='a' * 40):
+                with self.assertRaises(InterruptedError):
+                    self.tool.upgrade(env)
+            self.assertFalse(any(row['State']['Running'] for row in self.rows.values()))
+            self.assertTrue(all(path.exists() for path in self.tool.pending_paths(self.profile, env)))
+            self.assertFalse(any(args[:2] == ['docker', 'start'] for args in self.events))
+
+    def test_popen_failure_before_upgrade_restores_writers(self):
+        original = self.command
+        def failed(args, **kwargs):
+            if args[0] == 'bash':
+                raise OSError('cannot spawn')
+            return original(args, **kwargs)
+        with mock.patch.object(self, 'command', side_effect=failed):
+            with self.assertRaises(OSError):
+                self.run_upgrade()
+        self.assertTrue(all(row['State']['Running'] for row in self.rows.values()))
 
     def test_stop_failure_before_upgrade_restores_original_states(self):
         self.fail_second_stop = True

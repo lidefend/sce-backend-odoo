@@ -25,10 +25,12 @@ from frontend_acceptance_runtime_profile import resolve
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def command(args, *, capture=True, env=None, stdin=None):
+def command(args, *, capture=True, env=None, stdin=None, on_started=None):
     if not capture:
         child = subprocess.Popen(args, cwd=ROOT, env=env, stdin=stdin, start_new_session=True)
         try:
+            if on_started is not None:
+                on_started()
             code = child.wait()
         except BaseException:
             # Do not release the lease while an interrupted -u child still writes.
@@ -245,7 +247,7 @@ def stop_upgrade_container(name, token, profile):
         raise ValueError('upgrade writer stop unconfirmed; manual recovery required')
 
 
-def run_attempt(profile, env, head, operation, args, *, stdin=None):
+def run_attempt(profile, env, head, operation, args, *, stdin=None, on_started=None):
     token = uuid.uuid4().hex
     name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
     if command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{name}$']).strip():
@@ -254,7 +256,7 @@ def run_attempt(profile, env, head, operation, args, *, stdin=None):
     try:
         command(args, capture=False,
                 env={**env, 'SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME': name,
-                     'SC_ACCEPTANCE_MODULE_UPGRADE_ID': token}, stdin=stdin)
+                     'SC_ACCEPTANCE_MODULE_UPGRADE_ID': token}, stdin=stdin, on_started=on_started)
         stop_upgrade_container(name, token, profile)
     except BaseException as error:
         try:
@@ -307,6 +309,9 @@ def upgrade(env):
                               for row in rows]}, sort_keys=True), flush=True)
         stopped = []
         started = False
+        def mark_started():
+            nonlocal started
+            started = True
         try:
             for row in rows:
                 if row['State']['Running']:
@@ -318,11 +323,14 @@ def upgrade(env):
                 raise ValueError('writer appeared before upgrade')
             if source_identity(env) != head:
                 raise ValueError('source changed before upgrade')
-            started = True
             run_attempt(profile, env, head, 'module-upgrade',
-                        ['bash', str(ROOT / 'scripts/mod/upgrade.sh')])
+                        ['bash', str(ROOT / 'scripts/mod/upgrade.sh')], on_started=mark_started)
         except BaseException as error:
-            if not started:
+            # An interrupt between Popen and its callback is uncertain. Pending
+            # custody wins over restoration of a possibly obsolete registry.
+            uncertain_start = isinstance(error, (InterruptedError, KeyboardInterrupt)) and any(
+                path.exists() or path.is_symlink() for path in pending_paths(profile, env))
+            if not started and not uncertain_start:
                 for row in reversed(stopped):
                     current = inspect(row['Id'])
                     writer_identity(current, row['Name'].lstrip('/'), profile)
