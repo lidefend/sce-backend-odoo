@@ -85,7 +85,9 @@ def main() -> None:
         else {}
     )
     if (snapshot and _text(existing_draft.get("fingerprint")) == fingerprint
-            and isinstance(snapshot.snapshot_json, dict)
+            and draft.get("policy_sha256")
+                    and existing_draft.get("policy_sha256") == draft["policy_sha256"]
+                    and isinstance(snapshot.snapshot_json, dict)
             and snapshot.snapshot_json.get("policy_snapshot_schema") == "maintained_product_policy.v1"):
         changed = False
     else:
@@ -108,7 +110,9 @@ def main() -> None:
         if isinstance(snapshot_meta.get("release_draft"), dict)
         else {}
     )
-    if _text(snapshot_draft.get("fingerprint")) != fingerprint:
+    if (_text(snapshot_draft.get("fingerprint")) != fingerprint
+                    or not draft.get("policy_sha256")
+                    or snapshot_draft.get("policy_sha256") != draft["policy_sha256"]):
         raise RuntimeError("FRONTEND_ACCEPTANCE_SNAPSHOT_DRAFT_MISMATCH")
     snapshot_match = service.assert_frozen_release_integrity(snapshot)
     evidence = {

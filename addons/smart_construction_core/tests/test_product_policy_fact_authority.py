@@ -26,6 +26,27 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'released')
         return self.service.build_policy_draft_contract(product_key=self.policy.product_key)
 
+    def test_complete_policy_changes_invalidate_candidate_without_page_changes(self):
+        self._maintain()
+        for field, value in (
+            ('scenes', [{'key': 'maintained_scene', 'label': 'New scene'}]),
+            ('capabilities', [{'key': 'maintained_capability'}]),
+            ('label', 'Changed product label'),
+        ):
+            with self.subTest(field=field):
+                before = self.service.build_policy_draft_contract(product_key=self.policy.product_key)
+                candidate = SimpleNamespace(product_key=self.policy.product_key,
+                                            meta_json={'release_draft': deepcopy(before)})
+                self.service.assert_candidate_matches_current_draft(candidate)
+                self.policy.write({field: value})
+                after = self.service.build_policy_draft_contract(product_key=self.policy.product_key)
+                self.assertEqual(before['fingerprint'], after['fingerprint'])
+                self.assertNotEqual(before['policy_sha256'], after['policy_sha256'])
+                with self.assertRaisesRegex(ValueError, 'CANDIDATE_DRAFT_OUTDATED'):
+                    self.service.assert_candidate_matches_current_draft(candidate)
+                candidate.meta_json = {'release_draft': after}
+                self.service.assert_candidate_matches_current_draft(candidate)
+
     def test_existing_archived_empty_policy_does_not_read_seed(self):
         self.policy.write({'active': False, 'menu_groups': []})
         with patch.object(product_policy_sync, 'load_locked_menu_policy_contract', side_effect=AssertionError('seed read')):

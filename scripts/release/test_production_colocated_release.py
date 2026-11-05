@@ -36,13 +36,13 @@ class AcceptanceSnapshotExecutionTests(unittest.TestCase):
             "policy": self.policy, "changed": False, "contract": None,
         }
         self.snapshot = mock.Mock(id=22, source_policy_id=self.policy)
-        self.snapshot.meta_json = {"release_draft": {"fingerprint": "frozen"}}
+        self.snapshot.meta_json = {"release_draft": {"fingerprint": "frozen", "policy_sha256": "policy-before"}}
         self.snapshot.snapshot_json = {"policy_snapshot_schema": "maintained_product_policy.v1"}
         model = self.env.__getitem__.return_value.sudo.return_value
         model.search.return_value = self.snapshot
         model.browse.return_value = self.snapshot
         self.service = mock.Mock(spec=["build_policy_draft_contract", "freeze_release_surface", "assert_frozen_release_integrity"])
-        self.service.build_policy_draft_contract.return_value = {"fingerprint": "frozen", "blocking_issue_count": 0}
+        self.service.build_policy_draft_contract.return_value = {"fingerprint": "frozen", "policy_sha256": "policy-before", "blocking_issue_count": 0}
         self.service.freeze_release_surface.return_value = {"id": 22}
         self.service.assert_frozen_release_integrity.return_value = {"effective_count": 3}
         self.namespace = {"env": self.env, "os": os, "json": json,
@@ -68,6 +68,25 @@ class AcceptanceSnapshotExecutionTests(unittest.TestCase):
         self.service.freeze_release_surface.assert_called_once()
         self.service.assert_frozen_release_integrity.assert_called_once_with(self.snapshot)
 
+    def test_policy_only_change_forces_new_freeze(self):
+        self.service.build_policy_draft_contract.return_value['policy_sha256'] = 'policy-after'
+        def freeze(**kwargs):
+            self.snapshot.meta_json['release_draft']['policy_sha256'] = 'policy-after'
+            return {'id': 22}
+        self.service.freeze_release_surface.side_effect = freeze
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+        self.env.cr.commit.assert_called_once()
+
+    def test_missing_policy_digest_forces_refreeze(self):
+        self.snapshot.meta_json['release_draft'].pop('policy_sha256')
+        def freeze(**kwargs):
+            self.snapshot.meta_json['release_draft']['policy_sha256'] = 'policy-before'
+            return {'id': 22}
+        self.service.freeze_release_surface.side_effect = freeze
+        self.run_producer()
+        self.service.freeze_release_surface.assert_called_once()
+
     def test_tampered_current_snapshot_never_commits(self):
         self.service.assert_frozen_release_integrity.side_effect = ValueError("digest mismatch")
         with self.assertRaisesRegex(ValueError, "digest mismatch"):
@@ -84,6 +103,35 @@ class AcceptanceSnapshotExecutionTests(unittest.TestCase):
     def test_wrong_database_never_writes(self):
         self.env.cr.dbname = "other_database"
         with self.assertRaisesRegex(RuntimeError, "DATABASE_DENIED"):
+            self.run_producer()
+        self.env.__getitem__.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+
+class ColocatedSnapshotExecutionTests(AcceptanceSnapshotExecutionTests):
+    def setUp(self):
+        super().setUp()
+        tree = ast.parse((ROOT / "scripts/release/initialize_colocated_platform_snapshot.py").read_text())
+        tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))
+                     and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call))]
+        exec(compile(tree, "colocated_snapshot", "exec"), self.namespace)
+        self.env.__getitem__.return_value.sudo.return_value.get_param.return_value = self.env.cr.dbname
+        self.snapshot.to_runtime_dict.return_value = {'id': 22}
+        self.service.assert_frozen_release_integrity.return_value = {'effective_count': 3, 'fingerprint': 'frozen'}
+        self.env.reset_mock()
+
+    def run_producer(self):
+        with mock.patch.dict(os.environ, {
+            'PLATFORM_RELEASE_DB': 'sc_frontend_acceptance',
+            'PLATFORM_RELEASE_PRODUCT_KEY': 'construction.standard',
+            'PLATFORM_RELEASE_VERSION': 'test',
+            'SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY': 'I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION',
+        }), contextlib.redirect_stdout(io.StringIO()):
+            self.namespace['main']()
+
+    def test_wrong_database_never_writes(self):
+        self.env.cr.dbname = 'other_database'
+        with self.assertRaisesRegex(RuntimeError, 'DB_MUST_MATCH_CURRENT'):
             self.run_producer()
         self.env.__getitem__.assert_not_called()
         self.env.cr.commit.assert_not_called()

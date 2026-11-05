@@ -568,6 +568,7 @@ class EditionReleaseSnapshotService:
         preflight = self._preflight_checks_from_pages(pages=pages, active_snapshot_id=int(active.id) if active else 0)
         return {
             "policy_id": int(policy_rec.id) if policy_rec else 0,
+            "policy_sha256": hashlib.sha256(_stable_json(policy).encode("utf-8")).hexdigest(),
             "policy_write_date": policy_rec.write_date.isoformat() if policy_rec and policy_rec.write_date else "",
             "fingerprint": self._draft_fingerprint(policy=policy, pages=pages),
             "page_count": len(effective_pages),
@@ -586,7 +587,9 @@ class EditionReleaseSnapshotService:
         frozen_fingerprint = _text(frozen_draft.get("fingerprint"))
         current = self.build_policy_draft_contract(product_key=_text(snapshot.product_key))
         current_fingerprint = _text(current.get("fingerprint"))
-        if not frozen_fingerprint or frozen_fingerprint != current_fingerprint:
+        if (not frozen_fingerprint or frozen_fingerprint != current_fingerprint
+                or not frozen_draft.get("policy_sha256")
+                or frozen_draft.get("policy_sha256") != current.get("policy_sha256")):
             raise ValueError("CANDIDATE_DRAFT_OUTDATED")
         if int(frozen_draft.get("blocking_issue_count") or 0) > 0:
             raise ValueError("CANDIDATE_PREFLIGHT_BLOCKED")
@@ -660,6 +663,7 @@ class EditionReleaseSnapshotService:
             raise ValueError("RELEASE_PREFLIGHT_BLOCKED")
         payload["release_draft"] = {
             "fingerprint": _text(draft_contract.get("fingerprint")),
+            "policy_sha256": _text(draft_contract.get("policy_sha256")),
             "page_count": int(draft_contract.get("page_count") or 0),
             "total_page_count": int(draft_contract.get("total_page_count") or 0),
             "preview_page_count": int(draft_contract.get("preview_page_count") or 0),

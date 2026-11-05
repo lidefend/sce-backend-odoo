@@ -36,7 +36,9 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/split_plan_queue.md",
     "config/acceptance/evolution_binding.v1.json",
-    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/test/frontend_productization_fixture.sh",
+    "scripts/verify/test_frontend_release_local_entry.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -54,7 +56,7 @@
     ],
     "validation_scope_delta": "P4 exact native publication path classification; backend contract retained, mixed list/relation changes remain required. Generated hook outputs registered."
   },
-  "next_exact_step": "Publish the reviewed BE01+BE02 candidate through governed PR; after required CI/integration, migrate legacy catalog snapshot then maintain/publish the business-scenario entry on daily server",
+  "next_exact_step": "Push reviewed fix to PR813 and verify new SHA managed_orm initialization plus required remote checks; no merge before all required checks pass",
   "preexisting_generated": "complexity_budget_report.md from BE01 required commit hook; owned generated output, preserve",
   "evidence": {
     "offline_activation": {
@@ -128,11 +130,43 @@
     "orm_carry_forward": {
       "source_head": "481934ee58cb1e67a8e3a1ff1b7e12e5e5c8f3af",
       "reason": "Only P4 classification registry, its test, offline release test and run/docs changed after final11 ORM; no ORM source, test or runtime inputs changed. Original receipt retained."
+    },
+    "review_813": {
+      "status": "failed",
+      "head": "5f16eadfc9d42e67dc9aca08e99c7aebfc57ff88",
+      "log": ".runtime/be02-review-managed-failure.log",
+      "issues": [
+        "fixture enables before first publication",
+        "reuse and candidate identity omit full policy"
+      ]
+    },
+    "review_813_fix": {
+      "status": "locally_passed_remote_pending",
+      "source_head": "5f16eadfc9d42e67dc9aca08e99c7aebfc57ff88",
+      "orm_tests": 12,
+      "receipt": ".runtime/test-baseline/1793902245592961519/receipt.json",
+      "source_unchanged": true,
+      "producer_tests": 41,
+      "entry_tests": 17,
+      "fixture_lane_tests": 40,
+      "scene_tests": 87,
+      "locked_tests": 33,
+      "release_gate_tests": 9,
+      "logs": [
+        ".runtime/be02-review-orm.log",
+        ".runtime/be02-review-producers.log",
+        ".runtime/be02-review-bootstrap.log",
+        ".runtime/be02-review-fixture-lane-module.log",
+        ".runtime/be02-review-scene.log",
+        ".runtime/be02-review-locked.log",
+        ".runtime/be02-review-release-gate.log"
+      ],
+      "limits": "Producer/shell unit tests use mocked transports. Actual first fixture initialization requires new remote managed_orm. Direct script fixture-lane invocation lacked package path, then module invocation passed40."
     }
   },
   "completion_dimensions": {
     "batch": "implementation and selected local validation passed; rollout pending",
-    "mainline": "BE01 and BE02 committed locally; not published or merged",
+    "mainline": "PR813 open; review fixes locally validated, remote rerun pending",
     "deployment": "daily remains c819, five exemptions maintained; no BE02 deployment",
     "user_acceptance": "business scenario native publication pending integration and governed rollout"
   },

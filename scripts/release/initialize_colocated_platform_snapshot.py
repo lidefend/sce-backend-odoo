@@ -57,6 +57,8 @@ def main():
             existing_meta = existing.meta_json if existing and isinstance(existing.meta_json, dict) else {}
             existing_draft = existing_meta.get("release_draft") if isinstance(existing_meta.get("release_draft"), dict) else {}
             if (existing and _text(existing_draft.get("fingerprint")) == fingerprint
+                    and draft.get("policy_sha256")
+                    and existing_draft.get("policy_sha256") == draft["policy_sha256"]
                     and isinstance(existing.snapshot_json, dict)
                     and existing.snapshot_json.get("policy_snapshot_schema") == "maintained_product_policy.v1"):
                 result = existing.to_runtime_dict()
@@ -75,7 +77,9 @@ def main():
                 raise RuntimeError("LOCKED_MENU_SNAPSHOT_SOURCE_POLICY_MISMATCH")
             snapshot_meta = snapshot.meta_json if isinstance(snapshot.meta_json, dict) else {}
             snapshot_draft = snapshot_meta.get("release_draft") if isinstance(snapshot_meta.get("release_draft"), dict) else {}
-            if _text(snapshot_draft.get("fingerprint")) != fingerprint:
+            if (_text(snapshot_draft.get("fingerprint")) != fingerprint
+                    or not draft.get("policy_sha256")
+                    or snapshot_draft.get("policy_sha256") != draft["policy_sha256"]):
                 raise RuntimeError("RELEASE_SNAPSHOT_DRAFT_MISMATCH")
             post_snapshot_match = service.assert_frozen_release_integrity(snapshot)
 

@@ -199,12 +199,12 @@ Generated from repository source files. This report is informational during the 
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 844 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
+| 844 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
-| 840 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
