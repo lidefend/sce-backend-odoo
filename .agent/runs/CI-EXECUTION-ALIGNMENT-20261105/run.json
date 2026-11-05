@@ -23,6 +23,7 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "make/ci.mk",
     "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/ci/backend_changed_test_coverage.py",
     "scripts/ci/backend_impact_plan.py",
     "scripts/ci/backend_suite_plan.py",
@@ -42,6 +43,10 @@
     "scripts/ci/test_trusted_scan_scope.py",
     "scripts/ci/trusted_scan_scope.py",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/ops/archive_worktree_delivery_evidence.py",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/frontend_navigation_initialization_race.test.mjs",
     "scripts/verify/test_baseline_manifest.json",
@@ -92,12 +97,34 @@
         "scripts/ci/personal_data_false_positives.json",
         "scripts/ops/agent_run_context.py"
       ]
+    },
+    "integration_tools": {
+      "target": "verify.integration.cycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py",
+        ".github/workflows/"
+      ]
+    },
+    "archive_tools": {
+      "target": "verify.workspace.worktree.guard",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/ops/",
+        "config/",
+        "docs/ops/"
+      ]
     }
   },
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Use the local_scope receipt for unchanged inputs. Frozen candidate independent review and remote integration remain pending; no additional broad local checks absent changed dependencies.",
+  "next_exact_step": "Independent review of the frozen continuation candidate, followed by governed PR publication and exact-head/base remote verification. Reuse unchanged local tool receipts; no full local Quick/browser/ORM rerun without affected inputs.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -109,7 +136,7 @@
   },
   "validation": {
     "L0": "clean main baseline then explicit dirty scope",
-    "L1": "Current continuation: 80 trusted scan/tool tests plus ci.local.iteration and diff checks passed. Earlier frontend/CI/baseline results remain historical scoped evidence; no broad rerun for this isolated planner optimization.",
+    "L1": "Current delivery continuation: 24 integration tool tests, 152 archive/worktree tool tests, 273 CI contract tests, final ci.local.iteration and diff checks passed. Existing begin/record receipts confirm reusable scoped evidence.",
     "L2_L4": "remote execution verification required; no local product/runtime changes",
     "L5": "independent review and exact candidate checks before integration"
   },
@@ -120,17 +147,16 @@
     "unrelated worktrees"
   ],
   "stage_identity": {
-    "head": "e6f031977b0703c92623e31389c05b45c4f3b82c",
-    "dirty_scope": "P4 trusted scan scope planner and focused tests; existing local efficiency metadata",
+    "head": "4b87458c1454d37dde10123d6758b0919a30caed",
+    "dirty_scope": "P4 evidence archive retry, optional Quick inspection, owning remote tool selection and regression tests",
     "phase": "local validated continuation"
   },
   "results": {
     "ci_contract": {
       "status": "passed",
       "command": "make verify.ci.workflow.contract",
-      "tests": 272,
-      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log",
-      "reuse_note": "Historical pass retained; broad declared scripts/ci input changed in this continuation, so local receipt is stale. Current scan-planner changes are verified by the focused local_scope check, not claimed to reuse the broad CI contract verdict."
+      "tests": 273,
+      "log": ".runtime/ci-execution-alignment/delivery-wiring-tests.log"
     },
     "scheduled_contract": {
       "status": "passed",
@@ -159,9 +185,8 @@
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/ci-execution-alignment/local-iteration-after.log",
-      "coverage": "L1 only",
-      "wall_seconds": 15.7
+      "log": ".runtime/ci-execution-alignment/delivery-iteration-final.log",
+      "coverage": "L1 only"
     },
     "frontend_release": {
       "status": "passed",
@@ -244,6 +269,43 @@
       "profile": ".runtime/ci-execution-alignment/local-step-times.jsonl",
       "semantics": "Exact historical SHA authority digests cached only inside one plan; Make parsing keyed by full text with fresh file reads; commit-tip types batched, annotated tags still peeled. Test parity and invalidation within/across calls, moving HEAD, noncommit tags, and exception cleanup.",
       "recovery": "One added test initially mutated a prerequisite outside its selected scan closure; corrected to exercise history whose dependency includes that guard. Initial receipt registration used security.*; switched to the existing verify.trusted_scan.unit alias before the passing recorded run."
+    },
+    "delivery_flow_optimization": {
+      "status": "passed",
+      "commands": [
+        "make verify.integration.cycle.unit",
+        "make verify.workspace.worktree.guard",
+        "make verify.ci.workflow.contract",
+        "make ci.local.iteration"
+      ],
+      "tests": {
+        "integration_tools": 24,
+        "archive_and_worktree_tools": 152,
+        "ci_contract": 273
+      },
+      "logs": [
+        ".runtime/ci-execution-alignment/delivery-integration-tests.log",
+        ".runtime/ci-execution-alignment/delivery-archive-tests.log",
+        ".runtime/ci-execution-alignment/delivery-wiring-tests.log",
+        ".runtime/ci-execution-alignment/delivery-iteration-final.log"
+      ],
+      "changes": [
+        "Ordinary merge-readiness no longer invokes optional full Quick verification; explicit --inspect-local-quick retains diagnostics. Missing/failed/head-drift/dirty remote merge conditions unchanged.",
+        "Identical same-destination archive retry revalidates candidate/manifest, exact receipt file rows and hashes of source plus archive, then returns without copy or receipt rewrite. Mismatch refuses without cleanup or overwrite.",
+        "Changed archive/integration tools and their test files now select existing owning remote tool targets; removed only the obsolete zero-reference disposition after actual wiring."
+      ],
+      "measurements": {
+        "optional_quick_verification_before_seconds": 0.55,
+        "optional_quick_verification_default_calls_after": 0,
+        "archive_repeat_copy_calls_after": 0,
+        "archive_repeat_bytes_and_mtimes": "unchanged in regression test",
+        "scope": "No end-to-end CI/merge latency claim; main gain is safe retry and removal of unnecessary diagnostics. Committed fingerprint collection measured 0.261 seconds for 16 suites and was left unchanged."
+      },
+      "recovery": "First ci.local.iteration rejected the now-stale zero-reference disposition for verify.integration.cycle.unit. Existing governed unregister command removed that one obsolete entry; final guard passed without baseline relaxation.",
+      "limitations": [
+        "Archive reuse is limited to the same destination (date/topic/head); no cross-date archive search or content-verification bypass.",
+        "No real external evidence archive, remote publication, merge or runtime mutation executed."
+      ]
     }
   },
   "review_resolution": {
@@ -315,5 +377,6 @@
       "interpretation": "Test-runner durations exclude command/planning overhead. Daily entry still has material fixed cost; its individual steps have not been profiled, so no attributed bottleneck claim."
     },
     "optimization_scope": "P4 scan planning: per-invocation historical SHA digest memoization, full-text Make parse memoization, and batched commit-type verification; mutable refs, worktree reads and all scan gates preserved."
-  }
+  },
+  "delivery_optimization_scope": "P4 evidence archive retries and merge-readiness diagnostics; preserve source/target rechecks, required remote checks and verified archive content. No real archive or merge operation authorized/executed by this optimization."
 }

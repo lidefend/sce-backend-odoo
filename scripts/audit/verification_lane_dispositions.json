@@ -2463,12 +2463,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.integration.cycle.unit": {
-      "disposition": "ops_tooling",
-      "owner": "platform-team",
-      "reason": "unit coverage for the integration cycle helper",
-      "review_by": "2026-12-31"
-    },
     "verify.intent_group.authorization.unit": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",

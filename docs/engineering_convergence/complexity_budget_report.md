@@ -104,6 +104,7 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
@@ -111,7 +112,6 @@ Generated from repository source files. This report is informational during the 
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1313 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
-| 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1291 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |

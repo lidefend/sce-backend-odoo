@@ -44,6 +44,10 @@ CONTROL_PLANE = {
     'scripts/ops/daily_candidate_bundle_sync.py': 'verify.daily.runtime.candidate.bundle_sync',
     'scripts/ops/daily_runtime_published_face_converge.py': 'verify.daily.runtime.published_face.converge',
     'scripts/ops/quick_input_scope.py': 'verify.quick.input_scope.unit',
+    'scripts/ops/integration_cycle.py': 'verify.integration.cycle.unit',
+    'scripts/ops/test_integration_cycle.py': 'verify.integration.cycle.unit',
+    'scripts/ops/archive_worktree_delivery_evidence.py': 'verify.workspace.worktree.guard',
+    'scripts/ops/test_safe_worktree_cleanup.py': 'verify.workspace.worktree.guard',
     'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
     'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
 }
