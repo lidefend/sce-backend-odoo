@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "ORM-TEST-COVERAGE-GOVERNANCE-20261106",
+  "branch": "fix/orm-test-coverage-registration-20261106",
+  "baseline_sha": "17adbaf774370ead5cd19078c58c867c33cefac8",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ORM-TEST-COVERAGE-GOVERNANCE-20261106.yaml",
+  "record": ".agent/runs/ORM-TEST-COVERAGE-GOVERNANCE-20261106/run.json",
+  "scope": [
+    ".agent/runs/ORM-TEST-COVERAGE-GOVERNANCE-20261106/run.json",
+    ".agent/goals/ORM-TEST-COVERAGE-GOVERNANCE-20261106.yaml",
+    ".agent/active-runs.json",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_test_coverage_registry_audit.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "explicit ORM co-tag coverage registration",
+    "exclusions": [
+      "new ORM lane",
+      "frontend edits",
+      "runtime writes",
+      "seed",
+      "loosening audit"
+    ]
+  },
+  "execution_results": {
+    "clean_main_reproduction": {
+      "status": "failed",
+      "failures": [
+        "product_policy_fact_authority",
+        "scenario_direct_initialization"
+      ],
+      "unit_tests_passed": 18,
+      "log": ".runtime/orm-test-coverage/clean-main.log"
+    },
+    "targeted": {
+      "status": "passed",
+      "entry": "make test.coverage.registry.export verify.test.coverage.registry",
+      "tests": 19,
+      "log": ".runtime/orm-test-coverage/targeted.log",
+      "classification_unchanged": {
+        "groups": 209,
+        "gated": 5,
+        "on_demand": 56,
+        "unwired": 148
+      },
+      "runtime_orm": "not_run; existing selectors and ORM classes unchanged"
+    },
+    "iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/orm-test-coverage/iteration.log"
+    }
+  },
+  "next_exact_step": "Verify two source-bound co-tag registrations, freeze candidate, independent review and governed PR; root retains frontend ownership"
+}

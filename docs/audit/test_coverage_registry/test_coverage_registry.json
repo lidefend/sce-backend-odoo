@@ -1842,7 +1842,8 @@
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "class-selected"
     },
     {
       "group": "product_reports",
@@ -2233,7 +2234,8 @@
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "class-selected"
     },
     {
       "group": "scene_delivery_policy",

@@ -91,6 +91,61 @@ class TaggedDeclarationParsingTest(unittest.TestCase):
         self.assertIn(("post_install", "TestStacked"), parse_tagged_declarations(text))
 
 
+class ExplicitCoTagConsumerTest(unittest.TestCase):
+    def test_registered_core_classes_reach_actual_default_module_consumer(self):
+        import ast
+        import os
+        import re
+        import subprocess
+        import yaml
+        from scripts.verify import test_coverage_registry_audit as audit
+
+        registry = {row['group']: row for row in audit.load_registry()['entries']}
+        workflow_path = '.github/workflows/backend_test_suite.yml'
+        workflow = yaml.safe_load((audit.ROOT / workflow_path).read_text())
+        script = next(step['run'] for step in workflow['jobs']['backend_suite']['steps']
+                      if step.get('name') == 'Run backend test suite per module')
+        selection = script[script.index('module_test_tags="${TEST_TAGS_INPUT}"'):
+                           script.index('module_env_file=""')]
+        consumer = re.search(r'make test MODULE="\$\{module\}" TEST_TAGS="\$\{module_test_tags\}" '
+                             r'\\\n\s*DB_NAME="\$\{attempt_db\}"', script)
+        self.assertIsNotNone(consumer, 'default module tags must reach the real test runner')
+        for group in ('product_policy_fact_authority', 'scenario_direct_initialization'):
+            with self.subTest(group=group):
+                entry = registry[group]
+                self.assertEqual('unwired', entry['status'])  # Alias is not selected literally.
+                self.assertEqual('class-selected', entry['dispose'])
+                bound = entry['selection']
+                self.assertEqual('smart_construction_core', bound['module'])
+                self.assertEqual('sc_gate', bound['tag'])
+                self.assertEqual(workflow_path + ' :: sc_gate/${module}', entry['gate'])
+                tests = audit.ROOT / 'addons' / bound['module'] / 'tests'
+                declarations = parse_tagged_declarations((tests / bound['file']).read_text())
+                classes = {klass for tag, klass in declarations if tag == group}
+                self.assertEqual({bound['class']}, classes)
+                self.assertIn((bound['tag'], bound['class']), declarations)
+                self.assertNotIn(('-' + bound['tag'], bound['class']), declarations)
+                imports = ast.parse((tests / '__init__.py').read_text())
+                self.assertTrue(any(isinstance(node, ast.ImportFrom) and node.level == 1
+                                    and node.module is None
+                                    and any(alias.name == bound['file'][:-3] for alias in node.names)
+                                    for node in imports.body), 'ORM class must actually be imported')
+                # Execute the actual default-selection fragment and actual make
+                # consumer. Only external changed-test lookup and make are stubbed;
+                # no Odoo process or database is started by this wiring regression.
+                command = ('python3() { return 0; }\n'
+                           'make() { printf "%s\\n" "$@"; }\n' + selection + consumer.group(0))
+                outcome = subprocess.run(['bash', '-eu', '-c', command], env={**os.environ,
+                    'module': bound['module'], 'TEST_TAGS_INPUT': '', 'RUNNER_TEMP': '/unused',
+                    'attempt_db': 'unused'}, text=True, capture_output=True, check=True)
+                args = outcome.stdout.splitlines()
+                self.assertIn('MODULE=' + bound['module'], args)
+                selected = next(arg.removeprefix('TEST_TAGS=') for arg in args
+                                if arg.startswith('TEST_TAGS='))
+                self.assertIn(bound['tag'] + '/' + bound['module'], selected.split(','))
+                self.assertNotIn(group, selected)
+
+
 class TagTokenMatchingTest(unittest.TestCase):
     def test_module_qualified_expression_selects_tag(self) -> None:
         pattern = tag_token_pattern("sc_gate")

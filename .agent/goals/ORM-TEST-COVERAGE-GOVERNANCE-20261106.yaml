@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: ORM-TEST-COVERAGE-GOVERNANCE-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 准确登记两个已有sc_gate ORM类的自定义标签及实际执行接线
