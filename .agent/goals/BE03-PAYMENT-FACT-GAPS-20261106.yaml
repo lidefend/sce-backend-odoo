@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: BE03-PAYMENT-FACT-GAPS-20261106
+  status: active
+  formal_product_layer: P1
+  objective: 付款申请、审批、支付执行、状态回写的事实差距表及最小审计语义修正
