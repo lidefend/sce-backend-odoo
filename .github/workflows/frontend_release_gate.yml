@@ -464,7 +464,9 @@ jobs:
           docker compose build odoo
           make db.frontend.acceptance.ensure
           make acceptance.frontend.fixture
-          make acceptance.frontend.release_snapshot
+
+          # ORM cases establish their policy preconditions transactionally.
+          # Full release snapshot validation belongs to the full release lane.
 
       - name: Execute governed managed ORM regressions
         if: steps.risk.outputs.managed_orm_required == 'true'

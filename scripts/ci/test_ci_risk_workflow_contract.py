@@ -498,7 +498,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         script = setup['run']
         previous = -1
         for command in ('docker compose build odoo', 'make db.frontend.acceptance.ensure',
-                        'make acceptance.frontend.fixture', 'make acceptance.frontend.release_snapshot'):
+                        'make acceptance.frontend.fixture'):
             at = script.index(command)
             self.assertGreater(at, previous)
             previous = at
@@ -506,6 +506,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn('::add-mask::', script)
         self.assertNotIn('pnpm', str(job))
         self.assertNotIn('playwright', str(job))
+        self.assertNotIn('make acceptance.frontend.release_snapshot', str(job))
         execute = next(s for s in steps if s.get('name') == 'Execute governed managed ORM regressions')
         upload = next(s for s in steps if s.get('name') == 'Upload managed ORM execution identities')
         for step in (execute, upload):
