@@ -49,8 +49,9 @@
     "d04_first_batch_provider_alignment": "PASS: corrected 4 verified odoo_intent provider bindings (project.dashboard.enter, project.plan_bootstrap.enter, project.execution.enter, project.execution.advance) with handler file evidence; added _provider_module odoo_intent resolution from contract_ref; reverse_index now maps these 4 to smart_construction_core",
     "d04_second_batch_unresolved_chain": "PASS: 6 unresolved execution-chain verified -> composite_member=2 (project.risk.list, material.procurement.list), provider_found=2 (finance.plan.funding, finance.settlement.order), absorbed_by_existing=1 (analytics.lifecycle.monitor), unresolved=1 (finance.exception.monitor)",
     "d04_third_fourth_batch": "PASS: 6 composite converged -> composite_entry=6 (reuse project.list.open + construction.plan.report), unresolved=1 (project.structure.manage no deps); 13 no_provider -> retain=13 (all have real runtime models)",
-    "d05_01_sample": "PASS: construction.diary.open provider binding registered (odoo_action=smart_construction_core.action_sc_construction_diary, verified); List Contract business_config_contract_construction_diary_productized_list_v1 added (view_type=list, 13 fields); reverse_index maps to smart_construction_core"
+    "d05_01_sample": "PASS: construction.diary.open provider binding registered (odoo_action=smart_construction_core.action_sc_construction_diary, verified); List Contract business_config_contract_construction_diary_productized_list_v1 added (view_type=list, 13 fields); reverse_index maps to smart_construction_core",
+    "d05_01_deferred_suites": "DEFERRED: list_surface_structure + relation_roundtrip (stale evidence source, not ancestor of head) -> re-run after mainline-deploy sync + governed module upgrade; no browser this round"
   },
   "blockers": [],
-  "next_exact_step": "CAP-02D-05-01 sample delivered (provider + list contract); reuse pattern for safety/quality/equipment/labor 12 capabilities after owner sample review"
+  "next_exact_step": "push Draft PR (bypass --require-ready via git_safe_push.sh + gh pr create --draft); two runtime suites deferred to post-upgrade; then CI + merge + mainline-deploy sync + governed upgrade"
 }
