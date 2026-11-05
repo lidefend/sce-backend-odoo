@@ -381,7 +381,8 @@
       "id": "frontend-acceptance-carrier-lifecycle",
       "paths": [
         "scripts/dev/frontend_acceptance_carrier*",
-        "scripts/dev/frontend_acceptance_runtime.sh"
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_module_upgrade.py"
       ],
       "suites": [
         "governance_static",

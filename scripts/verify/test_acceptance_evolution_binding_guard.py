@@ -622,6 +622,24 @@ class TestGlobAndPlan(unittest.TestCase):
             merge = guard.plan_for_stage(self.registry, plan, "merge")
             self.assertEqual(merge["required_evidence_suites"], [], path)
 
+    def test_module_upgrade_lifecycle_has_deployment_identity_not_list_obligation(self):
+        path = 'scripts/dev/frontend_acceptance_module_upgrade.py'
+        plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+        self.assertEqual(plan['matched_rules'][path], 'frontend-acceptance-carrier-lifecycle')
+        self.assertEqual(set(plan['required_suites']), {'governance_static', 'path_namespace_identity'})
+        self.assertEqual(guard.plan_for_stage(self.registry, plan, 'merge')['required_evidence_suites'], [])
+        self.assertIn('path_namespace_identity',
+                      guard.plan_for_stage(self.registry, plan, 'deployment')['required_evidence_suites'])
+        for sibling in ('scripts/dev/frontend_acceptance_up.sh',
+                        'scripts/dev/frontend_acceptance_operation_entry.sh',
+                        'scripts/verify/frontend_acceptance_login_probe.py',
+                        'frontend/apps/web/src/views/ActionView.vue'):
+            with self.subTest(sibling=sibling):
+                mixed = guard.build_plan(self.registry, [path, sibling], 'base', HEAD)
+                self.assertIn('list_surface_structure',
+                              guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'])
+                self.assertNotEqual(mixed['matched_rules'][sibling], 'frontend-acceptance-carrier-lifecycle')
+
     def test_orm_runner_requires_backend_but_not_browser_evidence(self):
         for path in ('scripts/test/frontend_acceptance_fixture_orm.sh',
                      'scripts/ci/frontend_fixture_orm_entry.sh'):
