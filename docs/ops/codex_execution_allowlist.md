@@ -785,6 +785,25 @@ Codex **被授权自行进入 gate 模式**。
 
 ---
 
+### 本地隔离验收的非重置模块升级
+
+已授权验收使用既有 `make acceptance.module.upgrade SC_ACCEPTANCE_RUNTIME_PROFILE=local
+EXPECTED_HEAD=<完整当前SHA> MODULE=<逐项模块名,逗号分隔> CODEX_NEED_UPGRADE=1`。
+入口必须匹配注册 profile、精确数据库/filter/filestore 和干净源码；禁止 `all`、额外
+`ODOO_ARGS` 及未声明客户源码。现有 `MODE`/升级授权守卫仍适用。
+
+升级与两个注册预览地址的浏览器/后端替换共用互斥租约。先核对 Compose Odoo 与独立
+artifact 后端的容器身份及原状态，再停止并回读；未知运行写入者拒绝，已退出的 rollback
+容器保留。调用 `-u` 前中止会恢复本次停止的原运行服务；一旦开始升级，成功或失败均
+有意保持两类旧 registry 停止，不执行数据库回退、重建或 fixture 重置。
+
+成功只表示模块升级完成，`registry_pending=true`；随后在同一干净 SHA 通过既有
+`make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 建立当前 artifact，
+完成健康及业务契约回读才可继续验收。Compose Odoo 原为 running 也有意保持 stopped，
+HTTP 由当前 artifact 提供。本地 `acceptance.frontend.release_snapshot` 使用既有隔离
+shell 模式，不依赖启动旧 Compose registry；其他 profile 与 CI 路径保持既有行为。
+失败后不得把旧源码服务重启当作数据库恢复，须依据升级日志处理后再受管重试。
+
 ## 5. 失败即许可（Failure Is Allowed）
 
 Gate / Smoke / Snapshot 失败 **允许发生**。

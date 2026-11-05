@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import contextlib
+import copy
+import fcntl
+import hashlib
 import importlib.util
+import sys
 import json
 import os
 import subprocess
@@ -288,6 +293,208 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         self.assertIn("process.env.SC_ENTRY_NAMESPACE", vite)
         self.assertIn("'X-SC-Namespace': entryNamespace", vite)
         self.assertIn("'X-SC-Entry-Secret'", vite)
+
+
+class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "acceptance_module_upgrade", ROOT / "scripts/dev/frontend_acceptance_module_upgrade.py")
+        cls.tool = importlib.util.module_from_spec(spec)
+        with mock.patch.dict(sys.modules, {"frontend_acceptance_runtime_profile": PROFILE}):
+            spec.loader.exec_module(cls.tool)
+
+    def setUp(self):
+        self.profile = PROFILE.resolve("local")
+        self.env = dict(self.profile, EXPECTED_HEAD="a" * 40, MODULE="smart_core",
+                        SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY="operation_entry_v1")
+        self.rows = {}
+        for index, name in enumerate((self.profile["COMPOSE_PROJECT_NAME"] + "-odoo-1",
+                                      self.profile["BACKEND_ACCEPTANCE_NAME"])):
+            row = {"Id": str(index + 1) * 64, "Name": "/" + name,
+                   "Config": {"Labels": {"com.docker.compose.project": self.profile["COMPOSE_PROJECT_NAME"],
+                                          "com.docker.compose.service": "odoo"},
+                              "Env": [f"{k}={self.profile[k]}" for k in ("DB_NAME", "ODOO_DB", "ODOO_DBFILTER")]},
+                   "Mounts": [{"Destination": "/var/lib/odoo", "Type": "volume", "Name": self.profile["ODOO_DATA"]}],
+                   "State": {"Running": True}}
+            self.rows[row["Id"]] = row
+        self.events = []
+        self.fail_upgrade = False
+        self.fail_second_stop = False
+        self.extra_writer = False
+
+    def inspect(self, identity):
+        return copy.deepcopy(next(row for row in self.rows.values()
+                                  if identity in (row["Id"], row["Name"].lstrip("/"))))
+
+    def command(self, args, **kwargs):
+        self.events.append(args)
+        if args[:3] == ["docker", "ps", "-a"]:
+            return "\n".join(row["Name"].lstrip("/") for row in self.rows.values())
+        if args[:2] == ["docker", "ps"]:
+            return "\n".join([key for key, row in self.rows.items() if row["State"]["Running"]]
+                             + (["f" * 64] if self.extra_writer else []))
+        if args[:2] == ["docker", "stop"]:
+            self.rows[args[2]]["State"]["Running"] = False
+            if self.fail_second_stop and args[2] == "2" * 64:
+                raise subprocess.CalledProcessError(1, args)
+            return ""
+        if args[:2] == ["docker", "start"]:
+            self.rows[args[2]]["State"]["Running"] = True
+            return ""
+        if args[0] == "bash":
+            self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
+            self.assertEqual(args[1], str(ROOT / "scripts/mod/upgrade.sh"))
+            if self.fail_upgrade:
+                raise subprocess.CalledProcessError(1, args)
+            return ""
+        raise AssertionError(args)
+
+    def run_upgrade(self):
+        with tempfile.TemporaryDirectory() as temp, \
+             mock.patch.object(self.tool, "command", side_effect=self.command), \
+             mock.patch.object(self.tool, "inspect", side_effect=self.inspect), \
+             mock.patch.object(self.tool, "source_identity", return_value="a" * 40):
+            self.tool.upgrade(dict(self.env, XDG_RUNTIME_DIR=temp))
+
+    def test_both_running_writers_stop_before_real_upgrade_entry_and_stay_stopped(self):
+        self.run_upgrade()
+        self.assertEqual(sum(args[0] == "bash" for args in self.events), 1)
+        self.assertEqual(sum(args[:2] == ["docker", "stop"] for args in self.events), 2)
+        self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
+        self.assertFalse(any(args[:2] == ["docker", "start"] for args in self.events))
+
+    def test_upgrade_failure_does_not_restart_old_registry_or_restore_database(self):
+        self.fail_upgrade = True
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.run_upgrade()
+        self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
+        self.assertFalse(any(args[:2] == ["docker", "start"] for args in self.events))
+
+    def test_stop_failure_before_upgrade_restores_original_states(self):
+        self.fail_second_stop = True
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.run_upgrade()
+        self.assertTrue(all(row["State"]["Running"] for row in self.rows.values()))
+        self.assertFalse(any(args[0] == "bash" for args in self.events))
+
+    def test_originally_stopped_compose_is_never_started(self):
+        self.rows["1" * 64]["State"]["Running"] = False
+        self.fail_second_stop = True
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.run_upgrade()
+        self.assertFalse(self.rows["1" * 64]["State"]["Running"])
+        self.assertTrue(self.rows["2" * 64]["State"]["Running"])
+
+    def test_absent_artifact_is_valid_and_never_created_by_upgrade(self):
+        del self.rows["2" * 64]
+        self.run_upgrade()
+        self.assertEqual(len(self.rows), 1)
+        self.assertFalse(self.rows["1" * 64]["State"]["Running"])
+
+    def test_unknown_running_writer_denied_before_stop(self):
+        self.extra_writer = True
+        with self.assertRaisesRegex(ValueError, "unknown running writer"):
+            self.run_upgrade()
+        self.assertFalse(any(args[:2] == ["docker", "stop"] for args in self.events))
+
+    def test_writer_wrong_db_or_volume_is_denied_without_mutation(self):
+        for field in ("database", "volume", "project"):
+            with self.subTest(field=field):
+                original = copy.deepcopy(self.rows)
+                if field == "database":
+                    self.rows["2" * 64]["Config"]["Env"][0] = "DB_NAME=other"
+                elif field == "volume":
+                    self.rows["2" * 64]["Mounts"][0]["Name"] = "other"
+                else:
+                    self.rows["2" * 64]["Config"]["Labels"]["com.docker.compose.project"] = "other"
+                with self.assertRaises(ValueError):
+                    self.run_upgrade()
+                self.assertFalse(any(args[:2] == ["docker", "stop"] for args in self.events))
+                self.rows = original
+
+    def test_actual_preview_locks_reject_active_acceptance_on_either_port(self):
+        for port in ("5175", "5180"):
+            with self.subTest(port=port), tempfile.TemporaryDirectory() as temp:
+                target = f"http://127.0.0.1:{port}|http://127.0.0.1:18082|sc_frontend_acceptance"
+                directory = Path(temp) / "sce-frontend-acceptance/leases"
+                directory.mkdir(parents=True)
+                path = directory / (hashlib.sha256(target.encode()).hexdigest() + ".lock")
+                with path.open("a") as holder:
+                    fcntl.flock(holder.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
+                    with self.assertRaisesRegex(ValueError, "active acceptance lease"):
+                        with self.tool.leases(self.profile, {"XDG_RUNTIME_DIR": temp}):
+                            self.fail("active reader must deny writer")
+                with self.tool.leases(self.profile, {"XDG_RUNTIME_DIR": temp}):
+                    pass
+
+    def test_second_upgrade_cannot_hold_same_target_leases(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = {"XDG_RUNTIME_DIR": temp}
+            with self.tool.leases(self.profile, env):
+                with self.assertRaisesRegex(ValueError, "active acceptance lease"):
+                    with self.tool.leases(self.profile, env):
+                        self.fail("two upgrades must not run together")
+
+    def test_interrupted_upgrade_child_is_reaped_before_lease_release(self):
+        child = mock.Mock()
+        child.wait.side_effect = [InterruptedError("cancelled"), 0]
+        with mock.patch.object(self.tool.subprocess, "Popen", return_value=child):
+            with self.assertRaises(InterruptedError):
+                self.tool.command(["bash", "upgrade"], capture=False)
+        child.terminate.assert_called_once()
+        self.assertEqual(child.wait.call_count, 2)
+
+    def test_exited_rollback_custody_is_neither_stopped_nor_removed(self):
+        original = self.command
+        def with_custody(args, **kwargs):
+            value = original(args, **kwargs)
+            if args[:3] == ["docker", "ps", "-a"]:
+                value += "\nsc-backend-odoo-acceptance-rollback-51405bdf3bdc"
+            return value
+        with mock.patch.object(self, "command", side_effect=with_custody):
+            self.run_upgrade()
+        self.assertFalse(any("rollback" in str(args) for args in self.events))
+
+    def test_wrong_profile_or_identity_is_rejected(self):
+        for key, value in (("SC_ACCEPTANCE_RUNTIME_PROFILE", "candidate"),
+                           ("DB_NAME", "other"), ("SC_ACCEPTANCE_STANDARD_PREVIEW_PORT", "9999")):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                self.tool.profile_identity(dict(self.env, **{key: value}))
+
+    def test_exact_clean_head_and_explicit_modules_required(self):
+        def git(args, **kwargs):
+            return "a" * 40 if args[1] == "rev-parse" else ""
+        with mock.patch.object(self.tool, "command", side_effect=git):
+            self.assertEqual(self.tool.source_identity(self.env), "a" * 40)
+            for key, value in (("EXPECTED_HEAD", "b" * 40), ("SC_ACCEPTANCE_SOURCE_SHA", "b" * 40),
+                               ("MODULE", "all"), ("MODULE", "smart_core,smart_core"),
+                               ("MODULE", "smart_core;-i"), ("MODULE", "unknown_local_module"),
+                               ("ODOO_ARGS", "--db_host=other")):
+                with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                    self.tool.source_identity(dict(self.env, **{key: value}))
+        with mock.patch.object(self.tool, "command", side_effect=["a" * 40, " M addons/example.py"]):
+            with self.assertRaisesRegex(ValueError, "clean checkout"):
+                self.tool.source_identity(self.env)
+
+    def test_local_snapshot_uses_existing_isolated_shell_without_compose_exec(self):
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text()
+        block = runtime.split("  release-snapshot)\n", 1)[1].split("    ;;", 1)[0]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "scripts/ops").mkdir(parents=True)
+            (root / "scripts/test").mkdir(parents=True)
+            (root / "scripts/test/frontend_acceptance_release_snapshot.py").write_text("fixture")
+            (root / "scripts/ops/odoo_shell_exec.sh").write_text('echo "mode=${ODOO_SHELL_RUN_ISOLATED:-exec}"\n')
+            for profile, expected in (("local", "mode=1"), ("candidate", "mode=exec")):
+                result = subprocess.run(["bash", "-c", "preflight() { :; }; " + block],
+                                        env={**os.environ, "ROOT_DIR": str(root), "PROFILE": profile},
+                                        check=True, capture_output=True, text=True)
+                self.assertEqual(result.stdout.strip(), expected)
+        upgrade = runtime.split("  module-upgrade)\n", 1)[1].split("    ;;", 1)[0]
+        self.assertIn('python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py"', upgrade)
+        make = (ROOT / "make/runtime_ops.mk").read_text()
+        self.assertIn('EXPECTED_HEAD="$(EXPECTED_HEAD)" MODULE="$(MODULE)"', make)
 
 
 if __name__ == "__main__":

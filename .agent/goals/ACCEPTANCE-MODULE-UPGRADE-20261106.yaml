@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: ACCEPTANCE-MODULE-UPGRADE-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 既有非重置验收升级串行停写与失败状态收口

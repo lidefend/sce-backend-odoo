@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-MODULE-UPGRADE-20261106",
+  "branch": "fix/acceptance-module-upgrade-lifecycle-20261106",
+  "baseline_sha": "f12dccbd590e3499c7b7de38a28ea52ebb0c6ccc",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ACCEPTANCE-MODULE-UPGRADE-20261106.yaml",
+  "record": ".agent/runs/ACCEPTANCE-MODULE-UPGRADE-20261106/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/ACCEPTANCE-MODULE-UPGRADE-20261106/run.json",
+    ".agent/goals/ACCEPTANCE-MODULE-UPGRADE-20261106.yaml",
+    "scripts/dev/frontend_acceptance_module_upgrade.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "make/runtime_ops.mk",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "existing local acceptance module-upgrade lifecycle",
+    "module": "scripts/dev managed acceptance tooling",
+    "standard_vs_user_specific": "generic managed local acceptance mechanism",
+    "why_here": "serialize and quiesce exact writers before existing non-reset upgrade",
+    "why_not_elsewhere": "no product semantics, database schema, role or frontend changes",
+    "exclusions": [
+      "runtime/Docker/database writes by this agent",
+      "new environment or credentials",
+      "DB reset/rollback",
+      "frontend tree mutations"
+    ]
+  },
+  "execution_results": {
+    "readonly_resource_identity": {
+      "status": "passed",
+      "source": "root and be00 independent read-only Docker metadata",
+      "facts": "Both registered Odoo writers running with exact local database/filter/project/service/filestore; rollback custody exited and retained"
+    },
+    "targeted": {
+      "status": "passed",
+      "entry": "make verify.acceptance.runtime.baseline_rebuild.unit",
+      "tests": 145,
+      "log": ".runtime/acceptance-module-upgrade/targeted.log",
+      "detail": "24 candidate-profile +10 artifact +111 lifecycle/profile/identity; includes 14 new upgrade tests, no real runtime writes"
+    },
+    "iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/acceptance-module-upgrade/iteration.log"
+    },
+    "runtime": {
+      "status": "not_run",
+      "reason": "Root exclusively owns frontend/runtime; this batch tests orchestration offline, actual upgrade and backend.up readback remain pending"
+    }
+  },
+  "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback"
+}
