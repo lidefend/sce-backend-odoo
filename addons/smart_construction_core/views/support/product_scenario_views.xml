@@ -1,23 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <record id="action_sc_product_scenario" model="ir.actions.act_window">
-    <field name="name">业务场景</field>
-    <field name="res_model">sc.product.scenario</field>
-    <field name="view_mode">tree,form</field>
-    <field name="view_id" ref="view_sc_product_scenario_tree"/>
-  </record>
-
-  <menuitem id="menu_sc_product_scenario_business_config"
-            name="业务场景"
-            parent="smart_construction_core.menu_sc_business_config_center"
-            action="action_sc_product_scenario"
-            sequence="40"
-            groups="smart_construction_core.group_sc_cap_business_config_admin"/>
-
-  <record id="menu_sc_product_scenario_business_config" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
-  </record>
-
   <record id="view_sc_product_scenario_tree" model="ir.ui.view">
     <field name="name">sc.product.scenario.tree</field>
     <field name="model">sc.product.scenario</field>
@@ -59,5 +41,23 @@
         </sheet>
       </form>
     </field>
+  </record>
+
+  <record id="action_sc_product_scenario" model="ir.actions.act_window">
+    <field name="name">业务场景</field>
+    <field name="res_model">sc.product.scenario</field>
+    <field name="view_mode">tree,form</field>
+    <field name="view_id" ref="view_sc_product_scenario_tree"/>
+  </record>
+
+  <menuitem id="menu_sc_product_scenario_business_config"
+            name="业务场景"
+            parent="smart_construction_core.menu_sc_business_config_center"
+            action="action_sc_product_scenario"
+            sequence="40"
+            groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+
+  <record id="menu_sc_product_scenario_business_config" model="ir.ui.menu">
+    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
   </record>
 </odoo>
