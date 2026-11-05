@@ -60,7 +60,8 @@
     "scripts/verify/test_frontend_release_ci_guard.py",
     "scripts/verify/test_frontend_release_ci_identity.py",
     "scripts/verify/test_pr_publish_preflight.py",
-    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py"
   ],
   "environment": {
     "kind": "offline",
@@ -144,7 +145,7 @@
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Freeze and independently review ORM prerequisite repair plus actual-attempt receipt fix; archive, push PR811 and wait for exact-head required CI before protected integration.",
+  "next_exact_step": "Freeze data-space isolation tests, independent exact-head review, archive/push PR811, verify actual ORM and all required CI before protected merge.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -400,6 +401,19 @@
       "validation": "283 CI contract tests and local iteration passed",
       "log": ".runtime/ci-execution-alignment/orm-prerequisite-tests.log",
       "independent_prerequisite_review": "Readonly reviewer confirmed real policy setup, acceptance DB resolution, and absence of snapshot requirement; actual ORM execution remains required"
+    },
+    "managed_orm_round3": {
+      "head": "bd47254ec8f795b13c8228926828378bce6ca143",
+      "job": 127201606655,
+      "status": "failed",
+      "tests": 34,
+      "failed": 2,
+      "errors": 2,
+      "finding": "Data-space creation tests collided with populated activity XMLIDs; empty foreign draft negative case also predates permitted empty draft convergence. Repair rollback-only preconditions; retain protected history negative assertion and cover allowed empty draft convergence.",
+      "repair": "Transactional exact XMLID isolation; negative protected nonempty accounting entry plus positive empty-draft convergence test",
+      "local_validation": "283 CI contract tests, syntax and ci.local.iteration passed; direct unittest module invocation failed import due to wrong entrypoint, corrected via governed Make",
+      "log": ".runtime/ci-execution-alignment/round3-bd47254ec/managed-orm.log",
+      "independent_review": "Dirty code review passed; frozen review and remote ORM required"
     }
   },
   "review_resolution": {

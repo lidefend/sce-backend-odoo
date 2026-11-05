@@ -14,6 +14,17 @@ from ..tools.frontend_productization_fixture import (
 
 @tagged('post_install', '-at_install', 'acceptance_fixture_data_space')
 class TestAcceptanceFixtureDataSpace(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        # Creation cases own these names inside their rollback-only transaction.
+        # Keep the populated acceptance carrier's accounting records intact.
+        self.env['ir.model.data'].sudo().search([
+            ('module', '=', MODULE),
+            ('name', 'in', ['fe_activity_journal', 'fe_activity_journal_entry']),
+        ]).unlink()
+        for name in ('fe_activity_journal', 'fe_activity_journal_entry'):
+            self.assertFalse(self.env.ref(MODULE + '.' + name, raise_if_not_found=False))
+
     def test_activity_existing_foreign_journal_is_not_migrated(self):
         company = _company(self.env, 'TARGETJOURNAL')
         foreign = self.env['res.company'].create({'name': 'Synthetic historical journal owner'})
@@ -34,14 +45,44 @@ class TestAcceptanceFixtureDataSpace(TransactionCase):
             'name': 'Synthetic historical move journal', 'code': 'FEOLD',
             'type': 'general', 'company_id': foreign.id,
         })
+        account = self.env['account.account'].create({
+            'name': 'Synthetic historical facts', 'code': 'OWNERSHIP',
+            'account_type': 'expense', 'company_id': foreign.id,
+        })
         move = self.env['account.move'].with_company(foreign).create({
             'journal_id': old_journal.id, 'company_id': foreign.id, 'move_type': 'entry',
+            'line_ids': [
+                Command.create({'name': 'Synthetic debit', 'account_id': account.id, 'debit': 10}),
+                Command.create({'name': 'Synthetic credit', 'account_id': account.id, 'credit': 10}),
+            ],
         })
+        self.assertEqual(len(move.line_ids), 2)
         _bind_xmlid(self.env, 'fe_activity_journal_entry', move)
         with self.assertRaisesRegex(RuntimeError, 'move ownership mismatch'):
             _activity_move(self.env, company, _partner(self.env, 'TARGETMOVE', company), journal)
         self.assertEqual(move.company_id, foreign)
         self.assertEqual(move.journal_id, old_journal)
+        self.assertEqual(len(move.line_ids), 2)
+
+    def test_activity_owned_empty_draft_can_converge_without_replacement(self):
+        company = _company(self.env, 'EMPTYMOVE')
+        journal = _activity_journal(self.env, company)
+        foreign = self.env['res.company'].create({'name': 'Synthetic empty draft owner'})
+        old_journal = self.env['account.journal'].create({
+            'name': 'Synthetic empty draft journal', 'code': 'FEOLD',
+            'type': 'general', 'company_id': foreign.id,
+        })
+        move = self.env['account.move'].with_company(foreign).create({
+            'journal_id': old_journal.id, 'company_id': foreign.id, 'move_type': 'entry',
+        })
+        self.assertFalse(move.line_ids)
+        self.assertFalse(move.posted_before)
+        _bind_xmlid(self.env, 'fe_activity_journal_entry', move)
+        partner = _partner(self.env, 'EMPTYMOVE', company)
+        self.assertEqual(_activity_move(self.env, company, partner, journal), move)
+        self.assertEqual(move.company_id, company)
+        self.assertEqual(move.journal_id, journal)
+        self.assertEqual(_activity_move(self.env, company, partner, journal), move)
 
     def test_activity_journal_and_move_stay_in_owned_test_company(self):
         company = _company(self.env, 'JOURNALSPACE')
