@@ -39,6 +39,8 @@
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_merge_policy_gate.py",
     "scripts/ci/test_select_authoritative_workflow_run.py",
+    "scripts/ci/test_trusted_scan_scope.py",
+    "scripts/ci/trusted_scan_scope.py",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/frontend_navigation_initialization_race.test.mjs",
@@ -56,6 +58,7 @@
       "inputs": [
         ".github/workflows/",
         "Dockerfile",
+        "Makefile",
         "addons/",
         "config/",
         "config/ci/risk_tiering_v1.json",
@@ -65,38 +68,36 @@
         "scripts/ci/",
         "scripts/common/",
         "scripts/ops/",
+        "scripts/ops/agent_run_context.py",
         "scripts/ops/evidence_scope.py",
         "scripts/test/",
         "scripts/verify/"
       ]
     },
-    "ci_orders": {
-      "target": "verify.ci.execution_alignment.orders",
+    "local_scope": {
+      "target": "verify.trusted_scan.unit",
       "kind": "offline",
       "inputs": [
-        ".github/workflows/",
-        "Dockerfile",
-        "addons/",
-        "config/",
-        "config/ci/risk_tiering_v1.json",
+        "Makefile",
         "make/",
-        "make/ci.mk",
-        "scripts/_lib/",
-        "scripts/ci/",
-        "scripts/common/",
-        "scripts/dev/frontend_acceptance_operation_entry.sh",
-        "scripts/ops/",
-        "scripts/test/",
-        "scripts/test/frontend_acceptance_fixture_orm.sh",
-        "scripts/verify/",
-        "scripts/verify/test_baseline_contract.py"
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/test_secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/parallel_scan.py",
+        "scripts/ci/test_parallel_scan.py",
+        "scripts/verify/repository_clean_history_guard.py",
+        "config/security/",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ops/agent_run_context.py"
       ]
     }
   },
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Review the clean continuation candidate independently, then publish through the governed PR entry and verify current remote full/selected execution.",
+  "next_exact_step": "Use the local_scope receipt for unchanged inputs. Frozen candidate independent review and remote integration remain pending; no additional broad local checks absent changed dependencies.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -108,7 +109,7 @@
   },
   "validation": {
     "L0": "clean main baseline then explicit dirty scope",
-    "L1": "Passed CI contract 272, scheduled/security 81, frontend release unit, 223 affected cases in each of three orders, 297 registered baseline cases in each of three orders, registry/baseline unit checks and ci.local.iteration.",
+    "L1": "Current continuation: 80 trusted scan/tool tests plus ci.local.iteration and diff checks passed. Earlier frontend/CI/baseline results remain historical scoped evidence; no broad rerun for this isolated planner optimization.",
     "L2_L4": "remote execution verification required; no local product/runtime changes",
     "L5": "independent review and exact candidate checks before integration"
   },
@@ -119,16 +120,17 @@
     "unrelated worktrees"
   ],
   "stage_identity": {
-    "head": "7b3701dacc843203219c7d4f08fbc5b7d6e8c55b",
-    "dirty_scope": "continuation: owning navigation regression and full scheduled validation wiring",
-    "phase": "local iteration"
+    "head": "e6f031977b0703c92623e31389c05b45c4f3b82c",
+    "dirty_scope": "P4 trusted scan scope planner and focused tests; existing local efficiency metadata",
+    "phase": "local validated continuation"
   },
   "results": {
     "ci_contract": {
       "status": "passed",
       "command": "make verify.ci.workflow.contract",
       "tests": 272,
-      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log",
+      "reuse_note": "Historical pass retained; broad declared scripts/ci input changed in this continuation, so local receipt is stale. Current scan-planner changes are verified by the focused local_scope check, not claimed to reuse the broad CI contract verdict."
     },
     "scheduled_contract": {
       "status": "passed",
@@ -157,8 +159,9 @@
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/ci-execution-alignment/continuation-artifact-wiring.log",
-      "coverage": "L1 only"
+      "log": ".runtime/ci-execution-alignment/local-iteration-after.log",
+      "coverage": "L1 only",
+      "wall_seconds": 15.7
     },
     "frontend_release": {
       "status": "passed",
@@ -211,6 +214,36 @@
       "command": "make verify.ci.scheduled_gates ci.local.iteration",
       "log": ".runtime/ci-execution-alignment/continuation-artifact-wiring.log",
       "note": "Final artifact-persistence-only addition checked after three-order offline baseline."
+    },
+    "local_incremental_reuse": {
+      "status": "passed",
+      "command": "make agent.run.begin AGENT_CHECK=ci_contract; make verify.ci.workflow.contract; make agent.run.record; make agent.run.resume",
+      "tests": 272,
+      "test_wall_seconds": 9.7,
+      "unchanged_resume_wall_seconds": 2.9,
+      "test_log": ".runtime/ci-execution-alignment/efficiency-contract.log",
+      "receipt": ".runtime/agent-runs/CI-EXECUTION-ALIGNMENT-20261105/ci_contract.json",
+      "readback": ".runtime/ci-execution-alignment/efficiency-resume-after.json",
+      "observed": "ci_contract=reusable; planner lists verify.ci.workflow.contract under reusedTargets; no test execution on resume.",
+      "limits": "Local advisory evidence only; conservative inputs and manual handling of unmapped paths remain."
+    },
+    "local_scope_optimization": {
+      "status": "passed",
+      "command": "make verify.trusted_scan.unit; make ci.local.iteration",
+      "tests": 80,
+      "test_log": ".runtime/ci-execution-alignment/local-perf-unit-passed.log",
+      "receipt": ".runtime/agent-runs/CI-EXECUTION-ALIGNMENT-20261105/local_scope.json",
+      "iteration_log": ".runtime/ci-execution-alignment/local-iteration-after.log",
+      "measurement": {
+        "iteration_before_wall_seconds": 29.4,
+        "iteration_after_wall_seconds": 15.7,
+        "scope_before_wall_seconds": 17.4538,
+        "scope_after_wall_seconds": 3.72,
+        "limits": "Same local workspace, warm filesystem, individual observations rather than statistical benchmark; before scope measured via shell timing wrapper. No runtime workload or gate removed."
+      },
+      "profile": ".runtime/ci-execution-alignment/local-step-times.jsonl",
+      "semantics": "Exact historical SHA authority digests cached only inside one plan; Make parsing keyed by full text with fresh file reads; commit-tip types batched, annotated tags still peeled. Test parity and invalidation within/across calls, moving HEAD, noncommit tags, and exception cleanup.",
+      "recovery": "One added test initially mutated a prerequisite outside its selected scan closure; corrected to exercise history whose dependency includes that guard. Initial receipt registration used security.*; switched to the existing verify.trusted_scan.unit alias before the passing recorded run."
     }
   },
   "review_resolution": {
@@ -269,5 +302,18 @@
     "fix": "Unified backend nightly under professional full run; display nominal UTC/Shanghai slot, actual creation, trigger delay and attempt. Bind aggregate and managed evidence to exact head plus same nominal slot.",
     "limit": "GitHub schedule is best effort; occurrence inferred from preceding daily boundary, delays >=24h cannot be disambiguated from schedule payload. No punctuality guarantee or new external scheduler.",
     "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule"
+  },
+  "local_iteration_policy": {
+    "daily": "Run required lightweight iteration guards and affected nonzero tests. Begin/record declared checks so unchanged passing input evidence is reusable. Never infer pass from prose in results.",
+    "reproducibility": "Three-order affected tests and full offline baseline remain explicit convergence/nightly checks, not mandatory after every small edit. Original passed results and remote entrypoints retained.",
+    "repeat_rule": "Re-run the failed item or changed dependency surface first. An unchanged passing check requires a concrete reverify reason. No automatic local full Quick, full frontend release, browser or ORM fallback.",
+    "limitation": "Existing planner is advisory; unmapped paths still need explicit impact analysis. This correction enables this batch CI receipt; it does not implement universal fine-grained dependency closure.",
+    "observed_costs": {
+      "registered_baseline_test_seconds_three_orders": 53.404,
+      "affected_orders_test_seconds_three_orders": 15.459,
+      "iteration_entry_wall_seconds": 29.4,
+      "interpretation": "Test-runner durations exclude command/planning overhead. Daily entry still has material fixed cost; its individual steps have not been profiled, so no attributed bottleneck claim."
+    },
+    "optimization_scope": "P4 scan planning: per-invocation historical SHA digest memoization, full-text Make parse memoization, and batched commit-type verification; mutable refs, worktree reads and all scan gates preserved."
   }
 }

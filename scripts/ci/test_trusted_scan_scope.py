@@ -77,6 +77,58 @@ class TrustedScopeTests(unittest.TestCase):
         self.git('add', '--all')
         self.git('commit', '-m', message)
 
+    def test_plan_reuses_history_calculation_without_changing_scope(self):
+        expected = {kind: scope.select_scope(self.root, kind) for kind in scope.AUTHORITY}
+        with mock.patch.object(scope, 'revision_blob_sha256', wraps=scope.revision_blob_sha256) as read:
+            self.assertEqual(expected, scope.plan_scopes(self.root))
+            self.assertEqual(3, read.call_count, 'each historical scanner authority is read once per plan')
+        self.assertIsNone(scope._history_authorities.get())
+        # A later call must read current inputs again, even in the same process.
+        self.write('scripts/ci/secret_scan.py', 'changed scanner authority\n')
+        actual = scope.plan_scopes(self.root)
+        self.assertIsNone(actual['secrets'].base)
+        self.assertEqual(self.base, actual['personal'].base)
+        self.assertEqual({kind: scope.select_scope(self.root, kind) for kind in scope.AUTHORITY}, actual)
+
+    def test_plan_does_not_cache_worktree_or_movable_revision(self):
+        digests = []
+        def select(root, kind):
+            digests.append((scope.authority_digest(root, 'secrets'),
+                            scope.authority_digest(root, 'secrets', 'HEAD')))
+            self.write('scripts/ci/secret_scan.py', kind + '\n')
+            self.commit(kind)
+            return scope.Scope(None, 'test')
+        with mock.patch.object(scope, 'select_scope', side_effect=select):
+            scope.plan_scopes(self.root)
+        self.assertEqual(3, len({digest for digest, _ in digests}))
+        self.assertEqual(3, len({digest for _, digest in digests}))
+
+    def test_plan_discards_cache_after_exception(self):
+        with mock.patch.object(scope, 'select_scope', side_effect=ValueError('unreadable history')):
+            with self.assertRaises(ValueError):
+                scope.plan_scopes(self.root)
+        self.assertIsNone(scope._history_authorities.get())
+        self.assertIsNone(scope._make_parses.get())
+
+    def test_plan_rechecks_changed_make_text_within_same_invocation(self):
+        digests = []
+        def select(root, kind):
+            digests.append(scope.authority_digest(root, 'history'))
+            self.write('make/guards.mk', f'IS_PROD = {len(digests)}\n\nguard.prod.forbid:\n\t@test "$(IS_PROD)" != "1"\n')
+            return scope.Scope(None, 'test')
+        with mock.patch.object(scope, 'select_scope', side_effect=select):
+            scope.plan_scopes(self.root)
+        self.assertEqual(3, len(set(digests)))
+
+    def test_batched_commit_tips_preserve_tag_peeling_and_noncommit_rejection(self):
+        self.git('tag', '-a', 'annotated', '-m', 'commit tag', self.base)
+        self.assertEqual(self.base, scope.select_scope(self.root, 'secrets').base)
+        blob = self.git('rev-parse', 'HEAD:old.txt').strip()
+        self.git('update-ref', 'refs/tags/blob', blob)
+        result = scope.select_scope(self.root, 'secrets')
+        self.assertIsNone(result.base)
+        self.assertEqual('noncommit_ref_requires_full', result.reason)
+
     def test_scanner_proof_requires_complete_actual_scope(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
