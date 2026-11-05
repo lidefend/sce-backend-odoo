@@ -3,7 +3,10 @@ set -euo pipefail
 : "${ROOT_DIR:?ROOT_DIR required}"
 : "${ENV_FILE:?ENV_FILE required}"
 source "$ENV_FILE"
-[[ "${COMPOSE_PROJECT_NAME:-}" == sc-local-clean && "${DB_NAME:-}" == sc_clean && "${ODOO_DBFILTER:-}" == '^sc_clean$' ]] || {
+project="${COMPOSE_PROJECT_NAME:-}"
+db="${DB_NAME:-}"
+dbfilter="${ODOO_DBFILTER:-}"
+[[ "${project}" =~ ^sc-[a-z0-9-]+$ && "${db}" =~ ^sc_[a-z0-9_]+$ && "${dbfilter}" == "^${db}\$" ]] || {
   echo '[local.clean.frontend.output] profile identity mismatch' >&2; exit 2;
 }
 expected="$ROOT_DIR/frontend/apps/web/dist-clean"
