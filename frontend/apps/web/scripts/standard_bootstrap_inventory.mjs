@@ -97,10 +97,12 @@ try {
     const init = observed.contracts.find(row => row.intent === 'system.init')?.payload?.data;
     if (candidateStartup && role === 'fixture_role_config_admin') {
       const surface = init?.navigation?.scenario_surface?.tree;
-      assert.ok(surface?.platform?.length, 'authorized configuration entries survive scenario projection');
-      const management = page.locator('[data-management-navigation="true"]');
+      const configCenter = (surface?.centers || []).find(center => String(center.key || '').includes('config'));
+      assert.ok(configCenter, 'authorized configuration center survives scenario projection');
+      assert.ok((configCenter.entries?.length || 0) + (configCenter.scenarios?.length || 0), 'authorized configuration entries survive scenario projection');
+      const management = page.locator(`[data-center-key="${configCenter.key}"]`);
       await management.waitFor();
-      for (const entry of surface.platform) await management.getByRole('button', { name: entry.label, exact: true }).waitFor();
+      for (const entry of configCenter.entries || []) await management.getByRole('button', { name: entry.label, exact: true }).waitFor();
       assert.equal(new URL(observed.landing, base).pathname, '/s/enterprise.setup', 'administrator first hop reaches existing initialization scene');
       const catalogPanel = page.locator('[data-semantic-component="ScenarioActivationPanel"][data-state="ready"]');
       await catalogPanel.waitFor();
@@ -111,7 +113,7 @@ try {
         assert.ok(row.actions.length, 'native-authorized administrator can manage each released scene');
         await catalogPanel.getByText(row.name, { exact: true }).waitFor();
       }
-      observed.managementRecovery = { visibleEntries: surface.platform.length,
+      observed.managementRecovery = { visibleEntries: (configCenter.entries?.length || 0) + (configCenter.scenarios?.length || 0),
         scope: 'native_configuration_and_existing_setup_first_hop', initializationEntry: 'enterprise.setup',
         catalogCount: catalog.business_scenarios.length, mutationPerformed: false };
       await page.screenshot({ path: path.join(out, `${role}-configuration-entries.png`) });

@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Pure guard for the scenario-center navigation projection.
+
+Exercises ``project_authorized_nav_with_env`` against a fake Odoo environment:
+centers are derived from the native ``ir.ui.menu`` parent chain (direct child of
+the business root), and scenario bindings come from the maintainable
+``sc.product.scenario`` model. Authorized-but-unconfigured entries stay under
+their center instead of disappearing.
+"""
+from __future__ import annotations
+
+import importlib.util
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+SPEC = importlib.util.spec_from_file_location(
+    "scenario_surface_projection",
+    ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py",
+)
+PROJ = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(PROJ)
+
+
+class _Menu:
+    def __init__(self, menu_id, parent, name, xmlid, sequence=10):
+        self.id = menu_id
+        self.parent_id = parent
+        self.name = name
+        self.xmlid = xmlid
+        self.sequence = sequence
+
+    def get_external_id(self):
+        return {self.id: self.xmlid}
+
+
+class _Menus:
+    def __init__(self, by_id):
+        self.by_id = by_id
+
+    def sudo(self):
+        return self
+
+    def browse(self, ids):
+        return _Recordset(self.by_id[int(i)] for i in ids if int(i) in self.by_id)
+
+
+class _Recordset(list):
+    def exists(self):
+        return self
+
+
+class _Entry:
+    def __init__(self, menu, scenario):
+        self.menu_id = menu
+        self.scenario_id = scenario
+
+    @property
+    def intent(self):
+        return "handle"
+
+
+class _Entries:
+    def __init__(self, entries):
+        self.entries = entries
+
+    def sudo(self):
+        return self
+
+    def search(self, _domain):
+        return self.entries
+
+
+class _Scenario:
+    def __init__(self, code, name, active=True, sequence=10):
+        self.code = code
+        self.name = name
+        self.active = active
+        self.sequence = sequence
+
+
+class _Env:
+    def __init__(self):
+        root = _Menu(1, None, "智慧施工管理平台", "smart_construction_core.menu_sc_root")
+        finance = _Menu(10, root, "财务账款", "smart_construction_core.menu_sc_finance_center", 50)
+        project = _Menu(20, root, "项目中心", "smart_construction_core.menu_sc_project_center", 20)
+        self.menus = {
+            1: root,
+            10: finance,
+            20: project,
+            101: _Menu(101, finance, "付款申请", "smart_construction_core.menu_sc_user_payment_apply"),
+            201: _Menu(201, project, "未配置入口", "smart_construction_core.menu_sc_unconfigured"),
+        }
+        payment = _Scenario("payment.capital", "付款与资金办理")
+        self.entries = _Entries([_Entry(self.menus[101], payment)])
+
+    def __getitem__(self, key):
+        if key == "ir.ui.menu":
+            return _Menus(self.menus)
+        if key == "sc.product.scenario.entry":
+            return self.entries
+        raise KeyError(key)
+
+
+def _leaf(menu_id, action_id, label, xmlid):
+    return {
+        "menu_id": menu_id,
+        "action_id": action_id,
+        "route": f"/a/{action_id}?menu_id={menu_id}",
+        "label": label,
+        "menu_xmlid": xmlid,
+        "model": "test.model",
+        "view_modes": ["tree"],
+        "children": [],
+    }
+
+
+class ScenarioCenterProjectionGuard(unittest.TestCase):
+    def test_center_derived_from_native_parent_chain(self):
+        env = _Env()
+        nav = [
+            _leaf(101, 1011, "付款申请", "smart_construction_core.menu_sc_user_payment_apply"),
+            _leaf(201, 2011, "未配置入口", "smart_construction_core.menu_sc_unconfigured"),
+        ]
+        result = PROJ.project_authorized_nav_with_env(env, nav, {})
+        self.assertTrue(result["ok"])
+        centers = {center["key"]: center for center in result["tree"]["centers"]}
+        self.assertIn("smart_construction_core.menu_sc_finance_center", centers)
+        self.assertIn("smart_construction_core.menu_sc_project_center", centers)
+        finance = centers["smart_construction_core.menu_sc_finance_center"]
+        self.assertEqual(finance["scenarios"][0]["key"], "payment.capital")
+        self.assertEqual(finance["scenarios"][0]["entries"][0]["configured"], True)
+        project = centers["smart_construction_core.menu_sc_project_center"]
+        self.assertEqual(project["entries"][0]["configured"], False)
+
+    def test_disabled_scenario_keeps_authorized_entry_unconfigured(self):
+        env = _Env()
+        env.entries = _Entries([_Entry(env.menus[101], _Scenario("payment.capital", "付款与资金办理", active=False))])
+        nav = [_leaf(101, 1011, "付款申请", "smart_construction_core.menu_sc_user_payment_apply")]
+        result = PROJ.project_authorized_nav_with_env(env, nav, {})
+        centers = result["tree"]["centers"]
+        finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
+        self.assertEqual(finance["scenarios"], [])
+        self.assertEqual(finance["entries"][0]["configured"], False)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

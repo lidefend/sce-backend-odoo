@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "id": "NAV-UX-01",
+  "branch": "fix/nav-ux-01-scenario-navigation",
+  "baseline_sha": "149e94e538d1410c58b397708481e3140d822ab3",
+  "status": "active",
+  "goal": ".agent/goals/NAV-UX-01.yaml",
+  "record": "docs/ops/iterations/nav-ux-01-record.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "scope": [
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/models/support/__init__.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    "addons/smart_core/handlers/system_init.py",
+    "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/src/app/scenarioSurface.ts",
+    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/stores/session.ts",
+    "make/frontend.mk",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/scenario_center_projection_guard.py",
+    ".agent/goals/NAV-UX-01.yaml",
+    ".agent/runs/NAV-UX-01/run.json",
+    "docs/ops/iterations/nav-ux-01-record.md"
+    ,
+    ".agent/active-runs.json"
+  ],
+  "checks": {
+    "scenario_center_native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/scenario_surface_projection_guard.py"
+      ]
+    },
+    "scenario_center_frontend_lifecycle": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/scenarioSurface.ts",
+        "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
+      ]
+    }
+  },
+  "blockers": [
+    "runtime verification pending: managed local.dev/acceptance environments mount mainline-deploy, not this feature branch"
+  ],
+  "next_exact_step": "run ci.local.iteration, commit, push draft PR, then verify on managed runtime after main merge"
+}

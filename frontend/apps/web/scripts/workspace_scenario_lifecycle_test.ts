@@ -177,26 +177,27 @@ assert.deepEqual(home.quickLinks.value, []);
 // Standard business surface is authoritative even without a legacy scene row.
 const nativeEntry = (id: number) => ({ menu_xmlid: `test.menu_${id}`, menu_id: id,
   action_id: id + 100, action_xmlid: `test.action_${id}`, model: 'test.model',
-  view_modes: ['list'], route: `/a/${id + 100}?menu_id=${id}`, label: `入口${id}` });
+  view_modes: ['list'], route: `/a/${id + 100}?menu_id=${id}`, label: `入口${id}`,
+  intent: 'view', intent_label: '查看', configured: true });
 const nativeScenario = (id: number) => ({ key: `business.${id}`, name: `业务场景${id}`, type: 'business',
-  intents: [{ intent: 'view', label: '查看', entries: [nativeEntry(id)] }] });
+  sequence: 10, entries: [nativeEntry(id)] });
 session.workspaceScenarioProjection = { rows: [], workspace_candidate_count: 0 };
-session.scenarioSurface = { domains: [{ key: 'business', name: '业务',
-  scenarios: Array.from({ length: 17 }, (_, index) => nativeScenario(index + 1)) }], horizontal: [] };
+session.scenarioSurface = { centers: [{ key: 'business', name: '业务', sequence: 10,
+  scenarios: Array.from({ length: 17 }, (_, index) => nativeScenario(index + 1)), entries: [] }] };
 assert.equal(home.scenarioCandidateSceneKeys.value.length, 17);
 assert.equal(home.quickLinks.value.length, 7, 'home retains existing seven-shortcut presentation limit');
 assert.equal(home.quickLinks.value[0].label, '业务场景1');
 assert.equal(home.quickLinks.value[0].route, nativeEntry(1).route);
 // Each scenario is reachable when delivered, including later entries in the surface.
 for (let id = 1; id <= 17; id += 1) {
-  session.scenarioSurface.domains[0].scenarios = [nativeScenario(id)];
+  session.scenarioSurface.centers[0].scenarios = [nativeScenario(id)];
   assert.deepEqual(home.quickLinks.value.map(row => row.route), [nativeEntry(id).route]);
 }
-session.scenarioSurface = { domains: [], horizontal: [nativeEntry(50)] };
+session.scenarioSurface = { centers: [{ key: 'business', name: '业务', sequence: 10, scenarios: [], entries: [nativeEntry(50)] }] };
 assert.deepEqual(home.scenarioCandidateSceneKeys.value, []);
 assert.deepEqual(home.quickLinks.value.map(row => row.route), [nativeEntry(50).route]);
 // An authoritative empty surface never resurrects legacy menu entries.
-session.scenarioSurface = parseScenarioSurface({ ok: true, tree: { domains: [], horizontal: [] } });
+session.scenarioSurface = parseScenarioSurface({ ok: true, tree: { centers: [] } });
 assert.deepEqual(home.quickLinks.value, []);
 session.scenarioSurface = null;
 session.workspaceScenarioProjection = null;

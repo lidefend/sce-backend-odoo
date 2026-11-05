@@ -1539,4 +1539,5 @@ verify.nav01.native_authority.unit: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.daily_dev.acceptance_fixture.unit
 	@python3 scripts/verify/fact_layer_authority_guard.py
 	@python3 scripts/verify/scenario_surface_projection_guard.py
+	@python3 scripts/verify/scenario_center_projection_guard.py
 	@python3 -m unittest scripts.ops.test_scene_internal_action_authority

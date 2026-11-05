@@ -161,17 +161,22 @@ class ScProductPolicy(models.Model):
         }
         rec = self.sudo().search([("product_key", "=", product_key)], limit=1)
         if rec:
-            changed = any(rec[field_name] != field_value for field_name, field_value in values.items())
-            if changed:
-                rec.write(values)
-        else:
-            rec = self.sudo().create(values)
-            changed = True
+            # Once initialized, the policy record is the runtime maintenance
+            # authority. The identity/reference validation above has already
+            # run against the locked contract; a repeated sync must not
+            # overwrite operator edits to grouping, scenes, or capabilities.
+            return {
+                "policy": rec,
+                "contract": contract,
+                "changed": False,
+                "match": None,
+            }
+        rec = self.sudo().create(values)
         match = assert_policy_matches_locked_contract(contract, product_key, rec.menu_groups)
         return {
             "policy": rec,
             "contract": contract,
-            "changed": changed,
+            "changed": True,
             "match": match,
         }
 

@@ -1,0 +1,21 @@
+goal:
+  id: NAV-UX-01
+  title: 场景化中心导航交付收口
+  layer: P1
+  module: smart_construction_core + frontend/apps/web
+  objective: >-
+    以原生菜单树中心为一级、数据库维护的业务场景为二级组织，统一前端消费
+    场景化中心导航，并恢复搜索、展开记忆、当前位置定位与权威空态/错误态。
+  scope:
+    - addons/smart_construction_core
+    - addons/smart_core/handlers/system_init.py
+    - frontend/apps/web/src
+    - frontend/apps/web/scripts
+    - make/frontend.mk
+    - scripts/verify
+  exclusions:
+    - 不修改业务 Model/Action/View/ACL
+    - 不修改能力资格与产品发布状态
+    - 不新建 Registry 或平行导航协议
+    - 不执行浏览器回归（本轮）
+  status: active

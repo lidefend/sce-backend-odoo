@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Create-only seed. Runs on both fresh install and module upgrade; the
+       model method never rewrites an existing scenario or entry, so operator
+       edits survive later upgrades. -->
+  <data noupdate="0">
+    <function model="sc.product.scenario" name="import_scenario_product_surface"/>
+  </data>
+</odoo>

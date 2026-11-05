@@ -94,12 +94,12 @@ export function useWorkspaceHome() {
     // The server surface already combines publication, company enablement and
     // native authority. Business keys must not be filtered by the legacy entry registry.
     if (session.scenarioSurface) {
-      const navigationLinks = session.scenarioSurface.domains.flatMap(domain => domain.scenarios)
+      const navigationLinks = session.scenarioSurface.centers.flatMap(center => center.scenarios)
         .flatMap(scenario => {
-          const entry = scenario.intents.flatMap(intent => intent.entries)[0];
+          const entry = scenario.entries[0];
           return entry ? [{ key: scenario.key, label: scenario.name, detail: entry.label, route: entry.route }] : [];
         });
-      const horizontalLinks = session.scenarioSurface.horizontal.map(entry => ({
+      const horizontalLinks = session.scenarioSurface.centers.flatMap(center => center.entries).map(entry => ({
         key: entry.menu_xmlid, label: entry.label, detail: '', route: entry.route,
       }));
       return mergeWorkspaceNavigationLinks([...navigationLinks, ...horizontalLinks], workspaceLinks).slice(0, 7);
@@ -156,7 +156,7 @@ export function useWorkspaceHome() {
   const myObjectsEmpty = computed(() => text(session.workspaceHome?.layout?.texts?.['my_objects.empty']));
   const scenarioCandidateSceneKeys = computed<string[]>(() => {
     if (session.scenarioSurface) {
-      return session.scenarioSurface.domains.flatMap(domain => domain.scenarios.map(scenario => scenario.key));
+      return session.scenarioSurface.centers.flatMap(center => center.scenarios.map(scenario => scenario.key));
     }
     const projection = session.workspaceScenarioProjection;
     if (!projection) return [];
