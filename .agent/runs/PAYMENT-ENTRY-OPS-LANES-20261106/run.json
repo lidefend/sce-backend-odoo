@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "id": "PAYMENT-ENTRY-OPS-LANES-20261106",
+  "branch": "fix/payment-entry-ops-lanes-20261106",
+  "baseline_sha": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+  "status": "verification_pending",
+  "goal": ".agent/goals/PAYMENT-ENTRY-OPS-LANES-20261106.yaml",
+  "record": ".agent/runs/PAYMENT-ENTRY-OPS-LANES-20261106/run.json",
+  "scope": [
+    "make/dev.mk",
+    "scripts/ops/local_dev_payment_entry_configuration.py",
+    "scripts/verify/local_dev_payment_entry_probe.py",
+    "scripts/verify/test_local_dev_payment_entry_configuration.py",
+    "scripts/verify/test_local_dev_payment_entry_probe.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json",
+    ".agent/runs/PAYMENT-ENTRY-OPS-LANES-20261106/run.json",
+    ".agent/goals/PAYMENT-ENTRY-OPS-LANES-20261106.yaml",
+    ".agent/active-runs.json",
+    "docs/ops/local_payment_entry_tools.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing local.dev; no apply replay in this batch"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "ops verification registration",
+    "module": "scripts/ops and scripts/verify",
+    "standard_vs_user_specific": "fixed local development checkpoint tooling",
+    "why_here": "Operational read/write tools, no product semantics",
+    "blast_radius": "two on-demand targets only",
+    "exclusions": [
+      "product audit wording",
+      "payment logic",
+      "live configuration writes",
+      "ACL or exemption changes"
+    ]
+  },
+  "next_exact_step": "Independent P4 review and separate commit; no remote publication or live apply required for registration",
+  "execution_results": {
+    "lane_check": {
+      "status": "passed",
+      "log": ".runtime/payment-ops-lane-check.log"
+    },
+    "combined_unit_initial": {
+      "status": "passed",
+      "tests": 79,
+      "log": ".runtime/payment-ops-unit.log",
+      "limits": "Prior to final readiness helper; coverage guard source unchanged"
+    },
+    "focused_unit_final": {
+      "status": "passed",
+      "tests": 7,
+      "log": ".runtime/payment-ops-focused-final.log"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/payment-ops-iteration-final.log"
+    },
+    "runtime_apply": {
+      "status": "not_run",
+      "reason": "Registration and commit do not authorize reapplying configuration; no writes needed"
+    },
+    "baseline_policy": {
+      "status": "passed",
+      "log": ".runtime/payment-ops-baseline-policy.log"
+    }
+  },
+  "related_product_pr": {
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/814",
+    "head": "d02c23d6e25229a4372f87fd2524bdaf71fc8906",
+    "product_change": "Automatic audit message only; separate P4 exact AST classification commit",
+    "independent_review": "passed"
+  },
+  "next_business_gap": {
+    "diagnosis": ".runtime/payment-next-fact-gap.md",
+    "reproduction": ".runtime/be03-next-gap-template-reproduction.json",
+    "issue": "Default payment approval template overwrites maintained step order on upgrade",
+    "limits": "Controlled collaborators executing actual method; not ORM acceptance"
+  },
+  "independent_review": {
+    "status": "passed",
+    "scope": "Registration plus target publication and non-sudo route readback; exact final commit binding pending",
+    "limits": "No apply executed"
+  }
+}

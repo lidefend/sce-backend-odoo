@@ -60,7 +60,7 @@
       "defect": "Deliberate reviewed addition of one operator-only exact-checkpoint maintenance entry; user explicitly approved five menu exemptions. No CI gate or unrelated allowance relaxed."
     }
   ],
-  "max_targets_zero_reference": 676,
+  "max_targets_zero_reference": 678,
   "max_scripts_unreferenced_anywhere": 104,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -262,6 +262,8 @@
       "local.dev.gate_contract.bounded.run",
       "local.dev.journal.recovery",
       "local.dev.journal.role.identities",
+      "local.dev.payment_entry.configure",
+      "local.dev.payment_entry.probe",
       "local.dev.restart",
       "local.dev.runtime.allocation_attribution.probe",
       "local.dev.runtime.entry_target.probe",
