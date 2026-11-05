@@ -406,5 +406,43 @@ else:
         self.assertEqual(self.run_identity_command("resources", overrides).returncode, 2)
 
 
+class FixtureOrmEntryTests(unittest.TestCase):
+    def test_local_and_ci_dispatch_and_fail_closed_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = root / 'scripts/ci/frontend_fixture_orm_entry.sh'
+            entry.parent.mkdir(parents=True)
+            entry.write_text((ROOT / 'scripts/ci/frontend_fixture_orm_entry.sh').read_text())
+            fixtures = {
+                'config/acceptance/isolated_entry_identity.v1.env': 'SC_ENTRY_NAMESPACE=test\n',
+                'scripts/dev/frontend_acceptance_operation_entry.sh': 'echo "local:$1" >> "$TRACE"\n',
+                'scripts/common/frontend_release_ci_identity.sh': 'verify_frozen_frontend_release_ci_identity() { echo identity >> "$TRACE"; [[ "${FAIL:-}" != identity ]]; }\nvalidate_frozen_frontend_release_ci_resources() { echo "resources:$2" >> "$TRACE"; [[ "${FAIL:-}" != resources ]]; }\n',
+                'scripts/test/frontend_acceptance_fixture_orm.sh': 'echo orm >> "$TRACE"\n[[ "${FAIL:-}" != orm ]]\n',
+            }
+            for name, body in fixtures.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(body)
+            for github, fail, expected in [
+                ('false', '', ['local:fixture-orm']),
+                ('true', '', ['identity', 'resources:required', 'orm', 'resources:required']),
+                ('true', 'identity', ['identity']),
+                ('true', 'resources', ['identity', 'resources:required']),
+                ('true', 'orm', ['identity', 'resources:required', 'orm']),
+            ]:
+                with self.subTest(github=github, fail=fail):
+                    trace = root / 'trace'
+                    trace.unlink(missing_ok=True)
+                    env = dict(os.environ, GITHUB_ACTIONS=github, SC_FRONTEND_RELEASE_CI_ENTRY='1',
+                               TRACE=str(trace), FAIL=fail, ROOT_DIR='/untrusted/override')
+                    proc = subprocess.run(['bash', str(entry)], env=env, capture_output=True, text=True)
+                    self.assertEqual(proc.returncode == 0, not bool(fail), proc.stderr)
+                    self.assertEqual(trace.read_text().splitlines(), expected)
+            env.pop('SC_FRONTEND_RELEASE_CI_ENTRY')
+            trace.unlink()
+            self.assertNotEqual(subprocess.run(['bash', str(entry)], env=env, capture_output=True).returncode, 0)
+            self.assertFalse(trace.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -387,6 +387,17 @@
       ]
     },
     {
+      "id": "acceptance-orm-execution",
+      "paths": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh",
+        "scripts/ci/frontend_fixture_orm_entry.sh"
+      ],
+      "suites": [
+        "governance_static",
+        "backend_contract"
+      ]
+    },
+    {
       "id": "isolated-acceptance-entry-identity",
       "paths": [
         "config/acceptance/**",

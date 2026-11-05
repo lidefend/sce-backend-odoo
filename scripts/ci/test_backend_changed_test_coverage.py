@@ -140,8 +140,8 @@ class ManagedEvidenceTests(unittest.TestCase):
 
     def test_ci_managed_operation_validates_resources_before_and_after_execution(self):
         root = Path(__file__).resolve().parents[2]
-        source = (root / 'scripts/dev/frontend_acceptance_operation_entry.sh').read_text()
-        body = source.split('  fixture-orm)\n', 1)[1].split('    ;;', 1)[0]
+        source = (root / 'scripts/ci/frontend_fixture_orm_entry.sh').read_text()
+        body = source.split('verify_frozen_frontend_release_ci_identity \"$ROOT_DIR\"', 1)[1]
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'scripts/test/frontend_acceptance_fixture_orm.sh'
             target.parent.mkdir(parents=True)

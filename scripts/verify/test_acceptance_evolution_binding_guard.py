@@ -533,6 +533,18 @@ class TestGlobAndPlan(unittest.TestCase):
             merge = guard.plan_for_stage(self.registry, plan, "merge")
             self.assertEqual(merge["required_evidence_suites"], [], path)
 
+    def test_orm_runner_requires_backend_but_not_browser_evidence(self):
+        for path in ('scripts/test/frontend_acceptance_fixture_orm.sh',
+                     'scripts/ci/frontend_fixture_orm_entry.sh'):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+            self.assertEqual(plan['matched_rules'][path], 'acceptance-orm-execution')
+            self.assertEqual(set(plan['required_suites']), {'backend_contract', 'governance_static'})
+            self.assertEqual(guard.plan_for_stage(self.registry, plan, 'merge')['required_evidence_suites'], [])
+        for path in ('scripts/dev/frontend_acceptance_operation_entry.sh',
+                     'scripts/test/frontend_acceptance_release_snapshot.py'):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+            self.assertIn('list_surface_structure', plan['required_evidence_suites'])
+
     def test_frontend_acceptance_runtime_entries_still_require_list_surface(self):
         plan = guard.build_plan(
             self.registry,

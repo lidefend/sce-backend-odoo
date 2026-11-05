@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5101`
+- Scanned files: `5102`
 - Files requiring split plan: `72`
-- Files above warning threshold: `147`
+- Files above warning threshold: `146`
 
 ## Split Plan Required
 
@@ -119,8 +119,8 @@ Generated from repository source files. This report is informational during the 
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
+| 1257 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
-| 1245 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
@@ -235,7 +235,6 @@ Generated from repository source files. This report is informational during the 
 | 278 | Shell script | `scripts/verify/local_dev_payment_request_floorplan_readonly.sh` |
 | 271 | Shell script | `scripts/contract/gate_contract.sh` |
 | 271 | Shell script | `scripts/verify/production_blocker_image.sh` |
-| 252 | Shell script | `scripts/dev/frontend_acceptance_operation_entry.sh` |
 
 ## Largest Files
 

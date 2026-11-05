@@ -1178,7 +1178,7 @@ acceptance.frontend.fixture_guard: guard.prod.forbid
 # module is in forbidden_implicit_modules, so no product/demo profile installs
 # it; selecting its tag anywhere else runs zero tests and still exits zero.
 acceptance.frontend.fixture_orm: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh fixture-orm
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/ci/frontend_fixture_orm_entry.sh
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot

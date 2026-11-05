@@ -16,6 +16,7 @@
     ".github/workflows/professional_quality_gate.yml",
     ".github/workflows/public_guard.yml",
     ".github/workflows/release_candidate_gate.yml",
+    "config/acceptance/evolution_binding.v1.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
@@ -30,6 +31,7 @@
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/frontend_fixture_orm_entry.sh",
     "scripts/ci/scheduled_validation.py",
     "scripts/ci/select_authoritative_workflow_run.py",
     "scripts/ci/test_backend_changed_test_coverage.py",
@@ -50,8 +52,10 @@
     "scripts/ops/test_safe_worktree_cleanup.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_baseline_manifest.json",
     "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_release_ci_identity.py",
     "scripts/verify/test_pr_publish_preflight.py"
   ],
   "environment": {
@@ -136,7 +140,7 @@
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Freeze PR publication optimization; refresh required list_surface_structure evidence in registered acceptance profile; independent review, external archive, protected PR publication and main integration.",
+  "next_exact_step": "Freeze ORM-only impact isolation, review exact delta, archive and publish protected PR; current merge scope requires no local browser evidence.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -160,7 +164,7 @@
   ],
   "stage_identity": {
     "head": "d33b63647720f51c6476e4df44f1e84e0de8dcc9",
-    "dirty_scope": "P4 shared serial PR publication preflight and remote test selection wiring",
+    "dirty_scope": "P4 ORM runner impact isolation; preserves shared runtime/browser gates",
     "phase": "validated before final commit"
   },
   "results": {
@@ -325,6 +329,23 @@
       "tests": 23,
       "log": ".runtime/ci-execution-alignment/pr-publication-tests-record.log",
       "scope": "18 safe-push cases and 5 publication tests, including recursive make under -j4 -k; shared preflight once, push-before-create, stop on either failure."
+    },
+    "orm_entry_scope": {
+      "status": "passed",
+      "tests": {
+        "acceptance_binding": 56,
+        "ci_security_identity_scheduled": 82,
+        "ci_contract": 278
+      },
+      "logs": [
+        ".runtime/ci-execution-alignment/orm-entry-scope-tests.log",
+        ".runtime/ci-execution-alignment/orm-entry-wiring-tests.log",
+        ".runtime/ci-execution-alignment/orm-entry-ci-contract-final.log",
+        ".runtime/ci-execution-alignment/orm-entry-iteration-final.log",
+        ".runtime/ci-execution-alignment/orm-entry-freeze.log"
+      ],
+      "reason": "ORM-only CI entry is structurally separate from unchanged local/browser operation entry; fixture ORM runner maps to backend_contract plus governance_static. Shared entry and release-snapshot mutations still require browser evidence.",
+      "recovery": "Corrected nonexistent identity Make target to existing scheduled gate; removed stale zero-reference disposition after wiring; updated moved-entry regression test. All applicable final tests passed."
     }
   },
   "review_resolution": {
@@ -399,8 +420,11 @@
   },
   "delivery_optimization_scope": "P4 evidence archive retries and merge-readiness diagnostics; preserve source/target rechecks, required remote checks and verified archive content. No real archive or merge operation authorized/executed by this optimization.",
   "integration_runtime": {
-    "reason": "merge evidence planner requires list_surface_structure for changed acceptance entry scripts; existing evidence exceeds 72h",
-    "authority": "existing registered local acceptance profile only; governed artifact/backend/preview/contract/browser entrypoints; no new database, credentials or fixture reset",
-    "status": "not_run"
+    "status": "passed_on_prior_candidate",
+    "candidate": "803f60c66d373138603a8602555b0dbb13435821",
+    "upgrade": "existing acceptance smart_construction_core upgraded through governed entry; schema mismatch resolved",
+    "contract": "passed",
+    "browser": "passed phase=full rows=18 failures=0",
+    "relevance": "Not required for final ORM-only CI candidate; historical proof retained, not relabeled or reused as current-head acceptance"
   }
 }

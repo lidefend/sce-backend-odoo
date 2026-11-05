@@ -31,6 +31,7 @@ NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', 'make/frontend.mk', '*.md'
 # require their owning tool gate, and concrete test-file consumers take priority.
 # Do not exempt scripts/**: runner and unknown paths retain conservative scope.
 CONTROL_PLANE = {
+    'scripts/ci/frontend_fixture_orm_entry.sh': 'verify.ci.scheduled_gates',
     'scripts/ci/backend_impact_plan.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_changed_test_coverage.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_suite_plan.py': 'verify.ci.workflow.contract',
