@@ -1,5 +1,37 @@
 version: 1
 entries:
+- group: product_policy_fact_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
+  selection:
+    module: smart_construction_core
+    tag: sc_gate
+    file: test_product_policy_fact_authority.py
+    class: TestProductPolicyFactAuthority
+  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate,
+    consumed by the default module-qualified backend suite when smart_construction_core is
+    selected. A source-bound regression checks the co-tag, import and actual workflow shell
+    consumer. This is wiring evidence, not proof of current ORM execution or managed fixture coverage.
+  review_by: '2026-12-31'
+- group: scenario_direct_initialization
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
+  selection:
+    module: smart_construction_core
+    tag: sc_gate
+    file: test_scenario_direct_entry_initialization.py
+    class: TestScenarioDirectInitialization
+  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate,
+    consumed by the default module-qualified backend suite when smart_construction_core is
+    selected. A source-bound regression checks the co-tag, import and actual workflow shell
+    consumer. This does not claim that registration runs a fresh-install or upgrade acceptance.
+  review_by: '2026-12-31'
 - group: acceptance_business_scene_lifecycle
   kind: odoo_tag
   status: on-demand
