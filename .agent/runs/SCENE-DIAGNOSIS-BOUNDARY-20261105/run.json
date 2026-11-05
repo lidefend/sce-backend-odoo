@@ -28,7 +28,9 @@
     "docs/architecture/scenario_fact_authority_20261105.md",
     "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     "addons/smart_construction_core/tests/__init__.py",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_changed_test_coverage.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -212,5 +214,20 @@
     ],
     "failure_owner": "test prerequisite: fresh admin lacked declared configuration menu groups; corrected actor only, no product permission relaxation",
     "final_L1": "passed .runtime/scene-diagnosis-pr/fresh-final-iteration.log"
+  },
+  "ci_fix": {
+    "head": "073abef5ccf16aa6ebfcadd4419bdca41107683c",
+    "layer": "P4 execution evidence parser",
+    "cause": "Python3.10 verbose identity mismatch plus inventory JSON skipped key falsely treated as per-method skip",
+    "evidence": ".runtime/scene-diagnosis-pr/ci-executions/backend-execution-42037859921-1-3/smart_construction_scene/execution.log",
+    "plan": "Support both exact unittest identities, preserve negative cases, replay real downloaded logs; focused CI tests, no ORM rebuild",
+    "status": "locally_validated",
+    "tests": 286,
+    "tests_log": ".runtime/scene-diagnosis-pr/ci-parser-tests.log",
+    "diagnostic_replay": ".runtime/scene-diagnosis-pr/ci-coverage-replay.json",
+    "recovered": 86,
+    "retained": "exact module/class/method and explicit per-test success; real skip remains pending; ORM receipt authentication unchanged",
+    "independent_review": "passed /root/independent_ci_review; independently 20 tests and 86-method original log replay",
+    "lightweight": ".runtime/scene-diagnosis-pr/ci-parser-iteration.log"
   }
 }

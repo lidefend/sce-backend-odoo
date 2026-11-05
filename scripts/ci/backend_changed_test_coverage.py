@@ -84,11 +84,20 @@ def verify_logs(rows: list[dict], logs: list[str]) -> list[dict]:
         identity = re.escape(row['logger']) + r': Starting ' + re.escape(row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
         # An overall non-zero suite cannot stand in for the changed method.
         if row.get('kind') == 'python':
-            identity = re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
-                Path(row['path']).stem + '.' + row['class'] + '.' + row['method']) + r'\).*?\.\.\. ok(?:\n|$)'
-        matched = bool(re.search(identity, text))
-        skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
-                      for line in text.splitlines())
+            # Python 3.10 renders method (module.Class); newer unittest
+            # versions render method (module.Class.method). Bind both to the
+            # exact changed method, never to a suite's aggregate OK summary.
+            python_identity = r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
+                Path(row['path']).stem + '.' + row['class']) + r'(?:\.' + re.escape(
+                row['method']) + r')?\)'
+            matched = bool(re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text))
+            # Inventory JSON contains both all method IDs and a "skipped" key.
+            # Only the method's actual result line can prove it was skipped.
+            skipped = bool(re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text))
+        else:
+            matched = bool(re.search(identity, text))
+            skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
+                          for line in text.splitlines())
         result.append({**row, 'status': 'executed' if matched and not skipped and row['owner'] != MANAGED_TARGET else 'pending'})
     return result
 
