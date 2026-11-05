@@ -3,7 +3,7 @@
   "id": "SCENE-DIAGNOSIS-BOUNDARY-20261105",
   "branch": "refactor/scene-diagnosis-boundary-20261105",
   "baseline_sha": "ee79dda079873c90cbe2f00d6fb4461a9856fee0",
-  "status": "completed",
+  "status": "active",
   "goal": ".agent/goals/SCENE-DIAGNOSIS-BOUNDARY-20261105.yaml",
   "record": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
   "scope": [
@@ -44,7 +44,7 @@
     "why_not_elsewhere": "No frontend inference or new fact registry; no changes to P0 publication/ACL",
     "blast_radius": "Read-only dependency contract and legacy enablement prerequisite; no record authorization grants"
   },
-  "next_exact_step": "Use governed PR integration for the local stack when continuing delivery; next product scope is database-owned native publication and composition dependency evidence",
+  "next_exact_step": "Publish reviewed local stack as GitHub PR to main via make pr.publish; read back exact source/base identity; no merge or deployment.",
   "owner_direction": "Native publication releases capability; scenario publication releases composed products. Report independent evidence, not a shared published flag.",
   "validation_plan": {
     "L1": "make ci.local.iteration",
@@ -119,5 +119,17 @@
     "source_identity": ".runtime/scene-diagnosis-source-identity.json",
     "identity_sha256": "6d2802d979d3c39b565b8a605bed4e2e5de655f6bff44fc45df5a21465cf7a43",
     "scope": "Local batch only, not PR merge or deployment authorization"
+  },
+  "publication": {
+    "requested_by_owner": true,
+    "base_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+    "included_commits": [
+      "9b172e3fc5edbef6a5c409db280016c86040610e",
+      "ee79dda079873c90cbe2f00d6fb4461a9856fee0",
+      "f31571aa4d21bc4555948bec54477cd560cdbc2e"
+    ],
+    "scope": "Stacked roadmap, scenario fact authority and publication diagnosis; source unchanged since passing scoped tests",
+    "remote_ci": "pending",
+    "receipt_location": ".runtime/scene-diagnosis-pr/"
   }
 }
