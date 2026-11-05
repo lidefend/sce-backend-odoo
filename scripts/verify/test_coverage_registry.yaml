@@ -5,38 +5,42 @@ entries:
   status: on-demand
   owner: construction-product
   dispose: class-selected
-  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_business_scene_lifecycle test.safe'
-  reason: The existing managed acceptance ORM entry selects this tag alongside execution freeze,
-    verifies a nonzero test summary, and rolls back native company scene lifecycle test mutations.
-    Three lifecycle cases passed in the six-test fixture ORM run; this is on-demand acceptance,
-    not a recurring PR or scheduled gate.
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_business_scene_lifecycle'
+  reason: Selected by the managed fixture ORM lane. Candidate frontend CI publishes exact-head
+    method identities; backend changed-test coverage verifies the platform artifact before accepting
+    them. Wiring is not proof of a successful current execution.
+- group: acceptance_scenario_navigation_maintenance
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_scenario_navigation_maintenance'
+  reason: Navigation inputs require the managed maintenance methods in the backend execution plan.
+    Missing same-head managed evidence stays pending and blocks coverage, even if module smoke passes.
 - group: acceptance_fixture_data_space
   kind: odoo_tag
-  status: unwired
+  status: on-demand
   owner: construction-product
-  dispose: wire-pending
-  reason: Acceptance-fixture data-space creation coverage added by FE-CONTRACT-RUNTIME-02 (P1/P4). The
-    acceptance-fixture lane selects other tags, not this one, so it never re-runs. Wire it to a governed
-    ORM entry or retire the tag before treating the creation boundary as covered.
-  review_by: '2026-12-31'
+  dispose: class-selected
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_data_space'
+  reason: Explicitly selected on the managed fixture carrier; current runtime execution remains
+    separately evidenced and cannot be inferred from this registry entry.
 - group: acceptance_fixture_execution_freeze
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
-  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_execution_freeze test.safe'
-  reason: Now wired to the acceptance carrier's own ORM entry, which runs the tag on the managed acceptance
-    profile/database and fails closed on a missing summary or zero tests (scripts/test/frontend_acceptance_fixture_orm.sh).
-    Kept on-demand because it is invoked by the acceptance worktree rather than a recurring PR/scheduled
-    workflow.
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_execution_freeze'
+  reason: Selected on the managed acceptance profile/database with nonzero summary enforcement.
+    Candidate frontend CI archives method identities, without granting ordinary ORM history reuse.
 - group: acceptance_fixture_gate
   kind: odoo_tag
-  status: unwired
+  status: on-demand
   owner: construction-product
-  dispose: wire-pending
-  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
-    it to a gate or retire the group.
-  review_by: '2026-12-31'
+  dispose: class-selected
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_gate'
+  reason: Explicitly selected with the managed fixture tests; generic sc_gate module coverage
+    remains additive and does not stand in for the dedicated managed methods.
 - group: acceptance_nav_identity
   kind: odoo_tag
   status: unwired

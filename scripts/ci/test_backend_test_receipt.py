@@ -348,6 +348,9 @@ class IsolatedPythonDecisionTest(unittest.TestCase):
                    'docs/input.json':'{}','docs/unrelated.md':'notes',
                    'scripts/ci/backend_test_receipt.py':'executor',
                    'scripts/ci/backend_impact_plan.py':'mapper','scripts/ops/evidence_scope.py':'authority',
+                   'scripts/ci/backend_suite_plan.py':'planner',
+                   'scripts/ci/backend_changed_test_coverage.py':'coverage',
+                   'scripts/ci/ci_risk_classifier.py':'classifier','config/ci/risk_tiering_v1.json':'policy',
                    '.github/workflows/backend_test_suite.yml':'suite',
                    '.github/workflows/professional_quality_gate.yml':'caller'}
             for path,value in paths.items():

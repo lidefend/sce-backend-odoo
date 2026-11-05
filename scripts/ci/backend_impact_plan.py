@@ -32,6 +32,7 @@ NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', 'make/frontend.mk', '*.md'
 # Do not exempt scripts/**: runner and unknown paths retain conservative scope.
 CONTROL_PLANE = {
     'scripts/ci/backend_impact_plan.py': 'verify.ci.workflow.contract',
+    'scripts/ci/backend_changed_test_coverage.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_suite_plan.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_test_receipt.py': 'verify.ci.workflow.contract',
     'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',

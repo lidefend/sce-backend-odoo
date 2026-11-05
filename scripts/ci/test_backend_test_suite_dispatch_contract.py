@@ -41,7 +41,7 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         verify = workflow['jobs']['verify_coverage']
         self.assertEqual(['plan', 'backend_suite'], verify['needs'])
         self.assertIn('always() && !cancelled()', verify['if'])
-        script = next(s['run'] for s in verify['steps'] if s['name'] == 'Enforce complete backend coverage')
+        script = next(s['run'] for s in verify['steps'] if s.get('name') == 'Enforce complete backend coverage')
         for required, suite, reuse, expected in (
             ('true', 'success', '', 0),
             ('true', 'failure', '', 1),
@@ -68,26 +68,15 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         self.assertNotIn('continue-on-error', suite)
         self.assertIn('${{ matrix.index }}', suite['env']['COMPOSE_PROJECT_NAME'])
 
-    def test_cache_reuses_layers_not_test_success_or_database_state(self):
+    def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
-        cache = steps['Restore frontend build layers']['with']
-        self.assertEqual(cache['path'], '${{ runner.temp }}/backend-frontend-buildkit')
-        self.assertIn('frontend/**', cache['key'])
-        self.assertIn('Dockerfile.production-frontend-builder', cache['key'])
-        self.assertNotIn("hashFiles('Dockerfile'", cache['key'])
-        build = steps['Calculate frontend build fingerprint']
-        self.assertNotIn('if', build)
-        self.assertIn('--cache-from', build['run'])
-        self.assertIn('--cache-to', build['run'])
-        self.assertIn('--file Dockerfile.production-frontend-builder', build['run'])
-        self.assertIn('--target frontend-dist', build['run'])
-        self.assertNotIn('frontend-artifact', build['run'])
-        self.assertIn('test -s "${dist_dir}/index.html"', build['run'])
-        self.assertIn('test "${calculated_hash}" = "${EXPECTED_FRONTEND_BUILD_SHA256}"', build['run'])
-        self.assertIn('FRONTEND_DIST_DIR=', build['run'])
-        for name in ('Build images and start database', 'Run backend test suite per module'):
-            self.assertNotIn('if', steps[name])
+        self.assertNotIn('Calculate frontend build fingerprint', steps)
+        build = steps['Build images and start database']['run']
+        self.assertIn('docker compose build --builder "${BUILDX_BUILDER}" odoo', build)
+        self.assertIn('docker compose pull db redis', build)
+        self.assertNotIn('FRONTEND_BUILD_SHA256', str(steps))
+        self.assertNotIn('frontend', (ROOT / 'Dockerfile').read_text().split('FROM ')[0])
 
     def test_pip_download_cache_reaches_test_container_without_caching_results(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
@@ -148,7 +137,7 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         self.assertEqual('1',suite['env']['SC_BACKEND_ISOLATED_PYTHON'])
         step=next(s for s in suite['steps'] if s['name']=='Run backend test suite per module')
         body=step['run']
-        self.assertIn('if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then',body)
+        self.assertNotIn('full_args=()', body)
         self.assertIn('full_args=(--force-full)',body)
         self.assertIn('isolated-python',body)
         self.assertIn('"$((attempted + reused))" -ne "${planned_total}"',body)
@@ -159,7 +148,6 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
 
     def test_frontend_fingerprint_uses_dedicated_builder_stage(self):
         workflows = (
-            ROOT / '.github/workflows/backend_test_suite.yml',
             ROOT / '.github/workflows/demo-ci.yml',
         )
         for path in workflows:

@@ -26,8 +26,11 @@ jobs:
       lane: ${{ steps.risk.outputs.lane }}
       head: ${{ steps.identity.outputs.head }}
       frontend_mode: ${{ steps.risk.outputs.frontend_mode }}
+      backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
+      managed_orm_required: ${{ steps.risk.outputs.managed_orm_required }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
-      candidate_requested: ${{ github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
+      candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -144,8 +147,13 @@ jobs:
 
       - name: Publish lane summary
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
           RISK_LANE: ${{ needs.classify.outputs.lane }}
           FRONTEND_MODE: ${{ needs.classify.outputs.frontend_mode }}
+          BACKEND_CHANGED: ${{ needs.classify.outputs.backend_changed }}
+          FRONTEND_CHANGED: ${{ needs.classify.outputs.frontend_changed }}
+          MANAGED_ORM_REQUIRED: ${{ needs.classify.outputs.managed_orm_required }}
           PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
           CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
           FAST_RESULT: ${{ needs.fast.result }}
@@ -154,13 +162,28 @@ jobs:
           set -euo pipefail
           effective_frontend="${FRONTEND_MODE}"
           effective_professional="${PROFESSIONAL_MODE}"
+          if [ "${CANDIDATE_REQUESTED}" = true ] && [ "${MANAGED_ORM_REQUIRED}" = true ]; then
+            effective_frontend="full"
+          fi
           if [ "${CANDIDATE_REQUESTED}" != "true" ]; then
             if [ "${effective_frontend}" = "full" ]; then
               effective_frontend="standard"
             fi
             if [ "${effective_professional}" = "full" ]; then
-              effective_professional="governance"
+              if [ "${BACKEND_CHANGED}" = true ]; then
+                effective_professional="standard_backend"
+              elif [ "${FRONTEND_CHANGED}" = true ]; then
+                effective_professional="standard_frontend"
+              else
+                effective_professional="governance"
+              fi
             fi
+          fi
+          if [ "${EVENT_NAME}" = schedule ]; then
+            effective_professional="full"
+            effective_frontend="full"
+          elif [ "${EVENT_NAME}" = push ] && [ "${REF}" = refs/heads/main ]; then
+            effective_professional="mainline"
           fi
           if [ "${RISK_LANE}" = "FAST" ]; then
             selected_lane="fast"

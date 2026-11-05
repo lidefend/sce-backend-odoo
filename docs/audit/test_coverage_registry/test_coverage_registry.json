@@ -4,13 +4,13 @@
   "counts": {
     "odoo_tags": 207,
     "gated": 5,
-    "on_demand": 53,
-    "unwired": 149,
+    "on_demand": 56,
+    "unwired": 146,
     "odoo_tag_declarations": 427,
     "gated_declarations": 97,
     "uncovered_declarations": 330,
-    "ci_unit_scripts": 17,
-    "ci_unit_scripts_wired": 17,
+    "ci_unit_scripts": 18,
+    "ci_unit_scripts_wired": 18,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -353,13 +353,13 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
       ],
       "disposition": "class-selected"
     },
     {
       "group": "acceptance_fixture_gate",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 2,
       "files": [
@@ -367,8 +367,10 @@
         "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
-      "disposition": "wire-pending"
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "api_data_batch_backend",
@@ -526,15 +528,17 @@
     },
     {
       "group": "acceptance_fixture_data_space",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
-      "disposition": "wire-pending"
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "acceptance_fixture_execution_freeze",
@@ -546,7 +550,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle"
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
       ],
       "disposition": "class-selected"
     },
@@ -564,14 +568,17 @@
     },
     {
       "group": "acceptance_scenario_navigation_maintenance",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "acl_gate",
@@ -2788,6 +2795,19 @@
     }
   ],
   "ci_unit_scripts": [
+    {
+      "group": "scripts/ci/test_backend_changed_test_coverage.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_backend_changed_test_coverage.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
     {
       "group": "scripts/ci/test_backend_impact_plan.py",
       "status": "gated",

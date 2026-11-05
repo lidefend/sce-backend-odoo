@@ -781,7 +781,9 @@ def isolated_snapshot(root: Path, head: str, destination: Path, image_id: str) -
               'source_files': files, 'executor_sha256': digest(executor),
               'image_id': image_id, 'runner_sha256': digest(ISOLATED_RUNNER.encode()),
               'definitions': {path: digest(subprocess.check_output(['git','show',head+':'+path],cwd=root))
-                  for path in ('scripts/ci/backend_impact_plan.py','scripts/ops/evidence_scope.py',
+                  for path in ('scripts/ci/backend_impact_plan.py','scripts/ci/backend_suite_plan.py',
+                               'scripts/ci/backend_changed_test_coverage.py','scripts/ci/ci_risk_classifier.py',
+                               'config/ci/risk_tiering_v1.json','scripts/ops/evidence_scope.py',
                                '.github/workflows/backend_test_suite.yml',
                                '.github/workflows/professional_quality_gate.yml')},
               'network': 'none', 'rootfs': 'readonly', 'user': '65534:65534',

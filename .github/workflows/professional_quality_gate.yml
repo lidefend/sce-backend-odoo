@@ -34,6 +34,8 @@ jobs:
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
       orm_required: ${{ steps.risk.outputs.orm_required }}
+      orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
+      payment_orm_required: ${{ steps.risk.outputs.payment_orm_required }}
       tool_checks: ${{ steps.backend_impact.outputs.tool_checks }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
@@ -190,6 +192,8 @@ jobs:
       PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
+      ORM_SCOPES: ${{ needs.professional_authorization.outputs.orm_scopes }}
+      PAYMENT_ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.payment_orm_required != 'false' }}
       ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}
       TOOL_CHECKS: ${{ needs.professional_authorization.outputs.tool_checks }}
 
@@ -250,6 +254,9 @@ jobs:
         run: |
           set -euo pipefail
           make ${TOOL_CHECKS}
+          case " ${TOOL_CHECKS} " in
+            *" verify.ci.workflow.contract "*) make verify.ci.execution_alignment.orders ;;
+          esac
           echo "ran=true" >> "${GITHUB_OUTPUT}"
 
       - name: Bind code evolution to acceptance impact
@@ -267,10 +274,11 @@ jobs:
       # BACKEND_CHANGED flag which also includes pure verification scripts.
       - name: Report ORM verification selection
         run: |
+          printf 'Selected ORM scopes: %s; payment profile required: %s\n' "${ORM_SCOPES}" "${PAYMENT_ORM_REQUIRED}" >> "${GITHUB_STEP_SUMMARY}"
           printf 'ORM_REQUIRED=%s BACKEND_CHANGED=%s PROFESSIONAL_MODE=%s\n' "${ORM_REQUIRED}" "${BACKEND_CHANGED}" "${PROFESSIONAL_MODE}"
 
       - name: Prove settlement component profile with real ORM
-        if: env.ORM_REQUIRED == 'true'
+        if: env.PAYMENT_ORM_REQUIRED == 'true' || (env.CANDIDATE_REQUESTED == 'true' && env.PROFESSIONAL_MODE == 'full')
         run: |
           if [ "${CANDIDATE_REQUESTED}" = true ] && [ "${PROFESSIONAL_MODE}" = full ]; then
             make test.candidate.contract-profiles.orm

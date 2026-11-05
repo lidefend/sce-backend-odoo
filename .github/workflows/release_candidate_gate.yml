@@ -94,4 +94,11 @@ jobs:
     steps:
       - run: |
           result="${{ needs.wait_for_candidate_checks.result }}"
-          test "$result" = success || test "$result" = skipped
+          if [ "$result" = success ]; then
+            echo "Candidate validation: executed and passed" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$result" = skipped ]; then
+            echo "Candidate validation: not applicable (not executed); this status grants no candidate acceptance" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Candidate validation: pending or failed ($result)" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "id": "CI-EXECUTION-ALIGNMENT-20261105",
+  "branch": "fix/ci-execution-alignment-20261105",
+  "baseline_sha": "fe719728b99cae761d50eb14eabcefc4df307adf",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-EXECUTION-ALIGNMENT-20261105.yaml",
+  "record": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-EXECUTION-ALIGNMENT-20261105.yaml",
+    ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "make/ci.mk",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/verify/test_baseline_manifest.json",
+    "scripts/verify/test_coverage_registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed Make tools; no database or service mutation"
+  },
+  "checks": {
+    "ci_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/",
+        "Dockerfile",
+        "addons/",
+        "config/",
+        "config/ci/risk_tiering_v1.json",
+        "make/",
+        "make/ci.mk",
+        "scripts/_lib/",
+        "scripts/ci/",
+        "scripts/common/",
+        "scripts/ops/",
+        "scripts/ops/evidence_scope.py",
+        "scripts/test/",
+        "scripts/verify/"
+      ]
+    },
+    "ci_orders": {
+      "target": "verify.ci.execution_alignment.orders",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/",
+        "Dockerfile",
+        "addons/",
+        "config/",
+        "config/ci/risk_tiering_v1.json",
+        "make/",
+        "make/ci.mk",
+        "scripts/_lib/",
+        "scripts/ci/",
+        "scripts/common/",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/ops/",
+        "scripts/test/",
+        "scripts/test/frontend_acceptance_fixture_orm.sh",
+        "scripts/verify/",
+        "scripts/verify/test_baseline_contract.py"
+      ]
+    }
+  },
+  "blockers": [
+    "Existing frontend release unit assertion blocks full managed acceptance; do not weaken the assertion without owning behavior analysis.",
+    "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
+  ],
+  "next_exact_step": "Review checkpoint diff and scoped evidence; resolve the existing frontend navigation assertion in its owning scope, then obtain independent review and publish via governed PR entry for exact-head remote validation.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "remote CI selection and execution evidence",
+    "module": "scripts/ci and GitHub workflows",
+    "standard_vs_user_specific": "repository delivery mechanism",
+    "why_here": "Selection and evidence are delivery tooling",
+    "why_not_elsewhere": "No change to business assertions or runtime semantics",
+    "blast_radius": "backend suite, professional and frontend CI lanes"
+  },
+  "validation": {
+    "L0": "clean main baseline then explicit dirty scope",
+    "L1": "Passed final ci.local.iteration, 267 CI-contract tests, 76 scheduled/security checks, registry/baseline unit checks, 204 affected cases in each of three independent orders, and 2 real CLI digest-consumption cases.",
+    "L2_L4": "remote execution verification required; no local product/runtime changes",
+    "L5": "independent review and exact candidate checks before integration"
+  },
+  "exclusions": [
+    "business modules",
+    "general ORM reuse without closure proof",
+    "deployment",
+    "unrelated worktrees"
+  ],
+  "stage_identity": {
+    "head": "fe719728b99cae761d50eb14eabcefc4df307adf",
+    "dirty_scope": "owned files in scope; no pre-existing dirty files",
+    "phase": "local implementation checkpoint, not frozen publication candidate"
+  },
+  "results": {
+    "ci_contract": {
+      "status": "passed",
+      "command": "make verify.ci.workflow.contract",
+      "tests": 267,
+      "log": ".runtime/ci-execution-alignment/verification-final.log"
+    },
+    "scheduled_contract": {
+      "status": "passed",
+      "command": "make verify.ci.scheduled_gates",
+      "tests": 76,
+      "log": ".runtime/ci-execution-alignment/verification-final.log"
+    },
+    "affected_orders": {
+      "status": "passed",
+      "command": "make verify.ci.execution_alignment.orders",
+      "cases_per_order": 204,
+      "orders": [
+        "forward",
+        "reverse",
+        "random"
+      ],
+      "log": ".runtime/ci-execution-alignment/orders-final.log",
+      "note": "All three independent processes passed the final affected CI test surface; no ORM or all-repository claim."
+    },
+    "registry": {
+      "status": "passed",
+      "command": "make test.coverage.registry.export verify.test.coverage.registry verify.test.baseline.unit",
+      "tests": 30,
+      "log": ".runtime/ci-execution-alignment/registry-final.log"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/ci-execution-alignment/iteration-referenced.log",
+      "coverage": "L1 only"
+    },
+    "frontend_release": {
+      "status": "failed",
+      "command": "make verify.frontend.release.unit",
+      "owner": "pre-existing P4 validation-tool assertion against AppShell source",
+      "log": ".runtime/ci-execution-alignment/frontend-release-unit.log",
+      "unchanged_inputs": [
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "reason": "test line 76 expects ProductSideNavigation v-if=\"navigationReady\"; both files match baseline HEAD"
+    },
+    "remote_execution": {
+      "status": "not_run",
+      "reason": "No candidate publication or independent review yet; local checks do not prove remote Docker/ORM/artifact execution."
+    },
+    "iteration_initial_new_target": {
+      "status": "failed",
+      "owner": "P4 new Make entry lacked a remote consumer",
+      "log": ".runtime/ci-execution-alignment/iteration-checkpoint.log",
+      "recovery": "Owning control-plane CI branch now invokes the registered three-order entry; subsequent ci.local.iteration passed."
+    },
+    "cli_plan": {
+      "status": "passed",
+      "cases": 2,
+      "command": "Actual backend_suite_plan.py CLI against exact baseline tree; valid digest consumes scene shard; altered digest rejects",
+      "log": ".runtime/ci-execution-alignment/cli-results.json",
+      "limits": "Development tool bytes plus exact baseline source tree; no remote execution."
+    }
+  },
+  "review_resolution": {
+    "changed_tests": "Method selectors plus final successful receipt logs; managed acceptance requires same-head authenticated platform artifact. Missing proof blocks coverage. Explicit ci:candidate selects managed full lane and waits up to 30 minutes; first-attempt evidence only.",
+    "shards": "Workers consume digest-bound fixed plan; aggregation verifies each successful module receipt and disjoint execution/reuse union.",
+    "orm_routing": "Payment and navigation selected separately; shared/unknown runtime inputs expand; whole-PR module impact retained.",
+    "incremental_reuse": "Existing certified isolated Python reuse moved before partition; decision/config inputs added to recipe. Ordinary ORM closure remains uncertified. No test-only reverse-dependency narrowing without proof.",
+    "frontend_builds": "Backend does not consume frontend output; removed shard builds and limited Compose build/pull to owning services. No unverified shared result cache.",
+    "browsers": "Only full frontend lane restores/installs browser; standard lane still runs lint/type/unit/build.",
+    "summaries": "Professional backend/mainline/full summaries aligned; candidate skip explicitly not applicable; module executed_passed and valid_reuse statuses separate."
+  },
+  "rollback": "Revert this standalone CI checkpoint through the protected PR flow if integrated; no database/service/environment changes were executed.",
+  "completion": {
+    "batch": "implementation validated locally; verification_pending",
+    "mainline": "not integrated",
+    "deployment": "not performed",
+    "user_acceptance": "not claimed"
+  },
+  "external_state": "No remote writes, PR, merge, deployment or runtime mutations.",
+  "coverage_limitations": [
+    "Static declared test-method identities; dynamic factories/inherited generated cases are not a complete inventory proof.",
+    "Managed evidence requires successful frontend candidate workflow on the same head and original run attempt. Missing or failed managed evidence remains pending.",
+    "No narrowing of test-only reverse dependencies or general ORM history reuse without complete dependency proof."
+  ],
+  "generated_evidence": {
+    "producer": "repository commit hook refresh.generated_evidence",
+    "reviewed_paths": [
+      "docs/engineering_convergence/complexity_budget_report.md",
+      "docs/engineering_convergence/split_plan_queue.md",
+      "docs/engineering_convergence/test_inventory.csv",
+      "docs/engineering_convergence/test_inventory_summary.md"
+    ],
+    "review_result": "Only source-size/line-count and two new CI validation-asset inventory entries; no product/source changes.",
+    "evidence_reuse": "Documentation-only generated refresh does not alter test/executor inputs; previously passed scoped results retained."
+  }
+}

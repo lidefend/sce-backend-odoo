@@ -171,6 +171,11 @@ case "$operation" in
     }
     bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
     ;;
+  fixture-orm)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    bash "$ROOT_DIR/scripts/test/frontend_acceptance_fixture_orm.sh"
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    ;;
   release-snapshot)
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"

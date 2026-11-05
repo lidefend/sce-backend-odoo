@@ -69,6 +69,56 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(plan['mode'], 'full')
 
 
+class FrozenExecutionPlanTest(unittest.TestCase):
+    def setUp(self):
+        self.required = {'base': 'b' * 40, 'head': 'a' * 40,
+                         'modules': ['a', 'b', 'c', 'd']}
+        self.plan = {**self.required, 'shards': planner.partition(['b', 'c', 'd']),
+                     'reuse_decision': {'reuse': ['a'], 'decisions': [
+                         {'target': 'a', 'previous_receipt': {'locator': {'module': 'a'}}}]}}
+
+    def test_reused_first_module_does_not_drop_last_module(self):
+        with patch.object(planner, 'select_historical_receipts', return_value={
+                'decisions': [{'target': 'a', 'decision': 'REUSE'}]}):
+            result = planner.validate_execution_plan(self.plan, self.required)
+        self.assertEqual([s['modules'] for s in result['shards']], [['b'], ['c'], ['d']])
+
+    def test_missing_duplicate_overlap_and_wrong_identity_are_rejected(self):
+        for mutation in ('missing', 'duplicate', 'overlap', 'head', 'base', 'modules'):
+            plan = copy.deepcopy(self.plan)
+            if mutation == 'missing': plan['shards'].pop()
+            elif mutation == 'duplicate': plan['shards'][1]['modules'] = ['b']
+            elif mutation == 'overlap': plan['shards'][0]['modules'] = ['a', 'b']
+            else: plan[mutation] = 'invalid'
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                planner.validate_execution_plan(plan, self.required)
+
+    def test_expired_reuse_is_not_trusted_from_plan(self):
+        with patch.object(planner, 'select_historical_receipts', return_value={
+                'decisions': [{'target': 'a', 'decision': 'RUN'}]}), self.assertRaises(ValueError):
+            planner.validate_execution_plan(self.plan, self.required)
+
+    def test_certified_isolated_reuse_is_rechecked_without_repartition(self):
+        row = {'target': 'a', 'decision': 'REUSE', 'authority': 'isolated_python',
+               'image_id': 'sha256:' + 'f' * 64, 'previous_receipt': {'locator': {'module': 'a'}}}
+        self.plan['reuse_decision']['decisions'] = [row]
+        with patch.object(planner, 'isolated_plan_reuse', return_value=row), patch.object(
+                planner, 'select_historical_receipts', return_value={'decisions': []}):
+            self.assertEqual(self.plan, planner.validate_execution_plan(self.plan, self.required))
+        with patch.object(planner, 'isolated_plan_reuse', return_value=None), self.assertRaises(ValueError):
+            planner.validate_execution_plan(self.plan, self.required)
+
+    def test_actual_receipts_cover_each_executed_module_once(self):
+        receipts = [{'source_head': self.plan['head'], 'integration_base': self.plan['base'],
+                     'exit_code': 0, 'test_count': 1, 'module': m} for m in ['b', 'c', 'd']]
+        planner.verify_execution_coverage(self.plan, receipts)
+        for bad in (receipts[:-1], receipts + receipts[:1],
+                    [dict(r, source_head='old') for r in receipts],
+                    [dict(r, test_count=0) for r in receipts],
+                    [dict(r, module='a') for r in receipts]):
+            with self.assertRaises(ValueError): planner.verify_execution_coverage(self.plan, bad)
+
+
 class InputInventoryTest(unittest.TestCase):
     def setUp(self):
         self.graph={'core':{'prefix':'addons/core/','depends':{'base'},'file_inputs':[]},

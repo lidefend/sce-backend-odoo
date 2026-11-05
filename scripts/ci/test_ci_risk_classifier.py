@@ -354,5 +354,21 @@ class BackendRecipeScopeTests(unittest.TestCase):
                 self.assertFalse(ci_risk_classifier.git_backend_recipe_only(base, link_head))
 
 
+class ORMScopeTests(unittest.TestCase):
+    def test_navigation_does_not_select_payment(self):
+        result = classify(['addons/smart_construction_core/models/support/product_scenario.py'], event_name='pull_request')
+        self.assertIn('navigation_maintenance', result.orm_scopes)
+        self.assertNotIn('payment_settlement', result.orm_scopes)
+
+    def test_payment_and_shared_changes_select_dedicated_regression(self):
+        for path in ['addons/smart_construction_core/models/payment_request.py',
+                     'addons/smart_core/models/base.py', 'scripts/test/test.sh']:
+            with self.subTest(path=path):
+                self.assertIn('payment_settlement', classify([path], event_name='pull_request').orm_scopes)
+
+    def test_unrelated_module_still_selects_module_suite(self):
+        self.assertEqual(('module_suite',), classify(['addons/other/models/record.py'], event_name='pull_request').orm_scopes)
+
+
 if __name__ == "__main__":
     unittest.main()
