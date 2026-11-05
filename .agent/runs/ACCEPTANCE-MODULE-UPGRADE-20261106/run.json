@@ -19,7 +19,9 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "scripts/mod/upgrade.sh",
     "scripts/dev/backend_acceptance_up.sh",
-    "scripts/verify/lib/frontend_acceptance_lease.mjs"
+    "scripts/verify/lib/frontend_acceptance_lease.mjs",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/common/frontend_acceptance_attempt.sh"
   ],
   "checks": {},
   "environment": {
@@ -48,14 +50,14 @@
     "targeted": {
       "status": "passed",
       "entry": "make verify.acceptance.runtime.baseline_rebuild.unit",
-      "tests": 152,
-      "log": ".runtime/acceptance-module-upgrade/targeted-recovery.log",
-      "detail": "24 candidate profile +10 artifact +118 lifecycle/profile/identity; includes 21 new upgrade/recovery tests; no runtime writes"
+      "tests": 155,
+      "log": ".runtime/acceptance-module-upgrade/targeted-custody-final.log",
+      "detail": "24 candidate profile +10 artifact +121 lifecycle/profile/identity; no runtime writes"
     },
     "iteration": {
       "status": "passed",
       "entry": "make ci.local.iteration",
-      "log": ".runtime/acceptance-module-upgrade/iteration-recovery.log"
+      "log": ".runtime/acceptance-module-upgrade/iteration-custody-final.log"
     },
     "runtime": {
       "status": "not_run",
@@ -68,8 +70,20 @@
     },
     "review_fix": {
       "status": "verification_pending",
-      "detail": "S1: exact disposable attempt name/label and Docker stop readback under leases; atomic pending markers block backend/browser until explicit identity-bound recovery without replay"
+      "detail": "S1 fixes: exact attempt Docker identity/readback, atomic persistent pending marker and explicit no-replay recovery; interrupted attempts always retain pending. Snapshot holds same dual leases and custody through full isolated shell lifecycle."
+    },
+    "final_profile": {
+      "status": "passed",
+      "entry": "python3 -m unittest scripts.verify.test_frontend_acceptance_runtime_profile",
+      "tests": 38,
+      "log": ".runtime/acceptance-module-upgrade/profile-custody-final.log",
+      "detail": "After one additional actual backend shell lease-loop negative test; includes 25 new custody/lifecycle tests"
     }
   },
-  "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback"
+  "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback",
+  "risk_and_rollback": {
+    "shared_refs": "Root FE575685 full Quick tests passed but receipt refresh failed after concurrent governance commits changed shared refs. No receipt claimed; finish this PR/integration, freeze all agent refs before root final Quick. No Quick proof protocol change.",
+    "runtime": "No runtime writes performed by governance agent. Module upgrade/snapshot are non-reset; interruption keeps identity-bound custody. Operator performs explicit recover (no replay) and same-SHA backend.up/readback.",
+    "rollback": "Revert P4 commits through protected flow; never infer database rollback from code rollback."
+  }
 }

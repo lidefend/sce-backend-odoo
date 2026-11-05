@@ -25,9 +25,9 @@ from frontend_acceptance_runtime_profile import resolve
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def command(args, *, capture=True, env=None):
+def command(args, *, capture=True, env=None, stdin=None):
     if not capture:
-        child = subprocess.Popen(args, cwd=ROOT, env=env, start_new_session=True)
+        child = subprocess.Popen(args, cwd=ROOT, env=env, stdin=stdin, start_new_session=True)
         try:
             code = child.wait()
         except BaseException:
@@ -59,14 +59,19 @@ def inspect(name):
     return rows[0]
 
 
-def source_identity(env):
+def checkout_identity(env, *, require_expected=True):
     head = command(['git', 'rev-parse', 'HEAD']).strip()
-    if not re.fullmatch(r'[0-9a-f]{40}', env.get('EXPECTED_HEAD', '')) or env['EXPECTED_HEAD'] != head:
+    if require_expected and (not re.fullmatch(r'[0-9a-f]{40}', env.get('EXPECTED_HEAD', '')) or env['EXPECTED_HEAD'] != head):
         raise ValueError('EXPECTED_HEAD must equal current full HEAD')
     if env.get('SC_ACCEPTANCE_SOURCE_SHA', head) != head:
         raise ValueError('artifact source SHA differs from upgrade HEAD')
     if command(['git', 'status', '--porcelain', '--untracked-files=all']).strip():
         raise ValueError('module upgrade requires a clean checkout')
+    return head
+
+
+def source_identity(env):
+    head = checkout_identity(env)
     modules = env.get('MODULE', '').split(',')
     if not modules or len(set(modules)) != len(modules):
         raise ValueError('explicit distinct module list required')
@@ -130,11 +135,12 @@ def leases(profile, env):
         yield
 
 
-def pending_record(profile, env, head, name, token):
+def pending_record(profile, env, head, name, token, operation="module-upgrade"):
     return {'schema': 'acceptance-module-upgrade-pending.v1', 'profile': 'local',
             'database': profile['DB_NAME'], 'database_filter': profile['ODOO_DBFILTER'],
             'filestore': profile['ODOO_DATA'], 'source_sha': head,
-            'modules': env['MODULE'].split(','), 'container_name': name, 'attempt_id': token}
+            'modules': env['MODULE'].split(',') if operation == 'module-upgrade' else [],
+            'operation': operation, 'container_name': name, 'attempt_id': token}
 
 
 def write_pending(record, profile, env):
@@ -174,7 +180,12 @@ def recover_pending(profile, env, head):
     if not re.fullmatch(r'[0-9a-f]{32}', token):
         raise ValueError('pending attempt identity invalid')
     name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
-    expected = pending_record(profile, env, head, name, token)
+    operation = record.get('operation')
+    if operation not in ('module-upgrade', 'release-snapshot'):
+        raise ValueError('unknown pending operation')
+    if operation == 'release-snapshot' and env.get('MODULE', ''):
+        raise ValueError('snapshot recovery requires empty MODULE; never replays module upgrade')
+    expected = pending_record(profile, env, head, name, token, operation)
     if any(item != expected for item in records):
         raise ValueError('pending marker scope/source mismatch')
     stop_upgrade_container(name, token, profile)
@@ -234,14 +245,42 @@ def stop_upgrade_container(name, token, profile):
         raise ValueError('upgrade writer stop unconfirmed; manual recovery required')
 
 
+def run_attempt(profile, env, head, operation, args, *, stdin=None):
+    token = uuid.uuid4().hex
+    name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
+    if command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{name}$']).strip():
+        raise ValueError('write attempt container already exists')
+    write_pending(pending_record(profile, env, head, name, token, operation), profile, env)
+    try:
+        command(args, capture=False,
+                env={**env, 'SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME': name,
+                     'SC_ACCEPTANCE_MODULE_UPGRADE_ID': token}, stdin=stdin)
+        stop_upgrade_container(name, token, profile)
+    except BaseException as error:
+        try:
+            stop_upgrade_container(name, token, profile)
+            if not isinstance(error, (InterruptedError, KeyboardInterrupt)):
+                for path in pending_paths(profile, env):
+                    path.unlink()
+            else:
+                print('[acceptance.module.upgrade] RECOVERY_PENDING interrupted_attempt_requires_explicit_recovery=true', flush=True)
+        except BaseException:
+            print('[acceptance.module.upgrade] RECOVERY_PENDING writer_stop_unconfirmed=true acceptance_blocked=true', flush=True)
+            raise
+        raise
+    for path in pending_paths(profile, env):
+        path.unlink()
+
+
 def upgrade(env):
     profile = profile_identity(env)
     if env.get('ACCEPTANCE_UPGRADE_RECOVER', '') not in ('', '0', '1'):
         raise ValueError('invalid recovery mode; upgrade not started')
-    head = source_identity(env)
+    recovering = env.get('ACCEPTANCE_UPGRADE_RECOVER') == '1'
+    head = checkout_identity(env) if recovering else source_identity(env)
     with leases(profile, env):
         # Recheck after lock acquisition; never execute against a drifted checkout.
-        if source_identity(env) != head:
+        if (checkout_identity(env) if recovering else source_identity(env)) != head:
             raise ValueError('source changed while acquiring lease')
         if env.get('ACCEPTANCE_UPGRADE_RECOVER') == '1':
             recover_pending(profile, env, head)
@@ -266,10 +305,6 @@ def upgrade(env):
                           'modules': env['MODULE'].split(','), 'writers': [
                               {'id': row['Id'], 'name': row['Name'], 'running': row['State']['Running']}
                               for row in rows]}, sort_keys=True), flush=True)
-        token = uuid.uuid4().hex
-        attempt_name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
-        if command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{attempt_name}$']).strip():
-            raise ValueError('upgrade attempt container already exists')
         stopped = []
         started = False
         try:
@@ -283,15 +318,10 @@ def upgrade(env):
                 raise ValueError('writer appeared before upgrade')
             if source_identity(env) != head:
                 raise ValueError('source changed before upgrade')
-            write_pending(pending_record(profile, env, head, attempt_name, token), profile, env)
             started = True
-            command(['bash', str(ROOT / 'scripts/mod/upgrade.sh')], capture=False,
-                    env={**env, 'SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME': attempt_name,
-                         'SC_ACCEPTANCE_MODULE_UPGRADE_ID': token})
-            stop_upgrade_container(attempt_name, token, profile)
-            for path in pending_paths(profile, env):
-                path.unlink()
-        except BaseException:
+            run_attempt(profile, env, head, 'module-upgrade',
+                        ['bash', str(ROOT / 'scripts/mod/upgrade.sh')])
+        except BaseException as error:
             if not started:
                 for row in reversed(stopped):
                     current = inspect(row['Id'])
@@ -302,19 +332,23 @@ def upgrade(env):
                         raise ValueError('pre-upgrade restoration failed; manual recovery required')
                 print('[acceptance.module.upgrade] aborted_before_upgrade original_writer_states_restored=true', flush=True)
             else:
-                try:
-                    stop_upgrade_container(attempt_name, token, profile)
-                    for path in pending_paths(profile, env):
-                        if path.exists():
-                            path.unlink()
-                except BaseException:
-                    print("[acceptance.module.upgrade] RECOVERY_PENDING writer_stop_unconfirmed=true acceptance_blocked=true", flush=True)
-                    raise
                 print(f'[acceptance.module.upgrade] FAILED database_not_rolled_back=true writers_left_stopped=true sha={head}', flush=True)
             raise
         if running_writers(profile):
             raise ValueError('unexpected running writer after upgrade; do not accept runtime')
         print(f'[acceptance.module.upgrade] UPGRADED sha={head} writers_left_stopped=true registry_pending=true next=backend.acceptance.up-on-same-SHA', flush=True)
+
+
+def release_snapshot(env):
+    profile = profile_identity(env)
+    head = checkout_identity(env, require_expected=False)
+    with leases(profile, env):
+        check_pending(profile, env)
+        if checkout_identity(env, require_expected=False) != head:
+            raise ValueError('snapshot source changed before write')
+        with (ROOT / 'scripts/test/frontend_acceptance_release_snapshot.py').open() as source:
+            run_attempt(profile, {**env, 'ODOO_SHELL_RUN_ISOLATED': '1'}, head,
+                        'release-snapshot', ['bash', str(ROOT / 'scripts/ops/odoo_shell_exec.sh')], stdin=source)
 
 
 def main():
@@ -327,6 +361,8 @@ def main():
             profile = profile_identity(os.environ)
             with leases(profile, os.environ):
                 check_pending(profile, os.environ)
+        elif sys.argv[1:] == ['--release-snapshot']:
+            release_snapshot(os.environ)
         elif sys.argv[1:]:
             raise ValueError('unsupported module upgrade operation')
         else:

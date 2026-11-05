@@ -368,7 +368,8 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, \
              mock.patch.object(self.tool, "command", side_effect=self.command), \
              mock.patch.object(self.tool, "inspect", side_effect=self.inspect), \
-             mock.patch.object(self.tool, "source_identity", return_value="a" * 40):
+             mock.patch.object(self.tool, "source_identity", return_value="a" * 40), \
+             mock.patch.object(self.tool, "checkout_identity", return_value="a" * 40):
             self.tool.upgrade(dict(self.env, XDG_RUNTIME_DIR=temp))
 
     def test_both_running_writers_stop_before_real_upgrade_entry_and_stay_stopped(self):
@@ -485,7 +486,8 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
                 self.tool.write_pending(record, self.profile, env)
             with mock.patch.object(self.tool, "command", side_effect=self.command), \
                  mock.patch.object(self.tool, "inspect", side_effect=self.inspect), \
-                 mock.patch.object(self.tool, "source_identity", return_value="a" * 40):
+                 mock.patch.object(self.tool, "source_identity", return_value="a" * 40), \
+             mock.patch.object(self.tool, "checkout_identity", return_value="a" * 40):
                 with self.assertRaisesRegex(ValueError, "recovery pending"):
                     self.tool.upgrade(env)
                 self.assertEqual(self.events, [])
@@ -556,9 +558,74 @@ try {{
             self.assertTrue(marker.exists())
 
 
+    def test_snapshot_holds_both_leases_through_isolated_shell(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            def run(args, **kwargs):
+                if args[:2] == ['docker', 'ps']:
+                    return ''
+                self.assertEqual(args, ['bash', str(ROOT / 'scripts/ops/odoo_shell_exec.sh')])
+                self.assertEqual(kwargs['env']['ODOO_SHELL_RUN_ISOLATED'], '1')
+                self.assertEqual(Path(kwargs['stdin'].name).name, 'frontend_acceptance_release_snapshot.py')
+                with self.assertRaisesRegex(ValueError, 'active acceptance lease'):
+                    with self.tool.leases(self.profile, env):
+                        self.fail('upgrade must not overlap snapshot')
+                return ''
+            with mock.patch.object(self.tool, 'command', side_effect=run), \
+                 mock.patch.object(self.tool, 'checkout_identity', return_value='a' * 40):
+                self.tool.release_snapshot(env)
+            with self.tool.leases(self.profile, env):
+                pass
+
+    def test_interrupted_upgrade_retains_pending_even_if_writer_stop_confirmed(self):
+        self.fail_upgrade = True
+        original = self.command
+        def interrupted(args, **kwargs):
+            try:
+                return original(args, **kwargs)
+            except subprocess.CalledProcessError:
+                raise InterruptedError('signal')
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            with mock.patch.object(self.tool, 'command', side_effect=interrupted), \
+                 mock.patch.object(self.tool, 'inspect', side_effect=self.inspect), \
+                 mock.patch.object(self.tool, 'source_identity', return_value='a' * 40):
+                with self.assertRaises(InterruptedError):
+                    self.tool.upgrade(env)
+            self.assertFalse(self.attempt['State']['Running'])
+            self.assertTrue(all(path.exists() for path in self.tool.pending_paths(self.profile, env)))
+
+
+    def test_interrupted_snapshot_has_exact_custody_and_recovery_never_replays(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp, MODULE='')
+            events = []
+            def run(args, **kwargs):
+                events.append(args)
+                if args[0] == 'bash':
+                    self.assertEqual(kwargs['env']['ODOO_SHELL_RUN_ISOLATED'], '1')
+                    self.assertTrue(kwargs['env']['SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME'])
+                    self.assertRegex(kwargs['env']['SC_ACCEPTANCE_MODULE_UPGRADE_ID'], r'^[0-9a-f]{32}$')
+                    raise InterruptedError('snapshot cancelled')
+                return ''
+            with mock.patch.object(self.tool, 'command', side_effect=run), \
+                 mock.patch.object(self.tool, 'checkout_identity', return_value='a' * 40):
+                with self.assertRaises(InterruptedError):
+                    self.tool.release_snapshot(env)
+                paths = self.tool.pending_paths(self.profile, env)
+                self.assertTrue(all(path.exists() for path in paths))
+                self.assertEqual(json.loads(paths[0].read_text())['operation'], 'release-snapshot')
+                self.tool.upgrade(dict(env, ACCEPTANCE_UPGRADE_RECOVER='1'))
+            self.assertEqual(sum(args[0] == 'bash' for args in events), 1)
+            self.assertFalse(any(path.exists() for path in paths))
+        shell = (ROOT / 'scripts/ops/odoo_shell_exec.sh').read_text()
+        self.assertIn('source "$(dirname "$0")/../common/frontend_acceptance_attempt.sh"', shell)
+        self.assertIn('run --rm --no-deps -T "${acceptance_attempt_args[@]}"', shell)
+
     def test_real_upgrade_shell_passes_exact_attempt_name_and_label(self):
         source = (ROOT / 'scripts/mod/upgrade.sh').read_text()
-        block = source[source.index('acceptance_attempt_args=()'):]
+        common = (ROOT / 'scripts/common/frontend_acceptance_attempt.sh').read_text()
+        block = common + source[source.index('compose_dev run --rm -T'):]
         token = 'f' * 32
         env = dict(os.environ, **self.env, SC_ACCEPTANCE_MODULE_UPGRADE_ID=token,
                    SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME='sc-fe-r2-p1-01-module-upgrade-' + token,
@@ -576,6 +643,22 @@ try {{
         result = subprocess.run(['bash', '-c', 'set -eu; compose_dev() { exit 99; }; ' + block],
                                 env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
+
+
+    def test_actual_backend_replacement_lease_loop_denies_corrupt_pending(self):
+        source = (ROOT / 'scripts/dev/backend_acceptance_up.sh').read_text()
+        block = source[source.index('lock_root='):source.index('backup=""')]
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            path = self.tool.pending_paths(self.profile, env)[1]
+            path.parent.mkdir(parents=True)
+            path.write_text('corrupt-pending')
+            result = subprocess.run(['bash', '-c', 'set -eu; ' + block],
+                                    env={**os.environ, **env, 'PORT': '18082', 'DATABASE': 'sc_frontend_acceptance'},
+                                    text=True, capture_output=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn('module upgrade recovery pending', result.stderr)
+            self.assertTrue(path.exists())
 
     def test_backend_raw_replacement_and_reuse_both_check_pending(self):
         runtime = (ROOT / 'scripts/dev/frontend_acceptance_runtime.sh').read_text()
@@ -613,7 +696,7 @@ try {{
             root = Path(temp)
             (root / "scripts/ops").mkdir(parents=True)
             (root / "scripts/dev").mkdir(parents=True)
-            (root / "scripts/dev/frontend_acceptance_module_upgrade.py").write_text("# offline pending check stub\n")
+            (root / "scripts/dev/frontend_acceptance_module_upgrade.py").write_text("import sys\nassert sys.argv[1:] == ['--release-snapshot']\nprint('mode=1')\n")
             (root / "scripts/test").mkdir(parents=True)
             (root / "scripts/test/frontend_acceptance_release_snapshot.py").write_text("fixture")
             (root / "scripts/ops/odoo_shell_exec.sh").write_text('echo "mode=${ODOO_SHELL_RUN_ISOLATED:-exec}"\n')

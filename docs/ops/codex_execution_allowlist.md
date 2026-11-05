@@ -806,11 +806,15 @@ shell 模式，不依赖启动旧 Compose registry；其他 profile 与 CI 路�
 
 每次 `-u` 使用唯一容器名与标签；在持有双租约时原子记录相同作用域的 pending 标记，
 中断先结束本次 CLI 进程组，再按精确容器名/标签停止并回读一次性升级写入者。
+中断场景即使当时已确认停止也保留 pending，须显式恢复，防止 daemon 排队请求迟到。
 只有确认该写入者不存在或已停止后才清除标记。daemon 不可达、身份不符或标记损坏
 保持 `RECOVERY_PENDING`，后端启动/复用及浏览器租约均拒绝，不宣称安全完成。
 恢复沿原入口增加 `ACCEPTANCE_UPGRADE_RECOVER=1`，须仍绑定记录中的 clean SHA、
 MODULE 与 profile：仅回收该次写入者、确认停止并清标记，绝不自动重放 `-u`。
 恢复后是否重试升级，由操作者显式再次调用原模块升级入口。
+本地发布快照的隔离 shell 从检查到写入结束全程持有相同双租约，并复用相同命名容器
+与 pending 收容机制；快照 pending 的恢复沿该原入口指定 `MODULE=`（空值），按标记
+的源码及 profile 回收，不会重放快照或模块升级。
 
 
 ## 5. 失败即许可（Failure Is Allowed）

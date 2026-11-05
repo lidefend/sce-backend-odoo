@@ -885,7 +885,9 @@ PYPROJECTDOM
     ;;
   module-upgrade)
     preflight
-    : "${MODULE:?MODULE is required}"
+    if [[ "$PROFILE" != local || "${ACCEPTANCE_UPGRADE_RECOVER:-}" != 1 ]]; then
+      : "${MODULE:?MODULE is required}"
+    fi
     if [[ "$PROFILE" == local ]]; then
       python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py"
     else
@@ -900,8 +902,7 @@ PYPROJECTDOM
   release-snapshot)
     preflight
     if [[ "$PROFILE" == local ]]; then
-      python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py" --check-pending
-      ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+      python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py" --release-snapshot
     else
       bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
     fi
