@@ -168,6 +168,28 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         self.assertEqual(finance["scenarios"], [])
         self.assertEqual(finance["entries"][0]["configured"], False)
 
+    def test_stable_center_identity_fallback_for_native_core_menus(self):
+        # Simulates Odoo core menus (e.g. account) natively parented outside
+        # the business root but grouped by the delivery tree under a center.
+        env = _Env()
+        account_root = _Menu(999, None, "Invoicing", "account.menu_finance")
+        account_menu = _Menu(1001, account_root, "Journal Entries", "account.menu_action_move_journal_line_form")
+        env.menus[999] = account_root
+        env.menus[1001] = account_menu
+        env.entries = _Entries([_Entry(account_menu, _Scenario("accounting.management", "会计核算"))])
+        leaf = dict(_leaf(1001, 10011, "日记账分录", "account.menu_action_move_journal_line_form"))
+        center_group = {
+            "label": "财务账款",
+            "menu_id": 900,
+            "canonical_navigation": {"menu_id": 10},  # stable native center menu id
+            "children": [leaf],
+        }
+        nav = [{"label": "系统菜单", "children": [center_group]}]
+        result = PROJ.project_authorized_nav_with_env(env, nav, {})
+        centers = result["tree"]["centers"]
+        finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
+        self.assertEqual(finance["scenarios"][0]["key"], "accounting.management")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
