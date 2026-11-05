@@ -82,6 +82,7 @@
     "fix/guard-registry-governance-20261106": ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json",
     "fix/governed-generated-sync-20261106": ".agent/runs/GENERATED-SYNC-GOVERNANCE-20261106/run.json",
     "fix/orm-test-coverage-registration-20261106": ".agent/runs/ORM-TEST-COVERAGE-GOVERNANCE-20261106/run.json",
-    "fix/architecture-fact-source-guards-20261106": ".agent/runs/ARCHITECTURE-FACT-GUARDS-20261106/run.json"
+    "fix/architecture-fact-source-guards-20261106": ".agent/runs/ARCHITECTURE-FACT-GUARDS-20261106/run.json",
+    "fix/generated-replay-drift-sync-20261106": ".agent/runs/GENERATED-REPLAY-DRIFT-20261106/run.json"
   }
 }
