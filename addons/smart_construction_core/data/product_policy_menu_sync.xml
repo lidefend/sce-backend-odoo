@@ -2,5 +2,6 @@
 <odoo>
   <data noupdate="0">
     <function model="sc.product.policy" name="sync_construction_menu_product_policies"/>
+    <function model="sc.product.policy" name="protect_product_menu_records"/>
   </data>
 </odoo>

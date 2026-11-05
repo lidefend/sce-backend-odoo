@@ -216,6 +216,29 @@ class ScProductPolicy(models.Model):
         return {"applied": applied, "skipped": skipped, "total": len(mapping)}
 
     @api.model
+    def protect_product_menu_records(self):
+        """Mark the maintainable product menu XMLIDs noupdate on every upgrade.
+
+        This is the persistent complement to the one-time 17.0.0.173
+        pre-migration: menus added in a later release are still loaded with
+        noupdate=False, and this function (wired through a data-file function
+        that runs on install and upgrade) marks them after load so operator
+        edits survive the *next* upgrade. Only ``ir.ui.menu`` records of this
+        module are touched; actions, views and security records are untouched.
+        """
+        Data = self.env["ir.model.data"].sudo()
+        marked = 0
+        for row in Data.search([
+            ("model", "=", "ir.ui.menu"),
+            ("module", "=", "smart_construction_core"),
+            ("name", "=like", "menu_sc_%"),
+        ]):
+            if not row.noupdate:
+                row.write({"noupdate": True})
+                marked += 1
+        return {"marked_noupdate": marked}
+
+    @api.model
     def _ensure_formal_product_navigation_runtime_params(self):
         Param = self.env["ir.config_parameter"].sudo()
         Param.set_param(NAV_USER_DATA_ACCEPTANCE_ONLY_PARAM, "0")
