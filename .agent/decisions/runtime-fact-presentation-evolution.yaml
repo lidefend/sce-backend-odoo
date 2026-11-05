@@ -1,0 +1,24 @@
+decision:
+  id: ARCH-DECISION-RUNTIME-FACT-PRESENTATION-EVOLUTION
+  topic: runtime_fact_maintenance_and_public_presentation
+  status: active
+  scope: owner_confirmed_direction_not_final_migration_design
+  recorded_on: '2026-11-05'
+  report: docs/architecture/runtime_logic_and_evolution_20261105.md
+  goal: .agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml
+  rules:
+    - 后端事实与有效发布契约决定产品语义，前端公共层负责解释、呈现、交互与调用
+    - 针对已实现能力收敛日常事实维护；不把全部业务配置化描述为现状
+    - 优先消除同一业务语义的文件与数据库双来源，先明确读者、稳定身份及迁移边界
+    - 导航展示场景和企业业务启用语义须分别确认，展示重组不能自动扩大授权
+    - 正常升级应保留已维护事实；发布须消费选定有效策略并保留版本与回退证据
+    - 纯表现优化可独立迭代，不能在前端补造缺失业务语义或授权依据
+    - 一次性演示环境重置不是长期事实来源，也不是常规升级策略
+    - 每轮绑定当时源码与实际执行证据，分别报告批次、主线、部署与用户验收状态
+  unresolved_design:
+    - 企业启用与导航场景的稳定关联模型及兼容迁移方案
+    - 产品锁定目录文件约束的保留范围与受管发布替代路径
+    - 首个业务规则配置闭环与 Renderer 交互的产品范围
+  related:
+    - .agent/decisions/contract-first.yaml
+    - .agent/decisions/contract-driven-runtime-authority.yaml

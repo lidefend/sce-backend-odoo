@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: RUNTIME-EVOLUTION-REGISTRATION-20261105
+  title: 登记运行逻辑分析与长期迭代方向
+  status: completed
+  formal_product_layer: P4
+  exclusions: [产品实现, 数据库变更, 部署, 自动启动长期任务]
