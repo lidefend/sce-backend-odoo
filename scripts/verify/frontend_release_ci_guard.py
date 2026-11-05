@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+import yaml
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,12 +48,20 @@ def findings(root: Path = ROOT) -> list[str]:
         "if-no-files-found: error",
     )
     errors.extend(f"WORKFLOW_CONTRACT_MISSING:{item}" for item in required_text if item not in text)
-    if text.count("printf 'COMPOSE_PROJECT_NAME=%s\\n' \"${CI_PROJECT_NAME}\"") != 2:
-        errors.append("ISOLATED_COMPOSE_PROJECT_NOT_EXPORTED")
-    if text.count("printf 'ODOO_PORT=18082\\n'") != 2:
-        errors.append("ISOLATED_BACKEND_PORT_NOT_EXPORTED")
-    if text.count("printf 'SC_SOURCE_REVISION=%s\\n' \"${CHECKOUT_SHA}\"") != 2:
-        errors.append("ISOLATED_SOURCE_REVISION_NOT_EXPORTED")
+    try:
+        jobs = yaml.safe_load(text)['jobs']
+        for name in ('frontend_release_gate', 'managed_orm'):
+            job = jobs.get(name, {})
+            commands = '\n'.join(step.get('run', '') for step in job.get('steps', []))
+            for marker, error in (
+                ("printf 'COMPOSE_PROJECT_NAME=%s\\n' \"${CI_PROJECT_NAME}\"", 'ISOLATED_COMPOSE_PROJECT_NOT_EXPORTED'),
+                ("printf 'ODOO_PORT=18082\\n'", 'ISOLATED_BACKEND_PORT_NOT_EXPORTED'),
+                ("printf 'SC_SOURCE_REVISION=%s\\n' \"${CHECKOUT_SHA}\"", 'ISOLATED_SOURCE_REVISION_NOT_EXPORTED'),
+            ):
+                if commands.count(marker) != 2:
+                    errors.append(error)
+    except (yaml.YAMLError, KeyError, TypeError, AttributeError):
+        errors.append('CI_GATE_WORKFLOW_JOBS_INVALID')
     identity_markers = (
         "CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}",
         "sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.env",

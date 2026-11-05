@@ -594,7 +594,7 @@ jobs:
       - name: Verify changed test execution identities
         env:
           GH_TOKEN: ${{ github.token }}
-          MANAGED_WAIT_SECONDS: ${{ github.event_name == 'schedule' && '7200' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' && '1800' || '0' }}
+          MANAGED_WAIT_SECONDS: ${{ '7200' }}
         run: |
           python3 scripts/ci/backend_changed_test_coverage.py \
             --discover-managed --wait-managed-seconds "${MANAGED_WAIT_SECONDS}" --plan "${RUNNER_TEMP}/verified-plan.json" --receipts "${RUNNER_TEMP}/execution-receipts" \

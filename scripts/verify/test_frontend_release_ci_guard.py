@@ -36,6 +36,15 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         )
         return temporary, root
 
+    def test_managed_job_cannot_borrow_frontend_identity_exports(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        workflow = root / '.github/workflows/frontend_release_gate.yml'
+        prefix, managed = workflow.read_text().split('\n  managed_orm:\n', 1)
+        managed = managed.replace("printf 'ODOO_PORT=18082\\n'", "printf 'ODOO_PORT=9999\\n'", 1)
+        workflow.write_text(prefix + '\n  managed_orm:\n' + managed)
+        self.assertIn('ISOLATED_BACKEND_PORT_NOT_EXPORTED', findings(root))
+
     def test_repository_contract_passes(self):
         self.assertEqual(findings(), [])
 

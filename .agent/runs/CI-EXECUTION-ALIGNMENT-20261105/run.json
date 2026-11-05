@@ -53,9 +53,11 @@
     "scripts/ops/test_safe_worktree_cleanup.py",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
     "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+    "scripts/verify/frontend_release_ci_guard.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_baseline_manifest.json",
     "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_release_ci_guard.py",
     "scripts/verify/test_frontend_release_ci_identity.py",
     "scripts/verify/test_pr_publish_preflight.py"
   ],
@@ -141,7 +143,7 @@
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Review and publish targeted remote CI fixes to existing PR811; wait exact-head required checks and protected merge.",
+  "next_exact_step": "Freeze independent managed ORM producer correction, obtain authorized read-only agent review, archive and update PR811; then exact-head remote checks and protected merge.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -360,6 +362,17 @@
         "log": ".runtime/ci-execution-alignment/remote-fixes-tests.log"
       },
       "limits": "Browser dependency optimization cannot omit Chromium while selected standard tests consume it; no test removed."
+    },
+    "managed_orm_producer": {
+      "status": "local_passed_remote_pending",
+      "tests": {
+        "ci_security_identity_scheduled": 88,
+        "ci_contract": 280
+      },
+      "log": ".runtime/ci-execution-alignment/managed-producer-tests-final.log",
+      "behavior": "ordinary same-repository PR/push gets independent impact-selected managed ORM producer; candidate/schedule keeps mutually exclusive existing producer. No Node/frontend build/browser in ordinary ORM job. Frozen env and source identity, per-job export checks, artifact origin/digest verification remain required.",
+      "waiting": "7200-second upper bound, only pending producers wait; latest eligible failed/cancelled/unsupported-attempt/missing-artifact producer fails immediately with run URL; scheduled total deadline retained",
+      "review_finding": "User and independent agent S1: ordinary navigation PR had managed_orm_required with no producer and zero-second wait; now addressed for re-review"
     }
   },
   "review_resolution": {

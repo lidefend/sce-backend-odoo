@@ -331,3 +331,161 @@ jobs:
         env:
           FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
         run: bash scripts/ci/self_hosted_runner_cleanup.sh
+
+  managed_orm:
+    name: managed_orm
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.action != 'labeled') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
+      ((github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'push' &&
+      github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner) ||
+      (github.event_name == 'schedule' &&
+      github.ref == 'refs/heads/main'))
+    # Full candidate/scheduled runs use the existing producer in frontend_release_gate.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}
+      CANDIDATE_REQUESTED: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
+
+    steps:
+      - name: Checkout the authoritative code object
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CHECKOUT_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove checkout identity
+        id: identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${CHECKOUT_SHA}"
+          {
+            printf 'sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Classify change risk
+        id: risk
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/ci_risk_classifier.py \
+            --base "${BASE_SHA}" \
+            --head "${CHECKOUT_SHA}" \
+            --event "${GITHUB_EVENT_NAME}" \
+            --ref "${GITHUB_REF}" \
+            --github-output "${GITHUB_OUTPUT}"
+
+      - name: Generate isolated acceptance environment
+        if: steps.risk.outputs.managed_orm_required == 'true'
+        run: |
+          set -euo pipefail
+          db_password="$(openssl rand -hex 32)"
+          admin_password="$(openssl rand -hex 32)"
+          jwt_secret="$(openssl rand -hex 32)"
+          bootstrap_secret="$(openssl rand -hex 32)"
+          for secret in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do
+            echo "::add-mask::${secret}"
+          done
+          ci_env="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.env"
+          identity_file="${RUNNER_TEMP}/sce-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-frontend-release.identity"
+          umask 077
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+          } > "${ci_env}"
+          {
+            printf 'ENV=test\n'
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${CI_PROJECT_NAME}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=sc_frontend_acceptance\n'
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=frontend_release_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^sc_frontend_acceptance$\n'
+            printf 'ODOO_PORT=18082\n'
+            printf 'SC_SOURCE_REVISION=%s\n' "${CHECKOUT_SHA}"
+            printf 'DB_DATA=%s-db-data\n' "${CI_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${CI_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${CI_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=acceptance\n'
+            printf 'SC_ALLOW_DEMO_DATA=1\n'
+            printf 'SC_FRONTEND_RELEASE_IDENTITY_FILE=%s\n' "${identity_file}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Freeze isolated frontend release identity
+        if: steps.risk.outputs.managed_orm_required == 'true'
+        run: |
+          set -euo pipefail
+          bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
+
+      - name: Prepare isolated ORM fixture without frontend build
+        if: steps.risk.outputs.managed_orm_required == 'true'
+        run: |
+          set -euo pipefail
+          fixture_password="$(openssl rand -hex 32)"
+          echo "::add-mask::${fixture_password}"
+          export SC_ACCEPTANCE_FIXTURE_PASSWORD="${fixture_password}"
+          export SOURCE_SHA="${CHECKOUT_SHA}"
+          docker compose build odoo
+          make db.frontend.acceptance.ensure
+          make acceptance.frontend.fixture
+          make acceptance.frontend.release_snapshot
+
+      - name: Execute governed managed ORM regressions
+        if: steps.risk.outputs.managed_orm_required == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/managed-orm"
+          make acceptance.frontend.fixture_orm 2>&1 | tee "${RUNNER_TEMP}/managed-orm.log"
+          python3 scripts/ci/backend_changed_test_coverage.py --record-managed "${RUNNER_TEMP}/managed-orm.log" \
+            --head "${CHECKOUT_SHA}" --output "${RUNNER_TEMP}/managed-orm/managed-test-evidence.json"
+      - name: Upload managed ORM execution identities
+        if: steps.risk.outputs.managed_orm_required == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: managed-orm-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
+          path: ${{ runner.temp }}/managed-orm/managed-test-evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Clean isolated ORM runner state
+        if: always() && steps.risk.outputs.managed_orm_required == 'true'
+        env:
+          # Select the existing isolated-resource cleanup, not browser execution.
+          FRONTEND_MODE: full
+        run: bash scripts/ci/self_hosted_runner_cleanup.sh

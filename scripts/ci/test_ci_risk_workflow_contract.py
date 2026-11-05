@@ -485,6 +485,37 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("make/frontend.mk", owned)
         self.assertNotIn("make/**", overrides)
 
+    def test_ordinary_managed_orm_has_independent_producer_without_browser(self):
+        workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
+        job = workflow['jobs']['managed_orm']
+        self.assertNotIn('needs', job)
+        self.assertIn("github.event.action != 'labeled'", job['if'])
+        steps = job['steps']
+        setup = next(s for s in steps if s.get('name') == 'Prepare isolated ORM fixture without frontend build')
+        self.assertEqual(setup['if'], "steps.risk.outputs.managed_orm_required == 'true'")
+        script = setup['run']
+        previous = -1
+        for command in ('docker compose build odoo', 'make db.frontend.acceptance.ensure',
+                        'make acceptance.frontend.fixture', 'make acceptance.frontend.release_snapshot'):
+            at = script.index(command)
+            self.assertGreater(at, previous)
+            previous = at
+        self.assertIn('export SC_ACCEPTANCE_FIXTURE_PASSWORD=', script)
+        self.assertIn('::add-mask::', script)
+        self.assertNotIn('pnpm', str(job))
+        self.assertNotIn('playwright', str(job))
+        execute = next(s for s in steps if s.get('name') == 'Execute governed managed ORM regressions')
+        upload = next(s for s in steps if s.get('name') == 'Upload managed ORM execution identities')
+        for step in (execute, upload):
+            self.assertEqual(step['if'], setup['if'])
+        self.assertIn('--head "${CHECKOUT_SHA}"', execute['run'])
+        self.assertIn('env.CHECKOUT_SHA', upload['with']['name'])
+        self.assertEqual(steps[-1]['env']['FRONTEND_MODE'], 'full')
+        backend = yaml.safe_load(self.text('backend_test_suite.yml'))
+        verify = next(s for s in backend['jobs']['verify_coverage']['steps']
+                      if s.get('name') == 'Verify changed test execution identities')
+        self.assertEqual(verify['env']['MANAGED_WAIT_SECONDS'], "${{ '7200' }}")
+
     def test_browser_install_matches_selected_test_dependencies(self):
         workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
         steps = next(iter(workflow['jobs'].values()))['steps']

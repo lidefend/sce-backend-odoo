@@ -147,8 +147,23 @@ def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) ->
     for run in sorted(runs.get('workflow_runs', []), key=lambda r: r['id'], reverse=True):
         if schedule_slot and (run.get('event') != 'schedule' or scheduled_slot(run.get('created_at', '')) != schedule_slot):
             continue
-        if run.get('conclusion') != 'success' or run.get('run_attempt') != 1:
+        if (run.get('head_sha') != head or run.get('path') != '.github/workflows/frontend_release_gate.yml'
+                or any(run.get(key, {}).get('full_name') != receipts.REPOSITORY
+                       or run.get(key, {}).get('id') != receipts.REPOSITORY_ID
+                       for key in ('repository', 'head_repository'))):
             continue
+        event = os.environ.get('GITHUB_EVENT_NAME')
+        if event in ('pull_request', 'push', 'workflow_dispatch') and run.get('event') != event:
+            continue
+        # The latest eligible producer is authoritative. Never wait out a known
+        # failure or fall back to an older success while its replacement runs.
+        if run.get('status') != 'completed':
+            return None
+        url = f"https://github.com/{receipts.REPOSITORY}/actions/runs/{run['id']}"
+        if run.get('conclusion') != 'success':
+            raise ValueError(f"Managed ORM producer failed: {url} conclusion={run.get('conclusion')}")
+        if run.get('run_attempt') != 1:
+            raise ValueError(f"Managed ORM producer attempt lacks supported receipt authentication: {url}")
         artifacts = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/artifacts?per_page=100"))
         for artifact in artifacts.get('artifacts', []):
             if artifact.get('name') == f"managed-orm-{run['id']}-1-{head}":
@@ -156,6 +171,7 @@ def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) ->
                 artifact = json.loads(receipts.github_bytes(f"actions/artifacts/{artifact['id']}"))
                 return authenticate_managed_report(head, run, artifact,
                     receipts.github_bytes(f"actions/artifacts/{artifact['id']}/zip"), schedule_slot=schedule_slot)
+        raise ValueError(f"Successful managed ORM producer has no required artifact: {url}")
     return None
 
 

@@ -88,6 +88,22 @@ class ManagedEvidenceTests(unittest.TestCase):
                                      'head_repository_id': repo['id']}}
         return head, run, artifact, raw
 
+    def test_discovery_waits_only_for_pending_and_fails_fast_on_terminal_producer(self):
+        import os
+        head, run, _, _ = self.fixture()
+        for conclusion in ('failure', 'cancelled', 'timed_out', 'success'):
+            current = dict(run, conclusion=conclusion)
+            payload = json.dumps({'workflow_runs': [current]}).encode()
+            with self.subTest(conclusion=conclusion), patch.dict(os.environ, GITHUB_EVENT_NAME=''), \
+                    patch.object(coverage.receipts, 'github_bytes', side_effect=[payload, b'{"artifacts": []}']), \
+                    self.assertRaises(ValueError):
+                coverage.discover_managed_evidence(head)
+        payload = json.dumps({'workflow_runs': [dict(run, id=43, status='in_progress'), run]}).encode()
+        with patch.dict(os.environ, GITHUB_EVENT_NAME=''), \
+                patch.object(coverage.receipts, 'github_bytes', return_value=payload) as fetch:
+            self.assertIsNone(coverage.discover_managed_evidence(head))
+            self.assertEqual(fetch.call_count, 1)
+
     def test_scheduled_evidence_binds_slot_across_midnight_and_rejects_prior_day(self):
         head, run, artifact, raw = self.fixture()
         slot = coverage.scheduled_slot('2026-11-04T23:51:01Z')

@@ -220,6 +220,7 @@ Generated from repository source files. This report is informational during the 
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
+| 491 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 485 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
@@ -228,7 +229,6 @@ Generated from repository source files. This report is informational during the 
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 333 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 330 | Shell script | `scripts/release/immutable_candidate_build.sh` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
