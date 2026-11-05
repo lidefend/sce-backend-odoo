@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-CONVERGE-01",
   "branch": "codex/fe-converge-01-presentation",
-  "baseline_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
-  "status": "active",
+  "baseline_sha": "17adbaf774370ead5cd19078c58c867c33cefac8",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-CONVERGE-01.yaml",
   "record": "docs/ops/iterations/fe-converge-01/record.md",
   "scope": [
@@ -134,5 +134,32 @@
       "scope": "phase=full rows=18 failures=0 (isolated acceptance sc-fe-r2-p1-01, fixture_role_finance)"
     }
   ],
-  "next_exact_step": "受管隔离验收完成（list_surface_structure 18 rows PASS），提交候选 PR。"
+  "next_exact_step": "Commit evidence-index reconciliation, freeze clean HEAD, obtain explicitly requested current-head Quick, align registered acceptance carrier, run contract/list acceptance, record receipts, independent review and governed PR preflight/publish.",
+  "stage_identity": {
+    "head": "8852eeb6a47294a31ac97bd11c28420bbfaeaea6",
+    "dirty_scope": [
+      ".agent/runs/FE-CONVERGE-01/run.json",
+      "docs/ops/iterations/fe-converge-01/record.md"
+    ],
+    "purpose": "post-governance synchronization; freeze after recording this handoff"
+  },
+  "historical_validation_boundary": "Earlier validation_results are historical stage evidence, not current-head acceptance. Archived files retain original SHA bindings; current HEAD Quick and acceptance remain pending.",
+  "governance_sync": {
+    "registry_pr": 816,
+    "registry_merge": "1d0f2fe5a7604f2a252b0ed76d402d8b27b6e58b",
+    "sync_tool_pr": 817,
+    "sync_tool_merge": "17adbaf774370ead5cd19078c58c867c33cefac8",
+    "source_head": "1d0d1d6285e45ec0a6c5df5fd40a7a90ebe8cc16",
+    "result_head": "8852eeb6a47294a31ac97bd11c28420bbfaeaea6",
+    "backup_ref": "refs/heads/fe-converge-01-backup-20261106",
+    "backup_sha": "c589f9dea194034be3455d6fb2bd41bff2ceaead",
+    "archive_manifest": ".runtime/frontend-pre-governance/1d0d1d6285e45ec0a6c5df5fd40a7a90ebe8cc16/manifest.json",
+    "archived_hash_verified_files": 46,
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "status": "passed",
+    "generated_report_conflicts": [
+      "docs/engineering_convergence/complexity_budget_report.md"
+    ],
+    "limits": "Two responsibility commits use bounded short-history mode; extended count and old-head Quick rules were not bypassed. Original refresh.generated_evidence, preflight and hooks passed."
+  }
 }

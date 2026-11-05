@@ -318,3 +318,12 @@ FE-08 必须如实保留 `calendar/gantt/dashboard` 的降级视图，不伪装�
   action_surface_renderer.architecture.guard 全部通过。
 - 限制：demo 可访问面未发现默认 calendar/gantt/dashboard 入口（默认视图均为 tree/kanban），
   降级提示的真实页面展示待找到含这些视图类型的入口后复核。
+
+## 6. 治理修复后的候选同步（2026-11-06）
+
+- 注册审计修复 PR #816 已合入 `1d0f2fe5a760`；生成报告同步修复 PR #817 已合入 `17adbaf774370`，两者均经过独立审查和当前 SHA 的远端必需检查。
+- 原候选 `1d0d1d6285e4` 保留恢复 bundle；既有备份引用 `fe-converge-01-backup-20261106` 仍指向 `c589f9dea194`。旧回执、截图及记录的 46 个文件已复制并逐项哈希核对，清单见本 run 的 `governance_sync.archive_manifest`。
+- 第一次普通同步因生成报告冲突拒绝并恢复原 HEAD。修复后通过 `workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1` 同步到上述精确主线，原生成器重建 complexity 报告，生成证据 preflight 和原提交 hooks 通过，得到 `8852eeb6a472`。
+- 当前只有两个责任提交，使用受管短分支重建路径；没有伪造提交数满足 extended，也没有跳过 hooks 或修改旧回执。
+- 前述验证结果均为历史阶段记录，不能当作同步后候选的通过证明。此次所有者明确要求当前 HEAD Quick；冻结新候选后执行，随后重取受管契约及列表浏览器回执。最终结果由同一 run 引用原始回执，不为写入事后结果重复变更冻结 HEAD。
+- 本批仍只改善公共表现；实际支付、撤销及审批业务闭环不在本批验收范围。
