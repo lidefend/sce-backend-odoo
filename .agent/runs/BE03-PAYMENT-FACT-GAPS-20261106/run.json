@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "id": "BE03-PAYMENT-FACT-GAPS-20261106",
+  "branch": "refactor/be03-payment-fact-convergence-20261106",
+  "baseline_sha": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BE03-PAYMENT-FACT-GAPS-20261106.yaml",
+  "record": ".agent/runs/BE03-PAYMENT-FACT-GAPS-20261106/run.json",
+  "scope": [
+    ".agent/runs/BE03-PAYMENT-FACT-GAPS-20261106/run.json",
+    ".agent/goals/BE03-PAYMENT-FACT-GAPS-20261106.yaml",
+    ".agent/active-runs.json",
+    "docs/architecture/payment_business_fact_gaps_20261106.md",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "config/acceptance/evolution_binding.v1.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Reuse local.test for transactional approval tests; local.dev serves clean main from existing deployment worktree"
+  },
+  "layer": {
+    "formal_product_layer": "P1 audit semantics and documentation; existing independent P4 files preserved",
+    "exclusions": [
+      "new rule engine",
+      "whole-module inventory",
+      "ACL expansion",
+      "financial data writes",
+      "frontend implementation"
+    ],
+    "publication_tooling": "P4 AST-bound audit-copy classification only; preserve backend_contract and all non-copy runtime gates"
+  },
+  "preserved_independent_scope": [
+    ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
+    "make/dev.mk",
+    "scripts/ops/local_dev_payment_entry_configuration.py",
+    "scripts/verify/local_dev_payment_entry_probe.py",
+    "scripts/verify/test_local_dev_payment_entry_configuration.py",
+    "scripts/verify/test_local_dev_payment_entry_probe.py"
+  ],
+  "next_exact_step": "Publish wording-only business candidate; independent ops registration in separate commit/branch; no business writes",
+  "result": {
+    "gap_table": "docs/architecture/payment_business_fact_gaps_20261106.md",
+    "minimal_change": "Correct automatic approval audit explanation; no rule or authorization changes",
+    "mainline_integration": "PR813 merged f79d29f55a22d6dbaec778237fbf710a12b6f4b3; source tree identical to reviewed7998",
+    "readback": ".runtime/pr813-postmerge-payment-readback.json",
+    "readback_matches_prior": true,
+    "business_patch_status": "Committed wording candidate; independent review passed; publication pending content-bound validation classification",
+    "limits": [
+      "No fresh Odoo ORM acceptance for wording-only change",
+      "No frontend visual acceptance or real payment/reversal writes",
+      "Independent ops tooling still requires lane registration before its own publication"
+    ]
+  },
+  "execution_results": {
+    "approval_state_machine": {
+      "result": "PASS",
+      "count": 203,
+      "log": ".runtime/be03-approval-state-machine.log"
+    },
+    "local_iteration_business_scope": {
+      "result": "PASS",
+      "log": ".runtime/be03-local-iteration-business-scope.log",
+      "scope": "Independent local ops tools temporarily preserved, excluded and restored byte-for-byte"
+    },
+    "local_iteration_with_independent_tools": {
+      "result": "FAIL",
+      "log": ".runtime/be03-local-iteration.log",
+      "reason": "Two independent local ops Make targets lack verification lane registration; not included in business candidate"
+    },
+    "diff_check": {
+      "result": "PASS"
+    }
+  },
+  "checks": {}
+}

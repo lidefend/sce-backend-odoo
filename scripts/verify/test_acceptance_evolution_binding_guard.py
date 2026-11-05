@@ -361,6 +361,41 @@ class TestGlobAndPlan(unittest.TestCase):
                 plan = guard.build_plan(self.registry, [catalog, other], "base", HEAD)
                 self.assertTrue(required.issubset(plan["required_evidence_suites"]))
 
+    def test_payment_audit_copy_only_preserves_entire_execution_ast(self):
+        before = "def _complete_payment_approval(self, automatic=False):\n    self.write({'state': 'approved'})\n    self._message_post_non_blocking(_('old') if automatic else _('manual'))\n"
+        after = before.replace("_('old')", "_('new')")
+        self.assertTrue(guard.payment_approval_audit_copy_only(before, after))
+        for unsafe in (
+            after.replace("'approved'", "'done'"),
+            after.replace('if automatic', 'if True'),
+            after.replace("_('manual')", "_('other')"),
+            after.replace("_('new')", "_(value)"),
+            after.replace("_('new')", "_('')"),
+            after.replace("_('new')", "_(f'{value}')"),
+            after.replace('_message_post_non_blocking', 'execute'),
+            after + "    self.unlink()\n", after + after, 'invalid python!',
+        ):
+            with self.subTest(unsafe=unsafe):
+                self.assertFalse(guard.payment_approval_audit_copy_only(before, unsafe))
+
+    def test_payment_copy_plan_is_conditional_and_mixed_changes_keep_browser_scope(self):
+        path = 'addons/smart_construction_core/models/core/payment_request.py'
+        before = "def _complete_payment_approval(self):\n    self._message_post_non_blocking(_('old') if automatic else _('manual'))\n"
+        after = before.replace("'old'", "'new'")
+        with patch.object(guard, '_git', side_effect=[before, OTHER, after]):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+        self.assertEqual(plan['required_suites'], ['backend_contract'])
+        with patch.object(guard, '_git', side_effect=[before, OTHER, after]):
+            plan = guard.build_plan(self.registry, [path, 'addons/smart_construction_core/models/core/payment_execution.py'], 'base', HEAD)
+        self.assertIn('relation_roundtrip', plan['required_suites'])
+        with patch.object(guard, '_git', side_effect=guard.BindingError('missing')):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+        self.assertIn('list_surface_structure', plan['required_suites'])
+        with patch.object(guard, '_git', side_effect=[before, HEAD]), patch.object(Path, 'read_text', return_value=after + '    self.unlink()\n'):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+        self.assertIn('relation_roundtrip', plan['required_suites'])
+        self.assertTrue(guard.suite_owns_path(self.registry, 'relation_roundtrip', path))
+
     def test_manifest_version_only_requires_literal_equivalent_nonversion_metadata(self):
         before = "{'version': '1', 'depends': ['base'], 'data': ['a.xml']}"
         self.assertTrue(guard.manifest_version_only(before, before.replace("'1'", "'2'")))

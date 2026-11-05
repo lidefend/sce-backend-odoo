@@ -607,6 +607,17 @@
       ]
     },
     {
+      "id": "payment-automatic-approval-audit-copy",
+      "description": "Only the automatic approval chatter literal changes; entire remaining Python AST must match. Runtime/condition/action changes fall back to construction-product-runtime.",
+      "paths": [
+        "addons/smart_construction_core/models/core/payment_request.py"
+      ],
+      "condition": "payment_approval_audit_copy_only",
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
       "id": "construction-product-runtime",
       "paths": [
         "addons/smart_construction_core/**",
