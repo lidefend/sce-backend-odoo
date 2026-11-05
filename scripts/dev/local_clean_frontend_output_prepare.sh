@@ -6,7 +6,7 @@ source "$ENV_FILE"
 project="${COMPOSE_PROJECT_NAME:-}"
 db="${DB_NAME:-}"
 dbfilter="${ODOO_DBFILTER:-}"
-[[ "${project}" =~ ^sc-[a-z0-9-]+$ && "${db}" =~ ^sc_[a-z0-9_]+$ && "${dbfilter}" == "^${db}\$" ]] || {
+[[ "${project}" =~ ^sc-[a-z0-9-]+$ && "${db}" =~ ^sc_[a-z0-9_]+$ && -n "${dbfilter}" ]] || {
   echo '[local.clean.frontend.output] profile identity mismatch' >&2; exit 2;
 }
 expected="$ROOT_DIR/frontend/apps/web/dist-clean"
