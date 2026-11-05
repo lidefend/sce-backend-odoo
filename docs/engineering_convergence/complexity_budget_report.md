@@ -44,6 +44,7 @@ Generated from repository source files. This report is informational during the 
 | 2184 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2105 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -53,7 +54,6 @@ Generated from repository source files. This report is informational during the 
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1886 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1884 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -273,6 +273,7 @@ Generated from repository source files. This report is informational during the 
 | 2184 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2105 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -282,7 +283,6 @@ Generated from repository source files. This report is informational during the 
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1886 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1884 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |

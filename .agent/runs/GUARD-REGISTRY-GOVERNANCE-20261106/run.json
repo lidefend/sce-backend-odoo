@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "GUARD-REGISTRY-GOVERNANCE-20261106",
+  "branch": "fix/guard-registry-governance-20261106",
+  "baseline_sha": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+  "status": "verification_pending",
+  "goal": ".agent/goals/GUARD-REGISTRY-GOVERNANCE-20261106.yaml",
+  "record": ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json",
+  "scope": [
+    ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json",
+    ".agent/goals/GUARD-REGISTRY-GOVERNANCE-20261106.yaml",
+    ".agent/active-runs.json",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/capability_d03_conclusion.py",
+    "scripts/verify/retired/capability_d03_conclusion.py",
+    "make/guards.mk",
+    "make/ci.mk",
+    "docs/ops/guard_registry_governance_20261106.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/github_remote_execute.sh",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/audit/guard_registry/guard_registry.json",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline",
+    "authority": "Dedicated clean governed worktree; no runtime/DB/credentials"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "guard registry and actual unit-lane wiring",
+    "module": "scripts/verify and make",
+    "standard_vs_user_specific": "repository governance",
+    "why_here": "Repair tool lifecycle truth, no product compensation",
+    "blast_radius": "32 diagnosed registry items; two pure-test lane targets",
+    "exclusions": [
+      "frontend product code",
+      "runtime writes",
+      "blanket seed adoption",
+      "approval upgrade batch",
+      "backend_test_suite.yml and test_backend_test_suite_dispatch_contract.py"
+    ]
+  },
+  "execution_results": {
+    "clean_main_reproduction": {
+      "status": "failed",
+      "baseline": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+      "unit_count": 24,
+      "audit_failures": 32,
+      "log": ".runtime/guard-registry-governance/clean-main.log"
+    },
+    "wired_unit_suites": {
+      "status": "passed",
+      "test_counts": [
+        112,
+        3
+      ],
+      "log": ".runtime/guard-registry-governance/new-wiring-tests.log"
+    },
+    "registry_and_lane_audits": {
+      "status": "passed",
+      "registry_unit_count": 24,
+      "gate_required": 17,
+      "log": ".runtime/guard-registry-governance/final-audits.log"
+    },
+    "initial_local_iteration": {
+      "status": "failed",
+      "owner": "run bookkeeping kind should be offline, not static",
+      "log": ".runtime/guard-registry-governance/local-iteration.log"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/guard-registry-governance/local-iteration-final.log"
+    },
+    "execution_policy": {
+      "status": "passed",
+      "log": ".runtime/guard-registry-governance/execution-policy.log"
+    },
+    "dependency_restore": {
+      "status": "passed",
+      "entry": "make fe.install.cached",
+      "mode": "offline,frozen,ignore-scripts",
+      "reason": "precommit original report generator requires frontend package metadata"
+    }
+  },
+  "next_exact_step": "Freeze candidate, independent review, governed PR publication and remote required checks; no frontend mutation",
+  "dispositions": {
+    "item_table": "docs/ops/guard_registry_governance_20261106.md",
+    "raw_inventory": ".runtime/guard-registry-governance/item-dispositions.json",
+    "wired_tests": 14,
+    "file_consumed_modules": 16,
+    "retired_reports": 1,
+    "corrected_stale_orphans": 1,
+    "seed_used": false
+  }
+}
