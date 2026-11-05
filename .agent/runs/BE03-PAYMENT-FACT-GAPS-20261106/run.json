@@ -16,26 +16,6 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json"
   ],
-  "checks": {
-    "approval_state_machine": {
-      "result": "PASS",
-      "count": 203,
-      "log": ".runtime/be03-approval-state-machine.log"
-    },
-    "local_iteration_business_scope": {
-      "result": "PASS",
-      "log": ".runtime/be03-local-iteration-business-scope.log",
-      "scope": "Independent local ops tools temporarily preserved, excluded and restored byte-for-byte"
-    },
-    "local_iteration_with_independent_tools": {
-      "result": "FAIL",
-      "log": ".runtime/be03-local-iteration.log",
-      "reason": "Two independent local ops Make targets lack verification lane registration; not included in business candidate"
-    },
-    "diff_check": {
-      "result": "PASS"
-    }
-  },
   "environment": {
     "kind": "runtime",
     "authority": "Reuse local.test for transactional approval tests; local.dev serves clean main from existing deployment worktree"
@@ -71,5 +51,26 @@
       "No frontend visual acceptance or real payment/reversal writes",
       "Independent ops tooling still requires lane registration before its own publication"
     ]
-  }
+  },
+  "execution_results": {
+    "approval_state_machine": {
+      "result": "PASS",
+      "count": 203,
+      "log": ".runtime/be03-approval-state-machine.log"
+    },
+    "local_iteration_business_scope": {
+      "result": "PASS",
+      "log": ".runtime/be03-local-iteration-business-scope.log",
+      "scope": "Independent local ops tools temporarily preserved, excluded and restored byte-for-byte"
+    },
+    "local_iteration_with_independent_tools": {
+      "result": "FAIL",
+      "log": ".runtime/be03-local-iteration.log",
+      "reason": "Two independent local ops Make targets lack verification lane registration; not included in business candidate"
+    },
+    "diff_check": {
+      "result": "PASS"
+    }
+  },
+  "checks": {}
 }
