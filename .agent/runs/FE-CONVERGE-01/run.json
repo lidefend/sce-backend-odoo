@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-CONVERGE-01",
   "branch": "codex/fe-converge-01-presentation",
-  "baseline_sha": "f64de1f87c8c2bf3c3c4514f125068c1c637e6bd",
+  "baseline_sha": "f12dccbd590e3499c7b7de38a28ea52ebb0c6ccc",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-CONVERGE-01.yaml",
   "record": "docs/ops/iterations/fe-converge-01/record.md",
@@ -135,7 +135,7 @@
   ],
   "next_exact_step": "Commit evidence-index reconciliation, freeze clean HEAD, obtain explicitly requested current-head Quick, align registered acceptance carrier, run contract/list acceptance, record receipts, independent review and governed PR preflight/publish.",
   "stage_identity": {
-    "head": "97ff41cdd519a80aa65bf662ae44a54c386e153d",
+    "head": "16823afc117cb94cbac9655ac110ba795fd02329",
     "dirty_scope": [
       ".agent/runs/FE-CONVERGE-01/run.json",
       "docs/ops/iterations/fe-converge-01/record.md"
@@ -185,5 +185,28 @@
       "failure": "Missing custom-tag coverage dispositions, independently reproduced on clean main. No receipt issued."
     },
     "limits": "Both ORM classes already carried sc_gate and used the existing backend module selector. Fix registers and regression-checks that relationship; it does not claim new ORM execution."
+  },
+  "final_governance_sync": {
+    "architecture_pr": 819,
+    "architecture_merge": "4f05724f75e1ed22ff3190f664341720efc7e980",
+    "sync_replay_pr": 820,
+    "sync_replay_merge": "f12dccbd590e3499c7b7de38a28ea52ebb0c6ccc",
+    "source_head": "ab62ad7befeb035f470e977260ddfa8102177f25",
+    "result_head": "16823afc117cb94cbac9655ac110ba795fd02329",
+    "status": "passed",
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "ui_source_hashes": ".runtime/frontend-product-input-hashes.json",
+    "ui_source_comparison": "all three reviewed files unchanged",
+    "prior_quick": {
+      "status": "failed",
+      "log": ".runtime/frontend-ab62-final-quick.log",
+      "failure": "Pre-PR800 critical route override assertion contradicted the already migrated native action context authority; no receipt issued."
+    },
+    "prior_sync": {
+      "status": "failed_and_restored",
+      "log": ".runtime/frontend-architecture-sync.log",
+      "failure": "Generated-only replay drift rejected before original generator; exact source HEAD restored."
+    },
+    "limits": "No product, role, permission or database changes. Full Quick still pending on newly frozen candidate; no prior receipt reused."
   }
 }
