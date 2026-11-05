@@ -356,7 +356,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     self.assertEqual(catalog_row["release_state"],
                                      self.expected.get(entry.get("target", {}).get("menu_xmlid"), "preview"))
 
-    def test_dependency_diagnosis_requires_menu_qualification_and_published_scene(self):
+    def test_native_entry_diagnosis_does_not_require_duplicate_scene_publication(self):
         diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
         for menu_state in ("released", "preview"):
             entry = next(row for row in self.entries if self.expected.get(
@@ -368,22 +368,132 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     company.exists = lambda: company
                     class Env(ContextEnv):
                         cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                        def ref(self, xmlid, raise_if_not_found=False):
+                            action = types.SimpleNamespace(id=10, _name="ir.actions.act_window")
+                            if xmlid == entry["target"]["action_xmlid"]:
+                                return action
+                            if xmlid == entry["target"]["menu_xmlid"]:
+                                return types.SimpleNamespace(_name="ir.ui.menu", action=action)
+                            return False
                         def __getitem__(self, name):
                             runtime = _runtime_model(name, self)
                             if runtime is not None:
                                 return runtime
                             if name == "sc.scene":
-                                model = types.SimpleNamespace(search=lambda domain, limit: scene)
-                                model.sudo = lambda: model
-                                return model
+                                raise AssertionError("native entry must not depend on orchestration publication")
                             if name == "res.company":
                                 return types.SimpleNamespace(browse=lambda company_id: company)
                             raise AssertionError(name)
-                    result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key=entry["code"], company_id=1)
-                    self.assertEqual(result["enable_allowed"], menu_state == "released" and scene_state == "published")
+                    with patch.object(diagnosis, "_is_native_entry", return_value=True):
+                        result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key=entry["code"], company_id=1)
+                    self.assertEqual(result["enable_allowed"], menu_state == "released")
                     evidence = result["dependencies"][0]["evidence"]
                     self.assertEqual(evidence["product_released"], menu_state == "released")
-                    self.assertEqual(evidence["scene_published"], scene_state == "published")
+                    self.assertIsNone(evidence["scene_published"])
+                    self.assertEqual(evidence["readiness_kind"], "native_action")
+                    self.assertFalse(result["publication"]["scene_composition"]["applicable"])
+                    self.assertIsNone(result["publication"]["scene_composition"]["standard_released"])
+
+    def test_orchestration_lifecycle_is_still_required(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entry = {"code": "composed", "target": {"menu_xmlid": "test.menu", "route": "/s/composed"}}
+        for released in (False, True):
+            for state in ("draft", "published", None):
+                class Env:
+                    cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                    def __getitem__(self, name):
+                        if name == "sc.scene":
+                            scene = types.SimpleNamespace(id=1, state=state, active_version_id=types.SimpleNamespace(id=2, product_release_state="STANDARD_RELEASE")) if state else False
+                            if scene and scene.active_version_id:
+                                scene.active_version_id.scene_id = scene
+                                scene.active_version_id.product_edition = "construction.standard"
+                            model = types.SimpleNamespace(search=lambda domain, limit: scene)
+                            model.sudo = lambda: model
+                            return model
+                        company = types.SimpleNamespace(id=1)
+                        company.exists = lambda: company
+                        return types.SimpleNamespace(browse=lambda company_id: company)
+                with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                     patch.object(diagnosis, "resolve_product_released", return_value=released):
+                    result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="composed", company_id=1)
+                self.assertEqual(result["enable_allowed"], released and state == "published")
+                self.assertEqual(result["dependencies"][0]["evidence"]["readiness_kind"], "orchestration")
+
+    def test_composition_snapshot_does_not_substitute_for_standard_product_release(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        # An explicit intent remains composition even when an action is declared.
+        entry = {"code": "composed", "target": {"menu_xmlid": "test.menu", "action_xmlid": "test.action", "intent": "test.compose"}}
+        for version_state in ("PREVIEW", "OPTIONAL_CAPABILITY", "NOT_READY", "STANDARD_RELEASE", None):
+            version = types.SimpleNamespace(id=2, product_release_state=version_state) if version_state else False
+            scene = types.SimpleNamespace(id=1, state="published", active_version_id=version)
+            company = types.SimpleNamespace(id=1)
+            company.exists = lambda: company
+            class Env:
+                cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                def __getitem__(self, name):
+                    if name == "sc.scene":
+                        if scene and scene.active_version_id:
+                            scene.active_version_id.scene_id = scene
+                            scene.active_version_id.product_edition = "construction.standard"
+                        model = types.SimpleNamespace(search=lambda domain, limit: scene)
+                        model.sudo = lambda: model
+                        return model
+                    return types.SimpleNamespace(browse=lambda company_id: company)
+            with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                 patch.object(diagnosis, "resolve_product_released", return_value=True):
+                result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="composed", company_id=1)
+            self.assertEqual(result["enable_allowed"], version_state == "STANDARD_RELEASE")
+            self.assertTrue(result["publication"]["native_capability"]["entry_qualified"])
+            self.assertEqual(result["publication"]["scene_composition"]["standard_released"], version_state == "STANDARD_RELEASE")
+
+    def test_real_dashboard_declarations_cannot_be_classified_as_native(self):
+        import ast
+        from xml.etree import ElementTree
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entries = {entry["code"]: entry for entry in self.entries}
+        dashboard = _load("diagnosis_dashboard_provider", SCENE_DIR / "profiles/project_dashboard_scene_content.py")
+        self.assertFalse(diagnosis._declares_native_delivery(
+            entries["project.dashboard"], entries["project.dashboard"], dashboard.build()))
+        tree = ElementTree.parse(SCENE_DIR / "data/sc_scene_layout.xml")
+        payloads = [ast.literal_eval(field.attrib["eval"]) for field in tree.findall(".//field[@name='payload_json']")]
+        focus = next(row for row in payloads if row.get("code") == "projects.dashboard_focus")
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.dashboard_focus"], focus, {}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"], {}, {}))
+        _load("odoo.addons.smart_construction_scene.services.workflow_rollout_handoff",
+              SCENE_DIR / "services/workflow_rollout_handoff.py")
+        direct = _load("diagnosis_direct_provider", SCENE_DIR / "providers/projects_list_provider.py")
+        self.assertTrue(diagnosis._declares_native_delivery(entries["projects.list"], entries["projects.list"], direct.build()))
+        for changed in ({"primary_action": {"action_xmlid": "other.action"}},
+                        {"delivery_handoff": {**direct.build()["delivery_handoff"], "final_scene": "other.scene"}}):
+            self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"], entries["projects.list"], {**direct.build(), **changed}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"],
+            {**entries["projects.list"], "target": {**entries["projects.list"]["target"], "intent": "composed.execute"}}, direct.build()))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"],
+            {**entries["projects.list"], "page": {"blocks": [{"key": "composed"}]}}, direct.build()))
+        native = {"source": "native_fact_projection", "target": entries["enterprise.setup"]["target"]}
+        self.assertTrue(diagnosis._declares_native_delivery(entries["enterprise.setup"], native, {}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["enterprise.setup"], {**native, "tiles": [{"key": "composed"}]}, {}))
+
+    def test_native_binding_mismatch_and_missing_action_block_diagnosis(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entry = {"code": "native", "target": {"menu_xmlid": "test.menu", "action_xmlid": "test.action"}}
+        company = types.SimpleNamespace(id=1)
+        company.exists = lambda: company
+        for action in (False, types.SimpleNamespace(id=1, _name="ir.actions.act_window")):
+            class Env:
+                cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                def __getitem__(self, name):
+                    if name != "res.company":
+                        raise AssertionError(name)
+                    return types.SimpleNamespace(browse=lambda company_id: company)
+                def ref(self, xmlid, raise_if_not_found=False):
+                    return action if xmlid == "test.action" else types.SimpleNamespace(_name="ir.ui.menu", action=False)
+            with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                 patch.object(diagnosis, "resolve_product_released", return_value=True), \
+                 patch.object(diagnosis, "_is_native_entry", return_value=True):
+                result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="native", company_id=1)
+            self.assertFalse(result["enable_allowed"])
+            self.assertFalse(result["dependencies"][0]["evidence"]["structure_ready"])
 
     def test_all_handlers_reject_invalid_company_before_read_or_write(self):
         handlers, env = self._handlers_and_env()

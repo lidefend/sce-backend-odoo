@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: SCENE-DIAGNOSIS-BOUNDARY-20261105
+  status: completed
+  formal_product_layer: P1
+  objective: 场景诊断复用事实与发布判断，原生入口不再要求重复场景发布

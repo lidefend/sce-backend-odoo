@@ -135,3 +135,79 @@ class TestBusinessSceneLifecycle(TransactionCase):
         direct.sc_scenario_exempt = False
         scenario.initialize_direct_entry_exemptions()
         self.assertFalse(direct.sc_scenario_exempt)
+
+    def test_business_diagnosis_consumes_same_catalog_without_composition_record(self):
+        from odoo.addons.smart_construction_scene.handlers.scenario_activation import _catalog
+        from odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis import diagnose_scenario_dependencies
+        entry = self.env['sc.product.scenario.entry'].sudo().search([('menu_id', '=', self.menu.id)])
+        scenario = entry.scenario_id
+        for active in (True, False):
+            scenario.active = active
+            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
+                       if row['scene_key'] == scenario.code)
+            diagnosis = diagnose_scenario_dependencies(self.env,
+                scene_key='business.v1:' + scenario.code, company_id=self.company_a.id)
+            self.assertEqual(diagnosis['enable_allowed'], row['product_released'])
+            self.assertFalse(diagnosis['publication']['scene_composition']['applicable'])
+
+    def test_native_entry_does_not_require_composition_release(self):
+        from odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis import diagnose_scenario_dependencies
+        Scene = self.env['sc.scene'].sudo()
+        scene = Scene.search([('code', '=', 'enterprise.setup')], limit=1)
+        if not scene:
+            scene = Scene.create({'code': 'enterprise.setup', 'name': 'Native entry diagnosis test'})
+        scene.state = 'draft'
+        diagnosis = diagnose_scenario_dependencies(self.env, scene_key='enterprise.setup', company_id=self.company_a.id)
+        self.assertEqual(diagnosis['dependencies'][0]['evidence']['readiness_kind'], 'native_action', diagnosis)
+        self.assertTrue(diagnosis['dependencies'][0]['evidence']['structure_ready'])
+        self.assertEqual(diagnosis['enable_allowed'], diagnosis['publication']['native_capability']['entry_qualified'])
+        self.assertFalse(diagnosis['publication']['scene_composition']['applicable'])
+        menu = self.env.ref('smart_construction_core.menu_sc_enterprise_initialization')
+        menu.action = False
+        invalid = diagnose_scenario_dependencies(self.env, scene_key='enterprise.setup', company_id=self.company_a.id)
+        self.assertFalse(invalid['dependencies'][0]['evidence']['structure_ready'])
+        self.assertFalse(invalid['enable_allowed'])
+
+    def test_composition_has_its_own_version_and_edition_release(self):
+        from odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis import diagnose_scenario_dependencies
+        Scene = self.env['sc.scene'].sudo()
+        scene = Scene.search([('code', '=', 'projects.detail')], limit=1)
+        if not scene:
+            scene = Scene.create({'code': 'projects.detail', 'name': 'Composition diagnosis test'})
+        version = self.env['sc.scene.version'].sudo().create({
+            'scene_id': scene.id, 'version': 'test-diagnosis', 'payload_json': {'scene_key': scene.code},
+            'product_release_state': 'PREVIEW', 'product_edition': 'construction.standard',
+        })
+        scene.write({'state': 'published', 'active_version_id': version.id})
+        def diagnose():
+            return diagnose_scenario_dependencies(self.env, scene_key=scene.code, company_id=self.company_a.id)
+        result = diagnose()
+        self.assertTrue(result['publication']['native_capability']['entry_qualified'])
+        self.assertTrue(result['publication']['scene_composition']['snapshot_published'])
+        self.assertFalse(result['enable_allowed'])
+        version.product_release_state = 'STANDARD_RELEASE'
+        self.assertTrue(diagnose()['enable_allowed'])
+        version.product_edition = 'construction.preview'
+        self.assertFalse(diagnose()['enable_allowed'])
+        version.product_edition = 'construction.standard'
+        other = Scene.create({'code': 'test.other.composition', 'name': 'Other composition'})
+        version.scene_id = other
+        self.assertFalse(diagnose()['enable_allowed'])
+
+    def test_direct_handoff_does_not_erase_published_composition_content(self):
+        from odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis import diagnose_scenario_dependencies
+        Scene = self.env['sc.scene'].sudo()
+        scene = Scene.search([('code', '=', 'projects.list')], limit=1)
+        if not scene:
+            scene = Scene.create({'code': 'projects.list', 'name': 'Composed list test'})
+        version = self.env['sc.scene.version'].sudo().create({
+            'scene_id': scene.id, 'version': 'test-hidden-composition',
+            'payload_json': {'tiles': [{'key': 'restricted', 'groups_xmlids': ['base.group_system']}]},
+            'product_release_state': 'PREVIEW',
+        })
+        scene.write({'state': 'published', 'active_version_id': version.id})
+        result = diagnose_scenario_dependencies(self._actor(self.company_a),
+            scene_key='projects.list', company_id=self.company_a.id)
+        self.assertEqual(result['dependencies'][0]['evidence']['readiness_kind'], 'orchestration')
+        self.assertTrue(result['publication']['scene_composition']['applicable'])
+        self.assertFalse(result['enable_allowed'])

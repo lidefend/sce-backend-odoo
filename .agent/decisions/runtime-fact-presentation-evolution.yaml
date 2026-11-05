@@ -26,3 +26,11 @@ decision:
   related:
     - .agent/decisions/contract-first.yaml
     - .agent/decisions/contract-driven-runtime-authority.yaml
+
+  publication_dimensions:
+    native_capability: 原生发布能力；模型或动作存在不等于已发布资格
+    scene_composition: 场景发布组合产品；有编排快照不等于已发布标准版产品版本
+    independence: 原生入口可独立交付；真正组合须验证自身版本及依赖资格，不能互相替代
+    not_applicable: 有明确原生声明且无编排内容时，组合发布为不适用，不得标为通过
+    compatibility_target: 组合携带兼容action不改变组合身份；必须依据生效声明判断
+    report: docs/architecture/scene_layer_responsibility_20261105.md

@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-DIAGNOSIS-BOUNDARY-20261105",
+  "branch": "refactor/scene-diagnosis-boundary-20261105",
+  "baseline_sha": "ee79dda079873c90cbe2f00d6fb4461a9856fee0",
+  "status": "completed",
+  "goal": ".agent/goals/SCENE-DIAGNOSIS-BOUNDARY-20261105.yaml",
+  "record": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-DIAGNOSIS-BOUNDARY-20261105.yaml",
+    ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+    "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+    "addons/smart_construction_scene/handlers/scenario_dependency.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "docs/architecture/scene_layer_responsibility_20261105.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    ".agent/decisions/runtime-fact-presentation-evolution.yaml",
+    ".agent/context.yaml",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered acceptance local profile; no module upgrade or fixture reset",
+    "profile": "local",
+    "compose_project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_filter": "^sc_frontend_acceptance$",
+    "role": "isolated acceptance fixture tenant",
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "customer_business_data_allowed": false,
+    "fixture_allowed": true,
+    "preflight": ".runtime/scene-diagnosis-preflight.log"
+  },
+  "checks": {},
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P1",
+    "layer_target": "scenario dependency diagnosis",
+    "module": "smart_construction_scene",
+    "standard_vs_user_specific": "industry standard",
+    "why_here": "Diagnosis consumes declared entry facts instead of imposing duplicate scene publication on native action entries",
+    "why_not_elsewhere": "No frontend inference or new fact registry; no changes to P0 publication/ACL",
+    "blast_radius": "Read-only dependency contract and legacy enablement prerequisite; no record authorization grants"
+  },
+  "next_exact_step": "Use governed PR integration for the local stack when continuing delivery; next product scope is database-owned native publication and composition dependency evidence",
+  "owner_direction": "Native publication releases capability; scenario publication releases composed products. Report independent evidence, not a shared published flag.",
+  "validation_plan": {
+    "L1": "make ci.local.iteration",
+    "L2": "make verify.navigation.publication_consumers.unit",
+    "L3": "make acceptance.frontend.fixture_orm after existing local profile preflight",
+    "skipped": "No schema/seed change: no module upgrade. No frontend change: no build/browser suite. No environment rebuild."
+  },
+  "validation_results": [
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 169,
+      "groups": [
+        40,
+        16,
+        6,
+        21,
+        86
+      ],
+      "log": ".runtime/scene-diagnosis-unit-final.log"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "superseded",
+      "tests": 41,
+      "log": ".runtime/scene-diagnosis-orm.log",
+      "reason": "Review found action compatibility did not prove native delivery; classifier tightened"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "failed",
+      "log": ".runtime/scene-diagnosis-orm-final.log",
+      "owner": "validation_tool_defect",
+      "reason": "Native initialization declaration was incorrectly assumed to imply standard capability publication; exact assertion now separates the two conditions"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-orm-verified.log",
+      "tests": 41
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-orm-final-proof.log",
+      "repeat_reason": "Current user filtering must not erase composition publication; added real ORM restricted-tile/direct-handoff negative test",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-iteration-final.log"
+    }
+  ],
+  "stage_identity_artifact": ".runtime/scene-diagnosis-source-identity.json",
+  "completion": {
+    "batch": "scoped_implementation_and_validation_complete",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "Native qualification still uses existing product_menu_source; no new capability publication system introduced",
+    "Composition diagnosis is not runtime route authorization or full transitive-dependency release proof",
+    "No schema upgrade or browser suite needed; no daily or production deployment performed"
+  ],
+  "independent_review": {
+    "reviewer": "/root/independent_ci_review",
+    "status": "passed",
+    "source_identity": ".runtime/scene-diagnosis-source-identity.json",
+    "identity_sha256": "6d2802d979d3c39b565b8a605bed4e2e5de655f6bff44fc45df5a21465cf7a43",
+    "scope": "Local batch only, not PR merge or deployment authorization"
+  }
+}
