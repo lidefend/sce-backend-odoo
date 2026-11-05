@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONVERGE-01",
+  "branch": "codex/fe-converge-01-presentation",
+  "baseline_sha": "3f73e1e04219f2156456a0f85e4b1af7411224be",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONVERGE-01.yaml",
+  "record": "docs/ops/iterations/fe-converge-01/record.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGE-01.yaml",
+    ".agent/runs/FE-CONVERGE-01/run.json",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe-converge-01/",
+    "frontend/apps/web/src/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "isolated acceptance carrier sc-fe-r2-p1-01 / sc_frontend_acceptance / port 18082",
+    "backend_sha": "a4abac5ca4370bf73b98060a90ad84ac41283bc3",
+    "shared_local_dev_sha": "7998f673c33bd20c9301edaf39e2f68df3d142ae"
+  },
+  "checks": {
+    "L1_lint": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "Makefile",
+        "make/"
+      ]
+    },
+    "L1_shared_surface": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "scripts/verify/"
+      ]
+    },
+    "L1_renderer_registry": {
+      "target": "verify.frontend.action_surface_renderer.architecture.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/renderers/",
+        "scripts/verify/"
+      ]
+    }
+  },
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "通用前端运行时与共享组件（AppShell/design-system/product-shell/product-list/product-record/page blocks）",
+    "module": "frontend",
+    "standard_vs_user_specific": "platform mechanism presentation",
+    "why_here": "公共表现与交互属于通用前端运行时，不携带业务语义；按受管呈现策略与设计变量统一",
+    "why_not_elsewhere": "不修改契约/权限/动作/状态语义；不按模型/菜单/角色/状态文本增加前端判断；不触碰 P1/P2/P3",
+    "blast_radius": "frontend/apps/web/src 下共享外壳、设计令牌、通用 renderer 与组件；各中心页面通过共享组件共同受益"
+  },
+  "validation_results": [
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/fe-converge-01-iteration.log",
+      "scope": "L1 static iteration baseline (FE-00)"
+    },
+    {
+      "command": "make verify.frontend.lint.src",
+      "status": "passed",
+      "tests": 0,
+      "log": ".runtime/fe-converge-01-lint.log",
+      "scope": "0 errors; 1 pre-existing StatusPanel.vue formatting warning unrelated to token change"
+    },
+    {
+      "command": "make verify.frontend.shared_surface_semantic_boundary.guard",
+      "status": "passed",
+      "scope": "58 files scanned"
+    },
+    {
+      "command": "make verify.frontend.action_surface_renderer.architecture.guard",
+      "status": "passed"
+    },
+    {
+      "command": "make verify.frontend.style_system.guard",
+      "status": "passed",
+      "scope": "hardcoded_color_refs_max=0"
+    },
+    {
+      "command": "make verify.frontend.theme_profile.unit",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "command": "make verify.frontend.navigation_shell.unit",
+      "status": "passed",
+      "tests": 21
+    },
+    {
+      "command": "make verify.frontend.product_page_header.unit",
+      "status": "passed",
+      "tests": 75
+    },
+    {
+      "command": "make verify.frontend.typecheck.strict",
+      "status": "passed"
+    },
+    {
+      "command": "make verify.frontend.build",
+      "status": "passed",
+      "scope": "ENV_FILE reuses primary-worktree .env.dev; production build 28s"
+    },
+    {
+      "command": "make local.dev.candidate.frontend.up/down",
+      "status": "passed",
+      "scope": "candidate static server on 5176 started and stopped cleanly, bound to current SHA"
+    },
+    {
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "status": "not_run",
+      "owner": "environment_defect",
+      "reason": "local.dev backend source mount is bound to sce-backend-odoo-mainline-deploy, not this worktree"
+    },
+    {
+      "command": "make acceptance.runtime.contract_receipt",
+      "status": "passed",
+      "scope": "contract_only PASS -> artifacts/backend/dev_acceptance_release_probe.json"
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "passed",
+      "tests": 18,
+      "scope": "phase=full rows=18 failures=0 (isolated acceptance sc-fe-r2-p1-01, fixture_role_finance)"
+    }
+  ],
+  "next_exact_step": "Commit evidence-index reconciliation, freeze clean HEAD, obtain explicitly requested current-head Quick, align registered acceptance carrier, run contract/list acceptance, record receipts, independent review and governed PR preflight/publish.",
+  "stage_identity": {
+    "head": "f8a0b9d9b50027776b4b86ead9fd191dbc74fd58",
+    "dirty_scope": [
+      ".agent/runs/FE-CONVERGE-01/run.json",
+      "docs/ops/iterations/fe-converge-01/record.md"
+    ],
+    "purpose": "post-governance synchronization; freeze after recording this handoff"
+  },
+  "historical_validation_boundary": "Earlier validation_results are historical stage evidence, not current-head acceptance. Archived files retain original SHA bindings; current HEAD Quick and acceptance remain pending.",
+  "governance_sync": {
+    "registry_pr": 816,
+    "registry_merge": "1d0f2fe5a7604f2a252b0ed76d402d8b27b6e58b",
+    "sync_tool_pr": 817,
+    "sync_tool_merge": "17adbaf774370ead5cd19078c58c867c33cefac8",
+    "source_head": "1d0d1d6285e45ec0a6c5df5fd40a7a90ebe8cc16",
+    "result_head": "8852eeb6a47294a31ac97bd11c28420bbfaeaea6",
+    "backup_ref": "refs/heads/fe-converge-01-backup-20261106",
+    "backup_sha": "c589f9dea194034be3455d6fb2bd41bff2ceaead",
+    "archive_manifest": ".runtime/frontend-pre-governance/1d0d1d6285e45ec0a6c5df5fd40a7a90ebe8cc16/manifest.json",
+    "archived_hash_verified_files": 47,
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "status": "passed",
+    "generated_report_conflicts": [
+      "docs/engineering_convergence/complexity_budget_report.md"
+    ],
+    "limits": "Two responsibility commits use bounded short-history mode; extended count and old-head Quick rules were not bypassed. Original refresh.generated_evidence, preflight and hooks passed."
+  },
+  "review_resolution": {
+    "reviewed_head": "bae4dec0b1e564bc9dc29cfe4041dbe6d62e1bee",
+    "finding": "Historical diagnostic introduced unmanaged default credentials and arbitrary target URL.",
+    "resolution": "Remove unused observation helper from published candidate; preserve exact source in archive and original branch bundle. Use existing governed acceptance entrypoints only.",
+    "superseded_quick": {
+      "status": "stopped",
+      "log": ".runtime/frontend-final-quick.log",
+      "reason": "Independent review required candidate scope correction; no pass or receipt claimed."
+    }
+  },
+  "coverage_registration_sync": {
+    "pr": 818,
+    "merge": "f64de1f87c8c2bf3c3c4514f125068c1c637e6bd",
+    "source_head": "3783bfffa199321d470520563391d95d26c1e30f",
+    "result_head": "97ff41cdd519a80aa65bf662ae44a54c386e153d",
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "status": "passed",
+    "log": ".runtime/frontend-coverage-sync.log",
+    "prior_quick": {
+      "status": "failed",
+      "log": ".runtime/frontend-3783-final-quick.log",
+      "failure": "Missing custom-tag coverage dispositions, independently reproduced on clean main. No receipt issued."
+    },
+    "limits": "Both ORM classes already carried sc_gate and used the existing backend module selector. Fix registers and regression-checks that relationship; it does not claim new ORM execution."
+  },
+  "final_governance_sync": {
+    "architecture_pr": 819,
+    "architecture_merge": "4f05724f75e1ed22ff3190f664341720efc7e980",
+    "sync_replay_pr": 820,
+    "sync_replay_merge": "f12dccbd590e3499c7b7de38a28ea52ebb0c6ccc",
+    "source_head": "ab62ad7befeb035f470e977260ddfa8102177f25",
+    "result_head": "16823afc117cb94cbac9655ac110ba795fd02329",
+    "status": "passed",
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "ui_source_hashes": ".runtime/frontend-product-input-hashes.json",
+    "ui_source_comparison": "all three reviewed files unchanged",
+    "prior_quick": {
+      "status": "failed",
+      "log": ".runtime/frontend-ab62-final-quick.log",
+      "failure": "Pre-PR800 critical route override assertion contradicted the already migrated native action context authority; no receipt issued."
+    },
+    "prior_sync": {
+      "status": "failed_and_restored",
+      "log": ".runtime/frontend-architecture-sync.log",
+      "failure": "Generated-only replay drift rejected before original generator; exact source HEAD restored."
+    },
+    "limits": "No product, role, permission or database changes. Full Quick still pending on newly frozen candidate; no prior receipt reused."
+  },
+  "acceptance_lifecycle_sync": {
+    "pr": 821,
+    "merge": "3f73e1e04219f2156456a0f85e4b1af7411224be",
+    "source_head": "575685de8b443590fb754fefa44c5a6691c5279e",
+    "result_head": "f8a0b9d9b50027776b4b86ead9fd191dbc74fd58",
+    "status": "passed",
+    "log": ".runtime/frontend-lifecycle-sync.log",
+    "prior_quick": {
+      "status": "failed_receipt_not_issued",
+      "log": ".runtime/frontend-5756-final-quick.log",
+      "offline_baseline_receipt": ".runtime/frontend-5756-offline-baseline-receipt.json",
+      "baseline_cases": 306,
+      "independent_orders": 3,
+      "failure": "All test execution completed; final trusted scan refresh rejected shared Git reference drift from concurrent governance commits."
+    },
+    "runtime_readiness": {
+      "profile": "local",
+      "project": "sc-fe-r2-p1-01",
+      "database": "sc_frontend_acceptance",
+      "dbfilter": "^sc_frontend_acceptance$",
+      "filestore": "sc_fe_r2_p1_01_odoo",
+      "preflight": "passed",
+      "recovery_audit": "blocked by stopped existing rollback volume consumer; not a schema verdict",
+      "writers_observed_running": [
+        "sc-fe-r2-p1-01-odoo-1",
+        "sc-backend-odoo-acceptance"
+      ],
+      "runtime_writes_performed": false
+    },
+    "next_sequence": [
+      "freeze source and all shared refs",
+      "current-head Quick",
+      "existing non-reset acceptance.module.upgrade for confirmed installed affected modules",
+      "existing isolated release snapshot",
+      "exact artifact backend.up and health",
+      "standard preview and contract/list receipt",
+      "acceptance.evolution record/verify",
+      "PR preflight and publication"
+    ],
+    "scope_limits": "No daily database, no payment/reversal, no role/ACL widening. Lifecycle behavior is reviewed and CI-tested; actual upgrade/readback remains pending."
+  },
+  "final_evidence_locations": {
+    "quick_log": ".runtime/frontend-final-quiet-quick.log",
+    "result_index": ".runtime/agent-runs/FE-CONVERGE-01/final-delivery.json",
+    "acceptance_manifest": ".runtime/acceptance-evolution/evidence.v1.json",
+    "contract": "artifacts/backend/dev_acceptance_release_probe.json",
+    "list_surface": ".runtime/final-acceptance/list-surface-structure.json"
+  }
+}

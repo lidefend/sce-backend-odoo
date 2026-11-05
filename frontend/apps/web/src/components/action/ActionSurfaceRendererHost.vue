@@ -6,6 +6,11 @@
     :data-active-renderer="descriptor.activeRendererKey"
     :data-renderer-status="descriptor.status"
   >
+    <p
+      v-if="descriptor.status === 'fallback'"
+      class="action-surface-renderer-host__fallback"
+      role="status"
+    >该视图暂以列表形式展示</p>
     <component
       :is="rendererComponent"
       v-if="rendererComponent"
@@ -43,4 +48,12 @@ const rendererComponent = computed(() => (
 
 <style scoped>
 .action-surface-renderer-host { min-width: 0; }
+.action-surface-renderer-host__fallback {
+  margin: 0 0 var(--sc-space-sm);
+  padding: var(--sc-space-xs) var(--sc-space-sm);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+  font-size: var(--sc-product-text-sm);
+}
 </style>

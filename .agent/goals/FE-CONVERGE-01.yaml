@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: FE-CONVERGE-01
+  status: active
+  title: 前端公共表现与交互整体收敛（RFE-04 执行批次）
+  formal_product_layer: P0
+  layer_target: 前端通用 renderer/component 层与共享外壳（AppShell/通用列表/表单/反馈）
+  module: frontend
+  standard_vs_user_specific: platform_mechanism_presentation
+  objective: >
+    以 main 54bed83383ee2e03773141430bdd6d50ca4f932b 为基线，按 FE-00 → FE-01/02 →
+    FE-03/04/05 → FE-06/07/08 → FE-09 的顺序，统一公共外壳、视觉规范、页面标题与操作区、
+    列表与搜索、表单与详情、关系字段与明细、公共交互反馈，并覆盖看板/活动/图表/层级页面，
+    最终交付一版跨中心一致的直接体验产品。
+  why_here: >
+    公共表现与交互（颜色/间距/字体/控件高度/列宽/加载/空态/错误/保存反馈）属于通用前端运行时，
+    由 AppShell、通用 renderer、design-system、product-shell/product-list/product-record 等
+    共享组件承担；同类元素与交互应一致，且不携带业务语义。
+  why_not_elsewhere:
+    - 不修改任何后端契约、模型、字段、权限、动作或状态语义。
+    - 不在前端新增按模型名/菜单名/状态文本/角色码的展示分支或 fallback。
+    - 不隐藏字段、按钮或错误提示来掩盖契约缺口；契约缺失仍显式报 ContractGapError。
+    - 不把普通表现优化扩展为新场景平台、低代码设计器或业务流程改造。
+    - 不触碰 P1 smart_construction_core / P2 客户模块 / P3 低代码运行时配置。
+  scope: [frontend/apps/web/src/, docs/ops/iterations/fe-converge-01/, .agent/]
+  exclusions: [后端契约与数据, ACL/record rule/权限, 业务语义与状态, 部署与合并授权, P1/P2/P3 模块]
+  related_goal: .agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml
+  iterations:
+    - id: FE-00
+      status: completed
+      outcome: 固定基线与体验样本；盘点 Renderer 与公共组件消费者
+    - id: FE-01
+      status: planned
+      outcome: 收敛全局外壳（侧边栏/顶部栏/标签页/面包屑/内容区/移动端抽屉）
+    - id: FE-02
+      status: in_progress
+      outcome: 收敛公共视觉规范（字体/颜色/间距/圆角/边框/控件高度/内容宽度）
+    - id: FE-03
+      status: planned
+      outcome: 收敛页面标题与操作区
+    - id: FE-04
+      status: planned
+      outcome: 收敛列表与搜索
+    - id: FE-05
+      status: planned
+      outcome: 收敛表单与详情
+    - id: FE-06
+      status: planned
+      outcome: 收敛关系字段与明细
+    - id: FE-07
+      status: planned
+      outcome: 收敛公共交互反馈
+    - id: FE-08
+      status: planned
+      outcome: 覆盖其他已实现表现（看板/活动/图表/层级）
+    - id: FE-09
+      status: planned
+      outcome: 跨中心回归与清理
+  acceptance:
+    - 用户跨中心使用时看到一致的页面语言、执行一致的交互
+    - 能够明确判断当前状态与下一步操作
+    - 同类元素外观一致，减少页面内重复样式
+    - 各状态有明确反馈与可执行下一步，避免重复提交与无响应感
+    - 每个问题说明影响哪个公共组件或 Runtime，以及哪些其他页面共同受益
+    - 后端事实/契约缺口独立登记，不夹带前端绕过方案

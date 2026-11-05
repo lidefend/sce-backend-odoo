@@ -193,6 +193,12 @@ defineEmits<{
 .product-list-header__tools--collection { display: block; width: 100%; min-width: 0; }
 .product-list-header__layout { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-toolbar-group-gap); min-width: 0; }
 .product-list-header__tools--collection .product-list-header__leading { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-toolbar-gap); min-width: 0; margin-right: auto; }
+/* 列表工具栏主操作按钮与页头集合动作保持同一控件高度：桌面 36px（页头 538 同源），
+   移动端由下方 44px 触控目标规则接管，不另建第二套高度。 */
+.product-list-header__tools--collection .product-list-header__leading :deep(.sc-btn) {
+  min-height: var(--sc-component-input-form-height);
+  height: auto;
+}
 .product-list-header__query, .product-list-header__tools--collection .product-list-header__search { flex: 1 1 280px; min-width: 0; }
 .product-list-header__query { max-width: 640px; }
 .product-list-header__query :deep(.action-toolbar) { width: 100%; border: 0; border-radius: 0; background: transparent; padding: 0; }
