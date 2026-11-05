@@ -178,6 +178,7 @@
         },
         "services": {
           "compose_backend_port": 8074,
+          "backend_container": "sc-navux-verify-odoo-1",
           "backend_port": 8074,
           "frontend_port": 18091
         }
