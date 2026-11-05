@@ -21,6 +21,8 @@
     "scripts/verify/capability_d03_conclusion.py",
     "scripts/verify/capability_unresolved_execution_chain.py",
     "scripts/verify/test_capability_unresolved_execution_chain.py",
+    "scripts/verify/capability_composite_and_decision.py",
+    "scripts/verify/test_capability_composite_and_decision.py",
     "scripts/verify/module_capability_index.py",
     "scripts/verify/test_module_capability_index.py",
     "docs/product/capability_candidate_catalog_v1.json",
@@ -44,8 +46,9 @@
     "provider_reconciliation_data": "31 non-contract capabilities: provider_verified(intent handler)=4 (project.dashboard.enter, project.plan_bootstrap.enter, project.execution.enter, project.execution.advance); composite_unreconciled=7; platform_mechanism=1; unresolved(scene-only)=6; no_provider_found=13; delivery delivered=0, partial=15, undelivered=16",
     "d03_conclusion": "5 deliverables emitted: provider reconciliation + delivery matrix + composition matrix + scene identity + conclusion; composite capabilities depend on contract-ready atomics (mostly project.list.open); 4 provider_verified / 13 no_provider / 6 scene-only / 7 composite / 1 platform",
     "d04_first_batch_provider_alignment": "PASS: corrected 4 verified odoo_intent provider bindings (project.dashboard.enter, project.plan_bootstrap.enter, project.execution.enter, project.execution.advance) with handler file evidence; added _provider_module odoo_intent resolution from contract_ref; reverse_index now maps these 4 to smart_construction_core",
-    "d04_second_batch_unresolved_chain": "PASS: 6 unresolved execution-chain verified -> composite_member=2 (project.risk.list, material.procurement.list), provider_found=2 (finance.plan.funding, finance.settlement.order), absorbed_by_existing=1 (analytics.lifecycle.monitor), unresolved=1 (finance.exception.monitor)"
+    "d04_second_batch_unresolved_chain": "PASS: 6 unresolved execution-chain verified -> composite_member=2 (project.risk.list, material.procurement.list), provider_found=2 (finance.plan.funding, finance.settlement.order), absorbed_by_existing=1 (analytics.lifecycle.monitor), unresolved=1 (finance.exception.monitor)",
+    "d04_third_fourth_batch": "PASS: 6 composite converged -> composite_entry=6 (reuse project.list.open + construction.plan.report), unresolved=1 (project.structure.manage no deps); 13 no_provider -> retain=13 (all have real runtime models)"
   },
   "blockers": [],
-  "next_exact_step": "CAP-02D-04 batch 1+2 done (4 provider alignments + 6 unresolved chain); continue with 6 composite convergence and 13 no-provider product decisions"
+  "next_exact_step": "CAP-02D-04 batch 1-4 done (4 provider alignments + 6 unresolved + 6 composite + 13 decisions); await owner product取舍 then contract/scene gap fill for confirmed capabilities"
 }
