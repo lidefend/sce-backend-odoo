@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
+import tempfile
+from xml.etree import ElementTree as ET
 from pathlib import Path
 
 import sys
@@ -30,6 +33,85 @@ def _load(path: Path, name: str):
     return module
 
 
+def my_work_fact_errors(root: Path, policy_maps) -> list[str]:
+    """PR #800 moved this entry to native facts, not a critical-route override.
+
+    Exercise the real XML reader, public scene list and runtime projector with
+    two different native declarations. No repository or database is mutated.
+    """
+    errors: list[str] = []
+    scene_key = "my_work.workspace"
+    if scene_key in policy_maps.CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES:
+        errors.append("my-work route must come from native action facts, not policy-map override")
+    core = root / "addons/smart_construction_core"
+    relative = "views/support/my_work_views.xml"
+    try:
+        manifest = ast.literal_eval(_read(core / "__manifest__.py"))
+        if relative not in manifest.get("data", []):
+            errors.append("native my-work action/menu must be loaded by the module manifest")
+        xml = ET.parse(core / relative)
+        action = xml.find(".//record[@id='action_sc_my_work']")
+        menu = xml.find(".//menuitem[@id='menu_sc_my_work']")
+        if action is None or action.get("model") != "ir.actions.act_window":
+            raise ValueError("missing native my-work action declaration")
+        if menu is None or menu.get("action") != "smart_construction_core.action_sc_my_work":
+            raise ValueError("native my-work menu must bind its declared action")
+        name = action.find("field[@name='name']")
+        context = action.find("field[@name='context']")
+        if name is None or context is None:
+            raise ValueError("native my-work name/context declaration is missing")
+        declared = ast.literal_eval(context.text or "")
+        if (not isinstance(declared, dict) or not isinstance(declared.get("sc_web_route"), str)
+                or not declared["sc_web_route"].startswith("/") or not declared.get("sc_web_surface")):
+            raise ValueError("native my-work route/surface declaration is incomplete")
+        # The scene extension must not reintroduce the same second authority.
+        scene_extension = ast.parse(_read(root / "addons/smart_construction_scene/core_extension.py"))
+        maps = [node.value for node in scene_extension.body if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES"
+                        for target in node.targets)]
+        if len(maps) != 1 or scene_key in ast.literal_eval(maps[0]):
+            errors.append("scene extension must not override the native my-work route")
+        projection = _load(root / "addons/smart_construction_scene/profiles/scene_registry_content.py",
+                           "native_my_work_scene_projection_under_guard")
+        runtime = _load(root / "addons/smart_core/core/navigation_entry_target.py",
+                        "native_my_work_runtime_projection_under_guard")
+
+        def verify_projection(expected_context, expected_name):
+            rows = [row for row in projection.list_scene_entries() if row.get("code") == scene_key]
+            if len(rows) != 1:
+                errors.append("native my-work facts must produce exactly one public scene entry")
+                return
+            row = rows[0]
+            target = row.get("target", {})
+            expected = {"route": expected_context["sc_web_route"],
+                        "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+                        "action_xmlid": "smart_construction_core.action_sc_my_work"}
+            if row.get("name") != expected_name or any(target.get(k) != v for k, v in expected.items()):
+                errors.append("scene projection must consume native my-work route/name and entry identities")
+            projected = runtime.build_web_surface_entry_target(expected_context)
+            if (projected.get("route") != expected_context["sc_web_route"]
+                    or projected.get("surface") != expected_context["sc_web_surface"]):
+                errors.append("runtime entry must consume the declared route and surface")
+
+        verify_projection(declared, (name.text or "").strip())
+        original_core = projection._CORE_DIR
+        with tempfile.TemporaryDirectory(prefix="my-work-fact-guard-") as directory:
+            fixture = Path(directory) / relative
+            fixture.parent.mkdir(parents=True)
+            changed = {**declared, "sc_web_route": "/__fact_guard__/maintained-work"}
+            context.text = repr(changed)
+            name.text = "Maintained workspace fixture"
+            xml.write(fixture, encoding="unicode")
+            projection._CORE_DIR = Path(directory)
+            try:
+                verify_projection(changed, name.text)
+            finally:
+                projection._CORE_DIR = original_core
+    except (OSError, ValueError, TypeError, SyntaxError, ET.ParseError, AttributeError) as exc:
+        errors.append(f"native my-work source/projection cannot be verified: {exc}")
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
     core_text = _read(CORE_EXTENSION)
@@ -52,6 +134,7 @@ def main() -> int:
             "API_DATA_WRITE_ALLOWLIST = _policy_maps.API_DATA_WRITE_ALLOWLIST",
             "API_DATA_UNLINK_POLICIES = _policy_maps.API_DATA_UNLINK_POLICIES",
             "CRITICAL_SCENE_TARGET_OVERRIDES = _policy_maps.CRITICAL_SCENE_TARGET_OVERRIDES",
+            "CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = _policy_maps.CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES",
             "INDUSTRY_CREATE_FIELD_FALLBACKS = _policy_maps.INDUSTRY_CREATE_FIELD_FALLBACKS",
             "register_legacy_standard_list_profile({",
         ]:
@@ -106,8 +189,7 @@ def main() -> int:
             errors.append("policy maps must preserve payment request unlink policy")
         if policy_maps.API_DATA_UNLINK_POLICIES.get("sc.quality.rectification", {}).get("state_field") != "issue_state":
             errors.append("policy maps must preserve quality rectification state field")
-        if policy_maps.CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES.get("my_work.workspace") != "/my-work":
-            errors.append("policy maps must preserve critical route override")
+        errors.extend(my_work_fact_errors(ROOT, policy_maps))
 
     if errors:
         print("[construction_core_extension_policy_maps_split_guard] FAIL")

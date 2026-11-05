@@ -378,3 +378,10 @@ verify.capability.module_tooling.unit: guard.prod.forbid
 
 verify.construction.diary.list_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_diary_list_contract
+
+# Native workspace fact migration (PR #800): preserve source -> projections,
+# not the retired critical-route override map.
+.PHONY: verify.construction.policy_maps.unit
+verify.construction.policy_maps.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_construction_core_extension_policy_maps_split_guard
+	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "ARCHITECTURE-FACT-GUARDS-20261106",
+  "branch": "fix/architecture-fact-source-guards-20261106",
+  "baseline_sha": "f64de1f87c8c2bf3c3c4514f125068c1c637e6bd",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ARCHITECTURE-FACT-GUARDS-20261106.yaml",
+  "record": ".agent/runs/ARCHITECTURE-FACT-GUARDS-20261106/run.json",
+  "scope": [
+    ".agent/runs/ARCHITECTURE-FACT-GUARDS-20261106/run.json",
+    ".agent/goals/ARCHITECTURE-FACT-GUARDS-20261106.yaml",
+    ".agent/active-runs.json",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "make/guards.mk",
+    "make/ci.mk",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/verify/registry.yaml"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "native workspace fact source guard",
+    "exclusions": [
+      "product facts",
+      "frontend code",
+      "permissions",
+      "runtime/database writes",
+      "full Quick"
+    ]
+  },
+  "execution_results": {
+    "clean_main_guard": {
+      "status": "failed",
+      "log": ".runtime/architecture-fact-guards/clean-main-policy.log",
+      "reason": "obsolete hardcoded my_work route assertion"
+    },
+    "remaining_static_guards": {
+      "status": "passed",
+      "count": 18,
+      "log": ".runtime/architecture-fact-guards/remaining-main-guards.json"
+    },
+    "migration_source": {
+      "pr": 800,
+      "main_commit": "6e674745ae1c6e957ae933c8dddeb1b753fce251",
+      "authority": "native action_sc_my_work context and menu; scene registry and navigation entry target project these facts"
+    },
+    "quick_resume_limitation": {
+      "status": "not_changed",
+      "reason": "linked worktree Quick uses single run_quick; only main worktree supports shard resume. Keep proof protocol out of this PR."
+    },
+    "guard_behavior": {
+      "status": "passed",
+      "entry": "make verify.construction.policy_maps.unit",
+      "tests": 9,
+      "log": ".runtime/architecture-fact-guards/targeted.log"
+    },
+    "registry": {
+      "status": "passed",
+      "tests": 24,
+      "gate_required": "18/18",
+      "log": ".runtime/architecture-fact-guards/registry-final.log"
+    },
+    "quick_tail_preflight": {
+      "status": "passed",
+      "targets": 13,
+      "includes": "12 cheap tail targets plus baseline.unit only",
+      "log": ".runtime/architecture-fact-guards/quick-tail-preflight.json"
+    },
+    "full_baseline": {
+      "status": "not_run",
+      "reason": "three independent full manifest orders are not a cheap static preflight; baseline unit passed"
+    },
+    "iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/architecture-fact-guards/iteration.log"
+    }
+  },
+  "next_exact_step": "Targeted guard behavior and negative regressions, independent review, governed PR; frontend remains root-owned and paused"
+}

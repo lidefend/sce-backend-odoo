@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5105`
+- Scanned files: `5106`
 - Files requiring split plan: `73`
 - Files above warning threshold: `148`
 
@@ -44,7 +44,7 @@ Generated from repository source files. This report is informational during the 
 | 2184 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2105 | YAML workflow | `scripts/verify/registry.yaml` |
+| 2112 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -275,7 +275,7 @@ Generated from repository source files. This report is informational during the 
 | 2184 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2105 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 2112 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2089 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
