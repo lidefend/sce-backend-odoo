@@ -18,6 +18,7 @@ gate_anchors:
   invoked_by:
   - frontend/apps/web/package.json
 gate_required:
+- test_construction_core_extension_policy_maps_split_guard.py
 - frontend_decision_authority.py
 - frontend_decision_authority_guard.py
 - test_frontend_decision_authority_guard.py
@@ -1423,6 +1424,12 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_construction_core_extension_policy_maps_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
+  reason: Real native fact and projection regressions run via verify.construction.policy_maps.unit,
+    required by the contract architecture suite in local Quick and remote professional backend.
 - script: test_construction_create_default_hooks.py
   status: active
   owner: platform-team

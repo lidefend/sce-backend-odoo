@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: ARCHITECTURE-FACT-GUARDS-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 守卫跟随PR800原生入口事实权威并验证投影消费，拒绝硬编码回退
