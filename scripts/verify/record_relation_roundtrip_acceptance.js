@@ -820,6 +820,27 @@ async function runProbe(acceptance, environment) {
 main().catch((error) => {
   // Keep exception text and arguments private; source locations identify the
   // failed prerequisite without leaking credentials or request bodies.
+  const secretValues = [
+    process.env.SC_ENTRY_SHARED_SECRET,
+    process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD,
+    process.env.E2E_PASSWORD,
+    process.env.SC_ACCEPTANCE_PASSWORD,
+  ].filter(Boolean).map(String);
+  const redact = (value) => {
+    let text = String(value ?? '');
+    for (const secret of secretValues) {
+      if (secret && secret.length >= 4) text = text.split(secret).join('[REDACTED]');
+    }
+    return text.replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/g, 'Bearer [REDACTED]');
+  };
+  const cause = error?.cause instanceof Error ? error.cause : null;
+  const diagnostic = {
+    name: redact(error?.name),
+    message: redact(error?.message),
+    code: redact(error?.code),
+    cause: cause ? { name: redact(cause.name), message: redact(cause.message), code: redact(cause.code) } : null,
+  };
+  process.stderr.write(`[relation_roundtrip prerequisite diagnostic] ${JSON.stringify(diagnostic)}\n`);
   const locations = String(error?.stack || '').split('\n').slice(1)
     .map(line => line.match(/record_relation_roundtrip_acceptance\.js:\d+:\d+/)?.[0])
     .filter(Boolean);

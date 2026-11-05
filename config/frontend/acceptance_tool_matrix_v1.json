@@ -45,7 +45,8 @@
         "local",
         "test",
         "daily",
-        "candidate"
+        "candidate",
+        "navux_branch"
       ],
       "operations": [
         "readonly"
@@ -122,7 +123,8 @@
         "local",
         "test",
         "daily",
-        "candidate"
+        "candidate",
+        "navux_branch"
       ],
       "operations": [
         "readonly"
