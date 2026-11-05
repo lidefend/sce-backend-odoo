@@ -29,6 +29,27 @@ def run(run_id: int, *, status: str, conclusion: str | None, **overrides):
 
 
 class AuthoritativeWorkflowRunTests(unittest.TestCase):
+    def test_scheduled_gate_never_accepts_previous_day_same_head(self):
+        try:
+            from scripts.ci.scheduled_validation import scheduled_slot, observation
+        except ModuleNotFoundError:
+            from scheduled_validation import scheduled_slot, observation
+        old = run(10, status='completed', conclusion='success', event='schedule',
+                  created_at='2026-11-03T23:30:00Z')
+        current = run(11, status='in_progress', conclusion=None, event='schedule',
+                      created_at='2026-11-05T01:08:23Z')
+        options = dict(repository=REPOSITORY, workflow_path=WORKFLOW, head_sha=HEAD,
+                       event='schedule', schedule_slot=scheduled_slot('2026-11-04T23:51:01Z'))
+        self.assertIsNone(select_latest_run({'workflow_runs': [old]}, **options))
+        self.assertEqual(11, select_latest_run({'workflow_runs': [old, current]}, **options)['id'])
+        current.update(run_attempt=2, run_started_at='2026-11-05T02:49:40Z')
+        report = observation(current)
+        self.assertEqual('2026-11-05T02:30:00+08:00', report['nominal_slot_shanghai'])
+        self.assertEqual(398.4, report['trigger_delay_minutes'])
+        self.assertEqual(2, report['attempt'])
+        self.assertEqual(scheduled_slot('2026-11-04T18:30:00Z'), options['schedule_slot'])
+        with self.assertRaises(ValueError): scheduled_slot('2026-11-04T18:30:00')
+
     def select(self, *rows):
         return select_latest_run(
             {"workflow_runs": list(rows)},

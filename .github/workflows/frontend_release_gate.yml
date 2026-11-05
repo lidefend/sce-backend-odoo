@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: frontend-release-gate-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -57,6 +58,12 @@ jobs:
             printf 'sha=%s\n' "$(git rev-parse HEAD)"
             printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
           } >> "${GITHUB_OUTPUT}"
+
+      - name: Observe scheduled validation time
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/scheduled_validation.py
 
       - name: Classify change risk
         id: risk

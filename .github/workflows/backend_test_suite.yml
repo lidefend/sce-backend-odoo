@@ -2,7 +2,7 @@ name: backend_test_suite
 
 # R9 (productization audit): automated entry for the backend Odoo test
 # suite, which needs a live database. Runs nightly on the default branch
-# and on demand; each module with a tests/ directory is tested in an
+# via professional_quality_gate and on demand; each module with a tests/ directory is tested in an
 # isolated per-run database. Odoo tests and repository-level Python unit
 # tests use their respective governed runners; a zero-test Odoo invocation
 # is never accepted as a passing result.
@@ -19,8 +19,6 @@ on:
       head_ref:
         required: true
         type: string
-  schedule:
-    - cron: "37 19 * * *"  # 03:37 Asia/Shanghai nightly
   workflow_dispatch:
     inputs:
       head_ref:
@@ -561,7 +559,7 @@ jobs:
     needs: [plan, backend_suite]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 125
     steps:
       - name: Checkout candidate for coverage verification
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -596,7 +594,7 @@ jobs:
       - name: Verify changed test execution identities
         env:
           GH_TOKEN: ${{ github.token }}
-          MANAGED_WAIT_SECONDS: ${{ github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' && '1800' || '0' }}
+          MANAGED_WAIT_SECONDS: ${{ github.event_name == 'schedule' && '7200' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' && '1800' || '0' }}
         run: |
           python3 scripts/ci/backend_changed_test_coverage.py \
             --discover-managed --wait-managed-seconds "${MANAGED_WAIT_SECONDS}" --plan "${RUNNER_TEMP}/verified-plan.json" --receipts "${RUNNER_TEMP}/execution-receipts" \

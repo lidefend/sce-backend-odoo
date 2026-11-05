@@ -1451,7 +1451,9 @@ verify.frontend.contract_render_profile.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.navigation_initialization_race.unit
 verify.frontend.navigation_initialization_race.unit: guard.prod.forbid
-	@node scripts/verify/frontend_navigation_initialization_race.test.mjs
+	@mkdir -p .runtime/ci-execution-alignment
+	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_navigation_initialization_race.test.mjs --bundle --platform=node --format=esm --outfile=.runtime/ci-execution-alignment/navigation-initialization-test.mjs >/dev/null
+	@node .runtime/ci-execution-alignment/navigation-initialization-test.mjs
 
 .PHONY: verify.frontend.action_view_route_lease_race.unit
 verify.frontend.action_view_route_lease_race.unit: guard.prod.forbid

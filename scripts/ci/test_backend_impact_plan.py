@@ -334,7 +334,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         self.assertIn('--base "${IMPACT_BASE}"', suite)
         self.assertIn('module_test_tags="sc_smoke/${module},sc_gate/${module}"', suite)
         self.assertIn('if ! evaluate_orm_outcome', suite)
-        self.assertIn('cron: "37 19 * * *"', suite)
+        self.assertNotIn("  schedule:", suite)
 
 
 class ImportAndSqlClosureTest(unittest.TestCase):

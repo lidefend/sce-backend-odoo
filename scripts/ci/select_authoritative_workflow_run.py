@@ -6,6 +6,11 @@ import argparse
 import json
 import re
 import sys
+import os
+try:
+    from scripts.ci.scheduled_validation import scheduled_slot
+except ModuleNotFoundError:
+    from scheduled_validation import scheduled_slot
 from typing import Any
 
 
@@ -16,6 +21,7 @@ def select_latest_run(
     workflow_path: str,
     head_sha: str,
     event: str,
+    schedule_slot: str | None = None,
 ) -> dict[str, Any] | None:
     matches = []
     for run in payload.get("workflow_runs") or []:
@@ -30,6 +36,12 @@ def select_latest_run(
             continue
         if str(run.get("event") or "") != event:
             continue
+        if schedule_slot:
+            try:
+                if scheduled_slot(run.get('created_at', '')) != schedule_slot:
+                    continue
+            except (ValueError, TypeError):
+                continue
         run_id = run.get("id")
         if not isinstance(run_id, int) or run_id <= 0:
             continue
@@ -53,12 +65,16 @@ def main() -> int:
         return 0
     if not args.head:
         parser.error('--head is required unless --history is selected')
+    slot = os.environ.get('SCHEDULED_SLOT') if args.event == 'schedule' else None
+    if args.event == 'schedule' and not slot:
+        parser.error('scheduled selection requires the observed SCHEDULED_SLOT')
     selected = select_latest_run(
         payload,
         repository=args.repository,
         workflow_path=args.workflow_path,
         head_sha=args.head,
         event=args.event,
+        schedule_slot=slot,
     )
     if selected is not None:
         json.dump(selected, sys.stdout, separators=(",", ":"), sort_keys=True)

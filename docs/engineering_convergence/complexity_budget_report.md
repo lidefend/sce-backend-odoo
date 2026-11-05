@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5100`
+- Scanned files: `5101`
 - Files requiring split plan: `72`
 - Files above warning threshold: `147`
 
@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 959 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 623 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 621 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -221,15 +221,15 @@ Generated from repository source files. This report is informational during the 
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
+| 485 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 465 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 381 | Shell script | `scripts/demo/verify.sh` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
+| 332 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 330 | Shell script | `scripts/release/immutable_candidate_build.sh` |
-| 325 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
 | 278 | Shell script | `scripts/verify/local_dev_payment_request_floorplan_readonly.sh` |

@@ -48,6 +48,19 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(plan['modules'], ['a', 'b', 'c'])
         self.assertIn('explicit_full', plan['reasons'])
 
+    def test_full_plan_demands_registered_managed_methods(self):
+        module = planner.changed_coverage.MANAGED_MODULE
+        graph = {module: {'depends': set(), 'tests': True, 'prefix': f'addons/{module}/'}}
+        rows = [{'selector': '/fixture:Test.test_one', 'owner': 'acceptance.frontend.fixture_orm'}]
+        def git(*args):
+            return f'addons/{module}/tests' if args[0] == 'ls-tree' else 'a' * 40
+        with patch.object(planner.impact, 'git', side_effect=git), \
+                patch.object(planner.impact, 'snapshot', return_value=graph), \
+                patch.object(planner.changed_coverage, 'managed_tests', return_value=rows) as managed:
+            plan = planner.build_plan('', 'head')
+        self.assertEqual(rows, plan['changed_test_coverage'])
+        managed.assert_called_once()
+
     def test_dispatch_rejects_unknown_or_duplicate_modules(self):
         graph = {'a': {'depends': set(), 'tests': True, 'prefix': 'addons/a/'}}
         def git(*args):

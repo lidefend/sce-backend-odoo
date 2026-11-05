@@ -88,6 +88,37 @@ class ManagedEvidenceTests(unittest.TestCase):
                                      'head_repository_id': repo['id']}}
         return head, run, artifact, raw
 
+    def test_scheduled_evidence_binds_slot_across_midnight_and_rejects_prior_day(self):
+        head, run, artifact, raw = self.fixture()
+        slot = coverage.scheduled_slot('2026-11-04T23:51:01Z')
+        run.update(event='schedule', created_at='2026-11-05T01:08:23Z')
+        self.assertEqual(17, coverage.authenticate_managed_report(
+            head, run, artifact, raw, schedule_slot=slot)['artifact_id'])
+        for event, timestamp in [('schedule', '2026-11-03T23:51:01Z'),
+                                 ('workflow_dispatch', '2026-11-04T23:51:01Z')]:
+            run.update(event=event, created_at=timestamp)
+            with self.assertRaises(ValueError):
+                coverage.authenticate_managed_report(head, run, artifact, raw, schedule_slot=slot)
+
+    def test_scheduled_cli_passes_observed_slot_to_managed_discovery(self):
+        import os
+        import sys
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            row = coverage.inventory(ChangedCoverageTests.source, f'addons/{coverage.MANAGED_MODULE}/tests/test_nav.py')[0]
+            plan = root / 'plan.json'
+            plan.write_text(json.dumps({'head': 'a' * 40, 'base': '', 'changed_test_coverage': [row]}))
+            output = root / 'result.json'
+            current = {'head_sha': 'a' * 40, 'event': 'schedule', 'created_at': '2026-11-05T01:08:23Z'}
+            args = ['coverage', '--plan', str(plan), '--receipts', str(root), '--output', str(output),
+                    '--discover-managed', '--wait-managed-seconds', '7200']
+            with patch.object(sys, 'argv', args), patch.dict(os.environ, GITHUB_EVENT_NAME='schedule', GITHUB_RUN_ID='42'), \
+                    patch.object(coverage.receipts, 'github_bytes', return_value=json.dumps(current).encode()), \
+                    patch.object(coverage, 'discover_managed_evidence', return_value={'executed': [row['selector']]}) as discover:
+                coverage.main()
+            discover.assert_called_once_with('a' * 40, schedule_slot='2026-11-04T18:30:00+00:00')
+            self.assertEqual([], json.loads(output.read_text())['pending'])
+
     def test_current_successful_managed_evidence_is_bound_to_platform_digest(self):
         head, run, artifact, raw = self.fixture()
         result = coverage.authenticate_managed_report(head, run, artifact, raw)

@@ -582,6 +582,31 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertTrue(all('checkout' not in step.get('name', '').lower()
                             for step in jobs['professional_quality_gate']['steps']))
 
+    def test_scheduled_backend_cannot_be_skipped_by_empty_impact(self):
+        step = next(s for s in self.jobs()['professional_quality_gate']['steps']
+                    if s['name'] == 'Enforce affected backend execution')
+        for impact in ('true', 'false', ''):
+            for result in ('success', 'failure', 'cancelled', 'skipped', ''):
+                outcome = subprocess.run(['bash', '-c', step['run']], capture_output=True,
+                    env={**os.environ, 'EVENT_NAME': 'schedule', 'AUTHORIZATION_RESULT': 'success',
+                         'IMPACT_REQUIRED': impact, 'IMPACT_RESULT': result})
+                self.assertEqual(result == 'success', outcome.returncode == 0)
+        quality = self.jobs()['professional_quality_checks']
+        baseline = next(s for s in quality['steps'] if s.get('run') == 'make verify.test.baseline')
+        self.assertEqual("github.event_name == 'schedule'", baseline['if'])
+        evidence = next(s for s in quality['steps'] if s.get('name') == 'Preserve scheduled offline baseline evidence')
+        self.assertEqual('.runtime/test-baseline/offline/', evidence['with']['path'])
+        self.assertIn('always()', evidence['if'])
+        self.assertIn("github.event_name == 'schedule' ||", self.jobs()['backend_impact_suite']['if'])
+        for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',
+                     'merge_policy_gate', 'release_candidate_gate'):
+            text = (ROOT / '.github/workflows' / (name + '.yml')).read_text()
+            self.assertIn("cron: '30 18 * * *'", text)
+            self.assertIn('python3 scripts/ci/scheduled_validation.py', text)
+        backend = (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        self.assertNotIn('  schedule:', backend)
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then', backend)
+
     def test_actual_aggregate_script_rejects_missing_failed_cancelled_and_skipped(self):
         steps = self.jobs()['professional_quality_gate']['steps']
         step = next(s for s in steps if s['name'] == 'Enforce quality and compatibility execution')

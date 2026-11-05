@@ -72,6 +72,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Observe scheduled validation time
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/scheduled_validation.py
+
       - name: Classify change risk
         id: risk
         run: |
@@ -95,12 +101,12 @@ jobs:
 
   backend_impact_suite:
     needs: professional_authorization
-    if: github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true'
+    if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true')
     uses: ./.github/workflows/backend_test_suite.yml
     with:
-      base_sha: ${{ github.event.pull_request.base.sha }}
-      head_sha: ${{ github.event.pull_request.head.sha }}
-      head_ref: ${{ github.event.pull_request.head.ref }}
+      base_sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+      head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      head_ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -248,6 +254,20 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Run complete registered offline baseline for schedule
+        id: scheduled_baseline
+        if: github.event_name == 'schedule'
+        run: make verify.test.baseline
+
+      - name: Preserve scheduled offline baseline evidence
+        if: always() && github.event_name == 'schedule' && steps.scheduled_baseline.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scheduled-offline-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: .runtime/test-baseline/offline/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run owning tool checks for changed control plane
         id: tool_checks
         if: env.TOOL_CHECKS != ''
@@ -310,7 +330,7 @@ jobs:
           # Determine which shards to run based on change type
           # If only docs/config changed (no frontend/backend code), skip test shard
           RUN_TESTS=1
-          if [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
             echo "Change detected: docs/config only - skipping test shard"
             RUN_TESTS=0
           fi
@@ -434,7 +454,7 @@ jobs:
           if [ "${EVENT_NAME}" = pull_request ]; then
             test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false
           fi
-          if [ "${IMPACT_REQUIRED}" = "true" ]; then
+          if [ "${EVENT_NAME}" = schedule ] || [ "${IMPACT_REQUIRED}" = "true" ]; then
             test "${IMPACT_RESULT}" = success
           else
             test "${IMPACT_RESULT}" = skipped

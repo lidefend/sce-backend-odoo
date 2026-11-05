@@ -786,7 +786,7 @@ verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
 verify.ci.execution_alignment.orders: guard.prod.forbid
 	@mkdir -p .runtime/ci-execution-alignment/orders
 	@set -e; for order in forward reverse random; do \
-	  python3 -c 'import sys; from pathlib import Path; from scripts.verify.test_baseline_contract import child; sys.exit(child(["scripts.ci.test_backend_suite_plan", "scripts.ci.test_backend_test_receipt", "scripts.ci.test_backend_changed_test_coverage", "scripts.ci.test_ci_risk_classifier", "scripts.ci.test_ci_risk_workflow_contract", "scripts.ci.test_backend_test_suite_dispatch_contract"], sys.argv[1], 20261026, Path(".runtime/ci-execution-alignment/orders") / (sys.argv[1]+".json")))' "$$order"; \
+	  python3 -c 'import sys; from pathlib import Path; from scripts.verify.test_baseline_contract import child; sys.exit(child(["scripts.ci.test_backend_suite_plan", "scripts.ci.test_backend_test_receipt", "scripts.ci.test_backend_changed_test_coverage", "scripts.ci.test_ci_risk_classifier", "scripts.ci.test_select_authoritative_workflow_run", "scripts.ci.test_merge_policy_gate", "scripts.ci.test_ci_risk_workflow_contract", "scripts.ci.test_backend_test_suite_dispatch_contract"], sys.argv[1], 20261026, Path(".runtime/ci-execution-alignment/orders") / (sys.argv[1]+".json")))' "$$order"; \
 	done
 	@python3 -c 'import json; from pathlib import Path; from scripts.verify.test_baseline_contract import compare; root=Path(".runtime/ci-execution-alignment/orders"); print("[ci.execution_alignment.orders] PASS cases=" + str(compare([json.loads((root/(order+".json")).read_text()) for order in ("forward", "reverse", "random")])))'
 
@@ -797,6 +797,7 @@ verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 scripts/verify/test_frontend_release_ci_identity.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_ci_artifact_host_write_guard.py
 	@python3 scripts/ci/test_ci_risk_workflow_contract.py
+	@python3 scripts/ci/test_merge_policy_gate.py
 	@python3 scripts/verify/ci_artifact_host_write_guard.py
 	@echo "[verify.ci.scheduled_gates] PASS"
 

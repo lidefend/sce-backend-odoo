@@ -10,6 +10,9 @@ import io
 import zipfile
 import re
 import time
+import os
+from scheduled_validation import scheduled_slot
+from datetime import datetime
 from pathlib import Path
 
 import backend_impact_plan as impact
@@ -47,6 +50,13 @@ def inventory(source: str, path: str) -> list[dict]:
                              'owner': MANAGED_TARGET if module == MANAGED_MODULE else 'backend_suite',
                              'status': 'pending'})
     return rows
+
+
+def managed_tests(head: str) -> list[dict]:
+    paths = impact.git('ls-tree', '-r', '--name-only', head, '--',
+                       'addons/' + MANAGED_MODULE + '/tests').splitlines()
+    return [row for path in paths if path.endswith('.py')
+            for row in inventory(impact.git('show', head + ':' + path), path)]
 
 
 def changed_tests(base: str, head: str) -> list[dict]:
@@ -89,17 +99,14 @@ def managed_report(head: str, log: str) -> dict:
     summaries = re.findall(r'(\d+) failed, (\d+) error\(s\) of (\d+) tests', log)
     if not summaries or any(int(f) or int(e) for f, e, _ in summaries) or int(summaries[-1][2]) <= 0:
         raise ValueError('managed ORM evidence lacks a passing nonzero summary')
-    paths = impact.git('ls-tree', '-r', '--name-only', head, '--',
-                       'addons/' + MANAGED_MODULE + '/tests').splitlines()
-    rows = [row for path in paths if path.endswith('.py')
-            for row in inventory(impact.git('show', head + ':' + path), path)]
+    rows = managed_tests(head)
     observed = verify_logs([dict(r, owner='backend_suite') for r in rows], [log])
     return {'schema': 'managed-changed-tests/v1', 'head': head, 'owner': MANAGED_TARGET,
             'log_sha256': hashlib.sha256(log.encode()).hexdigest(),
             'executed': [r['selector'] for r in observed if r['status'] == 'executed']}
 
 
-def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes) -> dict:
+def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes, *, schedule_slot: str | None = None) -> dict:
     for field in ('repository', 'head_repository'):
         if run.get(field, {}).get('full_name') != receipts.REPOSITORY or run[field].get('id') != receipts.REPOSITORY_ID:
             raise ValueError('foreign managed evidence repository')
@@ -107,6 +114,8 @@ def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes
             or run.get('status') != 'completed' or run.get('run_attempt') != 1
             or run.get('path') != '.github/workflows/frontend_release_gate.yml'):
         raise ValueError('managed run identity, attempt or outcome mismatch')
+    if schedule_slot and (run.get('event') != 'schedule' or scheduled_slot(run.get('created_at', '')) != schedule_slot):
+        raise ValueError('managed evidence is not from this scheduled validation slot')
     origin = artifact.get('workflow_run', {})
     if (artifact.get('name') != f"managed-orm-{run['id']}-1-{head}"
             or artifact.get('expired') is not False or origin.get('id') != run['id']
@@ -132,10 +141,12 @@ def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes
     return {**report, 'run_id': run['id'], 'artifact_id': artifact['id'], 'artifact_digest': artifact['digest']}
 
 
-def discover_managed_evidence(head: str) -> dict | None:
+def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) -> dict | None:
     runs = json.loads(receipts.github_bytes(
         f'actions/workflows/frontend_release_gate.yml/runs?head_sha={head}&per_page=100'))
     for run in sorted(runs.get('workflow_runs', []), key=lambda r: r['id'], reverse=True):
+        if schedule_slot and (run.get('event') != 'schedule' or scheduled_slot(run.get('created_at', '')) != schedule_slot):
+            continue
         if run.get('conclusion') != 'success' or run.get('run_attempt') != 1:
             continue
         artifacts = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/artifacts?per_page=100"))
@@ -144,7 +155,7 @@ def discover_managed_evidence(head: str) -> dict | None:
                 # Resolve authoritative artifact metadata before downloading bytes.
                 artifact = json.loads(receipts.github_bytes(f"actions/artifacts/{artifact['id']}"))
                 return authenticate_managed_report(head, run, artifact,
-                    receipts.github_bytes(f"actions/artifacts/{artifact['id']}/zip"))
+                    receipts.github_bytes(f"actions/artifacts/{artifact['id']}/zip"), schedule_slot=schedule_slot)
     return None
 
 
@@ -173,11 +184,25 @@ def main() -> None:
     rows = verify_logs(rows, [(p.parent / 'execution.log').read_text() for p in args.receipts.rglob('receipt.json')])
     managed = None
     if args.discover_managed and any(r['owner'] == MANAGED_TARGET for r in rows):
-        if not 0 <= args.wait_managed_seconds <= 3600:
-            parser.error('managed evidence wait must be between 0 and 3600 seconds')
-        deadline = time.monotonic() + args.wait_managed_seconds
+        if not 0 <= args.wait_managed_seconds <= 7200:
+            parser.error('managed evidence wait must be between 0 and 7200 seconds')
+        schedule_slot = None
+        wait_seconds = args.wait_managed_seconds
+        if os.environ.get('GITHUB_EVENT_NAME') == 'schedule':
+            run_id = os.environ['GITHUB_RUN_ID']
+            if not run_id.isdigit():
+                raise ValueError('invalid current scheduled run id')
+            current = json.loads(receipts.github_bytes(f'actions/runs/{run_id}'))
+            if current.get('head_sha') != plan['head'] or current.get('event') != 'schedule':
+                raise ValueError('current scheduled run identity mismatch')
+            schedule_slot = scheduled_slot(current['created_at'])
+            # Bound the complete producer window, rather than adding two hours
+            # after a four-hour shard. Aggregators allow 340 minutes in total.
+            created = datetime.fromisoformat(current['created_at'].replace('Z', '+00:00')).timestamp()
+            wait_seconds = max(0, min(wait_seconds, created + 300 * 60 - time.time()))
+        deadline = time.monotonic() + wait_seconds
         while True:
-            managed = discover_managed_evidence(plan['head'])
+            managed = discover_managed_evidence(plan['head'], schedule_slot=schedule_slot)
             if managed or time.monotonic() >= deadline:
                 break
             print('Managed ORM evidence pending for exact candidate; waiting for the selected acceptance lane', flush=True)

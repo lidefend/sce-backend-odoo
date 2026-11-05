@@ -40,7 +40,7 @@ def partition(modules: list[str], limit: int = 4) -> list[dict]:
 # Known execution dependencies supplement the existing selector; this inventory
 # does not certify imports, external packages, dynamic contracts or SQL reads.
 EXECUTION_INPUTS = impact.GLOBAL + ('scripts/ci/backend_suite_plan.py',
-    'scripts/ops/evidence_scope.py', 'scripts/ci/backend_changed_test_coverage.py',
+    'scripts/ops/evidence_scope.py', 'scripts/ci/backend_changed_test_coverage.py', 'scripts/ci/scheduled_validation.py',
     'scripts/ci/ci_risk_classifier.py', 'config/ci/risk_tiering_v1.json',
     'scripts/ci/backend_test_receipt.py', 'scripts/common/**', 'scripts/_lib/**',
     'scripts/render_odoo_conf.py', 'config/requirements-test.txt')
@@ -141,6 +141,8 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
     plan = {**selected, 'base': base, 'head': head, 'shards': partition(selected['modules']) if selected['modules'] else []}
     plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
+    if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
+        plan['changed_test_coverage'] = changed_coverage.managed_tests(head)
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan

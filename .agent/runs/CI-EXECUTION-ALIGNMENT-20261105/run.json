@@ -14,6 +14,7 @@
     ".github/workflows/frontend_release_gate.yml",
     ".github/workflows/merge_policy_gate.yml",
     ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/public_guard.yml",
     ".github/workflows/release_candidate_gate.yml",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
@@ -21,19 +22,26 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "make/ci.mk",
+    "make/runtime_ops.mk",
     "scripts/ci/backend_changed_test_coverage.py",
     "scripts/ci/backend_impact_plan.py",
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/scheduled_validation.py",
+    "scripts/ci/select_authoritative_workflow_run.py",
     "scripts/ci/test_backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_impact_plan.py",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_receipt.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/verify/frontend_navigation_initialization_race.test.mjs",
     "scripts/verify/test_baseline_manifest.json",
     "scripts/verify/test_coverage_registry.yaml"
   ],
@@ -86,10 +94,9 @@
     }
   },
   "blockers": [
-    "Existing frontend release unit assertion blocks full managed acceptance; do not weaken the assertion without owning behavior analysis.",
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Review checkpoint diff and scoped evidence; resolve the existing frontend navigation assertion in its owning scope, then obtain independent review and publish via governed PR entry for exact-head remote validation.",
+  "next_exact_step": "Review the clean continuation candidate independently, then publish through the governed PR entry and verify current remote full/selected execution.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -101,7 +108,7 @@
   },
   "validation": {
     "L0": "clean main baseline then explicit dirty scope",
-    "L1": "Passed final ci.local.iteration, 267 CI-contract tests, 76 scheduled/security checks, registry/baseline unit checks, 204 affected cases in each of three independent orders, and 2 real CLI digest-consumption cases.",
+    "L1": "Passed CI contract 272, scheduled/security 81, frontend release unit, 223 affected cases in each of three orders, 297 registered baseline cases in each of three orders, registry/baseline unit checks and ci.local.iteration.",
     "L2_L4": "remote execution verification required; no local product/runtime changes",
     "L5": "independent review and exact candidate checks before integration"
   },
@@ -112,57 +119,52 @@
     "unrelated worktrees"
   ],
   "stage_identity": {
-    "head": "fe719728b99cae761d50eb14eabcefc4df307adf",
-    "dirty_scope": "owned files in scope; no pre-existing dirty files",
-    "phase": "local implementation checkpoint, not frozen publication candidate"
+    "head": "7b3701dacc843203219c7d4f08fbc5b7d6e8c55b",
+    "dirty_scope": "continuation: owning navigation regression and full scheduled validation wiring",
+    "phase": "local iteration"
   },
   "results": {
     "ci_contract": {
       "status": "passed",
       "command": "make verify.ci.workflow.contract",
-      "tests": 267,
-      "log": ".runtime/ci-execution-alignment/verification-final.log"
+      "tests": 272,
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
     },
     "scheduled_contract": {
       "status": "passed",
       "command": "make verify.ci.scheduled_gates",
-      "tests": 76,
-      "log": ".runtime/ci-execution-alignment/verification-final.log"
+      "tests": 81,
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
     },
     "affected_orders": {
       "status": "passed",
       "command": "make verify.ci.execution_alignment.orders",
-      "cases_per_order": 204,
+      "cases_per_order": 223,
       "orders": [
         "forward",
         "reverse",
         "random"
       ],
-      "log": ".runtime/ci-execution-alignment/orders-final.log",
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log",
       "note": "All three independent processes passed the final affected CI test surface; no ORM or all-repository claim."
     },
     "registry": {
       "status": "passed",
       "command": "make test.coverage.registry.export verify.test.coverage.registry verify.test.baseline.unit",
       "tests": 30,
-      "log": ".runtime/ci-execution-alignment/registry-final.log"
+      "log": ".runtime/ci-execution-alignment/continuation-final-r2.log"
     },
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/ci-execution-alignment/iteration-referenced.log",
+      "log": ".runtime/ci-execution-alignment/continuation-artifact-wiring.log",
       "coverage": "L1 only"
     },
     "frontend_release": {
-      "status": "failed",
+      "status": "passed",
       "command": "make verify.frontend.release.unit",
-      "owner": "pre-existing P4 validation-tool assertion against AppShell source",
-      "log": ".runtime/ci-execution-alignment/frontend-release-unit.log",
-      "unchanged_inputs": [
-        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
-        "frontend/apps/web/src/layouts/AppShell.vue"
-      ],
-      "reason": "test line 76 expects ProductSideNavigation v-if=\"navigationReady\"; both files match baseline HEAD"
+      "log": ".runtime/ci-execution-alignment/frontend-release-fixed.log",
+      "scope": "Current scenario navigation readiness, immutable authorized tuple and click consumer; complete registered release unit entry. No product runtime mutation."
     },
     "remote_execution": {
       "status": "not_run",
@@ -180,6 +182,35 @@
       "command": "Actual backend_suite_plan.py CLI against exact baseline tree; valid digest consumes scene shard; altered digest rejects",
       "log": ".runtime/ci-execution-alignment/cli-results.json",
       "limits": "Development tool bytes plus exact baseline source tree; no remote execution."
+    },
+    "frontend_release_previous": {
+      "status": "failed",
+      "command": "make verify.frontend.release.unit",
+      "owner": "pre-existing P4 validation-tool assertion against AppShell source",
+      "log": ".runtime/ci-execution-alignment/frontend-release-unit.log",
+      "unchanged_inputs": [
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "reason": "test line 76 expects ProductSideNavigation v-if=\"navigationReady\"; both files match baseline HEAD"
+    },
+    "scheduled_offline_baseline": {
+      "status": "passed",
+      "command": "make verify.test.baseline",
+      "cases_per_order": 297,
+      "orders": [
+        "forward",
+        "reverse",
+        "random"
+      ],
+      "log": ".runtime/ci-execution-alignment/scheduled-offline-baseline.log",
+      "limits": "Registered offline baseline, not all repository tests or ORM acceptance; dirty development stage, no exact-head remote claim."
+    },
+    "artifact_wiring": {
+      "status": "passed",
+      "command": "make verify.ci.scheduled_gates ci.local.iteration",
+      "log": ".runtime/ci-execution-alignment/continuation-artifact-wiring.log",
+      "note": "Final artifact-persistence-only addition checked after three-order offline baseline."
     }
   },
   "review_resolution": {
@@ -189,11 +220,12 @@
     "incremental_reuse": "Existing certified isolated Python reuse moved before partition; decision/config inputs added to recipe. Ordinary ORM closure remains uncertified. No test-only reverse-dependency narrowing without proof.",
     "frontend_builds": "Backend does not consume frontend output; removed shard builds and limited Compose build/pull to owning services. No unverified shared result cache.",
     "browsers": "Only full frontend lane restores/installs browser; standard lane still runs lint/type/unit/build.",
-    "summaries": "Professional backend/mainline/full summaries aligned; candidate skip explicitly not applicable; module executed_passed and valid_reuse statuses separate."
+    "summaries": "Professional backend/mainline/full summaries aligned; candidate skip explicitly not applicable; module executed_passed and valid_reuse statuses separate.",
+    "scheduled_full": "Schedule invokes all registered backend module suites without incremental receipt discovery, full professional/profile checks, full frontend/browser and all declared managed fixture methods, and complete registered offline baseline with retained logs/receipts. Empty impact cannot skip scheduled execution. Historical unwired test groups remain outside this registered scope."
   },
   "rollback": "Revert this standalone CI checkpoint through the protected PR flow if integrated; no database/service/environment changes were executed.",
   "completion": {
-    "batch": "implementation validated locally; verification_pending",
+    "batch": "Local implementation and scoped validation complete; independent review and remote validation pending.",
     "mainline": "not integrated",
     "deployment": "not performed",
     "user_acceptance": "not claimed"
@@ -214,5 +246,28 @@
     ],
     "review_result": "Only source-size/line-count and two new CI validation-asset inventory entries; no product/source changes.",
     "evidence_reuse": "Documentation-only generated refresh does not alter test/executor inputs; previously passed scoped results retained."
+  },
+  "authorization_continuation": "Owner requested fixing stale navigation assertions, complete wiring, full scheduled verification and investigation/fix of changing observed start times.",
+  "schedule_observation": {
+    "cron": "30 18 * * *",
+    "timezone_display": "Asia/Shanghai 02:30 daily",
+    "history_log": ".runtime/ci-execution-alignment/scheduled-runs-observed.json",
+    "examples": [
+      {
+        "run": 41740050673,
+        "created_at": "2026-11-03T23:33:12Z",
+        "attempt": 1
+      },
+      {
+        "run": 41936911986,
+        "created_at": "2026-11-04T23:51:01Z",
+        "run_started_at": "2026-11-05T02:49:40Z",
+        "attempt": 2
+      }
+    ],
+    "finding": "Fixed UTC cron; actual event creation delayed hours. Latest run_started_at belongs to a retry, not original queue delay.",
+    "fix": "Unified backend nightly under professional full run; display nominal UTC/Shanghai slot, actual creation, trigger delay and attempt. Bind aggregate and managed evidence to exact head plus same nominal slot.",
+    "limit": "GitHub schedule is best effort; occurrence inferred from preceding daily boundary, delays >=24h cannot be disambiguated from schedule payload. No punctuality guarantee or new external scheduler.",
+    "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule"
   }
 }
