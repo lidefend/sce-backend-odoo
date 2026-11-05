@@ -23,10 +23,13 @@
     "scripts/verify/test_capability_unresolved_execution_chain.py",
     "scripts/verify/capability_composite_and_decision.py",
     "scripts/verify/test_capability_composite_and_decision.py",
+    "scripts/verify/test_construction_diary_list_contract.py",
     "scripts/verify/module_capability_index.py",
     "scripts/verify/test_module_capability_index.py",
     "docs/product/capability_candidate_catalog_v1.json",
     "addons/smart_construction_core/data/construction_plan_form_productization_contract.xml",
+    "addons/smart_construction_core/data/construction_diary_list_contract.xml",
+    "addons/smart_construction_core/__manifest__.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md"
@@ -50,8 +53,9 @@
     "d04_second_batch_unresolved_chain": "PASS: 6 unresolved execution-chain verified -> composite_member=2 (project.risk.list, material.procurement.list), provider_found=2 (finance.plan.funding, finance.settlement.order), absorbed_by_existing=1 (analytics.lifecycle.monitor), unresolved=1 (finance.exception.monitor)",
     "d04_third_fourth_batch": "PASS: 6 composite converged -> composite_entry=6 (reuse project.list.open + construction.plan.report), unresolved=1 (project.structure.manage no deps); 13 no_provider -> retain=13 (all have real runtime models)",
     "d05_01_sample": "PASS: construction.diary.open provider binding registered (odoo_action=smart_construction_core.action_sc_construction_diary, verified); List Contract business_config_contract_construction_diary_productized_list_v1 added (view_type=list, 13 fields); reverse_index maps to smart_construction_core",
-    "d05_01_deferred_suites": "DEFERRED: list_surface_structure + relation_roundtrip (stale evidence source, not ancestor of head) -> re-run after mainline-deploy sync + governed module upgrade; no browser this round"
+    "d05_01_deferred_suites": "DEFERRED: list_surface_structure + relation_roundtrip (stale evidence source, not ancestor of head) -> re-run after mainline-deploy sync + governed module upgrade; no browser this round",
+    "d05_01_r2_loading_fix": "PASS: moved List Contract out of noupdate=1 data block into standalone data/construction_diary_list_contract.xml (plain <odoo>, no noupdate) registered in manifest; old noupdate file no longer contains the record; offline checks pass"
   },
   "blockers": [],
-  "next_exact_step": "push Draft PR (bypass --require-ready via git_safe_push.sh + gh pr create --draft); two runtime suites deferred to post-upgrade; then CI + merge + mainline-deploy sync + governed upgrade"
+  "next_exact_step": "push R2 loading fix to PR #809; then CI + merge + mainline-deploy sync + governed upgrade + two deferred runtime suites"
 }
