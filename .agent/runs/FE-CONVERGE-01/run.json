@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-CONVERGE-01",
   "branch": "codex/fe-converge-01-presentation",
-  "baseline_sha": "17adbaf774370ead5cd19078c58c867c33cefac8",
+  "baseline_sha": "f64de1f87c8c2bf3c3c4514f125068c1c637e6bd",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-CONVERGE-01.yaml",
   "record": "docs/ops/iterations/fe-converge-01/record.md",
@@ -135,7 +135,7 @@
   ],
   "next_exact_step": "Commit evidence-index reconciliation, freeze clean HEAD, obtain explicitly requested current-head Quick, align registered acceptance carrier, run contract/list acceptance, record receipts, independent review and governed PR preflight/publish.",
   "stage_identity": {
-    "head": "8852eeb6a47294a31ac97bd11c28420bbfaeaea6",
+    "head": "97ff41cdd519a80aa65bf662ae44a54c386e153d",
     "dirty_scope": [
       ".agent/runs/FE-CONVERGE-01/run.json",
       "docs/ops/iterations/fe-converge-01/record.md"
@@ -170,5 +170,20 @@
       "log": ".runtime/frontend-final-quick.log",
       "reason": "Independent review required candidate scope correction; no pass or receipt claimed."
     }
+  },
+  "coverage_registration_sync": {
+    "pr": 818,
+    "merge": "f64de1f87c8c2bf3c3c4514f125068c1c637e6bd",
+    "source_head": "3783bfffa199321d470520563391d95d26c1e30f",
+    "result_head": "97ff41cdd519a80aa65bf662ae44a54c386e153d",
+    "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
+    "status": "passed",
+    "log": ".runtime/frontend-coverage-sync.log",
+    "prior_quick": {
+      "status": "failed",
+      "log": ".runtime/frontend-3783-final-quick.log",
+      "failure": "Missing custom-tag coverage dispositions, independently reproduced on clean main. No receipt issued."
+    },
+    "limits": "Both ORM classes already carried sc_gate and used the existing backend module selector. Fix registers and regression-checks that relationship; it does not claim new ORM execution."
   }
 }
