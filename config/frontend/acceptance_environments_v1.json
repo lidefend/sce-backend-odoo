@@ -167,6 +167,39 @@
         "config_admin": "fixture_role_config_admin"
       },
       "runtime_identity_path": "/api/runtime-version",
+      "resource_contract": {
+        "compose_project": "sc-navux-verify",
+        "database": "sc_frontend_acceptance_candidate",
+        "database_filter": "^sc_frontend_acceptance_candidate$",
+        "volumes": {
+          "database": "sc_navux_verify_db_data",
+          "redis": "sc_navux_verify_redis_data",
+          "odoo": "sc_navux_verify_odoo_data"
+        },
+        "services": {
+          "compose_backend_port": 8074,
+          "backend_port": 8074,
+          "frontend_port": 18091
+        }
+      },
+      "managed_runtime": {
+        "base_env_file": ".env.local.navux-verify",
+        "compose_project": "sc-navux-verify",
+        "credential_container": "sc-navux-verify-odoo-1",
+        "database_filter": "^sc_frontend_acceptance_candidate$",
+        "volumes": {
+          "database": "sc_navux_verify_db_data",
+          "redis": "sc_navux_verify_redis_data",
+          "odoo": "sc_navux_verify_odoo_data"
+        },
+        "services": {
+          "compose_backend_port": 8074,
+          "backend_port": 8074,
+          "frontend_port": 18091,
+          "frontend_pidfile": "/tmp/sc-navux-verify-frontend.pid",
+          "frontend_logfile": "/tmp/sc-navux-verify-frontend.log"
+        }
+      },
       "isolation_guard": {
         "never_target": [
           "sc_frontend_acceptance",
