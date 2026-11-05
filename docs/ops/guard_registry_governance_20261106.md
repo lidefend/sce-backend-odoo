@@ -42,3 +42,19 @@
 同步工具边界：当前 frontend 候选只有两条责任提交，普通 sync 不要求 Quick，但生成冲突会中止；extended 要求当前 HEAD Quick 且通常至少 13 提交，并只复位登记生成文件，不自动运行生成器。若治理修复引入遇到这条循环，需通过独立受管 bootstrap 修复，不能临时跳钩或把旧回执改绑新 HEAD。
 
 原始日志及逐项 JSON 位于当前 run 索引所指的 `.runtime/guard-registry-governance/`。
+
+## Frozen-plan worker authentication follow-up
+
+The failed PR #815 backend worker called `validate_execution_plan` →
+`isolated_plan_reuse` → `isolated_history` → `gh api` from **Resolve module list**.
+That step lacked `GH_TOKEN`, although planning and final coverage authentication
+already supply it. The independent follow-up commit adds the existing GitHub job
+token to that step; receipt identity, success, digest and historical authority
+checks remain unchanged. No token is persisted in evidence.
+
+The regression parses the actual workflow and runs its frozen-plan shell with
+external executors stubbed. It verifies token inheritance and the frozen-plan,
+digest and shard arguments; missing authentication still fails before module
+selection is delivered. `make verify.ci.workflow.contract` passes, including the
+existing real planner reuse/rejection regression suite. This is offline wiring
+validation; authoritative remote checks remain required.

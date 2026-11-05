@@ -82,7 +82,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 959 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 621 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 622 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 

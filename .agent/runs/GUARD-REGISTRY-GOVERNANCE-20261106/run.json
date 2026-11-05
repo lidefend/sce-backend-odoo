@@ -23,7 +23,9 @@
     "docs/engineering_convergence/github_remote_execute.sh",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/audit/guard_registry/guard_registry.json",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    ".github/workflows/backend_test_suite.yml",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
   ],
   "checks": {},
   "environment": {
@@ -36,13 +38,12 @@
     "module": "scripts/verify and make",
     "standard_vs_user_specific": "repository governance",
     "why_here": "Repair tool lifecycle truth, no product compensation",
-    "blast_radius": "32 diagnosed registry items; two pure-test lane targets",
+    "blast_radius": "32 diagnosed registry items; two pure-test lane targets; frozen-plan worker authentication environment",
     "exclusions": [
       "frontend product code",
       "runtime writes",
       "blanket seed adoption",
-      "approval upgrade batch",
-      "backend_test_suite.yml and test_backend_test_suite_dispatch_contract.py"
+      "approval upgrade batch"
     ]
   },
   "execution_results": {
@@ -85,6 +86,27 @@
       "entry": "make fe.install.cached",
       "mode": "offline,frozen,ignore-scripts",
       "reason": "precommit original report generator requires frontend package metadata"
+    },
+    "workflow_contract": {
+      "status": "passed",
+      "entry": "make verify.ci.workflow.contract",
+      "test_counts": [
+        "39",
+        "22",
+        "20",
+        "75",
+        "34",
+        "45",
+        "20",
+        "11",
+        "5",
+        "16"
+      ],
+      "log": ".runtime/guard-registry-governance/workflow-contract.log"
+    },
+    "initial_worker_test_invocation": {
+      "status": "failed",
+      "reason": "module-style invocation cannot resolve existing planner sibling imports; rerun through registered Make target passed"
     }
   },
   "next_exact_step": "Freeze candidate, independent review, governed PR publication and remote required checks; no frontend mutation",
