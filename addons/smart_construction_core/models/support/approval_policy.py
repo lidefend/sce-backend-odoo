@@ -913,12 +913,21 @@ class ScApprovalPolicy(models.Model):
 
     @api.model
     def apply_user_visible_approval_templates(self):
-        """Align default approval templates with user-visible business roles."""
+        """Initialize defaults once; maintained steps are never upgrade inputs.
+
+        Existing databases explicitly adopt new templates/steps through the
+        policy editor. Missing/deleted steps are not an invitation to reseed.
+        """
+        module = self.env["ir.module.module"].sudo().search(
+            [("name", "=", "smart_construction_core")], limit=1
+        )
+        if module.state != "to install":
+            return True
         Step = self.env["sc.approval.step"].sudo()
         changed = False
         for code, template in self.USER_VISIBLE_APPROVAL_TEMPLATES.items():
             policy = self.sudo().search([("code", "=", code)], limit=1)
-            if not policy:
+            if not policy or self.USER_VISIBLE_TEMPLATE_MARKER in (policy.note or ""):
                 continue
             current_scope_keys = policy.step_ids.sorted("sequence").mapped("approval_scope_key")
             template_scope_keys = [scope_key for _name, scope_key in template["steps"]]

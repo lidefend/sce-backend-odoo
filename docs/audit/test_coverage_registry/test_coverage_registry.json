@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 209,
+    "odoo_tags": 210,
     "gated": 5,
     "on_demand": 56,
-    "unwired": 148,
-    "odoo_tag_declarations": 431,
-    "gated_declarations": 99,
-    "uncovered_declarations": 332,
+    "unwired": 149,
+    "odoo_tag_declarations": 433,
+    "gated_declarations": 100,
+    "uncovered_declarations": 333,
     "ci_unit_scripts": 18,
     "ci_unit_scripts_wired": 18,
     "ci_unit_scripts_unwired": 0
@@ -95,10 +95,11 @@
       "group": "sc_smoke",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 26,
+      "declarations": 27,
       "files": [
         "addons/smart_construction_core/tests/test_api_data_batch_contract_backend.py",
         "addons/smart_construction_core/tests/test_api_data_write_unlink_idempotency_backend.py",
+        "addons/smart_construction_core/tests/test_approval_step_upgrade.py",
         "addons/smart_construction_core/tests/test_capability_contract_backend.py",
         "addons/smart_construction_core/tests/test_capability_lint_gate.py",
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
@@ -669,6 +670,17 @@
         "make:verify.local.dev.system_permission.approval_scope.orm :: approval_scope_authority local.dev.test"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "approval_step_upgrade",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_approval_step_upgrade.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "auth_signup",

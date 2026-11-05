@@ -29,6 +29,7 @@
     "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
     "fix/acceptance-module-upgrade-lifecycle-20261106": ".agent/runs/ACCEPTANCE-MODULE-UPGRADE-20261106/run.json",
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
+    "fix/approval-step-maintenance-upgrade-20261106": ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
     "fix/architecture-fact-source-guards-20261106": ".agent/runs/ARCHITECTURE-FACT-GUARDS-20261106/run.json",
     "fix/baseline-docs-links-20261020": ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
     "fix/candidate-acceptance-probe-identity": ".agent/runs/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY/run.json",

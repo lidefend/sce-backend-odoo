@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "APPROVAL-STEP-UPGRADE-20261106",
+  "branch": "fix/approval-step-maintenance-upgrade-20261106",
+  "baseline_sha": "f79d29f55a22d6dbaec778237fbf710a12b6f4b3",
+  "status": "verification_pending",
+  "goal": ".agent/goals/APPROVAL-STEP-UPGRADE-20261106.yaml",
+  "record": ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
+  "scope": [
+    ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
+    ".agent/goals/APPROVAL-STEP-UPGRADE-20261106.yaml",
+    ".agent/active-runs.json",
+    "addons/smart_construction_core/models/support/approval_policy.py",
+    "addons/smart_construction_core/data/approval_policy_tier_sync.xml",
+    "addons/smart_construction_core/tests/test_approval_step_upgrade.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "scripts/test/payment_approval_upgrade_rehearsal.py",
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/test_local_test_runner.py",
+    "make/dev.mk",
+    "docs/architecture/approval_step_maintenance_upgrade.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "addons/smart_construction_core/data/approval_policy_seed.xml"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local.test sc_test; fresh once per attempt, two upgrades within same locked attempt; daily dev untouched"
+  },
+  "layer": {
+    "formal_product_layer": "P1 seed write authority; P4 bounded existing runner extension",
+    "layer_target": "sc.approval.policy initialization",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "standard product initialization, administrator facts preserved",
+    "why_here": "Fix actual template writes, no front-end or runtime reordering",
+    "blast_radius": "default approval templates at install/upgrade",
+    "exclusions": [
+      "actual payment/reversal",
+      "new approval engine",
+      "ACL expansion",
+      "daily database writes",
+      "PR814/815 source"
+    ]
+  },
+  "next_exact_step": "Commit scoped P1 and P4 changes, independent review of final tree and actual upgrade evidence; no main integration or daily deployment claimed",
+  "execution_results": {
+    "runner_unit": {
+      "status": "passed",
+      "count": 13,
+      "log": ".runtime/approval-upgrade-runner-unit-seed-fix.log"
+    },
+    "lightweight": {
+      "status": "passed",
+      "log": ".runtime/approval-upgrade-l1-seed-fix.log"
+    },
+    "orm_and_real_upgrades": {
+      "status": "passed",
+      "orm_tests": 5,
+      "actual_upgrades": 2,
+      "receipt": ".runtime/test-baseline/1793907825876145032/receipt.json",
+      "comparison": ".runtime/approval-upgrade-final-comparison.json",
+      "tested_input_hashes": ".runtime/approval-upgrade-tested-input-hashes.json",
+      "initial_source_identity": "f79d29f55a22 + declared dirty candidate; receipt proves source unchanged throughout attempt",
+      "database": "sc_test",
+      "limits": "synthetic test company; no daily deployment, payment or reversal"
+    },
+    "failed_attempts": [
+      {
+        "receipt": ".runtime/test-baseline/1793906806415953580/receipt.json",
+        "reason": "test maintainer pointed at noncustomer platform company; fixed using existing BusinessTransactionCase"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907044832291778/receipt.json",
+        "reason": "test confused review approved status with aggregate validated status"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907287523637739/receipt.json",
+        "reason": "upgrade comparison failed; normalized many2one serialization and found default seed recreation path"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907667860543470/receipt.json",
+        "reason": "owned attempt stopped when seed recreation defect confirmed; not a pass"
+      }
+    ]
+  }
+}
