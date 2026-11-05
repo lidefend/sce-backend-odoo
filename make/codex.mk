@@ -697,6 +697,7 @@ workspace.branch.sync-main: guard.prod.forbid
 		--expected-head "$(EXPECTED_HEAD)" \
 		--expected-old-base "$(EXPECTED_OLD_BASE)" \
 		--expected-main "$(EXPECTED_MAIN)" \
+		$(if $(filter 1,$(REGENERATE_GENERATED_EVIDENCE)),--regenerate-evidence,) \
 		$(if $(DEPENDENCY_PR),--dependency-pr "$(DEPENDENCY_PR)",) \
 		$(if $(DEPENDENCY_HEAD),--dependency-head "$(DEPENDENCY_HEAD)",) \
 		$(if $(DEPENDENCY_MERGE),--dependency-merge "$(DEPENDENCY_MERGE)",) \
@@ -712,6 +713,7 @@ workspace.branch.sync-main.extended: guard.prod.forbid
 		--expected-head "$(EXPECTED_HEAD)" \
 		--expected-old-base "$(EXPECTED_OLD_BASE)" \
 		--expected-main "$(EXPECTED_MAIN)" \
+		$(if $(filter 1,$(REGENERATE_GENERATED_EVIDENCE)),--regenerate-evidence,) \
 		$(if $(DEPENDENCY_PR),--dependency-pr "$(DEPENDENCY_PR)",) \
 		$(if $(DEPENDENCY_HEAD),--dependency-head "$(DEPENDENCY_HEAD)",) \
 		$(if $(DEPENDENCY_MERGE),--dependency-merge "$(DEPENDENCY_MERGE)",) \

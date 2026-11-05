@@ -22,6 +22,7 @@ ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 CONFIRMATION = "REBASE_UNPUBLISHED_BRANCH_ON_EXACT_MAIN"
 EXTENDED_CONFIRMATION = "REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN"
+GENERATED_CONFIRMATION = "REBASE_AND_REBUILD_GENERATED_EVIDENCE_ON_EXACT_MAIN"
 MAX_RESPONSIBILITY_COMMITS = 12
 MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
@@ -37,10 +38,17 @@ GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
-    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
-    "scripts/audit/verification_lane_baseline.json",
-    "scripts/audit/verification_lane_dispositions.json",
-    "scripts/verify/test_coverage_registry.yaml",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+)
+# The original refresh entry and its producer implementation must come from
+# exact main. In particular, governance registries are inputs, never outputs.
+GENERATOR_SOURCE_PATHS = (
+    "Makefile", "make", "scripts/ci", "scripts/audit", "scripts/contract",
+    "scripts/verify/test_coverage_registry_audit.py",
 )
 CANONICAL_ORIGIN_URLS = {
     "https://github.com/lidefend/sce-backend-odoo.git",
@@ -66,6 +74,7 @@ class SyncPlan:
     dependency_head: str | None = None
     covered_prefix: str | None = None
     covered_merge: str | None = None
+    regenerate_evidence: bool = False
 
     @property
     def replay_base(self) -> str:
@@ -78,6 +87,7 @@ class SyncResult:
     generated_evidence_conflicts: tuple[str, ...] = ()
     metadata_conflicts: tuple[str, ...] = ()
     main_equivalent_paths: tuple[str, ...] = ()
+    generated_commit: str | None = None
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -291,6 +301,7 @@ def validate(
     dependency_reader: Callable[[int], dict] = merged_dependency,
     covered_prefix: str | None = None,
     covered_merge: str | None = None,
+    regenerate_evidence: bool = False,
 ) -> SyncPlan:
     root = root.resolve()
     expected_root = expected_root.resolve()
@@ -414,6 +425,7 @@ def validate(
         dependency_head=dependency_head,
         covered_prefix=covered_prefix,
         covered_merge=covered_merge,
+        regenerate_evidence=regenerate_evidence,
     )
 
 
@@ -458,6 +470,16 @@ def resolve_append_only_log_conflict(plan: SyncPlan, conflicts: tuple[str, ...])
     return True
 
 
+def generated_output_path(root: Path, path: str) -> Path:
+    target = root / path
+    for item in (target, *target.parents):
+        if item == root:
+            break
+        if item.is_symlink():
+            raise SyncError(f"generated output must not traverse a symlink: {path}")
+    return target
+
+
 def resolve_generated_evidence_conflicts(
     plan: SyncPlan, conflicts: tuple[str, ...]
 ) -> tuple[str, ...]:
@@ -465,7 +487,7 @@ def resolve_generated_evidence_conflicts(
         path for path in conflicts if path in GENERATED_EVIDENCE_CONFLICT_PATHS
     )
     for path in resolved:
-        target = plan.root / path
+        target = generated_output_path(plan.root, path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text_at_revision(plan.root, plan.new_main, path), encoding="utf-8")
         run(plan.root, "add", "--", path)
@@ -541,10 +563,18 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] 
             )
         )
         allowed = {APPEND_ONLY_CONFLICT_PATH, ACTIVE_RUNS_INDEX_PATH}
-        if plan.extended_history:
+        if plan.extended_history or plan.regenerate_evidence:
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
         if not conflicts or any(path not in allowed for path in conflicts):
-            return None
+            diagnostic = plan.recovery_bundle.with_suffix(".conflict.json")
+            diagnostic.parent.mkdir(parents=True, exist_ok=True)
+            diagnostic.write_text(json.dumps({
+                "head": plan.head, "main": plan.new_main,
+                "conflicts": list(conflicts), "git_output": result.stdout,
+            }, indent=2) + "\n", encoding="utf-8")
+            raise SyncError("unsupported rebase conflict paths: " +
+                            ", ".join(conflicts or ("<none>",)) +
+                            f"; diagnostic={diagnostic}")
         if APPEND_ONLY_CONFLICT_PATH in conflicts:
             if not resolve_append_only_log_conflict(plan, conflicts):
                 return None
@@ -596,13 +626,72 @@ def abort_rebase_and_restore(plan: SyncPlan) -> None:
     restore_original_head(plan)
 
 
+def untracked_paths(root: Path) -> set[str]:
+    return set(filter(None, run(root, "ls-files", "--others", "--exclude-standard", "-z").stdout.split("\0")))
+
+
+def cleanup_new_untracked(root: Path, original: set[str]) -> None:
+    # No recursive clean and no removal of pre-existing evidence/dependencies.
+    for name in untracked_paths(root) - original:
+        path = root / name
+        if path.is_file() or path.is_symlink():
+            path.unlink()
+
+
+def regenerate_reports(plan: SyncPlan) -> str | None:
+    for path in GENERATED_EVIDENCE_CONFLICT_PATHS:
+        generated_output_path(plan.root, path)
+    if git_output(plan.root, "diff", plan.new_main, "--", *GENERATOR_SOURCE_PATHS):
+        raise SyncError("generated rebuild requires unchanged main producer sources and Make recipes")
+    before = git_output(plan.root, "rev-parse", "HEAD")
+    log = plan.recovery_bundle.with_suffix(".generation.log")
+    environment = sanitized_environment()
+    for key in ("MAKEFLAGS", "MFLAGS", "MAKEFILES", "MAKELEVEL"):
+        environment.pop(key, None)
+    allowed = set(GENERATED_EVIDENCE_CONFLICT_PATHS)
+
+    def verify_writes() -> tuple[str, ...]:
+        changed = set(git_output(plan.root, "diff", "--name-only", before).splitlines())
+        changed.update(untracked_paths(plan.root))
+        unexpected = sorted(changed - allowed)
+        if unexpected:
+            raise SyncError("generator/hook changed non-generated paths: " + ", ".join(unexpected))
+        for path in changed:
+            generated_output_path(plan.root, path)
+        return tuple(sorted(changed))
+
+    with log.open("w", encoding="utf-8") as stream:
+        for target in ("refresh.generated_evidence", "ci.generated_evidence.preflight"):
+            stream.write(f"make {target}\n")
+            stream.flush()
+            result = subprocess.run(["make", "--no-print-directory", target], cwd=plan.root,
+                                    env=environment, stdout=stream, stderr=subprocess.STDOUT,
+                                    check=False, timeout=300)
+            verify_writes()
+            if result.returncode:
+                raise SyncError(f"original generator/check failed: {target}; log={log}")
+    changed = verify_writes()
+    if not changed:
+        return None
+    run(plan.root, "add", "--", *changed)
+    # Real commit hooks remain enabled. Their writes are checked as well.
+    run(plan.root, "commit", "-m", "chore: regenerate reports after governed main sync")
+    verify_writes()
+    if git_output(plan.root, "rev-parse", "HEAD^") != before:
+        raise SyncError("generator commit changed responsibility history")
+    require_clean(plan.root)
+    return git_output(plan.root, "rev-parse", "HEAD")
+
+
 def sync(plan: SyncPlan) -> SyncResult:
+    original_untracked = untracked_paths(plan.root)
     create_bundle(plan)
     try:
         rebase_result = run_rebase(plan)
     except Exception as exc:
+        cleanup_new_untracked(plan.root, original_untracked)
         abort_rebase_and_restore(plan)
-        raise SyncError(f"rebase conflict resolution failed and original HEAD was restored: {exc}") from exc
+        raise SyncError(f"rebase conflict aborted; original HEAD was restored: {exc}") from exc
     if rebase_result is None:
         abort_rebase_and_restore(plan)
         raise SyncError("rebase conflict; aborted and restored original HEAD")
@@ -668,12 +757,15 @@ def sync(plan: SyncPlan) -> SyncResult:
             plan.root, plan.replay_base, plan.head, exclude=patch_excludes
         ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
             raise SyncError("responsibility patch identity changed after sync")
+        generated_commit = regenerate_reports(plan) if plan.regenerate_evidence else None
+        new_head = git_output(plan.root, "rev-parse", "HEAD")
     except Exception as exc:
+        cleanup_new_untracked(plan.root, original_untracked)
         restore_original_head(plan)
         if isinstance(exc, SyncError):
             raise SyncError(f"{exc}; original HEAD restored") from exc
         raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
-    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths)
+    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths, generated_commit)
 
 
 def main() -> int:
@@ -691,9 +783,11 @@ def main() -> int:
     parser.add_argument("--covered-prefix")
     parser.add_argument("--covered-merge")
     parser.add_argument("--allow-extended-history", action="store_true")
+    parser.add_argument("--regenerate-evidence", action="store_true")
     parser.add_argument("--confirm", required=True)
     args = parser.parse_args()
-    expected_confirmation = EXTENDED_CONFIRMATION if args.allow_extended_history else CONFIRMATION
+    expected_confirmation = (EXTENDED_CONFIRMATION if args.allow_extended_history else
+                             GENERATED_CONFIRMATION if args.regenerate_evidence else CONFIRMATION)
     if args.confirm != expected_confirmation:
         print(
             "[workspace.branch.sync-main] DENY confirmation must equal "
@@ -713,17 +807,22 @@ def main() -> int:
             dependency_merge=args.dependency_merge,
             covered_prefix=args.covered_prefix,
             covered_merge=args.covered_merge,
+            regenerate_evidence=args.regenerate_evidence,
         )
         result = sync(plan)
     except SyncError as exc:
         print(f"[workspace.branch.sync-main] DENY {exc}", file=sys.stderr)
         return 2
     invalidated = ",".join(result.generated_evidence_conflicts) or "none"
+    next_validation = ("exact-new-head-Quick-and-affected-acceptance" if plan.extended_history
+                       else "current-head-risk-selected-validation")
     print(
         f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} "
         f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
         f"common_base={plan.old_base} replay_base={plan.replay_base} "
-        f"generated_evidence_invalidated={invalidated}"
+        f"generated_evidence_invalidated={invalidated} "
+        f"generated_commit={result.generated_commit or 'none'} "
+        f"candidate_evidence=false next={next_validation}"
     )
     return 0
 
