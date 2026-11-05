@@ -46,6 +46,21 @@ class _Menus:
     def browse(self, ids):
         return _Recordset(self.by_id[int(i)] for i in ids if int(i) in self.by_id)
 
+    def search(self, domain):
+        out = []
+        for menu in self.by_id.values():
+            ok = True
+            for field, op, value in domain:
+                if field == "parent_id":
+                    parent = menu.parent_id
+                    pid = parent.id if parent else 0
+                    target = value.id if hasattr(value, "id") else value
+                    if op == "=" and pid != target:
+                        ok = False
+            if ok:
+                out.append(menu)
+        return _Recordset(out)
+
 
 class _Recordset(list):
     def exists(self):
@@ -102,6 +117,14 @@ class _Env:
         if key == "sc.product.scenario.entry":
             return self.entries
         raise KeyError(key)
+
+    def ref(self, xmlid, raise_if_not_found=True):
+        for menu in self.menus.values():
+            if menu.xmlid == xmlid:
+                return menu
+        if raise_if_not_found:
+            raise ValueError(xmlid)
+        return None
 
 
 def _leaf(menu_id, action_id, label, xmlid):

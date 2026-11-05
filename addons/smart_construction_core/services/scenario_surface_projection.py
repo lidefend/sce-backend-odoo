@@ -295,7 +295,13 @@ def flatten_authorized_nav_leaves(
     authority_by_pair = _route_authority_by_pair(route_authority)
     leaves: list[dict[str, Any]] = []
 
-    def walk(nodes: Iterable[dict[str, Any]], parent_menu_xmlid: str = "") -> None:
+    def walk(
+        nodes: Iterable[dict[str, Any]],
+        parent_menu_xmlid: str = "",
+        parent_group_key: str = "",
+        parent_group_label: str = "",
+        depth: int = 0,
+    ) -> None:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
@@ -310,6 +316,34 @@ def flatten_authorized_nav_leaves(
             route = _text(carrier.get("route") or node.get("route") or meta.get("route"))
             entry = authority_by_pair.get((menu_id, action_id), {})
             menu_xmlid = _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid"))
+            label = _text(node.get("label") or node.get("name") or carrier.get("label"))
+            # The delivery tree does not copy the policy group onto leaf rows:
+            # the business root's direct child (depth 1) is the center and its
+            # ``label`` is the only stable grouping signal carried down the tree.
+            group_label = _text(
+                node.get("policy_group_label")
+                or node.get("group_label")
+                or meta.get("policy_group_label")
+                or meta.get("group_label")
+            )
+            if depth == 1:
+                group_label = group_label or label
+                parent_group_label = group_label
+            effective_group_label = group_label or parent_group_label
+            group_key = _text(
+                node.get("policy_group_key")
+                or node.get("group_key")
+                or meta.get("policy_group_key")
+                or meta.get("group_key")
+                or parent_group_key
+            )
+            group_label = _text(
+                node.get("policy_group_label")
+                or node.get("group_label")
+                or meta.get("policy_group_label")
+                or meta.get("group_label")
+                or parent_group_label
+            )
             if menu_id > 0 and (action_id > 0 or route):
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
@@ -320,13 +354,15 @@ def flatten_authorized_nav_leaves(
                     "model": _text(node.get("model") or meta.get("model") or entry.get("model")),
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
                     "route": route,
-                    "label": _text(node.get("label") or node.get("name") or carrier.get("label")),
+                    "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
                     "entry_target": entry.get("entry_target") or meta.get("entry_target") or {},
                     "parent_menu_xmlid": leaf_parent,
+                    "policy_group_key": group_key,
+                    "policy_group_label": effective_group_label,
                 })
             if children:
-                walk(children, menu_xmlid)
+                walk(children, menu_xmlid, group_key, effective_group_label, depth + 1)
 
     walk(nav or [])
     return leaves
@@ -400,6 +436,34 @@ def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str
     return result
 
 
+def _native_centers_by_name(env) -> dict[str, dict[str, Any]]:
+    """Map native center display name -> center identity for policy fallback.
+
+    A few product entries (for example the Odoo ``account`` menus grouped into
+    the accounting center) are natively parented under a core Odoo root rather
+    than the business root, so the parent-chain walk cannot find their center.
+    The delivery tree still carries their product ``policy_group_label``; this
+    index lets the projection re-attach them to the matching native center.
+    """
+    if env is None:
+        return {}
+    root = env.ref(BUSINESS_ROOT_XMLID, raise_if_not_found=False)
+    if not root:
+        return {}
+    Menu = env["ir.ui.menu"].sudo()
+    result: dict[str, dict[str, Any]] = {}
+    for center in Menu.search([("parent_id", "=", root.id)]):
+        key = _menu_external_id(env, center)
+        name = _text(center.name)
+        if key and name:
+            result[name] = {
+                "key": key,
+                "name": name,
+                "sequence": int(getattr(center, "sequence", 10) or 10),
+            }
+    return result
+
+
 def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
     """Load maintainable scenario bindings from the Odoo model, server-side."""
     if env is None:
@@ -432,11 +496,17 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     center_by_id = _native_center_for_menus(env, [leaf.get("menu_id") for leaf in leaves])
+    center_by_name = _native_centers_by_name(env)
     scenario_by_menu = _scenario_entries_by_menu(env)
     centers: dict[str, dict[str, Any]] = {}
     for leaf in leaves:
         menu_id = int(leaf.get("menu_id") or 0)
-        center = center_by_id.get(menu_id)
+        # Synthetic menu containers (center headers with a /m/ route and no
+        # stable XMLID) are grouping nodes, not user entries; they must not be
+        # re-attached as children of themselves.
+        if not _text(leaf.get("menu_xmlid")):
+            continue
+        center = center_by_id.get(menu_id) or center_by_name.get(_text(leaf.get("policy_group_label")))
         if not center:
             continue
         node = centers.setdefault(center["key"], {
