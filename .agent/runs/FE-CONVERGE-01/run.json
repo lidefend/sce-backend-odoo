@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONVERGE-01",
+  "branch": "codex/fe-converge-01-presentation",
+  "baseline_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+  "status": "active",
+  "goal": ".agent/goals/FE-CONVERGE-01.yaml",
+  "record": "docs/ops/iterations/fe-converge-01/record.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGE-01.yaml",
+    ".agent/runs/FE-CONVERGE-01/run.json",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe-converge-01/",
+    "frontend/apps/web/src/",
+    "scripts/dev/fe_converge_observe.mjs"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "isolated acceptance carrier sc-fe-r2-p1-01 / sc_frontend_acceptance / port 18082",
+    "backend_sha": "a4abac5ca4370bf73b98060a90ad84ac41283bc3",
+    "shared_local_dev_sha": "7998f673c33bd20c9301edaf39e2f68df3d142ae"
+  },
+  "checks": {
+    "L1_lint": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "Makefile",
+        "make/"
+      ]
+    },
+    "L1_shared_surface": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "scripts/verify/"
+      ]
+    },
+    "L1_renderer_registry": {
+      "target": "verify.frontend.action_surface_renderer.architecture.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/renderers/",
+        "scripts/verify/"
+      ]
+    }
+  },
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "通用前端运行时与共享组件（AppShell/design-system/product-shell/product-list/product-record/page blocks）",
+    "module": "frontend",
+    "standard_vs_user_specific": "platform mechanism presentation",
+    "why_here": "公共表现与交互属于通用前端运行时，不携带业务语义；按受管呈现策略与设计变量统一",
+    "why_not_elsewhere": "不修改契约/权限/动作/状态语义；不按模型/菜单/角色/状态文本增加前端判断；不触碰 P1/P2/P3",
+    "blast_radius": "frontend/apps/web/src 下共享外壳、设计令牌、通用 renderer 与组件；各中心页面通过共享组件共同受益"
+  },
+  "validation_results": [
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/fe-converge-01-iteration.log",
+      "scope": "L1 static iteration baseline (FE-00)"
+    },
+    {
+      "command": "make verify.frontend.lint.src",
+      "status": "passed",
+      "tests": 0,
+      "log": ".runtime/fe-converge-01-lint.log",
+      "scope": "0 errors; 1 pre-existing StatusPanel.vue formatting warning unrelated to token change"
+    },
+    {
+      "command": "make verify.frontend.shared_surface_semantic_boundary.guard",
+      "status": "passed",
+      "scope": "58 files scanned"
+    },
+    {
+      "command": "make verify.frontend.action_surface_renderer.architecture.guard",
+      "status": "passed"
+    },
+    {
+      "command": "make verify.frontend.style_system.guard",
+      "status": "passed",
+      "scope": "hardcoded_color_refs_max=0"
+    },
+    {
+      "command": "make verify.frontend.theme_profile.unit",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "command": "make verify.frontend.navigation_shell.unit",
+      "status": "passed",
+      "tests": 21
+    },
+    {
+      "command": "make verify.frontend.product_page_header.unit",
+      "status": "passed",
+      "tests": 75
+    },
+    {
+      "command": "make verify.frontend.typecheck.strict",
+      "status": "passed"
+    },
+    {
+      "command": "make verify.frontend.build",
+      "status": "passed",
+      "scope": "ENV_FILE reuses primary-worktree .env.dev; production build 28s"
+    },
+    {
+      "command": "make local.dev.candidate.frontend.up/down",
+      "status": "passed",
+      "scope": "candidate static server on 5176 started and stopped cleanly, bound to current SHA"
+    },
+    {
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "status": "not_run",
+      "owner": "environment_defect",
+      "reason": "local.dev backend source mount is bound to sce-backend-odoo-mainline-deploy, not this worktree"
+    },
+    {
+      "command": "make acceptance.runtime.contract_receipt",
+      "status": "passed",
+      "scope": "contract_only PASS -> artifacts/backend/dev_acceptance_release_probe.json"
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "passed",
+      "tests": 18,
+      "scope": "phase=full rows=18 failures=0 (isolated acceptance sc-fe-r2-p1-01, fixture_role_finance)"
+    }
+  ],
+  "next_exact_step": "受管隔离验收完成（list_surface_structure 18 rows PASS），提交候选 PR。"
+}
