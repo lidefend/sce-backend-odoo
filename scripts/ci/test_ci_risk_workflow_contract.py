@@ -488,6 +488,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def test_ordinary_managed_orm_has_independent_producer_without_browser(self):
         workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
         job = workflow['jobs']['managed_orm']
+        self.assertIn("github.event.action == 'labeled' && github.event.label.name != 'ci:candidate'", workflow['concurrency']['group'])
+        self.assertIn("'ignored-label' || 'validation'", workflow['concurrency']['group'])
         self.assertNotIn('needs', job)
         self.assertIn("github.event.action != 'labeled'", job['if'])
         steps = job['steps']

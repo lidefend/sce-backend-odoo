@@ -160,6 +160,15 @@ def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) ->
         if run.get('status') != 'completed':
             return None
         url = f"https://github.com/{receipts.REPOSITORY}/actions/runs/{run['id']}"
+        jobs = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/jobs?per_page=100"))
+        producers = [job for job in jobs.get('jobs', [])
+                     if job.get('name') in ('frontend_release_gate', 'managed_orm')]
+        if producers and all(job.get('conclusion') == 'skipped' for job in producers):
+            # An unrelated label event selects neither producer and must not
+            # shadow the current validation run for the same PR head.
+            continue
+        if not producers:
+            raise ValueError(f"Managed ORM producer job identity missing: {url}")
         if run.get('conclusion') != 'success':
             raise ValueError(f"Managed ORM producer failed: {url} conclusion={run.get('conclusion')}")
         if run.get('run_attempt') != 1:

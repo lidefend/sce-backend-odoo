@@ -95,7 +95,7 @@ class ManagedEvidenceTests(unittest.TestCase):
             current = dict(run, conclusion=conclusion)
             payload = json.dumps({'workflow_runs': [current]}).encode()
             with self.subTest(conclusion=conclusion), patch.dict(os.environ, GITHUB_EVENT_NAME=''), \
-                    patch.object(coverage.receipts, 'github_bytes', side_effect=[payload, b'{"artifacts": []}']), \
+                    patch.object(coverage.receipts, 'github_bytes', side_effect=[payload, b'{"jobs": [{"name": "managed_orm", "conclusion": "success"}]}', b'{"artifacts": []}']), \
                     self.assertRaises(ValueError):
                 coverage.discover_managed_evidence(head)
         payload = json.dumps({'workflow_runs': [dict(run, id=43, status='in_progress'), run]}).encode()
@@ -103,6 +103,19 @@ class ManagedEvidenceTests(unittest.TestCase):
                 patch.object(coverage.receipts, 'github_bytes', return_value=payload) as fetch:
             self.assertIsNone(coverage.discover_managed_evidence(head))
             self.assertEqual(fetch.call_count, 1)
+
+    def test_discovery_ignores_all_skipped_label_run_without_shadowing_producer(self):
+        import os
+        head, run, artifact, raw = self.fixture()
+        runs = {'workflow_runs': [dict(run, id=43), run]}
+        responses = [runs,
+                     {'jobs': [{'name': 'managed_orm', 'conclusion': 'skipped'},
+                               {'name': 'frontend_release_gate', 'conclusion': 'skipped'}]},
+                     {'jobs': [{'name': 'managed_orm', 'conclusion': 'success'}]},
+                     {'artifacts': [artifact]}, artifact]
+        with patch.dict(os.environ, GITHUB_EVENT_NAME=''), patch.object(
+                coverage.receipts, 'github_bytes', side_effect=[json.dumps(x).encode() for x in responses] + [raw]):
+            self.assertEqual(coverage.discover_managed_evidence(head)['run_id'], 42)
 
     def test_scheduled_evidence_binds_slot_across_midnight_and_rejects_prior_day(self):
         head, run, artifact, raw = self.fixture()
