@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -308,6 +309,68 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertIn("backend_contract", plan["required_suites"])
         self.assertIn("list_surface_structure", plan["required_suites"])
         self.assertIn("relation_roundtrip", plan["required_suites"])
+
+    def test_scene_fact_changes_select_backend_without_unrelated_browser_suites(self):
+        paths = [
+            "addons/smart_construction_core/models/support/product_scenario.py",
+            "addons/smart_construction_core/services/scenario_surface_projection.py",
+            "addons/smart_construction_scene/models/product_policy.py",
+            "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+            "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        ]
+        plan = guard.build_plan(self.registry, paths, "base", HEAD)
+        self.assertEqual(plan["required_suites"], ["backend_contract"])
+        self.assertFalse(plan["unclassified"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
+    def test_scene_change_cannot_mask_mixed_business_or_browser_change(self):
+        scene = "addons/smart_construction_core/models/support/product_scenario.py"
+        for other, required in (
+            ("addons/smart_construction_core/models/core/project.py", {"list_surface_structure", "relation_roundtrip"}),
+            ("addons/smart_construction_scene/services/scene_contract.py", {"list_surface_structure", "relation_roundtrip"}),
+            ("frontend/apps/web/src/views/ActionView.vue", {"list_surface_structure"}),
+            ("scripts/verify/record_relation_roundtrip_acceptance.js", {"relation_roundtrip"}),
+        ):
+            with self.subTest(path=other):
+                plan = guard.build_plan(self.registry, [scene, other], "base", HEAD)
+                self.assertTrue(required.issubset(plan["required_evidence_suites"]))
+
+    def test_manifest_version_only_requires_literal_equivalent_nonversion_metadata(self):
+        before = "{'version': '1', 'depends': ['base'], 'data': ['a.xml']}"
+        self.assertTrue(guard.manifest_version_only(before, before.replace("'1'", "'2'")))
+        for after in (
+            before.replace("['base']", "['base', 'web']"),
+            before.replace('a.xml', 'b.xml'),
+            before[:-1] + ", 'assets': {'web.assets_backend': ['x.js']}}",
+            before[:-1] + ", 'post_init_hook': 'initialize'}",
+            "{'version': '2'}", "{}", "not_a_literal()", "[]", "{'version': None}",
+        ):
+            with self.subTest(after=after):
+                self.assertFalse(guard.manifest_version_only(before, after))
+
+    def test_manifest_conditional_plan_falls_back_on_runtime_or_missing_input(self):
+        path = "addons/smart_construction_core/__manifest__.py"
+        before = "{'version': '1', 'depends': ['base']}"
+        for after, only_version in ((before.replace("'1'", "'2'"), True),
+                                    (before.replace('base', 'web'), False)):
+            with patch.object(guard, '_git', side_effect=[before, OTHER, after]):
+                plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual('list_surface_structure' not in plan['required_suites'], only_version)
+            self.assertEqual('relation_roundtrip' not in plan['required_suites'], only_version)
+        with patch.object(guard, '_git', side_effect=guard.BindingError('missing base')):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertIn('relation_roundtrip', plan['required_suites'])
+        # Fingerprint invalidation remains conservative: path-only analysis
+        # cannot prove that a manifest delta contains only a version change.
+        self.assertTrue(guard.suite_owns_path(self.registry, 'list_surface_structure', path))
+
+    def test_manifest_local_plan_reads_uncommitted_dependencies(self):
+        path = "addons/smart_construction_core/__manifest__.py"
+        before = "{'version': '1', 'depends': ['base']}"
+        with patch.object(guard, '_git', side_effect=[before, HEAD]), \
+                patch.object(Path, 'read_text', return_value=before.replace('base', 'web')):
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+        self.assertIn('relation_roundtrip', plan['required_suites'])
 
     def test_plan_keeps_docs_only_changes_out_of_runtime_evidence(self):
         plan = guard.build_plan(self.registry, ["docs/ops/readme.md"], "base", HEAD)
@@ -1057,7 +1120,11 @@ class TestCarryForwardPolicy(unittest.TestCase):
         for suite in suites:
             self.assertEqual(before[suite], guard.suite_input_sha256(registry, suite, head))
         self._write(runtime_path, 'changed runtime')
-        runtime = self._commit('actual product change')
+        scene = self._commit('scene enablement change')
+        for suite in suites:
+            self.assertEqual(before[suite], guard.suite_input_sha256(registry, suite, scene))
+        self._write('addons/smart_construction_core/models/core/project.py', 'changed relation fields')
+        runtime = self._commit('actual relation product change')
         for suite in suites:
             self.assertNotEqual(before[suite], guard.suite_input_sha256(registry, suite, runtime))
         registry['suites']['list_surface_structure']['evidence']['min_counts']['records_total'] += 1

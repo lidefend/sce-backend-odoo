@@ -18,7 +18,12 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     ".agent/decisions/runtime-fact-presentation-evolution.yaml",
     ".agent/context.yaml",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -99,6 +104,30 @@
       "command": "make ci.local.iteration",
       "status": "passed",
       "log": ".runtime/scene-diagnosis-iteration-final.log"
+    },
+    {
+      "command": "make verify.acceptance.evolution.binding",
+      "status": "passed",
+      "tests": 61,
+      "log": ".runtime/scene-diagnosis-pr/selection-tests-final.log",
+      "scope": "P4 impact classification; previous log failed an obsolete invalidation sample, corrected with both relevant/unrelated assertions"
+    },
+    {
+      "command": "make verify.ci.orm_selection.unit",
+      "status": "passed",
+      "tests": 61,
+      "groups": [
+        39,
+        22
+      ],
+      "log": ".runtime/scene-diagnosis-pr/orm-selection-tests.log",
+      "scope": "Remote managed ORM producer and workflow wiring"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-pr/iteration-selection.log",
+      "scope": "P4 classification correction"
     }
   ],
   "stage_identity_artifact": ".runtime/scene-diagnosis-source-identity.json",
@@ -130,6 +159,15 @@
     ],
     "scope": "Stacked roadmap, scenario fact authority and publication diagnosis; source unchanged since passing scoped tests",
     "remote_ci": "pending",
-    "receipt_location": ".runtime/scene-diagnosis-pr/"
+    "receipt_location": ".runtime/scene-diagnosis-pr/",
+    "selection_correction": {
+      "owner_direction": "Remove unconditional unrelated list/relation prerequisites; preserve affected checks",
+      "layer": "P4 acceptance impact selection; no P1 semantic change",
+      "scope": "Exact scene fact consumers and version-only manifest metadata; unknown runtime and dependency changes retain conservative gates",
+      "browser_probe": "cancelled by owner steering; not a pass",
+      "contract_prerequisite": "passed at 0e6dbcc; not required for scene-only PR",
+      "runtime": "Existing local acceptance backend updated via backend.acceptance.up; persistent DB preserved; no daily deployment",
+      "independent_review": "passed /root/independent_ci_review; 61 binding and 39 classification independently rerun"
+    }
   }
 }

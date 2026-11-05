@@ -60,7 +60,11 @@ class Classification:
                    'addons/smart_construction_core/**/*settlement*',
                    'addons/smart_construction_core/**/*component*profile*')
         navigation = ('addons/**/*navigation*', 'addons/**/*scenario*',
-                      'addons/**/*menu*', 'addons/**/*business_scene*')
+                      'addons/**/*menu*', 'addons/**/*business_scene*',
+                      'addons/smart_construction_scene/models/product_policy.py',
+                      'addons/smart_construction_scene/models/scene_company_enablement.py',
+                      'addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py',
+                      'addons/smart_construction_scene/services/tenant_scene_activation.py')
         expand = (self.lane == 'RELEASE' or 'unknown_path_fail_closed' in self.reasons
                   or 'invalid_path' in self.reasons or any(_matches(p, shared) for p in self.paths))
         if expand or any(_matches(p, payment) for p in self.paths):
