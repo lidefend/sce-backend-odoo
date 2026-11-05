@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: RUNTIME-FACT-PRESENTATION-EVOLUTION
   title: 事实维护贯通运行时与公共表现层独立演进
-  status: planned
+  status: active
   kind: long_term_direction
   report: docs/architecture/runtime_logic_and_evolution_20261105.md
   decision: .agent/decisions/runtime-fact-presentation-evolution.yaml
@@ -16,11 +16,15 @@ goal:
     - .agent/goals/MY-WORK-FACT-LAYER-CONVERGENCE-20261104.yaml
   iterations:
     - id: RFE-01
-      status: planned
+      status: completed
+      result: docs/architecture/scenario_fact_authority_20261105.md
       outcome: 场景、入口、企业启用的事实读者与维护发布映射，确定首个最小迁移范围
       acceptance: 列出文件与模型读者、稳定身份、授权语义及兼容回退；不得把展示分组直接当授权分组
     - id: RFE-02
-      status: planned
+      status: completed
+      completion_scope: local_implementation_and_scoped_validation_only
+      mainline: not_integrated
+      run: .agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json
       depends_on: [RFE-01]
       outcome: 企业启用过滤消费唯一受管事实
       acceptance: 真实 ORM 覆盖公司切换、撤销、缺失状态及跨公司拒绝；导航、路由和直接调用一致
@@ -41,7 +45,7 @@ goal:
       status: planned
       outcome: 按产品需求逐项闭合 Renderer 缺口和历史页面迁移
       acceptance: 明确所选交互范围并实际验收；未实现能力继续如实标注降级
-  next_exact_step: 选择 RFE-01 作为下一有界批次，复核届时主线并登记事实到授权的读者映射
+  next_exact_step: 集成已验证的场景同源批次；随后按 RFE-03 梳理选定数据库策略与发布快照同源，不自动部署
   exclusions:
     - 登记不等于启动全部实现、主线集成、部署或产品验收
     - 不要求所有业务逻辑配置化；安全约束与业务不变量仍由服务端代码保证

@@ -130,6 +130,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self._binding(self.account_menu).unlink()
         self._upgrade_seed()
         after = self._locations(self._navigation())
+        self.assertNotIn(self.account_menu.id, after)
+        self.assertNotIn(self.account_menu.id, self.authorized_ids)
+        self.account_menu.sc_scenario_exempt = True
+        after = self._locations(self._navigation())
         self.assertEqual(set(after), set(before))
         center, scenario, entry = after[self.account_menu.id]
         self.assertEqual(center["key"], "smart_construction_core.menu_sc_accounting_center")
@@ -150,6 +154,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
         self.assertEqual(locations[menu2.id][2]["sequence"], 0)
         (first | second).unlink()
+        (self.account_menu | menu2).write({"sc_scenario_exempt": True})
         self.account_menu.sequence, menu2.sequence = 90, 0
         entries = self._locations(self._navigation())[self.account_menu.id][0]["entries"]
         ids = [entry["menu_id"] for entry in entries]

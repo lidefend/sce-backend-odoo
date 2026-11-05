@@ -449,6 +449,55 @@ def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str
     return result
 
 
+def load_runtime_surface(env):
+    """Read maintained scenario facts; files are never a runtime fallback.
+
+    Archived bindings remain present so authorization cannot mistake them for
+    an exemption. Native IDs cover menus without an external identifier.
+    """
+    if env is None:
+        raise ValueError("scenario runtime requires an Odoo environment")
+    scenarios = env["sc.product.scenario"].sudo().with_context(active_test=False).search([])
+    rows = []
+    for scenario in scenarios:
+        intents = {}
+        bindings = []
+        for entry in scenario.entry_ids:
+            menu = entry.menu_id
+            key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+            intents.setdefault(entry.intent, []).append(key)
+            bindings.append({"menu_id": menu.id, "menu_key": key,
+                             "sequence": entry.sequence, "intent": entry.intent})
+        rows.append({"key": scenario.code, "name": scenario.name,
+                     "active": bool(scenario.active), "sequence": scenario.sequence,
+                     "intents": intents, "bindings": bindings})
+    return {"schema": SCHEMA, "scenarios": rows}
+
+
+def runtime_menu_scope(env, surface=None):
+    """Index all native menus as bound, explicitly exempt, or missing.
+
+    This is a projection of persisted facts, not a second editable registry.
+    The index and ID/action maps share the same current native identities.
+    """
+    surface = load_runtime_surface(env) if surface is None else surface
+    index = build_menu_index(surface)
+    active = {row["key"]: row["active"] for row in surface["scenarios"]}
+    by_id, by_action = {}, {}
+    for menu in env["ir.ui.menu"].sudo().search([]):
+        key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+        by_id[menu.id] = key
+        if menu.action:
+            by_action.setdefault(menu.action.id, []).append(key)
+        if key in index:
+            index[key]["scenario_active"] = active[index[key]["scenario_key"]]
+        else:
+            index[key] = {"location": ("exempt" if menu.sc_scenario_exempt else
+                                       "container" if not menu.action and menu.child_id else "missing"),
+                          "scenario_key": "", "scenario_name": "", "intent": ""}
+    return index, by_id, by_action
+
+
 def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
     """Load maintainable scenario bindings from the Odoo model, server-side."""
     if env is None:

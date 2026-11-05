@@ -51,7 +51,7 @@ class ScSceneCompanyEnablement(models.Model):
         record = self.sudo().search(
             [("company_id", "=", company.id), ("scene_key", "=", scene_key)], limit=1
         )
-        product_released = resolve_product_released(scene_key)
+        product_released = resolve_product_released(scene_key, env=self.env)
         currently_enabled = bool(record.enabled) if record else False
         return record, decide_tenant_enablement(
             product_released=product_released,
@@ -69,7 +69,7 @@ class ScSceneCompanyEnablement(models.Model):
         if not isinstance(enabled, bool):
             raise UserError(_("启用状态必须为布尔值。"))
         allowed, next_enabled = decide_tenant_enablement(
-            product_released=resolve_product_released(self.scene_key),
+            product_released=resolve_product_released(self.scene_key, env=self.env),
             currently_enabled=bool(self.enabled),
             requested=enabled,
         )

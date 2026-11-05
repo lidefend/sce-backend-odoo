@@ -21,14 +21,8 @@ def _resolve_request_company(env, params):
 
 
 def _product_surface_index(env=None):
-    from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
-        build_menu_index,
-        load_surface,
-        resolve_native_parent_by_menu,
-    )
-
-    surface = load_surface()
-    return build_menu_index(surface, parent_by_menu=resolve_native_parent_by_menu(env, surface))
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import runtime_menu_scope
+    return runtime_menu_scope(env)[0]
 
 
 def _catalog(env, company_id=0):
@@ -43,7 +37,7 @@ def _catalog(env, company_id=0):
     )
     entries = list_scene_entries()
     release_state_by_menu = load_menu_release_states()
-    from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_surface
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
     from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_catalog, business_key
     from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
 
@@ -56,7 +50,7 @@ def _catalog(env, company_id=0):
     enablement = {}
     if company_id:
         scene_keys = {str(e.get("code") or e.get("key") or "").strip() for e in entries if str(e.get("code") or e.get("key") or "").strip()}
-        for s in (load_surface().get("scenarios") or []):
+        for s in (load_runtime_surface(env).get("scenarios") or []):
             key = str(s.get("key") or "").strip()
             if key:
                 scene_keys.add(business_key(key))
@@ -71,7 +65,7 @@ def _catalog(env, company_id=0):
     )
     can_manage = bool(env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
     result["business_scenarios"] = business_catalog(
-        load_surface(), release_state_by_menu, enablement, can_manage=bool(can_manage)
+        load_runtime_surface(env), release_state_by_menu, enablement, can_manage=bool(can_manage)
     )
     result["company_id"] = company_id
     return result
@@ -84,7 +78,7 @@ class ScenarioActivationCatalogGetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "scenario_activation_projection",
-        "authorities": ["sc.scene", "sc.scene.company.enablement", "product_menu_source"],
+        "authorities": ["sc.scene", "sc.product.scenario", "ir.config_parameter", "sc.scene.company.enablement", "product_menu_source"],
         "projection_only": True,
         "no_business_fact_authority": True,
     }
@@ -198,22 +192,23 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
         company_id, error = _resolve_request_company(self.env, params)
         if error:
             return {"ok": False, "error": error}
+        env = bind_company_context(self.env, company_id)
         entries = list_scene_entries()
         role_scene_candidates = self._resolve_authorized_scene_candidates(entries, company_id)
         release_state_by_menu = load_menu_release_states()
         enablement = {}
         if company_id:
-            from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_surface
+            from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
             from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
             from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
             for entry in entries:
                 key = str(entry.get("code") or entry.get("key") or "").strip()
                 if key:
-                    enablement[key] = read_tenant_enablement(self.env, company_id, key)
-            for scene in (load_surface().get("scenarios") or []):
+                    enablement[key] = read_tenant_enablement(env, company_id, key)
+            for scene in (load_runtime_surface(env).get("scenarios") or []):
                 key = str(scene.get("key") or "").strip()
                 if key:
-                    enablement[business_key(key)] = read_tenant_enablement(self.env, company_id, business_key(key))
+                    enablement[business_key(key)] = read_tenant_enablement(env, company_id, business_key(key))
         from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_states
         data = project_workspace_scenes(
             entries=entries,
@@ -221,7 +216,7 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
             tenant_enabled_by_scene=enablement,
             business_enabled_by_scene=business_states(enablement),
             role_scene_candidates=role_scene_candidates,
-            surface_index=_product_surface_index(self.env),
+            surface_index=_product_surface_index(env),
         )
         return {"ok": True, "data": data, "meta": {}}
 

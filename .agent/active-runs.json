@@ -74,6 +74,7 @@
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "fix/ci-execution-alignment-20261105": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
-    "audit/runtime-evolution-roadmap-20261105": ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json"
+    "audit/runtime-evolution-roadmap-20261105": ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json",
+    "refactor/scenario-fact-authority-20261105": ".agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json"
   }
 }

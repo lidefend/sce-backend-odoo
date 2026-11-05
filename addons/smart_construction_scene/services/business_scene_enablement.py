@@ -28,7 +28,9 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
         key = scene["key"].strip()
         menus = [menu for menu, location in index.items() if location["location"] == "scenario" and location["scenario_key"] == key]
         released = [menu for menu in menus if release_states.get(menu) == "released"]
-        is_enabled = enabled.get(key, False)
+        is_enabled = bool(scene.get("active", True)) and enabled.get(key, False)
+        if not scene.get("active", True):
+            released = []
         actions = []
         if can_manage and (is_enabled or released):
             actions.append({"key": "disable" if is_enabled else "enable",
@@ -43,14 +45,17 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
     return rows
 
 
+def location_business_enabled(location, enabled):
+    if not location or location["location"] == "missing":
+        return False
+    if location["location"] == "scenario":
+        return location.get("scenario_active", True) and enabled.get(location["scenario_key"]) is True
+    return location["location"] in ("exempt", "horizontal", "platform")
+
+
 def entry_business_enabled(entry, surface_index, enabled):
     menu = (entry.get("target") or {}).get("menu_xmlid")
-    location = surface_index.get(menu)
-    if not location:
-        return False
-    if location["location"] != "scenario":
-        return True
-    return enabled.get(location["scenario_key"]) is True
+    return location_business_enabled(surface_index.get(menu), enabled)
 
 
 def filter_business_authority(authority, *, surface_index, enabled, entries, menu_xmlids_by_id,
@@ -58,13 +63,20 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
     """Only remove existing authority; never manufacture allowed routes.
 
     Legacy aliases resolve through their menu binding, never textual key equality.
-    Unknown industry entry bindings fail closed; unrelated platform routes retain
-    their existing authority. The caller supplies current native menu identities.
+    Missing bindings fail closed, including bare actions without an authorized
+    menu carrier. Only the explicit initialization lifecycle exception below is
+    menu-less. The caller supplies current native menu identities.
     """
     # Native membership is used only to restrict rows already published by P0.
     # A bare action shared by multiple delivery surfaces remains usable through
     # any enabled surface; an explicit menu/legacy route retains its own scope.
     action_menus = menu_xmlids_by_action or {}
+    published_menu_pairs = set()
+    for bucket in AUTHORITY_BUCKETS:
+        for row in authority.get(bucket) or []:
+            menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
+            if menu and row.get("action_id") and row.get("allowed") is not False:
+                published_menu_pairs.add((row["action_id"], menu))
     result = deepcopy(authority)
     entry_by_key = {entry["code"]: entry for entry in entries if entry.get("code")}
     denied = result.setdefault("denied_actions", [])
@@ -74,29 +86,30 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
             menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
             location = surface_index.get(menu)
             legacy = entry_by_key.get(row.get("scene_key"))
-            if not location and legacy:
+            if not location and legacy and not menu and not row.get("menu_id"):
                 location = surface_index.get((legacy.get("target") or {}).get("menu_xmlid"))
-            allowed = (enabled.get(location["scenario_key"]) is True
-                       if location and location["location"] == "scenario"
-                       else bool(location) or legacy is None)
-            if not location and legacy is None and not menu and not row.get("menu_id"):
+            allowed = location_business_enabled(location, enabled)
+            if not location and legacy is None and not row.get("scene_key") and not menu and not row.get("menu_id"):
                 locations = [surface_index[xmlid] for xmlid in action_menus.get(row.get("action_id"), ())
-                             if xmlid in surface_index]
+                             if xmlid in surface_index and (row.get("action_id"), xmlid) in published_menu_pairs]
                 if locations:
-                    allowed = any(item["location"] != "scenario"
-                                  or enabled.get(item["scenario_key"]) is True for item in locations)
+                    allowed = any(location_business_enabled(item, enabled) for item in locations)
             # Initialization precedes business-scene enablement. This lifecycle
             # declaration preserves already-authorized internal actions only;
             # it neither adds routes nor overrides an explicit business menu.
-            if (not location and legacy
+            if (not location and legacy and not menu and not row.get("menu_id")
                     and legacy.get("enablement_scope") == "enterprise_initialization"
                     and row.get("source") == "scene_internal_action_authority"
                     and row.get("allowed") is True):
+                allowed = True
+            if bucket == "menu_containers" and location and location["location"] == "container" and not row.get("action_id"):
                 allowed = True
             if allowed:
                 kept.append(row)
             else:
                 denied.append({**row, "route_kind": "DENIED", "allowed_operation": "none",
-                               "reason_code": "BUSINESS_SCENARIO_NOT_ENABLED"})
+                               "reason_code": ("BUSINESS_SCENARIO_CONFIGURATION_MISSING"
+                                               if not location or location["location"] == "missing"
+                                               else "BUSINESS_SCENARIO_NOT_ENABLED")})
         result[bucket] = kept
     return result

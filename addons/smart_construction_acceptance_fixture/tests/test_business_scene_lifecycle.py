@@ -66,3 +66,72 @@ class TestBusinessSceneLifecycle(TransactionCase):
         with self.assertRaises(AccessError), self.cr.savepoint():
             a.with_env(actor).set_enabled(not a.enabled)
         self.assertFalse(actor['sc.scene.company.enablement'].search([('id', '=', b.id)]))
+
+    def test_maintained_membership_drives_company_authority_without_seed_file(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_construction_core.services import scenario_surface_projection
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
+        from odoo.addons.smart_construction_scene.handlers.scenario_activation import _catalog
+        entry = self.env['sc.product.scenario.entry'].sudo().search([('menu_id', '=', self.menu.id)])
+        self.assertEqual(len(entry), 1)
+        replacement = self.env['sc.product.scenario'].sudo().create({
+            'code': 'test.maintained.payment', 'name': 'Maintained payment',
+        })
+        entry.scenario_id = replacement
+        with patch.object(scenario_surface_projection, 'load_surface', side_effect=AssertionError('runtime read seed')):
+            self.assertFalse(self._allowed(self.company_a))
+            write_tenant_enablement(self.env, self.company_a.id, 'business.v1:test.maintained.payment', True)
+            self.assertTrue(self._allowed(self.company_a))
+            self.assertFalse(self._allowed(self.company_b))
+            replacement.name = 'Renamed payment'
+            rows = _catalog(self.env, self.company_a.id)['business_scenarios']
+            row = next(row for row in rows if row['scene_key'] == replacement.code)
+            self.assertEqual(row['name'], 'Renamed payment')
+            self.assertTrue(row['tenant_enabled'])
+            replacement.active = False
+            self.assertFalse(self._allowed(self.company_a))
+            replacement.active = True
+            self.assertTrue(self._allowed(self.company_a))
+            entry.unlink()
+            self.assertFalse(self._allowed(self.company_a))
+            self.menu.sc_scenario_exempt = True
+            self.assertTrue(self._allowed(self.company_a))
+            self.menu.sc_scenario_exempt = False
+            self.assertFalse(self._allowed(self.company_a))
+
+    def test_binding_clears_old_exemption_and_identity_cannot_be_renamed(self):
+        from odoo.exceptions import ValidationError
+        for code in (' test.ambiguous ', '   '):
+            with self.assertRaises(ValidationError), self.cr.savepoint():
+                self.env['sc.product.scenario'].sudo().create({'code': code, 'name': 'Invalid identity'})
+        entry = self.env['sc.product.scenario.entry'].sudo().search([('menu_id', '=', self.menu.id)])
+        scenario = entry.scenario_id
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            scenario.code = 'test.reassigned.identity'
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.menu.sc_scenario_exempt = True
+        entry.unlink()
+        self.menu.sc_scenario_exempt = True
+        rebound = self.env['sc.product.scenario.entry'].sudo().create({
+            'menu_id': self.menu.id, 'scenario_id': scenario.id,
+        })
+        self.assertFalse(self.menu.sc_scenario_exempt)
+        rebound.unlink()
+        self.assertFalse(self._allowed(self.company_a))
+
+    def test_exemption_migration_does_not_revive_deleted_business_binding(self):
+        scenario = self.env['sc.product.scenario'].sudo()
+        params = self.env['ir.config_parameter'].sudo()
+        marker = 'smart_construction_core.scenario_entry_scope.v1'
+        entry = self.env['sc.product.scenario.entry'].sudo().search([('menu_id', '=', self.menu.id)])
+        entry.unlink()
+        direct = self.env['ir.ui.menu'].sudo().create({
+            'name': 'Legacy direct test entry', 'action': 'ir.actions.act_window,%s' % self.menu.action.id,
+        })
+        params.set_param(marker, False)
+        scenario.initialize_direct_entry_exemptions()
+        self.assertTrue(direct.sc_scenario_exempt)
+        self.assertFalse(self.menu.sc_scenario_exempt)
+        direct.sc_scenario_exempt = False
+        scenario.initialize_direct_entry_exemptions()
+        self.assertFalse(direct.sc_scenario_exempt)

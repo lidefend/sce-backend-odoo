@@ -41,6 +41,41 @@ class ScProductScenario(models.Model):
         ("sc_product_scenario_code_uniq", "unique(code)", "Scenario code must be unique."),
     ]
 
+    @api.constrains("code")
+    def _check_stable_code(self):
+        for record in self:
+            if not record.code or not record.code.strip() or record.code != record.code.strip():
+                raise ValidationError("Scenario code must be nonempty and have no surrounding whitespace.")
+
+    def write(self, vals):
+        if "code" in vals and any(record.code != vals["code"] for record in self):
+            raise ValidationError("Scenario code is a stable enablement identity; edit the name instead.")
+        return super().write(vals)
+
+    @api.model
+    def initialize_direct_entry_exemptions(self):
+        """One-time adoption of legacy direct entries, never a runtime fallback.
+
+        Seed scenario menus stay fail-closed even if their binding was deleted
+        before this upgrade. Subsequent upgrades never recreate exemptions.
+        """
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import build_menu_index, load_surface
+
+        params = self.env["ir.config_parameter"].sudo()
+        marker = "smart_construction_core.scenario_entry_scope.v1"
+        if params.get_param(marker):
+            return
+        bound = self.env["sc.product.scenario.entry"].sudo().search([]).mapped("menu_id")
+        seed_bound = self.env["ir.ui.menu"].sudo().browse()
+        for xmlid, location in build_menu_index(load_surface()).items():
+            if location["location"] == "scenario":
+                menu = self.env.ref(xmlid, raise_if_not_found=False)
+                if menu and menu._name == "ir.ui.menu":
+                    seed_bound |= menu
+        direct = self.env["ir.ui.menu"].sudo().search(["|", ("action", "!=", False), ("child_id", "=", False)]) - bound - seed_bound
+        direct.write({"sc_scenario_exempt": True})
+        params.set_param(marker, "1")
+
     @api.model
     def import_scenario_product_surface(self):
         """Initialize once, atomically; later upgrades preserve even deletions.
@@ -126,6 +161,17 @@ class IrUiMenu(models.Model):
         "ir.ui.menu", string="External Product Center", ondelete="restrict",
         help="Placement for entries outside the business root. A native business parent chain takes precedence.",
     )
+    sc_scenario_exempt = fields.Boolean(
+        string="Exempt from Company Scenario Enablement", default=False,
+        help="Explicitly bypass only scenario enablement. Publication, ACL and company scope still apply. A scenario binding takes precedence.",
+    )
+
+    def write(self, vals):
+        if vals.get("sc_scenario_exempt") and self.env["sc.product.scenario.entry"].sudo().search_count([
+            ("menu_id", "in", self.ids),
+        ]):
+            raise ValidationError("Remove the scenario binding before explicitly exempting an entry.")
+        return super().write(vals)
 
     @api.constrains("sc_product_center_id", "parent_id")
     def _check_product_center(self):
@@ -153,6 +199,18 @@ class ScProductScenarioEntry(models.Model):
             "Each navigation entry can bind to exactly one scenario.",
         ),
     ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if "menu_id" in vals or "scenario_id" in vals:
+            self.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        return result
 
     @api.depends("menu_id")
     def _compute_menu_xmlid(self):

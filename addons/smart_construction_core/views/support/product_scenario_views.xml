@@ -7,6 +7,7 @@
     <field name="arch" type="xml">
       <field name="parent_id" position="after">
         <field name="sc_product_center_id"/>
+        <field name="sc_scenario_exempt"/>
       </field>
     </field>
   </record>

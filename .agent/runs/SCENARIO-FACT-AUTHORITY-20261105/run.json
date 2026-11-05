@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-FACT-AUTHORITY-20261105",
+  "branch": "refactor/scenario-fact-authority-20261105",
+  "baseline_sha": "9b172e3fc5edbef6a5c409db280016c86040610e",
+  "status": "completed",
+  "goal": ".agent/goals/SCENARIO-FACT-AUTHORITY-20261105.yaml",
+  "record": ".agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENARIO-FACT-AUTHORITY-20261105.yaml",
+    ".agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/models/scene_company_enablement.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "docs/architecture/scenario_fact_authority_20261105.md",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    ".agent/decisions/runtime-fact-presentation-evolution.yaml",
+    "docs/architecture/runtime_logic_and_evolution_20261105.md",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    ".agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml",
+    ".agent/context.yaml"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "make acceptance.* with registered local profile; preflight passed",
+    "profile": "local",
+    "compose_project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_filter": "^sc_frontend_acceptance$",
+    "role": "isolated acceptance fixture tenant",
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "customer_business_data_allowed": false,
+    "fixture_allowed": true,
+    "preflight": ".runtime/scenario-fact-runtime-preflight.log"
+  },
+  "checks": {},
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P1",
+    "layer_target": "existing scenario facts and company enablement consumers",
+    "module": "smart_construction_core / smart_construction_scene",
+    "standard_vs_user_specific": "industry standard",
+    "why_here": "Industry runtime must consume maintained scenario membership",
+    "why_not_elsewhere": "No frontend business inference or duplicate platform mechanism",
+    "blast_radius": "Business scenario catalog, authorization, workspace and readiness; focused unit and managed ORM checks"
+  },
+  "next_exact_step": "Publish this local candidate through governed PR integration when continuing delivery; product locked-catalog authority remains the next separate convergence scope",
+  "mainline_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+  "authorization_decision": "Owner explicitly requires bound/exempt/missing states; missing denies navigation and server entry; migrate legitimate existing direct entries only",
+  "validation_plan": {
+    "risk": "authorization and schema migration",
+    "L1": "make ci.local.iteration",
+    "L2": "make verify.navigation.publication_consumers.unit",
+    "L3": "make acceptance.module.upgrade MODULE=smart_construction_core and make acceptance.frontend.fixture_orm",
+    "browser": "not selected: no frontend consumer change; actual SystemInit tested by managed ORM",
+    "recovery": "Acceptance module upgrade is transactional; test mutations roll back via TransactionCase; no daily/production database operation"
+  },
+  "validation_results": [
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "layer": "L2",
+      "status": "passed",
+      "tests": 165,
+      "groups": [
+        40,
+        16,
+        6,
+        21,
+        82
+      ],
+      "log": ".runtime/scenario-fact-unit.log"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "layer": "L1",
+      "status": "passed",
+      "log": ".runtime/scenario-fact-iteration-final.log"
+    },
+    {
+      "command": "make acceptance.runtime.preflight",
+      "layer": "L0",
+      "status": "passed",
+      "log": ".runtime/scenario-fact-runtime-preflight.log"
+    },
+    {
+      "command": "make acceptance.module.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1",
+      "layer": "L3",
+      "status": "passed",
+      "log": ".runtime/scenario-fact-upgrade-final.log",
+      "scope": "smart_construction_core 17.0.0.175, sc_frontend_acceptance",
+      "earlier_attempt": ".runtime/scenario-fact-upgrade.log",
+      "repeat_reason": "Migration scope corrected to include actionless scene anchors; final marker scenario_entry_scope.v1"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "layer": "L3",
+      "status": "passed",
+      "log": ".runtime/scenario-fact-orm.log",
+      "tests": 38,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "layer": "L3",
+      "status": "passed",
+      "log": ".runtime/scenario-fact-orm-final.log",
+      "repeat_reason": "Added model validation and real ORM negative assertions for ambiguous whitespace in stable scenario identity",
+      "tests": 38,
+      "errors": 0,
+      "failures": 0
+    }
+  ],
+  "stage_identity_artifact": ".runtime/scenario-fact-final-source-identity.json",
+  "independent_review": {
+    "status": "passed",
+    "reviewer": "/root/independent_ci_review",
+    "scope": "Local source and evidence review; not PR merge authorization",
+    "identity": ".runtime/scenario-fact-final-source-identity.json",
+    "closed_findings": [
+      "unpublished menu must not rescue bare action",
+      "unknown action fails closed",
+      "actionless anchors are not containers",
+      "unknown explicit menu/scene cannot borrow legacy or initialization scope",
+      "stable code whitespace is rejected"
+    ]
+  },
+  "completion": {
+    "batch": "implementation_and_scoped_validation_complete",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "Existing company enablement parameter/legacy-model compatibility is retained; both reference the same stable scenario code",
+    "Locked publication source remains unchanged and is documented for next batch",
+    "No browser suite: no frontend code changed; actual SystemInit and server authority exercised by ORM",
+    "Code constraints do not silently repair preexisting invalid scenario codes"
+  ]
+}

@@ -182,4 +182,5 @@ planning_references:
     goal: .agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml
     decision: .agent/decisions/runtime-fact-presentation-evolution.yaml
     purpose: 后续事实维护与公共表现层迭代的规划入口，不替代源码、契约或验收证据
-    implementation_status: planned
+    implementation_status: scenario_fact_batch_locally_validated
+    current_result: .agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json
