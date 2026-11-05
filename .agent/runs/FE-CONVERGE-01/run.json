@@ -13,8 +13,7 @@
     "docs/engineering_convergence/",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe-converge-01/",
-    "frontend/apps/web/src/",
-    "scripts/dev/fe_converge_observe.mjs"
+    "frontend/apps/web/src/"
   ],
   "environment": {
     "kind": "runtime",
@@ -154,12 +153,22 @@
     "backup_ref": "refs/heads/fe-converge-01-backup-20261106",
     "backup_sha": "c589f9dea194034be3455d6fb2bd41bff2ceaead",
     "archive_manifest": ".runtime/frontend-pre-governance/1d0d1d6285e45ec0a6c5df5fd40a7a90ebe8cc16/manifest.json",
-    "archived_hash_verified_files": 46,
+    "archived_hash_verified_files": 47,
     "target": "workspace.branch.sync-main REGENERATE_GENERATED_EVIDENCE=1",
     "status": "passed",
     "generated_report_conflicts": [
       "docs/engineering_convergence/complexity_budget_report.md"
     ],
     "limits": "Two responsibility commits use bounded short-history mode; extended count and old-head Quick rules were not bypassed. Original refresh.generated_evidence, preflight and hooks passed."
+  },
+  "review_resolution": {
+    "reviewed_head": "bae4dec0b1e564bc9dc29cfe4041dbe6d62e1bee",
+    "finding": "Historical diagnostic introduced unmanaged default credentials and arbitrary target URL.",
+    "resolution": "Remove unused observation helper from published candidate; preserve exact source in archive and original branch bundle. Use existing governed acceptance entrypoints only.",
+    "superseded_quick": {
+      "status": "stopped",
+      "log": ".runtime/frontend-final-quick.log",
+      "reason": "Independent review required candidate scope correction; no pass or receipt claimed."
+    }
   }
 }
