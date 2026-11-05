@@ -21,6 +21,14 @@ SCENARIO_INTENTS = [
     ("master_data", "基础信息维护"),
 ]
 SCENARIO_INTENT_CODES = tuple(item[0] for item in SCENARIO_INTENTS)
+# Explicit P1 configuration surfaces from menu_product_configuration_wave1.xml.
+# These are initialization declarations, never a runtime or upgrade fallback.
+DIRECT_CONFIGURATION_MENU_XMLIDS = (
+    "smart_construction_core.menu_sc_business_config_workbench",  # Form configuration
+    "smart_construction_core.menu_sc_approval_policy",  # Approval configuration
+    "smart_construction_core.menu_ui_form_field_policy_business_config",  # Field maintenance
+    "smart_construction_core.menu_ui_menu_config_policy_business_config",  # Menu configuration
+)
 SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
 EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
 
@@ -54,17 +62,26 @@ class ScProductScenario(models.Model):
 
     @api.model
     def initialize_direct_entry_exemptions(self):
-        """Finalize scope initialization without inferring new exemptions.
+        """Declare known configuration entries only during first installation.
 
-        Neither an absent binding nor absence from the seed proves a legacy
-        direct entry: administrators may have deleted a custom association.
-        There is no authoritative association history to distinguish those
-        cases, so preserve explicit declarations and leave unknowns denied.
+        Missing association history never proves a legacy direct entry. Upgrades
+        preserve explicit decisions, including revocations and deleted bindings.
         """
         params = self.env["ir.config_parameter"].sudo()
         marker = "smart_construction_core.scenario_entry_scope.v1"
         if params.get_param(marker):
             return
+        module = self.env["ir.module.module"].sudo().search([
+            ("name", "=", "smart_construction_core"),
+        ], limit=1)
+        if module.state == "to install":
+            for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
+                menu = self.env.ref(xmlid)
+                if menu._name != "ir.ui.menu" or not menu.action:
+                    raise ValidationError("Direct configuration declaration requires an action menu: %s" % xmlid)
+                if self.env["sc.product.scenario.entry"].sudo().search_count([("menu_id", "=", menu.id)]):
+                    raise ValidationError("Direct configuration declaration conflicts with a scenario binding: %s" % xmlid)
+                menu.sudo().write({"sc_scenario_exempt": True})
         params.set_param(marker, "1")
 
     @api.model

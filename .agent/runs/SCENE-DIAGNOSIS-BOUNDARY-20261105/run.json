@@ -25,7 +25,10 @@
     "scripts/ci/ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "addons/smart_construction_core/models/support/product_scenario.py",
-    "docs/architecture/scenario_fact_authority_20261105.md"
+    "docs/architecture/scenario_fact_authority_20261105.md",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -189,5 +192,25 @@
     "orm_tests": 43,
     "orm_failures": 0,
     "orm_errors": 0
+  },
+  "fresh_install_fix": {
+    "baseline": "d34c0aab892c09120c7855e3acd67ab4a9065e7f",
+    "layer": "P1 explicit industry configuration entry defaults",
+    "scope": "Four enumerated configuration menus; only to install lifecycle, no upgrade grants",
+    "test_environment": "registered local.test sc-local-test / sc_test /^sc_test$/ disposable, no demo",
+    "status": "locally_validated",
+    "fresh_tests": 3,
+    "fresh_receipt": ".runtime/test-baseline/1793885719480904714/receipt.json",
+    "compatibility_tests": 43,
+    "compatibility_log": ".runtime/scene-diagnosis-pr/fresh-compatibility-orm.log",
+    "offline_tests": 169,
+    "binding_tests": 61,
+    "independent_review": "passed /root/independent_ci_review; runtime outcomes now passed",
+    "prior_failed_attempts": [
+      ".runtime/test-baseline/1793885252992670028/receipt.json",
+      ".runtime/test-baseline/1793885516809431056/receipt.json"
+    ],
+    "failure_owner": "test prerequisite: fresh admin lacked declared configuration menu groups; corrected actor only, no product permission relaxation",
+    "final_L1": "passed .runtime/scene-diagnosis-pr/fresh-final-iteration.log"
   }
 }

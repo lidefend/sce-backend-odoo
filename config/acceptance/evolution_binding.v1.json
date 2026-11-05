@@ -338,7 +338,9 @@
       "id": "offline-scene-test-implementation",
       "paths": [
         "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
-        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "addons/smart_construction_core/tests/__init__.py"
       ],
       "suites": [
         "backend_contract"
