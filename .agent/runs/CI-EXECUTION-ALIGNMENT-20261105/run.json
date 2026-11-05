@@ -143,7 +143,7 @@
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Freeze independent managed ORM producer correction, obtain authorized read-only agent review, archive and update PR811; then exact-head remote checks and protected merge.",
+  "next_exact_step": "Freeze actual-attempt managed receipt authentication fix, bind independent review, collect current producer outcome, archive/update PR811 and complete current-head CI/protected merge.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -383,6 +383,13 @@
       "log": ".runtime/ci-execution-alignment/managed-label-tests.log",
       "scope": "unrelated label events have separate concurrency; all-skipped producer jobs cannot shadow authenticated earlier actual producer; real terminal failures remain fail-fast",
       "remote_round1": "all four backend shards and professional checks passed at53ab; final coverage failed for missingmanagedORM as predicted, addressed in newproducer"
+    },
+    "managed_orm_rerun_authentication": {
+      "status": "local_passed_remote_pending",
+      "ci_contract_tests": 283,
+      "log": ".runtime/ci-execution-alignment/managed-rerun-tests.log",
+      "scope": "Positive integer run_attempt binds artifact name, returned metadata and attempt-specific jobs endpoint; selected jobs bind run id, head, attempt and completed success; repository, digest and outcome checks preserved",
+      "independent_review": "18 coverage cases passed; reviewer checked live GitHub job metadata fields; exact frozen identity pending"
     }
   },
   "review_resolution": {

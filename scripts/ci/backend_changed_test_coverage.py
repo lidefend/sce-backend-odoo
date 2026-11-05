@@ -106,18 +106,26 @@ def managed_report(head: str, log: str) -> dict:
             'executed': [r['selector'] for r in observed if r['status'] == 'executed']}
 
 
+def managed_attempt(run: dict) -> int:
+    attempt = run.get('run_attempt')
+    if type(attempt) is not int or attempt < 1:
+        raise ValueError('managed run attempt must be a positive integer')
+    return attempt
+
+
 def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes, *, schedule_slot: str | None = None) -> dict:
+    attempt = managed_attempt(run)
     for field in ('repository', 'head_repository'):
         if run.get(field, {}).get('full_name') != receipts.REPOSITORY or run[field].get('id') != receipts.REPOSITORY_ID:
             raise ValueError('foreign managed evidence repository')
     if (run.get('head_sha') != head or run.get('conclusion') != 'success'
-            or run.get('status') != 'completed' or run.get('run_attempt') != 1
+            or run.get('status') != 'completed'
             or run.get('path') != '.github/workflows/frontend_release_gate.yml'):
         raise ValueError('managed run identity, attempt or outcome mismatch')
     if schedule_slot and (run.get('event') != 'schedule' or scheduled_slot(run.get('created_at', '')) != schedule_slot):
         raise ValueError('managed evidence is not from this scheduled validation slot')
     origin = artifact.get('workflow_run', {})
-    if (artifact.get('name') != f"managed-orm-{run['id']}-1-{head}"
+    if (artifact.get('name') != f"managed-orm-{run['id']}-{attempt}-{head}"
             or artifact.get('expired') is not False or origin.get('id') != run['id']
             or origin.get('head_sha') != head
             or origin.get('repository_id') != receipts.REPOSITORY_ID
@@ -138,7 +146,7 @@ def authenticate_managed_report(head: str, run: dict, artifact: dict, raw: bytes
             or not all(isinstance(x, str) for x in report['executed'])
             or not re.fullmatch('[0-9a-f]{64}', str(report.get('log_sha256', '')))):
         raise ValueError('invalid managed test evidence')
-    return {**report, 'run_id': run['id'], 'artifact_id': artifact['id'], 'artifact_digest': artifact['digest']}
+    return {**report, 'run_id': run['id'], 'run_attempt': attempt, 'artifact_id': artifact['id'], 'artifact_digest': artifact['digest']}
 
 
 def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) -> dict | None:
@@ -160,7 +168,8 @@ def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) ->
         if run.get('status') != 'completed':
             return None
         url = f"https://github.com/{receipts.REPOSITORY}/actions/runs/{run['id']}"
-        jobs = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/jobs?per_page=100"))
+        attempt = managed_attempt(run)
+        jobs = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/attempts/{attempt}/jobs?per_page=100"))
         producers = [job for job in jobs.get('jobs', [])
                      if job.get('name') in ('frontend_release_gate', 'managed_orm')]
         if producers and all(job.get('conclusion') == 'skipped' for job in producers):
@@ -171,11 +180,14 @@ def discover_managed_evidence(head: str, *, schedule_slot: str | None = None) ->
             raise ValueError(f"Managed ORM producer job identity missing: {url}")
         if run.get('conclusion') != 'success':
             raise ValueError(f"Managed ORM producer failed: {url} conclusion={run.get('conclusion')}")
-        if run.get('run_attempt') != 1:
-            raise ValueError(f"Managed ORM producer attempt lacks supported receipt authentication: {url}")
+        selected = [job for job in producers if job.get('conclusion') != 'skipped']
+        if any(job.get('run_id') != run['id'] or job.get('run_attempt') != attempt
+               or job.get('head_sha') != head or job.get('status') != 'completed'
+               or job.get('conclusion') != 'success' for job in selected):
+            raise ValueError(f"Managed ORM producer job does not bind successful attempt {attempt}: {url}")
         artifacts = json.loads(receipts.github_bytes(f"actions/runs/{run['id']}/artifacts?per_page=100"))
         for artifact in artifacts.get('artifacts', []):
-            if artifact.get('name') == f"managed-orm-{run['id']}-1-{head}":
+            if artifact.get('name') == f"managed-orm-{run['id']}-{attempt}-{head}":
                 # Resolve authoritative artifact metadata before downloading bytes.
                 artifact = json.loads(receipts.github_bytes(f"actions/artifacts/{artifact['id']}"))
                 return authenticate_managed_report(head, run, artifact,

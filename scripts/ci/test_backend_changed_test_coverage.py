@@ -88,6 +88,45 @@ class ManagedEvidenceTests(unittest.TestCase):
                                      'head_repository_id': repo['id']}}
         return head, run, artifact, raw
 
+    def producer_job(self, head, attempt=1):
+        return {'name': 'managed_orm', 'run_id': 42, 'run_attempt': attempt,
+                'head_sha': head, 'status': 'completed', 'conclusion': 'success'}
+
+    def test_successful_rerun_binds_actual_attempt_and_rejects_cross_attempt_artifacts(self):
+        head, run, artifact, raw = self.fixture()
+        run['run_attempt'] = 2
+        artifact['name'] = f'managed-orm-42-2-{head}'
+        self.assertEqual(coverage.authenticate_managed_report(head, run, artifact, raw)['run_attempt'], 2)
+        for attempt in (0, -1, True, '2', None):
+            with self.subTest(attempt=attempt), self.assertRaises(ValueError):
+                coverage.authenticate_managed_report(head, dict(run, run_attempt=attempt), artifact, raw)
+        for other in (1, 3):
+            wrong = dict(artifact, name=f'managed-orm-42-{other}-{head}')
+            with self.subTest(other=other), self.assertRaises(ValueError):
+                coverage.authenticate_managed_report(head, run, wrong, raw)
+
+    def test_rerun_discovery_fetches_attempt_jobs_and_authenticates_matching_artifact(self):
+        import os
+        head, run, artifact, raw = self.fixture()
+        run['run_attempt'] = 2
+        artifact['name'] = f'managed-orm-42-2-{head}'
+        old = dict(artifact, id=16, name=f'managed-orm-42-1-{head}')
+        responses = [{'workflow_runs': [run]}, {'jobs': [self.producer_job(head, 2)]},
+                     {'artifacts': [old, artifact]}, artifact]
+        with patch.dict(os.environ, GITHUB_EVENT_NAME=''), patch.object(coverage.receipts, 'github_bytes',
+                side_effect=[json.dumps(x).encode() for x in responses] + [raw]) as fetch:
+            result = coverage.discover_managed_evidence(head)
+        self.assertEqual(result['run_attempt'], 2)
+        self.assertIn('actions/runs/42/attempts/2/jobs?per_page=100', [c.args[0] for c in fetch.call_args_list])
+        for field, value in [('run_attempt', 1), ('run_id', 41), ('head_sha', 'c' * 40),
+                             ('status', 'in_progress'), ('conclusion', 'failure')]:
+            wrong = dict(self.producer_job(head, 2), **{field: value})
+            responses = [{'workflow_runs': [run]}, {'jobs': [wrong]}]
+            with self.subTest(field=field), patch.dict(os.environ, GITHUB_EVENT_NAME=''), patch.object(
+                    coverage.receipts, 'github_bytes', side_effect=[json.dumps(x).encode() for x in responses]), \
+                    self.assertRaises(ValueError):
+                coverage.discover_managed_evidence(head)
+
     def test_discovery_waits_only_for_pending_and_fails_fast_on_terminal_producer(self):
         import os
         head, run, _, _ = self.fixture()
@@ -95,7 +134,7 @@ class ManagedEvidenceTests(unittest.TestCase):
             current = dict(run, conclusion=conclusion)
             payload = json.dumps({'workflow_runs': [current]}).encode()
             with self.subTest(conclusion=conclusion), patch.dict(os.environ, GITHUB_EVENT_NAME=''), \
-                    patch.object(coverage.receipts, 'github_bytes', side_effect=[payload, b'{"jobs": [{"name": "managed_orm", "conclusion": "success"}]}', b'{"artifacts": []}']), \
+                    patch.object(coverage.receipts, 'github_bytes', side_effect=[payload, json.dumps({'jobs': [self.producer_job(head)]}).encode(), b'{"artifacts": []}']), \
                     self.assertRaises(ValueError):
                 coverage.discover_managed_evidence(head)
         payload = json.dumps({'workflow_runs': [dict(run, id=43, status='in_progress'), run]}).encode()
@@ -111,7 +150,7 @@ class ManagedEvidenceTests(unittest.TestCase):
         responses = [runs,
                      {'jobs': [{'name': 'managed_orm', 'conclusion': 'skipped'},
                                {'name': 'frontend_release_gate', 'conclusion': 'skipped'}]},
-                     {'jobs': [{'name': 'managed_orm', 'conclusion': 'success'}]},
+                     {'jobs': [self.producer_job(head)]},
                      {'artifacts': [artifact]}, artifact]
         with patch.dict(os.environ, GITHUB_EVENT_NAME=''), patch.object(
                 coverage.receipts, 'github_bytes', side_effect=[json.dumps(x).encode() for x in responses] + [raw]):
@@ -154,7 +193,7 @@ class ManagedEvidenceTests(unittest.TestCase):
         self.assertEqual(17, result['artifact_id'])
         self.assertEqual(['/example:Test.test_one'], result['executed'])
 
-    def test_wrong_head_failure_retry_foreign_repo_and_tampering_rejected(self):
+    def test_wrong_head_failure_cross_attempt_foreign_repo_and_tampering_rejected(self):
         import copy
         for kind in ('head', 'failure', 'retry', 'foreign', 'digest', 'expired'):
             head, run, artifact, raw = self.fixture()
