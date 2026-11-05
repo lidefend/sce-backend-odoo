@@ -10,6 +10,6 @@
     <field name="active" eval="True"/>
     <field name="status">published</field>
     <field name="version_no">1</field>
-    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'list': {'title': '施工日志', 'composition_mode': 'native_semantic_surface', 'fields': [{'name': 'state', 'sequence': 10}, {'name': 'project_id', 'sequence': 20}, {'name': 'name', 'sequence': 30}, {'name': 'date_diary', 'sequence': 40}, {'name': 'title', 'sequence': 50}, {'name': 'quality_name', 'sequence': 60}, {'name': 'manpower_count', 'sequence': 70}, {'name': 'attendance_equipment', 'sequence': 80}, {'name': 'description', 'sequence': 90}, {'name': 'note', 'sequence': 100}, {'name': 'attachment_ids', 'sequence': 110}, {'name': 'handler_name', 'sequence': 120}, {'name': 'create_date', 'sequence': 130}]}}}}"/>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'list': {'title': '施工日志', 'composition_mode': 'native_semantic_surface'}}}}"/>
   </record>
 </odoo>

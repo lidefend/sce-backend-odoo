@@ -31,6 +31,12 @@ class DiaryListContractTests(unittest.TestCase):
         self.assertNotIn("construction_diary_productized_list_v1",
                          OLD_FILE.read_text(encoding="utf-8"))
 
+    def test_list_contract_declares_no_fields(self):
+        raw = NEW_FILE.read_text(encoding="utf-8")
+        self.assertIn("composition_mode", raw)
+        self.assertIn("native_semantic_surface", raw)
+        self.assertNotIn("'fields'", raw)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -54,8 +54,9 @@
     "d04_third_fourth_batch": "PASS: 6 composite converged -> composite_entry=6 (reuse project.list.open + construction.plan.report), unresolved=1 (project.structure.manage no deps); 13 no_provider -> retain=13 (all have real runtime models)",
     "d05_01_sample": "PASS: construction.diary.open provider binding registered (odoo_action=smart_construction_core.action_sc_construction_diary, verified); List Contract business_config_contract_construction_diary_productized_list_v1 added (view_type=list, 13 fields); reverse_index maps to smart_construction_core",
     "d05_01_deferred_suites": "DEFERRED: list_surface_structure + relation_roundtrip (stale evidence source, not ancestor of head) -> re-run after mainline-deploy sync + governed module upgrade; no browser this round",
-    "d05_01_r2_loading_fix": "PASS: moved List Contract out of noupdate=1 data block into standalone data/construction_diary_list_contract.xml (plain <odoo>, no noupdate) registered in manifest; old noupdate file no longer contains the record; offline checks pass"
+    "d05_01_r2_loading_fix": "PASS: moved List Contract out of noupdate=1 data block into standalone data/construction_diary_list_contract.xml (plain <odoo>, no noupdate) registered in manifest; old noupdate file no longer contains the record; offline checks pass",
+    "d05_01_r3_single_source_of_truth": "PASS: root cause = contract must not declare fields; list contract now mirrors Form contract (title + composition_mode=native_semantic_surface, NO fields array); authoritative native view_sc_construction_diary_tree is the single source of truth for columns"
   },
   "blockers": [],
-  "next_exact_step": "push R2 loading fix to PR #809; then CI + merge + mainline-deploy sync + governed upgrade + two deferred runtime suites"
+  "next_exact_step": "CAP-02D backend governance CLOSED OUT; contract single-source-of-truth principle recorded; pivot to frontend-first delivery"
 }
