@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import json
+import io
+from contextlib import redirect_stdout
+from dataclasses import replace
 import os
 import subprocess
 import sys
@@ -219,6 +222,47 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         diagnostic = json.loads(plan.recovery_bundle.with_suffix('.conflict.json').read_text())
         self.assertEqual([path], diagnostic['conflicts'])
         self.assertIn('CONFLICT', diagnostic['git_output'])
+
+    def test_generated_conflict_cannot_follow_report_symlink(self):
+        plan = self.plan()
+        outside = self.root.parent / 'outside.txt'
+        outside.write_text('retain outside')
+        self.generated_evidence.unlink()
+        self.generated_evidence.symlink_to(outside)
+        with self.assertRaisesRegex(syncer.SyncError, 'symlink'):
+            syncer.resolve_generated_evidence_conflicts(
+                plan, (syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],))
+        self.assertEqual('retain outside', outside.read_text())
+
+    def test_generated_rebuild_cannot_traverse_parent_symlink(self):
+        outside = self.root.parent / 'outside-dir'
+        outside.mkdir()
+        target = self.root / 'linked-reports'
+        target.symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(syncer.SyncError, 'symlink'):
+            syncer.generated_output_path(self.root, 'linked-reports/report.json')
+        self.assertEqual([], list(outside.iterdir()))
+
+    def test_success_guidance_keeps_ordinary_validation_incremental(self):
+        for extended in (False, True):
+            plan = replace(self.plan(), extended_history=extended, regenerate_evidence=True)
+            args = ['sync', '--expected-root', str(self.root), '--governance-root', str(self.root),
+                    '--expected-branch', plan.branch, '--expected-head', self.head,
+                    '--expected-old-base', self.old_base, '--expected-main', self.new_main,
+                    '--regenerate-evidence', '--confirm',
+                    syncer.EXTENDED_CONFIRMATION if extended else syncer.GENERATED_CONFIRMATION]
+            if extended:
+                args += ['--allow-extended-history', '--expected-commit-count', '1']
+            output = io.StringIO()
+            with self.subTest(extended=extended), mock.patch.object(sys, 'argv', args), \
+                    mock.patch.object(syncer, 'validate', return_value=plan), \
+                    mock.patch.object(syncer, 'sync', return_value=syncer.SyncResult(self.head)), \
+                    redirect_stdout(output):
+                self.assertEqual(0, syncer.main())
+            self.assertIn('candidate_evidence=false', output.getvalue())
+            self.assertEqual(extended, 'Quick' in output.getvalue())
+            if not extended:
+                self.assertIn('current-head-risk-selected-validation', output.getvalue())
 
     def test_clean_unpublished_branch_syncs_and_preserves_patch(self) -> None:
         plan = self.plan()

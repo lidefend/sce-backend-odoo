@@ -470,6 +470,16 @@ def resolve_append_only_log_conflict(plan: SyncPlan, conflicts: tuple[str, ...])
     return True
 
 
+def generated_output_path(root: Path, path: str) -> Path:
+    target = root / path
+    for item in (target, *target.parents):
+        if item == root:
+            break
+        if item.is_symlink():
+            raise SyncError(f"generated output must not traverse a symlink: {path}")
+    return target
+
+
 def resolve_generated_evidence_conflicts(
     plan: SyncPlan, conflicts: tuple[str, ...]
 ) -> tuple[str, ...]:
@@ -477,7 +487,7 @@ def resolve_generated_evidence_conflicts(
         path for path in conflicts if path in GENERATED_EVIDENCE_CONFLICT_PATHS
     )
     for path in resolved:
-        target = plan.root / path
+        target = generated_output_path(plan.root, path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text_at_revision(plan.root, plan.new_main, path), encoding="utf-8")
         run(plan.root, "add", "--", path)
@@ -629,6 +639,8 @@ def cleanup_new_untracked(root: Path, original: set[str]) -> None:
 
 
 def regenerate_reports(plan: SyncPlan) -> str | None:
+    for path in GENERATED_EVIDENCE_CONFLICT_PATHS:
+        generated_output_path(plan.root, path)
     if git_output(plan.root, "diff", plan.new_main, "--", *GENERATOR_SOURCE_PATHS):
         raise SyncError("generated rebuild requires unchanged main producer sources and Make recipes")
     before = git_output(plan.root, "rev-parse", "HEAD")
@@ -644,6 +656,8 @@ def regenerate_reports(plan: SyncPlan) -> str | None:
         unexpected = sorted(changed - allowed)
         if unexpected:
             raise SyncError("generator/hook changed non-generated paths: " + ", ".join(unexpected))
+        for path in changed:
+            generated_output_path(plan.root, path)
         return tuple(sorted(changed))
 
     with log.open("w", encoding="utf-8") as stream:
@@ -800,13 +814,15 @@ def main() -> int:
         print(f"[workspace.branch.sync-main] DENY {exc}", file=sys.stderr)
         return 2
     invalidated = ",".join(result.generated_evidence_conflicts) or "none"
+    next_validation = ("exact-new-head-Quick-and-affected-acceptance" if plan.extended_history
+                       else "current-head-risk-selected-validation")
     print(
         f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} "
         f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
         f"common_base={plan.old_base} replay_base={plan.replay_base} "
         f"generated_evidence_invalidated={invalidated} "
         f"generated_commit={result.generated_commit or 'none'} "
-        "candidate_evidence=false next=exact-new-head-Quick-and-affected-acceptance"
+        f"candidate_evidence=false next={next_validation}"
     )
     return 0
 

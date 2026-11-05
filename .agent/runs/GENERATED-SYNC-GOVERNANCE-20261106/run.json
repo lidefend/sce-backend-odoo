@@ -51,6 +51,13 @@
       "status": "passed",
       "entry": "make ci.local.iteration",
       "log": ".runtime/generated-sync/local-iteration-final.log"
+    },
+    "review_fix": {
+      "status": "passed",
+      "reason": "ordinary sync keeps incremental validation; extended Quick preserved; generated symlink traversal denied",
+      "test_count": 43,
+      "test_log": ".runtime/generated-sync/review-fix-tests-final.log",
+      "iteration_log": ".runtime/generated-sync/review-fix-iteration.log"
     }
   },
   "next_exact_step": "Freeze clean candidate, independent review, governed PR and current remote checks; root alone may sync frontend after protected merge"
