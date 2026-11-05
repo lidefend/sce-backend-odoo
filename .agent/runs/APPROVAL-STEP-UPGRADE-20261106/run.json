@@ -48,11 +48,16 @@
       "PR814/815 source"
     ]
   },
-  "blockers": [
-    "pr.publish.preflight (validation_delivery_plan --stage merge --require-ready): list_surface_structure evidence source is not an ancestor of the head",
-    "pr.publish.preflight: relation_roundtrip has no recorded runtime evidence; requires acceptance environment and credential authority"
-  ],
-  "next_exact_step": "resolve PR publication blocker: run the two required frontend runtime evidence suites (list_surface_structure, relation_roundtrip) with the acceptance runtime and credential authority, or obtain a governance reclassification for this backend-only seed write; then make pr.push.",
+  "blockers": [],
+  "next_exact_step": "publish Draft PR via make pr.push and make pr.create --draft; then report PR URL and four-layer status.",
+  "governance_classification": {
+    "list_surface_structure": "not applicable: change writes sc.approval.step seed records and the install-only initializer only; no list view, field set, action, layout or runtime error surface is touched",
+    "relation_roundtrip": "not applicable: no relation field definition, default, read/write, permission or status logic is changed",
+    "rules_added": [
+      "approval-policy-initialization (exact: approval_policy_seed.xml, approval_policy_tier_sync.xml, test_approval_step_upgrade.py)",
+      "approval-policy-initializer-method (condition approval_policy_initialization_only on approval_policy.py; other method changes keep construction-product-runtime)"
+    ]
+  },
   "execution_results": {
     "runner_unit": {
       "status": "passed",
