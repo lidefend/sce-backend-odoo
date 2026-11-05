@@ -514,11 +514,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_action",
+          "provider_ref": "smart_construction_core.action_sc_construction_diary",
+          "contract_ref": "addons/smart_construction_core/views/core/construction_diary_views.xml",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],
