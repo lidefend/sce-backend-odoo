@@ -76,6 +76,150 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         values.update(overrides)
         return syncer.validate(**values)  # type: ignore[arg-type]
 
+    def prepare_generated_conflict(self, *, failed=False, rogue=False, check_failed=False):
+        self.generated_evidence.write_text("topic-generated\n")
+        git(self.root, "add", str(self.generated_evidence))
+        git(self.root, "commit", "-m", "topic derived report")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        self.generated_evidence.write_text("main-generated\n")
+        target = syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
+        recipe = f"\t@printf 'derived:' > {target}\n\t@cat feature.txt >> {target}\n"
+        if rogue:
+            recipe += "\t@printf unexpected > stray.tmp\n"
+        if failed:
+            recipe += "\t@false\n"
+        (self.root / 'Makefile').write_text(
+            'refresh.generated_evidence:\n' + recipe +
+            'ci.generated_evidence.preflight:\n' + ('\t@false\n' if check_failed else
+            '\t@test "$$(cat ' + target + ')" = derived:feature\n'))
+        git(self.root, "add", "Makefile", target)
+        git(self.root, "commit", "-m", "main producer and report")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "feature/local-sync")
+
+    def test_small_branch_rebuilds_from_combined_inputs_without_old_quick(self):
+        self.prepare_generated_conflict()
+        hook = self.root / '.git/hooks/pre-commit'
+        hook.write_text('#!/bin/sh\nprintf invoked > .git/generator-hook-ran\n')
+        hook.chmod(0o755)
+        plan = self.plan(regenerate_evidence=True, quick_evidence_checker=lambda *_: False)
+        self.assertEqual(2, plan.commit_count)
+        with mock.patch.dict(os.environ, {'MAKEFLAGS': 'n', 'MAKEFILES': '/no/injected/makefile'}):
+            result = syncer.sync(plan)
+        self.assertEqual('derived:feature\n', self.generated_evidence.read_text())
+        self.assertEqual(result.head, result.generated_commit)
+        self.assertTrue((self.root / '.git/generator-hook-ran').exists())
+        self.assertEqual('feature\n', (self.root / 'feature.txt').read_text())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+        self.assertTrue(plan.recovery_bundle.with_suffix('.generation.log').exists())
+
+    def test_generation_failure_or_unexpected_write_restores_every_owned_change(self):
+        self.prepare_generated_conflict(failed=True)
+        (self.root / '.git/info/exclude').write_text('/.runtime/\n')
+        ignored = self.root / '.runtime/preexisting-evidence'
+        ignored.parent.mkdir()
+        ignored.write_text('retain')
+        plan = self.plan(regenerate_evidence=True)
+        with self.assertRaisesRegex(syncer.SyncError, 'original HEAD restored'):
+            syncer.sync(plan)
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertEqual('topic-generated\n', self.generated_evidence.read_text())
+        self.assertFalse((self.root / 'stray.tmp').exists())
+        self.assertFalse((self.root / 'Makefile').exists())
+        self.assertEqual('retain', ignored.read_text())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_successful_generator_cannot_write_unregistered_files(self):
+        self.prepare_generated_conflict(rogue=True)
+        with self.assertRaisesRegex(syncer.SyncError, 'non-generated paths: stray.tmp'):
+            syncer.sync(self.plan(regenerate_evidence=True))
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertFalse((self.root / 'stray.tmp').exists())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_commit_hook_failure_is_not_bypassed_and_restores_generated_state(self):
+        self.prepare_generated_conflict()
+        hook = self.root / '.git/hooks/pre-commit'
+        hook.write_text('#!/bin/sh\nprintf unexpected > hook-new.tmp\ngit add hook-new.tmp\nexit 1\n')
+        hook.chmod(0o755)
+        with self.assertRaisesRegex(syncer.SyncError, 'original HEAD restored'):
+            syncer.sync(self.plan(regenerate_evidence=True))
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertFalse((self.root / 'hook-new.tmp').exists())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_preflight_failure_restores_candidate_after_successful_generation(self):
+        self.prepare_generated_conflict(check_failed=True)
+        with self.assertRaisesRegex(syncer.SyncError, 'ci.generated_evidence.preflight'):
+            syncer.sync(self.plan(regenerate_evidence=True))
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        self.assertEqual('topic-generated\n', self.generated_evidence.read_text())
+        self.assertEqual('', git(self.root, 'status', '--porcelain').stdout.strip())
+
+    def test_rebuild_requires_its_own_explicit_confirmation(self):
+        with mock.patch.object(sys, 'argv', ['sync', '--expected-root', str(self.root),
+                '--governance-root', str(self.root), '--expected-branch', 'feature/local-sync',
+                '--expected-head', self.head, '--expected-old-base', self.old_base,
+                '--expected-main', self.new_main, '--regenerate-evidence',
+                '--confirm', syncer.CONFIRMATION]), mock.patch.object(syncer, 'validate') as validate:
+            self.assertEqual(2, syncer.main())
+        validate.assert_not_called()
+
+    def test_candidate_cannot_replace_the_original_generator_recipe(self):
+        self.prepare_generated_conflict()
+        (self.root / 'Makefile').write_text('refresh.generated_evidence:\n\t@touch forbidden\n')
+        git(self.root, 'add', 'Makefile')
+        git(self.root, 'commit', '-m', 'replace generator')
+        self.head = git(self.root, 'rev-parse', 'HEAD').stdout.strip()
+        # An add/add recipe conflict is already denied before any generator runs.
+        with self.assertRaisesRegex(syncer.SyncError, 'Makefile'):
+            syncer.sync(self.plan(regenerate_evidence=True))
+        self.assertFalse((self.root / 'forbidden').exists())
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+
+    def test_generated_outputs_exclude_maintained_governance_authority(self):
+        for path in ('scripts/audit/verification_lane_dispositions.json',
+                     'scripts/audit/verification_lane_baseline.json',
+                     'scripts/verify/test_coverage_registry.yaml',
+                     'docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json'):
+            self.assertNotIn(path, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        makefile = (Path(__file__).resolve().parents[2] / 'make/codex.mk').read_text()
+        for target in ('workspace.branch.sync-main:', 'workspace.branch.sync-main.extended:'):
+            block = makefile.split(target, 1)[1].split('\n\n', 1)[0]
+            self.assertIn('$(filter 1,$(REGENERATE_GENERATED_EVIDENCE)),--regenerate-evidence', block)
+
+    def test_rebuild_does_not_weaken_extended_quick_requirement(self):
+        with self.assertRaisesRegex(syncer.SyncError, 'Quick evidence'):
+            self.plan(regenerate_evidence=True, allow_extended_history=True,
+                      expected_commit_count=1, quick_evidence_checker=lambda *_: False)
+
+    def test_governance_authority_conflict_remains_denied_with_rebuild(self):
+        path = 'scripts/audit/verification_lane_dispositions.json'
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('topic authority\n')
+        git(self.root, 'add', path)
+        git(self.root, 'commit', '-m', 'topic authority')
+        self.head = git(self.root, 'rev-parse', 'HEAD').stdout.strip()
+        git(self.root, 'switch', 'main')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('main authority\n')
+        git(self.root, 'add', path)
+        git(self.root, 'commit', '-m', 'main authority')
+        self.new_main = git(self.root, 'rev-parse', 'HEAD').stdout.strip()
+        git(self.root, 'push', 'origin', 'HEAD:main')
+        git(self.root, 'switch', 'feature/local-sync')
+        plan = self.plan(regenerate_evidence=True)
+        with self.assertRaisesRegex(syncer.SyncError, path):
+            syncer.sync(plan)
+        self.assertEqual('topic authority\n', target.read_text())
+        self.assertEqual(self.head, git(self.root, 'rev-parse', 'HEAD').stdout.strip())
+        diagnostic = json.loads(plan.recovery_bundle.with_suffix('.conflict.json').read_text())
+        self.assertEqual([path], diagnostic['conflicts'])
+        self.assertIn('CONFLICT', diagnostic['git_output'])
+
     def test_clean_unpublished_branch_syncs_and_preserves_patch(self) -> None:
         plan = self.plan()
         result = syncer.sync(plan)
@@ -637,7 +781,8 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
         git(self.root, "switch", "feature/local-sync")
         plan = self.plan(expected_head=conflict_head, expected_main=conflict_main)
-        self.assertIsNone(syncer.run_rebase(plan))
+        with self.assertRaisesRegex(syncer.SyncError, "unsupported rebase conflict paths"):
+            syncer.run_rebase(plan)
         git(self.root, "rebase", "--abort")
 
     def test_root_mismatch_and_no_push_or_force_push_in_implementation(self) -> None:

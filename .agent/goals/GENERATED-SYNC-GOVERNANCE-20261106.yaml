@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: GENERATED-SYNC-GOVERNANCE-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 受管处理纯生成报告冲突并调用原生成器，保留身份、恢复和证据边界

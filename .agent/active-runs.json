@@ -79,6 +79,7 @@
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
-    "fix/guard-registry-governance-20261106": ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json"
+    "fix/guard-registry-governance-20261106": ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json",
+    "fix/governed-generated-sync-20261106": ".agent/runs/GENERATED-SYNC-GOVERNANCE-20261106/run.json"
   }
 }

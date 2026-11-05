@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "GENERATED-SYNC-GOVERNANCE-20261106",
+  "branch": "fix/governed-generated-sync-20261106",
+  "baseline_sha": "1d0f2fe5a7604f2a252b0ed76d402d8b27b6e58b",
+  "status": "verification_pending",
+  "goal": ".agent/goals/GENERATED-SYNC-GOVERNANCE-20261106.yaml",
+  "record": ".agent/runs/GENERATED-SYNC-GOVERNANCE-20261106/run.json",
+  "scope": [
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "make/codex.mk",
+    "docs/ops/codex_execution_allowlist.md",
+    ".agent/active-runs.json",
+    ".agent/runs/GENERATED-SYNC-GOVERNANCE-20261106/run.json",
+    ".agent/goals/GENERATED-SYNC-GOVERNANCE-20261106.yaml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "governed generated report synchronization",
+    "exclusions": [
+      "frontend mutation",
+      "runtime",
+      "registry seed",
+      "Quick evidence bypass"
+    ]
+  },
+  "execution_results": {
+    "sync_unit": {
+      "status": "passed",
+      "tests": 40,
+      "entry": "make verify.workspace.branch.sync-main",
+      "log": ".runtime/generated-sync/targeted-tests-final.log"
+    },
+    "initial_local_iteration": {
+      "status": "failed",
+      "reason": "run metadata omitted next_exact_step",
+      "log": ".runtime/generated-sync/local-iteration.log"
+    },
+    "actual_frontend_sync": {
+      "status": "not_run",
+      "reason": "root remains single writer; merged tooling and review required"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/generated-sync/local-iteration-final.log"
+    }
+  },
+  "next_exact_step": "Freeze clean candidate, independent review, governed PR and current remote checks; root alone may sync frontend after protected merge"
+}

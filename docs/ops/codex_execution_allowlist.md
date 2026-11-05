@@ -472,8 +472,20 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   对于尚未包含同步 target 的旧 linked worktree，允许由主工作树通过
   `WORKSPACE_BRANCH_SYNC_ROOT=<absolute-linked-worktree-path>` 调用；脚本必须
   验证两者共享同一 Git common directory。
-  仅对 `docs/ops/iterations/delivery_context_switch_log_v1.md` 的纯追加冲突
-  允许确定性合并；其余冲突一律 abort，禁止人工或脚本猜测业务内容。
+  默认仅处理已登记的追加日志和 active-runs 索引合并；其余冲突 abort。
+  所有者授权生成报告同步时，可显式设置 `REGENERATE_GENERATED_EVIDENCE=1`，
+  确认短语改为 `REBASE_AND_REBUILD_GENERATED_EVIDENCE_ON_EXACT_MAIN`。
+  普通入口仍只接受 1—12 个责任提交，无旧 HEAD Quick 前置；不制造提交凑 extended。
+  仅 `GENERATED_EVIDENCE_CONFLICT_PATHS` 中可重建报告允许临时取 main 解决冲突。
+  登记表、验证基线、G1 验收证据不是生成物，不允许自动覆盖或 seed。
+
+  责任路径、patch 和提交数核对后，工具调用原 `refresh.generated_evidence` 和
+  `ci.generated_evidence.preflight`，生成物变化以独立提交记录；原提交 hooks 照常执行。
+  Make recipes 与生成器实现目录必须与精确 main 一致；非生成物写入、原生成器失败、
+  preflight 或 hook 失败均拒绝并恢复原 HEAD/索引/工作树。只清理单写者操作期间新增的
+  非 ignored 未跟踪文件，保留事前 ignored 依赖与证据，不运行全局 clean。
+  生成日志、冲突路径和 Git 原始诊断保留在恢复 bundle 旁；不会伪造 Quick 或验收回执。
+  成功后须对新 HEAD 重新获取 Quick 和本批适用验收，不能沿用旧候选身份。
 
   仅允许同步未发布、没有开放 PR 的合规本地分支。调用者必须提供当前
   分支、HEAD、旧基线和 `origin/main` 的完整 SHA，并提供精确确认短语。
@@ -487,7 +499,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   `sync-main` 的全部精确身份、clean、无远端分支/PR、恢复 bundle 与冲突回滚
   门禁外，还必须具有当前工作树的有效 exact-head Quick receipt，并提供准确的
   `EXPECTED_COMMIT_COUNT` 和独立确认短语
-  `REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN`。该入口仅可把已登记的生成证据
+  `REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN`。可同时显式设置
+  `REGENERATE_GENERATED_EVIDENCE=1`，按上面的原生成器流程重建报告；Quick 和
+  提交数约束保持。未选择重建时，该入口仅可把已登记的纯生成报告
   冲突复位到新 main 版本，并在结果中明确标记证据失效；调用方必须随后执行生成
   证据刷新、重新冻结和新 HEAD 验证。重放后的提交数只允许减少不超过已确认冲突
   的纯生成证据提交数，且稳定路径集合与 patch identity 必须保持一致。其他冲突仍
