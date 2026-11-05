@@ -44,7 +44,8 @@
   --sc-product-table-row-height: var(--sc-table-row-height);
   --sc-product-table-header-height: var(--sc-table-header-height);
   --sc-product-toolbar-height: var(--sc-pattern-collection-toolbar-height);
-  --sc-product-list-toolbar-height: 46px;
+  /* 列表工具栏与集合工具栏共享同一权威高度，避免同一组件内出现 46/52 两套高度。 */
+  --sc-product-list-toolbar-height: var(--sc-pattern-collection-toolbar-height);
   --sc-touch-target-min: 44px;
   --sc-product-shadow-overlay: var(--sc-pattern-overlay-shadow);
   --sc-shell-topbar-height: calc(var(--sc-pattern-app-shell-topbar-height) * 1px);
