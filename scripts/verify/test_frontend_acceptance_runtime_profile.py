@@ -322,19 +322,27 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
         self.fail_upgrade = False
         self.fail_second_stop = False
         self.extra_writer = False
+        self.attempt = None
 
     def inspect(self, identity):
+        if self.attempt and identity == self.attempt["Id"]:
+            return copy.deepcopy(self.attempt)
         return copy.deepcopy(next(row for row in self.rows.values()
                                   if identity in (row["Id"], row["Name"].lstrip("/"))))
 
     def command(self, args, **kwargs):
         self.events.append(args)
+        if args[:4] == ["docker", "ps", "-a", "--no-trunc"]:
+            return self.attempt["Id"] if self.attempt else ""
         if args[:3] == ["docker", "ps", "-a"]:
             return "\n".join(row["Name"].lstrip("/") for row in self.rows.values())
         if args[:2] == ["docker", "ps"]:
             return "\n".join([key for key, row in self.rows.items() if row["State"]["Running"]]
                              + (["f" * 64] if self.extra_writer else []))
         if args[:2] == ["docker", "stop"]:
+            if self.attempt and args[2] == self.attempt["Id"]:
+                self.attempt["State"]["Running"] = False
+                return ""
             self.rows[args[2]]["State"]["Running"] = False
             if self.fail_second_stop and args[2] == "2" * 64:
                 raise subprocess.CalledProcessError(1, args)
@@ -346,6 +354,12 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
             self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
             self.assertEqual(args[1], str(ROOT / "scripts/mod/upgrade.sh"))
             if self.fail_upgrade:
+                env = kwargs["env"]
+                self.attempt = {"Id": "3" * 64, "Name": "/" + env["SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME"],
+                                "Config": {"Labels": {"com.docker.compose.project": self.profile["COMPOSE_PROJECT_NAME"],
+                                                        "com.docker.compose.service": "odoo",
+                                                        "sce.acceptance.module-upgrade": env["SC_ACCEPTANCE_MODULE_UPGRADE_ID"]}},
+                                "State": {"Running": True}}
                 raise subprocess.CalledProcessError(1, args)
             return ""
         raise AssertionError(args)
@@ -370,6 +384,8 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
             self.run_upgrade()
         self.assertFalse(any(row["State"]["Running"] for row in self.rows.values()))
         self.assertFalse(any(args[:2] == ["docker", "start"] for args in self.events))
+        self.assertFalse(self.attempt["State"]["Running"])
+        self.assertIn(["docker", "stop", "3" * 64], self.events)
 
     def test_stop_failure_before_upgrade_restores_original_states(self):
         self.fail_second_stop = True
@@ -438,23 +454,136 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
 
     def test_interrupted_upgrade_child_is_reaped_before_lease_release(self):
         child = mock.Mock()
-        child.wait.side_effect = [InterruptedError("cancelled"), 0]
-        with mock.patch.object(self.tool.subprocess, "Popen", return_value=child):
+        child.wait.side_effect = [InterruptedError("cancelled"), 0, 0]
+        child.pid = 56789
+        with mock.patch.object(self.tool.subprocess, "Popen", return_value=child), \
+             mock.patch.object(self.tool.os, "killpg") as killpg:
             with self.assertRaises(InterruptedError):
                 self.tool.command(["bash", "upgrade"], capture=False)
-        child.terminate.assert_called_once()
-        self.assertEqual(child.wait.call_count, 2)
+        self.assertEqual(killpg.call_count, 2)
+        self.assertEqual(child.wait.call_count, 3)
 
     def test_exited_rollback_custody_is_neither_stopped_nor_removed(self):
         original = self.command
         def with_custody(args, **kwargs):
             value = original(args, **kwargs)
-            if args[:3] == ["docker", "ps", "-a"]:
+            if args == ["docker", "ps", "-a", "--format", "{{.Names}}"]:
                 value += "\nsc-backend-odoo-acceptance-rollback-51405bdf3bdc"
             return value
         with mock.patch.object(self, "command", side_effect=with_custody):
             self.run_upgrade()
         self.assertFalse(any("rollback" in str(args) for args in self.events))
+
+
+    def test_pending_blocks_upgrade_and_recovery_never_replays_upgrade(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            token = "f" * 32
+            name = self.profile["COMPOSE_PROJECT_NAME"] + "-module-upgrade-" + token
+            record = self.tool.pending_record(self.profile, env, "a" * 40, name, token)
+            with self.tool.leases(self.profile, env):
+                self.tool.write_pending(record, self.profile, env)
+            with mock.patch.object(self.tool, "command", side_effect=self.command), \
+                 mock.patch.object(self.tool, "inspect", side_effect=self.inspect), \
+                 mock.patch.object(self.tool, "source_identity", return_value="a" * 40):
+                with self.assertRaisesRegex(ValueError, "recovery pending"):
+                    self.tool.upgrade(env)
+                self.assertEqual(self.events, [])
+                self.tool.upgrade(dict(env, ACCEPTANCE_UPGRADE_RECOVER="1"))
+            self.assertFalse(any(args[0] == "bash" for args in self.events))
+            self.assertFalse(any(path.exists() for path in self.tool.pending_paths(self.profile, env)))
+
+    def test_pending_unknown_damaged_or_source_mismatch_remains_blocked(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            paths = self.tool.pending_paths(self.profile, env)
+            paths[0].parent.mkdir(parents=True)
+            for content in ('bad-json', '{}', '[1]', json.dumps({"attempt_id": "f" * 32})):
+                paths[0].write_text(content)
+                with self.subTest(content=content), self.assertRaises(ValueError):
+                    self.tool.recover_pending(self.profile, env, "a" * 40)
+                with self.assertRaisesRegex(ValueError, 'recovery pending'):
+                    self.tool.check_pending(self.profile, env)
+                self.assertTrue(paths[0].exists())
+            paths[0].unlink()
+            paths[0].symlink_to(paths[0].parent / 'missing')
+            with self.assertRaisesRegex(ValueError, 'identity invalid'):
+                self.tool.recover_pending(self.profile, env, "a" * 40)
+
+    def test_unreachable_daemon_retains_pending_after_failed_upgrade(self):
+        self.fail_upgrade = True
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(self.env, XDG_RUNTIME_DIR=temp)
+            with mock.patch.object(self.tool, "command", side_effect=self.command), \
+                 mock.patch.object(self.tool, "inspect", side_effect=self.inspect), \
+                 mock.patch.object(self.tool, "source_identity", return_value="a" * 40), \
+                 mock.patch.object(self.tool, 'stop_upgrade_container', side_effect=OSError('unavailable')):
+                with self.assertRaises(OSError):
+                    self.tool.upgrade(env)
+            self.assertTrue(all(path.exists() for path in self.tool.pending_paths(self.profile, env)))
+            with self.assertRaisesRegex(ValueError, 'recovery pending'):
+                self.tool.check_pending(self.profile, env)
+            self.assertTrue(self.attempt['State']['Running'])
+
+    def test_upgrade_container_label_mismatch_is_not_stopped(self):
+        self.attempt = {'Id': '3' * 64, 'Name': '/expected', 'Config': {'Labels': {}},
+                        'State': {'Running': True}}
+        with mock.patch.object(self.tool, 'command', side_effect=self.command), \
+             mock.patch.object(self.tool, 'inspect', side_effect=self.inspect):
+            with self.assertRaisesRegex(ValueError, 'identity mismatch'):
+                self.tool.stop_upgrade_container('expected', 'f' * 32, self.profile)
+        self.assertTrue(self.attempt['State']['Running'])
+        self.assertFalse(any(args[:2] == ['docker', 'stop'] for args in self.events))
+
+    def test_browser_actual_lease_refuses_pending_without_parsing_it(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            marker = root / 'target.module-upgrade-pending.json'
+            marker.write_text('deliberately-invalid-pending')
+            script = f"""
+import {{ acquireAcceptanceLease }} from {json.dumps((ROOT / 'scripts/verify/lib/frontend_acceptance_lease.mjs').as_uri())};
+try {{
+  await acquireAcceptanceLease({{environment: {{concurrency: {{leaseRoot: {json.dumps(temp)}, targetKey: 'target'}}, artifacts: {{runRoot: {json.dumps(temp)}, runId: 'offline'}}}}, root: {json.dumps(temp)}}});
+  process.exitCode = 9;
+}} catch (error) {{
+  if (!error.message.includes('module upgrade recovery pending')) throw error;
+  console.log('pending-denied');
+}}
+"""
+            result = subprocess.run(['node', '--input-type=module', '-e', script],
+                                    capture_output=True, text=True, timeout=10, check=True)
+            self.assertEqual(result.stdout.strip(), 'pending-denied')
+            self.assertTrue(marker.exists())
+
+
+    def test_real_upgrade_shell_passes_exact_attempt_name_and_label(self):
+        source = (ROOT / 'scripts/mod/upgrade.sh').read_text()
+        block = source[source.index('acceptance_attempt_args=()'):]
+        token = 'f' * 32
+        env = dict(os.environ, **self.env, SC_ACCEPTANCE_MODULE_UPGRADE_ID=token,
+                   SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME='sc-fe-r2-p1-01-module-upgrade-' + token,
+                   ODOO_ADDONS_PATH='/synthetic/addons', ODOO_CONF='/synthetic/config',
+                   DB_USER='synthetic', DB_PASSWORD='synthetic-not-a-secret')
+        result = subprocess.run(['bash', '-c', 'set -eu; compose_dev() { printf "%s\\n" "$@"; }; ' + block],
+                                env=env, check=True, capture_output=True, text=True)
+        args = result.stdout.splitlines()
+        self.assertEqual(args[args.index('--name') + 1], env['SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME'])
+        self.assertEqual(args[args.index('--label') + 1], 'sce.acceptance.module-upgrade=' + token)
+        self.assertEqual(args[args.index('-u') + 1], 'smart_core')
+        self.assertIn('--stop-after-init', args)
+        self.assertIn('--max-cron-threads=0', args)
+        env['SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME'] = 'unowned-container'
+        result = subprocess.run(['bash', '-c', 'set -eu; compose_dev() { exit 99; }; ' + block],
+                                env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+
+    def test_backend_raw_replacement_and_reuse_both_check_pending(self):
+        runtime = (ROOT / 'scripts/dev/frontend_acceptance_runtime.sh').read_text()
+        block = runtime.split('  backend-up)\n', 1)[1].split('    ;;', 1)[0]
+        self.assertLess(block.index('--check-pending'), block.index('validate_backend_identity'))
+        source = (ROOT / 'scripts/dev/backend_acceptance_up.sh').read_text()
+        self.assertLess(source.index('.module-upgrade-pending.json'), source.index('docker stop'))
+        self.assertIn('-L "$lock_root/$key.module-upgrade-pending.json"', source)
 
     def test_wrong_profile_or_identity_is_rejected(self):
         for key, value in (("SC_ACCEPTANCE_RUNTIME_PROFILE", "candidate"),
@@ -483,6 +612,8 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "scripts/ops").mkdir(parents=True)
+            (root / "scripts/dev").mkdir(parents=True)
+            (root / "scripts/dev/frontend_acceptance_module_upgrade.py").write_text("# offline pending check stub\n")
             (root / "scripts/test").mkdir(parents=True)
             (root / "scripts/test/frontend_acceptance_release_snapshot.py").write_text("fixture")
             (root / "scripts/ops/odoo_shell_exec.sh").write_text('echo "mode=${ODOO_SHELL_RUN_ISOLATED:-exec}"\n')
@@ -494,7 +625,7 @@ class AcceptanceModuleUpgradeLifecycleTest(unittest.TestCase):
         upgrade = runtime.split("  module-upgrade)\n", 1)[1].split("    ;;", 1)[0]
         self.assertIn('python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py"', upgrade)
         make = (ROOT / "make/runtime_ops.mk").read_text()
-        self.assertIn('EXPECTED_HEAD="$(EXPECTED_HEAD)" MODULE="$(MODULE)"', make)
+        self.assertIn('EXPECTED_HEAD="$(EXPECTED_HEAD)" ACCEPTANCE_UPGRADE_RECOVER="$(ACCEPTANCE_UPGRADE_RECOVER)"', make)
 
 
 if __name__ == "__main__":

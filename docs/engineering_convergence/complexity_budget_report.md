@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 967 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 971 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 622 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |

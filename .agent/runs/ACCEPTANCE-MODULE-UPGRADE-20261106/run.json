@@ -16,7 +16,10 @@
     "make/runtime_ops.mk",
     "docs/ops/codex_execution_allowlist.md",
     "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/mod/upgrade.sh",
+    "scripts/dev/backend_acceptance_up.sh",
+    "scripts/verify/lib/frontend_acceptance_lease.mjs"
   ],
   "checks": {},
   "environment": {
@@ -45,18 +48,27 @@
     "targeted": {
       "status": "passed",
       "entry": "make verify.acceptance.runtime.baseline_rebuild.unit",
-      "tests": 145,
-      "log": ".runtime/acceptance-module-upgrade/targeted.log",
-      "detail": "24 candidate-profile +10 artifact +111 lifecycle/profile/identity; includes 14 new upgrade tests, no real runtime writes"
+      "tests": 152,
+      "log": ".runtime/acceptance-module-upgrade/targeted-recovery.log",
+      "detail": "24 candidate profile +10 artifact +118 lifecycle/profile/identity; includes 21 new upgrade/recovery tests; no runtime writes"
     },
     "iteration": {
       "status": "passed",
       "entry": "make ci.local.iteration",
-      "log": ".runtime/acceptance-module-upgrade/iteration.log"
+      "log": ".runtime/acceptance-module-upgrade/iteration-recovery.log"
     },
     "runtime": {
       "status": "not_run",
       "reason": "Root exclusively owns frontend/runtime; this batch tests orchestration offline, actual upgrade and backend.up readback remain pending"
+    },
+    "independent_review": {
+      "status": "failed",
+      "sha": "3c21226913b7b8b1be1cbabae5a6be920fca1e3d",
+      "finding": "S1 interrupted bash did not prove Docker upgrade writer stopped; fixing exact attempt identity and held-lease container cleanup"
+    },
+    "review_fix": {
+      "status": "verification_pending",
+      "detail": "S1: exact disposable attempt name/label and Docker stop readback under leases; atomic pending markers block backend/browser until explicit identity-bound recovery without replay"
     }
   },
   "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback"

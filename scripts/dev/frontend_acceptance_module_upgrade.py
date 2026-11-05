@@ -18,25 +18,31 @@ import signal
 import subprocess
 import sys
 import tempfile
+import uuid
 
 from frontend_acceptance_runtime_profile import resolve
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def command(args, *, capture=True):
+def command(args, *, capture=True, env=None):
     if not capture:
-        child = subprocess.Popen(args, cwd=ROOT)
+        child = subprocess.Popen(args, cwd=ROOT, env=env, start_new_session=True)
         try:
             code = child.wait()
         except BaseException:
             # Do not release the lease while an interrupted -u child still writes.
-            child.terminate()
-            try:
-                child.wait(timeout=30)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(child.pid, sig)
+                except ProcessLookupError:
+                    pass
+                if sig == signal.SIGTERM:
+                    try:
+                        child.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
+            child.wait()
             raise
         if code:
             raise subprocess.CalledProcessError(code, args)
@@ -91,21 +97,90 @@ def profile_identity(env):
     return profile
 
 
+def lease_paths(profile, env):
+    directory = Path(env.get('XDG_RUNTIME_DIR') or env.get('TMPDIR') or tempfile.gettempdir()) / 'sce-frontend-acceptance/leases'
+    result = []
+    for port in (profile['FRONTEND_ACCEPTANCE_PORT'], '5180'):
+        target = f"http://127.0.0.1:{port}|http://127.0.0.1:{profile['BACKEND_ACCEPTANCE_PORT']}|{profile['DB_NAME']}"
+        key = hashlib.sha256(target.encode()).hexdigest()
+        result.append(directory / key)
+    return result
+
+
+def pending_paths(profile, env):
+    return [path.with_suffix('.module-upgrade-pending.json') for path in lease_paths(profile, env)]
+
+
+def check_pending(profile, env):
+    if any(path.exists() or path.is_symlink() for path in pending_paths(profile, env)):
+        raise ValueError('module upgrade recovery pending; runtime/acceptance blocked')
+
+
 @contextlib.contextmanager
 def leases(profile, env):
     # Same keys and directory as frontend_acceptance_environment.mjs and backend.up.
-    directory = Path(env.get('XDG_RUNTIME_DIR') or env.get('TMPDIR') or tempfile.gettempdir()) / 'sce-frontend-acceptance/leases'
-    directory.mkdir(parents=True, exist_ok=True)
     with contextlib.ExitStack() as stack:
-        for port in (profile['FRONTEND_ACCEPTANCE_PORT'], '5180'):
-            target = f"http://127.0.0.1:{port}|http://127.0.0.1:{profile['BACKEND_ACCEPTANCE_PORT']}|{profile['DB_NAME']}"
-            key = hashlib.sha256(target.encode()).hexdigest()
-            stream = stack.enter_context((directory / f'{key}.lock').open('a'))
+        for path in lease_paths(profile, env):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            stream = stack.enter_context(path.with_suffix('.lock').open('a'))
             try:
                 fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise ValueError('active acceptance lease; no writer changed') from exc
         yield
+
+
+def pending_record(profile, env, head, name, token):
+    return {'schema': 'acceptance-module-upgrade-pending.v1', 'profile': 'local',
+            'database': profile['DB_NAME'], 'database_filter': profile['ODOO_DBFILTER'],
+            'filestore': profile['ODOO_DATA'], 'source_sha': head,
+            'modules': env['MODULE'].split(','), 'container_name': name, 'attempt_id': token}
+
+
+def write_pending(record, profile, env):
+    for path in pending_paths(profile, env):
+        # O_EXCL publishes an already fsynced complete JSON using a hard link.
+        fd, temporary = tempfile.mkstemp(prefix='.upgrade-pending-', dir=path.parent)
+        try:
+            with os.fdopen(fd, 'w') as stream:
+                json.dump(record, stream, sort_keys=True)
+                stream.write('\n')
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.link(temporary, path)
+            directory_fd = os.open(path.parent, os.O_DIRECTORY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        finally:
+            os.unlink(temporary)
+
+
+def recover_pending(profile, env, head):
+    paths = [path for path in pending_paths(profile, env) if path.exists() or path.is_symlink()]
+    if not paths:
+        raise ValueError('no pending module upgrade attempt to recover')
+    records = []
+    for path in paths:
+        if path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid():
+            raise ValueError('pending marker identity invalid')
+        try:
+            records.append(json.loads(path.read_text()))
+        except (ValueError, OSError) as exc:
+            raise ValueError('pending marker unreadable/invalid') from exc
+    record = records[0]
+    token = record.get('attempt_id', '') if isinstance(record, dict) else ''
+    if not re.fullmatch(r'[0-9a-f]{32}', token):
+        raise ValueError('pending attempt identity invalid')
+    name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
+    expected = pending_record(profile, env, head, name, token)
+    if any(item != expected for item in records):
+        raise ValueError('pending marker scope/source mismatch')
+    stop_upgrade_container(name, token, profile)
+    for path in paths:
+        path.unlink()
+    print(f'[acceptance.module.upgrade] RECOVERED attempt={name} upgrade_replayed=false registry_pending=true', flush=True)
 
 
 def writer_identity(row, name, profile):
@@ -136,13 +211,42 @@ def running_writers(profile):
     return result
 
 
+def stop_upgrade_container(name, token, profile):
+    """Reap only this attempt's disposable Docker writer, while leases are held."""
+    ids = command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{name}$']).split()
+    if not ids:
+        return
+    if len(ids) != 1:
+        raise ValueError('ambiguous upgrade container; manual recovery required')
+    row = inspect(ids[0])
+    labels = row.get('Config', {}).get('Labels') or {}
+    if (row.get('Name') != '/' + name or row.get('Id') != ids[0]
+            or labels.get('com.docker.compose.project') != profile['COMPOSE_PROJECT_NAME']
+            or labels.get('com.docker.compose.service') != 'odoo'
+            or labels.get('sce.acceptance.module-upgrade') != token):
+        raise ValueError('upgrade container identity mismatch; not stopped')
+    if row['State']['Running']:
+        command(['docker', 'stop', row['Id']])
+    # --rm may remove the stopped one-shot container. Both absence and an
+    # inspected non-running exact attempt prove it no longer writes.
+    remaining = command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{name}$']).split()
+    if remaining and (remaining != ids or inspect(ids[0])['State']['Running']):
+        raise ValueError('upgrade writer stop unconfirmed; manual recovery required')
+
+
 def upgrade(env):
     profile = profile_identity(env)
+    if env.get('ACCEPTANCE_UPGRADE_RECOVER', '') not in ('', '0', '1'):
+        raise ValueError('invalid recovery mode; upgrade not started')
     head = source_identity(env)
     with leases(profile, env):
         # Recheck after lock acquisition; never execute against a drifted checkout.
         if source_identity(env) != head:
             raise ValueError('source changed while acquiring lease')
+        if env.get('ACCEPTANCE_UPGRADE_RECOVER') == '1':
+            recover_pending(profile, env, head)
+            return
+        check_pending(profile, env)
         names = [f"{profile['COMPOSE_PROJECT_NAME']}-odoo-1", profile['BACKEND_ACCEPTANCE_NAME']]
         rows = []
         for name in names:
@@ -162,6 +266,10 @@ def upgrade(env):
                           'modules': env['MODULE'].split(','), 'writers': [
                               {'id': row['Id'], 'name': row['Name'], 'running': row['State']['Running']}
                               for row in rows]}, sort_keys=True), flush=True)
+        token = uuid.uuid4().hex
+        attempt_name = f"{profile['COMPOSE_PROJECT_NAME']}-module-upgrade-{token}"
+        if command(['docker', 'ps', '-a', '--no-trunc', '-q', '--filter', f'name=^/{attempt_name}$']).strip():
+            raise ValueError('upgrade attempt container already exists')
         stopped = []
         started = False
         try:
@@ -175,8 +283,14 @@ def upgrade(env):
                 raise ValueError('writer appeared before upgrade')
             if source_identity(env) != head:
                 raise ValueError('source changed before upgrade')
+            write_pending(pending_record(profile, env, head, attempt_name, token), profile, env)
             started = True
-            command(['bash', str(ROOT / 'scripts/mod/upgrade.sh')], capture=False)
+            command(['bash', str(ROOT / 'scripts/mod/upgrade.sh')], capture=False,
+                    env={**env, 'SC_ACCEPTANCE_UPGRADE_CONTAINER_NAME': attempt_name,
+                         'SC_ACCEPTANCE_MODULE_UPGRADE_ID': token})
+            stop_upgrade_container(attempt_name, token, profile)
+            for path in pending_paths(profile, env):
+                path.unlink()
         except BaseException:
             if not started:
                 for row in reversed(stopped):
@@ -188,6 +302,14 @@ def upgrade(env):
                         raise ValueError('pre-upgrade restoration failed; manual recovery required')
                 print('[acceptance.module.upgrade] aborted_before_upgrade original_writer_states_restored=true', flush=True)
             else:
+                try:
+                    stop_upgrade_container(attempt_name, token, profile)
+                    for path in pending_paths(profile, env):
+                        if path.exists():
+                            path.unlink()
+                except BaseException:
+                    print("[acceptance.module.upgrade] RECOVERY_PENDING writer_stop_unconfirmed=true acceptance_blocked=true", flush=True)
+                    raise
                 print(f'[acceptance.module.upgrade] FAILED database_not_rolled_back=true writers_left_stopped=true sha={head}', flush=True)
             raise
         if running_writers(profile):
@@ -201,7 +323,14 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
     try:
-        upgrade(os.environ)
+        if sys.argv[1:] == ['--check-pending']:
+            profile = profile_identity(os.environ)
+            with leases(profile, os.environ):
+                check_pending(profile, os.environ)
+        elif sys.argv[1:]:
+            raise ValueError('unsupported module upgrade operation')
+        else:
+            upgrade(os.environ)
     except (ValueError, subprocess.CalledProcessError, OSError) as exc:
         # Do not expose Docker inspect environments or credentials in diagnostics.
         detail = str(exc) if isinstance(exc, ValueError) else type(exc).__name__

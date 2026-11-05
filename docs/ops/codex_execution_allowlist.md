@@ -804,6 +804,15 @@ HTTP 由当前 artifact 提供。本地 `acceptance.frontend.release_snapshot` �
 shell 模式，不依赖启动旧 Compose registry；其他 profile 与 CI 路径保持既有行为。
 失败后不得把旧源码服务重启当作数据库恢复，须依据升级日志处理后再受管重试。
 
+每次 `-u` 使用唯一容器名与标签；在持有双租约时原子记录相同作用域的 pending 标记，
+中断先结束本次 CLI 进程组，再按精确容器名/标签停止并回读一次性升级写入者。
+只有确认该写入者不存在或已停止后才清除标记。daemon 不可达、身份不符或标记损坏
+保持 `RECOVERY_PENDING`，后端启动/复用及浏览器租约均拒绝，不宣称安全完成。
+恢复沿原入口增加 `ACCEPTANCE_UPGRADE_RECOVER=1`，须仍绑定记录中的 clean SHA、
+MODULE 与 profile：仅回收该次写入者、确认停止并清标记，绝不自动重放 `-u`。
+恢复后是否重试升级，由操作者显式再次调用原模块升级入口。
+
+
 ## 5. 失败即许可（Failure Is Allowed）
 
 Gate / Smoke / Snapshot 失败 **允许发生**。

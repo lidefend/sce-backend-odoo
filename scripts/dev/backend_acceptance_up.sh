@@ -30,6 +30,9 @@ for frontend_port in "${FRONTEND_ACCEPTANCE_PORT:-5175}" "${SC_ACCEPTANCE_STANDA
   key="$(printf '%s' "http://127.0.0.1:$frontend_port|http://127.0.0.1:$PORT|$DATABASE" | sha256sum | cut -d' ' -f1)"
   exec {lease_fd}>"$lock_root/$key.lock"
   flock -n -x "$lease_fd" || { echo "DENY active acceptance lease" >&2; exit 2; }
+  [[ ! -e "$lock_root/$key.module-upgrade-pending.json" && ! -L "$lock_root/$key.module-upgrade-pending.json" ]] || {
+    echo "DENY module upgrade recovery pending" >&2; exit 2;
+  }
 done
 backup=""
 was_running=false
