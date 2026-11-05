@@ -386,11 +386,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_intent",
+          "provider_ref": "project.dashboard.enter",
+          "contract_ref": "addons/smart_construction_core/handlers/project_dashboard_enter.py",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],
@@ -452,11 +451,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_intent",
+          "provider_ref": "project.plan_bootstrap.enter",
+          "contract_ref": "addons/smart_construction_core/handlers/project_plan_bootstrap_enter.py",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],
@@ -474,11 +472,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_intent",
+          "provider_ref": "project.execution.enter",
+          "contract_ref": "addons/smart_construction_core/handlers/project_execution_enter.py",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],
@@ -496,11 +493,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_intent",
+          "provider_ref": "project.execution.advance",
+          "contract_ref": "addons/smart_construction_core/handlers/project_execution_advance.py",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],
@@ -518,11 +514,10 @@
       "release_state": "candidate",
       "providers": [
         {
-          "provider_type": "unknown",
-          "provider_ref": "",
-          "contract_ref": "",
-          "provider_status": "unverified",
-          "pending_reason": "provider not yet reconciled"
+          "provider_type": "odoo_action",
+          "provider_ref": "smart_construction_core.action_sc_construction_diary",
+          "contract_ref": "addons/smart_construction_core/views/core/construction_diary_views.xml",
+          "provider_status": "verified"
         }
       ],
       "dependencies": [],

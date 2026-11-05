@@ -268,13 +268,21 @@ def _fact_digest(identity: dict, models: list[dict], security: dict, facts: dict
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _provider_module(provider_type: str, provider_ref: str) -> list[str]:
+def _provider_module(provider_type: str, provider_ref: str,
+                     contract_ref: str = "") -> list[str]:
     """Resolve module ownership from _name/_inherit facts, never from name prefix."""
     if not provider_ref or provider_ref in {"", "tbd", "unknown"}:
         return []
     if provider_type == "odoo_action":
         module = provider_ref.split(".")[0]
         return [module] if (ROOT / "addons" / module).is_dir() else []
+    if provider_type == "odoo_intent":
+        # resolve the handler's owning module from the handler file path
+        parts = (contract_ref or "").split("/")
+        if parts and parts[0] == "addons" and len(parts) > 1:
+            module = parts[1]
+            return [module] if (ROOT / "addons" / module).is_dir() else []
+        return []
     if provider_type == "odoo_model":
         modules = set()
         proc = subprocess.run(
@@ -304,7 +312,9 @@ def _reverse_index() -> dict[str, list[dict]]:
     index: dict[str, list[dict]] = {}
     for c in cat:
         for p in c.get("providers", []):
-            modules = _provider_module(p.get("provider_type") or "", p.get("provider_ref") or "")
+            modules = _provider_module(p.get("provider_type") or "",
+                                       p.get("provider_ref") or "",
+                                       p.get("contract_ref") or "")
             for m in modules:
                 index.setdefault(m, []).append({
                     "capability_key": c["capability_key"],

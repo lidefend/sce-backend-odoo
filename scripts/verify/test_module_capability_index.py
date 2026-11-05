@@ -130,6 +130,12 @@ class NameDeclarationTests(unittest.TestCase):
         self.assertIn("smart_construction_core", modules)
         self.assertIn("project", modules)
 
+    def test_provider_module_resolves_odoo_intent_from_contract_ref(self):
+        modules = idx._provider_module(
+            "odoo_intent", "project.dashboard.enter",
+            "addons/smart_construction_core/handlers/project_dashboard_enter.py")
+        self.assertEqual(modules, ["smart_construction_core"])
+
 
 if __name__ == "__main__":
     unittest.main()

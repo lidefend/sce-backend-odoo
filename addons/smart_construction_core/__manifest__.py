@@ -278,6 +278,7 @@
         'data/mail_notification_product_contract.xml',
         'data/tax_filing_contract.xml',
         'data/product_report_contracts.xml',
+        'data/construction_diary_list_contract.xml',
         'data/office_admin_form_productization_contract.xml',
         'data/document_admin_form_productization_contract.xml',
         'data/subcontract_request_form_productization_contract.xml',
