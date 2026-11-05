@@ -485,13 +485,13 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("make/frontend.mk", owned)
         self.assertNotIn("make/**", overrides)
 
-    def test_browser_install_matches_selected_full_lane(self):
+    def test_browser_install_matches_selected_test_dependencies(self):
         workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
         steps = next(iter(workflow['jobs'].values()))['steps']
         install = next(s for s in steps if s.get('name') == 'Install locked frontend toolchain')['run']
         cache = next(s for s in steps if s.get('id') == 'playwright-cache')
-        self.assertEqual("steps.effective_lane.outputs.frontend_mode == 'full'", cache['if'])
-        for mode, expected in [('standard', False), ('full', True)]:
+        self.assertEqual("steps.effective_lane.outputs.frontend_mode != 'skip'", cache['if'])
+        for mode, expected in [('skip', False), ('standard', True), ('full', True)]:
             script = install.replace("${{ steps.effective_lane.outputs.frontend_mode }}", mode).replace(
                 "${{ steps.playwright-cache.outputs.cache-hit }}", 'false')
             stubs = 'python3() { :; }; corepack() { :; }; pnpm() { printf "%s\\n" "$*"; };\n'

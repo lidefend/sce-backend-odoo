@@ -42,6 +42,7 @@
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/test_release_candidate_gate.py",
     "scripts/ci/test_select_authoritative_workflow_run.py",
     "scripts/ci/test_trusted_scan_scope.py",
     "scripts/ci/trusted_scan_scope.py",
@@ -140,7 +141,7 @@
   "blockers": [
     "Independent frozen-candidate review and remote execution validation remain required before publication/integration qualification."
   ],
-  "next_exact_step": "Freeze ORM-only impact isolation, review exact delta, archive and publish protected PR; current merge scope requires no local browser evidence.",
+  "next_exact_step": "Review and publish targeted remote CI fixes to existing PR811; wait exact-head required checks and protected merge.",
   "layer": {
     "formal_product_layer": "P4",
     "layer_target": "remote CI selection and execution evidence",
@@ -346,6 +347,19 @@
       ],
       "reason": "ORM-only CI entry is structurally separate from unchanged local/browser operation entry; fixture ORM runner maps to backend_contract plus governance_static. Shared entry and release-snapshot mutations still require browser evidence.",
       "recovery": "Corrected nonexistent identity Make target to existing scheduled gate; removed stale zero-reference disposition after wiring; updated moved-entry regression test. All applicable final tests passed."
+    },
+    "remote_pr_811_round1": {
+      "status": "failed",
+      "head": "53ab11fe4201aecad469f972d81c2536f66bb676",
+      "public_guard": "outdated candidate summary string assertion; replaced by executed success/skip/failure/cancelled behavior assertions",
+      "frontend": "standard pnpm test includes offline Chromium project detail component test; browser executable missing because full-only provisioning was incorrect",
+      "merge_policy": "correctly blocked on failed fact workflows",
+      "fix_validation": {
+        "scheduled_guard_tests": 86,
+        "offline_component_checks": 28,
+        "log": ".runtime/ci-execution-alignment/remote-fixes-tests.log"
+      },
+      "limits": "Browser dependency optimization cannot omit Chromium while selected standard tests consume it; no test removed."
     }
   },
   "review_resolution": {

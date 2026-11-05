@@ -2979,7 +2979,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        ".github/workflows/public_guard.yml"
+        ".github/workflows/public_guard.yml",
+        "make/ci.mk"
       ]
     },
     {

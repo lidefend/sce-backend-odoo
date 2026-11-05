@@ -228,7 +228,7 @@ Generated from repository source files. This report is informational during the 
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 332 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
+| 333 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 330 | Shell script | `scripts/release/immutable_candidate_build.sh` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
