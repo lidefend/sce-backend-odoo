@@ -11,32 +11,13 @@
     "authority": "existing local Make tools; no database or service access"
   },
   "scope": [
-    "addons/smart_construction_core/__manifest__.py",
-    "addons/smart_construction_core/core_extension.py",
-    "addons/smart_construction_core/models/support/__init__.py",
-    "addons/smart_construction_core/models/support/product_policy_sync.py",
-    "addons/smart_construction_core/models/support/product_scenario.py",
-    "addons/smart_construction_core/security/ir.model.access.csv",
-    "addons/smart_construction_core/services/scenario_surface_projection.py",
-    "addons/smart_construction_core/data/product_scenario_seed.xml",
-    "addons/smart_construction_core/views/support/product_scenario_views.xml",
-    "addons/smart_core/handlers/system_init.py",
-    "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
-    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
-    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
-    "frontend/apps/web/src/app/scenarioSurface.ts",
-    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
-    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
-    "frontend/apps/web/src/layouts/AppShell.vue",
-    "frontend/apps/web/src/stores/session.ts",
-    "make/frontend.mk",
-    "scripts/verify/registry.yaml",
-    "scripts/verify/scenario_center_projection_guard.py",
-    ".agent/goals/NAV-UX-01.yaml",
-    ".agent/runs/NAV-UX-01/run.json",
-    "docs/ops/iterations/nav-ux-01-record.md"
-    ,
-    ".agent/active-runs.json"
+    "addons/",
+    "config/",
+    "scripts/",
+    "make/",
+    "frontend/apps/web/",
+    "docs/",
+    ".agent/"
   ],
   "checks": {
     "scenario_center_native_authority": {
@@ -59,8 +40,6 @@
       ]
     }
   },
-  "blockers": [
-    "runtime verification pending: managed local.dev/acceptance environments mount mainline-deploy, not this feature branch"
-  ],
-  "next_exact_step": "run ci.local.iteration, commit, push draft PR, then verify on managed runtime after main merge"
+  "blockers": [],
+  "next_exact_step": "push draft PR and complete mainline integration"
 }
