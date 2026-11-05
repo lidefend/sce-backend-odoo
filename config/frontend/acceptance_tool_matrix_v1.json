@@ -145,7 +145,8 @@
         "local",
         "test",
         "daily",
-        "candidate"
+        "candidate",
+        "navux_branch"
       ],
       "operations": [
         "readonly"
