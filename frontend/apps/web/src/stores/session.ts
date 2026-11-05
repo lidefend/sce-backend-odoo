@@ -1,3 +1,4 @@
+import { navigationExpansionActions } from './navigationExpansionActions';
 import { requireStructuredStartupCapabilities } from '../app/productCapabilityCatalogProjection';
 import { getPublicAuthPageContracts } from '../services/accountActivation';
 import { defineStore } from 'pinia';
@@ -16,7 +17,10 @@ import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNam
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
-import { parseScenarioSurface, type ScenarioNavigationModel } from '../app/scenarioSurface';
+import {
+  parseScenarioSurface,
+  type ScenarioNavigationModel,
+} from '../app/scenarioSurface';
 import {
   activityPageTitleTargetKeys,
   normalizeRetainedActivityPageIdentity,
@@ -251,6 +255,8 @@ export interface SessionState extends NavigationProjectionState {
   menuTree: NavNode[];
   navigationModel: CanonicalNavigationModel | null;
   scenarioSurface: ScenarioNavigationModel | null;
+  scenarioExpandedCenters: string[];
+  scenarioExpandedScenarios: string[];
   routeAuthority: RouteAuthorityContract | null;
   menuExpandedKeys: string[];
   currentAction: NavMeta | null;
@@ -574,6 +580,8 @@ export const useSessionStore = defineStore('session', {
     menuTree: [],
     navigationModel: null,
     scenarioSurface: null,
+    scenarioExpandedCenters: [],
+    scenarioExpandedScenarios: [],
     routeAuthority: null,
     menuExpandedKeys: [],
     currentAction: null,
@@ -863,6 +871,8 @@ export const useSessionStore = defineStore('session', {
           this.navigationModel = null;
           this.scenarioSurface = null;
           this.menuExpandedKeys = parsed.menuExpandedKeys ?? [];
+          this.scenarioExpandedCenters = parsed.scenarioExpandedCenters ?? [];
+          this.scenarioExpandedScenarios = parsed.scenarioExpandedScenarios ?? [];
           this.currentAction = null;
           this.capabilities = parsed.capabilities ?? [];
           this.scenes = [];
@@ -938,6 +948,8 @@ export const useSessionStore = defineStore('session', {
       this.navigationModel = null;
       this.scenarioSurface = null;
       this.menuExpandedKeys = [];
+      this.scenarioExpandedCenters = [];
+      this.scenarioExpandedScenarios = [];
       this.currentAction = null;
       this.capabilities = [];
       this.featureFlags = {};
@@ -981,36 +993,15 @@ export const useSessionStore = defineStore('session', {
       this.currentAction = meta;
       this.persist();
     },
-    toggleMenuExpanded(key: string) {
-      const set = new Set(this.menuExpandedKeys);
-      if (set.has(key)) {
-        set.delete(key);
-      } else {
-        set.add(key);
-      }
-      this.menuExpandedKeys = [...set];
-      this.persist();
-    },
-    ensureMenuExpanded(keys: string[]) {
-      const set = new Set(this.menuExpandedKeys);
-      let changed = false;
-      keys.forEach((key) => {
-        if (!set.has(key)) {
-          set.add(key);
-          changed = true;
-        }
-      });
-      if (changed) {
-        this.menuExpandedKeys = [...set];
-        this.persist();
-      }
-    },
+    ...navigationExpansionActions,
     persist() {
       const snapshot: Partial<SessionState> = {
         sessionDb: this.sessionDb,
         user: this.user,
         menuTree: this.menuTree,
         menuExpandedKeys: this.menuExpandedKeys,
+        scenarioExpandedCenters: this.scenarioExpandedCenters,
+        scenarioExpandedScenarios: this.scenarioExpandedScenarios,
         currentAction: this.currentAction,
         capabilities: this.capabilities,
         scenes: this.scenes,
@@ -1047,6 +1038,8 @@ export const useSessionStore = defineStore('session', {
           sessionDb: this.sessionDb,
           user: this.user,
           menuExpandedKeys: this.menuExpandedKeys,
+          scenarioExpandedCenters: this.scenarioExpandedCenters,
+          scenarioExpandedScenarios: this.scenarioExpandedScenarios,
           currentAction: this.currentAction,
           roleSurface: this.roleSurface,
           recordContext: this.recordContext,

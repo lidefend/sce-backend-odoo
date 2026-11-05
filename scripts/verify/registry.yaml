@@ -1877,3 +1877,8 @@ entries:
   owner: platform-team
   date: '2026-11-03'
   reason: verify.nav01.native_authority.unit in local Quick and remote frontend checks
+- script: scenario_center_projection_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-05'
+  reason: scenario-center navigation projection (native centers + maintainable scenario model) in verify.nav01.native_authority.unit

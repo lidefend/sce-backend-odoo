@@ -1,3 +1,5 @@
+import { routeAuthorityEntries, type RouteAuthorityContract } from './routeAuthority';
+
 export interface ScenarioNavEntry {
   menu_xmlid: string;
   menu_id: number;
@@ -7,32 +9,34 @@ export interface ScenarioNavEntry {
   view_modes: string[];
   route: string;
   label: string;
-}
-
-export interface ScenarioIntentNode {
   intent: string;
-  label: string;
-  entries: ScenarioNavEntry[];
+  intent_label: string;
+  configured: boolean;
 }
 
 export interface ScenarioNode {
   key: string;
   name: string;
-  type: string;
-  intents: ScenarioIntentNode[];
+  sequence: number;
+  entries: ScenarioNavEntry[];
 }
 
-export interface ScenarioDomainNode {
+export interface ScenarioCenterNode {
   key: string;
   name: string;
+  sequence: number;
   scenarios: ScenarioNode[];
+  entries: ScenarioNavEntry[];
 }
 
 export interface ScenarioNavigationModel {
-  domains: ScenarioDomainNode[];
-  horizontal: ScenarioNavEntry[];
-  platform: ScenarioNavEntry[];
-  platformLabel: string;
+  centers: ScenarioCenterNode[];
+}
+
+export interface ScenarioSearchHit {
+  entry: ScenarioNavEntry;
+  centerName: string;
+  scenarioName: string;
 }
 
 export class ScenarioSurfaceError extends Error {
@@ -76,69 +80,113 @@ function parseEntry(raw: unknown): ScenarioNavEntry | null {
     view_modes: asList(row.view_modes).map((item) => text(item)).filter(Boolean),
     route,
     label: text(row.label) || menuXmlid,
+    intent: text(row.intent),
+    intent_label: text(row.intent_label),
+    configured: row.configured === true,
   };
-}
-
-function parseIntent(raw: unknown): ScenarioIntentNode | null {
-  const row = asRecord(raw);
-  const intent = text(row.intent);
-  if (!intent) return null;
-  const entries = asList(row.entries)
-    .map(parseEntry)
-    .filter((entry): entry is ScenarioNavEntry => entry !== null);
-  if (!entries.length) return null;
-  return { intent, label: text(row.label) || intent, entries };
 }
 
 function parseScenario(raw: unknown): ScenarioNode | null {
   const row = asRecord(raw);
   const key = text(row.key);
   if (!key) return null;
-  const intents = asList(row.intents)
-    .map(parseIntent)
-    .filter((intent): intent is ScenarioIntentNode => intent !== null);
-  if (!intents.length) return null;
-  return { key, name: text(row.name) || key, type: text(row.type), intents };
+  const entries = asList(row.entries)
+    .map(parseEntry)
+    .filter((entry): entry is ScenarioNavEntry => entry !== null);
+  if (!entries.length) return null;
+  return {
+    key,
+    name: text(row.name) || key,
+    sequence: positiveInteger(row.sequence),
+    entries,
+  };
 }
 
-function parseDomain(raw: unknown): ScenarioDomainNode | null {
+function parseCenter(raw: unknown): ScenarioCenterNode | null {
   const row = asRecord(raw);
   const key = text(row.key);
   if (!key) return null;
   const scenarios = asList(row.scenarios)
     .map(parseScenario)
     .filter((scenario): scenario is ScenarioNode => scenario !== null);
-  if (!scenarios.length) return null;
-  return { key, name: text(row.name) || key, scenarios };
+  const entries = asList(row.entries)
+    .map(parseEntry)
+    .filter((entry): entry is ScenarioNavEntry => entry !== null);
+  return {
+    key,
+    name: text(row.name) || key,
+    sequence: positiveInteger(row.sequence),
+    scenarios,
+    entries,
+  };
 }
 
 /**
- * Parse the server-owned `navigation.scenario_surface` into a normalized model.
+ * Parse the server-owned scenario-center navigation projection.
  *
- * Returns `null` for a missing, malformed, or incompatible contract so
- * the shell can fall back to the legacy canonical navigation. This parser is a
- * pure consumer: it never resolves actions, never constructs routes, and never
- * treats client-side data as an authorization source.
+ * Returns `null` for a missing/malformed contract. A valid empty projection is
+ * authoritative (for example after entry revocation) and must not trigger any
+ * other navigation fallback: the unified navigation shows its own empty state.
  */
 export function parseScenarioSurface(raw: unknown): ScenarioNavigationModel | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const contract = raw as Record<string, unknown>;
   if (contract.ok !== true) return null;
   const tree = asRecord(contract.tree);
-  if (!Array.isArray(tree.domains) || !Array.isArray(tree.horizontal)) return null;
-  const domains = asList(tree.domains)
-    .map(parseDomain)
-    .filter((domain): domain is ScenarioDomainNode => domain !== null);
-  const horizontal = asList(tree.horizontal)
-    .map(parseEntry)
-    .filter((entry): entry is ScenarioNavEntry => entry !== null);
-  const platform = asList(tree.platform).map(parseEntry)
-    .filter((entry): entry is ScenarioNavEntry => entry !== null);
-  const platformLabel = text(tree.platform_label);
-  if (platform.length && !platformLabel) {
-    throw new ScenarioSurfaceError('MANAGEMENT_LABEL_MISSING', '管理入口缺少服务端分组声明');
+  if (!Array.isArray(tree.centers)) return null;
+  const centers = asList(tree.centers)
+    .map(parseCenter)
+    .filter((center): center is ScenarioCenterNode => center !== null);
+  return { centers };
+}
+
+/**
+ * Search the authorized scenario-center surface by familiar business names.
+ * It never resolves actions or routes; it only narrows already-authorized
+ * entries and keeps center/scenario attribution for the result list.
+ */
+export function searchScenarioSurface(
+  model: ScenarioNavigationModel,
+  query: string,
+): ScenarioSearchHit[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return [];
+  const matchesEntry = (entry: ScenarioNavEntry): boolean => (
+    entry.label.toLowerCase().includes(term)
+    || entry.menu_xmlid.toLowerCase().includes(term)
+  );
+  const hits: ScenarioSearchHit[] = [];
+  for (const center of model.centers) {
+    for (const entry of center.entries) {
+      if (matchesEntry(entry)) {
+        hits.push({ entry, centerName: center.name, scenarioName: '' });
+      }
+    }
+    for (const scenario of center.scenarios) {
+      for (const entry of scenario.entries) {
+        if (matchesEntry(entry)) {
+          hits.push({ entry, centerName: center.name, scenarioName: scenario.name });
+        }
+      }
+    }
   }
-  // A valid empty projection is authoritative (for example after revocation).
-  // It must not trigger legacy navigation fallback.
-  return { domains, horizontal, platform, platformLabel };
+  return hits;
+}
+
+/** Snapshot only an exact entry still present in the current principal authority. */
+export function createScenarioSelectionSnapshot(entry: ScenarioNavEntry, authority: RouteAuthorityContract | null) {
+  const row = routeAuthorityEntries(authority).find((candidate) => (
+    candidate.menu_id === entry.menu_id && candidate.action_id === entry.action_id
+    && candidate.menu_xmlid === entry.menu_xmlid && candidate.route === entry.route
+  ));
+  if (!row || !entry.route) return null;
+  const snapshot = JSON.parse(JSON.stringify({ route: row.route, authority: row }));
+  const freeze = (value: Record<string, unknown>): void => {
+    Object.values(value).forEach((child) => {
+      if (child && typeof child === 'object') freeze(child as Record<string, unknown>);
+    });
+    Object.freeze(value);
+  };
+  freeze(snapshot);
+  return snapshot as Readonly<{ route: string; authority: typeof row }>;
 }

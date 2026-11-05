@@ -295,7 +295,14 @@ def flatten_authorized_nav_leaves(
     authority_by_pair = _route_authority_by_pair(route_authority)
     leaves: list[dict[str, Any]] = []
 
-    def walk(nodes: Iterable[dict[str, Any]], parent_menu_xmlid: str = "") -> None:
+    def walk(
+        nodes: Iterable[dict[str, Any]],
+        parent_menu_xmlid: str = "",
+        parent_group_key: str = "",
+        parent_group_label: str = "",
+        center_menu_id: int = 0,
+        depth: int = 0,
+    ) -> None:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
@@ -310,6 +317,40 @@ def flatten_authorized_nav_leaves(
             route = _text(carrier.get("route") or node.get("route") or meta.get("route"))
             entry = authority_by_pair.get((menu_id, action_id), {})
             menu_xmlid = _text(node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid") or entry.get("menu_xmlid"))
+            label = _text(node.get("label") or node.get("name") or carrier.get("label"))
+            group_label = _text(
+                node.get("policy_group_label")
+                or node.get("group_label")
+                or meta.get("policy_group_label")
+                or meta.get("group_label")
+            )
+            group_key = _text(
+                node.get("policy_group_key")
+                or node.get("group_key")
+                or meta.get("policy_group_key")
+                or meta.get("group_key")
+                or parent_group_key
+            )
+            # The center is the delivery tree's direct child of the business
+            # root (depth 1). Its stable identity is the native center menu id
+            # carried on the group node, never the editable display name.
+            native_center_id = 0
+            try:
+                native_center_id = int(
+                    carrier.get("menu_id")
+                    or node.get("config_menu_id")
+                    or meta.get("config_menu_id")
+                    or 0
+                )
+            except (TypeError, ValueError):
+                native_center_id = 0
+            if depth == 1:
+                group_label = group_label or label
+                # Always rebase to this center node (even to zero), so a
+                # sibling whose native id is missing never inherits the
+                # previous sibling's center.
+                center_menu_id = native_center_id
+            effective_group_label = group_label or parent_group_label
             if menu_id > 0 and (action_id > 0 or route):
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
@@ -320,13 +361,16 @@ def flatten_authorized_nav_leaves(
                     "model": _text(node.get("model") or meta.get("model") or entry.get("model")),
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
                     "route": route,
-                    "label": _text(node.get("label") or node.get("name") or carrier.get("label")),
+                    "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
                     "entry_target": entry.get("entry_target") or meta.get("entry_target") or {},
                     "parent_menu_xmlid": leaf_parent,
+                    "policy_group_key": group_key,
+                    "policy_group_label": effective_group_label,
+                    "center_menu_id": center_menu_id,
                 })
             if children:
-                walk(children, menu_xmlid)
+                walk(children, menu_xmlid, group_key, effective_group_label, center_menu_id, depth + 1)
 
     walk(nav or [])
     return leaves
@@ -347,3 +391,157 @@ def project_authorized_nav(
         # tenant configuration entries just because no business scene is enabled.
         include_platform=True,
     )
+
+
+BUSINESS_ROOT_XMLID = "smart_construction_core.menu_sc_root"
+SCENARIO_INTENT_LABELS = {
+    "handle": "办理",
+    "view": "查看",
+    "approve": "审批",
+    "report": "报表",
+    "master_data": "基础信息维护",
+}
+
+
+def _menu_external_id(env, menu) -> str:
+    try:
+        external = menu.get_external_id().get(menu.id)
+        return _text(external)
+    except Exception:
+        return ""
+
+
+def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str, Any]]:
+    """Map menu id to its native center, or its persisted external placement.
+
+    The center identity is the stable native menu XMLID; its display name is
+    only a projection. The original JSON alias consolidation is intentionally
+    not applied: native centers stay as maintained in ``ir.ui.menu``.
+    """
+    if env is None:
+        return {}
+    Menu = env["ir.ui.menu"].sudo()
+    ids = sorted({int(menu_id or 0) for menu_id in menu_ids if int(menu_id or 0) > 0})
+    menus = Menu.browse(ids).exists()
+    result: dict[int, dict[str, Any]] = {}
+    for menu in menus:
+        current = menu
+        center = None
+        for _ in range(32):
+            parent = current.parent_id
+            if not parent:
+                break
+            if _menu_external_id(env, parent) == BUSINESS_ROOT_XMLID:
+                center = current
+                break
+            current = parent
+        if center is None:
+            candidate = getattr(menu, "sc_product_center_id", None)
+            if candidate and candidate.parent_id and _menu_external_id(env, candidate.parent_id) == BUSINESS_ROOT_XMLID:
+                center = candidate
+        if center is not None:
+            result[int(menu.id)] = {
+                "key": _menu_external_id(env, center),
+                "name": _text(center.name),
+                "sequence": int(center.sequence),
+                "entry_sequence": int(menu.sequence),
+            }
+    return result
+
+
+def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
+    """Load maintainable scenario bindings from the Odoo model, server-side."""
+    if env is None:
+        return {}
+    Entry = env["sc.product.scenario.entry"].sudo()
+    result: dict[int, dict[str, Any]] = {}
+    for entry in Entry.search([]):
+        if not entry.menu_id or not entry.scenario_id:
+            continue
+        intent = _text(entry.intent)
+        result[int(entry.menu_id.id)] = {
+            "scenario_key": _text(entry.scenario_id.code),
+            "scenario_name": _text(entry.scenario_id.name),
+            "scenario_active": bool(entry.scenario_id.active),
+            "scenario_sequence": int(entry.scenario_id.sequence),
+            "sequence": int(entry.sequence),
+            "intent": intent,
+            "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+        }
+    return result
+
+
+def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str, Any]:
+    """Project authorized navigation into native-center -> scenario -> entries.
+
+    Reads the maintainable ``sc.product.scenario`` bindings server-side and only
+    re-attaches already-authorized leaves; it never grants authority and never
+    widens the current user's entry set. Entries without an active scenario are
+    kept under their center with ``configured=false`` so authorized work does
+    not silently disappear.
+    """
+    leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
+    center_by_id = _native_center_for_menus(env, [leaf.get("menu_id") for leaf in leaves])
+    scenario_by_menu = _scenario_entries_by_menu(env)
+    centers: dict[str, dict[str, Any]] = {}
+    for leaf in leaves:
+        menu_id = int(leaf.get("menu_id") or 0)
+        # Synthetic menu containers (center headers with a /m/ route and no
+        # stable XMLID) are grouping nodes, not user entries; they must not be
+        # re-attached as children of themselves.
+        if not _text(leaf.get("menu_xmlid")):
+            continue
+        center = center_by_id.get(menu_id)
+        if not center:
+            continue
+        node = centers.setdefault(center["key"], {
+            "key": center["key"],
+            "name": center["name"],
+            "sequence": center["sequence"],
+            "scenarios": {},
+            "entries": [],
+        })
+        entry = dict(leaf)
+        binding = scenario_by_menu.get(menu_id)
+        entry["sequence"] = binding["sequence"] if binding and binding["scenario_active"] else center["entry_sequence"]
+        if binding and binding["scenario_active"]:
+            entry["intent"] = binding["intent"]
+            entry["intent_label"] = binding["intent_label"]
+            entry["configured"] = True
+            scenario_key = binding["scenario_key"]
+            scenario_node = node["scenarios"].setdefault(scenario_key, {
+                "key": scenario_key,
+                "name": binding["scenario_name"],
+                "sequence": binding["scenario_sequence"],
+                "entries": [],
+            })
+            scenario_node["entries"].append(entry)
+        else:
+            entry["intent"] = ""
+            entry["intent_label"] = ""
+            entry["configured"] = False
+            node["entries"].append(entry)
+    center_rows: list[dict[str, Any]] = []
+    for center in sorted(centers.values(), key=lambda item: (item["sequence"], item["key"])):
+        scenarios = []
+        for scenario in sorted(center["scenarios"].values(), key=lambda item: (item["sequence"], item["key"])):
+            scenario["entries"].sort(key=lambda item: (item["sequence"], item["menu_xmlid"], item["menu_id"]))
+            scenarios.append(scenario)
+        center["entries"].sort(key=lambda item: (item["sequence"], item["menu_xmlid"], item["menu_id"]))
+        center_rows.append({
+            "key": center["key"],
+            "name": center["name"],
+            "sequence": center["sequence"],
+            "scenarios": scenarios,
+            "entries": center["entries"],
+        })
+    return {
+        "ok": True,
+        "tree": {"centers": center_rows},
+        "diagnostics": {
+            "authorized_leaf_count": sum(1 for leaf in leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
+            "center_count": len(center_rows),
+            "scenario_count": sum(len(c["scenarios"]) for c in center_rows),
+            "unconfigured_entry_count": sum(len(c["entries"]) for c in center_rows),
+        },
+    }

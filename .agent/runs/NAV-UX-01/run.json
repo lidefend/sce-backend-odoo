@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "NAV-UX-01",
+  "branch": "fix/nav-ux-01-scenario-navigation",
+  "baseline_sha": "149e94e538d1410c58b397708481e3140d822ab3",
+  "status": "active",
+  "goal": ".agent/goals/NAV-UX-01.yaml",
+  "record": "docs/ops/iterations/nav-ux-01-record.md",
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered candidate sc-fe-candidate-770 / sc_frontend_acceptance_candidate, existing volumes; governed acceptance.module.upgrade and acceptance.frontend.fixture_orm only; test mutations roll back. No new environment or daily deployment."
+  },
+  "scope": [
+    "addons/",
+    "config/",
+    "scripts/",
+    "make/",
+    "frontend/apps/web/",
+    "docs/",
+    ".agent/"
+  ],
+  "checks": {
+    "scenario_center_native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/scenario_surface_projection_guard.py"
+      ]
+    },
+    "scenario_center_frontend_lifecycle": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/scenarioSurface.ts",
+        "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Finish frontend PR unit suite, commit reviewed generated changes, then governed pr.push and affected browser receipts on registered candidate.",
+  "review_repair": {
+    "source_head": "0b11950407ef6a622228183ba9767fda0e120012",
+    "layer": "P1 scenario facts and migration; P0 generic frontend authority consumption; P4 affected tests and rollback of abandoned navux profile",
+    "scope": [
+      "scenario seed one-time lifecycle",
+      "native parent chain and persistent external menu center",
+      "scenario entry/native menu sequence",
+      "CI frontend shell authority and session complexity",
+      "CI scenario management action groups",
+      "remove abandoned navux profile and restore strict local-clean guard",
+      "generated evidence and completed run index consistency"
+    ],
+    "validation": "L1 pure projection + migration checks; L2/L3 transactional ORM and actual system.init output in registered candidate environment; browser suites do not prove maintenance semantics",
+    "exclusions": [
+      "No daily deployment",
+      "No expansion of authorized menu sets; management action now enforces the existing menu group",
+      "No frontend product rules",
+      "No new runtime/profile/database"
+    ],
+    "status": "local_fix_verified_publication_pending",
+    "remote_failures": {
+      "source_head": "0b11950407ef6a622228183ba9767fda0e120012",
+      "frontend_release_gate": "41990716716: navigation shell guard expected retired ProductSideNavigation and snapshot chain",
+      "professional_quality_checks": "41990716698: session.ts 2058 > 2005",
+      "backend_suite_0": "41990716698 / 127122905595: 3 failed of 500, action_sc_product_scenario lacks groups_id",
+      "merge_policy_gate": "41990716616: dependent frontend failure"
+    },
+    "results": {
+      "native_projection": "passed: .runtime/nav-ux-01/review810/static.log (40+16+6+21 tests)",
+      "frontend_navigation_and_lifecycle": "passed: .runtime/nav-ux-01/review810/navigation-regression.log (21 shell guard tests; actual store lifecycle and parser authority cases)",
+      "strict_types": "passed: .runtime/nav-ux-01/review810/typecheck.log",
+      "complexity": "passed: .runtime/nav-ux-01/review810/ci-targeted.log (session.ts 1998 <= 2005)",
+      "scenario_orm": "passed: .runtime/nav-ux-01/review810/orm.log, 9 tests, 0 failures/errors; policy fixture seeded inside rollback-only transaction, not persistent candidate configuration",
+      "action_gates": "passed: .runtime/nav-ux-01/review810/action-gates.log; 7 tests, 0 failures/errors, process exit 0",
+      "iteration": "passed before final documentation: .runtime/nav-ux-01/review810/iteration.log",
+      "freeze_prepare": "passed before final documentation: .runtime/nav-ux-01/review810/freeze-prepare.log",
+      "fixture_orm_all": "passed: .runtime/nav-ux-01/review810/fixture-orm-all.log; existing governed entry, 15 tests, 0 failures/errors",
+      "lint": "passed: .runtime/nav-ux-01/review810/lint.log; 0 errors, 1 preexisting StatusPanel formatting warning",
+      "profile_regression": "passed: .runtime/nav-ux-01/review810/profile-regression.log; standard preview Node + Python tests and G1 guard",
+      "frontend_pr_unit": "passed: make verify.frontend.pr.unit, process exit 0, .runtime/nav-ux-01/review810/frontend-pr-unit.log"
+    },
+    "limitations": [
+      "Current candidate persisted construction policies have empty menu_groups; ORM tests initialize explicit policy fixtures within rollback-only transactions. No claim about unchanged persistent candidate accounting exposure.",
+      "Remote results belong to old HEAD; new-head remote CI, independent review and affected browser evidence remain pending."
+    ]
+  }
+}

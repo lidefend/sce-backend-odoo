@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Methods persist versioned initialization markers in the same transaction.
+       Upgrade calls are no-ops, including after operator deletions. -->
+  <data noupdate="0">
+    <function model="sc.product.scenario" name="import_scenario_product_surface"/>
+    <function model="sc.product.scenario" name="initialize_external_navigation_centers"/>
+  </data>
+</odoo>

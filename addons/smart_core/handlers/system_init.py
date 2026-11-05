@@ -2381,6 +2381,7 @@ class SystemInitHandler(BaseIntentHandler):
         _scenario_surface = call_extension_hook_first(
             env,
             "smart_core_scenario_surface_projection",
+            env,
             _final_navigation,
             _final_route_authority,
         )

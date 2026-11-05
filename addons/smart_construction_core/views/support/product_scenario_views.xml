@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_menu_external_product_center" model="ir.ui.view">
+    <field name="name">ir.ui.menu.external.product.center</field>
+    <field name="model">ir.ui.menu</field>
+    <field name="inherit_id" ref="base.edit_menu_access"/>
+    <field name="arch" type="xml">
+      <field name="parent_id" position="after">
+        <field name="sc_product_center_id"/>
+      </field>
+    </field>
+  </record>
+  <record id="view_sc_product_scenario_tree" model="ir.ui.view">
+    <field name="name">sc.product.scenario.tree</field>
+    <field name="model">sc.product.scenario</field>
+    <field name="arch" type="xml">
+      <tree string="业务场景" editable="top">
+        <field name="sequence" widget="handle"/>
+        <field name="code"/>
+        <field name="name"/>
+        <field name="active"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_sc_product_scenario_form" model="ir.ui.view">
+    <field name="name">sc.product.scenario.form</field>
+    <field name="model">sc.product.scenario</field>
+    <field name="arch" type="xml">
+      <form string="业务场景">
+        <sheet>
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+            <field name="sequence"/>
+            <field name="active"/>
+          </group>
+          <group string="说明">
+            <field name="description" colspan="2"/>
+          </group>
+          <group string="导航入口">
+            <field name="entry_ids" nolabel="1">
+              <tree string="导航入口" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="menu_id"/>
+                <field name="menu_xmlid"/>
+                <field name="intent"/>
+              </tree>
+            </field>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_sc_product_scenario" model="ir.actions.act_window">
+    <field name="name">业务场景</field>
+    <field name="res_model">sc.product.scenario</field>
+    <field name="view_mode">tree,form</field>
+    <field name="view_id" ref="view_sc_product_scenario_tree"/>
+    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+  </record>
+
+  <menuitem id="menu_sc_product_scenario_business_config"
+            name="业务场景"
+            parent="smart_construction_core.menu_sc_business_config_center"
+            action="action_sc_product_scenario"
+            sequence="40"
+            groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+
+  <record id="menu_sc_product_scenario_business_config" model="ir.ui.menu">
+    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+  </record>
+</odoo>

@@ -161,17 +161,22 @@ class ScProductPolicy(models.Model):
         }
         rec = self.sudo().search([("product_key", "=", product_key)], limit=1)
         if rec:
-            changed = any(rec[field_name] != field_value for field_name, field_value in values.items())
-            if changed:
-                rec.write(values)
-        else:
-            rec = self.sudo().create(values)
-            changed = True
+            # Once initialized, the policy record is the runtime maintenance
+            # authority. The identity/reference validation above has already
+            # run against the locked contract; a repeated sync must not
+            # overwrite operator edits to grouping, scenes, or capabilities.
+            return {
+                "policy": rec,
+                "contract": contract,
+                "changed": False,
+                "match": None,
+            }
+        rec = self.sudo().create(values)
         match = assert_policy_matches_locked_contract(contract, product_key, rec.menu_groups)
         return {
             "policy": rec,
             "contract": contract,
-            "changed": changed,
+            "changed": True,
             "match": match,
         }
 
@@ -209,6 +214,29 @@ class ScProductPolicy(models.Model):
             menu.write({"groups_id": [(6, 0, [entry.id])]})
             applied += 1
         return {"applied": applied, "skipped": skipped, "total": len(mapping)}
+
+    @api.model
+    def protect_product_menu_records(self):
+        """Mark the maintainable product menu XMLIDs noupdate on every upgrade.
+
+        This is the persistent complement to the one-time 17.0.0.173
+        pre-migration: menus added in a later release are still loaded with
+        noupdate=False, and this function (wired through a data-file function
+        that runs on install and upgrade) marks them after load so operator
+        edits survive the *next* upgrade. Only ``ir.ui.menu`` records of this
+        module are touched; actions, views and security records are untouched.
+        """
+        Data = self.env["ir.model.data"].sudo()
+        marked = 0
+        for row in Data.search([
+            ("model", "=", "ir.ui.menu"),
+            ("module", "=", "smart_construction_core"),
+            ("name", "=like", "menu_sc_%"),
+        ]):
+            if not row.noupdate:
+                row.write({"noupdate": True})
+                marked += 1
+        return {"marked_noupdate": marked}
 
     @api.model
     def _ensure_formal_product_navigation_runtime_params(self):
