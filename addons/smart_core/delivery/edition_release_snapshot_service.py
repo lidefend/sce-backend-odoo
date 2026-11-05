@@ -180,6 +180,7 @@ class EditionReleaseSnapshotService:
             role_code=requested_role_code,
             enforce_release=True,
             enforce_access=True,
+            use_published_policy=False,
         )
         freeze_role_code = self._freeze_role_code(policy, explicit_role_code=requested_role_code)
         delivery = self.delivery_engine.build(
@@ -187,6 +188,7 @@ class EditionReleaseSnapshotService:
             product_key=requested_product_key,
             edition_key=requested_edition_key,
             base_product_key=requested_base_product_key,
+            use_published_policy=False,
         )
         resolved_policy = _dict(policy)
         resolved_delivery = _dict(delivery)
@@ -231,16 +233,8 @@ class EditionReleaseSnapshotService:
             "contract_version": FREEZE_SURFACE_CONTRACT_VERSION,
             "source_authority": self.source_authority_contract(),
             "identity": identity,
-            "policy": {
-                "product_key": effective_product_key,
-                "base_product_key": effective_base_product_key,
-                "edition_key": effective_edition_key,
-                "state": _text(resolved_policy.get("state")),
-                "access_level": _text(resolved_policy.get("access_level")),
-                "allowed_role_codes": deepcopy(_list(resolved_policy.get("allowed_role_codes"))),
-                "label": _text(resolved_policy.get("label")),
-                "version": _text(resolved_policy.get("version")) or "v1",
-            },
+            "policy_snapshot_schema": "maintained_product_policy.v1",
+            "policy": deepcopy(resolved_policy),
             "nav": deepcopy(_list(resolved_delivery.get("nav"))),
             "capabilities": deepcopy(_list(resolved_delivery.get("capabilities"))),
             "scenes": deepcopy(_list(resolved_delivery.get("scenes"))),
@@ -277,13 +271,15 @@ class EditionReleaseSnapshotService:
                         "menu_id": int(menu.get("menu_id") or 0),
                         "action_id": int(menu.get("action_id") or 0),
                         "menu_xmlid": _text(menu.get("menu_xmlid")),
+                        "action_xmlid": _text(menu.get("action_xmlid")),
                         "res_model": _text(menu.get("res_model")),
                         "scene_key": _text(menu.get("scene_key") or menu.get("target_scene_key")),
                     }
                 )
         return rows
 
-    def _draft_fingerprint(self, *, policy: dict[str, Any], pages: list[dict[str, Any]]) -> str:
+    @staticmethod
+    def _draft_fingerprint(*, policy: dict[str, Any], pages: list[dict[str, Any]]) -> str:
         normalized_pages = [
             {
                 "page_key": _text(row.get("page_key")),
@@ -294,6 +290,7 @@ class EditionReleaseSnapshotService:
                 "menu_id": int(row.get("menu_id") or 0),
                 "action_id": int(row.get("action_id") or 0),
                 "menu_xmlid": _text(row.get("menu_xmlid")),
+                **({"action_xmlid": _text(row["action_xmlid"])} if row.get("action_xmlid") else {}),
                 "res_model": _text(row.get("res_model")),
                 "scene_key": _text(row.get("scene_key")),
             }
@@ -369,6 +366,7 @@ class EditionReleaseSnapshotService:
 
     def _target_integrity_check(self, pages: list[dict[str, Any]]) -> dict[str, Any]:
         issues: list[dict[str, Any]] = []
+        seen_keys, seen_menus = set(), set()
         for page in pages:
             if not isinstance(page, dict):
                 continue
@@ -379,12 +377,23 @@ class EditionReleaseSnapshotService:
             menu_id = _to_int(page.get("menu_id"))
             action_id = _to_int(page.get("action_id"))
             res_model = _text(page.get("res_model"))
+            if page_key in seen_keys or (menu_xmlid and menu_xmlid in seen_menus):
+                issues.append(self._issue("DUPLICATE_PAGE_IDENTITY", page, "发布目录存在重复入口身份"))
+            seen_keys.add(page_key)
+            if menu_xmlid:
+                seen_menus.add(menu_xmlid)
             if not page_key:
                 issues.append(self._issue("PAGE_KEY_MISSING", page, "发布页缺少 page_key"))
             if not (route or scene_key or menu_id or action_id):
                 issues.append(self._issue("TARGET_MISSING", page, "发布页缺少可打开目标"))
                 continue
             if route.startswith("/a/"):
+                from urllib.parse import urlsplit, parse_qs
+                parsed = urlsplit(route)
+                expected_path = "/a/%s" % action_id
+                route_menu = parse_qs(parsed.query).get("menu_id", [])
+                if parsed.path != expected_path or (route_menu and route_menu != [str(menu_id)]):
+                    issues.append(self._issue("ACTION_ROUTE_IDENTITY_MISMATCH", page, "路由与菜单/动作身份不一致"))
                 if scene_key:
                     issues.append(self._issue("ACTION_MENU_HAS_SCENE_KEY", page, "Odoo action 菜单不能带 scene_key"))
                 if not action_id:
@@ -480,18 +489,31 @@ class EditionReleaseSnapshotService:
                 if not menu.exists():
                     issues.append(self._issue("SOURCE_MENU_NOT_FOUND", page, "源库菜单不存在"))
                     continue
+                menu_xmlid = _text(page.get("menu_xmlid"))
+                resolved_menu = source_env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else False
+                if not resolved_menu or resolved_menu._name != "ir.ui.menu" or resolved_menu.id != menu_id:
+                    issues.append(self._issue("SOURCE_MENU_XMLID_MISMATCH", page, "菜单 XMLID 与源库记录不一致"))
                 menu_action_id = 0
                 try:
                     menu_action_id = _to_int(menu.action.id)
                 except Exception:
                     menu_action_id = 0
-                if action_id and menu_action_id and action_id != menu_action_id:
+                if action_id and action_id != menu_action_id:
                     issues.append(self._issue("SOURCE_MENU_ACTION_MISMATCH", page, "源库菜单 action 与发布页不一致"))
             if action_id:
                 action = source_env["ir.actions.actions"].sudo().browse(action_id)
                 if not action.exists():
                     issues.append(self._issue("SOURCE_ACTION_NOT_FOUND", page, "源库 action 不存在"))
                     continue
+                action_xmlid = _text(page.get("action_xmlid"))
+                if action_xmlid:
+                    resolved_action = source_env.ref(action_xmlid, raise_if_not_found=False)
+                    if not resolved_action or not resolved_action._name.startswith("ir.actions.") or resolved_action.id != action_id:
+                        issues.append(self._issue("SOURCE_ACTION_XMLID_MISMATCH", page, "动作 XMLID 与源库记录不一致"))
+                action_type = _text(action.type)
+                concrete = source_env[action_type].sudo().browse(action_id) if action_type else action
+                if res_model and _text(getattr(concrete, "res_model", "")) != res_model:
+                    issues.append(self._issue("SOURCE_ACTION_MODEL_MISMATCH", page, "动作模型与发布声明不一致"))
             if res_model and res_model not in getattr(source_env.registry, "models", {}):
                 issues.append(self._issue("SOURCE_MODEL_NOT_FOUND", page, "源库模型不存在"))
         return issues
@@ -643,6 +665,7 @@ class EditionReleaseSnapshotService:
             "preview_page_count": int(draft_contract.get("preview_page_count") or 0),
             "hidden_page_count": int(draft_contract.get("hidden_page_count") or 0),
         }
+        payload["policy_sha256"] = hashlib.sha256(_stable_json(payload["policy"]).encode("utf-8")).hexdigest()
         values = {
             "state": "candidate",
             "product_key": resolved_product_key,
@@ -706,6 +729,36 @@ class EditionReleaseSnapshotService:
         if _text(product_key):
             domain.append(("product_key", "=", _text(product_key)))
         return [row.to_runtime_dict() for row in model.search(domain, order="product_key asc, version desc, id desc")]
+
+    def assert_frozen_release_integrity(self, snapshot):
+        """Verify the frozen declaration independently of later draft edits."""
+        meta = _dict(snapshot.meta_json)
+        draft = _dict(meta.get("release_draft"))
+        pages = _list(draft.get("pages"))
+        frozen = _dict(snapshot.snapshot_json)
+        policy = _dict(frozen.get("policy"))
+        if "policy_snapshot_schema" in frozen:
+            if frozen["policy_snapshot_schema"] != "maintained_product_policy.v1":
+                raise ValueError("RELEASE_SNAPSHOT_POLICY_SCHEMA_UNSUPPORTED")
+            digest = hashlib.sha256(_stable_json(policy).encode("utf-8")).hexdigest()
+            if digest != frozen.get("policy_sha256"):
+                raise ValueError("RELEASE_SNAPSHOT_POLICY_DIGEST_MISMATCH")
+        if not snapshot.source_policy_id or _text(policy.get("product_key")) != snapshot.product_key:
+            raise ValueError("RELEASE_SNAPSHOT_SOURCE_POLICY_MISMATCH")
+        if self._draft_fingerprint(policy=policy, pages=pages) != _text(draft.get("fingerprint")):
+            raise ValueError("RELEASE_SNAPSHOT_FINGERPRINT_MISMATCH")
+        effective = [row for row in pages if row.get("enabled") and row.get("release_state") in {"released", "preview"}]
+        keys = [_text(row.get("page_key")) for row in pages]
+        if not effective or len(set(keys)) != len(keys) or "" in keys:
+            raise ValueError("RELEASE_SNAPSHOT_PAGE_IDENTITIES_INVALID")
+        if len(effective) != int(draft.get("page_count") or 0):
+            raise ValueError("RELEASE_SNAPSHOT_PAGE_COUNT_MISMATCH")
+        if self._target_integrity_check(effective)["blocking"] or self._source_target_check(effective)["blocking"]:
+            raise ValueError("RELEASE_SNAPSHOT_NATIVE_REFERENCE_MISMATCH")
+        return {"exact_match": True, "effective_count": len(effective),
+                "released_count": sum(row["release_state"] == "released" for row in effective),
+                "preview_count": sum(row["release_state"] == "preview" for row in effective),
+                "fingerprint": draft["fingerprint"], "source": "frozen_database_policy"}
 
     def resolve_active_snapshot(self, *, product_key: str) -> dict[str, Any]:
         model = self._model()

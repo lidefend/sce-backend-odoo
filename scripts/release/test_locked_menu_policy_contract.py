@@ -208,8 +208,11 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                 return False
             def __getitem__(self, model):
                 raise AssertionError("must not fabricate native records: " + model)
+        policy = types.SimpleNamespace(env=MissingNativeEnvironment(), search=lambda *args, **kwargs: False)
+        policy.sudo = lambda: policy
+        policy.with_context = lambda **kwargs: policy
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "unresolved action"):
-            namespace[method.name](types.SimpleNamespace(env=MissingNativeEnvironment()), "test")
+            namespace[method.name](policy, "test")
         self.assertEqual(reads, ["test.menu", "test.action"])
 
     def test_fund_archives_are_installed_xml_contracts_not_dynamic_fallbacks(self):

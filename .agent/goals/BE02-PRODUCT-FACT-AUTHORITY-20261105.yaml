@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: BE02-PRODUCT-FACT-AUTHORITY-20261105
+  status: active
+  formal_product_layer: P1
+  objective: 产品目录维护归现有数据库策略，有效发布快照同源，原生身份校验保持

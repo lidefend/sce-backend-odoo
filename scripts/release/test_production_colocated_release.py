@@ -41,22 +41,14 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
         self.assertIn("_text(existing_draft.get(\"fingerprint\")) == fingerprint", self.snapshot)
         self.assertIn('"idempotent": True', self.snapshot)
 
-    def test_snapshot_synchronizes_and_gates_locked_policy_before_freeze(self):
+    def test_snapshot_gates_database_draft_and_frozen_native_references(self):
         body = self.snapshot.split("def main():", 1)[1]
-        sync_at = body.index("synchronize_locked_formal_menu_policy")
-        pre_gate_at = body.index("assert_policy_matches_locked_contract")
-        freeze_at = body.index("freeze_release_surface")
-        # The frozen snapshot is compared on the delivery caliber the locked P1
-        # product definition declares: released pages equal the locked baseline,
-        # declared preview pages equal the policy's preview set, nothing else.
-        # Reverting to the released-only gate would silently retract the
-        # declared preview widening and block the published face from converging.
-        post_gate_at = body.index("assert_snapshot_matches_policy_release_states")
-        self.assertLess(sync_at, pre_gate_at)
-        self.assertLess(pre_gate_at, freeze_at)
-        self.assertLess(freeze_at, post_gate_at)
-        self.assertIn("policy.menu_groups", body[post_gate_at:])
-        self.assertIn("env.cr.rollback()", self.snapshot)
+        self.assertLess(body.index("build_policy_draft_contract"), body.index("freeze_release_surface"))
+        self.assertLess(body.index("freeze_release_surface"), body.index("assert_frozen_release_integrity"))
+        self.assertIn('snapshot.source_policy_id', body)
+        self.assertIn('RELEASE_SNAPSHOT_DRAFT_MISMATCH', body)
+        self.assertNotIn('assert_policy_matches_locked_contract', body)
+        self.assertIn("env.cr.rollback()", body)
 
     def test_formal_synchronization_has_no_catalog_fallback(self):
         method = self.policy_sync.split("def synchronize_locked_formal_menu_policy", 1)[1].split(

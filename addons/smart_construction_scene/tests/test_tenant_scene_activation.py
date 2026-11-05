@@ -115,6 +115,11 @@ class TestActualPublicationConsumers(unittest.TestCase):
         raw = json.loads(source_path.read_text())
         self.expected = {row["menu_xmlid"]: row["release_state"] for row in raw["entries"]}
         self.entries = scene_registry_content.list_scene_entries()
+        gate = types.ModuleType("odoo.addons.smart_core.handlers.system_init")
+        gate._load_platform_release_gate = lambda env, product_key: {"applied": True, "menu_release_states": self.expected}
+        patcher = patch.dict(sys.modules, {gate.__name__: gate})
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_resolved_bindings_preserve_every_declared_release_state(self):
         self.assertNotIn("entries", product_menu_source.load_source())
@@ -128,11 +133,23 @@ class TestActualPublicationConsumers(unittest.TestCase):
             menu = next(key for key, value in self.expected.items() if value == state)
             entries = [{"code": "test.scene", "target": {"menu_xmlid": menu}}]
             self.assertEqual(tenant_scene_activation.resolve_product_released(
-                "test.scene", entries=entries), state == "released")
+                "test.scene", env=object(), entries=entries), state == "released")
+
+    def test_runtime_publication_never_falls_back_to_seed_or_draft(self):
+        with patch.object(product_menu_source, 'load_source', side_effect=AssertionError('seed read')):
+            gate = sys.modules['odoo.addons.smart_core.handlers.system_init']
+            with patch.object(gate, '_load_platform_release_gate', return_value={'applied': False}):
+                self.assertEqual(product_menu_source.load_published_menu_release_states(object()), {})
+            with patch.object(gate, '_load_platform_release_gate', side_effect=[
+                {'applied': True, 'menu_release_states': {'maintained.new': 'released'}},
+                {'applied': True, 'menu_release_states': {'preview.only': 'released'}},
+            ]):
+                self.assertEqual(product_menu_source.load_published_menu_release_states(object()),
+                                 {'maintained.new': 'released', 'preview.only': 'preview'})
 
     def test_unknown_entry_is_not_published(self):
         self.assertFalse(tenant_scene_activation.resolve_product_released(
-            "test.unknown", entries=[{"code": "test.unknown", "target": {"menu_xmlid": "missing.menu"}}]))
+            "test.unknown", env=object(), entries=[{"code": "test.unknown", "target": {"menu_xmlid": "missing.menu"}}]))
 
     def test_invalid_source_is_not_silently_an_empty_publication(self):
         with patch.object(product_menu_source, "load_source", side_effect=ValueError("invalid publication")):
@@ -851,7 +868,7 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
         handler.env, handler.params = Env(1), {}
         release = {f"test.{key}": "released" for key in ("project", "finance", "other")}
         with patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries), \
-             patch.object(product_menu_source, "load_menu_release_states", return_value=release), \
+             patch.object(product_menu_source, "load_published_menu_release_states", return_value=release), \
              patch.object(scenario_surface, "load_runtime_surface", return_value={
                  "scenarios": [{"key": key} for key in ("project", "finance", "other")]}), \
              patch.object(handlers, "_product_surface_index", return_value={

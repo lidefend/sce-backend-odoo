@@ -444,6 +444,20 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
     meta_json = snapshot.get("meta_json") if isinstance(snapshot.get("meta_json"), dict) else {}
     release_draft = meta_json.get("release_draft") if isinstance(meta_json.get("release_draft"), dict) else {}
     pages = release_draft.get("pages") if isinstance(release_draft.get("pages"), list) else []
+    frozen = snapshot.get("snapshot_json") if isinstance(snapshot.get("snapshot_json"), dict) else {}
+    if "policy_snapshot_schema" in frozen:
+        if frozen["policy_snapshot_schema"] != "maintained_product_policy.v1":
+            raise ValueError("PUBLISHED_PRODUCT_POLICY_SCHEMA_UNSUPPORTED")
+        import hashlib
+        policy = frozen.get("policy")
+        if not isinstance(policy, dict) or policy.get("product_key") != snapshot.get("product_key"):
+            raise ValueError("PUBLISHED_PRODUCT_POLICY_INVALID")
+        digest = hashlib.sha256(json.dumps(policy, ensure_ascii=False, sort_keys=True, default=str,
+                                           separators=(",", ":")).encode("utf-8")).hexdigest()
+        if digest != frozen.get("policy_sha256"):
+            raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
+        if EditionReleaseSnapshotService._draft_fingerprint(policy=policy, pages=pages) != release_draft.get("fingerprint"):
+            raise ValueError("PUBLISHED_PRODUCT_PAGES_FINGERPRINT_MISMATCH")
     allowed = {
         "page_keys": set(),
         "menu_keys": set(),
@@ -454,6 +468,7 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
         "action_ids": set(),
     }
     effective_count = 0
+    release_states = {}
     for page in pages:
         if not isinstance(page, dict):
             continue
@@ -462,6 +477,8 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
         if not enabled or release_state not in {"released", "preview"}:
             continue
         effective_count += 1
+        if _text(page.get("menu_xmlid")):
+            release_states[_text(page["menu_xmlid"])] = release_state
         for bucket, key in (
             ("page_keys", "page_key"),
             ("menu_keys", "menu_key"),
@@ -484,6 +501,7 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
         "product_key": _text(snapshot.get("product_key")),
         "page_count": effective_count,
         "total_page_count": len(pages),
+        "menu_release_states": release_states,
         "fingerprint": _text(release_draft.get("fingerprint")),
         "allowed": allowed,
     }

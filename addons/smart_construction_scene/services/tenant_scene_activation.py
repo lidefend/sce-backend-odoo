@@ -107,8 +107,8 @@ def resolve_product_released(
     if scene_key.startswith(BUSINESS_PREFIX):
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
         if release_state_by_menu is None:
-            from odoo.addons.smart_construction_core.services.product_menu_source import load_menu_release_states
-            release_state_by_menu = load_menu_release_states()
+            from odoo.addons.smart_construction_core.services.product_menu_source import load_published_menu_release_states
+            release_state_by_menu = load_published_menu_release_states(env)
         key = scene_key[len(BUSINESS_PREFIX):]
         return any(row["scene_key"] == key and row["product_released"]
                    for row in business_catalog(load_runtime_surface(env), release_state_by_menu, {}))
@@ -117,9 +117,9 @@ def resolve_product_released(
         return False
     if release_state_by_menu is None:
         from odoo.addons.smart_construction_core.services.product_menu_source import (
-            load_menu_release_states,
+            load_published_menu_release_states,
         )
-        release_state_by_menu = load_menu_release_states()
+        release_state_by_menu = load_published_menu_release_states(env)
     return resolve_entry_release_state({"target": {"menu_xmlid": menu_xmlid}}, release_state_by_menu) == "released"
 
 

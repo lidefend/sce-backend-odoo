@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from copy import deepcopy
+
 from odoo import api, models
+from odoo.exceptions import ValidationError
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     MENU_CONFIG_NAV_ENABLED_PARAM,
     NAV_USER_DATA_ACCEPTANCE_ONLY_PARAM,
@@ -23,6 +26,47 @@ def _text(value):
 class ScProductPolicy(models.Model):
     _inherit = "sc.product.policy"
 
+    def set_native_menu_publication(self, menu_id, group_key, release_state="preview"):
+        """Maintain an entry in the existing policy draft; never publish it.
+
+        Same model ACL as the formal product-policy form. Native IDs and action
+        references are resolved here, not copied from a file or another database.
+        """
+        self.ensure_one()
+        self.check_access_rights("write")
+        self.check_access_rule("write")
+        if release_state not in {"released", "preview", "hidden", "retired"}:
+            raise ValidationError("Unsupported native entry release state")
+        menu = self.env["ir.ui.menu"].browse(int(menu_id)).exists()
+        if not menu or not menu.action or menu.action._name != "ir.actions.act_window":
+            raise ValidationError("Select one native window-action menu")
+        menu.ensure_one()
+        menu.check_access_rights("read")
+        menu.check_access_rule("read")
+        xmlid = menu.get_external_id().get(menu.id)
+        action = menu.action
+        action_xmlid = action.get_external_id().get(action.id)
+        if not xmlid or not action_xmlid or not action.res_model or action.res_model not in self.env:
+            raise ValidationError("Stable menu/action identities and an installed model are required")
+        groups = deepcopy(self.menu_groups or [])
+        matches = [group for group in groups if group.get("group_key") == group_key]
+        if len(matches) != 1:
+            raise ValidationError("Select one existing product policy group")
+        target = matches[0]
+        for group in groups:
+            group["menus"] = [row for row in group.get("menus", []) if row.get("menu_xmlid") != xmlid]
+        target["menus"].append({
+            "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
+            "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
+            "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
+            "res_model": action.res_model, "model": action.res_model,
+            "route": "/a/%s?menu_id=%s" % (action.id, menu.id),
+            "enabled": release_state in {"released", "preview"}, "release_state": release_state,
+            "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
+        })
+        self.write({"menu_groups": groups})
+        return True
+
     @api.model
     def synchronize_locked_formal_menu_policy(
         self,
@@ -33,6 +77,11 @@ class ScProductPolicy(models.Model):
     ):
         """Converge one formal construction policy without catalog fallback."""
         product_key = _text(product_key)
+        rec = self.sudo().with_context(active_test=False).search([("product_key", "=", product_key)], limit=1)
+        if rec:
+            # An existing record, including an archived/empty one, is maintained
+            # authority. Seed files are not a prerequisite for using it.
+            return {"policy": rec, "contract": None, "changed": False, "match": None}
         contract = load_locked_menu_policy_contract(
             baseline_path=baseline_path,
             checksum_path=checksum_path,
@@ -159,18 +208,6 @@ class ScProductPolicy(models.Model):
             "capabilities": capabilities,
             "note": "projected from P1 native product facts; release state is tracked separately",
         }
-        rec = self.sudo().search([("product_key", "=", product_key)], limit=1)
-        if rec:
-            # Once initialized, the policy record is the runtime maintenance
-            # authority. The identity/reference validation above has already
-            # run against the locked contract; a repeated sync must not
-            # overwrite operator edits to grouping, scenes, or capabilities.
-            return {
-                "policy": rec,
-                "contract": contract,
-                "changed": False,
-                "match": None,
-            }
         rec = self.sudo().create(values)
         match = assert_policy_matches_locked_contract(contract, product_key, rec.menu_groups)
         return {

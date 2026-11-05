@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 
 try:
     from odoo import SUPERUSER_ID, api
@@ -174,6 +176,46 @@ class ProductPolicyService:
                 return payload
         except Exception:
             return None
+
+    def _load_published_policy(self, *, product_key: str, require_current_schema: bool = False):
+        """Read immutable catalog facts from the configured release database.
+
+        Legacy snapshots have no full policy payload; their old path remains
+        available until an explicit re-freeze. Model writes guard that boundary.
+        """
+        def read(read_env):
+            model = read_env["sc.edition.release.snapshot"].sudo()
+            rec = model.search([("product_key", "=", product_key), ("state", "=", "released"),
+                                ("is_active", "=", True), ("active", "=", True)],
+                               order="released_at desc, activated_at desc, id desc", limit=1)
+            payload = rec.snapshot_json if rec and isinstance(rec.snapshot_json, dict) else {}
+            if not rec:
+                return None
+            if "policy_snapshot_schema" not in payload:
+                if require_current_schema:
+                    raise ValueError("LEGACY_PUBLISHED_POLICY_REQUIRES_REFREEZE")
+                return None
+            if payload.get("policy_snapshot_schema") != "maintained_product_policy.v1":
+                raise ValueError("PUBLISHED_PRODUCT_POLICY_SCHEMA_UNSUPPORTED")
+            policy = payload.get("policy")
+            if not isinstance(policy, dict) or policy.get("product_key") != product_key or not isinstance(policy.get("menu_groups"), list):
+                raise ValueError("PUBLISHED_PRODUCT_POLICY_INVALID")
+            digest = hashlib.sha256(json.dumps(policy, ensure_ascii=False, sort_keys=True, default=str,
+                                                separators=(",", ":")).encode("utf-8")).hexdigest()
+            if digest != payload.get("policy_sha256"):
+                raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
+            return copy.deepcopy(policy)
+        registry_models = getattr(getattr(self.env, "registry", None), "models", {})
+        if "sc.edition.release.snapshot" not in registry_models:
+            return None
+        platform_db = self._platform_policy_db()
+        current = str(getattr(getattr(self.env, "cr", None), "dbname", "") or "")
+        if platform_db == current:
+            return read(self.env)
+        if not platform_db or Registry is None or api is None:
+            return None
+        with Registry(platform_db).cursor() as cr:
+            return read(api.Environment(cr, SUPERUSER_ID, dict(getattr(self.env, "context", {}) or {})))
 
     def _default_product_policy(self) -> dict:
         if callable(call_extension_hook_first):
@@ -426,6 +468,7 @@ class ProductPolicyService:
         role_code: str | None = None,
         enforce_release: bool = False,
         enforce_access: bool = False,
+        use_published_policy: bool = True,
     ) -> dict:
         key, resolved_base_product_key, resolved_edition_key = self.resolve_policy_identity(
             product_key=product_key,
@@ -433,6 +476,24 @@ class ProductPolicyService:
             base_product_key=base_product_key,
         )
         resolved_role_code = str(role_code or "").strip()
+        # Publication uses an explicit argument, never request-supplied context.
+        if enforce_release and use_published_policy:
+            published = self._load_published_policy(product_key=key)
+            if published is not None:
+                allowed = self._access_allowed(published, role_code=resolved_role_code) if enforce_access else True
+                if allowed and self._policy_releaseable(published):
+                    return self._attach_edition_diagnostics(
+                        self._sanitize_scene_version_bindings(published), requested_product_key=key,
+                        requested_base_product_key=resolved_base_product_key, requested_edition_key=resolved_edition_key,
+                        role_code=resolved_role_code, access_allowed=True)
+                if resolved_edition_key != "standard":
+                    fallback = self.get_policy(base_product_key=resolved_base_product_key, edition_key="standard",
+                                               role_code=resolved_role_code, enforce_release=True, enforce_access=enforce_access)
+                    return self._attach_edition_diagnostics(
+                        fallback, requested_product_key=key, requested_base_product_key=resolved_base_product_key,
+                        requested_edition_key=resolved_edition_key, role_code=resolved_role_code,
+                        fallback_reason="EDITION_ACCESS_DENIED", access_allowed=False)
+                raise ValueError("PUBLISHED_PRODUCT_POLICY_ACCESS_DENIED")
         try:
             rec = self.env["sc.product.policy"].sudo().search([("product_key", "=", key), ("active", "=", True)], limit=1)
         except Exception:
@@ -440,19 +501,7 @@ class ProductPolicyService:
         if rec:
             payload = rec.to_runtime_dict()
             if isinstance(payload, dict) and payload.get("product_key"):
-                if self._is_catalog_backed_product(base_product_key=resolved_base_product_key) and self._policy_needs_catalog_refresh(payload):
-                    catalog_payload = self._catalog_backed_policy(product_key=key)
-                    if catalog_payload:
-                        payload = catalog_payload
-                if (
-                    not isinstance(payload.get("policy_source_authority"), dict)
-                    or not self._policy_has_surface(payload)
-                ):
-                    payload = self._minimal_policy_for_resolved_identity(
-                        product_key=key,
-                        base_product_key=resolved_base_product_key,
-                        edition_key=resolved_edition_key,
-                    )
+                payload.setdefault("policy_source_authority", self.source_authority_contract())
                 payload = self._sanitize_scene_version_bindings(payload)
                 access_allowed = self._access_allowed(payload, role_code=resolved_role_code) if enforce_access else True
                 release_allowed = self._policy_releaseable(payload) if enforce_release else True
@@ -480,19 +529,7 @@ class ProductPolicyService:
                 )
         platform_payload = self._load_platform_policy(product_key=key)
         if platform_payload:
-            if self._is_catalog_backed_product(base_product_key=resolved_base_product_key) and self._policy_needs_catalog_refresh(platform_payload):
-                catalog_payload = self._catalog_backed_policy(product_key=key)
-                if catalog_payload:
-                    platform_payload = catalog_payload
-            if (
-                not isinstance(platform_payload.get("policy_source_authority"), dict)
-                or not self._policy_has_surface(platform_payload)
-            ):
-                platform_payload = self._minimal_policy_for_resolved_identity(
-                    product_key=key,
-                    base_product_key=resolved_base_product_key,
-                    edition_key=resolved_edition_key,
-                )
+            platform_payload.setdefault("policy_source_authority", self.source_authority_contract())
             payload = self._sanitize_scene_version_bindings(platform_payload)
             access_allowed = self._access_allowed(payload, role_code=resolved_role_code) if enforce_access else True
             release_allowed = self._policy_releaseable(payload) if enforce_release else True

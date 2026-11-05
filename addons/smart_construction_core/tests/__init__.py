@@ -154,3 +154,5 @@ from . import test_conditioned_processing_feedback
 from . import test_approval_policy_feedback
 
 from . import test_scenario_direct_entry_initialization
+
+from . import test_product_policy_fact_authority
