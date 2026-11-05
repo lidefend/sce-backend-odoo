@@ -212,8 +212,15 @@ def run_operation(operation):
 def main():
     if os.environ.get('SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY') != 'operation_entry_v1':
         raise RuntimeError('use the governed Make entry')
-    expected_db = 'sc_frontend_acceptance_candidate' if _PROFILE == 'candidate' else 'sc_frontend_acceptance'
-    expected_project = 'sc-fe-candidate-770' if _PROFILE == 'candidate' else 'sc-fe-r2-p1-01'
+    if _PROFILE == 'navux_branch':
+        expected_db = 'sc_frontend_acceptance_candidate'
+        expected_project = 'sc-navux-verify'
+    elif _PROFILE == 'candidate':
+        expected_db = 'sc_frontend_acceptance_candidate'
+        expected_project = 'sc-fe-candidate-770'
+    else:
+        expected_db = 'sc_frontend_acceptance'
+        expected_project = 'sc-fe-r2-p1-01'
     if os.environ.get('DB_NAME') != expected_db or os.environ.get('COMPOSE_PROJECT_NAME') != expected_project:
         raise RuntimeError('managed profile mismatch')
     OUTPUT.mkdir(parents=True, exist_ok=True)
