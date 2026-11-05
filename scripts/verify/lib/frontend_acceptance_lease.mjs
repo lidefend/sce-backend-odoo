@@ -50,6 +50,20 @@ export async function acquireAcceptanceLease({ environment, root, mode = 'shared
   await fs.mkdir(leaseRoot, { recursive: true });
   const lockFile = path.join(leaseRoot, `${targetKey}.lock`);
   const holder = await holdFlock(lockFile, mode === 'shared-read');
+  const pendingPath = path.join(leaseRoot, `${targetKey}.module-upgrade-pending.json`);
+  try {
+    // Any pending object (including invalid JSON/symlink) fails closed.
+    try {
+      await fs.lstat(pendingPath);
+      throw new Error('module upgrade recovery pending; acceptance blocked');
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  } catch (error) {
+    holder.stdin.end();
+    holder.kill();
+    throw error;
+  }
   const metadataPath = path.join(leaseRoot, `${targetKey}-${runId}.json`);
   const identity = await processIdentity(process.pid).catch(() => ({ starttime: '', cmdline_hash: '' }));
   const metadata = {

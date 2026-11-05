@@ -709,6 +709,9 @@ PYPROJECTDOM
     ;;
   backend-up)
     preflight
+    if [[ "$PROFILE" == local ]]; then
+      python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py" --check-pending
+    fi
     if validate_backend_identity && [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == true ]]; then
       echo "[backend.acceptance.up] REUSED exact healthy artifact carrier"
       exit 0
@@ -882,8 +885,14 @@ PYPROJECTDOM
     ;;
   module-upgrade)
     preflight
-    : "${MODULE:?MODULE is required}"
-    bash "$ROOT_DIR/scripts/mod/upgrade.sh"
+    if [[ "$PROFILE" != local || "${ACCEPTANCE_UPGRADE_RECOVER:-}" != 1 ]]; then
+      : "${MODULE:?MODULE is required}"
+    fi
+    if [[ "$PROFILE" == local ]]; then
+      python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py"
+    else
+      bash "$ROOT_DIR/scripts/mod/upgrade.sh"
+    fi
     ;;
   baseline-upgrade)
     preflight
@@ -892,7 +901,11 @@ PYPROJECTDOM
     ;;
   release-snapshot)
     preflight
-    bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+    if [[ "$PROFILE" == local ]]; then
+      python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py" --release-snapshot
+    else
+      bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+    fi
     ;;
   page-identity-runtime-ids)
     preflight

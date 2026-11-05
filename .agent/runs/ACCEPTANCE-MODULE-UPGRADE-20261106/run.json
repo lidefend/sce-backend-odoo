@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-MODULE-UPGRADE-20261106",
+  "branch": "fix/acceptance-module-upgrade-lifecycle-20261106",
+  "baseline_sha": "f12dccbd590e3499c7b7de38a28ea52ebb0c6ccc",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ACCEPTANCE-MODULE-UPGRADE-20261106.yaml",
+  "record": ".agent/runs/ACCEPTANCE-MODULE-UPGRADE-20261106/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/ACCEPTANCE-MODULE-UPGRADE-20261106/run.json",
+    ".agent/goals/ACCEPTANCE-MODULE-UPGRADE-20261106.yaml",
+    "scripts/dev/frontend_acceptance_module_upgrade.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "make/runtime_ops.mk",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/mod/upgrade.sh",
+    "scripts/dev/backend_acceptance_up.sh",
+    "scripts/verify/lib/frontend_acceptance_lease.mjs",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/common/frontend_acceptance_attempt.sh",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "existing local acceptance module-upgrade lifecycle",
+    "module": "scripts/dev managed acceptance tooling",
+    "standard_vs_user_specific": "generic managed local acceptance mechanism",
+    "why_here": "serialize and quiesce exact writers before existing non-reset upgrade",
+    "why_not_elsewhere": "no product semantics, database schema, role or frontend changes",
+    "exclusions": [
+      "runtime/Docker/database writes by this agent",
+      "new environment or credentials",
+      "DB reset/rollback",
+      "frontend tree mutations"
+    ]
+  },
+  "execution_results": {
+    "readonly_resource_identity": {
+      "status": "passed",
+      "source": "root and be00 independent read-only Docker metadata",
+      "facts": "Both registered Odoo writers running with exact local database/filter/project/service/filestore; rollback custody exited and retained"
+    },
+    "targeted": {
+      "status": "passed",
+      "entry": "make verify.acceptance.runtime.baseline_rebuild.unit",
+      "tests": 155,
+      "log": ".runtime/acceptance-module-upgrade/targeted-custody-final.log",
+      "detail": "24 candidate profile +10 artifact +121 lifecycle/profile/identity; no runtime writes"
+    },
+    "iteration": {
+      "status": "passed",
+      "entry": "make ci.local.iteration",
+      "log": ".runtime/acceptance-module-upgrade/iteration-prestart-final.log"
+    },
+    "runtime": {
+      "status": "not_run",
+      "reason": "Root exclusively owns frontend/runtime; this batch tests orchestration offline, actual upgrade and backend.up readback remain pending"
+    },
+    "independent_review": {
+      "status": "failed",
+      "sha": "3c21226913b7b8b1be1cbabae5a6be920fca1e3d",
+      "finding": "S1 interrupted bash did not prove Docker upgrade writer stopped; fixing exact attempt identity and held-lease container cleanup"
+    },
+    "review_fix": {
+      "status": "verification_pending",
+      "detail": "S1 fixes: exact attempt Docker identity/readback, atomic persistent pending marker and explicit no-replay recovery; interrupted attempts always retain pending. Snapshot holds same dual leases and custody through full isolated shell lifecycle. S2 pre-spawn failures restore original writers; interruption with pending custody never takes pre-start recovery even before callback."
+    },
+    "final_profile": {
+      "status": "passed",
+      "entry": "python3 -m unittest scripts.verify.test_frontend_acceptance_runtime_profile",
+      "tests": 42,
+      "log": ".runtime/acceptance-module-upgrade/prestart-final.log",
+      "detail": "Final S2 regression: pre-spawn ps/marker/Popen failure restores prior writer state; spawn-callback interruption preserves stopped state and pending. 29 new tests total."
+    },
+    "publication_preflight": {
+      "status": "failed",
+      "sha": "afd55bef8b814622230c977e43c7838b779a733f",
+      "log": ".runtime/acceptance-module-upgrade/publish.log",
+      "reason": "New lifecycle helper hit broad isolated-acceptance-entry-identity rule and incorrectly required list_surface_structure browser evidence. No push occurred; root authorized exact addition to existing carrier lifecycle rule, preserving deployment identity and adjacent product obligations."
+    },
+    "classification": {
+      "status": "passed",
+      "entry": "make verify.acceptance.evolution.binding",
+      "log": ".runtime/acceptance-module-upgrade/classification.log",
+      "detail": "Exact lifecycle helper mapping only; deployment identity retained, adjacent browser/contract and mixed product paths retain list evidence. Merge plan ready_for_existing_gates."
+    }
+  },
+  "next_exact_step": "Independent exact-SHA review and governed PR; root alone integrates tools and executes non-reset upgrade then same-SHA backend.up/readback",
+  "risk_and_rollback": {
+    "shared_refs": "Root FE575685 full Quick tests passed but receipt refresh failed after concurrent governance commits changed shared refs. No receipt claimed; finish this PR/integration, freeze all agent refs before root final Quick. No Quick proof protocol change.",
+    "runtime": "No runtime writes performed by governance agent. Module upgrade/snapshot are non-reset; interruption keeps identity-bound custody. Operator performs explicit recover (no replay) and same-SHA backend.up/readback.",
+    "rollback": "Revert P4 commits through protected flow; never infer database rollback from code rollback."
+  }
+}

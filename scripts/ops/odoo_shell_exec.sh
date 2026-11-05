@@ -29,11 +29,12 @@ while IFS='=' read -r env_name _; do
 done < <(env)
 
 if [[ "${ODOO_SHELL_RUN_ISOLATED:-0}" == "1" ]]; then
+  source "$(dirname "$0")/../common/frontend_acceptance_attempt.sh"
   # The acceptance fixture must not depend on the lifecycle or stale mounts of
   # the daily Odoo service. Compose run creates a disposable shell carrier with
   # the currently declared volumes and removes it after the transaction.
   # shellcheck disable=SC2086
-  compose ${COMPOSE_FILES} run --rm --no-deps -T --entrypoint odoo "${ENV_FORWARD_ARGS[@]}" \
+  compose ${COMPOSE_FILES} run --rm --no-deps -T "${acceptance_attempt_args[@]}" --entrypoint odoo "${ENV_FORWARD_ARGS[@]}" \
     -e ODOO_DB="$DB_NAME" -e DB_NAME="$DB_NAME" \
     -e ODOO_DBFILTER="^${DB_NAME//./\\.}\$" \
     -e DB_HOST="${DB_HOST:-db}" -e DB_PORT="${DB_PORT:-5432}" \

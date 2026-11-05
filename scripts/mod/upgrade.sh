@@ -24,7 +24,11 @@ if [[ -n "${SC_CUSTOMER_ADDONS_ROOT:-}" ]]; then
   ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH},/mnt/customer-addons"
 fi
 
-compose_dev run --rm -T \
+# Only the governed local acceptance lifecycle owns a named disposable writer.
+# Other module upgrade callers keep their existing Compose invocation.
+source "$ROOT_DIR/scripts/common/frontend_acceptance_attempt.sh"
+
+compose_dev run --rm -T "${acceptance_attempt_args[@]}" \
   -e SC_ENVIRONMENT \
   -e SC_ALLOW_DEMO_DATA \
   -e SC_DEMO_USER_PASSWORD \

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5106`
+- Scanned files: `5108`
 - Files requiring split plan: `73`
 - Files above warning threshold: `148`
 
@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 959 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 972 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 622 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -104,8 +104,8 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
+| 1379 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
-| 1361 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |

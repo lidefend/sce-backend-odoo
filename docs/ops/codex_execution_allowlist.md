@@ -785,6 +785,38 @@ Codex **被授权自行进入 gate 模式**。
 
 ---
 
+### 本地隔离验收的非重置模块升级
+
+已授权验收使用既有 `make acceptance.module.upgrade SC_ACCEPTANCE_RUNTIME_PROFILE=local
+EXPECTED_HEAD=<完整当前SHA> MODULE=<逐项模块名,逗号分隔> CODEX_NEED_UPGRADE=1`。
+入口必须匹配注册 profile、精确数据库/filter/filestore 和干净源码；禁止 `all`、额外
+`ODOO_ARGS` 及未声明客户源码。现有 `MODE`/升级授权守卫仍适用。
+
+升级与两个注册预览地址的浏览器/后端替换共用互斥租约。先核对 Compose Odoo 与独立
+artifact 后端的容器身份及原状态，再停止并回读；未知运行写入者拒绝，已退出的 rollback
+容器保留。调用 `-u` 前中止会恢复本次停止的原运行服务；一旦开始升级，成功或失败均
+有意保持两类旧 registry 停止，不执行数据库回退、重建或 fixture 重置。
+
+成功只表示模块升级完成，`registry_pending=true`；随后在同一干净 SHA 通过既有
+`make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 建立当前 artifact，
+完成健康及业务契约回读才可继续验收。Compose Odoo 原为 running 也有意保持 stopped，
+HTTP 由当前 artifact 提供。本地 `acceptance.frontend.release_snapshot` 使用既有隔离
+shell 模式，不依赖启动旧 Compose registry；其他 profile 与 CI 路径保持既有行为。
+失败后不得把旧源码服务重启当作数据库恢复，须依据升级日志处理后再受管重试。
+
+每次 `-u` 使用唯一容器名与标签；在持有双租约时原子记录相同作用域的 pending 标记，
+中断先结束本次 CLI 进程组，再按精确容器名/标签停止并回读一次性升级写入者。
+中断场景即使当时已确认停止也保留 pending，须显式恢复，防止 daemon 排队请求迟到。
+只有确认该写入者不存在或已停止后才清除标记。daemon 不可达、身份不符或标记损坏
+保持 `RECOVERY_PENDING`，后端启动/复用及浏览器租约均拒绝，不宣称安全完成。
+恢复沿原入口增加 `ACCEPTANCE_UPGRADE_RECOVER=1`，须仍绑定记录中的 clean SHA、
+MODULE 与 profile：仅回收该次写入者、确认停止并清标记，绝不自动重放 `-u`。
+恢复后是否重试升级，由操作者显式再次调用原模块升级入口。
+本地发布快照的隔离 shell 从检查到写入结束全程持有相同双租约，并复用相同命名容器
+与 pending 收容机制；快照 pending 的恢复沿该原入口指定 `MODULE=`（空值），按标记
+的源码及 profile 回收，不会重放快照或模块升级。
+
+
 ## 5. 失败即许可（Failure Is Allowed）
 
 Gate / Smoke / Snapshot 失败 **允许发生**。
