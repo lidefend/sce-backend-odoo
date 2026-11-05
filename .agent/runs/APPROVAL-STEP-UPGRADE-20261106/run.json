@@ -23,7 +23,10 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "addons/smart_construction_core/data/approval_policy_seed.xml"
+    "addons/smart_construction_core/data/approval_policy_seed.xml",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
   ],
   "checks": {},
   "environment": {
@@ -31,7 +34,7 @@
     "authority": "existing local.test sc_test; fresh once per attempt, two upgrades within same locked attempt; daily dev untouched"
   },
   "layer": {
-    "formal_product_layer": "P1 seed write authority; P4 bounded existing runner extension",
+    "formal_product_layer": "P1 seed write authority; P4 bounded existing runner extension and acceptance-rule classification",
     "layer_target": "sc.approval.policy initialization",
     "module": "smart_construction_core",
     "standard_vs_user_specific": "standard product initialization, administrator facts preserved",

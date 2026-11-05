@@ -361,6 +361,68 @@ class TestGlobAndPlan(unittest.TestCase):
                 plan = guard.build_plan(self.registry, [catalog, other], "base", HEAD)
                 self.assertTrue(required.issubset(plan["required_evidence_suites"]))
 
+    def test_approval_policy_initialization_paths_use_backend_contract(self):
+        paths = [
+            "addons/smart_construction_core/data/approval_policy_seed.xml",
+            "addons/smart_construction_core/data/approval_policy_tier_sync.xml",
+            "addons/smart_construction_core/tests/test_approval_step_upgrade.py",
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                plan = guard.build_plan(self.registry, [path], "base", HEAD)
+                self.assertEqual(plan["matched_rules"][path], "approval-policy-initialization")
+                self.assertEqual(plan["required_suites"], ["backend_contract"])
+                self.assertEqual(plan["required_evidence_suites"], [])
+
+    def test_approval_policy_initializer_condition_is_scoped(self):
+        before = (
+            "class ScApprovalPolicy(models.Model):\n"
+            "    def apply_user_visible_approval_templates(self):\n"
+            "        return True\n"
+            "\n"
+            "    def sync_tier_definitions(self):\n"
+            "        return self.env['x']\n"
+        )
+        after_init = before.replace(
+            "        return True\n",
+            "        module = self.env['ir.module.module']\n"
+            "        return bool(module)\n",
+        )
+        after_other = before.replace("self.env['x']", "self.env['y']")
+        self.assertTrue(guard.approval_policy_initialization_only(before, after_init))
+        self.assertFalse(guard.approval_policy_initialization_only(before, after_other))
+        self.assertFalse(
+            guard.approval_policy_initialization_only(
+                "class ScApprovalPolicy(models.Model):\n    pass\n",
+                "class ScApprovalPolicy(models.Model):\n    pass\n",
+            )
+        )
+
+        path = "addons/smart_construction_core/models/support/approval_policy.py"
+        with patch.object(guard, "_git", side_effect=[before, OTHER, after_init]):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "approval-policy-initializer-method")
+        self.assertNotIn("list_surface_structure", plan["required_suites"])
+        self.assertNotIn("relation_roundtrip", plan["required_suites"])
+
+        with patch.object(guard, "_git", side_effect=[before, OTHER, after_other]):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "construction-product-runtime")
+        self.assertIn("list_surface_structure", plan["required_suites"])
+        self.assertIn("relation_roundtrip", plan["required_suites"])
+
+    def test_approval_policy_initialization_does_not_mask_other_construction_files(self):
+        path = "addons/smart_construction_core/data/approval_policy_seed.xml"
+        for other, required in (
+            ("addons/smart_construction_core/models/core/project.py", {"list_surface_structure", "relation_roundtrip"}),
+            ("addons/smart_construction_core/services/new_service.py", {"list_surface_structure", "relation_roundtrip"}),
+            ("frontend/apps/web/src/views/ActionView.vue", {"list_surface_structure"}),
+            ("scripts/verify/record_relation_roundtrip_acceptance.js", {"relation_roundtrip"}),
+        ):
+            with self.subTest(path=other):
+                plan = guard.build_plan(self.registry, [path, other], "base", HEAD)
+                self.assertTrue(required.issubset(plan["required_evidence_suites"]))
+
     def test_manifest_version_only_requires_literal_equivalent_nonversion_metadata(self):
         before = "{'version': '1', 'depends': ['base'], 'data': ['a.xml']}"
         self.assertTrue(guard.manifest_version_only(before, before.replace("'1'", "'2'")))

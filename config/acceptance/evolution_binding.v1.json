@@ -608,6 +608,29 @@
       ]
     },
     {
+      "id": "approval-policy-initialization",
+      "description": "Approval policy step seed initialization and maintenance authority (forcecreate=0, install-only initializer). Backend contract coverage; no list layout or relation-field behavior. Exact paths only; mixed business changes retain their own suites.",
+      "paths": [
+        "addons/smart_construction_core/data/approval_policy_seed.xml",
+        "addons/smart_construction_core/data/approval_policy_tier_sync.xml",
+        "addons/smart_construction_core/tests/test_approval_step_upgrade.py"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "approval-policy-initializer-method",
+      "description": "Change confined to ScApprovalPolicy.apply_user_visible_approval_templates. Backend contract coverage; any other method change in the shared model file keeps construction-product-runtime suites.",
+      "paths": [
+        "addons/smart_construction_core/models/support/approval_policy.py"
+      ],
+      "condition": "approval_policy_initialization_only",
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
       "id": "construction-product-runtime",
       "paths": [
         "addons/smart_construction_core/**",
