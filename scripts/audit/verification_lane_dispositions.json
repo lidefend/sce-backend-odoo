@@ -3414,6 +3414,18 @@
       "disposition": "demo_runbook",
       "owner": "construction-product",
       "reason": "BE00-BE01 owner-approved five-menu scenario exemption maintenance; exact demo UUID, source SHA and menu IDs, default readback. Operator-only, not automatic initialization or CI. Independent implementation review passed; remove after this database reconciliation is retired."
+    },
+    "local.dev.payment_entry.probe": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "sc_dev_demo 按支付菜单 XMLID 和 demo_role_finance 登录名发现 ID/允许公司并逐层只读诊断；缺字段时只输出结构与候选身份。READ ONLY 及回滚，不支付/撤销、不改权限；不是固定339/908/公司1断言。需既有活栈，按需运行，不进入自动 Quick/CI。",
+      "review_by": "2027-03-31"
+    },
+    "local.dev.payment_entry.configure": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "sc_dev_demo 固定支付入口配置运维：默认 plan 只读回滚；apply 需精确确认及既有写租约，通过正式方法维护发布参数、冻结/发布快照和企业启用并回读；可能提交配置，禁止自动 Quick/CI。不得修改角色、ACL、场景豁免或关联；不是只读探针。",
+      "review_by": "2027-03-31"
     }
   },
   "scripts": {

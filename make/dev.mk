@@ -1541,6 +1541,24 @@ local.dev.runtime.entry_target.probe: guard.prod.forbid local.dev.ready
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_entry_target_probe.py
 
+.PHONY: local.dev.payment_entry.probe
+local.dev.payment_entry.probe: guard.prod.forbid local.dev.ready
+	@python3 -m unittest scripts.verify.test_local_dev_payment_entry_probe
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_payment_entry_probe.py
+
+.PHONY: local.dev.payment_entry.configure local.dev.payment_entry.configure.run
+local.dev.payment_entry.configure: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "payment-entry-configuration" -- \
+	  $(MAKE) --no-print-directory local.dev.payment_entry.configure.run
+
+local.dev.payment_entry.configure.run: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@python3 -m unittest scripts.verify.test_local_dev_payment_entry_configuration
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/ops/local_dev_payment_entry_configuration.py
+
 # Read-only cache-identity probe for the R2 relation-demand boundary: where the
 # R2 methods run relative to the persisted runtime-source write, and whether the
 # persisted source token covers the affected code identity. Rollback-only writes,

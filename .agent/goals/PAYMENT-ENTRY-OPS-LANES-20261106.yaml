@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: PAYMENT-ENTRY-OPS-LANES-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 为已有支付入口运维工具按真实读写行为登记验证车道
