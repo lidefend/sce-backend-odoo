@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "id": "BE00-BE01-FACT-CLOSURE-20261105",
+  "branch": "refactor/be00-be01-fact-closure-20261105",
+  "baseline_sha": "c819daff496deab474bf97b84031bfd50db148bc",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BE00-BE01-FACT-CLOSURE-20261105.yaml",
+  "record": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE00-BE01-FACT-CLOSURE-20261105.yaml",
+    ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
+    "docs/architecture/backend_fact_convergence_be00_be01_20261105.md",
+    "scripts/verify/daily_demo_business_readiness.py",
+    "scripts/verify/test_daily_demo_business_readiness.py",
+    "make/role_authority.mk",
+    "scripts/ops/daily_demo_scenario_configuration.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing governed daily-development server duties; inspect only before any upgrade/data write; no new environment"
+  },
+  "blockers": [],
+  "next_exact_step": "BE02: trace menu 720 native publication and migrate catalog authority to maintained Odoo facts without modifying scenario exemptions or frontend",
+  "layer": {
+    "formal_product_layer": "P1 with bounded P4 readback tooling if needed",
+    "layer_target": "smart_construction_core / smart_construction_scene maintained facts",
+    "standard_vs_user_specific": "industry standard with administrator-owned database records",
+    "why_here": "Reuse existing Odoo models and contract consumers",
+    "why_not_elsewhere": "No frontend business inference or new configuration authority",
+    "blast_radius": "Scenario bindings/exemptions/company enablement; preserve ACL and contract shape"
+  },
+  "parallel_frontend": {
+    "branch": "codex/fe-converge-01-presentation",
+    "observed_head": "bf37c33e139d7465dd5bd3f15cce6530f048ac8c",
+    "status": "existing active work; not overwritten",
+    "interface": "Existing public contracts unchanged; no frontend modifications in BE batch"
+  },
+  "batches": [
+    "BE00+BE01 current",
+    "BE02 product catalog authority next",
+    "BE03-BE06 page/payment configuration after BE02"
+  ],
+  "acceptance": "Administrator facts drive consistent navigation/server entry decisions across requests and upgrades without frontend edits",
+  "report_dimensions": [
+    "config-only adjustments now available",
+    "deleted duplicate/file dependencies",
+    "remaining code and reasons"
+  ],
+  "owner_decision": {
+    "approved": true,
+    "scope": "Explicit scenario exemption for exactly five identified maintenance menus; native publication/ACL/company scope retained",
+    "source": "User 同意 after five-menu proposal"
+  },
+  "deployment_source": "/home/lidefend/workspace/sce-backend-odoo-mainline-deploy @ release/be01-daily-c819daff",
+  "evidence": {
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/be00-be01-iteration.log",
+      "coverage": "L1 only"
+    },
+    "targeted_unit": {
+      "status": "passed",
+      "tests": 14,
+      "target": "verify.daily.demo.business_readiness.unit"
+    },
+    "before_upgrade_observation": {
+      "status": "passed",
+      "log": ".runtime/be00-be01-scenario-before.log",
+      "source_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+      "database_writes": 0
+    },
+    "release_plan": {
+      "status": "passed",
+      "log": ".runtime/be00-be01-release-plan.log",
+      "execution": "executed through registered component Make targets on existing clean release worktree"
+    },
+    "independent_review": {
+      "status": "passed",
+      "reviewer": "independent_ci_review",
+      "limitation_fixed": "Menu search is not an exhaustive database exemption inventory"
+    },
+    "runtime_authorization_acceptance": {
+      "status": "passed",
+      "coverage": "Non-super demo_full actual SystemInit and server authority service, no HTTP/browser; searchable action menus only",
+      "log": ".runtime/be01-delivery.log",
+      "counts": {
+        "missing_denied": 291,
+        "bound_allowed": 72,
+        "bound_denied": 7,
+        "exempt_allowed": 4,
+        "exempt_denied": 1
+      },
+      "review": "Independent review approved direct checking of every nav pair and nonzero coverage"
+    },
+    "configuration": {
+      "status": "passed",
+      "log": ".runtime/be01-configure.log",
+      "readback": ".runtime/be01-readback.log",
+      "changed_fields": [
+        "sc_scenario_exempt"
+      ],
+      "menu_ids": [
+        431,
+        424,
+        445,
+        432,
+        720
+      ],
+      "roles_unchanged": true
+    },
+    "deployment": {
+      "status": "passed",
+      "source_sha": "c819daff496deab474bf97b84031bfd50db148bc",
+      "evidence_root": "/home/lidefend/workspace/sce-backend-odoo-mainline-deploy/.runtime/be01",
+      "checks": [
+        "bundle-sync.json",
+        "frontend-build.json",
+        "refresh.json",
+        "upgrade.json",
+        "entry.json"
+      ]
+    },
+    "repeat_upgrade": {
+      "status": "passed",
+      "report": "/home/lidefend/workspace/sce-backend-odoo-mainline-deploy/.runtime/be01/repeat-upgrade.json",
+      "readback": ".runtime/be01-repeat-readback.log",
+      "authorization": ".runtime/be01-repeat-delivery.log",
+      "five_exemptions_preserved": true
+    }
+  },
+  "checks": {},
+  "remaining_gaps": [
+    "Business scenario menu 720 is explicitly exempt but absent from published native authority; BE02 must close catalog maintenance/publication. Do not bypass native qualification.",
+    "No HTTP/browser journey in this batch; prior exact-source fixture tests cover revocation/deletion, not repeated destructive edits to daily data."
+  ],
+  "completion_dimensions": {
+    "batch": "five-menu authorized configuration complete; overall architecture convergence verification_pending",
+    "mainline": "c819 already integrated; this batch P4 tooling not published",
+    "deployment": "c819 deployed, module upgrade and entry identity PASS",
+    "user_acceptance": "four configuration entries allowed by actual navigation/server authority; business-scenario entry still denied; no HTTP/browser journey"
+  }
+}

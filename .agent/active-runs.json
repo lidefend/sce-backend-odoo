@@ -76,6 +76,7 @@
     "fix/ci-execution-alignment-20261105": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
     "audit/runtime-evolution-roadmap-20261105": ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json",
     "refactor/scenario-fact-authority-20261105": ".agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json",
-    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json"
+    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+    "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json"
   }
 }
