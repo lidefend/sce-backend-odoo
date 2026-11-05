@@ -19,6 +19,9 @@
     "scripts/verify/capability_provider_reconciliation.py",
     "scripts/verify/test_capability_provider_reconciliation.py",
     "scripts/verify/capability_d03_conclusion.py",
+    "scripts/verify/module_capability_index.py",
+    "scripts/verify/test_module_capability_index.py",
+    "docs/product/capability_candidate_catalog_v1.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md"
@@ -37,8 +40,9 @@
     "evidence_verification_finding": "ALL 31 non-contract capabilities have provider_type=unknown / provider_ref='' / pending_reason='provider not yet reconciled'; they are provider_unreconciled, not provider_only; 0 have a real reconciled action/model/intent provider",
     "provider_reconciliation_unit": "PASS offline: 1 test (test_capability_provider_reconciliation.py)",
     "provider_reconciliation_data": "31 non-contract capabilities: provider_verified(intent handler)=4 (project.dashboard.enter, project.plan_bootstrap.enter, project.execution.enter, project.execution.advance); composite_unreconciled=7; platform_mechanism=1; unresolved(scene-only)=6; no_provider_found=13; delivery delivered=0, partial=15, undelivered=16",
-    "d03_conclusion": "5 deliverables emitted: provider reconciliation + delivery matrix + composition matrix + scene identity + conclusion; composite capabilities depend on contract-ready atomics (mostly project.list.open); 4 provider_verified / 13 no_provider / 6 scene-only / 7 composite / 1 platform"
+    "d03_conclusion": "5 deliverables emitted: provider reconciliation + delivery matrix + composition matrix + scene identity + conclusion; composite capabilities depend on contract-ready atomics (mostly project.list.open); 4 provider_verified / 13 no_provider / 6 scene-only / 7 composite / 1 platform",
+    "d04_first_batch_provider_alignment": "PASS: corrected 4 verified odoo_intent provider bindings (project.dashboard.enter, project.plan_bootstrap.enter, project.execution.enter, project.execution.advance) with handler file evidence; added _provider_module odoo_intent resolution from contract_ref; reverse_index now maps these 4 to smart_construction_core"
   },
   "blockers": [],
-  "next_exact_step": "CAP-02D-03 all 5 deliverables emitted; await owner decision: (a) reconcile 4 provider_verified, (b) productize-or-drop 13 no_provider_found, (c) converge 7 composite, (d) then CAP-02D-04 contract/scene gap fill"
+  "next_exact_step": "CAP-02D-04 first batch (4 provider alignments) done; continue with 6 unresolved execution-chain verification, 6 composite convergence, 13 no-provider product decisions"
 }
