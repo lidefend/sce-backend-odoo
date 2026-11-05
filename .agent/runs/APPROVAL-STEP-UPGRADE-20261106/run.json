@@ -45,7 +45,7 @@
       "PR814/815 source"
     ]
   },
-  "next_exact_step": "Commit scoped P1 and P4 changes, independent review of final tree and actual upgrade evidence; no main integration or daily deployment claimed",
+  "next_exact_step": "Synchronize preserved approval candidate onto exact current main; validate bounded environment option and rerun governed isolated upgrade scenario against current integration inputs; publish independent PR.",
   "execution_results": {
     "runner_unit": {
       "status": "passed",
@@ -84,6 +84,18 @@
         "receipt": ".runtime/test-baseline/1793907667860543470/receipt.json",
         "reason": "owned attempt stopped when seed recreation defect confirmed; not a pass"
       }
-    ]
+    ],
+    "runner_environment_option": {
+      "status": "passed",
+      "count": 14,
+      "log": ".runtime/approval-current-runner-unit.log"
+    }
+  },
+  "sync_attempt": {
+    "main": "ef3851c103f74a10a767d30156561d4d015489e6",
+    "status": "safely_restored",
+    "log": ".runtime/approval-current-main-sync.log",
+    "reason": "candidate make/dev.mk parameter-only change rejected by exact generator Make authority",
+    "resolution": "keep Make recipe unchanged; existing runner reads explicit LOCAL_TEST_UPGRADE_SCENARIO with original module/scenario checks"
   }
 }

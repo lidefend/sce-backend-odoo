@@ -7,6 +7,20 @@ from scripts.dev import local_test_runner as runner
 
 
 class LocalTestRunnerTest(unittest.TestCase):
+    def test_make_environment_scenario_is_validated_before_runtime(self):
+        for scenario, module, valid in (
+            ('payment_approval_order', 'smart_construction_core', True),
+            ('payment_approval_order', 'smart_core', False),
+            ('unknown', 'smart_construction_core', False),
+        ):
+            with self.subTest(scenario=scenario, module=module), \
+                    patch.dict(runner.os.environ, {'LOCAL_TEST_UPGRADE_SCENARIO': scenario}), \
+                    patch.object(runner, 'profile', side_effect=ValueError('test stop before runtime')) as profile, \
+                    patch.object(runner, 'command') as command:
+                self.assertEqual(runner.main(['test', '--module', module]), 2)
+                self.assertEqual(profile.called, valid)
+                command.assert_not_called()
+
     def test_upgrade_scenario_is_bounded_to_fresh_test_module(self):
         self.assertEqual(runner.upgrade_rehearsal_script('', 'smart_core'), '')
         with self.assertRaises(ValueError):

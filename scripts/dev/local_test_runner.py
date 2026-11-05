@@ -169,7 +169,8 @@ def main(argv=None):
     ap.add_argument('--env-file', type=Path, default=PROFILE)
     ap.add_argument('--module', default='')
     ap.add_argument('--tags', default='')
-    ap.add_argument('--upgrade-scenario', choices=['', 'payment_approval_order'], default='')
+    ap.add_argument('--upgrade-scenario', choices=['', 'payment_approval_order'],
+                    default=os.environ.get('LOCAL_TEST_UPGRADE_SCENARIO', ''))
     ap.add_argument('--order', choices=['forward','reverse','random'], default='forward')
     args = ap.parse_args(argv)
     try:
