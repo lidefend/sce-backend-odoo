@@ -126,7 +126,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         entry = self.env['sc.product.scenario.entry'].sudo().search([('menu_id', '=', self.menu.id)])
         entry.unlink()
         direct = self.env['ir.ui.menu'].sudo().create({
-            'name': 'Legacy direct test entry', 'action': 'ir.actions.act_window,%s' % self.menu.action.id,
+            'name': 'Explicit direct test entry', 'sc_scenario_exempt': True, 'action': 'ir.actions.act_window,%s' % self.menu.action.id,
         })
         params.set_param(marker, False)
         scenario.initialize_direct_entry_exemptions()
@@ -135,6 +135,38 @@ class TestBusinessSceneLifecycle(TransactionCase):
         direct.sc_scenario_exempt = False
         scenario.initialize_direct_entry_exemptions()
         self.assertFalse(direct.sc_scenario_exempt)
+
+    def test_custom_binding_deleted_before_upgrade_stays_unconfigured(self):
+        Scenario = self.env['sc.product.scenario'].sudo()
+        Entry = self.env['sc.product.scenario.entry'].sudo()
+        Menu = self.env['ir.ui.menu'].sudo()
+        params = self.env['ir.config_parameter'].sudo()
+        marker = 'smart_construction_core.scenario_entry_scope.v1'
+        custom = Scenario.create({'code': 'test.custom.deleted', 'name': 'Custom'})
+        action = 'ir.actions.act_window,%s' % self.menu.action.id
+        for vals in ({'name': 'Custom action', 'action': action},
+                     {'name': 'Custom actionless leaf'}):
+            menu = Menu.create(vals)
+            # Previously explicit direct entries also lose their exemption
+            # when bound. Deletion must not resurrect the prior declaration.
+            menu.sc_scenario_exempt = True
+            entry = Entry.create({'scenario_id': custom.id, 'menu_id': menu.id})
+            self.assertFalse(menu.sc_scenario_exempt)
+            entry.unlink()
+            params.set_param(marker, False)
+            Scenario.initialize_direct_entry_exemptions()
+            self.assertFalse(menu.sc_scenario_exempt)
+            self.assertTrue(params.get_param(marker))
+            Scenario.initialize_direct_entry_exemptions()
+            self.assertFalse(menu.sc_scenario_exempt)
+        unknown = Menu.create({'name': 'Unknown history', 'action': action})
+        params.set_param(marker, False)
+        Scenario.initialize_direct_entry_exemptions()
+        self.assertFalse(unknown.sc_scenario_exempt)
+        # Missing history can only be resolved by an explicit maintenance act.
+        unknown.sc_scenario_exempt = True
+        Scenario.initialize_direct_entry_exemptions()
+        self.assertTrue(unknown.sc_scenario_exempt)
 
     def test_business_diagnosis_consumes_same_catalog_without_composition_record(self):
         from odoo.addons.smart_construction_scene.handlers.scenario_activation import _catalog

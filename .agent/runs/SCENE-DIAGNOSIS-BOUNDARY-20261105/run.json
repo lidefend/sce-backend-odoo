@@ -23,7 +23,9 @@
     "scripts/verify/acceptance_evolution_binding_guard.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/ci/ci_risk_classifier.py",
-    "scripts/ci/test_ci_risk_classifier.py"
+    "scripts/ci/test_ci_risk_classifier.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "docs/architecture/scenario_fact_authority_20261105.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -49,7 +51,7 @@
     "why_not_elsewhere": "No frontend inference or new fact registry; no changes to P0 publication/ACL",
     "blast_radius": "Read-only dependency contract and legacy enablement prerequisite; no record authorization grants"
   },
-  "next_exact_step": "Publish reviewed local stack as GitHub PR to main via make pr.publish; read back exact source/base identity; no merge or deployment.",
+  "next_exact_step": "Push reviewed migration fix to PR812; verify exact remote SHA; remote CI pending, no merge/deploy.",
   "owner_direction": "Native publication releases capability; scenario publication releases composed products. Report independent evidence, not a shared published flag.",
   "validation_plan": {
     "L1": "make ci.local.iteration",
@@ -169,5 +171,23 @@
       "runtime": "Existing local acceptance backend updated via backend.acceptance.up; persistent DB preserved; no daily deployment",
       "independent_review": "passed /root/independent_ci_review; 61 binding and 39 classification independently rerun"
     }
+  },
+  "review_fix": {
+    "issue": "PR812 P2 ambiguous legacy menu exemption",
+    "layer": "P1 smart_construction_core scenario migration",
+    "baseline": "cd98f32beba3311a6b3a75a4d93fcae28f5f9287",
+    "decision": "No authoritative deleted-membership history exists; do not infer any new exemption from absence. Preserve explicit declarations; missing remains denied.",
+    "validation": "Affected migration ORM, offline navigation suite and lightweight checks; no browser or deployment",
+    "status": "locally_validated",
+    "independent_review": "passed /root/independent_ci_review",
+    "logs": [
+      ".runtime/scene-diagnosis-pr/migration-unit.log",
+      ".runtime/scene-diagnosis-pr/migration-iteration.log",
+      ".runtime/scene-diagnosis-pr/migration-orm.log"
+    ],
+    "offline_tests": 169,
+    "orm_tests": 43,
+    "orm_failures": 0,
+    "orm_errors": 0
   }
 }

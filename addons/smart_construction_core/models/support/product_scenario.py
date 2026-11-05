@@ -54,26 +54,17 @@ class ScProductScenario(models.Model):
 
     @api.model
     def initialize_direct_entry_exemptions(self):
-        """One-time adoption of legacy direct entries, never a runtime fallback.
+        """Finalize scope initialization without inferring new exemptions.
 
-        Seed scenario menus stay fail-closed even if their binding was deleted
-        before this upgrade. Subsequent upgrades never recreate exemptions.
+        Neither an absent binding nor absence from the seed proves a legacy
+        direct entry: administrators may have deleted a custom association.
+        There is no authoritative association history to distinguish those
+        cases, so preserve explicit declarations and leave unknowns denied.
         """
-        from odoo.addons.smart_construction_core.services.scenario_surface_projection import build_menu_index, load_surface
-
         params = self.env["ir.config_parameter"].sudo()
         marker = "smart_construction_core.scenario_entry_scope.v1"
         if params.get_param(marker):
             return
-        bound = self.env["sc.product.scenario.entry"].sudo().search([]).mapped("menu_id")
-        seed_bound = self.env["ir.ui.menu"].sudo().browse()
-        for xmlid, location in build_menu_index(load_surface()).items():
-            if location["location"] == "scenario":
-                menu = self.env.ref(xmlid, raise_if_not_found=False)
-                if menu and menu._name == "ir.ui.menu":
-                    seed_bound |= menu
-        direct = self.env["ir.ui.menu"].sudo().search(["|", ("action", "!=", False), ("child_id", "=", False)]) - bound - seed_bound
-        direct.write({"sc_scenario_exempt": True})
         params.set_param(marker, "1")
 
     @api.model
