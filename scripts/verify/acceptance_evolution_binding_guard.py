@@ -20,6 +20,7 @@ Exit codes: 0 pass, 1 binding/evidence failure, 2 usage or registry error.
 from __future__ import annotations
 
 import argparse
+import ast
 import datetime
 import hashlib
 import json
@@ -209,6 +210,8 @@ def load_registry(path: Path) -> dict:
         paths = rule.get("paths")
         if not isinstance(paths, list) or not paths or not all(isinstance(p, str) and p for p in paths):
             raise BindingError(f"rule {rule_id!r} needs non-empty path globs")
+        if rule.get("condition") not in (None, "manifest_version_only"):
+            raise BindingError(f"unsupported rule condition: {rule.get('condition')!r}")
         suites_for_rule = rule.get("suites")
         if not isinstance(suites_for_rule, list):
             raise BindingError(f"rule {rule_id!r} suites must be an array")
@@ -409,8 +412,40 @@ def suite_owns_path(registry: dict, suite_id: str, path: str) -> bool:
     if any(path_matches(pattern, path) for pattern in explicit):
         return True
     rule = next((item for item in registry['rules']
-                 if any(path_matches(pattern, path) for pattern in item['paths'])), None)
+                 if not item.get('condition')
+                 and any(path_matches(pattern, path) for pattern in item['paths'])), None)
     return rule is not None and suite_id in rule['suites']
+
+
+def manifest_version_only(before: str, after: str) -> bool:
+    """Only literal metadata is eligible; dependencies/assets/hooks stay conservative."""
+    try:
+        old, new = ast.literal_eval(before), ast.literal_eval(after)
+    except (ValueError, SyntaxError, TypeError, RecursionError):
+        return False
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        return False
+    if not all(isinstance(item.get("version"), str) and item["version"].strip()
+               for item in (old, new)):
+        return False
+    return ({k: v for k, v in old.items() if k != "version"}
+            == {k: v for k, v in new.items() if k != "version"})
+
+
+def rule_condition_matches(rule: dict, path: str, base: str, head: str) -> bool:
+    if not rule.get("condition"):
+        return True
+    if rule["condition"] != "manifest_version_only":
+        return False
+    try:
+        before = str(_git("show", f"{base}:{path}"))
+        # Local planning includes dirty paths: never classify uncommitted
+        # dependency edits using the older committed manifest.
+        after = ((ROOT / path).read_text() if head == str(_git("rev-parse", "HEAD"))
+                 else str(_git("show", f"{head}:{path}")))
+        return manifest_version_only(before, after)
+    except (OSError, ValueError, BindingError, subprocess.CalledProcessError):
+        return False
 
 
 def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict:
@@ -421,7 +456,8 @@ def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict
     required: list[str] = []
     for path in changed:
         rule = next(
-            (item for item in rules if any(path_matches(glob, path) for glob in item["paths"])),
+            (item for item in rules if any(path_matches(glob, path) for glob in item["paths"])
+             and rule_condition_matches(item, path, base, head)),
             None,
         )
         if rule is None:

@@ -51,6 +51,36 @@ class TestNavigation(TransactionCase):
         self.assertEqual('pending', coverage.verify_logs(rows, ['Ran 9 tests\nOK'])[0]['status'])
         self.assertEqual('pending', coverage.verify_logs(rows, [good.replace('ok', 'skipped')])[0]['status'])
 
+    def test_python310_and_modern_verbose_logs_bind_exact_method(self):
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        for identity in ('test_python.TestThing', 'test_python.TestThing.test_one',
+                         'tests.test_python.TestThing', 'tests.test_python.TestThing.test_one'):
+            with self.subTest(identity=identity):
+                good = f'test_one ({identity}) ... ok\n'
+                self.assertEqual('executed', coverage.verify_logs(rows, [good])[0]['status'])
+                for bad in (good.replace('test_one', 'test_other'),
+                            good.replace('test_python', 'test_unrelated'),
+                            good.replace('TestThing', 'TestOther'),
+                            good.replace('... ok', '... FAIL'),
+                            good.replace('... ok', "... skipped 'not selected'"),
+                            'quoted example: ' + good):
+                    self.assertEqual('pending', coverage.verify_logs(rows, [bad])[0]['status'])
+        mismatched = 'test_one (test_python.TestThing.test_other) ... ok\n'
+        self.assertEqual('pending', coverage.verify_logs(rows, [mismatched])[0]['status'])
+
+    def test_python_inventory_skipped_key_does_not_override_actual_success(self):
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        identity = 'test_python.TestThing.test_one'
+        for skipped in ([], ['test_python.TestThing.test_other']):
+            inventory = 'SC_BACKEND_TEST_IDS=' + json.dumps({'ids': [identity], 'skipped': skipped})
+            log = 'test_one (test_python.TestThing) ... ok\n' + inventory
+            self.assertEqual('executed', coverage.verify_logs(rows, [log])[0]['status'])
+            self.assertEqual('pending', coverage.verify_logs(rows, [inventory])[0]['status'])
+        log += "\ntest_one (test_python.TestThing) ... skipped 'not selected'\n"
+        self.assertEqual('pending', coverage.verify_logs(rows, [log])[0]['status'])
+
     def test_managed_methods_cannot_be_proven_by_generic_module_logs(self):
         rows = self.rows(coverage.MANAGED_MODULE)
         log = f'odoo.addons.{coverage.MANAGED_MODULE}.tests.test_nav: Starting TestNavigation.test_upgrade ...'

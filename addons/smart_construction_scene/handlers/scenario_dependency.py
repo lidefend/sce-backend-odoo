@@ -15,7 +15,8 @@ class ScenarioDependencyDiagnosisGetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "scenario_dependency_diagnosis_projection",
-        "authorities": ["sc.scene", "sc.scene.version", "res.company"],
+        "authorities": ["sc.scene", "sc.scene.version", "sc.product.scenario", "sc.product.scenario.entry",
+                        "ir.ui.menu", "ir.actions.act_window", "product_menu_source", "res.company"],
         "projection_only": True,
         "no_business_fact_authority": True,
     }

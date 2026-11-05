@@ -360,6 +360,20 @@ class ORMScopeTests(unittest.TestCase):
         self.assertIn('navigation_maintenance', result.orm_scopes)
         self.assertNotIn('payment_settlement', result.orm_scopes)
 
+    def test_scene_fact_consumers_produce_managed_navigation_receipts(self):
+        # Keep this cross-layer assertion tied to the selection registry so a
+        # future backend-only path cannot silently lose its ORM producer.
+        import json
+        registry = json.loads((Path(__file__).resolve().parents[2] /
+                               'config/acceptance/evolution_binding.v1.json').read_text())
+        rule = next(row for row in registry['rules'] if row['id'] == 'scenario-fact-and-enablement')
+        for path in rule['paths']:
+            with self.subTest(path=path):
+                result = classify([path], event_name='pull_request')
+                self.assertIn('navigation_maintenance', result.orm_scopes)
+                self.assertTrue(result.managed_orm_required)
+                self.assertNotIn('payment_settlement', result.orm_scopes)
+
     def test_payment_and_shared_changes_select_dedicated_regression(self):
         for path in ['addons/smart_construction_core/models/payment_request.py',
                      'addons/smart_core/models/base.py', 'scripts/test/test.sh']:

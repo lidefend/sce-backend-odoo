@@ -338,7 +338,9 @@
       "id": "offline-scene-test-implementation",
       "paths": [
         "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
-        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "addons/smart_construction_core/tests/__init__.py"
       ],
       "suites": [
         "backend_contract"
@@ -545,6 +547,37 @@
       "paths": [
         "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json"
       ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "scenario-fact-and-enablement",
+      "description": "Navigation membership, company scope and publication diagnosis: backend/managed navigation ORM, not list geometry or relation-field roundtrip. No wildcard exemption for scene orchestration or business models.",
+      "paths": [
+        "addons/smart_construction_core/data/product_scenario_seed.xml",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/views/support/product_scenario_views.xml",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/handlers/scenario_dependency.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/models/scene_company_enablement.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "construction-manifest-version-only",
+      "paths": [
+        "addons/smart_construction_core/__manifest__.py"
+      ],
+      "condition": "manifest_version_only",
       "suites": [
         "backend_contract"
       ]

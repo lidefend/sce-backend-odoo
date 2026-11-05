@@ -175,3 +175,17 @@ resume_entry:
   continuation: identity_then_selected_run_then_changed_dependencies_only
   receipts: .runtime/agent-runs/<goal-id>/
   receipts_are_delivery_evidence: false
+
+planning_references:
+  runtime_evolution:
+    report: docs/architecture/runtime_logic_and_evolution_20261105.md
+    goal: .agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml
+    decision: .agent/decisions/runtime-fact-presentation-evolution.yaml
+    purpose: 后续事实维护与公共表现层迭代的规划入口，不替代源码、契约或验收证据
+    implementation_status: scenario_fact_batch_locally_validated
+    current_result: .agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json
+
+  scene_publication_boundaries:
+    report: docs/architecture/scene_layer_responsibility_20261105.md
+    current_result: .agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json
+    principle: 原生发布能力，场景发布组合产品，两类状态与证据独立

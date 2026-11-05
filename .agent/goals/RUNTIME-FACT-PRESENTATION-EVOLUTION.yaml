@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: RUNTIME-FACT-PRESENTATION-EVOLUTION
+  title: 事实维护贯通运行时与公共表现层独立演进
+  status: active
+  kind: long_term_direction
+  report: docs/architecture/runtime_logic_and_evolution_20261105.md
+  decision: .agent/decisions/runtime-fact-presentation-evolution.yaml
+  historical_source_sha: fe719728b99cae761d50eb14eabcefc4df307adf
+  registration_main_sha: 54bed83383ee2e03773141430bdd6d50ca4f932b
+  tracks:
+    - 已有业务能力的日常组织与可配置规则逐步由受管模型维护，经发布与契约贯通实际执行
+    - 前端公共组件与交互独立优化，业务事实、权限、动作和状态语义仍由后端声明
+  related_goals:
+    - .agent/goals/SCENE-FACT-DATA-CONVERGENCE-20261104.yaml
+    - .agent/goals/MY-WORK-FACT-LAYER-CONVERGENCE-20261104.yaml
+  iterations:
+    - id: RFE-01
+      status: completed
+      result: docs/architecture/scenario_fact_authority_20261105.md
+      outcome: 场景、入口、企业启用的事实读者与维护发布映射，确定首个最小迁移范围
+      acceptance: 列出文件与模型读者、稳定身份、授权语义及兼容回退；不得把展示分组直接当授权分组
+    - id: RFE-02
+      status: completed
+      completion_scope: local_implementation_and_scoped_validation_only
+      mainline: not_integrated
+      run: .agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json
+      depends_on: [RFE-01]
+      outcome: 企业启用过滤消费唯一受管事实
+      acceptance: 真实 ORM 覆盖公司切换、撤销、缺失状态及跨公司拒绝；导航、路由和直接调用一致
+    - id: RFE-03
+      status: planned
+      depends_on: [RFE-01]
+      outcome: 初始化默认、日常维护、发布与回退一致
+      acceptance: 升级保留维护，新快照匹配有效策略，旧快照不可改写，导航及直接动作负例通过
+    - id: RFE-04
+      status: planned
+      outcome: 选定集合页与表单的公共表现及交互优化
+      acceptance: 桌面移动端、键盘焦点及加载错误保存反馈验证；不改变业务契约和权限
+    - id: RFE-05
+      status: planned
+      outcome: 一个已有业务规则的配置闭环
+      acceptance: 编辑到真实执行具备正反例、审计、版本回退；保留服务端事务及业务不变量
+    - id: RFE-06
+      status: planned
+      outcome: 按产品需求逐项闭合 Renderer 缺口和历史页面迁移
+      acceptance: 明确所选交互范围并实际验收；未实现能力继续如实标注降级
+  next_exact_step: 集成已验证的场景同源批次；随后按 RFE-03 梳理选定数据库策略与发布快照同源，不自动部署
+  exclusions:
+    - 登记不等于启动全部实现、主线集成、部署或产品验收
+    - 不要求所有业务逻辑配置化；安全约束与业务不变量仍由服务端代码保证
+    - 不新增竞争事实登记层或默认逐模块编写前端页面
+    - 本次演示数据重置授权不扩展为日常升级或其他环境重置授权

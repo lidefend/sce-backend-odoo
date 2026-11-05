@@ -78,6 +78,33 @@ class ContextEnv:
         return bound
 
 
+def _runtime_model(name, env):
+    """ORM transport fixture; production readers never consult this seed file."""
+    if name not in ("sc.product.scenario", "ir.ui.menu"):
+        return None
+    surface = scenario_surface.load_surface()
+    index = scenario_surface.build_menu_index(surface, parent_by_menu={
+        child: root for root, children in getattr(env, "roots", {}).items() for child in children})
+    menus = {}
+    for number, (key, location) in enumerate(index.items(), 1):
+        menu = types.SimpleNamespace(id=number, action=types.SimpleNamespace(id=number),
+                                     sc_scenario_exempt=location["location"] != "scenario")
+        menu.get_external_id = lambda number=number, key=key: {number: key}
+        menus[key] = menu
+    records = list(menus.values())
+    if name == "sc.product.scenario":
+        records = []
+        for row in surface["scenarios"]:
+            bindings = [types.SimpleNamespace(menu_id=menus[key], intent=intent, sequence=10)
+                        for intent, keys in row.get("intents", {}).items() for key in keys]
+            records.append(types.SimpleNamespace(code=row["key"], name=row.get("name", row["key"]),
+                                                 active=True, sequence=10, entry_ids=bindings))
+    model = types.SimpleNamespace(search=lambda domain: records)
+    model.sudo = lambda: model
+    model.with_context = lambda **kwargs: model
+    return model
+
+
 class TestActualPublicationConsumers(unittest.TestCase):
     """Exercise real publication decoding; only the ORM transport is stubbed."""
 
@@ -153,6 +180,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 return types.SimpleNamespace(child_id=children)
 
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name == "ir.config_parameter":
                     model = types.SimpleNamespace(
                         get_param=lambda key, default="0": params.get(key, default),
@@ -215,7 +245,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
         handler._resolve_authorized_scene_candidates = lambda entries, company_id: [row["code"] for row in self.entries]
         result = handler.handle()["data"]
         surface = scenario_surface.load_surface()
-        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
+        index = scenario_surface.runtime_menu_scope(env)[0]
         expected = sum(self.expected.get(row.get("target", {}).get("menu_xmlid")) == "released"
                        and business_enablement.entry_business_enabled(row, index, {}) for row in self.entries)
         self.assertGreater(expected, 0)
@@ -230,7 +260,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
         workspace._resolve_authorized_scene_candidates = lambda entries, company_id: []
         projection = workspace.handle()["data"]
         surface = scenario_surface.load_surface()
-        index = scenario_surface.build_menu_index(surface, parent_by_menu=scenario_surface.resolve_native_parent_by_menu(env, surface))
+        index = scenario_surface.runtime_menu_scope(env)[0]
         self.assertEqual(len({value["scenario_key"] for value in index.values() if value["location"] == "scenario"}), 17)
         for entry, catalog_row, workspace_row in zip(self.entries, catalog["rows"], projection["rows"]):
             expected = index.get(entry.get("target", {}).get("menu_xmlid"))
@@ -241,7 +271,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
 
     def test_invalid_surface_does_not_silently_emit_unmapped_catalog(self):
         handlers, env = self._handlers_and_env()
-        with patch.object(scenario_surface, "load_surface", side_effect=ValueError("invalid surface")):
+        with patch.object(scenario_surface, "load_runtime_surface", side_effect=ValueError("invalid surface")):
             with self.assertRaisesRegex(ValueError, "invalid surface"):
                 handlers._catalog(env, company_id=1)
 
@@ -274,7 +304,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
         workspace.env, workspace.params = env, {}
         workspace._resolve_authorized_scene_candidates = lambda entries, company_id: []
         surface = {"scenarios": [{"key": "same"}, {"key": "same"}]}
-        with patch.object(scenario_surface, "load_surface", return_value=surface):
+        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface):
             with self.assertRaisesRegex(ValueError, "duplicate scenario key"):
                 handlers._catalog(env, company_id=1)
             with self.assertRaisesRegex(ValueError, "duplicate scenario key"):
@@ -326,7 +356,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     self.assertEqual(catalog_row["release_state"],
                                      self.expected.get(entry.get("target", {}).get("menu_xmlid"), "preview"))
 
-    def test_dependency_diagnosis_requires_menu_qualification_and_published_scene(self):
+    def test_native_entry_diagnosis_does_not_require_duplicate_scene_publication(self):
         diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
         for menu_state in ("released", "preview"):
             entry = next(row for row in self.entries if self.expected.get(
@@ -338,25 +368,141 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     company.exists = lambda: company
                     class Env(ContextEnv):
                         cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                        def ref(self, xmlid, raise_if_not_found=False):
+                            action = types.SimpleNamespace(id=10, _name="ir.actions.act_window")
+                            if xmlid == entry["target"]["action_xmlid"]:
+                                return action
+                            if xmlid == entry["target"]["menu_xmlid"]:
+                                return types.SimpleNamespace(_name="ir.ui.menu", action=action)
+                            return False
                         def __getitem__(self, name):
+                            runtime = _runtime_model(name, self)
+                            if runtime is not None:
+                                return runtime
                             if name == "sc.scene":
-                                model = types.SimpleNamespace(search=lambda domain, limit: scene)
-                                model.sudo = lambda: model
-                                return model
+                                raise AssertionError("native entry must not depend on orchestration publication")
                             if name == "res.company":
                                 return types.SimpleNamespace(browse=lambda company_id: company)
                             raise AssertionError(name)
-                    result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key=entry["code"], company_id=1)
-                    self.assertEqual(result["enable_allowed"], menu_state == "released" and scene_state == "published")
+                    with patch.object(diagnosis, "_is_native_entry", return_value=True):
+                        result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key=entry["code"], company_id=1)
+                    self.assertEqual(result["enable_allowed"], menu_state == "released")
                     evidence = result["dependencies"][0]["evidence"]
                     self.assertEqual(evidence["product_released"], menu_state == "released")
-                    self.assertEqual(evidence["scene_published"], scene_state == "published")
+                    self.assertIsNone(evidence["scene_published"])
+                    self.assertEqual(evidence["readiness_kind"], "native_action")
+                    self.assertFalse(result["publication"]["scene_composition"]["applicable"])
+                    self.assertIsNone(result["publication"]["scene_composition"]["standard_released"])
+
+    def test_orchestration_lifecycle_is_still_required(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entry = {"code": "composed", "target": {"menu_xmlid": "test.menu", "route": "/s/composed"}}
+        for released in (False, True):
+            for state in ("draft", "published", None):
+                class Env:
+                    cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                    def __getitem__(self, name):
+                        if name == "sc.scene":
+                            scene = types.SimpleNamespace(id=1, state=state, active_version_id=types.SimpleNamespace(id=2, product_release_state="STANDARD_RELEASE")) if state else False
+                            if scene and scene.active_version_id:
+                                scene.active_version_id.scene_id = scene
+                                scene.active_version_id.product_edition = "construction.standard"
+                            model = types.SimpleNamespace(search=lambda domain, limit: scene)
+                            model.sudo = lambda: model
+                            return model
+                        company = types.SimpleNamespace(id=1)
+                        company.exists = lambda: company
+                        return types.SimpleNamespace(browse=lambda company_id: company)
+                with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                     patch.object(diagnosis, "resolve_product_released", return_value=released):
+                    result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="composed", company_id=1)
+                self.assertEqual(result["enable_allowed"], released and state == "published")
+                self.assertEqual(result["dependencies"][0]["evidence"]["readiness_kind"], "orchestration")
+
+    def test_composition_snapshot_does_not_substitute_for_standard_product_release(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        # An explicit intent remains composition even when an action is declared.
+        entry = {"code": "composed", "target": {"menu_xmlid": "test.menu", "action_xmlid": "test.action", "intent": "test.compose"}}
+        for version_state in ("PREVIEW", "OPTIONAL_CAPABILITY", "NOT_READY", "STANDARD_RELEASE", None):
+            version = types.SimpleNamespace(id=2, product_release_state=version_state) if version_state else False
+            scene = types.SimpleNamespace(id=1, state="published", active_version_id=version)
+            company = types.SimpleNamespace(id=1)
+            company.exists = lambda: company
+            class Env:
+                cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                def __getitem__(self, name):
+                    if name == "sc.scene":
+                        if scene and scene.active_version_id:
+                            scene.active_version_id.scene_id = scene
+                            scene.active_version_id.product_edition = "construction.standard"
+                        model = types.SimpleNamespace(search=lambda domain, limit: scene)
+                        model.sudo = lambda: model
+                        return model
+                    return types.SimpleNamespace(browse=lambda company_id: company)
+            with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                 patch.object(diagnosis, "resolve_product_released", return_value=True):
+                result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="composed", company_id=1)
+            self.assertEqual(result["enable_allowed"], version_state == "STANDARD_RELEASE")
+            self.assertTrue(result["publication"]["native_capability"]["entry_qualified"])
+            self.assertEqual(result["publication"]["scene_composition"]["standard_released"], version_state == "STANDARD_RELEASE")
+
+    def test_real_dashboard_declarations_cannot_be_classified_as_native(self):
+        import ast
+        from xml.etree import ElementTree
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entries = {entry["code"]: entry for entry in self.entries}
+        dashboard = _load("diagnosis_dashboard_provider", SCENE_DIR / "profiles/project_dashboard_scene_content.py")
+        self.assertFalse(diagnosis._declares_native_delivery(
+            entries["project.dashboard"], entries["project.dashboard"], dashboard.build()))
+        tree = ElementTree.parse(SCENE_DIR / "data/sc_scene_layout.xml")
+        payloads = [ast.literal_eval(field.attrib["eval"]) for field in tree.findall(".//field[@name='payload_json']")]
+        focus = next(row for row in payloads if row.get("code") == "projects.dashboard_focus")
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.dashboard_focus"], focus, {}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"], {}, {}))
+        _load("odoo.addons.smart_construction_scene.services.workflow_rollout_handoff",
+              SCENE_DIR / "services/workflow_rollout_handoff.py")
+        direct = _load("diagnosis_direct_provider", SCENE_DIR / "providers/projects_list_provider.py")
+        self.assertTrue(diagnosis._declares_native_delivery(entries["projects.list"], entries["projects.list"], direct.build()))
+        for changed in ({"primary_action": {"action_xmlid": "other.action"}},
+                        {"delivery_handoff": {**direct.build()["delivery_handoff"], "final_scene": "other.scene"}}):
+            self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"], entries["projects.list"], {**direct.build(), **changed}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"],
+            {**entries["projects.list"], "target": {**entries["projects.list"]["target"], "intent": "composed.execute"}}, direct.build()))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["projects.list"],
+            {**entries["projects.list"], "page": {"blocks": [{"key": "composed"}]}}, direct.build()))
+        native = {"source": "native_fact_projection", "target": entries["enterprise.setup"]["target"]}
+        self.assertTrue(diagnosis._declares_native_delivery(entries["enterprise.setup"], native, {}))
+        self.assertFalse(diagnosis._declares_native_delivery(entries["enterprise.setup"], {**native, "tiles": [{"key": "composed"}]}, {}))
+
+    def test_native_binding_mismatch_and_missing_action_block_diagnosis(self):
+        diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entry = {"code": "native", "target": {"menu_xmlid": "test.menu", "action_xmlid": "test.action"}}
+        company = types.SimpleNamespace(id=1)
+        company.exists = lambda: company
+        for action in (False, types.SimpleNamespace(id=1, _name="ir.actions.act_window")):
+            class Env:
+                cr = types.SimpleNamespace(now=lambda: "controlled-clock")
+                def __getitem__(self, name):
+                    if name != "res.company":
+                        raise AssertionError(name)
+                    return types.SimpleNamespace(browse=lambda company_id: company)
+                def ref(self, xmlid, raise_if_not_found=False):
+                    return action if xmlid == "test.action" else types.SimpleNamespace(_name="ir.ui.menu", action=False)
+            with patch.object(scene_registry_content, "list_scene_entries", return_value=[entry]), \
+                 patch.object(diagnosis, "resolve_product_released", return_value=True), \
+                 patch.object(diagnosis, "_is_native_entry", return_value=True):
+                result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key="native", company_id=1)
+            self.assertFalse(result["enable_allowed"])
+            self.assertFalse(result["dependencies"][0]["evidence"]["structure_ready"])
 
     def test_all_handlers_reject_invalid_company_before_read_or_write(self):
         handlers, env = self._handlers_and_env()
         class NoAccessEnv:
             company, user = env.company, env.user
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 raise AssertionError(f"rejected request accessed ORM: {name}")
         for handler_class in (handlers.ScenarioActivationCatalogGetHandler,
                               handlers.WorkspaceScenarioProjectionGetHandler,
@@ -377,6 +523,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
             company = env.company
             user = types.SimpleNamespace(company_ids=types.SimpleNamespace(ids=[1, 2]))
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name == "ir.config_parameter":
                     def get_param(key, default="0"):
                         domains.append((name, key))
@@ -398,6 +547,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
         class NoAccessEnv:
             company, user = env.company, env.user
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 raise AssertionError(f"invalid mutation accessed ORM: {name}")
         handler = handlers.ScenarioActivationSetHandler()
         handler.env, handler.params = NoAccessEnv(), {}
@@ -443,6 +595,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
         class Env(ContextEnv):
             company, user = env.company, env.user
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name == "res.company":
                     return types.SimpleNamespace(browse=lambda company_id: company)
                 if name == "ir.config_parameter":
@@ -480,6 +635,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
             company = original.company
             user = types.SimpleNamespace(id=7, company_ids=types.SimpleNamespace(ids=[1, 2]))
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if self.company.id != 2 or self.context["allowed_company_ids"] != [2]:
                     raise AssertionError("mutation used wrong company context")
                 if name == "res.company":
@@ -525,6 +683,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 class EnablementEnv(ContextEnv):
                     company, user = env.company, env.user
                     def __getitem__(self, name):
+                        runtime = _runtime_model(name, self)
+                        if runtime is not None:
+                            return runtime
                         if name == "res.company":
                             return types.SimpleNamespace(browse=lambda company_id: company)
                         if name == "ir.config_parameter":
@@ -556,6 +717,9 @@ class TestDiagnosisCompanyContext(unittest.TestCase):
             company = types.SimpleNamespace(id=1)
             user = types.SimpleNamespace(id=7, company_ids=types.SimpleNamespace(ids=[1, 2]))
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 raise AssertionError(f"unexpected ORM access: {name}")
         self.handler.env = Env()
         self.handler.params = {"scene_key": "old.scene", "company_id": 1}
@@ -663,6 +827,9 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
             def ref(self, xmlid, raise_if_not_found=False):
                 return refs.get(xmlid, False)
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name == "sc.product.policy":
                     def with_context(**kwargs):
                         context_calls.append(kwargs)
@@ -685,7 +852,7 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
         release = {f"test.{key}": "released" for key in ("project", "finance", "other")}
         with patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries), \
              patch.object(product_menu_source, "load_menu_release_states", return_value=release), \
-             patch.object(scenario_surface, "load_surface", return_value={
+             patch.object(scenario_surface, "load_runtime_surface", return_value={
                  "scenarios": [{"key": key} for key in ("project", "finance", "other")]}), \
              patch.object(handlers, "_product_surface_index", return_value={
                  f"test.{key}": {"location": "scenario", "scenario_key": key}
@@ -762,7 +929,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         self.assertEqual(result["contextual_actions"], [row])
         self.assertEqual(self.filtered({}, {})["contextual_actions"], [])
         for change in ({"allowed": False}, {"source": "client"},
-                       {"menu_xmlid": "test.project"}):
+                       {"menu_xmlid": "test.project"}, {"menu_xmlid": "missing.menu"}, {"menu_id": 999}):
             with self.subTest(change=change):
                 result = self.filtered({}, {"contextual_actions": [{**row, **change}]})
                 self.assertEqual(result["contextual_actions"], [])
@@ -797,6 +964,12 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 self.assertEqual(self.filtered({"project.management": True}, authority)[bucket], authority[bucket])
         self.assertEqual(route_authority.published_pairs(self.filtered({"project.management": True}, {})), set())
 
+    def test_unknown_explicit_menu_cannot_borrow_enabled_legacy_scope(self):
+        for identity in ({"menu_id": 999}, {"menu_xmlid": "missing.menu"}):
+            row = {"action_id": 11, "scene_key": "alias.project", **identity}
+            result = self.filtered({"project.management": True}, {"contextual_actions": [row]})
+            self.assertFalse(result["contextual_actions"])
+
     def test_unknown_legacy_binding_fails_closed(self):
         result = self.filtered({}, {"contextual_actions": [{"action_id": 99, "scene_key": "unknown.legacy"}]})
         self.assertEqual(result["contextual_actions"], [])
@@ -807,7 +980,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                                   ({"project.management": False}, [])):
             with self.subTest(enabled=enabled):
                 result = business_enablement.filter_business_authority(
-                    {"contextual_actions": [row]}, surface_index=self.index, enabled=enabled,
+                    {"contextual_actions": [row], "primary_actions": [{"menu_xmlid": "test.project", "action_id": 11}]}, surface_index=self.index, enabled=enabled,
                     entries=self.entries, menu_xmlids_by_id={},
                     menu_xmlids_by_action={11: ["test.project"]})
                 self.assertEqual(result["contextual_actions"], expected)
@@ -821,12 +994,14 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             (["test.project", "test.admin"], {}, [row]),
         ):
             with self.subTest(menus=menus, enabled=enabled):
-                source = {"contextual_actions": [row]}
+                source = {"contextual_actions": [row], "primary_actions": [
+                    {"menu_xmlid": menu, "action_id": 11} for menu in menus]}
+                original = copy.deepcopy(source)
                 result = business_enablement.filter_business_authority(
                     source, surface_index=self.index, enabled=enabled,
                     entries=self.entries, menu_xmlids_by_id={}, menu_xmlids_by_action={11: menus})
                 self.assertEqual(result["contextual_actions"], expected)
-                self.assertEqual(source, {"contextual_actions": [row]})
+                self.assertEqual(source, original)
 
     def test_action_membership_does_not_override_explicit_disabled_menu_or_legacy(self):
         rows = [{"menu_id": 1, "action_id": 11},
@@ -838,12 +1013,21 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             menu_xmlids_by_action={11: ["test.project", "test.finance"]})
         self.assertEqual(result["contextual_actions"], [])
 
-    def test_action_scope_never_manufactures_routes_or_denies_unrelated_platform_action(self):
+    def test_action_scope_never_manufactures_routes_or_trusts_unconfigured_action(self):
         for source in ({}, {"admin_actions": [{"action_id": 99}]}):
             result = business_enablement.filter_business_authority(
                 source, surface_index=self.index, enabled={"project.management": True},
                 entries=self.entries, menu_xmlids_by_id={}, menu_xmlids_by_action={11: ["test.project"]})
-            self.assertEqual(route_authority.published_pairs(result), route_authority.published_pairs(source))
+            self.assertEqual(route_authority.published_pairs(result), set())
+
+    def test_unpublished_exempt_alias_cannot_rescue_disabled_bare_action(self):
+        source = {"primary_actions": [{"menu_xmlid": "test.project", "action_id": 11}],
+                  "contextual_actions": [{"action_id": 11}]}
+        result = business_enablement.filter_business_authority(
+            source, surface_index=self.index, enabled={}, entries=self.entries,
+            menu_xmlids_by_id={}, menu_xmlids_by_action={11: ["test.project", "test.admin"]})
+        self.assertFalse(result["primary_actions"])
+        self.assertFalse(result["contextual_actions"])
 
     def test_actual_catalog_separates_all_business_keys_from_legacy_records(self):
         surface = scenario_surface.load_surface()
@@ -855,8 +1039,8 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         key = next(row["scene_key"] for row in rows if row["product_released"])
         rows = business_enablement.business_catalog(surface, release, {business_enablement.business_key(key): True})
         self.assertEqual([row["scene_key"] for row in rows if row["tenant_enabled"]], [key])
-        self.assertTrue(tenant_scene_activation.resolve_product_released(business_enablement.business_key(key)))
-        self.assertFalse(tenant_scene_activation.resolve_product_released("business.v1:unknown"))
+        self.assertTrue(tenant_scene_activation.resolve_product_released(business_enablement.business_key(key), env=TestActualPublicationConsumers()._handlers_and_env()[1]))
+        self.assertFalse(tenant_scene_activation.resolve_product_released("business.v1:unknown", env=TestActualPublicationConsumers()._handlers_and_env()[1]))
 
     def test_workspace_uses_same_business_decision_without_native_grants(self):
         release = {menu: "released" for menu in self.index}
@@ -883,6 +1067,9 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             def __init__(self, company_id):
                 self.company = types.SimpleNamespace(id=company_id)
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name != "ir.config_parameter":
                     raise AssertionError(name)
                 def get_param(key, default="0"):
@@ -895,8 +1082,8 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 return types.SimpleNamespace(id=list(fixture.index).index(xmlid) + 1, _name="ir.ui.menu",
                                              action=types.SimpleNamespace(id=11 if xmlid == "test.project" else 99))
         record = module.ScProductPolicy()
-        with patch.object(scenario_surface, "load_surface", return_value=surface), \
-             patch.object(scenario_surface, "build_menu_index", return_value=self.index), \
+        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface), \
+             patch.object(scenario_surface, "runtime_menu_scope", return_value=(self.index, {1: "test.project"}, {11: ["test.project"]})), \
              patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries):
             for company_id, expected in ((1, True), (2, False), (1, True)):
                 record.env = Env(company_id)
@@ -917,6 +1104,9 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         class Env(ContextEnv):
             company, user = original.company, original.user
             def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
                 if name == "res.company":
                     company = types.SimpleNamespace(id=1)
                     company.exists = lambda: company
@@ -1285,6 +1475,73 @@ class TestTenantSceneActivation(unittest.TestCase):
         )
         self.assertEqual(company_id, 0)
         self.assertEqual(error, {"code": 400, "message": "invalid company_id"})
+
+
+class TestMaintainedScenarioScope(unittest.TestCase):
+    def test_missing_archived_and_exempt_apply_to_menu_and_bare_action(self):
+        authority = {"primary_actions": [{"menu_id": 1, "action_id": 11}],
+                     "contextual_actions": [{"action_id": 11}]}
+        cases = [({"location": "missing"}, False),
+                 ({"location": "exempt"}, True),
+                 ({"location": "scenario", "scenario_key": "new", "scenario_active": False}, False),
+                 ({"location": "scenario", "scenario_key": "new", "scenario_active": True}, True)]
+        for location, expected in cases:
+            with self.subTest(location=location):
+                result = business_enablement.filter_business_authority(
+                    authority, surface_index={"test.menu": location}, enabled={"new": True}, entries=[],
+                    menu_xmlids_by_id={1: "test.menu"}, menu_xmlids_by_action={11: ["test.menu"]})
+                self.assertEqual(bool(result["primary_actions"]), expected)
+                self.assertEqual(bool(result["contextual_actions"]), expected)
+                self.assertEqual(authority["primary_actions"], [{"menu_id": 1, "action_id": 11}])
+
+    def test_rebinding_uses_new_scenario_not_old_enabled_key(self):
+        entry = {"target": {"menu_xmlid": "test.menu"}}
+        index = {"test.menu": {"location": "scenario", "scenario_key": "new"}}
+        self.assertFalse(business_enablement.entry_business_enabled(entry, index, {"old": True}))
+        self.assertTrue(business_enablement.entry_business_enabled(entry, index, {"new": True}))
+
+    def test_actionless_anchor_is_not_a_container_and_honors_explicit_exemption(self):
+        menu = types.SimpleNamespace(id=7, action=False, child_id=[], sc_scenario_exempt=False,
+                                     get_external_id=lambda: {7: "test.anchor"})
+        class Env:
+            def __getitem__(self, name):
+                model = types.SimpleNamespace(search=lambda domain: [menu])
+                model.sudo = lambda: model
+                return model
+        surface = {"scenarios": []}
+        index, by_id, _ = scenario_surface.runtime_menu_scope(Env(), surface)
+        self.assertEqual(index["test.anchor"]["location"], "missing")
+        menu.sc_scenario_exempt = True
+        index, _, _ = scenario_surface.runtime_menu_scope(Env(), surface)
+        self.assertEqual(index["test.anchor"]["location"], "exempt")
+        surface = {"scenarios": [{"key": "s", "active": True, "intents": {"view": ["test.anchor"]}}]}
+        index, _, _ = scenario_surface.runtime_menu_scope(Env(), surface)
+        self.assertEqual(index["test.anchor"]["location"], "scenario")
+        self.assertFalse(business_enablement.location_business_enabled(index["test.anchor"], {}))
+        self.assertTrue(business_enablement.location_business_enabled(index["test.anchor"], {"s": True}))
+
+    def test_runtime_reader_has_no_file_fallback_and_keeps_archived_identity(self):
+        menu = types.SimpleNamespace(id=7, action=types.SimpleNamespace(id=17), sc_scenario_exempt=False,
+                                     get_external_id=lambda: {})
+        entry = types.SimpleNamespace(menu_id=menu, intent="view", sequence=3)
+        scenario = types.SimpleNamespace(code="maintained", name="Edited", active=False,
+                                         sequence=4, entry_ids=[entry])
+        class Env:
+            def __getitem__(self, name):
+                rows = {"ir.ui.menu": [menu], "sc.product.scenario": [scenario]}[name]
+                model = types.SimpleNamespace(search=lambda domain: rows)
+                model.sudo = lambda: model
+                model.with_context = lambda **kwargs: model
+                return model
+        with patch.object(scenario_surface, "load_surface", side_effect=AssertionError("file read")):
+            surface = scenario_surface.load_runtime_surface(Env())
+            index, by_id, by_action = scenario_surface.runtime_menu_scope(Env(), surface)
+        self.assertEqual(surface["scenarios"][0]["name"], "Edited")
+        self.assertEqual(by_id, {7: "menu:7"})
+        self.assertEqual(by_action, {17: ["menu:7"]})
+        self.assertFalse(index["menu:7"]["scenario_active"])
+        with self.assertRaises(ValueError):
+            scenario_surface.load_runtime_surface(None)
 
 
 if __name__ == "__main__":

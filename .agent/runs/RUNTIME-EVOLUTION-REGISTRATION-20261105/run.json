@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "RUNTIME-EVOLUTION-REGISTRATION-20261105",
+  "branch": "audit/runtime-evolution-roadmap-20261105",
+  "baseline_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+  "status": "completed",
+  "goal": ".agent/goals/RUNTIME-EVOLUTION-REGISTRATION-20261105.yaml",
+  "record": ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/context.yaml",
+    ".agent/goals/RUNTIME-EVOLUTION-REGISTRATION-20261105.yaml",
+    ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json",
+    ".agent/goals/RUNTIME-FACT-PRESENTATION-EVOLUTION.yaml",
+    ".agent/decisions/runtime-fact-presentation-evolution.yaml",
+    "docs/architecture/runtime_logic_and_evolution_20261105.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Documentation and engineering-context registration only"
+  },
+  "checks": {
+    "local_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "artifact": ".runtime/runtime-evolution-registration-iteration.log",
+      "scope": "Seven documentation/context paths; no runtime changes"
+    },
+    "registration_integrity": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "Python YAML/JSON parse, scoped path and reference existence, git cat-file source-link validation; git diff --check",
+      "result": "4 YAML files, 7 scoped paths, 15 immutable source links validated"
+    },
+    "product_tests": {
+      "status": "not_run",
+      "reason": "Documentation and planning only; no product behavior or test dependencies changed; incremental planner recommends no L2 targets"
+    }
+  },
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "engineering context and architecture planning",
+    "module": "docs/architecture and .agent",
+    "standard_vs_user_specific": "repository planning",
+    "why_here": "Capture owner-approved long-term direction and evidence boundaries",
+    "why_not_elsewhere": "No product facts, schema or runtime policies changed",
+    "blast_radius": "Future task discovery and planning only"
+  },
+  "next_exact_step": "Registration complete. For subsequent implementation select RFE-01, revalidate then-current main and register a bounded execution run; no automatic runtime write.",
+  "completion": {
+    "batch": "registration_completed",
+    "mainline": "not_integrated",
+    "deployment": "not_applicable",
+    "user_acceptance": "not_claimed",
+    "long_term_implementation": "planned"
+  }
+}

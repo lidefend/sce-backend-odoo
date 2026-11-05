@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-DIAGNOSIS-BOUNDARY-20261105",
+  "branch": "refactor/scene-diagnosis-boundary-20261105",
+  "baseline_sha": "ee79dda079873c90cbe2f00d6fb4461a9856fee0",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-DIAGNOSIS-BOUNDARY-20261105.yaml",
+  "record": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-DIAGNOSIS-BOUNDARY-20261105.yaml",
+    ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+    "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+    "addons/smart_construction_scene/handlers/scenario_dependency.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "docs/architecture/scene_layer_responsibility_20261105.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    ".agent/decisions/runtime-fact-presentation-evolution.yaml",
+    ".agent/context.yaml",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "docs/architecture/scenario_fact_authority_20261105.md",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_changed_test_coverage.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered acceptance local profile; no module upgrade or fixture reset",
+    "profile": "local",
+    "compose_project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_filter": "^sc_frontend_acceptance$",
+    "role": "isolated acceptance fixture tenant",
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "customer_business_data_allowed": false,
+    "fixture_allowed": true,
+    "preflight": ".runtime/scene-diagnosis-preflight.log"
+  },
+  "checks": {},
+  "blockers": [],
+  "layer": {
+    "formal_product_layer": "P1",
+    "layer_target": "scenario dependency diagnosis",
+    "module": "smart_construction_scene",
+    "standard_vs_user_specific": "industry standard",
+    "why_here": "Diagnosis consumes declared entry facts instead of imposing duplicate scene publication on native action entries",
+    "why_not_elsewhere": "No frontend inference or new fact registry; no changes to P0 publication/ACL",
+    "blast_radius": "Read-only dependency contract and legacy enablement prerequisite; no record authorization grants"
+  },
+  "next_exact_step": "Push reviewed migration fix to PR812; verify exact remote SHA; remote CI pending, no merge/deploy.",
+  "owner_direction": "Native publication releases capability; scenario publication releases composed products. Report independent evidence, not a shared published flag.",
+  "validation_plan": {
+    "L1": "make ci.local.iteration",
+    "L2": "make verify.navigation.publication_consumers.unit",
+    "L3": "make acceptance.frontend.fixture_orm after existing local profile preflight",
+    "skipped": "No schema/seed change: no module upgrade. No frontend change: no build/browser suite. No environment rebuild."
+  },
+  "validation_results": [
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 169,
+      "groups": [
+        40,
+        16,
+        6,
+        21,
+        86
+      ],
+      "log": ".runtime/scene-diagnosis-unit-final.log"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "superseded",
+      "tests": 41,
+      "log": ".runtime/scene-diagnosis-orm.log",
+      "reason": "Review found action compatibility did not prove native delivery; classifier tightened"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "failed",
+      "log": ".runtime/scene-diagnosis-orm-final.log",
+      "owner": "validation_tool_defect",
+      "reason": "Native initialization declaration was incorrectly assumed to imply standard capability publication; exact assertion now separates the two conditions"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-orm-verified.log",
+      "tests": 41
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-orm-final-proof.log",
+      "repeat_reason": "Current user filtering must not erase composition publication; added real ORM restricted-tile/direct-handoff negative test",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-iteration-final.log"
+    },
+    {
+      "command": "make verify.acceptance.evolution.binding",
+      "status": "passed",
+      "tests": 61,
+      "log": ".runtime/scene-diagnosis-pr/selection-tests-final.log",
+      "scope": "P4 impact classification; previous log failed an obsolete invalidation sample, corrected with both relevant/unrelated assertions"
+    },
+    {
+      "command": "make verify.ci.orm_selection.unit",
+      "status": "passed",
+      "tests": 61,
+      "groups": [
+        39,
+        22
+      ],
+      "log": ".runtime/scene-diagnosis-pr/orm-selection-tests.log",
+      "scope": "Remote managed ORM producer and workflow wiring"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/scene-diagnosis-pr/iteration-selection.log",
+      "scope": "P4 classification correction"
+    }
+  ],
+  "stage_identity_artifact": ".runtime/scene-diagnosis-source-identity.json",
+  "completion": {
+    "batch": "scoped_implementation_and_validation_complete",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "Native qualification still uses existing product_menu_source; no new capability publication system introduced",
+    "Composition diagnosis is not runtime route authorization or full transitive-dependency release proof",
+    "No schema upgrade or browser suite needed; no daily or production deployment performed"
+  ],
+  "independent_review": {
+    "reviewer": "/root/independent_ci_review",
+    "status": "passed",
+    "source_identity": ".runtime/scene-diagnosis-source-identity.json",
+    "identity_sha256": "6d2802d979d3c39b565b8a605bed4e2e5de655f6bff44fc45df5a21465cf7a43",
+    "scope": "Local batch only, not PR merge or deployment authorization"
+  },
+  "publication": {
+    "requested_by_owner": true,
+    "base_sha": "54bed83383ee2e03773141430bdd6d50ca4f932b",
+    "included_commits": [
+      "9b172e3fc5edbef6a5c409db280016c86040610e",
+      "ee79dda079873c90cbe2f00d6fb4461a9856fee0",
+      "f31571aa4d21bc4555948bec54477cd560cdbc2e"
+    ],
+    "scope": "Stacked roadmap, scenario fact authority and publication diagnosis; source unchanged since passing scoped tests",
+    "remote_ci": "pending",
+    "receipt_location": ".runtime/scene-diagnosis-pr/",
+    "selection_correction": {
+      "owner_direction": "Remove unconditional unrelated list/relation prerequisites; preserve affected checks",
+      "layer": "P4 acceptance impact selection; no P1 semantic change",
+      "scope": "Exact scene fact consumers and version-only manifest metadata; unknown runtime and dependency changes retain conservative gates",
+      "browser_probe": "cancelled by owner steering; not a pass",
+      "contract_prerequisite": "passed at 0e6dbcc; not required for scene-only PR",
+      "runtime": "Existing local acceptance backend updated via backend.acceptance.up; persistent DB preserved; no daily deployment",
+      "independent_review": "passed /root/independent_ci_review; 61 binding and 39 classification independently rerun"
+    }
+  },
+  "review_fix": {
+    "issue": "PR812 P2 ambiguous legacy menu exemption",
+    "layer": "P1 smart_construction_core scenario migration",
+    "baseline": "cd98f32beba3311a6b3a75a4d93fcae28f5f9287",
+    "decision": "No authoritative deleted-membership history exists; do not infer any new exemption from absence. Preserve explicit declarations; missing remains denied.",
+    "validation": "Affected migration ORM, offline navigation suite and lightweight checks; no browser or deployment",
+    "status": "locally_validated",
+    "independent_review": "passed /root/independent_ci_review",
+    "logs": [
+      ".runtime/scene-diagnosis-pr/migration-unit.log",
+      ".runtime/scene-diagnosis-pr/migration-iteration.log",
+      ".runtime/scene-diagnosis-pr/migration-orm.log"
+    ],
+    "offline_tests": 169,
+    "orm_tests": 43,
+    "orm_failures": 0,
+    "orm_errors": 0
+  },
+  "fresh_install_fix": {
+    "baseline": "d34c0aab892c09120c7855e3acd67ab4a9065e7f",
+    "layer": "P1 explicit industry configuration entry defaults",
+    "scope": "Four enumerated configuration menus; only to install lifecycle, no upgrade grants",
+    "test_environment": "registered local.test sc-local-test / sc_test /^sc_test$/ disposable, no demo",
+    "status": "locally_validated",
+    "fresh_tests": 3,
+    "fresh_receipt": ".runtime/test-baseline/1793885719480904714/receipt.json",
+    "compatibility_tests": 43,
+    "compatibility_log": ".runtime/scene-diagnosis-pr/fresh-compatibility-orm.log",
+    "offline_tests": 169,
+    "binding_tests": 61,
+    "independent_review": "passed /root/independent_ci_review; runtime outcomes now passed",
+    "prior_failed_attempts": [
+      ".runtime/test-baseline/1793885252992670028/receipt.json",
+      ".runtime/test-baseline/1793885516809431056/receipt.json"
+    ],
+    "failure_owner": "test prerequisite: fresh admin lacked declared configuration menu groups; corrected actor only, no product permission relaxation",
+    "final_L1": "passed .runtime/scene-diagnosis-pr/fresh-final-iteration.log"
+  },
+  "ci_fix": {
+    "head": "073abef5ccf16aa6ebfcadd4419bdca41107683c",
+    "layer": "P4 execution evidence parser",
+    "cause": "Python3.10 verbose identity mismatch plus inventory JSON skipped key falsely treated as per-method skip",
+    "evidence": ".runtime/scene-diagnosis-pr/ci-executions/backend-execution-42037859921-1-3/smart_construction_scene/execution.log",
+    "plan": "Support both exact unittest identities, preserve negative cases, replay real downloaded logs; focused CI tests, no ORM rebuild",
+    "status": "locally_validated",
+    "tests": 286,
+    "tests_log": ".runtime/scene-diagnosis-pr/ci-parser-tests.log",
+    "diagnostic_replay": ".runtime/scene-diagnosis-pr/ci-coverage-replay.json",
+    "recovered": 86,
+    "retained": "exact module/class/method and explicit per-test success; real skip remains pending; ORM receipt authentication unchanged",
+    "independent_review": "passed /root/independent_ci_review; independently 20 tests and 86-method original log replay",
+    "lightweight": ".runtime/scene-diagnosis-pr/ci-parser-iteration.log"
+  }
+}

@@ -152,3 +152,5 @@ from . import test_workspace_processing_feedback
 from . import test_cost_processing_feedback
 from . import test_conditioned_processing_feedback
 from . import test_approval_policy_feedback
+
+from . import test_scenario_direct_entry_initialization

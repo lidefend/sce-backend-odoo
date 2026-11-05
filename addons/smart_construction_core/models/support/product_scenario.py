@@ -21,6 +21,14 @@ SCENARIO_INTENTS = [
     ("master_data", "基础信息维护"),
 ]
 SCENARIO_INTENT_CODES = tuple(item[0] for item in SCENARIO_INTENTS)
+# Explicit P1 configuration surfaces from menu_product_configuration_wave1.xml.
+# These are initialization declarations, never a runtime or upgrade fallback.
+DIRECT_CONFIGURATION_MENU_XMLIDS = (
+    "smart_construction_core.menu_sc_business_config_workbench",  # Form configuration
+    "smart_construction_core.menu_sc_approval_policy",  # Approval configuration
+    "smart_construction_core.menu_ui_form_field_policy_business_config",  # Field maintenance
+    "smart_construction_core.menu_ui_menu_config_policy_business_config",  # Menu configuration
+)
 SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
 EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
 
@@ -40,6 +48,41 @@ class ScProductScenario(models.Model):
     _sql_constraints = [
         ("sc_product_scenario_code_uniq", "unique(code)", "Scenario code must be unique."),
     ]
+
+    @api.constrains("code")
+    def _check_stable_code(self):
+        for record in self:
+            if not record.code or not record.code.strip() or record.code != record.code.strip():
+                raise ValidationError("Scenario code must be nonempty and have no surrounding whitespace.")
+
+    def write(self, vals):
+        if "code" in vals and any(record.code != vals["code"] for record in self):
+            raise ValidationError("Scenario code is a stable enablement identity; edit the name instead.")
+        return super().write(vals)
+
+    @api.model
+    def initialize_direct_entry_exemptions(self):
+        """Declare known configuration entries only during first installation.
+
+        Missing association history never proves a legacy direct entry. Upgrades
+        preserve explicit decisions, including revocations and deleted bindings.
+        """
+        params = self.env["ir.config_parameter"].sudo()
+        marker = "smart_construction_core.scenario_entry_scope.v1"
+        if params.get_param(marker):
+            return
+        module = self.env["ir.module.module"].sudo().search([
+            ("name", "=", "smart_construction_core"),
+        ], limit=1)
+        if module.state == "to install":
+            for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
+                menu = self.env.ref(xmlid)
+                if menu._name != "ir.ui.menu" or not menu.action:
+                    raise ValidationError("Direct configuration declaration requires an action menu: %s" % xmlid)
+                if self.env["sc.product.scenario.entry"].sudo().search_count([("menu_id", "=", menu.id)]):
+                    raise ValidationError("Direct configuration declaration conflicts with a scenario binding: %s" % xmlid)
+                menu.sudo().write({"sc_scenario_exempt": True})
+        params.set_param(marker, "1")
 
     @api.model
     def import_scenario_product_surface(self):
@@ -126,6 +169,17 @@ class IrUiMenu(models.Model):
         "ir.ui.menu", string="External Product Center", ondelete="restrict",
         help="Placement for entries outside the business root. A native business parent chain takes precedence.",
     )
+    sc_scenario_exempt = fields.Boolean(
+        string="Exempt from Company Scenario Enablement", default=False,
+        help="Explicitly bypass only scenario enablement. Publication, ACL and company scope still apply. A scenario binding takes precedence.",
+    )
+
+    def write(self, vals):
+        if vals.get("sc_scenario_exempt") and self.env["sc.product.scenario.entry"].sudo().search_count([
+            ("menu_id", "in", self.ids),
+        ]):
+            raise ValidationError("Remove the scenario binding before explicitly exempting an entry.")
+        return super().write(vals)
 
     @api.constrains("sc_product_center_id", "parent_id")
     def _check_product_center(self):
@@ -153,6 +207,18 @@ class ScProductScenarioEntry(models.Model):
             "Each navigation entry can bind to exactly one scenario.",
         ),
     ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if "menu_id" in vals or "scenario_id" in vals:
+            self.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        return result
 
     @api.depends("menu_id")
     def _compute_menu_xmlid(self):

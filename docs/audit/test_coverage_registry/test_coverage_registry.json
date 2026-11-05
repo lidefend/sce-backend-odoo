@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 207,
+    "odoo_tags": 208,
     "gated": 5,
     "on_demand": 56,
-    "unwired": 146,
-    "odoo_tag_declarations": 427,
-    "gated_declarations": 97,
-    "uncovered_declarations": 330,
+    "unwired": 147,
+    "odoo_tag_declarations": 429,
+    "gated_declarations": 98,
+    "uncovered_declarations": 331,
     "ci_unit_scripts": 18,
     "ci_unit_scripts_wired": 18,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 68,
+      "declarations": 69,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -69,6 +69,7 @@
         "addons/smart_construction_core/tests/test_quality_acceptance_capability.py",
         "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py",
         "addons/smart_construction_core/tests/test_role_regression_minimal.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
         "addons/smart_construction_core/tests/test_social_fund_capability.py",
         "addons/smart_construction_core/tests/test_subcontract_cost_registration.py",
         "addons/smart_construction_core/tests/test_tax_filing.py",
@@ -2210,6 +2211,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "scenario_direct_initialization",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "scene_delivery_policy",
