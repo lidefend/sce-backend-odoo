@@ -7,6 +7,46 @@ from scripts.dev import local_test_runner as runner
 
 
 class LocalTestRunnerTest(unittest.TestCase):
+    def test_upgrade_scenario_is_bounded_to_fresh_test_module(self):
+        self.assertEqual(runner.upgrade_rehearsal_script('', 'smart_core'), '')
+        with self.assertRaises(ValueError):
+            runner.upgrade_rehearsal_script('payment_approval_order', 'smart_core')
+        with patch.object(runner, 'profile') as profile:
+            self.assertEqual(runner.main(['prepare', '--upgrade-scenario', 'payment_approval_order']), 2)
+            profile.assert_not_called()
+        script = runner.upgrade_rehearsal_script('payment_approval_order', 'smart_construction_core')
+        self.assertIn('-u smart_construction_core --stop-after-init', script)
+        self.assertNotIn('dropdb', script)
+        self.assertNotIn('sc_dev_demo', script)
+
+    def test_upgrade_evidence_requires_all_three_successful_phases(self):
+        phases = ['prepare', 'after_upgrade_1', 'after_upgrade_2']
+        rows = [dict(phase=phase, status='passed', database='sc_test') for phase in phases]
+        log = '\n'.join('APPROVAL_UPGRADE_EVIDENCE=' + json.dumps(row) for row in rows)
+        log += '\nLOCAL_TEST_REAL_UPGRADE=after_upgrade_1\nLOCAL_TEST_REAL_UPGRADE=after_upgrade_2\n'
+        self.assertEqual(len(runner.upgrade_rehearsal_outcome(log, 'payment_approval_order')), 3)
+        for invalid in (log.replace('after_upgrade_2', 'after_upgrade_1'),
+                        log.replace('"passed"', '"failed"'), log.replace('sc_test', 'sc_dev_demo'),
+                        log.replace('LOCAL_TEST_REAL_UPGRADE=after_upgrade_1', 'missing')):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                runner.upgrade_rehearsal_outcome(invalid, 'payment_approval_order')
+
+    def test_actual_template_initializer_does_not_write_in_installed_or_upgrade_state(self):
+        import ast
+        from types import SimpleNamespace
+        path = runner.ROOT / 'addons/smart_construction_core/models/support/approval_policy.py'
+        tree = ast.parse(path.read_text())
+        method = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                      and node.name == 'apply_user_visible_approval_templates')
+        method.decorator_list = []
+        namespace = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        for state in ('installed', 'to upgrade', 'to remove'):
+            module_model = SimpleNamespace(sudo=lambda: SimpleNamespace(search=lambda *a, **k: SimpleNamespace(state=state)))
+            owner = SimpleNamespace(env={'ir.module.module': module_model})
+            # No writable model is supplied: any seed access in an upgrade fails.
+            self.assertTrue(namespace['apply_user_visible_approval_templates'](owner))
+
     def profile_file(self, root, **changes):
         values = dict(runner.IDENTITY, SC_ENVIRONMENT='dev', DB_PASSWORD='private', ADMIN_PASSWD='private', JWT_SECRET='private')
         values.update(changes)
