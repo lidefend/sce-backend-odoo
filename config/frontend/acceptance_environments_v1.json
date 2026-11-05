@@ -145,7 +145,7 @@
     "navux_branch": {
       "environment": "dev",
       "target_mode": "external",
-      "base_url": "http://127.0.0.1:18091/t/clean",
+      "base_url": "http://127.0.0.1:18091",
       "base_url_required": true,
       "database": "sc_frontend_acceptance_candidate",
       "database_required": true,
