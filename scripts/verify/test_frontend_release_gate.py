@@ -19,6 +19,7 @@ SECTIONS = {
     "navigation",
     "performance",
     "responsive",
+    "role_release_projection",
     "static",
 }
 

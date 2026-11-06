@@ -67,6 +67,7 @@
     "fix/my-work-fact-layer-convergence-20261104": ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",
     "fix/native-relation-helper-declaration": ".agent/runs/NATIVE-RELATION-DECLARATION/run.json",
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
+    "fix/nav-projection-reconciliation-20261106": ".agent/runs/BE-NAV-PROJECTION-01/run.json",
     "fix/nav-ux-01-scenario-navigation": ".agent/runs/NAV-UX-01/run.json",
     "fix/nav01-admin-entry-recovery-20261103": ".agent/runs/NAV01-ADMIN-ENTRY-RECOVERY-20261103/run.json",
     "fix/nav01-mainline-integration-20261103": ".agent/runs/NAV01-MAINLINE-INTEGRATION-20261103/run.json",

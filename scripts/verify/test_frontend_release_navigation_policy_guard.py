@@ -7,6 +7,7 @@ from pathlib import Path
 from scripts.verify.frontend_release_navigation_policy_guard import (
     ROLE_MAP,
     _load_role_policy,
+    compare_role_projection,
     validate,
     validate_formal_targets,
     validate_runtime_targets,
@@ -111,6 +112,51 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         manifest["scene_targets"][menu]["route"] = "/s/other"
         self.assertTrue(validate_formal_targets(manifest, product, {menu: "workspace.home"}))
 
+
+class RoleProjectionComparatorTest(unittest.TestCase):
+    def setUp(self):
+        root = Path(__file__).resolve().parents[2]
+        self.manifest = json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
+
+    def test_pm_equal_count_swap_is_visible_as_missing_and_unexpected(self):
+        boq_identity = "smart_construction_core.menu_sc_boq_analysis|smart_construction_core.action_project_boq_analysis|project.boq.analysis"
+        tender_identity = "smart_construction_core.menu_sc_project_tender|smart_construction_core.action_sc_project_tender|tender.bid"
+
+        pm = self.manifest["roles"]["pm"]
+        actual = list(pm["leaf_keys"])
+        expected = [tender_identity if key == boq_identity else key for key in actual]
+        self.assertEqual(len(expected), pm["expected_count"])
+        self.assertEqual(len(pm["browser_leaf_keys"]), pm["browser_expected_count"])
+
+        # Old guard: an equal-count swap of a non-browser leaf passes, because the
+        # pm role is capability-discover and the offline guard never compares the
+        # full leaf identities against an independent published set.
+        swapped_manifest = json.loads(json.dumps(self.manifest))
+        swapped_manifest["roles"]["pm"]["leaf_keys"] = expected
+        self.assertEqual(validate(swapped_manifest, _load_role_policy()), [])
+
+        result = compare_role_projection(expected, actual)
+        self.assertTrue(any("menu_sc_project_tender" in key for key in result["missing"]))
+        self.assertTrue(any("menu_sc_boq_analysis" in key for key in result["unexpected"]))
+        self.assertFalse(result["consistent"])
+
+    def test_finance_synchronized_shrink_still_fails(self):
+        finance = self.manifest["roles"]["finance"]
+        actual = list(finance["leaf_keys"])
+        home = "smart_construction_core.menu_sc_workspace_home||"
+        shrunk_manifest = json.loads(json.dumps(self.manifest))
+        shrunk_manifest["roles"]["finance"] = {
+            "expected_count": 1,
+            "leaf_keys": [home],
+            "browser_expected_count": 1,
+            "browser_leaf_keys": [home],
+        }
+        self.assertEqual(validate(shrunk_manifest, _load_role_policy()), [])
+
+        result = compare_role_projection([home], actual)
+        self.assertTrue(result["unexpected"])
+        self.assertFalse(result["consistent"])
+        self.assertGreater(result["actual_count"], result["expected_count"])
 
 
 class RuntimeTargetDeclarationTest(unittest.TestCase):

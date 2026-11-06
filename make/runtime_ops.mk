@@ -1156,7 +1156,7 @@ acceptance.baseline.upgrade: guard.codex.fast.upgrade guard.prod.danger
 # ======================================================
 # ==================== Policy Ops ======================
 # ======================================================
-.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture acceptance.frontend.fixture_guard acceptance.frontend.fixture_orm acceptance.frontend.release_snapshot acceptance.frontend.core_record_form.journeys frontend.acceptance.release.build demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.delivery_hardening.release.performance_probe verify.frontend.delivery_hardening.release.browser verify.frontend.dynamic_list_optional_columns.browser verify.frontend.release.unit verify.frontend.release.audit verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
+.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture acceptance.frontend.fixture_guard acceptance.frontend.fixture_orm acceptance.frontend.release_snapshot acceptance.frontend.core_record_form.journeys frontend.acceptance.release.build demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.role_release_projection verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.delivery_hardening.release.performance_probe verify.frontend.delivery_hardening.release.browser verify.frontend.dynamic_list_optional_columns.browser verify.frontend.release.unit verify.frontend.release.audit verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
 
 verify.frontend.dynamic_list_optional_columns.browser: guard.prod.forbid
 	@BASE_URL="$${BASE_URL:-}" DB_NAME="$${DB_NAME:-}" E2E_LOGIN="$${E2E_LOGIN:-}" E2E_PASSWORD="$${E2E_PASSWORD:-}" ARTIFACTS_DIR="$${ARTIFACTS_DIR:-}" DYNAMIC_LIST_TARGETS_JSON="$${DYNAMIC_LIST_TARGETS_JSON:-}" node scripts/verify/frontend_dynamic_list_optional_columns_browser.mjs
@@ -1181,7 +1181,38 @@ acceptance.frontend.fixture_orm: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/ci/frontend_fixture_orm_entry.sh
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot
+	@set -e; \
+	run_id="$${SC_ACCEPTANCE_RUN_ID:-$${GITHUB_RUN_ID:-local-$$(date +%s%N)}}"; run_attempt="$${GITHUB_RUN_ATTEMPT:-1}"; \
+	output="$$(SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot 2>&1)"; \
+	printf '%s\n' "$$output"; \
+	line="$$(printf '%s\n' "$$output" | grep 'frontend_acceptance_release_snapshot.v1' | tail -1)"; \
+	test -n "$$line" || { echo 'release snapshot receipt missing' >&2; exit 2; }; \
+	mkdir -p artifacts/frontend-release-audit; \
+	receipt=artifacts/frontend-release-audit/release-snapshot-receipt.json; \
+	if [ -f "$$receipt" ] && [ "$$(jq -r '.run_id // empty' "$$receipt")" = "$$run_id" ] && [ "$$(jq -r '.run_attempt // empty' "$$receipt")" = "$$run_attempt" ]; then \
+	  echo '[acceptance.frontend.release_snapshot] kept existing receipt for current run'; \
+	else \
+	  printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" --arg run_id "$$run_id" --arg run_attempt "$$run_attempt" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, run_id:$$run_id, run_attempt:$$run_attempt, receipt:.}' \
+	    > artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp; \
+	  mv artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp artifacts/frontend-release-audit/release-snapshot-receipt.json; \
+	  echo '[acceptance.frontend.release_snapshot] wrote receipt for current run'; \
+	fi
+
+verify.frontend.role_release_projection: guard.prod.forbid
+	@set -e; \
+	rm -f artifacts/frontend-release-audit/role-release-projection.json; \
+	run_id="$${SC_ACCEPTANCE_RUN_ID:-$${GITHUB_RUN_ID:-local-$$(date +%s%N)}}"; run_attempt="$${GITHUB_RUN_ATTEMPT:-1}"; \
+	output="$$(SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh role-release-projection 2>&1)"; \
+	line="$$(printf '%s\n' "$$output" | grep '^ROLE_RELEASE_PROJECTION=' | tail -1)"; \
+	test -n "$$line" || { printf '%s\n' "$$output" >&2; exit 2; }; \
+	mkdir -p artifacts/frontend-release-audit; \
+	printf '%s\n' "$$line" | sed 's/^ROLE_RELEASE_PROJECTION=//' | \
+	  jq --arg sha "$$(git rev-parse HEAD)" --arg ts "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+	    --arg run_id "$$run_id" --arg run_attempt "$$run_attempt" \
+	  '{schema_version:"frontend-role-release-projection/v1", git_sha:$$sha, generated_at:$$ts, scope_status:"NOT_VERIFIED", run_id:$$run_id, run_attempt:$$run_attempt, release_snapshot:.release_snapshot, db:.db, roles:.roles}' \
+	  > artifacts/frontend-release-audit/role-release-projection.json.tmp; \
+	mv artifacts/frontend-release-audit/role-release-projection.json.tmp artifacts/frontend-release-audit/role-release-projection.json; \
+	echo "[verify.frontend.role_release_projection] wrote artifacts/frontend-release-audit/role-release-projection.json"
 
 acceptance.frontend.core_record_form.journeys: guard.prod.forbid
 	@set -e; \
@@ -1466,6 +1497,7 @@ verify.frontend.navigation_initialization_race.browser: guard.prod.forbid
 verify.frontend.release.audit:
 	@set +e; \
 	status=0; \
+	export SC_ACCEPTANCE_RUN_ID="$${SC_ACCEPTANCE_RUN_ID:-local-$$(date +%s)-$$$$}"; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
 	VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
 	frontend_build_sha="$$(cat frontend/apps/web/dist/.build-sha256 2>/dev/null || true)"; \
@@ -1482,6 +1514,9 @@ verify.frontend.release.audit:
 	fi; \
 	if [ "$$status" -eq 0 ]; then \
 		$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
+	fi; \
+	if [ "$$status" -eq 0 ]; then \
+		$(MAKE) --no-print-directory verify.frontend.role_release_projection || status=$$?; \
 	fi; \
 	if [ "$$status" -eq 0 ]; then \
 		$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
