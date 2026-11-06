@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: CI-HISTORY-EVIDENCE-01
+  status: active
+  title: 修复后端覆盖证据的 skip 判定误报
+  formal_product_layer: P4
+  layer_target: scripts/ci/backend_changed_test_coverage.py
+  module: scripts/ci
+  standard_vs_user_specific: platform_mechanism
+  objective: >
+    verify_logs 的 ORM skip 判定用子串启发式（行内同时出现 "skipp" 与 Class.method 即判
+    skipped），把 dev test ... tags= 选择行误当跳过标记：选择行列出全部 selector，兄弟方法
+    test_notice_skipped_* 提供了 "skipp" 子串，导致已实际执行的方法被记为 pending。
+    改为精确匹配 "Class.method 后紧跟 skipp token" 的结果行，并用真实失败 locator 建回归。
+  why_here: >
+    skip 判定是覆盖证据消费逻辑，归属 CI 验证工具，不改变任何产品契约或业务语义。
+  why_not_elsewhere:
+    - 不修改 #828 的产品代码（smart_core / smart_construction_core / frontend）。
+    - 不降低覆盖要求；证据缺失仍 fail-closed，错误模块仍不得串用。
+    - 不把 NOT_VERIFIED 改成 PASS。
+  scope: [scripts/ci/backend_changed_test_coverage.py, scripts/ci/test_backend_changed_test_coverage.py]
+  exclusions: [产品模块, 共享 local.dev 运行态, 生产部署与合并授权]
