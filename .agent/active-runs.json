@@ -18,6 +18,7 @@
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",
+    "codex/list-create-entry-contract-20261106": ".agent/runs/LIST-CREATE-ENTRY-CONTRACT-20261106/run.json",
     "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
     "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
     "codex/test-baseline-incremental-reuse": ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",

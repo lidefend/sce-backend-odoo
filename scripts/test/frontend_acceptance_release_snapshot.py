@@ -17,7 +17,10 @@ from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
 
 
 
-EXPECTED_DATABASE = "sc_frontend_acceptance"
+EXPECTED_DATABASE = str(
+    os.environ.get("SC_ACCEPTANCE_SNAPSHOT_DATABASE") or "sc_frontend_acceptance"
+).strip()
+ALLOWED_DATABASES = {"sc_frontend_acceptance", "sc_frontend_acceptance_candidate"}
 PRODUCT_KEY = "construction.standard"
 PLATFORM_RELEASE_DB_PARAM = "smart_core.platform_release_db"
 CATALOG_SOURCE_DB_PARAM = "smart_core.release_operator.catalog_source_db"
@@ -29,7 +32,7 @@ def _text(value) -> str:
 
 def _guard() -> str:
     database = _text(env.cr.dbname)  # noqa: F821
-    if database != EXPECTED_DATABASE:
+    if database not in ALLOWED_DATABASES or database != EXPECTED_DATABASE:
         raise RuntimeError(
             f"FRONTEND_ACCEPTANCE_SNAPSHOT_DATABASE_DENIED:{database}"
         )
@@ -118,6 +121,7 @@ def main() -> None:
     evidence = {
         "schema": "frontend_acceptance_release_snapshot.v1",
         "database": database,
+        "profile": _text(os.environ.get("SC_ACCEPTANCE_RUNTIME_PROFILE")),
         "product_key": PRODUCT_KEY,
         "version": version,
         "source_revision": source_revision,

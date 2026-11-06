@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: LIST-CREATE-ENTRY-CONTRACT-20261106
+  status: active
+  title: 列表新建契约——交付带目标与授权的创建动作
+  formal_product_layer: P0
+  layer_target: smart_core 列表契约装配/生产者 + smart_construction_core 台账委托声明
+  module: smart_core
+  standard_vs_user_specific: platform_mechanism
+  objective: >
+    列表“新建”不再用布尔能力（entryCapabilities/effectiveRecordCapabilities）表达，
+    改为交付一个带 target 与当前用户授权的 action.list.create 规则。普通列表默认直建
+    当前入口标准创建表单；项目台账 590 委托到标准项目立项（action_project_initiation）。
+  why_here: >
+    列表创建入口的目标解析与授权裁决属于平台契约装配机制；台账→立项的委托是施工行业
+    标准声明。
+  why_not_elsewhere:
+    - 不把创建目标或授权写进前端硬编码。
+    - 不在 P2/P3 放行业或客户偏好。
+    - 不改动生产发布/合并/部署授权。
+  scope: [addons/smart_core/, addons/smart_construction_core/actions/project_list_actions.xml, frontend/apps/web/src/views/ActionView.vue, scripts/verify/frontend_list_surface_structure_browser.mjs, scripts/verify/unified_page_contract_v2_assembler_guard.py, docs/architecture/frontend_contract_basis_ledger.json]
+  exclusions: [生产部署与合并授权, P2/P3 模块, 共享 local.dev 运行态]
