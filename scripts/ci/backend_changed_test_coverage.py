@@ -163,8 +163,16 @@ def verify_logs(rows: list[dict], sources: list[dict]) -> list[dict]:
             identity = re.escape(row['logger']) + r': Starting ' + re.escape(
                 row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
             matched = bool(re.search(identity, text))
-            skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
-                          for line in text.splitlines())
+            # A skip is a test-result line whose method name is immediately
+            # followed by a ``skipp`` token.  The previous substring heuristic
+            # also matched the ``dev test ... tags=`` selection line: it lists
+            # every selector, and a sibling method name such as
+            # ``test_notice_skipped_*`` supplies the ``skipp`` substring, so a
+            # perfectly executed row was misclassified as skipped.
+            skip_identity = (
+                r'(?<!\S)' + re.escape(row['class'] + '.' + row['method']) + r'\s+skipp'
+            )
+            skipped = any(re.search(skip_identity, line) for line in text.splitlines())
         result.append({**row, 'status': 'executed' if matched and not skipped and row['owner'] != MANAGED_TARGET else 'pending'})
     return result
 

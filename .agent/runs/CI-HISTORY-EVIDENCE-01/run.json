@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "CI-HISTORY-EVIDENCE-01",
+  "branch": "fix/ci-backend-coverage-skip-detection",
+  "baseline_sha": "0bf5fb00d5bbd1d0a544178db96840395420f073",
+  "status": "active",
+  "goal": ".agent/goals/CI-HISTORY-EVIDENCE-01.yaml",
+  "record": "docs/ops/iterations/ci-history-evidence-01-record.md",
+  "scope": [
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
+    "docs/ops/iterations/ci-history-evidence-01-record.md",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and pure-python CI unit tests"
+  },
+  "checks": {
+    "ci_coverage_verify_logs_unit": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/test_backend_changed_test_coverage.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "提交 skip 判定修复，跑 ci.local.iteration + CI 单测，再 pr.push + pr.create（Draft）",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "scripts/ci 覆盖证据消费",
+    "module": "scripts/ci",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "verify_logs 是 CI 验证工具，不携带产品语义",
+    "why_not_elsewhere": "不改产品契约、不改前端渲染、不扩数据库写入",
+    "blast_radius": "backend_impact_suite 的 verify_coverage 步骤与 professional/merge 门禁"
+  }
+}
