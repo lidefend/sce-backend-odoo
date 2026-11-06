@@ -228,6 +228,13 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             validate_role_release_projection(self._report(mutate), SHA)
         self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH", str(ctx.exception))
 
+    def test_stale_run_id_rejected(self):
+        def mutate(report, _manifest):
+            report["run_id"] = "42191333658-other"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH", str(ctx.exception))
+
     def test_stale_snapshot_rejected(self):
         def mutate(report, _manifest):
             report["release_snapshot"]["version"] = "frontend-audit-000000000000"

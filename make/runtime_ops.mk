@@ -1482,6 +1482,7 @@ verify.frontend.navigation_initialization_race.browser: guard.prod.forbid
 verify.frontend.release.audit:
 	@set +e; \
 	status=0; \
+	export SC_ACCEPTANCE_RUN_ID="$${SC_ACCEPTANCE_RUN_ID:-local-$$(date +%s)-$$$$}"; \
 	$(MAKE) --no-print-directory verify.frontend.release.unit || status=$$?; \
 	VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance python3 scripts/verify/frontend_static_release_audit.py || status=$$?; \
 	frontend_build_sha="$$(cat frontend/apps/web/dist/.build-sha256 2>/dev/null || true)"; \
