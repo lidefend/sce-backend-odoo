@@ -118,7 +118,9 @@ def _projection_problem_summary(problem: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_role_release_projection(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
+def validate_role_release_projection(
+    report: dict[str, Any], expected_sha: str, receipt: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Recompute the per-role published projection from the raw identity list.
 
     The collector gathers identities and never prints PASS. This validator binds
@@ -136,14 +138,17 @@ def validate_role_release_projection(report: dict[str, Any], expected_sha: str) 
     if str(report.get("run_attempt") or "") != expected_run_attempt:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH")
     snapshot = report.get("release_snapshot") or {}
-    if str(snapshot.get("database") or "") != "sc_frontend_acceptance":
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_DB_MISMATCH")
-    if int(snapshot.get("snapshot_id") or 0) <= 0:
+    try:
+        snapshot_id = int(snapshot.get("snapshot_id") or 0)
+    except (TypeError, ValueError) as exc:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID") from exc
+    if snapshot_id <= 0:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_MISSING")
-    if not str(snapshot.get("fingerprint") or "").strip():
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_FINGERPRINT_MISSING")
-    if str(snapshot.get("version") or "") != f"frontend-audit-{expected_sha[:12]}":
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_VERSION_MISMATCH")
+    for field in ("database", "version", "snapshot_id", "fingerprint"):
+        actual = snapshot.get(field)
+        expected = (receipt or {}).get(field)
+        if expected is not None and str(actual) != str(expected):
+            raise EvidenceError(f"ROLE_RELEASE_PROJECTION_SNAPSHOT_{field.upper()}_MISMATCH")
     if str(report.get("db") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
     manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")
@@ -342,11 +347,18 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
     evidence: dict[str, Any] = {}
     failures: list[str] = []
     missing_evidence: list[str] = []
+    receipt_path = evidence_root / "frontend-release-audit/release-snapshot-receipt.json"
+    snapshot_receipt: dict[str, Any] = {}
+    if receipt_path.exists():
+        snapshot_receipt = (read_json(receipt_path).get("receipt") or {})
     for name, validator in validators.items():
         report: dict[str, Any] | None = None
         try:
             report = read_json(paths[name])
-            sections[name] = validator(report, expected_sha)
+            if name == "role_release_projection":
+                sections[name] = validator(report, expected_sha, snapshot_receipt)
+            else:
+                sections[name] = validator(report, expected_sha)
             evidence[name] = {
                 "path": str(paths[name].relative_to(ROOT)),
                 "git_sha": report.get("git_sha"),

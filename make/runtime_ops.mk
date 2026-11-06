@@ -1181,7 +1181,15 @@ acceptance.frontend.fixture_orm: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/ci/frontend_fixture_orm_entry.sh
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot
+	@set -e; \
+	output="$$(SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot 2>&1)"; \
+	printf '%s\n' "$$output"; \
+	line="$$(printf '%s\n' "$$output" | grep 'frontend_acceptance_release_snapshot.v1' | tail -1)"; \
+	test -n "$$line" || { echo 'release snapshot receipt missing' >&2; exit 2; }; \
+	mkdir -p artifacts/frontend-release-audit; \
+	printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, receipt:.}' \
+	  > artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp; \
+	mv artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp artifacts/frontend-release-audit/release-snapshot-receipt.json
 
 verify.frontend.role_release_projection: guard.prod.forbid
 	@set -e; \

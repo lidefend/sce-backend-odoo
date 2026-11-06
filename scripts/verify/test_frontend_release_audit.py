@@ -161,6 +161,12 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         "pm": ("fixture_role_pm", "pm"),
         "owner": ("fixture_role_owner", "owner"),
     }
+    RECEIPT = {
+        "database": "sc_frontend_acceptance",
+        "snapshot_id": 3,
+        "fingerprint": "12e8edf300b58ea9d82fff9525677c8467453445c5228f780c75fc5840ab9b1f",
+        "version": f"frontend-audit-{SHA[:12]}",
+    }
 
     def _manifest(self):
         root = Path(__file__).resolve().parents[2]
@@ -169,7 +175,11 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
     def setUp(self):
         env_patch = patch.dict(
             os.environ,
-            {"GITHUB_RUN_ID": "42191333658", "GITHUB_RUN_ATTEMPT": "7"},
+            {
+                "SC_ACCEPTANCE_RUN_ID": "test-managed-run",
+                "GITHUB_RUN_ID": "42191333658",
+                "GITHUB_RUN_ATTEMPT": "7",
+            },
             clear=False,
         )
         env_patch.start()
@@ -189,7 +199,8 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             "git_sha": SHA,
             "db": "sc_frontend_acceptance",
             "scope_status": scope_status,
-            "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
+            "run_id": os.environ.get("SC_ACCEPTANCE_RUN_ID")
+            or os.environ.get("GITHUB_RUN_ID", "local"),
             "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1"),
             "release_snapshot": {
                 "database": "sc_frontend_acceptance",
@@ -203,8 +214,11 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             mutate(report, manifest)
         return report
 
+    def _validate(self, report):
+        return validate_role_release_projection(report, SHA, self.RECEIPT)
+
     def test_matching_identities_pass(self):
-        validate_role_release_projection(self._report(), SHA)
+        self._validate(self._report())
 
     def test_matching_identities_with_unverified_scope_still_fail(self):
         with self.assertRaises(EvidenceError) as ctx:
@@ -230,7 +244,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
 
     def test_stale_run_id_rejected(self):
         def mutate(report, _manifest):
-            report["run_id"] = "42191333658-other"
+            report["run_id"] = "test-managed-run-other"
         with self.assertRaises(EvidenceError) as ctx:
             validate_role_release_projection(self._report(mutate), SHA)
         self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH", str(ctx.exception))
@@ -239,8 +253,22 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         def mutate(report, _manifest):
             report["release_snapshot"]["version"] = "frontend-audit-000000000000"
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_VERSION_MISMATCH", str(ctx.exception))
+
+    def test_stale_snapshot_fingerprint_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"]["fingerprint"] = "0" * 64
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_FINGERPRINT_MISMATCH", str(ctx.exception))
+
+    def test_invalid_snapshot_id_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"]["snapshot_id"] = "abc"
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
 
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):
