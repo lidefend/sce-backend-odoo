@@ -16,6 +16,8 @@
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "scripts/verify/record_relation_roundtrip_acceptance.js",
     "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
     "scripts/test/frontend_acceptance_release_snapshot.py",
     "make/runtime_ops.mk",
     "docs/architecture/frontend_contract_basis_ledger.json",
