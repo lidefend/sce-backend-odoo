@@ -676,8 +676,9 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     collect(raw_layout)
     declarations = [n for n in raw_nodes if n.get("componentKey") in KEYS]
     if not declarations:
-        contract = _assemble_unified_page_contract_v2(source_contract, **kwargs)
-        _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
+        contract = _assemble_unified_page_contract_v2(
+            source_contract, node_actor_env=node_actor_env, **kwargs,
+        )
         return contract
     references = set()
     for node in declarations:
@@ -701,7 +702,9 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             admitted.add((name, locator, occurrence))
     with _feedback_assembly_scope(admitted):
         try:
-            contract = _assemble_unified_page_contract_v2(source_contract, **kwargs)
+            contract = _assemble_unified_page_contract_v2(
+                source_contract, node_actor_env=node_actor_env, **kwargs,
+            )
         except FormConfigurationError:
             raise
         except ValueError as exc:
@@ -735,7 +738,6 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             draft_feedback=draft_feedback,
             parsed_view=parsed_view,
         )
-        _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
         return contract
 
 
@@ -774,7 +776,10 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
             visible = False
     try:
         from odoo.addons.smart_construction_core.services.baseline_readiness import build_readiness
-        result = build_readiness(node_actor_env, model, record_id)
+        # A new (unsaved) record has no positive id; the readiness service
+        # treats ``None`` as the "no_data" projection for a record that has not
+        # been selected yet, while ``0`` would be rejected as a non-positive id.
+        result = build_readiness(node_actor_env, model, record_id or None)
     except Exception:
         return
     labels = {"ready": "可提交", "blocked": "待处理", "no_data": "暂无记录", "forbidden": "无权限"}
@@ -790,6 +795,49 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
         "reasonCode": _text(result.get("reason_code")),
         "sourceAuthority": "smart_construction_core.services.baseline_readiness.build_readiness",
     }
+    _suppress_notice_owned_body_fields(contract)
+
+
+def _suppress_notice_owned_body_fields(contract: dict[str, Any]) -> None:
+    """Hide native body occurrences of a field published through ``noticeContract``.
+
+    The readiness content is handed to the page-header notice, so the native
+    body occurrence must not render a second time. Only the layout occurrence
+    is suppressed: the field value, widget status/auth and the native XML stay
+    authoritative. Nodes are never removed from ``children``, so parent
+    ``widgetList`` ownership bindings remain intact. A container whose every
+    direct field child is one such field (the single-field project-overview
+    readiness group) is suppressed as well, so its now-empty group caption does
+    not survive as a stray heading.
+    """
+    tree = contract.get("layoutContract")
+    if not isinstance(tree, dict):
+        return
+    roots = tree.get("containerTree")
+    if not isinstance(roots, list):
+        return
+
+    def walk(nodes: list[Any]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            children = node.get("children")
+            if isinstance(children, list):
+                walk(children)
+            kind = _text(node.get("type") or node.get("containerType")).lower()
+            if kind == "field":
+                if _text(node.get("name")) == "submission_readiness_display":
+                    node["visible"] = False
+                continue
+            if children and all(
+                isinstance(child, dict)
+                and _text(child.get("type") or child.get("containerType")).lower() == "field"
+                and _text(child.get("name")) == "submission_readiness_display"
+                for child in children
+            ):
+                node["visible"] = False
+
+    walk(roots)
 
 
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
@@ -949,6 +997,7 @@ def _assemble_unified_page_contract_v2(
     request_id: str = "request.upc.v2.assembler",
     trace_id: str = "",
     stage_timings: dict[str, int] | None = None,
+    node_actor_env=None,
 ) -> dict[str, Any]:
     started_at = time.monotonic()
     source = _dict(source_contract)
@@ -982,6 +1031,11 @@ def _assemble_unified_page_contract_v2(
     actions_bound_at = time.monotonic()
     if resolved in {"ui.contract", "native_form_projection"}:
         _page_composition_contract(contract, source)
+    # The readiness notice and its body-occurrence suppression are part of the
+    # semantic contract, so they must be present before the integrity digest is
+    # sealed over ``contract_semantic_payload``. Injecting after sealing would
+    # leave ``contractSha256``/``etag``/``snapshotId`` not covering them.
+    _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
     sealed = seal_unified_page_contract(
         contract,
         source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,

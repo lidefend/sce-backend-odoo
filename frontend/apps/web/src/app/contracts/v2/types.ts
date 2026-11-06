@@ -651,6 +651,7 @@ export interface ContractV2Snapshot {
   workflowContract?: ContractV2Dictionary;
   fieldOwnership?: ContractV2FieldOwnership;
   pageComposition?: ContractV2PageComposition;
+  noticeContract?: ContractV2NoticeContract;
 }
 
 export interface ContractV2FieldOwnership {
@@ -662,6 +663,21 @@ export interface ContractV2PageComposition {
   diagnostics?: unknown[];
   schemaVersion?: string;
   permissionSemanticsPreserved?: boolean;
+}
+
+export interface ContractV2SubmissionReadinessNotice {
+  visible: boolean;
+  status: string;
+  statusLabel?: string;
+  message?: string;
+  nextStep?: string;
+  nextStepAction?: string;
+  reasonCode?: string;
+  sourceAuthority?: string;
+}
+
+export interface ContractV2NoticeContract {
+  submissionReadiness?: ContractV2SubmissionReadinessNotice;
 }
 
 export interface ContractV2UnsupportedFeature {

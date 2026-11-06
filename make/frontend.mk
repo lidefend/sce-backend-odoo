@@ -546,7 +546,7 @@ verify.frontend.action_view_surface_gate_runtime.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-view-surface-gate-runtime-test.mjs >/dev/null
 	@node /tmp/action-view-surface-gate-runtime-test.mjs
 
-.PHONY: verify.frontend.dev.incremental verify.frontend.dev.incremental.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.frontend.dev.watch verify.frontend.form_structure_contract_projection.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_child_sequence.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.collection_status_presentation.unit
+.PHONY: verify.frontend.dev.incremental verify.frontend.dev.incremental.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.frontend.dev.watch verify.frontend.form_structure_contract_projection.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_child_sequence.unit verify.frontend.submission_readiness_notice_contract.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.collection_status_presentation.unit
 
 verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
 	@python3 scripts/verify/form_structure_contract_projection_matrix.py --check
@@ -642,6 +642,10 @@ verify.frontend.native_text_presentation.unit: guard.prod.forbid
 verify.frontend.native_child_sequence.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_child_sequence_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-child-sequence-test.mjs >/dev/null
 	@node /tmp/native-child-sequence-test.mjs
+
+verify.frontend.submission_readiness_notice_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/submission_readiness_notice_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/submission-readiness-notice-contract-test.mjs >/dev/null
+	@node /tmp/submission-readiness-notice-contract-test.mjs
 
 verify.frontend.action_view_context_policy.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_context_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-view-context-policy-test.mjs >/dev/null

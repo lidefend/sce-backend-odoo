@@ -8,7 +8,7 @@ const report = { status: 'failed', head: process.env.CANDIDATE_HEAD, stage: 'hea
 fs.mkdirSync(output, { recursive: true });
 assert.equal(target.database, 'sc_dev_demo');
 assert.deepEqual(target.missing, [], 'existing records must cover declared cases');
-assert.equal(target.cases.length, 5);
+assert.equal(target.cases.length, 7);
 const browser = await launchChromium();
 try {
   const selected = process.env.READINESS_CASE_KEYS?.split(',').filter(Boolean);
@@ -44,19 +44,28 @@ try {
       responses.length = 0;
       const route = item.record_id ? `r/${item.model}/${item.record_id}` : `f/${item.model}/new`;
       await page.goto(`${base}/${route}?action_id=${item.action_id}&menu_id=${item.menu_id}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(expected => document.body.innerText.includes(expected), item.expected.split('\n')[0], { timeout: 30000 });
-      const field = page.locator('[data-field-name="submission_readiness_display"]');
-      assert.equal(await field.count(), 1, 'one native readiness field');
-      await field.scrollIntoViewIfNeeded();
-      assert.equal(await field.isVisible(), true, 'readiness field visible');
-      const body = await field.innerText();
-      for (const line of item.expected.split('\n')) assert.ok(body.includes(line), `${item.key}: expected native readiness text`);
-      assert.ok(JSON.stringify(responses).includes('submission_readiness_display'), 'field supplied by runtime contract/data');
+      const serverVisible = item.server?.visible === true;
+      if (serverVisible) {
+        await page.waitForSelector('[data-submission-readiness]', { timeout: 30000 });
+      } else {
+        await page.waitForSelector(`[data-form-model="${item.model}"]`, { timeout: 30000 });
+      }
+      const notice = page.locator('[data-submission-readiness]');
+      const bodyField = page.locator('[data-field-name="submission_readiness_display"]');
+      assert.equal(await notice.count(), serverVisible ? 1 : 0, `${item.key}: page-header readiness notice count`);
+      assert.equal(await bodyField.count(), 0, `${item.key}: native body readiness field must not render`);
+      if (serverVisible) {
+        await notice.scrollIntoViewIfNeeded();
+        const headerText = await notice.innerText();
+        for (const line of [item.server.status_label, item.server.message, item.server.next_step_label]) {
+          if (line) assert.ok(headerText.includes(line), `${item.key}: header missing ${line}`);
+        }
+      }
+      assert.ok(JSON.stringify(responses).includes('submissionReadiness'), `${item.key}: notice declared by runtime contract`);
       assert.equal(report.mutations.length, 0);
       assert.equal(report.errors.length, 0);
       await page.screenshot({ path: path.join(output, `${item.key}.png`), fullPage: true });
-      await field.screenshot({ path: path.join(output, `${item.key}-field.png`) });
-      report.cases.push({ key: item.key, status: 'passed', actor_id: item.actor.id, record_id: item.record_id, readiness: item.status });
+      report.cases.push({ key: item.key, status: 'passed', actor_id: item.actor.id, record_id: item.record_id, readiness: item.server?.status ?? item.server?.visible });
     } catch (error) {
       await page.screenshot({ path: path.join(output, `${item.key}-failed.png`), fullPage: true });
       fs.writeFileSync(path.join(output, `${item.key}-responses.json`), JSON.stringify(responses, null, 2));
