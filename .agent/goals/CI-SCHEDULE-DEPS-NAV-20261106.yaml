@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: CI-SCHEDULE-DEPS-NAV-20261106
+  status: active
+  formal_product_layer: P4
+  objective: 恢复定时 CI：补齐 ripgrep 依赖，并使导航发布守卫对齐能力发现口径

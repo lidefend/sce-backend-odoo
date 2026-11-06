@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULE-DEPS-NAV-20261106",
+  "branch": "fix/ci-schedule-deps-nav-20261106",
+  "baseline_sha": "3455125787b1a3950c00c6c475db62197604b948",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-SCHEDULE-DEPS-NAV-20261106.yaml",
+  "record": ".agent/runs/CI-SCHEDULE-DEPS-NAV-20261106/run.json",
+  "scope": [
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/verify/frontend_release_navigation_policy_guard.py",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    ".agent/runs/CI-SCHEDULE-DEPS-NAV-20261106/run.json",
+    ".agent/goals/CI-SCHEDULE-DEPS-NAV-20261106.yaml",
+    ".agent/active-runs.json"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline",
+    "authority": "registered offline unit targets and workflow syntax"
+  },
+  "layer": {
+    "formal_product_layer": "P4 CI and navigation governance",
+    "layer_target": "professional_quality workflow + navigation release guard",
+    "module": "ci/governance",
+    "standard_vs_user_specific": "standard CI governance",
+    "why_here": "schedule CI fails on missing rg and stale whitelist guard",
+    "blast_radius": "CI dependency preparation and navigation guard projection",
+    "exclusions": ["product semantics", "authorization widening", "role group changes"]
+  },
+  "next_exact_step": "publish draft PR and run complete scheduled verification",
+  "execution_results": {
+    "navigation_guard": {"status": "passed", "log": ".runtime/ci-nav-guard.log"},
+    "capability_tooling_unit": {"status": "passed", "count": 112, "log": ".runtime/ci-deps-capunit.log"}
+  }
+}
