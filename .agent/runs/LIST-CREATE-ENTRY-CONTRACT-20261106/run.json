@@ -14,6 +14,8 @@
     "frontend/apps/web/src/views/ActionView.vue",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/test/frontend_acceptance_release_snapshot.py",
     "make/runtime_ops.mk",
     "docs/architecture/frontend_contract_basis_ledger.json",
@@ -51,5 +53,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "补 frontend_contract_basis_ledger.json 绑定并跑 verify.frontend.contract_basis.enforce 与 ci.local.iteration"
+  "next_exact_step": "独立复核与外部归档后执行 pr.publish.preflight 与 pr.push"
 }
