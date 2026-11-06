@@ -129,15 +129,21 @@ def validate_role_release_projection(report: dict[str, Any], expected_sha: str) 
     only a VERIFIED scope is held to the hard identity equality.
     """
     require_sha(report, expected_sha, "role_release_projection")
-    expected_run_id = os.environ.get("GITHUB_RUN_ID", "local")
+    expected_run_id = os.environ.get("SC_ACCEPTANCE_RUN_ID") or os.environ.get("GITHUB_RUN_ID", "local")
     expected_run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
     if str(report.get("run_id") or "") != expected_run_id:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH")
     if str(report.get("run_attempt") or "") != expected_run_attempt:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH")
     snapshot = report.get("release_snapshot") or {}
-    if str(snapshot.get("source_revision") or "") != expected_sha:
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_MISMATCH")
+    if str(snapshot.get("database") or "") != "sc_frontend_acceptance":
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_DB_MISMATCH")
+    if int(snapshot.get("snapshot_id") or 0) <= 0:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_MISSING")
+    if not str(snapshot.get("fingerprint") or "").strip():
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_FINGERPRINT_MISSING")
+    if str(snapshot.get("version") or "") != f"frontend-audit-{expected_sha[:12]}":
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_VERSION_MISMATCH")
     if str(report.get("db") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
     manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")

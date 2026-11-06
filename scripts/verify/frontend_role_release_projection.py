@@ -103,6 +103,25 @@ def _bucket_counts(authority):
     }
 
 
+def _release_snapshot_identity():
+    snapshot = env["sc.edition.release.snapshot"].sudo().search([
+        ("product_key", "=", "construction.standard"),
+        ("state", "=", "released"),
+        ("is_active", "=", True),
+        ("active", "=", True),
+    ], limit=1)
+    if not snapshot:
+        return {}
+    meta = snapshot.meta_json if isinstance(snapshot.meta_json, dict) else {}
+    draft = meta.get("release_draft") if isinstance(meta.get("release_draft"), dict) else {}
+    return {
+        "database": DATABASE,
+        "snapshot_id": int(snapshot.id),
+        "fingerprint": str(draft.get("fingerprint") or "").strip(),
+        "version": str(snapshot.version or "").strip(),
+    }
+
+
 def _denied_rows(authority):
     rows = []
     if not isinstance(authority, dict):
@@ -171,7 +190,15 @@ for manifest_role, _role_code, login in ROLES:
 
 print(
     "ROLE_RELEASE_PROJECTION="
-    + json.dumps({"db": DATABASE, "roles": roles}, ensure_ascii=False, default=str),
+    + json.dumps(
+        {
+            "db": DATABASE,
+            "release_snapshot": _release_snapshot_identity(),
+            "roles": roles,
+        },
+        ensure_ascii=False,
+        default=str,
+    ),
     flush=True,
 )
 env.cr.rollback()

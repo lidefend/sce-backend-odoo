@@ -166,6 +166,15 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         return json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
 
+    def setUp(self):
+        env_patch = patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "42191333658", "GITHUB_RUN_ATTEMPT": "7"},
+            clear=False,
+        )
+        env_patch.start()
+        self.addCleanup(env_patch.stop)
+
     def _report(self, mutate=None, scope_status="VERIFIED"):
         manifest = self._manifest()
         roles = {
@@ -180,9 +189,14 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             "git_sha": SHA,
             "db": "sc_frontend_acceptance",
             "scope_status": scope_status,
-            "run_id": "local",
-            "run_attempt": "1",
-            "release_snapshot": {"source_revision": SHA},
+            "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
+            "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1"),
+            "release_snapshot": {
+                "database": "sc_frontend_acceptance",
+                "snapshot_id": 3,
+                "fingerprint": "12e8edf300b58ea9d82fff9525677c8467453445c5228f780c75fc5840ab9b1f",
+                "version": f"frontend-audit-{SHA[:12]}",
+            },
             "roles": roles,
         }
         if mutate:
@@ -208,17 +222,18 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", str(ctx.exception))
 
     def test_stale_run_attempt_rejected(self):
-        with patch.dict(os.environ, {"GITHUB_RUN_ATTEMPT": "2"}):
-            with self.assertRaises(EvidenceError) as ctx:
-                validate_role_release_projection(self._report(), SHA)
+        def mutate(report, _manifest):
+            report["run_attempt"] = "1"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
         self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH", str(ctx.exception))
 
     def test_stale_snapshot_rejected(self):
         def mutate(report, _manifest):
-            report["release_snapshot"] = {"source_revision": "c" * 40}
+            report["release_snapshot"]["version"] = "frontend-audit-000000000000"
         with self.assertRaises(EvidenceError) as ctx:
             validate_role_release_projection(self._report(mutate), SHA)
-        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_MISMATCH", str(ctx.exception))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_VERSION_MISMATCH", str(ctx.exception))
 
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):
