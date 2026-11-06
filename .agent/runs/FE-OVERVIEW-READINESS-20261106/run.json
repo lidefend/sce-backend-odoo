@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-OVERVIEW-READINESS-20261106",
   "branch": "fix/project-overview-native-text-rendering",
-  "baseline_sha": "0bf5fb00d5bbd1d0a544178db96840395420f073",
+  "baseline_sha": "1199054a57bb9c5a6a40977b4889ff6507773424",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-OVERVIEW-READINESS-20261106.yaml",
   "record": "docs/ops/iterations/fe-overview-readiness-20261106.md",
@@ -63,7 +63,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "修复页签文本渲染与 P0/P1 分层后，重录 frontend_presentation，再 pr.publish.preflight + pr.push（保持 Draft）",
+  "next_exact_step": "主线已同步至 1199054a5（含 CI 修复）；重跑 pr.publish.preflight + pr.push（保持 Draft）",
   "layer": {
     "formal_product_layer": "P0 + P1",
     "layer_target": "P0 统一页契约装配器/前端原生渲染器 + P1 smart_construction_core 办理前检查裁决",
