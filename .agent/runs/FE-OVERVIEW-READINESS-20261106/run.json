@@ -54,10 +54,8 @@
       ]
     }
   },
-  "blockers": [
-    "readiness/overview 浏览器回执待采集：sc_dev_demo 当前绑定 FE-converge 候选分支，需等待或改绑独立候选载体"
-  ],
-  "next_exact_step": "在绑定本候选的载体上采集立项完成度与办理前检查两份浏览器回执，再走 pr.publish.preflight + pr.push + pr.create（Draft）",
+  "blockers": [],
+  "next_exact_step": "走 pr.publish.preflight + pr.push + pr.create（Draft），并携带付款侧/项目侧 readiness 与项目概览浏览器回执",
   "layer": {
     "formal_product_layer": "P0",
     "layer_target": "统一页契约装配器与前端契约 schema/原生渲染器",
