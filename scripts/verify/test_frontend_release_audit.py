@@ -162,10 +162,14 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         "owner": ("fixture_role_owner", "owner"),
     }
     RECEIPT = {
-        "database": "sc_frontend_acceptance",
-        "snapshot_id": 3,
-        "fingerprint": "12e8edf300b58ea9d82fff9525677c8467453445c5228f780c75fc5840ab9b1f",
-        "version": f"frontend-audit-{SHA[:12]}",
+        "git_sha": SHA,
+        "receipt": {
+            "database": "sc_frontend_acceptance",
+            "snapshot_id": 3,
+            "fingerprint": "12e8edf300b58ea9d82fff9525677c8467453445c5228f780c75fc5840ab9b1f",
+            "version": f"frontend-audit-{SHA[:12]}",
+            "source_revision": SHA,
+        },
     }
 
     def _manifest(self):
@@ -222,9 +226,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
 
     def test_matching_identities_with_unverified_scope_still_fail(self):
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(
-                self._report(scope_status="NOT_VERIFIED"), SHA
-            )
+            self._validate(self._report(scope_status="NOT_VERIFIED"))
         self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", str(ctx.exception))
 
     def test_missing_or_misspelled_scope_still_fail(self):
@@ -232,21 +234,21 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             report = self._report()
             report["scope_status"] = scope
             with self.assertRaises(EvidenceError) as ctx:
-                validate_role_release_projection(report, SHA)
+                self._validate(report)
             self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", str(ctx.exception))
 
     def test_stale_run_attempt_rejected(self):
         def mutate(report, _manifest):
             report["run_attempt"] = "1"
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH", str(ctx.exception))
 
     def test_stale_run_id_rejected(self):
         def mutate(report, _manifest):
             report["run_id"] = "test-managed-run-other"
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH", str(ctx.exception))
 
     def test_stale_snapshot_rejected(self):
@@ -270,6 +272,33 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
 
+    def test_missing_receipt_rejected(self):
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, None)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_MISSING", str(ctx.exception))
+
+    def test_receipt_missing_fingerprint_rejected(self):
+        receipt = json.loads(json.dumps(self.RECEIPT))
+        del receipt["receipt"]["fingerprint"]
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_FINGERPRINT_MISSING", str(ctx.exception))
+
+    def test_receipt_sha_mismatch_rejected(self):
+        receipt = json.loads(json.dumps(self.RECEIPT))
+        receipt["git_sha"] = "b" * 40
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_SHA_MISMATCH", str(ctx.exception))
+
+    def test_receipt_stale_source_revision_rejected(self):
+        receipt = json.loads(json.dumps(self.RECEIPT))
+        receipt["receipt"]["source_revision"] = "c" * 40
+        receipt["receipt"]["version"] = "frontend-audit-cccccccccccc"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_SOURCE_REVISION_MISMATCH", str(ctx.exception))
+
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):
             identities = report["roles"]["pm"]["p0"]["primary_home_identities"]
@@ -280,7 +309,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
                         "smart_construction_core.action_sc_project_tender|tender.bid"
                     )
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
 
     def test_same_entries_wrong_role_rejected(self):
@@ -288,7 +317,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             report["roles"]["pm"]["role_code"] = "finance"
             report["roles"]["pm"]["login"] = "fixture_role_finance"
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
         self.assertIn("subject_identity_mismatch", str(ctx.exception))
 
@@ -296,7 +325,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         def mutate(report, _manifest):
             report["db"] = "sc_frontend_acceptance_candidate"
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_DB_MISMATCH", str(ctx.exception))
 
     def test_scope_not_verified_keeps_all_role_diagnostics(self):
@@ -308,7 +337,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
                     "smart_construction_core.menu_sc_workspace_home||"
                 ]
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate, scope_status="NOT_VERIFIED"), SHA)
+            self._validate(self._report(mutate, scope_status="NOT_VERIFIED"))
         text = str(ctx.exception)
         self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", text)
         for role in manifest["roles"]:
@@ -318,7 +347,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         def mutate(report, _manifest):
             report["roles"].pop("owner")
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_ROLE_SET_MISMATCH", str(ctx.exception))
 
     def test_sha_mismatch_rejected(self):
@@ -331,7 +360,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             identities = report["roles"]["finance"]["p0"]["primary_home_identities"]
             identities.append(identities[0])
         with self.assertRaises(EvidenceError) as ctx:
-            validate_role_release_projection(self._report(mutate), SHA)
+            self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
 
 

@@ -137,6 +137,28 @@ def validate_role_release_projection(
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH")
     if str(report.get("run_attempt") or "") != expected_run_attempt:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH")
+    if not isinstance(receipt, dict):
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_MISSING")
+    if str(receipt.get("git_sha") or "") != expected_sha:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SHA_MISMATCH")
+    inner = receipt.get("receipt") or {}
+    for field in ("database", "version", "snapshot_id", "fingerprint", "source_revision"):
+        if field not in inner:
+            raise EvidenceError(f"ROLE_RELEASE_PROJECTION_RECEIPT_{field.upper()}_MISSING")
+    if str(inner.get("source_revision") or "") != expected_sha:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SOURCE_REVISION_MISMATCH")
+    if str(inner.get("version") or "") != f"frontend-audit-{expected_sha[:12]}":
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_VERSION_MISMATCH")
+    if str(inner.get("database") or "") != "sc_frontend_acceptance":
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_DB_MISMATCH")
+    try:
+        receipt_snapshot_id = int(inner.get("snapshot_id"))
+    except (TypeError, ValueError) as exc:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SNAPSHOT_ID_INVALID") from exc
+    if receipt_snapshot_id <= 0:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SNAPSHOT_ID_MISSING")
+    if not str(inner.get("fingerprint") or "").strip():
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_FINGERPRINT_MISSING")
     snapshot = report.get("release_snapshot") or {}
     try:
         snapshot_id = int(snapshot.get("snapshot_id") or 0)
@@ -146,8 +168,8 @@ def validate_role_release_projection(
         raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_MISSING")
     for field in ("database", "version", "snapshot_id", "fingerprint"):
         actual = snapshot.get(field)
-        expected = (receipt or {}).get(field)
-        if expected is not None and str(actual) != str(expected):
+        expected = inner.get(field)
+        if str(actual) != str(expected):
             raise EvidenceError(f"ROLE_RELEASE_PROJECTION_SNAPSHOT_{field.upper()}_MISMATCH")
     if str(report.get("db") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
@@ -348,9 +370,9 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
     failures: list[str] = []
     missing_evidence: list[str] = []
     receipt_path = evidence_root / "frontend-release-audit/release-snapshot-receipt.json"
-    snapshot_receipt: dict[str, Any] = {}
+    snapshot_receipt: dict[str, Any] | None = None
     if receipt_path.exists():
-        snapshot_receipt = (read_json(receipt_path).get("receipt") or {})
+        snapshot_receipt = read_json(receipt_path)
     for name, validator in validators.items():
         report: dict[str, Any] | None = None
         try:

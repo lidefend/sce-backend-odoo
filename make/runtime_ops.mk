@@ -1187,9 +1187,14 @@ acceptance.frontend.release_snapshot: guard.prod.forbid
 	line="$$(printf '%s\n' "$$output" | grep 'frontend_acceptance_release_snapshot.v1' | tail -1)"; \
 	test -n "$$line" || { echo 'release snapshot receipt missing' >&2; exit 2; }; \
 	mkdir -p artifacts/frontend-release-audit; \
-	printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, receipt:.}' \
-	  > artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp; \
-	mv artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp artifacts/frontend-release-audit/release-snapshot-receipt.json
+	if [ ! -f artifacts/frontend-release-audit/release-snapshot-receipt.json ]; then \
+	  printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, receipt:.}' \
+	    > artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp; \
+	  mv artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp artifacts/frontend-release-audit/release-snapshot-receipt.json; \
+	  echo '[acceptance.frontend.release_snapshot] wrote release-snapshot-receipt.json'; \
+	else \
+	  echo '[acceptance.frontend.release_snapshot] kept existing release-snapshot-receipt.json'; \
+	fi
 
 verify.frontend.role_release_projection: guard.prod.forbid
 	@set -e; \
