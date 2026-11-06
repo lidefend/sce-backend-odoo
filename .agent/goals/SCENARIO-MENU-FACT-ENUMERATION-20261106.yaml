@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: SCENARIO-MENU-FACT-ENUMERATION-20261106
+  status: active
+  formal_product_layer: P1
+  objective: 场景事实索引枚举全部原生菜单，不受当前主体菜单可见性影响
