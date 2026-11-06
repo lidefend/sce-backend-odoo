@@ -1182,18 +1182,20 @@ acceptance.frontend.fixture_orm: guard.prod.forbid
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
 	@set -e; \
+	run_id="$${SC_ACCEPTANCE_RUN_ID:-$${GITHUB_RUN_ID:-local-$$(date +%s%N)}}"; run_attempt="$${GITHUB_RUN_ATTEMPT:-1}"; \
 	output="$$(SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot 2>&1)"; \
 	printf '%s\n' "$$output"; \
 	line="$$(printf '%s\n' "$$output" | grep 'frontend_acceptance_release_snapshot.v1' | tail -1)"; \
 	test -n "$$line" || { echo 'release snapshot receipt missing' >&2; exit 2; }; \
 	mkdir -p artifacts/frontend-release-audit; \
-	if [ ! -f artifacts/frontend-release-audit/release-snapshot-receipt.json ]; then \
-	  printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, receipt:.}' \
+	receipt=artifacts/frontend-release-audit/release-snapshot-receipt.json; \
+	if [ -f "$$receipt" ] && [ "$$(jq -r '.run_id // empty' "$$receipt")" = "$$run_id" ] && [ "$$(jq -r '.run_attempt // empty' "$$receipt")" = "$$run_attempt" ]; then \
+	  echo '[acceptance.frontend.release_snapshot] kept existing receipt for current run'; \
+	else \
+	  printf '%s\n' "$$line" | jq --arg sha "$$(git rev-parse HEAD)" --arg run_id "$$run_id" --arg run_attempt "$$run_attempt" '{schema_version:"frontend-acceptance-release-snapshot-receipt/v1", git_sha:$$sha, run_id:$$run_id, run_attempt:$$run_attempt, receipt:.}' \
 	    > artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp; \
 	  mv artifacts/frontend-release-audit/release-snapshot-receipt.json.tmp artifacts/frontend-release-audit/release-snapshot-receipt.json; \
-	  echo '[acceptance.frontend.release_snapshot] wrote release-snapshot-receipt.json'; \
-	else \
-	  echo '[acceptance.frontend.release_snapshot] kept existing release-snapshot-receipt.json'; \
+	  echo '[acceptance.frontend.release_snapshot] wrote receipt for current run'; \
 	fi
 
 verify.frontend.role_release_projection: guard.prod.forbid

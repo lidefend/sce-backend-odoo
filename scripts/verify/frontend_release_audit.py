@@ -118,6 +118,15 @@ def _projection_problem_summary(problem: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _strict_positive_int(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("boolean is not a snapshot id")
+    parsed = int(value)
+    if parsed <= 0:
+        raise ValueError("snapshot id must be positive")
+    return parsed
+
+
 def validate_role_release_projection(
     report: dict[str, Any], expected_sha: str, receipt: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -141,7 +150,13 @@ def validate_role_release_projection(
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_MISSING")
     if str(receipt.get("git_sha") or "") != expected_sha:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SHA_MISMATCH")
+    if str(receipt.get("run_id") or "") != expected_run_id:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_RUN_ID_MISMATCH")
+    if str(receipt.get("run_attempt") or "") != expected_run_attempt:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_RUN_ATTEMPT_MISMATCH")
     inner = receipt.get("receipt") or {}
+    if not isinstance(inner, dict):
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_NOT_OBJECT")
     for field in ("database", "version", "snapshot_id", "fingerprint", "source_revision"):
         if field not in inner:
             raise EvidenceError(f"ROLE_RELEASE_PROJECTION_RECEIPT_{field.upper()}_MISSING")
@@ -152,20 +167,16 @@ def validate_role_release_projection(
     if str(inner.get("database") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_DB_MISMATCH")
     try:
-        receipt_snapshot_id = int(inner.get("snapshot_id"))
+        receipt_snapshot_id = _strict_positive_int(inner.get("snapshot_id"))
     except (TypeError, ValueError) as exc:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SNAPSHOT_ID_INVALID") from exc
-    if receipt_snapshot_id <= 0:
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_SNAPSHOT_ID_MISSING")
     if not str(inner.get("fingerprint") or "").strip():
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_FINGERPRINT_MISSING")
     snapshot = report.get("release_snapshot") or {}
     try:
-        snapshot_id = int(snapshot.get("snapshot_id") or 0)
+        snapshot_id = _strict_positive_int(snapshot.get("snapshot_id") or 0)
     except (TypeError, ValueError) as exc:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID") from exc
-    if snapshot_id <= 0:
-        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_MISSING")
     for field in ("database", "version", "snapshot_id", "fingerprint"):
         actual = snapshot.get(field)
         expected = inner.get(field)

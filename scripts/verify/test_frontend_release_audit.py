@@ -163,6 +163,8 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
     }
     RECEIPT = {
         "git_sha": SHA,
+        "run_id": "test-managed-run",
+        "run_attempt": "7",
         "receipt": {
             "database": "sc_frontend_acceptance",
             "snapshot_id": 3,
@@ -298,6 +300,26 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         with self.assertRaises(EvidenceError) as ctx:
             validate_role_release_projection(self._report(), SHA, receipt)
         self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_SOURCE_REVISION_MISMATCH", str(ctx.exception))
+
+    def test_receipt_run_id_mismatch_rejected(self):
+        receipt = json.loads(json.dumps(self.RECEIPT))
+        receipt["run_id"] = "other-managed-run"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_RUN_ID_MISMATCH", str(ctx.exception))
+
+    def test_receipt_not_object_rejected(self):
+        receipt = {"git_sha": SHA, "run_id": "test-managed-run", "run_attempt": "7", "receipt": 42}
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_NOT_OBJECT", str(ctx.exception))
+
+    def test_snapshot_id_boolean_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"]["snapshot_id"] = True
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
 
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):
