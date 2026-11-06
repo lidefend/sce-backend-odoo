@@ -61,11 +61,9 @@
         "docs/architecture/frontend_contract_basis_ledger.json"
       ]
     },
-    "L1_ci_receipt_unit": {
-      "target": "python3 -m unittest test_backend_changed_test_coverage test_backend_test_receipt test_backend_suite_plan",
+    "L1_ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
       "kind": "offline",
-      "status": "passed",
-      "tests": 149,
       "inputs": [
         "scripts/ci/backend_changed_test_coverage.py",
         "scripts/ci/test_backend_changed_test_coverage.py",
@@ -73,28 +71,21 @@
         "scripts/ci/test_backend_test_receipt.py",
         "scripts/ci/backend_suite_plan.py",
         "scripts/ci/test_backend_suite_plan.py",
-        "scripts/ci/run_mixed_python_tests.py"
+        "scripts/ci/run_mixed_python_tests.py",
+        ".github/workflows/backend_test_suite.yml"
       ]
     },
-    "L1_boundary_python": {
-      "target": "python3 scripts/ci/run_mixed_python_tests.py <file>",
+    "L1_boundary_contract": {
+      "target": "verify.node_component_validation.unit",
       "kind": "offline",
-      "status": "passed",
-      "tests": 300,
-      "detail": {
-        "test_ui_contract_v2_boundaries.py": 163,
-        "test_unified_page_contract_v2_mobile_compact.py": 137
-      },
       "inputs": [
         "addons/smart_core/handlers/ui_contract_v2.py",
-        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
-        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
       ]
     },
-    "L1_frontend_types": {
-      "target": "vue-tsc --noEmit",
+    "L1_frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
       "kind": "offline",
-      "status": "passed",
       "inputs": [
         "frontend/apps/web/src/views/ActionView.vue"
       ]
