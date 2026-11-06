@@ -21,6 +21,34 @@ from ci_risk_classifier import classify
 
 MANAGED_MODULE = 'smart_construction_acceptance_fixture'
 MANAGED_TARGET = 'acceptance.frontend.fixture_orm'
+RESULTS_MARKER = 'SC_BACKEND_TEST_RESULTS='
+RESULTS_SCHEMA = 'backend-python-test-results/v1'
+
+
+def _module_level_imports(tree: ast.Module) -> list[ast.stmt]:
+    """Imports that declare the runner kind, never method-local imports.
+
+    A file may conditionally import Odoo at module scope inside a ``try``
+    (``test_project_context_resolver.py`` falls back to ``unittest.TestCase``
+    when Odoo is absent).  That conditional import still declares an ORM suite.
+    A method-local ``from odoo...`` import inside ``def test_*`` does not.  Walk
+    module-level control-flow (try/with/if) but stop at class and function
+    bodies so both cases are classified from the same fact.
+    """
+    imports: list[ast.stmt] = []
+
+    def visit(node: ast.AST) -> None:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            imports.append(node)
+            return
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            return
+        for child in ast.iter_child_nodes(node):
+            visit(child)
+
+    for statement in tree.body:
+        visit(statement)
+    return imports
 
 
 def inventory(source: str, path: str) -> list[dict]:
@@ -29,9 +57,12 @@ def inventory(source: str, path: str) -> list[dict]:
             or not parts[-1].startswith('test') or not path.endswith('.py')):
         return []
     tree = ast.parse(source, filename=path)
-    # Relative common-case imports are conservatively treated as ORM. Pure
-    # unittest files declare their standard-library runner explicitly.
-    imports = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
+    # Classify by module-level imports only.  A test method may import a sibling
+    # module locally (for example `from odoo.addons... import helper`), but that
+    # local import does not declare the whole file an ORM suite; a standalone
+    # `unittest` file stays a pure-python runner.  A module-level conditional
+    # Odoo import inside `try` still declares an ORM suite.
+    imports = _module_level_imports(tree)
     pure = any((isinstance(n, ast.ImportFrom) and n.module == 'unittest') or
                (isinstance(n, ast.Import) and any(a.name == 'unittest' for a in n.names)) for n in imports)
     orm = any(isinstance(n, ast.ImportFrom) and (n.module or '').startswith('odoo') for n in imports)
@@ -77,30 +108,91 @@ def changed_tests(base: str, head: str) -> list[dict]:
     return rows
 
 
-def verify_logs(rows: list[dict], logs: list[str]) -> list[dict]:
-    text = '\n'.join(logs)
+def verify_logs(rows: list[dict], sources: list[dict]) -> list[dict]:
+    """Match each row inside its own receipt scope, never a merged log blob.
+
+    Each ``source`` is ``{'module', 'kind', 'execution', 'text'}`` read from one
+    receipt.  Two addons may own a same-named test file; binding every row to
+    its receipt's ``(module, kind, execution)`` keeps a skipped method in addon
+    A from absorbing a passed method in addon B, regardless of source order.
+    """
+    by_scope: dict[tuple[str, str, str], str] = {}
+    for source in sources:
+        module = str(source.get('module') or '')
+        kind = str(source.get('kind') or '')
+        execution = str(source.get('execution') or '')
+        text = str(source.get('text') or '')
+        key = (module, kind, execution)
+        by_scope[key] = by_scope[key] + '\n' + text if key in by_scope else text
+
     result = []
     for row in rows:
-        identity = re.escape(row['logger']) + r': Starting ' + re.escape(row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
-        # An overall non-zero suite cannot stand in for the changed method.
+        module = row['module']
+        matched = False
+        skipped = False
         if row.get('kind') == 'python':
-            # Python 3.10 renders method (module.Class); newer unittest
-            # versions render method (module.Class.method). Bind both to the
-            # exact changed method, never to a suite's aggregate OK summary.
-            python_identity = r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
-                Path(row['path']).stem + '.' + row['class']) + r'(?:\.' + re.escape(
-                row['method']) + r')?\)'
-            matched = bool(re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text))
-            # Inventory JSON contains both all method IDs and a "skipped" key.
-            # Only the method's actual result line can prove it was skipped.
-            skipped = bool(re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text))
+            stem = Path(row['path']).stem
+            test_id = stem + '.' + row['class'] + '.' + row['method']
+            # Prefer the per-file execution scope, then the module-level python
+            # scope for a pure-python module without per-file execution names.
+            for scope_key in ((module, 'python', stem), (module, 'python', '')):
+                text = by_scope.get(scope_key)
+                if text is None:
+                    continue
+                outcomes = _python_outcomes(text)
+                if outcomes:
+                    outcome = outcomes.get(test_id)
+                    if outcome is None:
+                        continue
+                    matched = outcome == 'passed'
+                    skipped = outcome == 'skipped'
+                    break
+                python_identity = (
+                    r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?'
+                    + re.escape(stem + '.' + row['class']) + r'(?:\.'
+                    + re.escape(row['method']) + r')?\)'
+                )
+                if re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text):
+                    matched = True
+                if re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text):
+                    skipped = True
+                if matched or skipped:
+                    break
         else:
+            text = by_scope.get((module, 'orm', ''), '')
+            identity = re.escape(row['logger']) + r': Starting ' + re.escape(
+                row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
             matched = bool(re.search(identity, text))
             skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
                           for line in text.splitlines())
         result.append({**row, 'status': 'executed' if matched and not skipped and row['owner'] != MANAGED_TARGET else 'pending'})
     return result
 
+
+def _python_outcomes(text: str) -> dict[str, str]:
+    """Merge per-file structured results into one outcome map keyed by test.id().
+
+    Each mixed file emits its own marker line; full test ids are unique across
+    files (the module stem differs), so merging is safe and a later line never
+    silently reuses another file's outcome.
+    """
+    outcomes: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.startswith(RESULTS_MARKER):
+            continue
+        try:
+            payload = json.loads(line[len(RESULTS_MARKER):])
+        except ValueError:
+            continue
+        if not isinstance(payload, dict) or payload.get('schema') != RESULTS_SCHEMA:
+            continue
+        results = payload.get('results')
+        if not isinstance(results, dict):
+            continue
+        for test_id, outcome in results.items():
+            if isinstance(test_id, str) and isinstance(outcome, str):
+                outcomes[test_id] = outcome
+    return outcomes
 
 def managed_report(head: str, log: str) -> dict:
     if impact.git('rev-parse', 'HEAD').strip() != head:
@@ -109,7 +201,8 @@ def managed_report(head: str, log: str) -> dict:
     if not summaries or any(int(f) or int(e) for f, e, _ in summaries) or int(summaries[-1][2]) <= 0:
         raise ValueError('managed ORM evidence lacks a passing nonzero summary')
     rows = managed_tests(head)
-    observed = verify_logs([dict(r, owner='backend_suite') for r in rows], [log])
+    observed = verify_logs([dict(r, owner='backend_suite') for r in rows],
+                           [{'module': MANAGED_MODULE, 'kind': 'orm', 'execution': '', 'text': log}])
     return {'schema': 'managed-changed-tests/v1', 'head': head, 'owner': MANAGED_TARGET,
             'log_sha256': hashlib.sha256(log.encode()).hexdigest(),
             'executed': [r['selector'] for r in observed if r['status'] == 'executed']}
@@ -227,7 +320,16 @@ def main() -> None:
         return
     if args.receipts is None or args.output is None:
         parser.error('receipt reconciliation requires --receipts and --output')
-    rows = verify_logs(rows, [(p.parent / 'execution.log').read_text() for p in args.receipts.rglob('receipt.json')])
+    sources = []
+    for path in args.receipts.rglob('receipt.json'):
+        receipt = json.loads(path.read_text())
+        sources.append({
+            'module': receipt['module'],
+            'kind': receipt.get('kind', ''),
+            'execution': receipt.get('execution', ''),
+            'text': (path.parent / 'execution.log').read_text(),
+        })
+    rows = verify_logs(rows, sources)
     managed = None
     if args.discover_managed and any(r['owner'] == MANAGED_TARGET for r in rows):
         if not 0 <= args.wait_managed_seconds <= 7200:

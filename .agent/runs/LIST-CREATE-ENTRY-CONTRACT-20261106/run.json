@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "id": "LIST-CREATE-ENTRY-CONTRACT-20261106",
+  "branch": "codex/list-create-entry-contract-20261106",
+  "baseline_sha": "5b842bdde0d483413bde708b32aa3523992c6e77",
+  "status": "verification_pending",
+  "goal": ".agent/goals/LIST-CREATE-ENTRY-CONTRACT-20261106.yaml",
+  "record": "docs/ops/iterations/list-create-entry-contract-20261106/record.md",
+  "scope": [
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_construction_core/actions/project_list_actions.xml",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/contractRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    ".github/workflows/backend_test_suite.yml",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    "scripts/ci/backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/run_mixed_python_tests.py",
+    "scripts/test/frontend_acceptance_release_snapshot.py",
+    "make/runtime_ops.mk",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/list-create-entry-contract-20261106/record.md",
+    ".agent/goals/LIST-CREATE-ENTRY-CONTRACT-20261106.yaml",
+    ".agent/runs/LIST-CREATE-ENTRY-CONTRACT-20261106/run.json",
+    ".agent/active-runs.json",
+    "scripts/ops/daily_runtime_release_orchestration.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "L1_assembler_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+      ]
+    },
+    "L1_contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "docs/architecture/frontend_contract_basis_ledger.json"
+      ]
+    },
+    "L1_ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/test_backend_changed_test_coverage.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/run_mixed_python_tests.py",
+        ".github/workflows/backend_test_suite.yml"
+      ]
+    },
+    "L1_boundary_contract": {
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+      ]
+    },
+    "L1_frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "提交本批自有文件（排除 daily_runtime_release_orchestration.py）后，以完整 EXPECTED_HEAD 执行 pr.push（不 pr.ready）；远端 professional_quality_gate 跑通同一模块一次 ORM + 两个 Python 文件端到端回执后，按新 HEAD 补列表回执并注明关系回执复用 SHA"
+}

@@ -3458,6 +3458,120 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "read": True, "create": False, "write": False, "unlink": False, "duplicate": False,
             })
 
+    def test_collection_create_entry_action_projects_default_target_and_authorization(self):
+        # The default direct-create target is authorized by the collection's own
+        # effective create capability, never by a producer-side ACL guess.
+        base = {
+            "model": "res.partner", "context": {"create": True},
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "head": {"permissions": {"read": True, "write": True, "create": True, "unlink": True}},
+            "views": {
+                "tree": {"capabilities": {"can_create": True}, "columns": ["name"]},
+                "form": {"capabilities": {"can_create": True}},
+            },
+            "collectionCreateEntry": {"kind": "record_create", "model": "res.partner", "label": "新建"},
+        }
+        for view_type in ("tree", "list", "kanban"):
+            source = deepcopy(base)
+            source["view_type"] = view_type
+            with self.subTest(view_type=view_type):
+                full = assembler.assemble_unified_page_contract_v2(
+                    source, source_type="ui.contract", client_type="web_pc",
+                    request_id="test.list.create.default",
+                )
+                rule = next(
+                    row for row in full["actionContract"]["actionRuleList"]
+                    if row["actionId"] == "action.list.create"
+                )
+                self.assertEqual(rule["target"], {"type": "record_create", "model": "res.partner"})
+                self.assertIs(rule["allowed"], True)
+                self.assertIs(rule["authorizationAllowed"], True)
+                self.assertIs(rule["entitlementEvaluated"], True)
+
+        denied_cases = (
+            ("acl_denied", lambda s: s["head"]["permissions"].update({"create": False})),
+            ("context_denied", lambda s: s.update({"context": {"create": False}})),
+            ("no_create_denied", lambda s: s.update({"context": {"create": True, "no_create": True}})),
+            ("view_denied", lambda s: s["views"]["tree"]["capabilities"].update({"can_create": False})),
+        )
+        tree_source = deepcopy(base)
+        tree_source["view_type"] = "tree"
+        for label, mutate in denied_cases:
+            denied = deepcopy(tree_source)
+            mutate(denied)
+            with self.subTest(denied=label):
+                full = assembler.assemble_unified_page_contract_v2(
+                    denied, source_type="ui.contract", client_type="web_pc",
+                    request_id="test.list.create.default.denied",
+                )
+                rule = next(
+                    row for row in full["actionContract"]["actionRuleList"]
+                    if row["actionId"] == "action.list.create"
+                )
+                self.assertEqual(rule["target"], {"type": "record_create", "model": "res.partner"})
+                self.assertIs(rule["allowed"], False)
+                self.assertIs(rule["authorizationAllowed"], False)
+                self.assertIs(rule["entitlementEvaluated"], True)
+
+    def test_collection_create_entry_action_projects_delegated_target_and_authorization(self):
+        source = {
+            "model": "project.project", "view_type": "tree", "context": {"create": False},
+            "fields": {"name": {"name": "name", "type": "char", "string": "项目名称"}},
+            "head": {"permissions": {"read": True, "write": True, "create": False, "unlink": True}},
+            "views": {
+                "tree": {"capabilities": {"can_create": False}, "columns": ["name"]},
+                "form": {"capabilities": {"can_create": True}},
+            },
+            "collectionCreateEntry": {
+                "kind": "action", "model": "project.project",
+                "action_id": 339, "action_xmlid": "smart_construction_core.action_project_initiation",
+                "menu_id": 501, "menu_xmlid": "smart_construction_core.menu_sc_project_initiation",
+                "label": "项目立项",
+                "authorizationAllowed": True, "entitlementEvaluated": True,
+                "requiredGroups": ["smart_construction_core.group_sc_cap_project_user"],
+            },
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc",
+            request_id="test.list.create.delegated",
+        )
+        rule = next(
+            row for row in full["actionContract"]["actionRuleList"]
+            if row["actionId"] == "action.list.create"
+        )
+        self.assertEqual(rule["target"]["type"], "action")
+        self.assertEqual(rule["target"]["action_id"], 339)
+        self.assertEqual(rule["target"]["action_xmlid"], "smart_construction_core.action_project_initiation")
+        self.assertEqual(rule["target"]["menu_id"], 501)
+        self.assertIs(rule["allowed"], True)
+        self.assertIs(rule["authorizationAllowed"], True)
+        self.assertIs(rule["entitlementEvaluated"], True)
+        self.assertEqual(
+            rule["permissionConstraints"]["clauses"][0]["requiredGroups"],
+            ["smart_construction_core.group_sc_cap_project_user"],
+        )
+
+        for mutate in (
+            {"authorizationAllowed": False},
+            {"authorizationAllowed": True, "action_id": 0},
+        ):
+            denied = deepcopy(source)
+            denied["collectionCreateEntry"].update(mutate)
+            with self.subTest(delegated_denied=mutate):
+                full = assembler.assemble_unified_page_contract_v2(
+                    denied, source_type="ui.contract", client_type="web_pc",
+                    request_id="test.list.create.delegated.denied",
+                )
+                rule = next(
+                    row for row in full["actionContract"]["actionRuleList"]
+                    if row["actionId"] == "action.list.create"
+                )
+                self.assertIs(rule["allowed"], False)
+                if mutate.get("authorizationAllowed") is False:
+                    self.assertIs(rule["authorizationAllowed"], False)
+                if mutate.get("action_id") == 0:
+                    self.assertEqual(rule["target"], {})
+
     def test_denied_create_is_explicitly_rejected_instead_of_rendered_readonly(self):
         denied = {"read": True, "write": False, "create": False, "unlink": False, "duplicate": False}
         source = {

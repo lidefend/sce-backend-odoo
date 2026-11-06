@@ -904,11 +904,14 @@ function dailyCreateContractMatches(row, expected) {
   const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
   return row.intent === 'ui.contract.v2' && envelope?.ok === true
     && envelope.data?.pageInfo?.model === expected.model
-    && envelope.data?.pageInfo?.viewType === 'form';
+    && envelope.data?.pageInfo?.viewType === 'form'
+    && Number(row.params?.action_id) === expected.actionId
+    && Number(row.params?.menu_id) === expected.menuId;
 }
 
 function dailyCreateDomMatches(observed, expected) {
   return observed.model === expected.model && observed.record === 'new'
+    && Number(observed.action) === expected.actionId && Number(observed.menu) === expected.menuId
     && observed.driverCount === 1 && observed.patternCount === 1 && observed.driverErrorCount === 0
     && observed.profile === 'create' && observed.cards > 0;
 }
@@ -1116,7 +1119,16 @@ try {
       const listData = listContract.response.data;
       const model = String(listData.pageInfo.model || '');
       const listRef = dailyContractEvidenceRef(runtime.contracts, listContract);
-      const declaredCreate = listData.statusContract?.globalStatus?.effectiveRecordCapabilities?.create === true;
+      const listCreateRule = (listData.actionContract?.actionRuleList || []).find(rule => rule.actionId === 'action.list.create');
+      const declaredCreate = listCreateRule?.allowed === true
+        && listCreateRule?.authorizationAllowed === true
+        && listCreateRule?.entitlementEvaluated === true;
+      const createTarget = listCreateRule?.target && typeof listCreateRule.target === 'object' ? listCreateRule.target : {};
+      const delegatedCreate = String(createTarget.type || '').trim() === 'action';
+      const createModel = String(createTarget.model || model || '').trim() || model;
+      const createEntry = delegatedCreate
+        ? { actionId: Number(createTarget.action_id || 0), menuId: Number(createTarget.menu_id || 0) }
+        : { actionId: source.actionId, menuId: source.menuId };
 
       // Create: the declared capability must be consumed -- a rendered control
       // exists iff the contract allows create, and clicking it opens the
@@ -1127,15 +1139,17 @@ try {
       if (!declaredCreate) {
         for (const check of ['declared_create_entry', 'create_contract', 'create_renderer']) {
           recordChecks.push({ viewport: viewport.key, check, passed: false, not_applicable: true,
-            reason: 'create authority is not declared for this list', contract_evidence_ref: listRef });
+            reason: listCreateRule ? 'create authority is not granted for this list' : 'create authority is not declared for this list', contract_evidence_ref: listRef });
         }
       } else {
-        recordChecks.push({ viewport: viewport.key, check: 'declared_create_entry', passed: true, model,
-          route: `/f/${model}/new`, contract_evidence_ref: listRef });
+        const createRoute = `/f/${createModel}/new`;
+        recordChecks.push({ viewport: viewport.key, check: 'declared_create_entry', passed: true, model: createModel,
+          route: createRoute, kind: delegatedCreate ? 'delegated_action' : 'record_create',
+          transit: delegatedCreate ? `/a/${createEntry.actionId}` : null, contract_evidence_ref: listRef });
         const createStart = runtime.contracts.length;
         await createControl.click();
-        await page.waitForURL(url => relativeRoutePath(url.pathname) === `/f/${model}/new`, { timeout: 30_000 });
-        const expectedCreate = { model, recordId: 'new', actionId: source.actionId, menuId: source.menuId, path: `/f/${model}/new` };
+        await page.waitForURL(url => relativeRoutePath(url.pathname) === createRoute, { timeout: 30_000 });
+        const expectedCreate = { model: createModel, recordId: 'new', actionId: createEntry.actionId, menuId: createEntry.menuId, path: createRoute };
         let createRows = [];
         for (let attempt = 0; attempt < 600; attempt += 1) {
           createRows = runtime.contracts.slice(createStart).filter(row => dailyCreateContractMatches(row, expectedCreate));

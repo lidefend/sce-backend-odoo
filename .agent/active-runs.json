@@ -9,7 +9,6 @@
     "audit/fepc-13d-title-contract": ".agent/runs/FEPC-13D/run.json",
     "audit/fepc-13i-00-readiness": ".agent/runs/FEPC-13I-00/run.json",
     "audit/fepc-13m-minimal-title": ".agent/runs/FEPC-13M-R1/run.json",
-    "audit/runtime-evolution-roadmap-20261105": ".agent/runs/RUNTIME-EVOLUTION-REGISTRATION-20261105/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
     "codex/backend-suite-reuse-authority": ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
     "codex/cap01b-capability-reconciliation-20261104": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
@@ -18,6 +17,7 @@
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",
+    "codex/list-create-entry-contract-20261106": ".agent/runs/LIST-CREATE-ENTRY-CONTRACT-20261106/run.json",
     "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
     "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
     "codex/test-baseline-incremental-reuse": ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",
@@ -89,7 +89,6 @@
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
-    "refactor/scenario-fact-authority-20261105": ".agent/runs/SCENARIO-FACT-AUTHORITY-20261105/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json"
   }
 }
