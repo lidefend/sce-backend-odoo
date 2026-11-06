@@ -296,6 +296,11 @@
               {{ widgetTitle(widgetNode) }}
             </div>
           </template>
+          <p
+            v-if="segment.kind === 'text'"
+            class="native-static-text native-inline-text"
+            :data-native-text-presentation="nativeTextPresentation(segment.nodes[0]).kind"
+          >{{ segment.nodes.map((childNode) => nodeText(childNode)).join('') }}</p>
           <NativeFormTreeRenderer
             v-if="segment.kind === 'container'"
             :nodes="segment.nodes"
