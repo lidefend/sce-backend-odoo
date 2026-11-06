@@ -21,6 +21,8 @@ from ci_risk_classifier import classify
 
 MANAGED_MODULE = 'smart_construction_acceptance_fixture'
 MANAGED_TARGET = 'acceptance.frontend.fixture_orm'
+RESULTS_MARKER = 'SC_BACKEND_TEST_RESULTS='
+RESULTS_SCHEMA = 'backend-python-test-results/v1'
 
 
 def _module_level_imports(tree: ast.Module) -> list[ast.stmt]:
@@ -108,21 +110,29 @@ def changed_tests(base: str, head: str) -> list[dict]:
 
 def verify_logs(rows: list[dict], logs: list[str]) -> list[dict]:
     text = '\n'.join(logs)
+    python_outcomes = _python_outcomes(text)
     result = []
     for row in rows:
         identity = re.escape(row['logger']) + r': Starting ' + re.escape(row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
         # An overall non-zero suite cannot stand in for the changed method.
         if row.get('kind') == 'python':
-            # Python 3.10 renders method (module.Class); newer unittest
-            # versions render method (module.Class.method). Bind both to the
-            # exact changed method, never to a suite's aggregate OK summary.
-            python_identity = r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
-                Path(row['path']).stem + '.' + row['class']) + r'(?:\.' + re.escape(
-                row['method']) + r')?\)'
-            matched = bool(re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text))
-            # Inventory JSON contains both all method IDs and a "skipped" key.
-            # Only the method's actual result line can prove it was skipped.
-            skipped = bool(re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text))
+            if python_outcomes:
+                # The executor records every method's full test.id() and exact
+                # outcome. Match the same identity instead of parsing wrapped
+                # verbose `... ok` text (docstrings and test-printed logs split
+                # the method name and `ok` across lines and were miscounted).
+                test_id = Path(row['path']).stem + '.' + row['class'] + '.' + row['method']
+                outcome = python_outcomes.get(test_id)
+                matched = outcome == 'passed'
+                skipped = outcome == 'skipped'
+            else:
+                # Legacy receipts predate the structured marker. Keep the
+                # verbosity-2 fallback for ORM-independent old python logs.
+                python_identity = r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
+                    Path(row['path']).stem + '.' + row['class']) + r'(?:\.' + re.escape(
+                    row['method']) + r')?\)'
+                matched = bool(re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text))
+                skipped = bool(re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text))
         else:
             matched = bool(re.search(identity, text))
             skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
@@ -130,6 +140,31 @@ def verify_logs(rows: list[dict], logs: list[str]) -> list[dict]:
         result.append({**row, 'status': 'executed' if matched and not skipped and row['owner'] != MANAGED_TARGET else 'pending'})
     return result
 
+
+def _python_outcomes(text: str) -> dict[str, str]:
+    """Merge per-file structured results into one outcome map keyed by test.id().
+
+    Each mixed file emits its own marker line; full test ids are unique across
+    files (the module stem differs), so merging is safe and a later line never
+    silently reuses another file's outcome.
+    """
+    outcomes: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.startswith(RESULTS_MARKER):
+            continue
+        try:
+            payload = json.loads(line[len(RESULTS_MARKER):])
+        except ValueError:
+            continue
+        if not isinstance(payload, dict) or payload.get('schema') != RESULTS_SCHEMA:
+            continue
+        results = payload.get('results')
+        if not isinstance(results, dict):
+            continue
+        for test_id, outcome in results.items():
+            if isinstance(test_id, str) and isinstance(outcome, str):
+                outcomes[test_id] = outcome
+    return outcomes
 
 def managed_report(head: str, log: str) -> dict:
     if impact.git('rev-parse', 'HEAD').strip() != head:

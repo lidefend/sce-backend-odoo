@@ -547,6 +547,22 @@ def workflow_authority_blobs(source_tree: str, fetch) -> dict[str, str]:
     return blobs
 
 
+def _module_receipt_prefix(module: str, files: dict[str, bytes]) -> str:
+    """Locate the module-level receipt directory inside an archived shard.
+
+    ORM modules archive ``<module>/orm/receipt.json`` and pure-python modules
+    archive ``<module>/python/receipt.json``.  Mixed per-file python receipts
+    live one level deeper (``<module>/python/<execution>/receipt.json``) and are
+    not a module-level reuse target, so only the two direct kind directories
+    are considered.
+    """
+    for kind in ('orm', 'python'):
+        prefix = module + '/' + kind + '/'
+        if prefix + 'receipt.json' in files:
+            return prefix
+    raise ValueError('target execution evidence missing')
+
+
 def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
                          shard: int, expected_head: str, module: str,
                          now: datetime | None = None, fetch=None) -> dict:
@@ -590,9 +606,10 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
         raise ValueError('platform archive digest mismatch')
     files = archive_members(raw)
     names = ('receipt.json', 'execution.log', 'runtime.json', 'python.json')
-    if any(module + '/' + name not in files for name in names):
+    receipt_prefix = _module_receipt_prefix(module, files)
+    if any(receipt_prefix + name not in files for name in names):
         raise ValueError('target execution evidence missing')
-    receipt = json.loads(files[module + '/receipt.json'])
+    receipt = json.loads(files[receipt_prefix + 'receipt.json'])
     provenance = receipt.get('provenance') or {}
     if (receipt.get('module') != module
             or provenance.get('GITHUB_REPOSITORY') != REPOSITORY
@@ -606,7 +623,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
         for name in names:
-            (folder/name).write_bytes(files[module + '/' + name])
+            (folder/name).write_bytes(files[receipt_prefix + name])
         scope_path = None
         if receipt.get('scope_plan') is not None:
             if 'scope-plan.json' not in files:
@@ -614,7 +631,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             scope_path = folder/'scope-plan.json'
             scope_path.write_bytes(files['scope-plan.json'])
         verified = verify(folder, expected_head=expected_head,
-                          expected_digest=digest(files[module+'/receipt.json']), now=now,scope_plan=scope_path)
+                          expected_digest=digest(files[receipt_prefix + 'receipt.json']), now=now,scope_plan=scope_path)
     execution_definition_attested = False
     if isinstance(receipt.get('workflow_definition'), dict):
         try:
@@ -648,7 +665,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'execution_definition_attested': execution_definition_attested,
             'reuse_authority': reuse_authority,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
-            'receipt_sha256': digest(files[module+'/receipt.json']),
+            'receipt_sha256': digest(files[receipt_prefix + 'receipt.json']),
             'workflow_path': run['path'],
             'scope_plan': receipt.get('scope_plan'), 'test_count': receipt['test_count'],
             'issued_at': receipt['issued_at'], 'expires_at': receipt['expires_at'],

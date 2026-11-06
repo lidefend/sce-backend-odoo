@@ -60,6 +60,35 @@ class TestNavigation(TransactionCase):
         bad = 'test_one (__main__.TestThing.test_one) ... ok\n'
         self.assertEqual('pending', coverage.verify_logs(rows, [bad])[0]['status'])
 
+    def test_python_structured_results_verify_wrapped_verbose_identity(self):
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        # A docstring or test-printed log splits the method identity from the
+        # `... ok` suffix, so the legacy verbosity-2 regex miscounts it. The
+        # structured executor record must be authoritative instead.
+        wrapped = 'test_one (test_python.TestThing.test_one)\ndocstring first line ... ok\n'
+        marker = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_python.TestThing.test_one': 'passed'},
+            'run': 1, 'skipped': 0, 'failures': 0, 'errors': 0,
+        })
+        self.assertEqual('executed', coverage.verify_logs(rows, [wrapped, marker])[0]['status'])
+
+    def test_python_structured_results_do_not_cross_contaminate_skip_and_pass(self):
+        source = ('import unittest\n'
+                  'class TestThing(unittest.TestCase):\n'
+                  '    def test_one(self): pass\n'
+                  '    def test_two(self): pass\n')
+        rows = coverage.inventory(source, 'addons/example/tests/test_python.py')
+        marker = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_python.TestThing.test_one': 'skipped',
+                        'test_python.TestThing.test_two': 'passed'},
+            'run': 2, 'skipped': 1, 'failures': 0, 'errors': 0,
+        })
+        self.assertEqual(['pending', 'executed'],
+                         [r['status'] for r in coverage.verify_logs(rows, [marker])])
+
     def test_nested_local_odoo_import_does_not_reclassify_pure_unittest_as_orm(self):
         # A standalone unittest that locally imports an odoo helper inside one
         # test method must stay kind=python; only module-level odoo imports

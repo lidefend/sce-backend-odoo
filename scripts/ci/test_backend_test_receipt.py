@@ -684,7 +684,7 @@ class ExecutionReceiptTest(unittest.TestCase):
         stream = io.BytesIO()
         with zipfile.ZipFile(stream, 'w') as archive:
             for path in (self.output/'example'/'python').iterdir():
-                archive.writestr('example/'+path.name, path.read_bytes())
+                archive.writestr('example/python/'+path.name, path.read_bytes())
             if plan is not None:
                 archive.writestr('scope-plan.json',plan.read_bytes())
         raw = stream.getvalue()
@@ -734,7 +734,7 @@ class ExecutionReceiptTest(unittest.TestCase):
         import backend_suite_plan as planner
         original = self.platform_fixture(scoped=True)
         files = receipt.archive_members(original['actions/artifacts/20/zip'])
-        valid = json.loads(files['example/receipt.json'])
+        valid = json.loads(files['example/python/receipt.json'])
         target = {'known_inputs_sha256':valid['scope_plan']['known_inputs_sha256'],
                   'blockers':['dependency_closure_not_certified']}
         plan = {'head':self.head,'base':self.head,'modules':['example']}
@@ -747,7 +747,7 @@ class ExecutionReceiptTest(unittest.TestCase):
             stream=io.BytesIO()
             with zipfile.ZipFile(stream,'w') as archive:
                 for path,data in files.items():
-                    archive.writestr(path,receipt.canonical(broken) if path=='example/receipt.json' else data)
+                    archive.writestr(path,receipt.canonical(broken) if path=='example/python/receipt.json' else data)
             changed['actions/artifacts/21/zip']=stream.getvalue()
             metadata=copy.deepcopy(original['actions/artifacts/20'])
             metadata.update(id=21,name='backend-execution-11-2-0',digest='sha256:'+receipt.digest(stream.getvalue()))
