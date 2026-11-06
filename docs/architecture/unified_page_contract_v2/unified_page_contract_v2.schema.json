@@ -102,6 +102,9 @@
     },
     "pageComposition": {
       "$ref": "#/$defs/pageComposition"
+    },
+    "noticeContract": {
+      "$ref": "#/$defs/noticeContract"
     }
   },
   "$defs": {
@@ -2998,6 +3001,51 @@
         },
         "permissionSemanticsPreserved": {
           "type": "boolean"
+        }
+      }
+    },
+    "noticeContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "submissionReadiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "visible": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "statusLabel": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "nextStep": {
+              "type": "string"
+            },
+            "nextStepAction": {
+              "type": "string"
+            },
+            "reasonCode": {
+              "type": "string"
+            },
+            "sourceAuthority": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "visible",
+            "status"
+          ]
         }
       }
     }

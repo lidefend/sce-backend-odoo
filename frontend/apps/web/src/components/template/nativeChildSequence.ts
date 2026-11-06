@@ -5,7 +5,7 @@ export function nativeChildSegments<T>(nodes: readonly T[], typeOf: (node: T) =>
   const segments: Array<{ kind: string; nodes: T[] }> = [];
   for (const node of nodes) {
     const type = typeOf(node);
-    const kind = ['field', 'button', 'widget'].includes(type) ? type : 'container';
+    const kind = ['field', 'button', 'widget', 'text'].includes(type) ? type : 'container';
     const previous = segments[segments.length - 1];
     if (previous?.kind === kind) previous.nodes.push(node);
     else segments.push({ kind, nodes: [node] });
@@ -32,6 +32,6 @@ export function isDeclaredLayoutContainerToken(tokens: readonly string[]) {
 export function declaredLayoutChildSegments<T>(nodes: readonly T[], typeOf: (node: T) => string) {
   return nodes.map((node) => {
     const type = typeOf(node);
-    return { kind: ['field', 'button', 'widget'].includes(type) ? type : 'container', nodes: [node] };
+    return { kind: ['field', 'button', 'widget', 'text'].includes(type) ? type : 'container', nodes: [node] };
   });
 }

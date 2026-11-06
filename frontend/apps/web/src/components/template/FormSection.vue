@@ -37,11 +37,13 @@
       item-layout="horizontal"
     >
       <template #label="{ item }">
-        {{ item.label }}
-        <ScPopover v-if="detailFactField(item).helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
-          <template #trigger="{ visible }"><ScButton variant="ghost" size="small" type="button" :aria-label="detailFactField(item).label" :aria-expanded="visible" :aria-controls="visible ? fieldHelpId(detailFactField(item)) : undefined" data-field-help-trigger>?</ScButton></template>
-          <span :id="fieldHelpId(detailFactField(item))">{{ detailFactField(item).helpText }}</span>
-        </ScPopover>
+        <template v-if="labelVisible(item)">
+          {{ item.label }}
+          <ScPopover v-if="detailFactField(item).helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
+            <template #trigger="{ visible }"><ScButton variant="ghost" size="small" type="button" :aria-label="detailFactField(item).label" :aria-expanded="visible" :aria-controls="visible ? fieldHelpId(detailFactField(item)) : undefined" data-field-help-trigger>?</ScButton></template>
+            <span :id="fieldHelpId(detailFactField(item))">{{ detailFactField(item).helpText }}</span>
+          </ScPopover>
+        </template>
       </template>
       <template #item="{ item }">
         <div
@@ -970,6 +972,10 @@ function readonlyHtml(field: FormSectionFieldSchema) {
  */
 function detailFactField(item: unknown): FormSectionFieldSchema {
   return item as FormSectionFieldSchema;
+}
+
+function labelVisible(item: unknown): boolean {
+  return !detailFactField(item).hideLabel;
 }
 
 function detailFactRelationEntry(item: unknown): boolean {

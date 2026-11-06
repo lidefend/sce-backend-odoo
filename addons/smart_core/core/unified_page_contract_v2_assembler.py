@@ -676,7 +676,10 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     collect(raw_layout)
     declarations = [n for n in raw_nodes if n.get("componentKey") in KEYS]
     if not declarations:
-        return _assemble_unified_page_contract_v2(source_contract, **kwargs)
+        contract = _assemble_unified_page_contract_v2(
+            source_contract, node_actor_env=node_actor_env, **kwargs,
+        )
+        return contract
     references = set()
     for node in declarations:
         config = node.get("componentConfig")
@@ -699,7 +702,9 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             admitted.add((name, locator, occurrence))
     with _feedback_assembly_scope(admitted):
         try:
-            contract = _assemble_unified_page_contract_v2(source_contract, **kwargs)
+            contract = _assemble_unified_page_contract_v2(
+                source_contract, node_actor_env=node_actor_env, **kwargs,
+            )
         except FormConfigurationError:
             raise
         except ValueError as exc:
@@ -734,6 +739,83 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             parsed_view=parsed_view,
         )
         return contract
+
+
+def _has_visible_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
+    """True when a native readiness occurrence exists and is not statically hidden.
+
+    The notice replaces the native body occurrence, so an occurrence hidden by
+    its own ``invisible`` or by a hidden ancestor must not produce a page-header
+    notice either.
+    """
+    tree = contract.get("layoutContract")
+    if not isinstance(tree, dict):
+        return False
+    roots = tree.get("containerTree")
+    if not isinstance(roots, list):
+        return False
+
+    def walk(nodes: list[Any], ancestor_hidden: bool = False) -> bool:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            hidden = ancestor_hidden or statically_hidden(node)
+            if _text(node.get("type") or node.get("containerType")).lower() == "field" \
+                    and _text(node.get("name")) == "submission_readiness_display":
+                # A field can occur more than once in one view. Skip hidden
+                # occurrences and keep scanning; any visible occurrence is
+                # enough to justify the page-header notice.
+                if not hidden:
+                    return True
+                continue
+            children = node.get("children")
+            if isinstance(children, list) and walk(children, hidden):
+                return True
+        return False
+
+    return walk(roots)
+
+
+def _suppress_notice_owned_body_fields(contract: dict[str, Any]) -> None:
+    """Hide native body occurrences of a field published through ``noticeContract``.
+
+    The readiness content is handed to the page-header notice, so the native
+    body occurrence must not render a second time. Only the layout occurrence
+    is suppressed: the field value, widget status/auth and the native XML stay
+    authoritative. Nodes are never removed from ``children``, so parent
+    ``widgetList`` ownership bindings remain intact. A container whose every
+    direct field child is one such field (the single-field project-overview
+    readiness group) is suppressed as well, so its now-empty group caption does
+    not survive as a stray heading.
+    """
+    tree = contract.get("layoutContract")
+    if not isinstance(tree, dict):
+        return
+    roots = tree.get("containerTree")
+    if not isinstance(roots, list):
+        return
+
+    def walk(nodes: list[Any]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            children = node.get("children")
+            if isinstance(children, list):
+                walk(children)
+            kind = _text(node.get("type") or node.get("containerType")).lower()
+            if kind == "field":
+                if _text(node.get("name")) == "submission_readiness_display":
+                    node["visible"] = False
+                continue
+            if children and all(
+                isinstance(child, dict)
+                and _text(child.get("type") or child.get("containerType")).lower() == "field"
+                and _text(child.get("name")) == "submission_readiness_display"
+                for child in children
+            ):
+                node["visible"] = False
+
+    walk(roots)
 
 
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
@@ -893,6 +975,7 @@ def _assemble_unified_page_contract_v2(
     request_id: str = "request.upc.v2.assembler",
     trace_id: str = "",
     stage_timings: dict[str, int] | None = None,
+    node_actor_env=None,
 ) -> dict[str, Any]:
     started_at = time.monotonic()
     source = _dict(source_contract)

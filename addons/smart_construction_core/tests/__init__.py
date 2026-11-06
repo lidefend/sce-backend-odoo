@@ -139,6 +139,7 @@ from . import test_system_permission_accounting
 from . import test_system_permission_business
 
 from . import test_baseline_readiness
+from . import test_submission_readiness_notice_p1
 
 from . import test_experience_role_surface
 

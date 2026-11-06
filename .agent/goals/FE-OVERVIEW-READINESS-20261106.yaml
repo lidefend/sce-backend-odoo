@@ -1,0 +1,35 @@
+schema_version: 1
+goal:
+  id: FE-OVERVIEW-READINESS-20261106
+  status: active
+  title: 项目概览原生文本渲染与办理前检查页头提示收敛
+  formal_product_layer: P0
+  layer_target: smart_core 统一页契约装配器 + 前端契约 schema/原生渲染器
+  module: smart_core + frontend
+  standard_vs_user_specific: platform_mechanism_presentation
+  objective: >
+    以 main 5b842bdde0d483413bde708b32aa3523992c6e77 为基线，修复两处原生表单呈现缺陷：
+    （1）原生 inline text 子节点（“立项完成度：1 / 3”的静态文本与斜杠）被归并入 container 后丢失，
+    渲染器不按声明顺序输出；（2）办理前检查 submission_readiness_display 在正文与页头重复展示，
+    收敛为页头一条结构化 notice，正文同一提示为零。
+  why_here: >
+    原生 text 分段与 noticeContract 消费属于通用前端运行时与统一页契约机制，不携带业务语义；
+    P0 装配器声明 notice 及正文抑制，前端按契约消费，不按模型/菜单/状态文本特判。
+  why_not_elsewhere:
+    - 不修改原生 XML 视图、字段取值、权限与 ACL。
+    - 不在前端按模型名/状态文本推导产品语义或回填 fallback。
+    - 不把 P1 baseline_readiness 的业务判定逻辑搬进前端。
+    - 不触碰 P2/P3 与部署合并授权。
+  scope: [addons/smart_core/, frontend/apps/web/src/, frontend/apps/web/scripts/, make/frontend.mk, scripts/verify/, docs/frontend_productization/, .agent/]
+  exclusions: [原生视图 XML, ACL/record rule, P1 baseline_readiness 判定逻辑本体, P2/P3, 部署与合并授权]
+  iterations:
+    - id: ITEM-1
+      status: completed
+      outcome: 原生 inline text 子节点按声明顺序渲染，新增 native_child_sequence 单测与 Make 目标
+    - id: ITEM-2
+      status: in_progress
+      outcome: 办理前检查收敛为页头 notice；正文字段仅抑制布局可见性；noticeContract 进入 V2 schema；决策权守卫无未登记业务状态字面量
+  acceptance:
+    - 草稿态 FE Project A 按序读出“立项完成度：1 / 3”，非草稿整段隐藏
+    - 办理前检查五例页头一条、正文零条，状态/原因/下一步与服务端一致
+    - 项目或付款离开可见状态时页头与正文均为零

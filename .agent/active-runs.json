@@ -78,6 +78,7 @@
     "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
     "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
     "fix/project-form-header-density-20261023": ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json",
+    "fix/project-overview-native-text-rendering": ".agent/runs/FE-OVERVIEW-READINESS-20261106/run.json",
     "fix/quick-incremental-execution": ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json",
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/scenario-menu-fact-enumeration-20261106": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",

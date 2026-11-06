@@ -43,6 +43,8 @@ import type {
   ContractV2LayoutContract,
   ContractV2Lifecycle,
   ContractV2Meta,
+  ContractV2NoticeContract,
+  ContractV2SubmissionReadinessNotice,
   ContractV2PageRenderMode,
   ContractV2PageComposition,
   ContractV2PageInfo,
@@ -2600,6 +2602,53 @@ function decodePageComposition(value: unknown, issues: DecodeIssue[]): ContractV
   return out;
 }
 
+function decodeSubmissionReadinessNotice(
+  value: unknown,
+  issues: DecodeIssue[],
+): ContractV2SubmissionReadinessNotice | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.noticeContract.submissionReadiness', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  rejectUnknownKeys(row, [
+    'visible', 'status', 'statusLabel', 'state', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
+  ], '$.noticeContract.submissionReadiness', issues);
+  const visible = optionalBooleanField(row, 'visible', '$.noticeContract.submissionReadiness', issues);
+  if (visible === undefined) {
+    issues.push({ path: '$.noticeContract.submissionReadiness.visible', message: 'is required' });
+    return undefined;
+  }
+  const status = asString(row.status);
+  if (!status) {
+    issues.push({ path: '$.noticeContract.submissionReadiness.status', message: 'is required' });
+    return undefined;
+  }
+  const out: ContractV2SubmissionReadinessNotice = { visible, status };
+  for (const key of [
+    'statusLabel', 'state', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
+  ] as const) {
+    const text = optionalStringField(row, key, '$.noticeContract.submissionReadiness', issues);
+    if (text) out[key] = text;
+  }
+  return out;
+}
+
+function decodeNoticeContract(value: unknown, issues: DecodeIssue[]): ContractV2NoticeContract | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.noticeContract', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  rejectUnknownKeys(row, ['submissionReadiness'], '$.noticeContract', issues);
+  const out: ContractV2NoticeContract = {};
+  const readiness = decodeSubmissionReadinessNotice(row.submissionReadiness, issues);
+  if (readiness) out.submissionReadiness = readiness;
+  return out;
+}
+
 function validateDeliveryIdentity(
   pageInfo: ContractV2PageInfo,
   runtimeContract: ContractV2RuntimeContract,
@@ -2626,6 +2675,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   rejectUnknownKeys(root, [
     'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
     'formStructureContract', 'searchContract', 'workflowContract', 'fieldOwnership', 'pageComposition', 'meta',
+    'noticeContract',
   ], '$', issues);
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
@@ -2644,6 +2694,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   const fieldOwnership = decodeFieldOwnership(root.fieldOwnership, issues);
   const pageComposition = decodePageComposition(root.pageComposition, issues);
+  const noticeContract = decodeNoticeContract(root.noticeContract, issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (!issues.length) projectNodeComponents({layoutContract, statusContract, dataContract});
@@ -2663,5 +2714,6 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     ...(workflowContract ? { workflowContract } : {}),
     ...(fieldOwnership ? { fieldOwnership } : {}),
     ...(pageComposition ? { pageComposition } : {}),
+    ...(noticeContract ? { noticeContract } : {}),
   };
 }

@@ -4,7 +4,7 @@ Generated from `test_inventory.csv` E2E-classified assets.
 
 ## Summary
 
-- E2E-classified assets: `50`
+- E2E-classified assets: `51`
 - Strong or near-strong coverage: `11`
 - Partial coverage: `1`
 - Gaps: `0`
@@ -13,7 +13,7 @@ Generated from `test_inventory.csv` E2E-classified assets.
 
 | Journey | Status | Existing Assets | Gap to Close |
 | --- | --- | --- | --- |
-| E2E-01: Project administrator creates a project and configures members. | partial_to_strong | `scripts/verify/direct_project_business_browser_acceptance.js`<br>`scripts/verify/user_entry_delivery_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
+| E2E-01: Project administrator creates a project and configures members. | partial_to_strong | `scripts/verify/direct_project_business_browser_acceptance.js`<br>`scripts/verify/local_acceptance_project_overview_browser.mjs`<br>`scripts/verify/user_entry_delivery_browser_acceptance.js` | Map assertions to acceptance points and add missing business data checks if needed. |
 | E2E-02: Cost engineer imports BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py`<br>`scripts/verify/boq_baseline_browser_acceptance.mjs`<br>`scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
 | E2E-03: Project manager generates WBS or tasks from BOQ. | strong | `make test.e2e.fixed_data.odoo`<br>`scripts/e2e/e2e_boq_import_fixed_data_preflight.py`<br>`scripts/e2e/e2e_boq_to_wbs_task_preflight.py`<br>`scripts/verify/boq_baseline_browser_acceptance.mjs`<br>`scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs` | Keep Odoo fixed-data gate green; add role/browser evidence before release if this journey is user-facing. |
 | E2E-04: Commercial user creates budget and contract. | partial_to_strong | `scripts/e2e/e2e_contract_smoke.py`<br>`scripts/verify/business_entry_general_contract_browser.mjs`<br>`scripts/verify/daily_demo_contract_ui_browser.mjs`<br>`scripts/verify/frontend_contract_form_presentation_browser.mjs`<br>`scripts/verify/frontend_contract_prompt_action_presentation_browser.mjs`<br>`scripts/verify/unified_page_contract_lite_all_tree_browser_smoke.js`<br>`scripts/verify/unified_page_contract_lite_all_tree_legacy_browser_smoke.js`<br>`scripts/verify/unified_page_contract_lite_all_tree_matrix_browser_smoke.js`<br>`... 2 more` | Map assertions to acceptance points and add missing business data checks if needed. |

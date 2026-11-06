@@ -296,6 +296,11 @@
               {{ widgetTitle(widgetNode) }}
             </div>
           </template>
+          <p
+            v-if="segment.kind === 'text'"
+            class="native-static-text native-inline-text"
+            :data-native-text-presentation="nativeTextPresentation(segment.nodes[0]).kind"
+          >{{ segment.nodes.map((childNode) => nodeText(childNode)).join('') }}</p>
           <NativeFormTreeRenderer
             v-if="segment.kind === 'container'"
             :nodes="segment.nodes"
@@ -344,6 +349,12 @@
           </template>
         </template>
       </component>
+
+      <p
+        v-else-if="nodeType(node) === 'text' && nodeText(node)"
+        class="native-static-text native-inline-text"
+        :data-native-text-presentation="nativeTextPresentation(node).kind"
+      >{{ nodeText(node) }}</p>
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
@@ -652,6 +663,13 @@ function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>):
       if (props.fieldSchemasForNodes([child]).length) return true;
       continue;
     }
+    if (childType === 'text') {
+      // A visible non-empty static text child is real content: a container
+      // holding only hidden fields plus an inline hint must not be dropped as
+      // an empty shell.
+      if (nodeText(child)) return true;
+      continue;
+    }
     if (childType === 'button' || childType === 'widget') return true;
     if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer', 'h1', 'h2', 'h3', 'div', 'span'].includes(childType)) {
       // A nested container that carries visible static text is real content,
@@ -849,7 +867,17 @@ function notebookPages(node: NativeFormLayoutNode) {
 
 function notebookPageChildren(node: NativeFormLayoutNode, pageIndex: number) {
   const page = notebookPages(node)[pageIndex] || notebookPages(node)[0];
-  return page ? rawChildren(page) : [];
+  if (!page) return [];
+  const children = [...rawChildren(page)];
+  // A page (tab) may carry inline hint text directly under the page element;
+  // the projection keeps it on the page node's own ``text`` facet. Emit it as
+  // the first child so the recursive renderer's text branch shows it instead
+  // of dropping it as an empty panel.
+  const ownText = nodeText(page);
+  if (ownText) {
+    children.unshift({ type: 'text', text: ownText, attributes: {}, children: [], widgetList: [] });
+  }
+  return children;
 }
 
 function sectionRevealTargets(node: NativeFormLayoutNode) {
