@@ -27,7 +27,7 @@ async function openCase(key, route, { expectNotice, expectOverviewText } = {}) {
     await page.waitForSelector('[data-form-model]', { timeout: 30000 });
     if (expectOverviewText) {
       await page.waitForFunction(
-        (expected) => document.body.innerText.replace(/\s+/g, ' ').includes(expected),
+        (expected) => document.body.innerText.replace(/\s+/g, '').includes(expected.replace(/\s+/g, '')),
         expectOverviewText,
         { timeout: 30000 },
       );
@@ -40,8 +40,8 @@ async function openCase(key, route, { expectNotice, expectOverviewText } = {}) {
     }
     const noticeCount = await page.locator('[data-submission-readiness]').count();
     const bodyCount = await page.locator('[data-field-name="submission_readiness_display"]').count();
-    const text = expectOverviewText ? (await page.locator('body').innerText()).replace(/\s+/g, ' ') : null;
-    assert.ok(!expectOverviewText || text.includes(expectOverviewText), `${key}: overview text missing`);
+    const text = expectOverviewText ? (await page.locator('body').innerText()).replace(/\s+/g, '') : null;
+    assert.ok(!expectOverviewText || text.includes(expectOverviewText.replace(/\s+/g, '')), `${key}: overview text missing`);
     assert.equal(noticeCount, expectNotice === true ? 1 : 0, `${key}: notice count`);
     assert.equal(bodyCount, 0, `${key}: native body readiness field must not render`);
     await page.screenshot({ path: path.join(output, `${key}.png`), fullPage: true });
