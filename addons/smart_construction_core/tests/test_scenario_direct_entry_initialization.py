@@ -55,3 +55,29 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertFalse(menu.sc_scenario_exempt)
         unknown = self.env['ir.ui.menu'].create({'name': 'Unknown action', 'action': '%s,%s' % (menu.action._name, menu.action.id)})
         self.assertFalse(unknown.sc_scenario_exempt)
+
+    def test_scope_indexes_group_gated_menus_for_unprivileged_principal(self):
+        """The scene-fact index must not inherit native menu visibility."""
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import runtime_menu_scope
+
+        config_group = self.env.ref(
+            'smart_construction_core.group_sc_cap_business_config_admin'
+        )
+        principal = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Scope index principal',
+            'login': 'scope.index.principal',
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        menu = self.env['ir.ui.menu'].create({
+            'name': 'Group-gated config leaf',
+            'parent_id': self.env.ref('smart_construction_core.menu_sc_root').id,
+            'sc_scenario_exempt': True,
+            'groups_id': [(4, config_group.id)],
+        })
+        # Native visible search still hides it from the unprivileged principal.
+        principal_env = self.env(user=principal.id)
+        self.assertFalse(principal_env['ir.ui.menu'].sudo().search([('id', '=', menu.id)]))
+        # The fact index must still resolve the menu and its explicit exemption.
+        index, by_id, _ = runtime_menu_scope(principal_env)
+        self.assertIn(menu.id, by_id)
+        self.assertEqual(index[by_id[menu.id]]['location'], 'exempt')

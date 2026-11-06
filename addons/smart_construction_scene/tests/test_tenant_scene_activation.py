@@ -1524,6 +1524,7 @@ class TestMaintainedScenarioScope(unittest.TestCase):
             def __getitem__(self, name):
                 model = types.SimpleNamespace(search=lambda domain: [menu])
                 model.sudo = lambda: model
+                model.with_context = lambda **kwargs: model
                 return model
         surface = {"scenarios": []}
         index, by_id, _ = scenario_surface.runtime_menu_scope(Env(), surface)

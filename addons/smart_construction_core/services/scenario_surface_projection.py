@@ -484,7 +484,14 @@ def runtime_menu_scope(env, surface=None):
     index = build_menu_index(surface)
     active = {row["key"]: row["active"] for row in surface["scenarios"]}
     by_id, by_action = {}, {}
-    for menu in env["ir.ui.menu"].sudo().search([]):
+    # The scene-fact index must cover every native menu, not just the menus the
+    # current principal may see. Odoo filters ir.ui.menu search by the caller's
+    # menu groups even under sudo unless the full-list context is set, so a
+    # role that cannot yet see a configuration menu would silently drop it from
+    # this index and then misclassify its route as BUSINESS_SCENARIO_CONFIGURATION_MISSING.
+    for menu in env["ir.ui.menu"].sudo().with_context(
+        **{"ir.ui.menu.full_list": True}
+    ).search([]):
         key = _menu_external_id(env, menu) or f"menu:{menu.id}"
         by_id[menu.id] = key
         if menu.action:

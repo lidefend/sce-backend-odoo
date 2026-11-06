@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-MENU-FACT-ENUMERATION-20261106",
+  "branch": "fix/scenario-menu-fact-enumeration-20261106",
+  "baseline_sha": "3455125787b1a3950c00c6c475db62197604b948",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENARIO-MENU-FACT-ENUMERATION-20261106.yaml",
+  "record": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
+  "scope": [
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
+    ".agent/goals/SCENARIO-MENU-FACT-ENUMERATION-20261106.yaml",
+    ".agent/active-runs.json"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local.test sc_test and registered unit targets"
+  },
+  "layer": {
+    "formal_product_layer": "P1 scene fact index; P4 bounded test adaptation",
+    "layer_target": "runtime_menu_scope",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "standard product fact indexing",
+    "why_here": "scene fact index must not inherit native menu visibility",
+    "blast_radius": "scene location index completeness; no authority widening",
+    "exclusions": [
+      "publication/ACL/company scope",
+      "frontend visibility",
+      "business scenario enablement semantics"
+    ]
+  },
+  "next_exact_step": "publish draft PR for review",
+  "execution_results": {
+    "orm_scenario_direct": {
+      "status": "passed",
+      "count": 4,
+      "receipt": ".runtime/test-baseline/1793934102506228416/receipt.json"
+    },
+    "publication_consumers_unit": {
+      "status": "passed",
+      "count": 108,
+      "log": ".runtime/scenario-pub-consumers2.log"
+    }
+  }
+}
