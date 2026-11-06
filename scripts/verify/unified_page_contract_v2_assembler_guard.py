@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v27-notice-contract"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v28-notice-visibility"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -78,7 +78,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "4dd10243ecfe866225b7ebcd224df8ca5705ac4c8387f6db9a938494ff74d23e"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "50d20fe3f4e32ac61754dc0d3fdad3c89eab2c16bd31ea67b9fce4e57b99c00b"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and

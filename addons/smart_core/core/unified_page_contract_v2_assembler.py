@@ -760,7 +760,7 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
     # the views that actually declare that field. A model-scoped gate would
     # leak the notice onto sibling forms (for example the project quick-create
     # form) that never declare 办理前检查.
-    if not _has_submission_readiness_body_field(contract):
+    if not _has_visible_submission_readiness_body_field(contract):
         return
     record_id = _positive_int(
         source.get("record_id") or source.get("recordId")
@@ -811,7 +811,13 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
     _suppress_notice_owned_body_fields(contract)
 
 
-def _has_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
+def _has_visible_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
+    """True when a native readiness occurrence exists and is not statically hidden.
+
+    The notice replaces the native body occurrence, so an occurrence hidden by
+    its own ``invisible`` or by a hidden ancestor must not produce a page-header
+    notice either.
+    """
     tree = contract.get("layoutContract")
     if not isinstance(tree, dict):
         return False
@@ -819,15 +825,16 @@ def _has_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
     if not isinstance(roots, list):
         return False
 
-    def walk(nodes: list[Any]) -> bool:
+    def walk(nodes: list[Any], ancestor_hidden: bool = False) -> bool:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
+            hidden = ancestor_hidden or statically_hidden(node)
             if _text(node.get("type") or node.get("containerType")).lower() == "field" \
                     and _text(node.get("name")) == "submission_readiness_display":
-                return True
+                return not hidden
             children = node.get("children")
-            if isinstance(children, list) and walk(children):
+            if isinstance(children, list) and walk(children, hidden):
                 return True
         return False
 

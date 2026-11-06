@@ -34,11 +34,12 @@ def _readiness_patch():
     services.baseline_readiness = baseline
     core = mock.MagicMock()
     core.services = services
-    return mock.patch.dict(sys.modules, {
+    patch = mock.patch.dict(sys.modules, {
         "odoo.addons.smart_construction_core": core,
         "odoo.addons.smart_construction_core.services": services,
         "odoo.addons.smart_construction_core.services.baseline_readiness": baseline,
     })
+    return baseline, patch
 
 
 class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
@@ -112,8 +113,7 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
 
     def test_notice_scope_requires_a_declared_readiness_body_field(self):
         source = {"model": "project.project"}
-        # The quick-create project form never declares 办理前检查, so it must
-        # not receive the page-header notice.
+        baseline, patch = _readiness_patch()
         without_field = {
             "layoutContract": {
                 "containerTree": [{
@@ -126,10 +126,6 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        _inject_submission_readiness_notice(without_field, source, self.env)
-        self.assertNotIn("noticeContract", without_field)
-
-        # A view that declares the field must produce exactly one notice.
         with_field = {
             "layoutContract": {
                 "containerTree": [{
@@ -142,10 +138,58 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        with _readiness_patch():
+        with patch:
+            # The quick-create project form never declares 办理前检查, so it
+            # must not receive the page-header notice, and the readiness
+            # service must never be invoked.
+            _inject_submission_readiness_notice(without_field, source, self.env)
+            self.assertNotIn("noticeContract", without_field)
+            baseline.build_readiness.assert_not_called()
+
+            # A view that declares the field must produce exactly one notice.
             _inject_submission_readiness_notice(with_field, source, self.env)
         self.assertIn("noticeContract", with_field)
         readiness = with_field["noticeContract"]["submissionReadiness"]
         self.assertTrue(readiness["visible"])
         self.assertEqual(readiness["status"], "ready")
         self.assertFalse(with_field["layoutContract"]["containerTree"][0]["children"][0]["visible"])
+        baseline.build_readiness.assert_called_once()
+
+    def test_notice_respects_native_hidden_visibility(self):
+        source = {"model": "project.project"}
+        baseline, patch = _readiness_patch()
+        readiness = _field_node("field.submission_readiness_display.occ.1", "submission_readiness_display")
+
+        # Field itself hidden.
+        field_hidden = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.readiness",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "办理前检查",
+                    "children": [{**readiness, "invisible": True}],
+                    "widgetList": [],
+                }],
+            },
+        }
+        # Parent group hidden.
+        group_hidden = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.readiness",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "办理前检查",
+                    "invisible": True,
+                    "children": [dict(readiness)],
+                    "widgetList": [],
+                }],
+            },
+        }
+        with patch:
+            _inject_submission_readiness_notice(field_hidden, source, self.env)
+            _inject_submission_readiness_notice(group_hidden, source, self.env)
+        self.assertNotIn("noticeContract", field_hidden)
+        self.assertNotIn("noticeContract", group_hidden)
+        baseline.build_readiness.assert_not_called()

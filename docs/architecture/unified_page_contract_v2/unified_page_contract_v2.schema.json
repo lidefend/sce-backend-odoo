@@ -3009,12 +3009,14 @@
       "properties": {
         "submissionReadiness": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "visible": {
               "type": "boolean"
             },
             "status": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "statusLabel": {
               "type": "string"

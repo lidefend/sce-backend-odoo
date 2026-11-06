@@ -657,6 +657,13 @@ function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>):
       if (props.fieldSchemasForNodes([child]).length) return true;
       continue;
     }
+    if (childType === 'text') {
+      // A visible non-empty static text child is real content: a container
+      // holding only hidden fields plus an inline hint must not be dropped as
+      // an empty shell.
+      if (nodeText(child)) return true;
+      continue;
+    }
     if (childType === 'button' || childType === 'widget') return true;
     if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer', 'h1', 'h2', 'h3', 'div', 'span'].includes(childType)) {
       // A nested container that carries visible static text is real content,
