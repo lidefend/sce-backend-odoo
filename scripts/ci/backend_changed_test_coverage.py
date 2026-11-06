@@ -23,6 +23,32 @@ MANAGED_MODULE = 'smart_construction_acceptance_fixture'
 MANAGED_TARGET = 'acceptance.frontend.fixture_orm'
 
 
+def _module_level_imports(tree: ast.Module) -> list[ast.stmt]:
+    """Imports that declare the runner kind, never method-local imports.
+
+    A file may conditionally import Odoo at module scope inside a ``try``
+    (``test_project_context_resolver.py`` falls back to ``unittest.TestCase``
+    when Odoo is absent).  That conditional import still declares an ORM suite.
+    A method-local ``from odoo...`` import inside ``def test_*`` does not.  Walk
+    module-level control-flow (try/with/if) but stop at class and function
+    bodies so both cases are classified from the same fact.
+    """
+    imports: list[ast.stmt] = []
+
+    def visit(node: ast.AST) -> None:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            imports.append(node)
+            return
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            return
+        for child in ast.iter_child_nodes(node):
+            visit(child)
+
+    for statement in tree.body:
+        visit(statement)
+    return imports
+
+
 def inventory(source: str, path: str) -> list[dict]:
     parts = path.split('/')
     if (len(parts) < 4 or parts[0] not in impact.ROOTS or parts[2] != 'tests'
@@ -32,10 +58,9 @@ def inventory(source: str, path: str) -> list[dict]:
     # Classify by module-level imports only.  A test method may import a sibling
     # module locally (for example `from odoo.addons... import helper`), but that
     # local import does not declare the whole file an ORM suite; a standalone
-    # `unittest` file stays a pure-python runner.  Walking nested function
-    # bodies here misclassified `test_unified_page_contract_v2_mobile_compact.py`
-    # as ORM and demanded ORM execution evidence for its 137 pure tests.
-    imports = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+    # `unittest` file stays a pure-python runner.  A module-level conditional
+    # Odoo import inside `try` still declares an ORM suite.
+    imports = _module_level_imports(tree)
     pure = any((isinstance(n, ast.ImportFrom) and n.module == 'unittest') or
                (isinstance(n, ast.Import) and any(a.name == 'unittest' for a in n.names)) for n in imports)
     orm = any(isinstance(n, ast.ImportFrom) and (n.module or '').startswith('odoo') for n in imports)

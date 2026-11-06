@@ -4503,16 +4503,45 @@ def _safe_eval_action_value(value: Any, default: Any) -> Any:
 
 
 def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, Any]:
-    """Project only create defaults from a route literal into trusted context."""
+    """Project create defaults and denial modifiers from a route literal into
+    trusted context.
+
+    A route (business action) may publish ``context_raw`` carrying ``default_*``
+    create defaults plus operation denials such as ``create: False`` or
+    ``no_create``.  Defaults and denials are safe to trust: a denial can only
+    reduce the effective capability, never grant it.  A positive operation
+    value is deliberately not projected because it cannot add authority that
+    the model ACL already decides.
+    """
     merged = dict(context) if isinstance(context, dict) else {}
     parsed = _safe_eval_action_value(context_raw, {})
     if not isinstance(parsed, dict):
         return merged
+    operation_keys = ("create", "edit", "write", "delete", "unlink", "duplicate")
     for key, value in parsed.items():
         normalized_key = str(key or "").strip()
         if normalized_key.startswith("default_"):
             merged[normalized_key] = value
+            continue
+        if normalized_key.startswith("no_") and normalized_key[3:] in operation_keys:
+            if _route_context_truthy(value):
+                merged[normalized_key] = value
+            continue
+        if normalized_key in operation_keys and not _route_context_truthy(value):
+            # An explicitly false operation value is a denial; project it so
+            # the collection create-entry adjudication sees the restriction.
+            merged[normalized_key] = value
     return merged
+
+
+def _route_context_truthy(value: Any) -> bool:
+    """Match the Odoo modifier truthiness used by the collection adjudication."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    lowered = str(value).strip().lower()
+    return lowered not in {"", "0", "false", "no", "n", "off", "none"}
 
 
 def _allowed_models_from_hook(env, hook_name: str) -> set[str]:

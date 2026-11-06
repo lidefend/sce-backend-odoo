@@ -1560,7 +1560,8 @@ const canCreateRecord = computed(() => {
   if (targetType === 'action') {
     return toPositiveInt(entry.target.action_id) !== null;
   }
-  const targetModel = String(entry.target.model || resolvedModelRef.value || model.value || '').trim();
+  if (targetType !== 'record_create') return false;
+  const targetModel = String(entry.target.model || '').trim();
   return Boolean(targetModel && actionId.value);
 });
 const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
@@ -1742,7 +1743,8 @@ function createRouteQueryForBusinessCategory(categoryCode = '') {
 }
 
 async function openCreateRecordWithBusinessCategory(categoryCode = '') {
-  const targetModel = (resolvedModelRef.value || model.value || '').trim();
+  const entry = resolveCollectionCreateEntry(actionContract.value);
+  const targetModel = String(entry.target.model || '').trim();
   if (!targetModel || !canCreateRecord.value) return;
   closeBusinessCategoryCreatePicker();
   await router.push({
@@ -1762,7 +1764,8 @@ async function openCreateRecord() {
     openHierarchyAction({ action_id: targetActionId, menu_id: targetMenuId ?? undefined });
     return;
   }
-  const targetModel = String(entry.target.model || resolvedModelRef.value || model.value || '').trim();
+  if (targetType !== 'record_create') return;
+  const targetModel = String(entry.target.model || '').trim();
   if (!targetModel) return;
   const existingCategoryCode = String(route.query.default_business_category_code || route.query.current_business_category_code || '').trim();
   if (!existingCategoryCode && businessCategoryCreateOptions.value.length > 1) {

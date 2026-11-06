@@ -78,6 +78,11 @@ function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): Array<R
   const normalized: Array<Record<string, unknown>> = [];
   for (const action of rows) {
     if (!action || typeof action !== 'object') continue;
+    // An unauthorized or not-allowed action must not be projected as a
+    // clickable toolbar entry.  In particular the denied `list.create` rule
+    // (entry authorizes creation, but the current principal does not) would
+    // otherwise surface as a clickable 项目立项 quick action.
+    if (action.allowed === false || action.authorizationAllowed === false) continue;
     const key = String(action.actionKey || action.actionId || '').trim();
     if (!key) continue;
     const intent = String(action.intent || '').trim();

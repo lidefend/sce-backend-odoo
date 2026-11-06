@@ -73,6 +73,33 @@ class TestNavigation(TransactionCase):
         orm_rows = coverage.inventory(orm_source, 'addons/example/tests/test_orm.py')
         self.assertEqual('orm', orm_rows[0]['kind'])
 
+    def test_module_level_conditional_odoo_import_declares_orm_suite(self):
+        # `test_project_context_resolver.py` inherits TransactionCase when Odoo
+        # is present and falls back to unittest.TestCase offline.  Its Odoo
+        # import lives inside a module-level try; that still declares an ORM
+        # suite, unlike a method-local import.
+        source = (
+            'import unittest\n'
+            'try:\n'
+            '    from odoo.tests.common import TransactionCase\n'
+            '    BaseCase = TransactionCase\n'
+            'except ModuleNotFoundError:\n'
+            '    BaseCase = unittest.TestCase\n'
+            'class TestThing(BaseCase):\n'
+            '    def test_one(self): pass\n'
+        )
+        rows = coverage.inventory(source, 'addons/example/tests/test_cond.py')
+        self.assertEqual('orm', rows[0]['kind'])
+
+    def test_real_project_context_resolver_file_classifies_as_orm(self):
+        root = Path(__file__).resolve().parents[2]
+        path = root / 'addons/smart_construction_core/tests/test_project_context_resolver.py'
+        if not path.exists():
+            self.skipTest('real project context resolver test file unavailable')
+        rows = coverage.inventory(path.read_text(), str(path.relative_to(root)))
+        self.assertTrue(rows)
+        self.assertEqual('orm', rows[0]['kind'])
+
     def test_python310_and_modern_verbose_logs_bind_exact_method(self):
         rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
                                   'addons/example/tests/test_python.py')

@@ -1702,6 +1702,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(merged["allowed_company_ids"], [1])
         self.assertEqual(merged["company_id"], 1)
 
+    def test_route_context_projects_operation_denials_but_never_grants(self):
+        merged = self.module._merge_route_default_context(
+            {},
+            "{'create': False, 'no_edit': True, 'duplicate': True, 'default_phase_key': 'initiation'}",
+        )
+        self.assertIs(merged["create"], False)
+        self.assertIs(merged["no_edit"], True)
+        self.assertNotIn("duplicate", merged)
+        self.assertEqual(merged["default_phase_key"], "initiation")
+
     def test_rejects_zero_max_actions(self):
         handler = self.module.UiContractV2Handler(env=object())
 
