@@ -14,6 +14,7 @@
     "make/frontend.mk",
     "scripts/verify/local_dev_readiness_ids.py",
     "scripts/verify/local_dev_readiness_browser.mjs",
+    "scripts/verify/local_acceptance_project_overview_browser.mjs",
     "docs/frontend_productization/",
     "docs/engineering_convergence/",
     "docs/ops/iterations/fe-overview-readiness-20261106.md",
