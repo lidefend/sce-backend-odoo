@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CI-SCHEDULE-DEPS-NAV-20261106",
   "branch": "fix/ci-schedule-deps-nav-20261106",
-  "baseline_sha": "3455125787b1a3950c00c6c475db62197604b948",
+  "baseline_sha": "c1f249feaccbc21d46ab8c8a42c9c13d892dc98d",
   "status": "verification_pending",
   "goal": ".agent/goals/CI-SCHEDULE-DEPS-NAV-20261106.yaml",
   "record": ".agent/runs/CI-SCHEDULE-DEPS-NAV-20261106/run.json",
