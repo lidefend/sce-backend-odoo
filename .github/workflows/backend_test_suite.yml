@@ -161,6 +161,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           MODULES=""
           PYTHON_MODULES=""
+          MIXED_PYTHON_FILES=""
+          changed_tests="$(git diff --no-renames --diff-filter=AM --name-only "${IMPACT_BASE}" "${HEAD_SHA}" -- 'addons/*/tests/*.py' 'demo_addons/*/tests/*.py' || true)"
           # Verify required scope from exact trees, then consume the frozen partition.
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
@@ -178,17 +180,34 @@ jobs:
             test -n "${test_dir}" || { echo "module ${module} has no tests/ directory" >&2; exit 1; }
             if grep -RqsE '(^|[[:space:]])(from|import)[[:space:]]+odoo\.tests' "${test_dir}"; then
               MODULES="${MODULES} ${module}"
+              # A mixed addon owns both ORM suites and standalone unittest
+              # files.  The whole-addon ORM classification above would drop the
+              # changed pure Python files, so collect only those for a
+              # per-file Python run (never a whole mixed tests directory).
+              for changed_file in ${changed_tests}; do
+                [ -f "${changed_file}" ] || continue
+                case "${changed_file}" in
+                  "${test_dir}"/test*.py)
+                    if ! grep -qE '(^|[[:space:]])(from|import)[[:space:]]+odoo\.tests' "${changed_file}"; then
+                      MIXED_PYTHON_FILES="${MIXED_PYTHON_FILES} ${changed_file}"
+                    fi
+                    ;;
+                esac
+              done
             else
               PYTHON_MODULES="${PYTHON_MODULES} ${module}"
             fi
           done
-          test -n "${MODULES}${PYTHON_MODULES}" || { echo "no runnable module tests found"; exit 1; }
+          test -n "${MODULES}${PYTHON_MODULES}${MIXED_PYTHON_FILES}" || { echo "no runnable module tests found"; exit 1; }
           MODULES="${MODULES# }"
           PYTHON_MODULES="${PYTHON_MODULES# }"
+          MIXED_PYTHON_FILES="${MIXED_PYTHON_FILES# }"
           echo "MODULES=${MODULES}" >> "${GITHUB_ENV}"
           echo "PYTHON_MODULES=${PYTHON_MODULES}" >> "${GITHUB_ENV}"
+          echo "MIXED_PYTHON_FILES=${MIXED_PYTHON_FILES}" >> "${GITHUB_ENV}"
           printf 'backend Odoo modules:\n%s\n' "${MODULES:-<none>}"
           printf 'backend Python unit modules:\n%s\n' "${PYTHON_MODULES:-<none>}"
+          printf 'backend mixed pure Python files:\n%s\n' "${MIXED_PYTHON_FILES:-<none>}"
 
       - name: Configure compose environment
         run: |
@@ -313,6 +332,7 @@ jobs:
           reused=0
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
+          planned_mixed="$(printf '%s\n' ${MIXED_PYTHON_FILES:-} | wc -w | tr -d ' ')"
           receipt_dir="${RUNNER_TEMP}/backend-receipts-${GITHUB_RUN_ID}-${SHARD_INDEX}"
           mkdir -p "${receipt_dir}"
           echo "BACKEND_RECEIPT_DIR=${receipt_dir}" >> "${GITHUB_ENV}"
@@ -390,7 +410,7 @@ jobs:
                 failed=1
               fi
               if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                  --module "${module}" --attempt "${module_attempt}" --head "${HEAD_SHA}" \
+                  --module "${module}" --kind orm --attempt "${module_attempt}" --head "${HEAD_SHA}" \
                   --status "${module_status}" --log-status "${module_log_status}" --database "${attempt_db}" \
                   --log "${module_log}" --secrets-file "${attempt_env_file:-${ENV_FILE}}" --output "${receipt_dir}"; then
                 echo "::error::attempt diagnostic collection failed for ${module}"
@@ -486,7 +506,7 @@ jobs:
             python_log_status="${pipeline_status[1]}"
             python_evidence_failed=0
             if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                --module "${module}" --attempt 1 --head "${HEAD_SHA}" \
+                --module "${module}" --kind python --attempt 1 --head "${HEAD_SHA}" \
                 --status "${python_status}" --log-status "${python_log_status}" \
                 --log "${python_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
               echo "::error::attempt diagnostic collection failed for ${module}"
@@ -507,11 +527,51 @@ jobs:
               failed=1
             fi
           done
+          for mixed_file in ${MIXED_PYTHON_FILES:-}; do
+            attempted=$((attempted + 1))
+            mixed_module="$(printf '%s' "${mixed_file}" | cut -d/ -f2)"
+            mixed_execution="$(basename "${mixed_file}" .py)"
+            mixed_log="${RUNNER_TEMP}/backend-suite-mixed-python-${mixed_module}-$(basename "${mixed_file}" .py)-${GITHUB_RUN_ID}.log"
+            echo "===== backend mixed Python unit file: ${mixed_file} ====="
+            mixed_started=${SECONDS}
+            # Each mixed pure-python file runs in its own process through the
+            # governed discover runner so verbose lines carry the
+            # ``<filename>.Class.method`` identity the coverage verifier
+            # requires (python3 <file> -v emits __main__.Class.method, and
+            # `python3 -m unittest <file>` imports the Odoo package __init__).
+            python3 scripts/ci/run_mixed_python_tests.py "${mixed_file}" 2>&1 | tee "${mixed_log}"
+            pipeline_status=("${PIPESTATUS[@]}")
+            mixed_duration=$((SECONDS - mixed_started))
+            mixed_status="${pipeline_status[0]}"
+            mixed_log_status="${pipeline_status[1]}"
+            mixed_evidence_failed=0
+            if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
+                --module "${mixed_module}" --kind python --execution "${mixed_execution}" --attempt 1 --head "${HEAD_SHA}" \
+                --status "${mixed_status}" --log-status "${mixed_log_status}" \
+                --log "${mixed_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
+              echo "::error::attempt diagnostic collection failed for ${mixed_file}"
+              mixed_evidence_failed=1
+              failed=1
+            fi
+            if [ "${mixed_status}" -ne 0 ] || [ "${mixed_log_status}" -ne 0 ] || [ "${mixed_evidence_failed}" -ne 0 ]; then
+              echo "::error::backend mixed Python unit file failed: ${mixed_file}"
+              failed=1
+            elif ! grep -Eq 'Ran [1-9][0-9]* test[s]?[[:space:]]' "${mixed_log}"; then
+              echo "::error::backend mixed Python unit file collected zero tests: ${mixed_file}"
+              failed=1
+            elif ! python3 scripts/ci/backend_test_receipt.py record \
+                --module "${mixed_module}" --kind python --execution "${mixed_execution}" --head "${HEAD_SHA}" --base "${receipt_base}" \
+                --secrets-file "${ENV_FILE}" --duration-seconds "${mixed_duration}" --status 0 --log "${mixed_log}" \
+                --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}"; then
+              echo "::error::backend execution evidence collection failed for mixed Python file ${mixed_file}"
+              failed=1
+            fi
+          done
           # A truncated step must never look like a pass. Assert that the
           # executed scope equals the resolved module list before trusting
           # `failed`; an early abort (image/docker/db failure) then fails the
           # step instead of skipping the remaining modules invisibly.
-          planned_total=$((planned_odoo + planned_python))
+          planned_total=$((planned_odoo + planned_python + planned_mixed))
           if [ "$((attempted + reused))" -ne "${planned_total}" ]; then
             echo "::error::backend suite execution truncated: executed ${attempted} + reused ${reused} of ${planned_total} planned module run(s)"
             failed=1

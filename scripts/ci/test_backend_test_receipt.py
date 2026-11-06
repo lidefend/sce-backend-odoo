@@ -312,7 +312,9 @@ class IsolatedPythonDecisionTest(unittest.TestCase):
               [('addons/example/test.py','c'*40),*recipe['authority_blobs'].items()]]
         stream=io.BytesIO()
         with zipfile.ZipFile(stream,'w') as archive:
-            archive.writestr(receipt.ISOLATED_MODULE+'/execution.log',receipt.ISOLATED_MARKER+json.dumps(proof)+'\n')
+            archive.writestr(receipt.ISOLATED_MODULE+'/python/receipt.json', b'{}')
+            archive.writestr(receipt.ISOLATED_MODULE+'/python/execution.log',
+                             receipt.ISOLATED_MARKER+json.dumps(proof)+'\n')
         data={'actions/runs?status=success&per_page=30':{'workflow_runs':[run]},
               'actions/runs/10/artifacts?per_page=100':{'artifacts':[{'id':20,'name':'backend-execution-10-1-0'}]},
               'git/trees/'+tree_sha+'?recursive=1':{'sha':tree_sha,'truncated':False,'tree':rows},
@@ -420,11 +422,11 @@ class ExecutionReceiptTest(unittest.TestCase):
         with patch.dict(os.environ, {'GITHUB_WORKFLOW_SHA': 'invalid', 'GITHUB_WORKFLOW_REF': ''}):
             with self.assertRaisesRegex(ValueError, 'workflow definition'):
                 self.record()
-        self.assertFalse((self.output / 'example/receipt.json').exists())
+        self.assertFalse((self.output / 'example' / 'python' / 'receipt.json').exists())
 
     def test_workflow_definition_cannot_self_attest_and_old_receipts_remain_valid(self):
         self.record()
-        path = self.output / 'example/receipt.json'
+        path = self.output / 'example' / 'python' / 'receipt.json'
         original = json.loads(path.read_text())
         for definition in ({'status': 'not_captured', 'attested': True},
                            {'status': 'producer_observed', 'attested': True, 'sha': 'a' * 40,
@@ -450,7 +452,7 @@ class ExecutionReceiptTest(unittest.TestCase):
             return receipt.record(self.root, **args)
 
     def verify(self, result, **kwargs):
-        return receipt.verify(self.output/'example', expected_head=self.head,
+        return receipt.verify(self.output/'example'/result['kind'], expected_head=self.head,
                               expected_digest=result['receipt_sha256'], now=kwargs.get('now', self.now))
 
     def test_real_execution_roundtrip_never_self_authorizes_reuse(self):
@@ -465,7 +467,7 @@ class ExecutionReceiptTest(unittest.TestCase):
     def test_changed_log_or_environment_is_rejected(self):
         result = self.record()
         for name in ('execution.log','runtime.json','python.json'):
-            path = self.output/'example'/name
+            path = self.output/'example'/'python'/name
             original = path.read_bytes()
             with self.subTest(name=name):
                 path.write_bytes(original+b' ')
@@ -475,7 +477,7 @@ class ExecutionReceiptTest(unittest.TestCase):
 
     def test_changed_receipt_target_count_and_lifetime_are_rejected(self):
         result = self.record()
-        path = self.output/'example/receipt.json'; original = path.read_bytes()
+        path = self.output/'example'/'python'/'receipt.json'; original = path.read_bytes()
         for key, value in [('module','other'),('test_count',99),('expires_at','2030-01-01T00:00:00+00:00')]:
             with self.subTest(key=key):
                 changed=json.loads(original);changed[key]=value;path.write_bytes(receipt.canonical(changed))
@@ -514,9 +516,39 @@ class ExecutionReceiptTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'overwrite'):
             self.record()
 
+    def test_distinct_executions_do_not_collide_in_same_module_kind(self):
+        first = self.record(execution='test_boundaries')
+        second = self.record(execution='test_mobile_compact')
+        self.assertEqual('test_boundaries', first['execution'])
+        self.assertEqual('test_mobile_compact', second['execution'])
+        self.assertNotEqual(first['receipt_sha256'], second['receipt_sha256'])
+        self.assertTrue((self.output / 'example' / 'python' / 'test_boundaries' / 'receipt.json').exists())
+        self.assertTrue((self.output / 'example' / 'python' / 'test_mobile_compact' / 'receipt.json').exists())
+
+    def test_duplicate_execution_is_refused(self):
+        self.record(execution='test_boundaries')
+        with self.assertRaisesRegex(ValueError, 'overwrite'):
+            self.record(execution='test_boundaries')
+
+    def test_invalid_execution_name_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'invalid execution name'):
+            self.record(execution='../escape')
+        with self.assertRaisesRegex(ValueError, 'invalid execution name'):
+            receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+                head=self.head, status=0, log_status=0, log=self.log, execution='../escape')
+
+    def test_archive_attempt_execution_namespaces_attempt_path(self):
+        result = receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+            head=self.head, status=0, log_status=0, log=self.log, execution='test_boundaries')
+        self.assertEqual('test_boundaries', result['execution'])
+        self.assertTrue((self.output / 'attempts' / 'example' / 'python' / 'test_boundaries' / '1' / 'attempt.json').exists())
+        receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+            head=self.head, status=0, log_status=0, log=self.log, execution='test_mobile_compact')
+        self.assertTrue((self.output / 'attempts' / 'example' / 'python' / 'test_mobile_compact' / '1' / 'attempt.json').exists())
+
     def test_symlink_evidence_rejected(self):
         result = self.record()
-        path=self.output/'example/execution.log';path.unlink();path.symlink_to(self.log)
+        path=self.output/'example'/'python'/'execution.log';path.unlink();path.symlink_to(self.log)
         with self.assertRaisesRegex(ValueError, 'linked'):
             self.verify(result)
 
@@ -525,7 +557,7 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.log.write_text(self.log.read_text()+secret+'\n')
         with patch.dict(os.environ, {'DB_PASSWORD':secret}):
             result=self.record()
-        self.assertNotIn(secret, (self.output/'example/execution.log').read_text())
+        self.assertNotIn(secret, (self.output/'example'/'python'/'execution.log').read_text())
         self.verify(result)
 
     def test_orm_actual_selection_environment_and_identity(self):
@@ -551,7 +583,7 @@ class ExecutionReceiptTest(unittest.TestCase):
 
     def test_self_authorized_reuse_rejected_even_with_matching_digest(self):
         self.record()
-        path = self.output/'example/receipt.json'
+        path = self.output/'example'/'python'/'receipt.json'
         value = json.loads(path.read_text()); value['reuse_ready'] = True
         path.write_bytes(receipt.canonical(value))
         with self.assertRaisesRegex(ValueError, 'self-authorize'):
@@ -578,7 +610,7 @@ class ExecutionReceiptTest(unittest.TestCase):
         env_file.write_text('SC_DEMO_USER_PASSWORD=fixture-not-exported\n')
         self.log.write_text(self.log.read_text()+'fixture-not-exported\n')
         result = self.record(secrets_file=env_file)
-        self.assertNotIn('fixture-not-exported', (self.output/'example/execution.log').read_text())
+        self.assertNotIn('fixture-not-exported', (self.output/'example'/'python'/'execution.log').read_text())
         self.verify(result)
 
     def scope_fixture(self, base=None):
@@ -592,12 +624,12 @@ class ExecutionReceiptTest(unittest.TestCase):
         plan=self.scope_fixture();result=self.record(scope_plan=plan)
         with self.assertRaisesRegex(ValueError,'scope plan missing'):
             self.verify(result)
-        verified=receipt.verify(self.output/'example',expected_head=self.head,
+        verified=receipt.verify(self.output/'example'/'python',expected_head=self.head,
             expected_digest=result['receipt_sha256'],now=self.now,scope_plan=plan)
         self.assertFalse(verified['reuse_ready'])
         plan.write_bytes(plan.read_bytes()+b' ')
         with self.assertRaisesRegex(ValueError,'scope plan missing or changed'):
-            receipt.verify(self.output/'example',expected_head=self.head,
+            receipt.verify(self.output/'example'/'python',expected_head=self.head,
                 expected_digest=result['receipt_sha256'],now=self.now,scope_plan=plan)
 
     def test_wrong_head_base_target_or_shard_membership_is_rejected(self):
@@ -629,20 +661,20 @@ class ExecutionReceiptTest(unittest.TestCase):
         env=self.home/'managed.env';env.write_text('SC_DEMO_USER_PASSWORD=fixture-attempt-secret\n')
         self.log.write_text('fixture-attempt-secret failed before completion\n')
         for number,status in ((1,137),(2,0)):
-            result=receipt.archive_attempt(output=self.output,module='example',attempt=number,
+            result=receipt.archive_attempt(output=self.output,module='example',kind='python',attempt=number,
                 head=self.head,status=status,log_status=0,log=self.log,secrets_file=env)
             self.assertEqual('diagnostic_only_not_test_success',result['interpretation'])
             self.assertFalse(result['reuse_ready'])
-            folder=self.output/'attempts/example'/str(number)
+            folder=self.output/'attempts/example'/'python'/str(number)
             self.assertNotIn('fixture-attempt-secret',(folder/'execution.log').read_text())
             self.assertFalse((folder/'receipt.json').exists())
         with self.assertRaises(FileExistsError):
-            receipt.archive_attempt(output=self.output,module='example',attempt=1,head=self.head,
+            receipt.archive_attempt(output=self.output,module='example',kind='python',attempt=1,head=self.head,
                 status=137,log_status=0,log=self.log)
 
     def test_attempt_path_and_status_cannot_escape_archive(self):
         for overrides in ({'module':'../escape'},{'attempt':0},{'status':-1},{'log_status':256}):
-            args=dict(output=self.output,module='example',attempt=1,head=self.head,status=1,log_status=0,log=self.log)
+            args=dict(output=self.output,module='example',kind='python',attempt=1,head=self.head,status=1,log_status=0,log=self.log)
             args.update(overrides)
             with self.assertRaisesRegex(ValueError,'invalid attempt'):receipt.archive_attempt(**args)
 
@@ -653,8 +685,8 @@ class ExecutionReceiptTest(unittest.TestCase):
             observed = self.record(scope_plan=plan)
         stream = io.BytesIO()
         with zipfile.ZipFile(stream, 'w') as archive:
-            for path in (self.output/'example').iterdir():
-                archive.writestr('example/'+path.name, path.read_bytes())
+            for path in (self.output/'example'/'python').iterdir():
+                archive.writestr('example/python/'+path.name, path.read_bytes())
             if plan is not None:
                 archive.writestr('scope-plan.json',plan.read_bytes())
         raw = stream.getvalue()
@@ -704,7 +736,7 @@ class ExecutionReceiptTest(unittest.TestCase):
         import backend_suite_plan as planner
         original = self.platform_fixture(scoped=True)
         files = receipt.archive_members(original['actions/artifacts/20/zip'])
-        valid = json.loads(files['example/receipt.json'])
+        valid = json.loads(files['example/python/receipt.json'])
         target = {'known_inputs_sha256':valid['scope_plan']['known_inputs_sha256'],
                   'blockers':['dependency_closure_not_certified']}
         plan = {'head':self.head,'base':self.head,'modules':['example']}
@@ -717,7 +749,7 @@ class ExecutionReceiptTest(unittest.TestCase):
             stream=io.BytesIO()
             with zipfile.ZipFile(stream,'w') as archive:
                 for path,data in files.items():
-                    archive.writestr(path,receipt.canonical(broken) if path=='example/receipt.json' else data)
+                    archive.writestr(path,receipt.canonical(broken) if path=='example/python/receipt.json' else data)
             changed['actions/artifacts/21/zip']=stream.getvalue()
             metadata=copy.deepcopy(original['actions/artifacts/20'])
             metadata.update(id=21,name='backend-execution-11-2-0',digest='sha256:'+receipt.digest(stream.getvalue()))

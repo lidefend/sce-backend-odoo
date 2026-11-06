@@ -1,6 +1,18 @@
 export function toPositiveInt(raw: unknown): number | null {
-  const parsed = Number(raw || 0);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  // Strict positive-integer parsing for record/action/menu ids.  Number() here
+  // would coerce `true` to 1 and accept `379.5`, so a malformed contract could
+  // make a hidden create entry clickable or misroute it.  Only integer numbers
+  // and decimal digit strings without a leading zero are accepted.
+  if (typeof raw === 'number') {
+    return Number.isSafeInteger(raw) && raw > 0 ? raw : null;
+  }
+  if (typeof raw === 'string') {
+    const text = raw.trim();
+    if (!/^[1-9][0-9]*$/.test(text)) return null;
+    const parsed = Number(text);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+  }
+  return null;
 }
 
 export function parseMaybeJsonRecord(raw: unknown): Record<string, unknown> {

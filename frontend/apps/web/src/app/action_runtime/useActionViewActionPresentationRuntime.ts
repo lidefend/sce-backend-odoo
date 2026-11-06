@@ -78,7 +78,18 @@ function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): Array<R
   const normalized: Array<Record<string, unknown>> = [];
   for (const action of rows) {
     if (!action || typeof action !== 'object') continue;
-    const key = String(action.actionKey || action.actionId || '').trim();
+    // An unauthorized or not-allowed action must not be projected as a
+    // clickable toolbar entry.  In particular the denied `list.create` rule
+    // (entry authorizes creation, but the current principal does not) would
+    // otherwise surface as a clickable 项目立项 quick action.
+    if (action.allowed === false || action.authorizationAllowed === false) continue;
+    const actionId = String(action.actionId || '').trim();
+    const actionKey = String(action.actionKey || '').trim();
+    // The list toolbar owns `action.list.create` exclusively.  Projecting it
+    // again as a quick action would expose a second 新建 entry whose click
+    // destination (source-list menu) differs from the dedicated button.
+    if (actionId === 'action.list.create' || actionKey === 'list.create') continue;
+    const key = actionKey || actionId;
     if (!key) continue;
     const intent = String(action.intent || '').trim();
     const target = action.target && typeof action.target === 'object' && !Array.isArray(action.target) ? action.target : {};

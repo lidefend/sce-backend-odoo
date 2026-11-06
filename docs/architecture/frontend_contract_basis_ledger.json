@@ -269,6 +269,18 @@
   "openContractDefects": [],
   "closedContractDefects": [
     {
+      "id": "CD-20261106-LIST-CREATE-ENTRY",
+      "missing": "列表“新建”缺带 target 的授权创建动作",
+      "surface": "ActionView/ListPage 列表新建入口（项目台账 590 及其它列表）",
+      "discoveredBy": "候选 280d5380e 让按钮跟随 entryCapabilities.create 后，入口允许建但模型 ACL 禁止的用户仍见“新建”，而有立项权的用户在 590 上被隐藏；布尔不带目标，前端只能硬编码 /f/:model/new。",
+      "requiredDeclarationLayer": "P0:smart_core 列表契约装配 + P1:smart_construction_core 台账委托声明",
+      "resolution": "后端为列表交付 action.list.create 规则（target + authorizationAllowed + entitlementEvaluated + permissionConstraints）；默认 record_create 直建当前入口标准创建表单，台账 590 经 sc_create_entry_action_xmlid 委托到 action_project_initiation；前端以同一规则决定显隐与去向，缺失即 fail-closed。",
+      "closureEvidence": [
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ]
+    },
+    {
       "id": "CD-20261008-WORKSHEET-PAGE-SIZE",
       "missing": "config.sheet.page_size",
       "surface": "HierarchicalWorksheet (menu_sc_p1_expense_contract / menu_sc_payment_execution)",

@@ -22,24 +22,31 @@ class TestNavigation(TransactionCase):
     def rows(self, module='example'):
         return coverage.inventory(self.source, f'addons/{module}/tests/test_nav.py')
 
+    def orm_src(self, text, module='example'):
+        return {'module': module, 'kind': 'orm', 'execution': '', 'text': text}
+
+    def py_src(self, text, module='example', execution='test_python'):
+        return {'module': module, 'kind': 'python', 'execution': execution, 'text': text}
+
     def test_custom_tag_methods_get_exact_selectors(self):
         self.assertEqual(['/example:TestNavigation.test_upgrade', '/example:TestNavigation.test_delete'],
                          [r['selector'] for r in self.rows()])
 
     def test_unrelated_nonzero_suite_does_not_prove_changed_tests(self):
-        result = coverage.verify_logs(self.rows(), ['odoo.addons.other.tests.test_nav: Starting TestNavigation.test_upgrade ...',
-                                                   '0 failed, 0 error(s) of 23 tests'])
+        result = coverage.verify_logs(self.rows(), [self.orm_src(
+            'odoo.addons.other.tests.test_nav: Starting TestNavigation.test_upgrade ...\n'
+            '0 failed, 0 error(s) of 23 tests')])
         self.assertTrue(all(r['status'] == 'pending' for r in result))
 
     def test_each_method_requires_execution(self):
-        result = coverage.verify_logs(self.rows(), [
-            'odoo.addons.example.tests.test_nav: Starting TestNavigation.test_upgrade ...'])
+        result = coverage.verify_logs(self.rows(), [self.orm_src(
+            'odoo.addons.example.tests.test_nav: Starting TestNavigation.test_upgrade ...')])
         self.assertEqual(['executed', 'pending'], [r['status'] for r in result])
 
     def test_skipped_is_not_execution(self):
-        result = coverage.verify_logs(self.rows(), [
+        result = coverage.verify_logs(self.rows(), [self.orm_src(
             'odoo.addons.example.tests.test_nav: Starting TestNavigation.test_upgrade ...\n'
-            'TestNavigation.test_upgrade skipped'])
+            'TestNavigation.test_upgrade skipped')])
         self.assertEqual('pending', result[0]['status'])
 
     def test_python_changed_method_requires_verbose_success_identity(self):
@@ -47,9 +54,116 @@ class TestNavigation(TransactionCase):
                                   'addons/example/tests/test_python.py')
         self.assertEqual('python', rows[0]['kind'])
         good = 'test_one (test_python.TestThing.test_one) ... ok\n'
-        self.assertEqual('executed', coverage.verify_logs(rows, [good])[0]['status'])
-        self.assertEqual('pending', coverage.verify_logs(rows, ['Ran 9 tests\nOK'])[0]['status'])
-        self.assertEqual('pending', coverage.verify_logs(rows, [good.replace('ok', 'skipped')])[0]['status'])
+        self.assertEqual('executed', coverage.verify_logs(rows, [self.py_src(good)])[0]['status'])
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src('Ran 9 tests\nOK')])[0]['status'])
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(good.replace('ok', 'skipped'))])[0]['status'])
+
+    def test_python_direct_file_run_main_identity_is_rejected(self):
+        # `python3 <file> -v` imports the file as __main__; the coverage
+        # verifier must refuse it because it cannot bind __main__ back to the
+        # changed file. The governed discover runner emits the filename stem.
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        bad = 'test_one (__main__.TestThing.test_one) ... ok\n'
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(bad)])[0]['status'])
+
+    def test_python_structured_results_verify_wrapped_verbose_identity(self):
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        # A docstring or test-printed log splits the method identity from the
+        # `... ok` suffix, so the legacy verbosity-2 regex miscounts it. The
+        # structured executor record must be authoritative instead.
+        wrapped = 'test_one (test_python.TestThing.test_one)\ndocstring first line ... ok\n'
+        marker = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_python.TestThing.test_one': 'passed'},
+            'run': 1, 'skipped': 0, 'failures': 0, 'errors': 0,
+        })
+        self.assertEqual('executed', coverage.verify_logs(rows, [self.py_src(wrapped + '\n' + marker)])[0]['status'])
+
+    def test_python_structured_results_do_not_cross_contaminate_skip_and_pass(self):
+        source = ('import unittest\n'
+                  'class TestThing(unittest.TestCase):\n'
+                  '    def test_one(self): pass\n'
+                  '    def test_two(self): pass\n')
+        rows = coverage.inventory(source, 'addons/example/tests/test_python.py')
+        marker = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_python.TestThing.test_one': 'skipped',
+                        'test_python.TestThing.test_two': 'passed'},
+            'run': 2, 'skipped': 1, 'failures': 0, 'errors': 0,
+        })
+        self.assertEqual(['pending', 'executed'],
+                         [r['status'] for r in coverage.verify_logs(rows, [self.py_src(marker)])])
+
+    def test_same_name_tests_bind_to_their_own_addon_scope(self):
+        source = 'import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n'
+        rows_a = coverage.inventory(source, 'addons/addon_a/tests/test_common.py')
+        rows_b = coverage.inventory(source, 'addons/addon_b/tests/test_common.py')
+        marker_a = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_common.TestThing.test_one': 'skipped'},
+            'run': 1, 'skipped': 1, 'failures': 0, 'errors': 0,
+        })
+        marker_b = 'SC_BACKEND_TEST_RESULTS=' + json.dumps({
+            'schema': 'backend-python-test-results/v1',
+            'results': {'test_common.TestThing.test_one': 'passed'},
+            'run': 1, 'skipped': 0, 'failures': 0, 'errors': 0,
+        })
+        src_a = self.py_src(marker_a, module='addon_a', execution='test_common')
+        src_b = self.py_src(marker_b, module='addon_b', execution='test_common')
+        for ordered in ([src_a, src_b], [src_b, src_a]):
+            observed = coverage.verify_logs(rows_a + rows_b, ordered)
+            self.assertEqual(['pending', 'executed'], [r['status'] for r in observed])
+
+    def test_nested_local_odoo_import_does_not_reclassify_pure_unittest_as_orm(self):
+        # A standalone unittest that locally imports an odoo helper inside one
+        # test method must stay kind=python; only module-level odoo imports
+        # declare an ORM suite.
+        source = (
+            'import unittest\n'
+            'class TestThing(unittest.TestCase):\n'
+            '    def test_one(self):\n'
+            '        from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain\n'
+            '        pass\n'
+        )
+        rows = coverage.inventory(source, 'addons/example/tests/test_python.py')
+        self.assertEqual('python', rows[0]['kind'])
+
+        orm_source = (
+            'from odoo.tests.common import TransactionCase\n'
+            'class TestThing(TransactionCase):\n'
+            '    def test_one(self): pass\n'
+        )
+        orm_rows = coverage.inventory(orm_source, 'addons/example/tests/test_orm.py')
+        self.assertEqual('orm', orm_rows[0]['kind'])
+
+    def test_module_level_conditional_odoo_import_declares_orm_suite(self):
+        # `test_project_context_resolver.py` inherits TransactionCase when Odoo
+        # is present and falls back to unittest.TestCase offline.  Its Odoo
+        # import lives inside a module-level try; that still declares an ORM
+        # suite, unlike a method-local import.
+        source = (
+            'import unittest\n'
+            'try:\n'
+            '    from odoo.tests.common import TransactionCase\n'
+            '    BaseCase = TransactionCase\n'
+            'except ModuleNotFoundError:\n'
+            '    BaseCase = unittest.TestCase\n'
+            'class TestThing(BaseCase):\n'
+            '    def test_one(self): pass\n'
+        )
+        rows = coverage.inventory(source, 'addons/example/tests/test_cond.py')
+        self.assertEqual('orm', rows[0]['kind'])
+
+    def test_real_project_context_resolver_file_classifies_as_orm(self):
+        root = Path(__file__).resolve().parents[2]
+        path = root / 'addons/smart_construction_core/tests/test_project_context_resolver.py'
+        if not path.exists():
+            self.skipTest('real project context resolver test file unavailable')
+        rows = coverage.inventory(path.read_text(), str(path.relative_to(root)))
+        self.assertTrue(rows)
+        self.assertEqual('orm', rows[0]['kind'])
 
     def test_python310_and_modern_verbose_logs_bind_exact_method(self):
         rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
@@ -58,16 +172,16 @@ class TestNavigation(TransactionCase):
                          'tests.test_python.TestThing', 'tests.test_python.TestThing.test_one'):
             with self.subTest(identity=identity):
                 good = f'test_one ({identity}) ... ok\n'
-                self.assertEqual('executed', coverage.verify_logs(rows, [good])[0]['status'])
+                self.assertEqual('executed', coverage.verify_logs(rows, [self.py_src(good)])[0]['status'])
                 for bad in (good.replace('test_one', 'test_other'),
                             good.replace('test_python', 'test_unrelated'),
                             good.replace('TestThing', 'TestOther'),
                             good.replace('... ok', '... FAIL'),
                             good.replace('... ok', "... skipped 'not selected'"),
                             'quoted example: ' + good):
-                    self.assertEqual('pending', coverage.verify_logs(rows, [bad])[0]['status'])
+                    self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(bad)])[0]['status'])
         mismatched = 'test_one (test_python.TestThing.test_other) ... ok\n'
-        self.assertEqual('pending', coverage.verify_logs(rows, [mismatched])[0]['status'])
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(mismatched)])[0]['status'])
 
     def test_python_inventory_skipped_key_does_not_override_actual_success(self):
         rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
@@ -76,15 +190,15 @@ class TestNavigation(TransactionCase):
         for skipped in ([], ['test_python.TestThing.test_other']):
             inventory = 'SC_BACKEND_TEST_IDS=' + json.dumps({'ids': [identity], 'skipped': skipped})
             log = 'test_one (test_python.TestThing) ... ok\n' + inventory
-            self.assertEqual('executed', coverage.verify_logs(rows, [log])[0]['status'])
-            self.assertEqual('pending', coverage.verify_logs(rows, [inventory])[0]['status'])
+            self.assertEqual('executed', coverage.verify_logs(rows, [self.py_src(log)])[0]['status'])
+            self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(inventory)])[0]['status'])
         log += "\ntest_one (test_python.TestThing) ... skipped 'not selected'\n"
-        self.assertEqual('pending', coverage.verify_logs(rows, [log])[0]['status'])
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.py_src(log)])[0]['status'])
 
     def test_managed_methods_cannot_be_proven_by_generic_module_logs(self):
         rows = self.rows(coverage.MANAGED_MODULE)
         log = f'odoo.addons.{coverage.MANAGED_MODULE}.tests.test_nav: Starting TestNavigation.test_upgrade ...'
-        self.assertEqual('pending', coverage.verify_logs(rows, [log])[0]['status'])
+        self.assertEqual('pending', coverage.verify_logs(rows, [self.orm_src(log, module=coverage.MANAGED_MODULE)])[0]['status'])
 
     def test_managed_acceptance_has_explicit_owner_and_stays_pending(self):
         rows = self.rows(coverage.MANAGED_MODULE)

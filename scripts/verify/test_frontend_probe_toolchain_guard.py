@@ -98,6 +98,36 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         self.assertIn('CONTRACT_LABEL_RENDER_DIFF', source)
         self.assertIn('CONTRACT_READONLY_MISMATCH', source)
         self.assertIn('CONTRACT_VISIBILITY_MISMATCH', source)
+
+    def test_relation_title_restore_waits_for_settled_title_and_stays_strict(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        surface = source[source.index('async function waitForRecordSurface'):source.index('async function recordSnapshot')]
+        self.assertIn('template-page-title', surface)
+        self.assertIn('加载中', surface)
+        self.assertIn('正在加载', surface)
+        self.assertIn('正在初始化', surface)
+        restore = source[source.index('const after = await recordSnapshot(page)'):source.index('result.roundtrip = { field, restored, after }')]
+        self.assertIn('title_restored: same(after.title, before.title)', restore)
+        # Counterexample: a genuinely different settled title must still fail
+        # the restore check, while the loading suffix no longer contaminates it.
+        program = """
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = vm.createContext({
+  same: (left, right) => JSON.stringify(left) === JSON.stringify(right),
+});
+vm.runInContext(process.argv[1], context);
+assert.equal(context.titleRestored('FE Project A', 'FE Project A'), true);
+assert.equal(context.titleRestored('FE Project A', 'FE Project B'), false);
+"""
+        title_fn = """
+function titleRestored(before, after) {
+  const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  return same(after, before);
+}
+"""
+        result = subprocess.run(['node', '-e', program, title_fn], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('RELATION_TARGET_ACTION_MISMATCH', source)
         self.assertIn("previousCell?.tagName === 'TD'", source)
         self.assertIn('const controlFieldSet = new Set(', source)

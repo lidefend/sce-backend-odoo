@@ -1702,6 +1702,46 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(merged["allowed_company_ids"], [1])
         self.assertEqual(merged["company_id"], 1)
 
+    def test_route_context_projects_operation_denials_but_never_grants(self):
+        merged = self.module._merge_route_default_context(
+            {},
+            "{'create': False, 'no_edit': True, 'duplicate': True, 'default_phase_key': 'initiation'}",
+        )
+        self.assertIs(merged["create"], False)
+        self.assertIs(merged["no_edit"], True)
+        self.assertNotIn("duplicate", merged)
+        self.assertEqual(merged["default_phase_key"], "initiation")
+
+    def test_route_context_normalizes_denial_literals_and_preserves_existing_denials(self):
+        # A string 'on' must normalize to the boolean the assembler recognizes
+        # instead of overwriting the entry's boolean denial with a weaker value.
+        merged = self.module._merge_route_default_context(
+            {"no_create": True}, "{'no_create': 'on'}"
+        )
+        self.assertIs(merged["no_create"], True)
+
+        # Valid JSON with lowercase false must not be dropped.
+        merged = self.module._merge_route_default_context({}, '{"create": false}')
+        self.assertIs(merged["create"], False)
+
+        # A truthy route value must never loosen an existing denial.
+        merged = self.module._merge_route_default_context(
+            {"create": False}, "{'create': true}"
+        )
+        self.assertIs(merged["create"], False)
+
+    def test_route_context_rejects_non_object_literals_without_raising(self):
+        # A non-object route literal carries no operation facts. It must be
+        # rejected by returning the trusted context unchanged, never by
+        # calling .items() on a list, number or other non-dict value.
+        for raw in ("[]", "'[]'", "1", "'1'", '"x"', "null"):
+            with self.subTest(raw=raw):
+                merged = self.module._merge_route_default_context(
+                    {"no_create": True}, raw
+                )
+                self.assertIs(merged["no_create"], True)
+                self.assertNotIn("create", merged)
+
     def test_rejects_zero_max_actions(self):
         handler = self.module.UiContractV2Handler(env=object())
 

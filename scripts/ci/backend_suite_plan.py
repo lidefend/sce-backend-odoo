@@ -423,17 +423,38 @@ def validate_execution_plan(plan: dict, required: dict) -> dict:
 
 def verify_execution_coverage(plan: dict, receipts: list[dict]) -> None:
     expected = {name for shard in plan['shards'] for name in shard['modules']}
-    actual = []
+    seen: set[tuple[str, str, str]] = set()
     for receipt in receipts:
         if (receipt.get('source_head') != plan['head']
                 or receipt.get('integration_base') != plan['base']
                 or receipt.get('exit_code') != 0
                 or type(receipt.get('test_count')) is not int or receipt['test_count'] <= 0):
             raise ValueError('invalid execution receipt identity or outcome')
-        actual.append(receipt['module'])
-    if len(actual) != len(set(actual)) or set(actual) != expected:
+        execution = receipt.get('execution', '')
+        if execution and not re.fullmatch('[A-Za-z_][A-Za-z0-9_-]*', execution):
+            raise ValueError('invalid execution name in receipt')
+        key = (receipt['module'], receipt.get('kind', ''), execution)
+        if key in seen:
+            raise ValueError(f"duplicate execution receipt for {receipt['module']}/{receipt.get('kind')}/{execution}")
+        seen.add(key)
+    actual = {module for module, _kind, _execution in seen}
+    if actual != expected:
         raise ValueError('actual receipt modules differ from frozen execution scope')
 
+
+def locate_scope_plan(receipt_path: Path) -> Path:
+    """Find the frozen scope-plan.json at the receipt artifact root.
+
+    ORM receipts live at ``<root>/<module>/orm/receipt.json`` and per-file
+    Python receipts at ``<root>/<module>/python/<execution>/receipt.json``;
+    the shared scope plan stays at ``<root>/scope-plan.json``.  Walk ancestors
+    so the depth is derived from the receipt, never hard-coded.
+    """
+    for parent in receipt_path.parents:
+        candidate = parent / 'scope-plan.json'
+        if candidate.is_file():
+            return candidate
+    raise ValueError('frozen scope plan missing above receipt: ' + str(receipt_path))
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -463,7 +484,7 @@ def main() -> None:
         receipts = []
         for path in args.receipts.rglob('receipt.json'):
             raw = path.read_bytes()
-            shard_plan = path.parent.parent / 'scope-plan.json'
+            shard_plan = locate_scope_plan(path)
             validate_execution_plan(json.loads(shard_plan.read_text()), plan)
             execution_receipt.verify(path.parent, expected_head=plan['head'],
                 expected_digest=hashlib.sha256(raw).hexdigest(), scope_plan=shard_plan)

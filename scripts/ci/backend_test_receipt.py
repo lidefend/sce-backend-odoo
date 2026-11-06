@@ -153,18 +153,24 @@ def scope_reference(raw: bytes, *, head: str, base: str, module: str) -> dict:
             'dependency_closure_complete':bool(target.get('dependency_closure_complete'))}
 
 
-def archive_attempt(*, output: Path, module: str, attempt: int, head: str,
+def archive_attempt(*, output: Path, module: str, kind: str, attempt: int, head: str,
                     status: int, log_status: int, log: Path, database: str = '',
-                    secrets_file: Path | None = None) -> dict:
+                    secrets_file: Path | None = None, execution: str = '') -> dict:
     if (not re.fullmatch('[A-Za-z_][A-Za-z0-9_]*',module)
+            or kind not in ('orm', 'python')
             or not re.fullmatch('[0-9a-f]{40}',head) or type(attempt) is not int or attempt <= 0
             or any(type(v) is not int or not 0 <= v <= 255 for v in (status,log_status))):
         raise ValueError('invalid attempt identity or exit status')
+    if execution and not re.fullmatch('[A-Za-z_][A-Za-z0-9_-]*', execution):
+        raise ValueError('invalid execution name')
     text = redacted_log(log,secrets_file)
-    target = output/'attempts'/module/str(attempt)
+    attempt_root = output/'attempts'/module/kind
+    if execution:
+        attempt_root = attempt_root / execution
+    target = attempt_root / str(attempt)
     target.mkdir(parents=True,exist_ok=False)
     (target/'execution.log').write_text(text,encoding='utf-8')
-    result = {'schema':'backend-test-attempt/v1','module':module,'attempt':attempt,
+    result = {'schema':'backend-test-attempt/v1','module':module,'kind':kind,'execution':execution,'attempt':attempt,
               'source_head':head,'database':database,'process_exit_code':status,'log_exit_code':log_status,
               'log_sha256':digest((target/'execution.log').read_bytes()),
               'interpretation':'diagnostic_only_not_test_success','reuse_ready':False}
@@ -195,7 +201,7 @@ def workflow_definition_observation(environment: dict | None = None) -> dict:
 def record(root: Path, *, module: str, kind: str, head: str, base: str,
            database: str, status: int, log: Path, context_file: Path, output: Path,
            now: datetime | None = None, selection: str = '', duration_seconds: float | None = None, secrets_file: Path | None = None, scope_plan: Path | None = None,
-           readback: dict | Path | None = None) -> dict:
+           readback: dict | Path | None = None, execution: str = '') -> dict:
     if kind not in ('orm', 'python'):
         raise ValueError('unknown executor kind')
     if kind == 'orm' and (not selection or not database):
@@ -204,6 +210,8 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
         raise ValueError('invalid measured duration')
     if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', module):
         raise ValueError('invalid module')
+    if execution and not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]*', execution):
+        raise ValueError('invalid execution name')
     if not re.fullmatch(r'[0-9a-f]{40}',head) or (base and not re.fullmatch(r'[0-9a-f]{40}',base)):
         raise ValueError('exact source/base commits required')
     if command('git', 'rev-parse', 'HEAD', cwd=root) != head:
@@ -239,10 +247,12 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     workflow_definition = workflow_definition_observation()
     now = now or datetime.now(timezone.utc)
     output.mkdir(parents=True, exist_ok=True)
-    target = output / module
+    target = output / module / kind
+    if execution:
+        target = target / execution
     if target.exists():
         raise ValueError('refuse to overwrite existing target evidence')
-    target.mkdir()
+    target.mkdir(parents=True, exist_ok=False)
     text = log.read_text(encoding='utf-8')
     text = redacted_log(log, secrets_file)
     (target / 'execution.log').write_text(text, encoding='utf-8')
@@ -253,7 +263,7 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     if not (scope and scope.get('dependency_closure_complete')):
         blockers.append('target_dependency_closure_not_certified')
     receipt = {
-        'schema': SCHEMA, 'module': module, 'kind': kind, 'source_head': head,
+        'schema': SCHEMA, 'module': module, 'kind': kind, 'execution': execution, 'source_head': head,
         'source_tree': tree, 'integration_base': base, 'database': database, 'scope_plan':scope,
         'target': f'make test MODULE={module}' if kind == 'orm' else f'unittest discover {candidates[0]}/tests',
         'selection': selection if kind == 'orm' else 'test*.py',
@@ -537,6 +547,22 @@ def workflow_authority_blobs(source_tree: str, fetch) -> dict[str, str]:
     return blobs
 
 
+def _module_receipt_prefix(module: str, files: dict[str, bytes]) -> str:
+    """Locate the module-level receipt directory inside an archived shard.
+
+    ORM modules archive ``<module>/orm/receipt.json`` and pure-python modules
+    archive ``<module>/python/receipt.json``.  Mixed per-file python receipts
+    live one level deeper (``<module>/python/<execution>/receipt.json``) and are
+    not a module-level reuse target, so only the two direct kind directories
+    are considered.
+    """
+    for kind in ('orm', 'python'):
+        prefix = module + '/' + kind + '/'
+        if prefix + 'receipt.json' in files:
+            return prefix
+    raise ValueError('target execution evidence missing')
+
+
 def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
                          shard: int, expected_head: str, module: str,
                          now: datetime | None = None, fetch=None) -> dict:
@@ -580,9 +606,10 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
         raise ValueError('platform archive digest mismatch')
     files = archive_members(raw)
     names = ('receipt.json', 'execution.log', 'runtime.json', 'python.json')
-    if any(module + '/' + name not in files for name in names):
+    receipt_prefix = _module_receipt_prefix(module, files)
+    if any(receipt_prefix + name not in files for name in names):
         raise ValueError('target execution evidence missing')
-    receipt = json.loads(files[module + '/receipt.json'])
+    receipt = json.loads(files[receipt_prefix + 'receipt.json'])
     provenance = receipt.get('provenance') or {}
     if (receipt.get('module') != module
             or provenance.get('GITHUB_REPOSITORY') != REPOSITORY
@@ -596,7 +623,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
         for name in names:
-            (folder/name).write_bytes(files[module + '/' + name])
+            (folder/name).write_bytes(files[receipt_prefix + name])
         scope_path = None
         if receipt.get('scope_plan') is not None:
             if 'scope-plan.json' not in files:
@@ -604,7 +631,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             scope_path = folder/'scope-plan.json'
             scope_path.write_bytes(files['scope-plan.json'])
         verified = verify(folder, expected_head=expected_head,
-                          expected_digest=digest(files[module+'/receipt.json']), now=now,scope_plan=scope_path)
+                          expected_digest=digest(files[receipt_prefix + 'receipt.json']), now=now,scope_plan=scope_path)
     execution_definition_attested = False
     if isinstance(receipt.get('workflow_definition'), dict):
         try:
@@ -638,7 +665,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'execution_definition_attested': execution_definition_attested,
             'reuse_authority': reuse_authority,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
-            'receipt_sha256': digest(files[module+'/receipt.json']),
+            'receipt_sha256': digest(files[receipt_prefix + 'receipt.json']),
             'workflow_path': run['path'],
             'scope_plan': receipt.get('scope_plan'), 'test_count': receipt['test_count'],
             'issued_at': receipt['issued_at'], 'expires_at': receipt['expires_at'],
@@ -894,7 +921,7 @@ def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dic
                     # attempt is eligible; attempt-number names alone are insufficient.
                     raw = fetch(f"actions/artifacts/{artifact['id']}/zip")
                     members = archive_members(raw)
-                    log = members[ISOLATED_MODULE+'/execution.log'].decode()
+                    log = members[_module_receipt_prefix(ISOLATED_MODULE, members) + 'execution.log'].decode()
                     markers = [json.loads(x[len(ISOLATED_MARKER):]) for x in log.splitlines()
                                if x.startswith(ISOLATED_MARKER)]
                     if markers != [proof]:
@@ -1074,6 +1101,7 @@ def main() -> None:
     parser.add_argument('--base', default='')
     parser.add_argument('--module')
     parser.add_argument('--kind', choices=('orm', 'python'))
+    parser.add_argument('--execution', default='')
     parser.add_argument('--database', default='')
     parser.add_argument('--selection', default='')
     parser.add_argument('--duration-seconds', type=float)
@@ -1107,13 +1135,13 @@ def main() -> None:
                         database=args.database, status=args.status, log=args.log,
                         context_file=args.context, output=args.output, selection=args.selection,
                         duration_seconds=args.duration_seconds, secrets_file=args.secrets_file,
-                        scope_plan=args.scope_plan, readback=args.readback)
+                        scope_plan=args.scope_plan, readback=args.readback, execution=args.execution)
         print(json.dumps({'module': result['module'], 'test_count': result['test_count'],
                           'receipt_sha256': result['receipt_sha256'], 'reuse_ready': False}))
     elif args.mode == 'archive-attempt':
-        print(json.dumps(archive_attempt(output=args.output,module=args.module,attempt=args.attempt,
+        print(json.dumps(archive_attempt(output=args.output,module=args.module,kind=args.kind,attempt=args.attempt,
              head=args.head,status=args.status,log_status=args.log_status,log=args.log,
-             database=args.database,secrets_file=args.secrets_file)))
+             database=args.database,secrets_file=args.secrets_file,execution=args.execution)))
     elif args.mode == 'verify-contract-source':
         print(json.dumps(contract_source_binding(json.loads(args.contract.read_text()),
                                                 json.loads(args.source_payload.read_text()))))

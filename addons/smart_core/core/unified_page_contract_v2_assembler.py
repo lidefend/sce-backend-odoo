@@ -1542,6 +1542,12 @@ def _assemble_ui_contract(
         render_profile=render_profile,
         layout_type=layout_type,
     )
+    _append_collection_create_entry_action(
+        contract,
+        source,
+        model=model,
+        view_type=view_type,
+    )
     _append_ui_contract_actions(contract, ui, source_widget_id="page.root", main_data=contract["dataContract"]["mainData"])
     _append_ui_contract_row_actions(contract, ui)
     _append_registered_kanban_row_action(contract, model=model, view_type=view_type)
@@ -2928,6 +2934,90 @@ def _ui_contract_page_auth(source: dict[str, Any], ui: dict[str, Any], render_pr
     if render_profile in {"create", "edit"}:
         return "edit"
     return "read" if view_type in {"tree", "list", "kanban"} else "edit"
+
+
+def _append_collection_create_entry_action(
+    contract: dict[str, Any],
+    source: dict[str, Any],
+    *,
+    model: str,
+    view_type: str,
+) -> None:
+    """Project the producer's authorized collection 新建 action into V2.
+
+    A collection entry's ``entryCapabilities.create`` is a presentation/entry
+    restriction, not the user's creation entitlement, and it carries no target.
+    The producer resolves the actual creation target (the entry's standard
+    create form, or an entry-declared override such as 项目立项).  A direct
+    target is authorized by the collection's own effective create capability
+    already assembled into ``globalStatus.effectiveRecordCapabilities``; a
+    delegated target carries the producer's authorization verdict.  This
+    function publishes that verdict as one ``actionRuleList`` rule so the
+    frontend shows and executes the same target; a missing or unauthorized
+    declaration fails closed.
+    """
+    if view_type not in {"tree", "list", "kanban"}:
+        return
+    entry = _dict(source.get("collectionCreateEntry"))
+    if not entry:
+        return
+    kind = _text(entry.get("kind"), "record_create")
+    target_model = _text(entry.get("model") or model)
+    if kind == "action":
+        authorized = entry.get("authorizationAllowed") is True
+        evaluated = entry.get("entitlementEvaluated") is True
+        action_id = _positive_int(entry.get("action_id"), 0)
+        target: dict[str, Any] = {
+            "type": "action",
+            "action_id": action_id,
+            "action_xmlid": _text(entry.get("action_xmlid")),
+            "menu_id": _positive_int(entry.get("menu_id"), 0),
+        }
+        if not action_id:
+            # A declared override that cannot be resolved to a real action is a
+            # contract gap, never a grant.
+            target = {}
+    else:
+        effective_capabilities = _dict(
+            _dict(contract.get("statusContract")).get("globalStatus")
+        ).get("effectiveRecordCapabilities")
+        effective_capabilities = _dict(effective_capabilities)
+        authorized = effective_capabilities.get("create") is True
+        evaluated = True
+        target = {"type": "record_create", "model": target_model}
+    required_groups = [
+        _text(item) for item in _list(entry.get("requiredGroups")) if _text(item)
+    ]
+    allowed = bool(authorized and evaluated and target)
+    action_rule: dict[str, Any] = {
+        "actionId": "action.list.create",
+        "actionKey": "list.create",
+        "sourceActionKey": "list.create",
+        "backendIdentity": "contract_action:list.create",
+        "label": _text(entry.get("label"), "新建"),
+        "intent": "ui.contract",
+        "target": target,
+        "button": {},
+        "triggerType": "click",
+        "sourceWidgetId": "page.root",
+        "targetIds": [],
+        "dispatchMode": "server",
+        "targetScope": "page",
+        "refreshMode": "none",
+        "sourceChannel": "platform_collection_create_entry",
+        "presentationAuthority": "native_contract",
+        "presentationPriority": 100,
+        "allowed": allowed,
+        "enabled": allowed,
+        "authorizationAllowed": authorized,
+        "entitlementEvaluated": evaluated,
+    }
+    if required_groups:
+        action_rule["permissionConstraints"] = {"requiredGroups": required_groups}
+    reason_code = _text(entry.get("reasonCode"))
+    if reason_code:
+        action_rule["reasonCode"] = reason_code
+    contract["actionContract"]["actionRuleList"].append(action_rule)
 
 
 def _append_standard_form_save_action(

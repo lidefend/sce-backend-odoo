@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import ast
+import json
 import time
 from copy import deepcopy
 from typing import Any, Dict, Optional
@@ -36,6 +37,7 @@ from ..core.ui_base_contract_asset_repository import (
     upsert_runtime_source_asset,
 )
 from ..core.request_params import parse_positive_int
+from ..delivery.runtime_route_authority import menu_publication_decision, published_route_authority
 from ..utils.contract_governance import (
     _apply_form_view_capabilities, _mark_record_dependent_native_buttons_hidden_on_create,
     apply_contract_governance, apply_native_authority_domain_overrides,
@@ -92,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v26-relation-open-excludes-admin-surface"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-persisted-relation-dependencies-v27-collection-create-entry-action"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1098,6 +1100,11 @@ class UiContractV2Handler(BaseIntentHandler):
             ui_params=ui_params,
         )
         action_window_at = time.monotonic()
+        self._inject_collection_create_entry_action(
+            source_contract,
+            model=str(model or "").strip(),
+            view_type=str(view_type or "").strip().lower(),
+        )
         self._inject_current_form_settings_action(
             source_contract,
             params=params,
@@ -1686,6 +1693,132 @@ class UiContractV2Handler(BaseIntentHandler):
         if isinstance(action_context_raw, str) and action_context_raw.strip():
             if not source_contract.get("context_raw"):
                 source_contract["context_raw"] = action_context_raw
+
+    def _inject_collection_create_entry_action(
+        self,
+        source_contract: dict[str, Any],
+        *,
+        model: str,
+        view_type: str,
+    ) -> None:
+        """Declare the authorized 新建 action for a collection entry.
+
+        A collection's ``entryCapabilities.create`` only says whether the entry
+        allows *direct* record creation.  What a list toolbar actually needs is
+        the full target (which creation action to run) plus an authorization
+        verdict for the current user.  This method resolves that target with
+        the same authority the producer already owns:
+
+        * default: the entry's own standard create form for ``model``;
+        * override: an entry action whose context declares
+          ``sc_create_entry_action_xmlid`` (for example the project ledger
+          resolving 新建 to 项目立项).
+
+        Delegated targets are fail-closed against the target's own
+        availability: model ACL create, action group membership and the
+        published ``(menu_id, action_id)`` route authority.  Direct targets
+        declare the target only; the assembler applies the collection's
+        effective create capability so default and native-view denials share
+        one verdict.
+        """
+        if not model:
+            return
+        active_view_type = str(view_type or "").split(",")[0].strip().lower()
+        if active_view_type == "list":
+            active_view_type = "tree"
+        if active_view_type not in {"tree", "kanban"}:
+            return
+
+        entry_context = source_contract.get("context") if isinstance(source_contract.get("context"), dict) else {}
+        override_xmlid = _surface_text(entry_context.get("sc_create_entry_action_xmlid"))
+        override_menu_xmlid = _surface_text(entry_context.get("sc_create_entry_menu_xmlid"))
+
+        target_model = model
+        target_action_id = 0
+        target_label = ""
+        required_groups: list[str] = []
+        target_menu_id = 0
+        kind = "record_create"
+
+        if override_xmlid:
+            override_action = self.env.ref(override_xmlid, raise_if_not_found=False)
+            if not override_action:
+                source_contract["collectionCreateEntry"] = {
+                    "kind": "action",
+                    "action_xmlid": override_xmlid,
+                    "authorizationAllowed": False,
+                    "entitlementEvaluated": False,
+                    "reasonCode": "CREATE_ENTRY_ACTION_UNRESOLVED",
+                }
+                return
+            target_action_id = int(override_action.id or 0)
+            target_model = _surface_text(override_action.res_model) or target_model
+            target_label = _surface_text(override_action.name) or "新建"
+            kind = "action"
+            for group in override_action.groups_id:
+                xmlid = group.get_external_id().get(group.id)
+                if xmlid:
+                    required_groups.append(xmlid)
+            if override_menu_xmlid:
+                override_menu = self.env.ref(override_menu_xmlid, raise_if_not_found=False)
+                if override_menu:
+                    target_menu_id = int(override_menu.id or 0)
+
+        if kind != "action":
+            # Default direct create: the producer resolves the target only.  The
+            # assembler authorizes it with the collection's effective create
+            # capability (model ACL x entry context x native view can_create),
+            # so there is exactly one verdict source for direct creation.
+            source_contract["collectionCreateEntry"] = {
+                "kind": "record_create",
+                "model": target_model,
+                "label": "新建",
+            }
+            return
+
+        # Delegated target: model ACL, action groups and published route.
+        model_create_allowed = False
+        try:
+            if target_model in self.env:
+                model_create_allowed = self.env[target_model].check_access_rights(
+                    "create", raise_exception=False
+                )
+        except Exception:
+            _logger.debug("ui.contract.v2 collection create entry ACL lookup skipped", exc_info=True)
+            model_create_allowed = False
+
+        user_group_ids = set(self.env.user.groups_id.ids)
+        group_allowed = not override_action.groups_id.ids or bool(
+            set(override_action.groups_id.ids) & user_group_ids
+        )
+
+        publication_decision = menu_publication_decision(
+            published_route_authority(self.env), target_menu_id, target_action_id
+        )
+        authorization_allowed = bool(
+            model_create_allowed
+            and group_allowed
+            and publication_decision is True
+        )
+        entitlement_evaluated = True
+
+        entry = {
+            "kind": "action",
+            "model": target_model,
+            "label": target_label or "新建",
+            "authorizationAllowed": authorization_allowed,
+            "entitlementEvaluated": entitlement_evaluated,
+        }
+        if kind == "action":
+            entry["action_xmlid"] = override_xmlid
+            entry["action_id"] = target_action_id
+            entry["menu_xmlid"] = override_menu_xmlid
+            entry["menu_id"] = target_menu_id
+            if required_groups:
+                entry["requiredGroups"] = required_groups
+        if not authorization_allowed:
+            entry["reasonCode"] = "CREATE_ENTRY_NOT_AUTHORIZED"
+        source_contract["collectionCreateEntry"] = entry
 
     def _inject_current_form_settings_action(
         self,
@@ -4371,16 +4504,63 @@ def _safe_eval_action_value(value: Any, default: Any) -> Any:
 
 
 def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, Any]:
-    """Project only create defaults from a route literal into trusted context."""
+    """Project create defaults and denial modifiers from a route literal into
+    trusted context.
+
+    A route (business action) may publish ``context_raw`` carrying ``default_*``
+    create defaults plus operation denials such as ``create: False`` or
+    ``no_create``.  Defaults and denials are safe to trust: a denial can only
+    reduce the effective capability, never grant it.  A positive operation
+    value is deliberately not projected because it cannot add authority that
+    the model ACL already decides.
+    """
     merged = dict(context) if isinstance(context, dict) else {}
     parsed = _safe_eval_action_value(context_raw, {})
+    if (not isinstance(parsed, dict) or not parsed) and isinstance(context_raw, str) and context_raw.strip():
+        # _safe_eval_action_value evaluates Python literal context.  A JSON
+        # literal such as {"create": false} is not a Python literal and is
+        # silently dropped; retry as JSON so an operation denial is never lost.
+        try:
+            json_parsed = json.loads(context_raw)
+        except (TypeError, ValueError):
+            json_parsed = None
+        if isinstance(json_parsed, dict):
+            parsed = json_parsed
     if not isinstance(parsed, dict):
+        # A non-object route literal (for example '[]' or '1') carries no
+        # operation facts; reject it by returning the trusted context unchanged
+        # instead of failing on `.items()`.
         return merged
+    operation_keys = ("create", "edit", "write", "delete", "unlink", "duplicate")
     for key, value in parsed.items():
         normalized_key = str(key or "").strip()
         if normalized_key.startswith("default_"):
             merged[normalized_key] = value
+            continue
+        if normalized_key.startswith("no_") and normalized_key[3:] in operation_keys:
+            if _route_context_truthy(value):
+                # Normalize the denial to the boolean the assembler's
+                # `_modifier_true` recognizes; a string such as 'on' must never
+                # overwrite the entry's boolean denial with a weaker literal.
+                merged[normalized_key] = True
+            continue
+        if normalized_key in operation_keys and not _route_context_truthy(value):
+            # An explicitly false operation value is a denial; project the
+            # normalized boolean so no route literal can loosen an existing
+            # prohibition into an allow.
+            merged[normalized_key] = False
     return merged
+
+
+def _route_context_truthy(value: Any) -> bool:
+    """Match the assembler's ``_modifier_true`` vocabulary exactly."""
+    if value is True:
+        return True
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return False
 
 
 def _allowed_models_from_hook(env, hook_name: str) -> set[str]:
