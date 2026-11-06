@@ -15,12 +15,19 @@
     "authority": "registered acceptance profile local: sc_frontend_acceptance / sc-fe-r2-p1-01; read-only collector after acceptance.frontend.fixture + acceptance.frontend.release_snapshot"
   },
   "scope": [
-    "scripts/verify/frontend_release_navigation_policy_guard.py",
-    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
-    "scripts/verify/frontend_role_release_projection.py",
-    "scripts/dev/frontend_acceptance_runtime.sh",
+    ".agent/",
+    "config/ci/frontend_release_gate_v1.json",
+    "docs/engineering_convergence/",
+    "docs/ops/iterations/be-nav-projection-01-record.md",
+    "make/runtime_ops.mk",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
-    "make/runtime_ops.mk"
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/frontend_release_audit.py",
+    "scripts/verify/frontend_release_navigation_policy_guard.py",
+    "scripts/verify/frontend_role_release_projection.py",
+    "scripts/verify/test_frontend_release_audit.py",
+    "scripts/verify/test_frontend_release_gate.py",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py"
   ],
   "checks": {
     "offline_guard_counterexamples": {
