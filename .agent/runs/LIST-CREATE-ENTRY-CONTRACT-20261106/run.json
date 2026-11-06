@@ -13,6 +13,7 @@
     "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
     "addons/smart_construction_core/actions/project_list_actions.xml",
     "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/contractRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
     ".github/workflows/backend_test_suite.yml",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
