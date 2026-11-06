@@ -88,7 +88,10 @@ def _identities(authority, buckets):
             menu = str(row.get("menu_xmlid") or "").strip() or _menu_xmlid(menu_id)
             action, model = _action_info(action_id) if action_id else ("", "")
             identities.append("%s|%s|%s" % (menu, action, model))
-    return sorted(set(identities))
+    # Preserve raw rows (including intra-bucket duplicates). The aggregator's
+    # comparator is the only place that reports duplicates; de-duplicating here
+    # would silently hide a repeated published identity.
+    return identities
 
 
 def _bucket_counts(authority):

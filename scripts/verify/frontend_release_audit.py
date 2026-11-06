@@ -94,37 +94,100 @@ def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, 
     return {"result": "PASS", "roles": roles, "total": total}
 
 
+ROLE_RELEASE_SUBJECTS = {
+    "finance": ("fixture_role_finance", "finance"),
+    "project_a_member": ("fixture_role_project_a_member", "project_member"),
+    "pm": ("fixture_role_pm", "pm"),
+    "owner": ("fixture_role_owner", "owner"),
+}
+
+
+def _projection_problem_summary(problem: dict[str, Any]) -> dict[str, Any]:
+    if problem.get("reason") in ("subject_identity_mismatch", "collect_error"):
+        return problem
+    return {
+        "expected_count": problem.get("expected_count"),
+        "actual_count": problem.get("actual_count"),
+        "missing_count": len(problem.get("missing") or []),
+        "unexpected_count": len(problem.get("unexpected") or []),
+        "missing_sample": (problem.get("missing") or [])[:8],
+        "unexpected_sample": (problem.get("unexpected") or [])[:8],
+        "duplicate_identities": problem.get("actual_duplicates")
+        or problem.get("expected_duplicates"),
+        "invalid_identities": problem.get("invalid_identities"),
+    }
+
+
 def validate_role_release_projection(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
     """Recompute the per-role published projection from the raw identity list.
 
-    The collector only gathers identities and never prints PASS; this validator
-    re-derives missing/unexpected against the declared leaf identities so an
-    equal-count swapped entry cannot pass. It fails for evidence/identity gaps,
-    a missing role, a collector error, or any per-role identity mismatch.
+    The collector gathers identities and never prints PASS. This validator binds
+    the evidence to the expected database, subjects and role codes, then
+    re-derives missing/unexpected for every role instead of failing fast on the
+    first difference. A report whose scope is not yet VERIFIED fails with
+    ``ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH`` and keeps all per-role diagnostics;
+    only a VERIFIED scope is held to the hard identity equality.
     """
     require_sha(report, expected_sha, "role_release_projection")
+    if str(report.get("db") or "") != "sc_frontend_acceptance":
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
     manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")
     declared_roles = set((manifest.get("roles") or {}).keys())
     actual_roles = report.get("roles") or {}
     if set(actual_roles) != declared_roles:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_ROLE_SET_MISMATCH")
+    scope_status = str(report.get("scope_status") or "NOT_VERIFIED")
     sections: dict[str, Any] = {}
+    problems: dict[str, Any] = {}
     for role in sorted(declared_roles):
         row = actual_roles.get(role) or {}
+        expected_login, expected_role_code = ROLE_RELEASE_SUBJECTS[role]
+        if row.get("login") != expected_login or row.get("role_code") != expected_role_code:
+            problems[role] = {
+                "reason": "subject_identity_mismatch",
+                "expected": {"login": expected_login, "role_code": expected_role_code},
+                "actual": {"login": row.get("login"), "role_code": row.get("role_code")},
+            }
+            sections[role] = {"result": "FAIL", "reason": "subject_identity_mismatch"}
+            continue
         p0 = row.get("p0") or {}
         if p0.get("error"):
-            raise EvidenceError(f"ROLE_RELEASE_PROJECTION_COLLECT_ERROR:{role}")
+            problems[role] = {"reason": "collect_error", "error": p0["error"]}
+            sections[role] = {"result": "FAIL", "reason": "collect_error"}
+            continue
         identities = p0.get("primary_home_identities") or []
         comparison = compare_role_projection(
             (manifest["roles"][role].get("leaf_keys") or []), identities
         )
         sections[role] = comparison
         if not comparison["consistent"]:
+            problems[role] = comparison
+    if problems:
+        identity_problems = {
+            role: problem
+            for role, problem in problems.items()
+            if problem.get("reason") in ("subject_identity_mismatch", "collect_error")
+        }
+        scope_problems = {
+            role: problem for role, problem in problems.items() if role not in identity_problems
+        }
+        summary = {
+            role: _projection_problem_summary(problems.get(role, {}))
+            for role in sorted(declared_roles)
+        }
+        if identity_problems:
             raise EvidenceError(
-                f"ROLE_RELEASE_PROJECTION_MISMATCH:{role}:"
-                f"missing={len(comparison['missing'])} unexpected={len(comparison['unexpected'])}"
+                "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH:"
+                + json.dumps(summary, ensure_ascii=False)
             )
-    return {"result": "PASS", "roles": sections}
+        if scope_problems:
+            reason = (
+                "ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH"
+                if scope_status != "VERIFIED"
+                else "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH"
+            )
+            raise EvidenceError(reason + ":" + json.dumps(summary, ensure_ascii=False))
+    return {"result": "PASS", "roles": sections, "scope_status": scope_status}
 
 
 def validate_accessibility(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:

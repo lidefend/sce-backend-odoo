@@ -154,17 +154,33 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
 
 
 class RoleReleaseProjectionValidatorTest(unittest.TestCase):
+    SUBJECTS = {
+        "finance": ("fixture_role_finance", "finance"),
+        "project_a_member": ("fixture_role_project_a_member", "project_member"),
+        "pm": ("fixture_role_pm", "pm"),
+        "owner": ("fixture_role_owner", "owner"),
+    }
+
     def _manifest(self):
         root = Path(__file__).resolve().parents[2]
         return json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
 
-    def _report(self, mutate=None):
+    def _report(self, mutate=None, scope_status="VERIFIED"):
         manifest = self._manifest()
         roles = {
-            role: {"p0": {"primary_home_identities": list(row["leaf_keys"]), "error": None}}
+            role: {
+                "login": self.SUBJECTS[role][0],
+                "role_code": self.SUBJECTS[role][1],
+                "p0": {"primary_home_identities": list(row["leaf_keys"]), "error": None},
+            }
             for role, row in manifest["roles"].items()
         }
-        report = {"git_sha": SHA, "roles": roles}
+        report = {
+            "git_sha": SHA,
+            "db": "sc_frontend_acceptance",
+            "scope_status": scope_status,
+            "roles": roles,
+        }
         if mutate:
             mutate(report, manifest)
         return report
@@ -183,7 +199,38 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
                     )
         with self.assertRaises(EvidenceError) as ctx:
             validate_role_release_projection(self._report(mutate), SHA)
-        self.assertIn("ROLE_RELEASE_PROJECTION_MISMATCH:pm", str(ctx.exception))
+        self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
+
+    def test_same_entries_wrong_role_rejected(self):
+        def mutate(report, _manifest):
+            report["roles"]["pm"]["role_code"] = "finance"
+            report["roles"]["pm"]["login"] = "fixture_role_finance"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
+        self.assertIn("subject_identity_mismatch", str(ctx.exception))
+
+    def test_wrong_database_rejected(self):
+        def mutate(report, _manifest):
+            report["db"] = "sc_frontend_acceptance_candidate"
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_DB_MISMATCH", str(ctx.exception))
+
+    def test_scope_not_verified_keeps_all_role_diagnostics(self):
+        manifest = self._manifest()
+
+        def mutate(report, _manifest):
+            for role in report["roles"]:
+                report["roles"][role]["p0"]["primary_home_identities"] = [
+                    "smart_construction_core.menu_sc_workspace_home||"
+                ]
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate, scope_status="NOT_VERIFIED"), SHA)
+        text = str(ctx.exception)
+        self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", text)
+        for role in manifest["roles"]:
+            self.assertIn(f'"{role}"', text)
 
     def test_missing_role_rejected(self):
         def mutate(report, _manifest):
@@ -203,7 +250,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             identities.append(identities[0])
         with self.assertRaises(EvidenceError) as ctx:
             validate_role_release_projection(self._report(mutate), SHA)
-        self.assertIn("ROLE_RELEASE_PROJECTION_MISMATCH:finance", str(ctx.exception))
+        self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
 
 
 if __name__ == "__main__":

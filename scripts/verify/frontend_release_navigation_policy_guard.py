@@ -38,7 +38,20 @@ def compare_role_projection(expected, actual) -> dict:
     This is the only comparison that can surface an equal-count wrong entry: it
     never derives the actual set from the manifest, so a swapped or removed
     declaration shows up as ``missing`` / ``unexpected`` instead of passing.
+    Inputs must be string arrays; a non-array or non-string entry fails closed.
     """
+    if not isinstance(expected, list) or not isinstance(actual, list):
+        return {
+            "expected_count": 0,
+            "actual_count": 0,
+            "missing": [],
+            "unexpected": [],
+            "expected_duplicates": [],
+            "actual_duplicates": [],
+            "invalid_identities": ["expected_and_actual_must_be_string_arrays"],
+            "consistent": False,
+        }
+
     def _normalize(items):
         keys = []
         duplicates = []
