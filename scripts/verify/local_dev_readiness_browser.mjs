@@ -50,6 +50,10 @@ try {
         await page.waitForSelector('[data-submission-readiness]', { timeout: 30000 });
       } else {
         await page.waitForSelector(`[data-form-model="${item.model}"]`, { timeout: 30000 });
+        // Wait for the contract to decode and the form to render a real field,
+        // so the "body readiness field absent" check runs after the form would
+        // have rendered that field had it not been suppressed.
+        await page.waitForFunction(() => document.querySelector('[data-field-name]') !== null, { timeout: 30000 });
       }
       const notice = page.locator('[data-submission-readiness]');
       const bodyField = page.locator('[data-field-name="submission_readiness_display"]');
