@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import ast
+import json
 import time
 from copy import deepcopy
 from typing import Any, Dict, Optional
@@ -4515,8 +4516,16 @@ def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, An
     """
     merged = dict(context) if isinstance(context, dict) else {}
     parsed = _safe_eval_action_value(context_raw, {})
-    if not isinstance(parsed, dict):
-        return merged
+    if (not isinstance(parsed, dict) or not parsed) and isinstance(context_raw, str) and context_raw.strip():
+        # _safe_eval_action_value evaluates Python literal context.  A JSON
+        # literal such as {"create": false} is not a Python literal and is
+        # silently dropped; retry as JSON so an operation denial is never lost.
+        try:
+            json_parsed = json.loads(context_raw)
+        except (TypeError, ValueError):
+            json_parsed = None
+        if isinstance(json_parsed, dict):
+            parsed = json_parsed
     operation_keys = ("create", "edit", "write", "delete", "unlink", "duplicate")
     for key, value in parsed.items():
         normalized_key = str(key or "").strip()
@@ -4525,23 +4534,28 @@ def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, An
             continue
         if normalized_key.startswith("no_") and normalized_key[3:] in operation_keys:
             if _route_context_truthy(value):
-                merged[normalized_key] = value
+                # Normalize the denial to the boolean the assembler's
+                # `_modifier_true` recognizes; a string such as 'on' must never
+                # overwrite the entry's boolean denial with a weaker literal.
+                merged[normalized_key] = True
             continue
         if normalized_key in operation_keys and not _route_context_truthy(value):
-            # An explicitly false operation value is a denial; project it so
-            # the collection create-entry adjudication sees the restriction.
-            merged[normalized_key] = value
+            # An explicitly false operation value is a denial; project the
+            # normalized boolean so no route literal can loosen an existing
+            # prohibition into an allow.
+            merged[normalized_key] = False
     return merged
 
 
 def _route_context_truthy(value: Any) -> bool:
-    """Match the Odoo modifier truthiness used by the collection adjudication."""
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    lowered = str(value).strip().lower()
-    return lowered not in {"", "0", "false", "no", "n", "off", "none"}
+    """Match the assembler's ``_modifier_true`` vocabulary exactly."""
+    if value is True:
+        return True
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return False
 
 
 def _allowed_models_from_hook(env, hook_name: str) -> set[str]:

@@ -332,7 +332,7 @@ jobs:
           reused=0
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
-          planned_mixed="$(printf '%s\n' ${MIXED_PYTHON_FILES} | wc -w | tr -d ' ')"
+          planned_mixed="$(printf '%s\n' ${MIXED_PYTHON_FILES:-} | wc -w | tr -d ' ')"
           receipt_dir="${RUNNER_TEMP}/backend-receipts-${GITHUB_RUN_ID}-${SHARD_INDEX}"
           mkdir -p "${receipt_dir}"
           echo "BACKEND_RECEIPT_DIR=${receipt_dir}" >> "${GITHUB_ENV}"
@@ -410,7 +410,7 @@ jobs:
                 failed=1
               fi
               if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                  --module "${module}" --attempt "${module_attempt}" --head "${HEAD_SHA}" \
+                  --module "${module}" --kind orm --attempt "${module_attempt}" --head "${HEAD_SHA}" \
                   --status "${module_status}" --log-status "${module_log_status}" --database "${attempt_db}" \
                   --log "${module_log}" --secrets-file "${attempt_env_file:-${ENV_FILE}}" --output "${receipt_dir}"; then
                 echo "::error::attempt diagnostic collection failed for ${module}"
@@ -506,7 +506,7 @@ jobs:
             python_log_status="${pipeline_status[1]}"
             python_evidence_failed=0
             if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                --module "${module}" --attempt 1 --head "${HEAD_SHA}" \
+                --module "${module}" --kind python --attempt 1 --head "${HEAD_SHA}" \
                 --status "${python_status}" --log-status "${python_log_status}" \
                 --log "${python_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
               echo "::error::attempt diagnostic collection failed for ${module}"
@@ -527,20 +527,20 @@ jobs:
               failed=1
             fi
           done
-          for mixed_file in ${MIXED_PYTHON_FILES}; do
+          for mixed_file in ${MIXED_PYTHON_FILES:-}; do
             attempted=$((attempted + 1))
             mixed_module="$(printf '%s' "${mixed_file}" | cut -d/ -f2)"
             mixed_log="${RUNNER_TEMP}/backend-suite-mixed-python-${mixed_module}-$(basename "${mixed_file}" .py)-${GITHUB_RUN_ID}.log"
             echo "===== backend mixed Python unit file: ${mixed_file} ====="
             mixed_started=${SECONDS}
-            python3 -m unittest -v "${mixed_file}" 2>&1 | tee "${mixed_log}"
+            python3 "${mixed_file}" -v 2>&1 | tee "${mixed_log}"
             pipeline_status=("${PIPESTATUS[@]}")
             mixed_duration=$((SECONDS - mixed_started))
             mixed_status="${pipeline_status[0]}"
             mixed_log_status="${pipeline_status[1]}"
             mixed_evidence_failed=0
             if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                --module "${mixed_module}" --attempt 1 --head "${HEAD_SHA}" \
+                --module "${mixed_module}" --kind python --attempt 1 --head "${HEAD_SHA}" \
                 --status "${mixed_status}" --log-status "${mixed_log_status}" \
                 --log "${mixed_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
               echo "::error::attempt diagnostic collection failed for ${mixed_file}"

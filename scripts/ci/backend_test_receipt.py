@@ -153,18 +153,19 @@ def scope_reference(raw: bytes, *, head: str, base: str, module: str) -> dict:
             'dependency_closure_complete':bool(target.get('dependency_closure_complete'))}
 
 
-def archive_attempt(*, output: Path, module: str, attempt: int, head: str,
+def archive_attempt(*, output: Path, module: str, kind: str, attempt: int, head: str,
                     status: int, log_status: int, log: Path, database: str = '',
                     secrets_file: Path | None = None) -> dict:
     if (not re.fullmatch('[A-Za-z_][A-Za-z0-9_]*',module)
+            or kind not in ('orm', 'python')
             or not re.fullmatch('[0-9a-f]{40}',head) or type(attempt) is not int or attempt <= 0
             or any(type(v) is not int or not 0 <= v <= 255 for v in (status,log_status))):
         raise ValueError('invalid attempt identity or exit status')
     text = redacted_log(log,secrets_file)
-    target = output/'attempts'/module/str(attempt)
+    target = output/'attempts'/module/kind/str(attempt)
     target.mkdir(parents=True,exist_ok=False)
     (target/'execution.log').write_text(text,encoding='utf-8')
-    result = {'schema':'backend-test-attempt/v1','module':module,'attempt':attempt,
+    result = {'schema':'backend-test-attempt/v1','module':module,'kind':kind,'attempt':attempt,
               'source_head':head,'database':database,'process_exit_code':status,'log_exit_code':log_status,
               'log_sha256':digest((target/'execution.log').read_bytes()),
               'interpretation':'diagnostic_only_not_test_success','reuse_ready':False}
@@ -239,10 +240,10 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     workflow_definition = workflow_definition_observation()
     now = now or datetime.now(timezone.utc)
     output.mkdir(parents=True, exist_ok=True)
-    target = output / module
+    target = output / module / kind
     if target.exists():
         raise ValueError('refuse to overwrite existing target evidence')
-    target.mkdir()
+    target.mkdir(parents=True, exist_ok=False)
     text = log.read_text(encoding='utf-8')
     text = redacted_log(log, secrets_file)
     (target / 'execution.log').write_text(text, encoding='utf-8')
@@ -1111,7 +1112,7 @@ def main() -> None:
         print(json.dumps({'module': result['module'], 'test_count': result['test_count'],
                           'receipt_sha256': result['receipt_sha256'], 'reuse_ready': False}))
     elif args.mode == 'archive-attempt':
-        print(json.dumps(archive_attempt(output=args.output,module=args.module,attempt=args.attempt,
+        print(json.dumps(archive_attempt(output=args.output,module=args.module,kind=args.kind,attempt=args.attempt,
              head=args.head,status=args.status,log_status=args.log_status,log=args.log,
              database=args.database,secrets_file=args.secrets_file)))
     elif args.mode == 'verify-contract-source':
