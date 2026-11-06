@@ -2,6 +2,13 @@
 
 分支 `fix/project-overview-native-text-rendering`，基线 main `5b842bdde0d483413bde708b32aa3523992c6e77`（已合入 #826）。
 
+## ITEM-0 主线同步（#827 已合入）
+
+- 主线由 `5b842bdde` 前进到 `0bf5fb00d`（合入 #827「列表创建入口契约」），本分支以追加式 merge 同步，`5201e25a8` 与 `0bf5fb00d` 均为最终 HEAD 的祖先。
+- 产品冲突仅两处，手工解并保留两侧语义：`ui_contract_v2.py`（#827 `_inject_collection_create_entry_action` + 本分支 notice 装配）、`unified_page_contract_v2_assembler_guard.py`（28 项输入的缓存摘要重钉）。
+- 装配缓存版本推进为 `ui-contract-v2-native-persisted-relation-dependencies-v30-notice-visibility-multi-collection-create-entry`，28 项输入摘要重算为 `039ca0e6…`，assembler guard 通过。
+- run 基线随同步更新为 `0bf5fb00d`；#827 已合入文件不再计入本 run 越界变更。
+
 ## ITEM-1 立项完成度（原生 inline text 渲染）
 
 - `nativeChildSequence.ts` / `NativeFormTreeRenderer.vue`：`text` 节点成为独立分段并按声明顺序渲染。

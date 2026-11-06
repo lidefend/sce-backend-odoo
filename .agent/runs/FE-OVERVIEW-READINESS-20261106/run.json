@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-OVERVIEW-READINESS-20261106",
   "branch": "fix/project-overview-native-text-rendering",
-  "baseline_sha": "5b842bdde0d483413bde708b32aa3523992c6e77",
+  "baseline_sha": "0bf5fb00d5bbd1d0a544178db96840395420f073",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-OVERVIEW-READINESS-20261106.yaml",
   "record": "docs/ops/iterations/fe-overview-readiness-20261106.md",
@@ -60,7 +60,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "走 pr.publish.preflight + pr.push + pr.create（Draft），并携带付款侧/项目侧 readiness 与项目概览浏览器回执",
+  "next_exact_step": "主线已同步至 0bf5fb00d；重录 frontend_presentation 与两条专项浏览器回执，再 pr.publish.preflight + pr.push（保持 Draft）",
   "layer": {
     "formal_product_layer": "P0",
     "layer_target": "统一页契约装配器与前端契约 schema/原生渲染器",
