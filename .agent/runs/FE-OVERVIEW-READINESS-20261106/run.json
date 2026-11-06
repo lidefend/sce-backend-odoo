@@ -20,8 +20,8 @@
     ".agent/"
   ],
   "environment": {
-    "kind": "runtime",
-    "authority": "readiness/overview 浏览器回执绑定 sc_dev_demo；载体当前被 FE-converge 分支占用，回执待载体绑定后采集"
+    "kind": "offline",
+    "authority": "existing local Make tools; backend pure-python tests, frontend unit tests and static guards; readiness/overview browser acceptance pending on governed carrier binding"
   },
   "checks": {
     "native_child_sequence_unit": {
