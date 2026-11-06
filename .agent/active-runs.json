@@ -1,7 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/scenario-menu-fact-enumeration-20261106": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "audit/fepc-07r-home-metric-decisions": ".agent/runs/FEPC-07R/run.json",
@@ -36,6 +35,7 @@
     "fix/candidate-acceptance-probe-identity": ".agent/runs/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/ci-execution-alignment-20261105": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
+    "fix/ci-schedule-deps-nav-20261106": ".agent/runs/CI-SCHEDULE-DEPS-NAV-20261106/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
     "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
@@ -79,6 +79,7 @@
     "fix/project-form-header-density-20261023": ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json",
     "fix/quick-incremental-execution": ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json",
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
+    "fix/scenario-menu-fact-enumeration-20261106": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
     "fix/scene-fact-data-convergence-20261104": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "fix/scheduled-navigation-closeout-20261103": ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/run.json",
     "fix/test-integration-preflight-mainline": ".agent/runs/TEST-INTEGRATION-PREFLIGHT-MAINLINE/run.json",

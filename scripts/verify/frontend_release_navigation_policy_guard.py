@@ -44,6 +44,7 @@ def validate(manifest: dict, policies: dict) -> list[str]:
             if str(key).strip()
         }
         policy = policies.get(policy_role) or {}
+        discovers = bool(policy.get("discover_installed_capabilities"))
         released = {
             str(xmlid).strip()
             for field in ("primary_menu_xmlids", "role_home_menu_xmlids")
@@ -68,7 +69,18 @@ def validate(manifest: dict, policies: dict) -> list[str]:
                 f"{manifest_role}: browser projection outside released policy="
                 f"{sorted(browser_menu_xmlids - expected)}"
             )
-        if released != expected:
+        if discovers:
+            stale_primary = {
+                str(xmlid).strip()
+                for xmlid in policy.get("primary_menu_xmlids") or []
+                if str(xmlid).strip()
+            }
+            if stale_primary:
+                errors.append(
+                    f"{manifest_role}: capability-discover role declares stale "
+                    f"primary_menu_xmlids={sorted(stale_primary)}"
+                )
+        elif released != expected:
             errors.append(
                 f"{manifest_role}: release projection differs "
                 f"missing={sorted(expected - released)} unexpected={sorted(released - expected)}"

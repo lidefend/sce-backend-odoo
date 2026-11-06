@@ -4,7 +4,13 @@ import unittest
 import json
 from pathlib import Path
 
-from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, _load_role_policy, validate, validate_formal_targets, validate_runtime_targets
+from scripts.verify.frontend_release_navigation_policy_guard import (
+    ROLE_MAP,
+    _load_role_policy,
+    validate,
+    validate_formal_targets,
+    validate_runtime_targets,
+)
 
 
 def _fixture():
@@ -43,14 +49,21 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         policies = _load_role_policy()
         self.assertEqual(validate(manifest, policies), [])
 
-        # Reintroducing the retired expectation must still fail closed.
-        manifest["roles"]["finance"]["leaf_keys"].append(
-            "smart_construction_core.menu_sc_historical_payment_fact|"
-            "smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact"
-        )
-        manifest["roles"]["finance"]["expected_count"] += 1
-        self.assertTrue(any("finance: release projection differs" in row
+        # A capability-discover role must not reintroduce a static primary whitelist.
+        policies["finance"]["primary_menu_xmlids"] = [
+            "smart_construction_core.menu_sc_historical_payment_fact"
+        ]
+        self.assertTrue(any("finance: capability-discover role declares stale" in row
                             for row in validate(manifest, policies)))
+
+    def test_capability_discover_role_rejects_stale_primary_whitelist(self):
+        manifest, policies = _fixture()
+        policies["finance"]["discover_installed_capabilities"] = True
+        policies["finance"]["role_home_menu_xmlids"] = ["x.menu_finance"]
+        policies["finance"]["primary_menu_xmlids"] = ["x.stale_leaf"]
+        errors = validate(manifest, policies)
+        self.assertTrue(any("finance: capability-discover role declares stale" in row
+                            for row in errors))
 
     def test_contextual_or_denied_overlap_fails_closed(self):
         manifest, policies = _fixture()
