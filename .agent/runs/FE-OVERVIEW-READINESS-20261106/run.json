@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "FE-OVERVIEW-READINESS-20261106",
+  "branch": "fix/project-overview-native-text-rendering",
+  "baseline_sha": "5b842bdde0d483413bde708b32aa3523992c6e77",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-OVERVIEW-READINESS-20261106.yaml",
+  "record": "docs/ops/iterations/fe-overview-readiness-20261106.md",
+  "scope": [
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+    "frontend/apps/web/src/",
+    "frontend/apps/web/scripts/",
+    "make/frontend.mk",
+    "scripts/verify/local_dev_readiness_ids.py",
+    "scripts/verify/local_dev_readiness_browser.mjs",
+    "docs/frontend_productization/",
+    "docs/engineering_convergence/",
+    "docs/ops/iterations/fe-overview-readiness-20261106.md",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "readiness/overview 浏览器回执绑定 sc_dev_demo；载体当前被 FE-converge 分支占用，回执待载体绑定后采集"
+  },
+  "checks": {
+    "native_child_sequence_unit": {
+      "target": "verify.frontend.native_child_sequence.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/nativeChildSequence.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/scripts/native_child_sequence_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "submission_readiness_notice_contract_unit": {
+      "target": "verify.frontend.submission_readiness_notice_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/scripts/submission_readiness_notice_contract_test.ts"
+      ]
+    },
+    "decision_authority_guard": {
+      "target": "verify.frontend.decision_authority.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "scripts/verify/frontend_decision_authority.py"
+      ]
+    }
+  },
+  "blockers": [
+    "readiness/overview 浏览器回执待采集：sc_dev_demo 当前绑定 FE-converge 候选分支，需等待或改绑独立候选载体"
+  ],
+  "next_exact_step": "在绑定本候选的载体上采集立项完成度与办理前检查两份浏览器回执，再走 pr.publish.preflight + pr.push + pr.create（Draft）",
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "统一页契约装配器与前端契约 schema/原生渲染器",
+    "module": "smart_core + frontend",
+    "standard_vs_user_specific": "platform mechanism presentation",
+    "why_here": "原生 text 分段与 noticeContract 属于通用前端运行时与统一页契约机制，不携带业务语义",
+    "why_not_elsewhere": "不修改契约/权限/动作/状态语义；不按模型/菜单/角色/状态文本增加前端判断；不触碰 P1/P2/P3",
+    "blast_radius": "原生表单渲染（NativeFormTreeRenderer/nativeChildSequence）与 ContractFormPage 页头 notice 消费"
+  }
+}
