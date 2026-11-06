@@ -1348,8 +1348,12 @@ const submissionReadinessNotice = computed(() => {
 });
 
 const submissionReadinessState = computed(() => {
-  const status = String(submissionReadinessNotice.value?.status || '');
-  return status === 'forbidden' ? 'error' : status === 'ready' ? 'success' : status === 'no_data' ? 'empty' : 'info';
+  // The visual state is declared by the contract; the terminal must not derive
+  // product semantics from the business ``status`` value on its own.
+  const state = submissionReadinessNotice.value?.state;
+  return state === 'success' || state === 'empty' || state === 'error' || state === 'loading'
+    ? state
+    : 'info';
 });
 const rights = computed(() => {
   const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };

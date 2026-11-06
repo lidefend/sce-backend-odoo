@@ -2613,7 +2613,7 @@ function decodeSubmissionReadinessNotice(
   }
   const row = value as ContractV2Dictionary;
   rejectUnknownKeys(row, [
-    'visible', 'status', 'statusLabel', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
+    'visible', 'status', 'statusLabel', 'state', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
   ], '$.noticeContract.submissionReadiness', issues);
   const visible = optionalBooleanField(row, 'visible', '$.noticeContract.submissionReadiness', issues);
   if (visible === undefined) {
@@ -2627,7 +2627,7 @@ function decodeSubmissionReadinessNotice(
   }
   const out: ContractV2SubmissionReadinessNotice = { visible, status };
   for (const key of [
-    'statusLabel', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
+    'statusLabel', 'state', 'message', 'nextStep', 'nextStepAction', 'reasonCode', 'sourceAuthority',
   ] as const) {
     const text = optionalStringField(row, key, '$.noticeContract.submissionReadiness', issues);
     if (text) out[key] = text;

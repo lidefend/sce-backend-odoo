@@ -126,6 +126,7 @@ function buildSnapshot() {
         visible: true,
         status: 'blocked',
         statusLabel: '待处理',
+        state: 'info',
         message: '请先补齐项目资料。',
         nextStep: '处理阻塞原因',
         nextStepAction: 'review_record',
@@ -141,6 +142,7 @@ const decoded = decodeContractV2Snapshot(buildSnapshot());
 assert.equal(decoded.noticeContract?.submissionReadiness?.status, 'blocked');
 assert.equal(decoded.noticeContract?.submissionReadiness?.visible, true);
 assert.equal(decoded.noticeContract?.submissionReadiness?.statusLabel, '待处理');
+assert.equal(decoded.noticeContract?.submissionReadiness?.state, 'info');
 assert.equal(decoded.noticeContract?.submissionReadiness?.nextStep, '处理阻塞原因');
 
 const group = decoded.layoutContract.containerTree[0];

@@ -16,7 +16,7 @@ Generated from repository source files. This report is informational during the 
 | 6092 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5273 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5134 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5141 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4991 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4646 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
@@ -44,8 +44,8 @@ Generated from repository source files. This report is informational during the 
 | 2184 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2115 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2112 | YAML workflow | `scripts/verify/registry.yaml` |
-| 2111 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1998 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -248,7 +248,7 @@ Generated from repository source files. This report is informational during the 
 | 6092 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5273 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5134 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5141 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4991 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4646 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
@@ -276,8 +276,8 @@ Generated from repository source files. This report is informational during the 
 | 2184 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2115 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2112 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
-| 2111 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1998 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |

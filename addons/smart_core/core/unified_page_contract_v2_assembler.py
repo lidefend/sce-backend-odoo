@@ -785,10 +785,17 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
     labels = {"ready": "可提交", "blocked": "待处理", "no_data": "暂无记录", "forbidden": "无权限"}
     status = _text(result.get("status"))
     next_step = _dict(result.get("next_step"))
+    notice_state = {
+        "ready": "success",
+        "blocked": "info",
+        "no_data": "empty",
+        "forbidden": "error",
+    }.get(status, "info")
     contract.setdefault("noticeContract", {})["submissionReadiness"] = {
         "visible": bool(visible),
         "status": status,
         "statusLabel": labels.get(status, status),
+        "state": notice_state,
         "message": _text(result.get("message")),
         "nextStep": _text(next_step.get("label")),
         "nextStepAction": _text(next_step.get("action")),

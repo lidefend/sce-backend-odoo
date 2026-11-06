@@ -669,6 +669,7 @@ export interface ContractV2SubmissionReadinessNotice {
   visible: boolean;
   status: string;
   statusLabel?: string;
+  state?: string;
   message?: string;
   nextStep?: string;
   nextStepAction?: string;
