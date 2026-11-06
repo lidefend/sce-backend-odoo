@@ -51,6 +51,28 @@ class TestNavigation(TransactionCase):
         self.assertEqual('pending', coverage.verify_logs(rows, ['Ran 9 tests\nOK'])[0]['status'])
         self.assertEqual('pending', coverage.verify_logs(rows, [good.replace('ok', 'skipped')])[0]['status'])
 
+    def test_nested_local_odoo_import_does_not_reclassify_pure_unittest_as_orm(self):
+        # A standalone unittest that locally imports an odoo helper inside one
+        # test method must stay kind=python; only module-level odoo imports
+        # declare an ORM suite.
+        source = (
+            'import unittest\n'
+            'class TestThing(unittest.TestCase):\n'
+            '    def test_one(self):\n'
+            '        from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain\n'
+            '        pass\n'
+        )
+        rows = coverage.inventory(source, 'addons/example/tests/test_python.py')
+        self.assertEqual('python', rows[0]['kind'])
+
+        orm_source = (
+            'from odoo.tests.common import TransactionCase\n'
+            'class TestThing(TransactionCase):\n'
+            '    def test_one(self): pass\n'
+        )
+        orm_rows = coverage.inventory(orm_source, 'addons/example/tests/test_orm.py')
+        self.assertEqual('orm', orm_rows[0]['kind'])
+
     def test_python310_and_modern_verbose_logs_bind_exact_method(self):
         rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
                                   'addons/example/tests/test_python.py')

@@ -29,9 +29,13 @@ def inventory(source: str, path: str) -> list[dict]:
             or not parts[-1].startswith('test') or not path.endswith('.py')):
         return []
     tree = ast.parse(source, filename=path)
-    # Relative common-case imports are conservatively treated as ORM. Pure
-    # unittest files declare their standard-library runner explicitly.
-    imports = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
+    # Classify by module-level imports only.  A test method may import a sibling
+    # module locally (for example `from odoo.addons... import helper`), but that
+    # local import does not declare the whole file an ORM suite; a standalone
+    # `unittest` file stays a pure-python runner.  Walking nested function
+    # bodies here misclassified `test_unified_page_contract_v2_mobile_compact.py`
+    # as ORM and demanded ORM execution evidence for its 137 pure tests.
+    imports = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
     pure = any((isinstance(n, ast.ImportFrom) and n.module == 'unittest') or
                (isinstance(n, ast.Import) and any(a.name == 'unittest' for a in n.names)) for n in imports)
     orm = any(isinstance(n, ast.ImportFrom) and (n.module or '').startswith('odoo') for n in imports)
