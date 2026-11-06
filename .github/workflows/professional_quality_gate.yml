@@ -254,6 +254,14 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Prepare governed verification dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y ripgrep
+          command -v rg
+          rg --version
+
       - name: Run complete registered offline baseline for schedule
         id: scheduled_baseline
         if: github.event_name == 'schedule'
