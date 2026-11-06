@@ -193,3 +193,38 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
         self.assertNotIn("noticeContract", field_hidden)
         self.assertNotIn("noticeContract", group_hidden)
         baseline.build_readiness.assert_not_called()
+
+    def test_notice_finds_any_visible_occurrence_among_multiple(self):
+        source = {"model": "project.project"}
+        baseline, patch = _readiness_patch()
+        visible = _field_node("field.submission_readiness_display.occ.2", "submission_readiness_display")
+        hidden = {**_field_node("field.submission_readiness_display.occ.1", "submission_readiness_display"), "invisible": True}
+
+        def group_with(fields):
+            return {
+                "layoutContract": {
+                    "containerTree": [{
+                        "containerId": "group.readiness",
+                        "containerType": "group",
+                        "type": "group",
+                        "title": "办理前检查",
+                        "children": fields,
+                        "widgetList": [],
+                    }],
+                },
+            }
+
+        with patch:
+            # Hidden first, visible later: the visible occurrence must win.
+            hidden_first = group_with([dict(hidden), dict(visible)])
+            _inject_submission_readiness_notice(hidden_first, source, self.env)
+            self.assertIn("noticeContract", hidden_first)
+            # Visible first, hidden later.
+            visible_first = group_with([dict(visible), dict(hidden)])
+            _inject_submission_readiness_notice(visible_first, source, self.env)
+            self.assertIn("noticeContract", visible_first)
+            # All hidden.
+            all_hidden = group_with([dict(hidden), dict(hidden)])
+            _inject_submission_readiness_notice(all_hidden, source, self.env)
+            self.assertNotIn("noticeContract", all_hidden)
+        self.assertEqual(baseline.build_readiness.call_count, 2)

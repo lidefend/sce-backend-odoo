@@ -861,7 +861,17 @@ function notebookPages(node: NativeFormLayoutNode) {
 
 function notebookPageChildren(node: NativeFormLayoutNode, pageIndex: number) {
   const page = notebookPages(node)[pageIndex] || notebookPages(node)[0];
-  return page ? rawChildren(page) : [];
+  if (!page) return [];
+  const children = [...rawChildren(page)];
+  // A page (tab) may carry inline hint text directly under the page element;
+  // the projection keeps it on the page node's own ``text`` facet. Emit it as
+  // the first child so the recursive renderer's text branch shows it instead
+  // of dropping it as an empty panel.
+  const ownText = nodeText(page);
+  if (ownText) {
+    children.unshift({ type: 'text', text: ownText, attributes: {}, children: [], widgetList: [] });
+  }
+  return children;
 }
 
 function sectionRevealTargets(node: NativeFormLayoutNode) {

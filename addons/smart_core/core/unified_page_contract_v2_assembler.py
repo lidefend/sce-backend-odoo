@@ -832,7 +832,12 @@ def _has_visible_submission_readiness_body_field(contract: dict[str, Any]) -> bo
             hidden = ancestor_hidden or statically_hidden(node)
             if _text(node.get("type") or node.get("containerType")).lower() == "field" \
                     and _text(node.get("name")) == "submission_readiness_display":
-                return not hidden
+                # A field can occur more than once in one view. Skip hidden
+                # occurrences and keep scanning; any visible occurrence is
+                # enough to justify the page-header notice.
+                if not hidden:
+                    return True
+                continue
             children = node.get("children")
             if isinstance(children, list) and walk(children, hidden):
                 return True

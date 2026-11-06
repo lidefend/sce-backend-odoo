@@ -3006,6 +3006,7 @@
     },
     "noticeContract": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "submissionReadiness": {
           "type": "object",
@@ -3016,7 +3017,8 @@
             },
             "status": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "pattern": "\\S"
             },
             "statusLabel": {
               "type": "string"
