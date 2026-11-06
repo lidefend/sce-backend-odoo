@@ -64,5 +64,14 @@
     "role_release_projection_collector": "passed",
     "role_release_projection_aggregation": "passed",
     "p0_vs_manifest_scope": "SCOPE_MISMATCH / NOT_VERIFIED"
+  },
+  "evidence_chain": {
+    "list_surface_structure": "PASS local/sc_frontend_acceptance/afea83603ed5caafd7a6b39dc00cab594797f98d",
+    "candidate_chain": "BLOCKED",
+    "candidate_blockers": [
+      "fixture Preview scene rejection (该场景为 Preview 状态，企业不能启用)",
+      "release_snapshot database denial (FRONTEND_ACCEPTANCE_SNAPSHOT_DATABASE_DENIED:sc_frontend_acceptance_candidate)"
+    ],
+    "preflight": "ready_for_existing_gates"
   }
 }
