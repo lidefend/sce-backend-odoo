@@ -1185,13 +1185,16 @@ acceptance.frontend.release_snapshot: guard.prod.forbid
 
 verify.frontend.role_release_projection: guard.prod.forbid
 	@set -e; \
+	rm -f artifacts/frontend-release-audit/role-release-projection.json; \
+	run_id="$${GITHUB_RUN_ID:-local}"; run_attempt="$${GITHUB_RUN_ATTEMPT:-1}"; \
 	output="$$(SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh role-release-projection 2>&1)"; \
 	line="$$(printf '%s\n' "$$output" | grep '^ROLE_RELEASE_PROJECTION=' | tail -1)"; \
 	test -n "$$line" || { printf '%s\n' "$$output" >&2; exit 2; }; \
 	mkdir -p artifacts/frontend-release-audit; \
 	printf '%s\n' "$$line" | sed 's/^ROLE_RELEASE_PROJECTION=//' | \
 	  jq --arg sha "$$(git rev-parse HEAD)" --arg ts "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-	  '{schema_version:"frontend-role-release-projection/v1", git_sha:$$sha, generated_at:$$ts, scope_status:"NOT_VERIFIED", db:.db, roles:.roles}' \
+	    --arg run_id "$$run_id" --arg run_attempt "$$run_attempt" \
+	  '{schema_version:"frontend-role-release-projection/v1", git_sha:$$sha, generated_at:$$ts, scope_status:"NOT_VERIFIED", run_id:$$run_id, run_attempt:$$run_attempt, release_snapshot:{source_revision:$$sha}, db:.db, roles:.roles}' \
 	  > artifacts/frontend-release-audit/role-release-projection.json.tmp; \
 	mv artifacts/frontend-release-audit/role-release-projection.json.tmp artifacts/frontend-release-audit/role-release-projection.json; \
 	echo "[verify.frontend.role_release_projection] wrote artifacts/frontend-release-audit/role-release-projection.json"

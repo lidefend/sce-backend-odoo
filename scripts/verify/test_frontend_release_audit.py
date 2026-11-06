@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -179,6 +180,9 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             "git_sha": SHA,
             "db": "sc_frontend_acceptance",
             "scope_status": scope_status,
+            "run_id": "local",
+            "run_attempt": "1",
+            "release_snapshot": {"source_revision": SHA},
             "roles": roles,
         }
         if mutate:
@@ -187,6 +191,34 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
 
     def test_matching_identities_pass(self):
         validate_role_release_projection(self._report(), SHA)
+
+    def test_matching_identities_with_unverified_scope_still_fail(self):
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(
+                self._report(scope_status="NOT_VERIFIED"), SHA
+            )
+        self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", str(ctx.exception))
+
+    def test_missing_or_misspelled_scope_still_fail(self):
+        for scope in (None, "VERIFYED", "not-verified"):
+            report = self._report()
+            report["scope_status"] = scope
+            with self.assertRaises(EvidenceError) as ctx:
+                validate_role_release_projection(report, SHA)
+            self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", str(ctx.exception))
+
+    def test_stale_run_attempt_rejected(self):
+        with patch.dict(os.environ, {"GITHUB_RUN_ATTEMPT": "2"}):
+            with self.assertRaises(EvidenceError) as ctx:
+                validate_role_release_projection(self._report(), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH", str(ctx.exception))
+
+    def test_stale_snapshot_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"] = {"source_revision": "c" * 40}
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_MISMATCH", str(ctx.exception))
 
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):

@@ -129,6 +129,15 @@ def validate_role_release_projection(report: dict[str, Any], expected_sha: str) 
     only a VERIFIED scope is held to the hard identity equality.
     """
     require_sha(report, expected_sha, "role_release_projection")
+    expected_run_id = os.environ.get("GITHUB_RUN_ID", "local")
+    expected_run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+    if str(report.get("run_id") or "") != expected_run_id:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ID_MISMATCH")
+    if str(report.get("run_attempt") or "") != expected_run_attempt:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_RUN_ATTEMPT_MISMATCH")
+    snapshot = report.get("release_snapshot") or {}
+    if str(snapshot.get("source_revision") or "") != expected_sha:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_MISMATCH")
     if str(report.get("db") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
     manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")
@@ -162,31 +171,39 @@ def validate_role_release_projection(report: dict[str, Any], expected_sha: str) 
         sections[role] = comparison
         if not comparison["consistent"]:
             problems[role] = comparison
-    if problems:
-        identity_problems = {
-            role: problem
-            for role, problem in problems.items()
-            if problem.get("reason") in ("subject_identity_mismatch", "collect_error")
-        }
-        scope_problems = {
-            role: problem for role, problem in problems.items() if role not in identity_problems
-        }
-        summary = {
-            role: _projection_problem_summary(problems.get(role, {}))
-            for role in sorted(declared_roles)
-        }
-        if identity_problems:
-            raise EvidenceError(
-                "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH:"
-                + json.dumps(summary, ensure_ascii=False)
-            )
-        if scope_problems:
-            reason = (
-                "ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH"
-                if scope_status != "VERIFIED"
-                else "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH"
-            )
-            raise EvidenceError(reason + ":" + json.dumps(summary, ensure_ascii=False))
+    identity_problems = {
+        role: problem
+        for role, problem in problems.items()
+        if problem.get("reason") in ("subject_identity_mismatch", "collect_error")
+    }
+    scope_problems = {
+        role: problem for role, problem in problems.items() if role not in identity_problems
+    }
+    summary = {
+        role: _projection_problem_summary(problems.get(role, {}))
+        for role in sorted(declared_roles)
+    }
+    if identity_problems:
+        error = EvidenceError(
+            "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH:"
+            + json.dumps(summary, ensure_ascii=False)
+        )
+        error.role_sections = sections
+        raise error
+    if scope_status != "VERIFIED":
+        error = EvidenceError(
+            "ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH:"
+            + json.dumps(summary, ensure_ascii=False)
+        )
+        error.role_sections = sections
+        raise error
+    if scope_problems:
+        error = EvidenceError(
+            "ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH:"
+            + json.dumps(summary, ensure_ascii=False)
+        )
+        error.role_sections = sections
+        raise error
     return {"result": "PASS", "roles": sections, "scope_status": scope_status}
 
 
@@ -340,6 +357,8 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
                         "total": report.get("total"),
                     }
                 )
+            if name == "role_release_projection" and getattr(exc, "role_sections", None):
+                sections[name]["roles"] = exc.role_sections
             if str(exc).startswith(("EVIDENCE_INVALID:", "EVIDENCE_NOT_OBJECT:")):
                 missing_evidence.append(str(exc))
             failures.append(str(exc))
