@@ -756,6 +756,12 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
     model = _text(source.get("model") or ui.get("model"))
     if model not in ("project.project", "payment.request"):
         return
+    # The notice replaces a native body occurrence, so it must only appear on
+    # the views that actually declare that field. A model-scoped gate would
+    # leak the notice onto sibling forms (for example the project quick-create
+    # form) that never declare 办理前检查.
+    if not _has_submission_readiness_body_field(contract):
+        return
     record_id = _positive_int(
         source.get("record_id") or source.get("recordId")
         or ui.get("record_id") or ui.get("recordId"),
@@ -803,6 +809,29 @@ def _inject_submission_readiness_notice(contract: dict[str, Any], source_contrac
         "sourceAuthority": "smart_construction_core.services.baseline_readiness.build_readiness",
     }
     _suppress_notice_owned_body_fields(contract)
+
+
+def _has_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
+    tree = contract.get("layoutContract")
+    if not isinstance(tree, dict):
+        return False
+    roots = tree.get("containerTree")
+    if not isinstance(roots, list):
+        return False
+
+    def walk(nodes: list[Any]) -> bool:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if _text(node.get("type") or node.get("containerType")).lower() == "field" \
+                    and _text(node.get("name")) == "submission_readiness_display":
+                return True
+            children = node.get("children")
+            if isinstance(children, list) and walk(children):
+                return True
+        return False
+
+    return walk(roots)
 
 
 def _suppress_notice_owned_body_fields(contract: dict[str, Any]) -> None:

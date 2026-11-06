@@ -1,45 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import annotations
+from odoo.tests import TransactionCase
 
-import importlib.util
-import sys
-import types
-import unittest
-from pathlib import Path
-
-
-CORE_DIR = Path(__file__).resolve().parents[1] / "core"
-
-
-def _load_assembler():
-    sys.modules.setdefault("odoo", types.ModuleType("odoo"))
-    sys.modules.setdefault("odoo.addons", types.ModuleType("odoo.addons"))
-    smart_core_pkg = sys.modules.setdefault("odoo.addons.smart_core", types.ModuleType("odoo.addons.smart_core"))
-    smart_core_pkg.__path__ = [str(CORE_DIR.parent)]
-    core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
-    core_pkg.__path__ = [str(CORE_DIR)]
-    for module_name in (
-        "odoo.addons.smart_core.core.source_authority",
-        "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
-    ):
-        sys.modules.pop(module_name, None)
-    source_spec = importlib.util.spec_from_file_location(
-        "odoo.addons.smart_core.core.source_authority",
-        CORE_DIR / "source_authority.py",
-    )
-    source_module = importlib.util.module_from_spec(source_spec)
-    assert source_spec and source_spec.loader
-    sys.modules["odoo.addons.smart_core.core.source_authority"] = source_module
-    source_spec.loader.exec_module(source_module)
-    spec = importlib.util.spec_from_file_location(
-        "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
-        CORE_DIR / "unified_page_contract_v2_assembler.py",
-    )
-    module = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
-    sys.modules["odoo.addons.smart_core.core.unified_page_contract_v2_assembler"] = module
-    spec.loader.exec_module(module)
-    return module
+from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+    _has_submission_readiness_body_field,
+    _suppress_notice_owned_body_fields,
+)
 
 
 def _field_node(container_id: str, name: str) -> dict:
@@ -53,9 +18,7 @@ def _field_node(container_id: str, name: str) -> dict:
     }
 
 
-class SubmissionReadinessNoticeSuppressionTests(unittest.TestCase):
-    def setUp(self):
-        self.assembler = _load_assembler()
+class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
 
     def test_single_field_group_is_suppressed_without_orphaning_widgets(self):
         contract = {
@@ -74,7 +37,7 @@ class SubmissionReadinessNoticeSuppressionTests(unittest.TestCase):
                 }],
             },
         }
-        self.assembler._suppress_notice_owned_body_fields(contract)
+        _suppress_notice_owned_body_fields(contract)
         group = contract["layoutContract"]["containerTree"][0]
         field = group["children"][0]
         self.assertFalse(group["visible"])
@@ -99,7 +62,7 @@ class SubmissionReadinessNoticeSuppressionTests(unittest.TestCase):
                 }],
             },
         }
-        self.assembler._suppress_notice_owned_body_fields(contract)
+        _suppress_notice_owned_body_fields(contract)
         group = contract["layoutContract"]["containerTree"][0]
         self.assertNotIn("visible", group, "a group with other content must keep its own visibility")
         by_name = {child["name"]: child for child in group["children"]}
@@ -119,11 +82,37 @@ class SubmissionReadinessNoticeSuppressionTests(unittest.TestCase):
                 }],
             },
         }
-        self.assembler._suppress_notice_owned_body_fields(contract)
+        _suppress_notice_owned_body_fields(contract)
         group = contract["layoutContract"]["containerTree"][0]
         self.assertNotIn("visible", group)
         self.assertNotIn("visible", group["children"][0])
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_notice_scope_requires_a_declared_readiness_body_field(self):
+        with_field = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.readiness",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "办理前检查",
+                    "children": [_field_node("field.submission_readiness_display.occ.1", "submission_readiness_display")],
+                    "widgetList": [],
+                }],
+            },
+        }
+        self.assertTrue(_has_submission_readiness_body_field(with_field))
+        # The quick-create project form never declares 办理前检查, so it must
+        # not receive the page-header notice.
+        without_field = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.quick_create",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "项目创建",
+                    "children": [_field_node("field.name.occ.1", "name")],
+                    "widgetList": [],
+                }],
+            },
+        }
+        self.assertFalse(_has_submission_readiness_body_field(without_field))
