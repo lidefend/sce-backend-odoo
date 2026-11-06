@@ -1,0 +1,23 @@
+goal:
+  id: BE-NAV-PROJECTION-01
+  title: 真实角色发布投影对账
+  layer: P4
+  module: scripts/verify + make (delivery tooling)
+  objective: >-
+    修复前端发布导航策略守卫对「同数错项」的漏报：为 finance / project_a_member /
+    pm / owner 四角色的真实发布投影建立独立只读采集与逐身份比较，接入现有 full
+    发布验证，阻断「PM 等数替换」与「财务清单同步缩减」两类反例。
+  scope:
+    - scripts/verify/frontend_release_navigation_policy_guard.py
+    - scripts/verify/test_frontend_release_navigation_policy_guard.py
+    - scripts/verify/frontend_role_release_projection.py
+    - scripts/dev/frontend_acceptance_runtime.sh
+    - scripts/dev/frontend_acceptance_operation_entry.sh
+    - make/runtime_ops.mk
+    - artifacts/frontend-release-audit/role-release-projection.json
+  exclusions:
+    - 不修改 config/frontend/authoritative_navigation.json（导航清单）
+    - 不修改角色组、发布基线、sc_dev_demo
+    - 不新增 workflow、不重开 supervisor/reporter
+    - 不触碰 P0-P3 产品语义与 ACL
+  status: active

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "id": "BE-NAV-PROJECTION-01",
+  "branch": "fix/nav-projection-reconciliation-20261106",
+  "baseline_sha": "3629ae1a7027f82532b18f306ce926fd467affef",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active"
+  },
+  "status": "active",
+  "goal": ".agent/goals/BE-NAV-PROJECTION-01.yaml",
+  "record": "docs/ops/iterations/be-nav-projection-01-record.md",
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered acceptance profile local: sc_frontend_acceptance / sc-fe-r2-p1-01; read-only collector after acceptance.frontend.fixture + acceptance.frontend.release_snapshot"
+  },
+  "scope": [
+    "scripts/verify/frontend_release_navigation_policy_guard.py",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+    "scripts/verify/frontend_role_release_projection.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "make/runtime_ops.mk"
+  ],
+  "checks": {
+    "offline_guard_counterexamples": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py"
+      ]
+    },
+    "role_release_projection_collector": {
+      "target": "acceptance.frontend.role_release_projection",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_role_release_projection.py",
+        "config/frontend/authoritative_navigation.json",
+        "config/frontend/acceptance_environments_v1.json"
+      ]
+    },
+    "role_release_projection_aggregation": {
+      "target": "verify.frontend.release.audit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+        "scripts/verify/frontend_release_navigation_policy_guard.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "trace four representative differences to their owning layer, then candidate SHA + Draft PR; do not merge 87==fixture P0 as a hard rule",
+  "first_receipt": {
+    "offline_guard_counterexamples": "passed",
+    "role_release_projection_collector": "passed",
+    "role_release_projection_aggregation": "passed",
+    "p0_vs_manifest_scope": "SCOPE_MISMATCH / NOT_VERIFIED"
+  }
+}

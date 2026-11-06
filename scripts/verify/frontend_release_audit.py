@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from frontend_release_navigation_policy_guard import compare_role_projection
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -90,6 +92,39 @@ def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, 
         ):
             raise EvidenceError(f"NAVIGATION_ROLE_MISMATCH:{role}")
     return {"result": "PASS", "roles": roles, "total": total}
+
+
+def validate_role_release_projection(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
+    """Recompute the per-role published projection from the raw identity list.
+
+    The collector only gathers identities and never prints PASS; this validator
+    re-derives missing/unexpected against the declared leaf identities so an
+    equal-count swapped entry cannot pass. It fails for evidence/identity gaps,
+    a missing role, a collector error, or any per-role identity mismatch.
+    """
+    require_sha(report, expected_sha, "role_release_projection")
+    manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")
+    declared_roles = set((manifest.get("roles") or {}).keys())
+    actual_roles = report.get("roles") or {}
+    if set(actual_roles) != declared_roles:
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_ROLE_SET_MISMATCH")
+    sections: dict[str, Any] = {}
+    for role in sorted(declared_roles):
+        row = actual_roles.get(role) or {}
+        p0 = row.get("p0") or {}
+        if p0.get("error"):
+            raise EvidenceError(f"ROLE_RELEASE_PROJECTION_COLLECT_ERROR:{role}")
+        identities = p0.get("primary_home_identities") or []
+        comparison = compare_role_projection(
+            (manifest["roles"][role].get("leaf_keys") or []), identities
+        )
+        sections[role] = comparison
+        if not comparison["consistent"]:
+            raise EvidenceError(
+                f"ROLE_RELEASE_PROJECTION_MISMATCH:{role}:"
+                f"missing={len(comparison['missing'])} unexpected={len(comparison['unexpected'])}"
+            )
+    return {"result": "PASS", "roles": sections}
 
 
 def validate_accessibility(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
@@ -200,6 +235,7 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
     paths = {
         "static": evidence_root / "frontend-release-audit/static.json",
         "navigation": evidence_root / "frontend-page-identity/navigation-report.json",
+        "role_release_projection": evidence_root / "frontend-release-audit/role-release-projection.json",
         "delivery_hardening": evidence_root / "frontend-delivery-hardening/report.json",
         "accessibility": evidence_root / "frontend-delivery-hardening/accessibility.json",
         "performance": evidence_root / "frontend-delivery-hardening/performance.json",
@@ -209,6 +245,7 @@ def aggregate(evidence_root: Path, expected_sha: str) -> dict[str, Any]:
     validators = {
         "static": validate_static,
         "navigation": validate_navigation,
+        "role_release_projection": validate_role_release_projection,
         "delivery_hardening": validate_runtime,
         "accessibility": validate_accessibility,
         "performance": validate_performance,

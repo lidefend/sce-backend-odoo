@@ -16,6 +16,7 @@ from frontend_release_audit import (
     validate_performance,
     validate_responsive,
     validate_error_recovery,
+    validate_role_release_projection,
 )
 
 SHA = "a" * 40
@@ -150,6 +151,59 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
         validate_error_recovery(recovery, SHA)
         with self.assertRaises(EvidenceError):
             validate_error_recovery({**recovery, "session_expired": "NOT_RUN"}, SHA)
+
+
+class RoleReleaseProjectionValidatorTest(unittest.TestCase):
+    def _manifest(self):
+        root = Path(__file__).resolve().parents[2]
+        return json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
+
+    def _report(self, mutate=None):
+        manifest = self._manifest()
+        roles = {
+            role: {"p0": {"primary_home_identities": list(row["leaf_keys"]), "error": None}}
+            for role, row in manifest["roles"].items()
+        }
+        report = {"git_sha": SHA, "roles": roles}
+        if mutate:
+            mutate(report, manifest)
+        return report
+
+    def test_matching_identities_pass(self):
+        validate_role_release_projection(self._report(), SHA)
+
+    def test_same_count_wrong_identity_rejected(self):
+        def mutate(report, _manifest):
+            identities = report["roles"]["pm"]["p0"]["primary_home_identities"]
+            for index, key in enumerate(identities):
+                if key.startswith("smart_construction_core.menu_sc_boq_analysis|"):
+                    identities[index] = (
+                        "smart_construction_core.menu_sc_project_tender|"
+                        "smart_construction_core.action_sc_project_tender|tender.bid"
+                    )
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_MISMATCH:pm", str(ctx.exception))
+
+    def test_missing_role_rejected(self):
+        def mutate(report, _manifest):
+            report["roles"].pop("owner")
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_ROLE_SET_MISMATCH", str(ctx.exception))
+
+    def test_sha_mismatch_rejected(self):
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), "b" * 40)
+        self.assertIn("EVIDENCE_SHA_MISMATCH", str(ctx.exception))
+
+    def test_duplicate_identity_rejected(self):
+        def mutate(report, _manifest):
+            identities = report["roles"]["finance"]["p0"]["primary_home_identities"]
+            identities.append(identities[0])
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(mutate), SHA)
+        self.assertIn("ROLE_RELEASE_PROJECTION_MISMATCH:finance", str(ctx.exception))
 
 
 if __name__ == "__main__":

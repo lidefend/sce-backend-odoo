@@ -180,6 +180,11 @@ case "$operation" in
     ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/verify/frontend_page_identity_runtime_metadata.py"
     ;;
+  role-release-projection)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/verify/frontend_role_release_projection.py"
+    ;;
   delivery-hardening-runtime-ids)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \

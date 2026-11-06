@@ -30,6 +30,53 @@ def _load_role_policy() -> dict:
     raise ValueError("ROLE_SURFACE_OVERRIDES is missing")
 
 
+def compare_role_projection(expected, actual) -> dict:
+    """Compare declared role leaf identities against independently collected ones.
+
+    Both sides use ``menu_xmlid|action_xmlid|model``. The scene home anchor may
+    carry an empty action/model (``menu_xmlid||``) and remains a real identity.
+    This is the only comparison that can surface an equal-count wrong entry: it
+    never derives the actual set from the manifest, so a swapped or removed
+    declaration shows up as ``missing`` / ``unexpected`` instead of passing.
+    """
+    def _normalize(items):
+        keys = []
+        duplicates = []
+        invalid = []
+        seen = set()
+        for raw in items:
+            if not isinstance(raw, str):
+                invalid.append(str(raw))
+                continue
+            value = raw.strip()
+            parts = value.split("|")
+            if len(parts) != 3 or not parts[0].strip():
+                invalid.append(value)
+                continue
+            key = "|".join(part.strip() for part in parts)
+            if key in seen:
+                duplicates.append(key)
+                continue
+            seen.add(key)
+            keys.append(key)
+        return keys, duplicates, invalid
+
+    exp_keys, exp_dup, exp_invalid = _normalize(expected)
+    act_keys, act_dup, act_invalid = _normalize(actual)
+    exp_set = set(exp_keys)
+    act_set = set(act_keys)
+    return {
+        "expected_count": len(exp_keys),
+        "actual_count": len(act_keys),
+        "missing": sorted(exp_set - act_set),
+        "unexpected": sorted(act_set - exp_set),
+        "expected_duplicates": sorted(exp_dup),
+        "actual_duplicates": sorted(act_dup),
+        "invalid_identities": sorted(set(exp_invalid) | set(act_invalid)),
+        "consistent": exp_set == act_set and not exp_dup and not act_dup and not exp_invalid and not act_invalid,
+    }
+
+
 def validate(manifest: dict, policies: dict) -> list[str]:
     expected_roles = manifest.get("roles") if isinstance(manifest, dict) else {}
     errors: list[str] = []
