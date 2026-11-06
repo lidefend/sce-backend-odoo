@@ -11,7 +11,12 @@
              maintenance is not hard-denied here so it follows the entry's
              permission contract, group-gated fields and ACL instead of a
              dedicated read-only page. -->
-        <field name="context">{'create': False, 'delete': False, 'no_duplicate': True}</field>
+        <!-- The ledger's 新建 does not mean "create project.project directly".
+             It resolves to the standard 项目立项 entry, which owns its own
+             action, menu, groups and create form.  The platform reads this
+             declaration and authorizes the resolved action for the current
+             user; it never re-derives the target from the ledger model. -->
+        <field name="context">{'create': False, 'delete': False, 'no_duplicate': True, 'sc_create_entry_action_xmlid': 'smart_construction_core.action_project_initiation', 'sc_create_entry_menu_xmlid': 'smart_construction_core.menu_sc_project_initiation'}</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read'))]"/>
     </record>
 </odoo>

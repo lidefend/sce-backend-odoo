@@ -1090,7 +1090,6 @@ import {
 import {
   collectContractV2ButtonStatusById,
   resolveContractV2ActionRules,
-  resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2SurfacePolicies,
 } from '../app/contracts/v2';
@@ -1516,12 +1515,29 @@ function routeContextOperationAllowed(operation: string): boolean {
   return contextOperationAllowed(routeQueryMap.value.context_raw, operation);
 }
 
-function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
-  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
-  if (capabilities) return capabilities.create;
-  const globalStatus = resolveContractV2GlobalStatus(contract);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  return ['edit', 'write', 'manage'].includes(pageAuth);
+interface CollectionCreateEntryResolution {
+  authorized: boolean;
+  target: Record<string, unknown>;
+}
+
+/**
+ * The list toolbar 新建 decision is a single contract action, not a boolean
+ * capability.  The backend publishes the resolved creation target plus the
+ * current user's authorization as one `list.create` action rule; the frontend
+ * reads that same rule for both visibility and the click destination.  A
+ * missing or unauthorized rule fails closed and hides the button.
+ */
+function resolveCollectionCreateEntry(contract: ActionViewRuntimeContract | null): CollectionCreateEntryResolution {
+  const rules = resolveContractV2ActionRules(contract);
+  const rule = rules.find((row) => row.actionKey === 'list.create' || row.actionId === 'action.list.create');
+  if (!rule) return { authorized: false, target: {} };
+  const target = rule.target && typeof rule.target === 'object' && !Array.isArray(rule.target)
+    ? rule.target as Record<string, unknown>
+    : {};
+  const authorized = rule.allowed === true
+    && rule.authorizationAllowed === true
+    && rule.entitlementEvaluated === true;
+  return { authorized, target };
 }
 
 function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
@@ -1537,10 +1553,15 @@ function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean 
 const canEditRecord = computed(() => resolveWriteRight(actionContract.value) && routeContextOperationAllowed('edit'));
 
 const canCreateRecord = computed(() => {
-  const targetModel = (resolvedModelRef.value || model.value || '').trim();
-  if (!targetModel || !actionId.value) return false;
   if (status.value === 'loading') return false;
-  return resolveCreateRight(actionContract.value) && routeContextOperationAllowed('create');
+  const entry = resolveCollectionCreateEntry(actionContract.value);
+  if (!entry.authorized) return false;
+  const targetType = String(entry.target.type || '').trim();
+  if (targetType === 'action') {
+    return toPositiveInt(entry.target.action_id) !== null;
+  }
+  const targetModel = String(entry.target.model || resolvedModelRef.value || model.value || '').trim();
+  return Boolean(targetModel && actionId.value);
 });
 const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');
@@ -1731,8 +1752,18 @@ async function openCreateRecordWithBusinessCategory(categoryCode = '') {
 }
 
 async function openCreateRecord() {
-  const targetModel = (resolvedModelRef.value || model.value || '').trim();
-  if (!targetModel || !canCreateRecord.value) return;
+  if (!canCreateRecord.value) return;
+  const entry = resolveCollectionCreateEntry(actionContract.value);
+  const targetType = String(entry.target.type || '').trim();
+  if (targetType === 'action') {
+    const targetActionId = toPositiveInt(entry.target.action_id);
+    if (!targetActionId) return;
+    const targetMenuId = toPositiveInt(entry.target.menu_id);
+    openHierarchyAction({ action_id: targetActionId, menu_id: targetMenuId ?? undefined });
+    return;
+  }
+  const targetModel = String(entry.target.model || resolvedModelRef.value || model.value || '').trim();
+  if (!targetModel) return;
   const existingCategoryCode = String(route.query.default_business_category_code || route.query.current_business_category_code || '').trim();
   if (!existingCategoryCode && businessCategoryCreateOptions.value.length > 1) {
     businessCategoryCreatePickerVisible.value = true;
