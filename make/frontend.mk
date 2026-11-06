@@ -642,6 +642,7 @@ verify.frontend.native_text_presentation.unit: guard.prod.forbid
 verify.frontend.native_child_sequence.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_child_sequence_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-child-sequence-test.mjs >/dev/null
 	@node /tmp/native-child-sequence-test.mjs
+	@node frontend/apps/web/scripts/native_tab_text_component_test.mjs
 
 verify.frontend.submission_readiness_notice_contract.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/submission_readiness_notice_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/submission-readiness-notice-contract-test.mjs >/dev/null

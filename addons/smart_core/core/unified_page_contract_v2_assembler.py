@@ -741,76 +741,6 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
         return contract
 
 
-def _inject_submission_readiness_notice(contract: dict[str, Any], source_contract: dict[str, Any], node_actor_env) -> None:
-    """Publish the native submission readiness as a structured page-header notice.
-
-    The notice reuses ``build_readiness`` so the terminal never parses the
-    multi-line ``submission_readiness_display`` text and never derives submit
-    authorization from the status label. It is declarative and fail-closed: when
-    the readiness service cannot run, no notice is injected.
-    """
-    if node_actor_env is None:
-        return
-    source = _dict(source_contract)
-    ui = _dict(source.get("ui")) or source
-    model = _text(source.get("model") or ui.get("model"))
-    if model not in ("project.project", "payment.request"):
-        return
-    # The notice replaces a native body occurrence, so it must only appear on
-    # the views that actually declare that field. A model-scoped gate would
-    # leak the notice onto sibling forms (for example the project quick-create
-    # form) that never declare 办理前检查.
-    if not _has_visible_submission_readiness_body_field(contract):
-        return
-    record_id = _positive_int(
-        source.get("record_id") or source.get("recordId")
-        or ui.get("record_id") or ui.get("recordId"),
-        0,
-    )
-    visible = record_id == 0
-    if record_id:
-        try:
-            record = node_actor_env[model].browse(record_id).exists()
-            if model == "project.project":
-                visible = (
-                    _text(record.lifecycle_state) == "draft"
-                    and _text(record.sc_approval_state) == "draft"
-                )
-            else:
-                visible = _text(record.state) in ("draft", "rejected")
-        except Exception:
-            visible = False
-    try:
-        from odoo.addons.smart_construction_core.services.baseline_readiness import build_readiness
-        # A new (unsaved) record has no positive id; the readiness service
-        # treats ``None`` as the "no_data" projection for a record that has not
-        # been selected yet, while ``0`` would be rejected as a non-positive id.
-        result = build_readiness(node_actor_env, model, record_id or None)
-    except Exception:
-        return
-    labels = {"ready": "可提交", "blocked": "待处理", "no_data": "暂无记录", "forbidden": "无权限"}
-    status = _text(result.get("status"))
-    next_step = _dict(result.get("next_step"))
-    notice_state = {
-        "ready": "success",
-        "blocked": "info",
-        "no_data": "empty",
-        "forbidden": "error",
-    }.get(status, "info")
-    contract.setdefault("noticeContract", {})["submissionReadiness"] = {
-        "visible": bool(visible),
-        "status": status,
-        "statusLabel": labels.get(status, status),
-        "state": notice_state,
-        "message": _text(result.get("message")),
-        "nextStep": _text(next_step.get("label")),
-        "nextStepAction": _text(next_step.get("action")),
-        "reasonCode": _text(result.get("reason_code")),
-        "sourceAuthority": "smart_construction_core.services.baseline_readiness.build_readiness",
-    }
-    _suppress_notice_owned_body_fields(contract)
-
-
 def _has_visible_submission_readiness_body_field(contract: dict[str, Any]) -> bool:
     """True when a native readiness occurrence exists and is not statically hidden.
 
@@ -1079,11 +1009,6 @@ def _assemble_unified_page_contract_v2(
     actions_bound_at = time.monotonic()
     if resolved in {"ui.contract", "native_form_projection"}:
         _page_composition_contract(contract, source)
-    # The readiness notice and its body-occurrence suppression are part of the
-    # semantic contract, so they must be present before the integrity digest is
-    # sealed over ``contract_semantic_payload``. Injecting after sealing would
-    # leave ``contractSha256``/``etag``/``snapshotId`` not covering them.
-    _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
     sealed = seal_unified_page_contract(
         contract,
         source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,

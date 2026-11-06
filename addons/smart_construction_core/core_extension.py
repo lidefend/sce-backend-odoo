@@ -29,6 +29,8 @@ from odoo.addons.smart_core.core.scene_contract_builder import (
     register_route_only_actions,
 )
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+    _has_visible_submission_readiness_body_field,
+    _suppress_notice_owned_body_fields,
     declare_container_columns,
     register_kanban_row_action,
 )
@@ -444,6 +446,85 @@ def _sc_text(value) -> str:
     return str(value or "").strip()
 
 
+_SC_READINESS_LABELS = {
+    "ready": "可提交",
+    "blocked": "待处理",
+    "no_data": "暂无记录",
+    "forbidden": "无权限",
+}
+_SC_READINESS_STATES = {
+    "ready": "success",
+    "blocked": "info",
+    "no_data": "empty",
+    "forbidden": "error",
+}
+
+
+def _sc_positive_int(value, fallback=0):
+    try:
+        parsed = int(value)
+        if parsed > 0:
+            return parsed
+    except Exception:
+        pass
+    return fallback
+
+
+def _sc_inject_submission_readiness_notice(env, out, source):
+    """Compute and publish the submission-readiness page-header notice.
+
+    Owned by P1 (smart_construction_core): the industry models, lifecycle
+    states and the readiness service belong here, not in the P0 assembler.
+    P0 keeps the generic notice contract, the visible-position traversal and
+    the body-occurrence suppression helpers, which this layer reuses.
+    """
+    if not isinstance(out, dict) or not isinstance(source, dict):
+        return
+    ui = source.get("ui") if isinstance(source.get("ui"), dict) else {}
+    model = _sc_text(source.get("model") or ui.get("model"))
+    if model not in ("project.project", "payment.request"):
+        return
+    if not _has_visible_submission_readiness_body_field(out):
+        return
+    record_id = _sc_positive_int(
+        source.get("record_id") or source.get("recordId")
+        or ui.get("record_id") or ui.get("recordId"),
+        0,
+    )
+    visible = record_id == 0
+    if record_id:
+        try:
+            record = env[model].browse(record_id).exists()
+            if model == "project.project":
+                visible = (
+                    _sc_text(record.lifecycle_state) == "draft"
+                    and _sc_text(record.sc_approval_state) == "draft"
+                )
+            else:
+                visible = _sc_text(record.state) in ("draft", "rejected")
+        except Exception:
+            visible = False
+    try:
+        from odoo.addons.smart_construction_core.services.baseline_readiness import build_readiness
+        result = build_readiness(env, model, record_id or None)
+    except Exception:
+        return
+    status = _sc_text(result.get("status"))
+    next_step = result.get("next_step") if isinstance(result.get("next_step"), dict) else {}
+    out.setdefault("noticeContract", {})["submissionReadiness"] = {
+        "visible": bool(visible),
+        "status": status,
+        "statusLabel": _SC_READINESS_LABELS.get(status, status),
+        "state": _SC_READINESS_STATES.get(status, "info"),
+        "message": _sc_text(result.get("message")),
+        "nextStep": _sc_text(next_step.get("label")),
+        "nextStepAction": _sc_text(next_step.get("action")),
+        "reasonCode": _sc_text(result.get("reason_code")),
+        "sourceAuthority": "smart_construction_core.services.baseline_readiness.build_readiness",
+    }
+    _suppress_notice_owned_body_fields(out)
+
+
 def _sc_explicit_source_view_id(source: dict, head: dict | None = None, context: dict | None = None) -> int:
     head = head if isinstance(head, dict) else {}
     context = context if isinstance(context, dict) else {}
@@ -541,6 +622,7 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
                     entry.pop(forbidden, None)
         layout_contract["componentRegistry"] = component_registry
         out["layoutContract"] = layout_contract
+    _sc_inject_submission_readiness_notice(env, out, source)
     if model == "construction.work.breakdown" and view_type in {"tree", "list"}:
         source_context = source.get("context") if isinstance(source.get("context"), dict) else {}
         if not source_context:

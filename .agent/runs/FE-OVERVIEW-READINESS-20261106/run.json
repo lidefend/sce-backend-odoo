@@ -12,6 +12,9 @@
     "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/tests/__init__.py",
     "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_submission_readiness_notice_p1.py",
     "frontend/apps/web/src/",
     "frontend/apps/web/scripts/",
     "make/frontend.mk",
@@ -60,14 +63,14 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "主线已同步至 0bf5fb00d；重录 frontend_presentation 与两条专项浏览器回执，再 pr.publish.preflight + pr.push（保持 Draft）",
+  "next_exact_step": "修复页签文本渲染与 P0/P1 分层后，重录 frontend_presentation，再 pr.publish.preflight + pr.push（保持 Draft）",
   "layer": {
-    "formal_product_layer": "P0",
-    "layer_target": "统一页契约装配器与前端契约 schema/原生渲染器",
-    "module": "smart_core + frontend",
-    "standard_vs_user_specific": "platform mechanism presentation",
-    "why_here": "原生 text 分段与 noticeContract 属于通用前端运行时与统一页契约机制，不携带业务语义",
-    "why_not_elsewhere": "不修改契约/权限/动作/状态语义；不按模型/菜单/角色/状态文本增加前端判断；不触碰 P1/P2/P3",
-    "blast_radius": "原生表单渲染（NativeFormTreeRenderer/nativeChildSequence）与 ContractFormPage 页头 notice 消费"
+    "formal_product_layer": "P0 + P1",
+    "layer_target": "P0 统一页契约装配器/前端原生渲染器 + P1 smart_construction_core 办理前检查裁决",
+    "module": "smart_core + smart_construction_core + frontend",
+    "standard_vs_user_specific": "platform mechanism presentation (P0) + construction industry readiness ruling (P1)",
+    "why_here": "原生 text 分段与 noticeContract 机制归 P0；project/payment 的模型、状态与文案裁决归 P1",
+    "why_not_elsewhere": "P0 不得识别 project.project/payment.request、draft/rejected 或导入 build_readiness；前端不得自造提示语义",
+    "blast_radius": "NativeFormTreeRenderer 页签文本渲染；P1 finalize hook 注入 noticeContract 并抑制正文"
   }
 }

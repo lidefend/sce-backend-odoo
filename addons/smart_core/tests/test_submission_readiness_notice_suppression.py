@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
-from unittest import mock
-
 from odoo.tests import TransactionCase
 
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
-    _inject_submission_readiness_notice,
+    _has_visible_submission_readiness_body_field,
     _suppress_notice_owned_body_fields,
 )
 
@@ -19,27 +16,6 @@ def _field_node(container_id: str, name: str) -> dict:
         "children": [],
         "widgetList": [],
     }
-
-
-def _readiness_patch():
-    """Provide a governed readiness projection without installing P1 modules."""
-    baseline = mock.MagicMock()
-    baseline.build_readiness = mock.MagicMock(return_value={
-        "status": "ready",
-        "reason_code": "OK",
-        "message": "当前可提交；提示项及提交时的重新校验仍然适用。",
-        "next_step": {"action": "submit_record", "label": "提交业务记录"},
-    })
-    services = mock.MagicMock()
-    services.baseline_readiness = baseline
-    core = mock.MagicMock()
-    core.services = services
-    patch = mock.patch.dict(sys.modules, {
-        "odoo.addons.smart_construction_core": core,
-        "odoo.addons.smart_construction_core.services": services,
-        "odoo.addons.smart_construction_core.services.baseline_readiness": baseline,
-    })
-    return baseline, patch
 
 
 class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
@@ -111,22 +87,8 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
         self.assertNotIn("visible", group)
         self.assertNotIn("visible", group["children"][0])
 
-    def test_notice_scope_requires_a_declared_readiness_body_field(self):
-        source = {"model": "project.project"}
-        baseline, patch = _readiness_patch()
-        without_field = {
-            "layoutContract": {
-                "containerTree": [{
-                    "containerId": "group.quick_create",
-                    "containerType": "group",
-                    "type": "group",
-                    "title": "项目创建",
-                    "children": [_field_node("field.name.occ.1", "name")],
-                    "widgetList": [],
-                }],
-            },
-        }
-        with_field = {
+    def test_visible_readiness_field_is_detected(self):
+        contract = {
             "layoutContract": {
                 "containerTree": [{
                     "containerId": "group.readiness",
@@ -138,29 +100,25 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        with patch:
-            # The quick-create project form never declares 办理前检查, so it
-            # must not receive the page-header notice, and the readiness
-            # service must never be invoked.
-            _inject_submission_readiness_notice(without_field, source, self.env)
-            self.assertNotIn("noticeContract", without_field)
-            baseline.build_readiness.assert_not_called()
+        self.assertTrue(_has_visible_submission_readiness_body_field(contract))
 
-            # A view that declares the field must produce exactly one notice.
-            _inject_submission_readiness_notice(with_field, source, self.env)
-        self.assertIn("noticeContract", with_field)
-        readiness = with_field["noticeContract"]["submissionReadiness"]
-        self.assertTrue(readiness["visible"])
-        self.assertEqual(readiness["status"], "ready")
-        self.assertFalse(with_field["layoutContract"]["containerTree"][0]["children"][0]["visible"])
-        baseline.build_readiness.assert_called_once()
+    def test_absent_readiness_field_is_not_detected(self):
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.quick_create",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "项目创建",
+                    "children": [_field_node("field.name.occ.1", "name")],
+                    "widgetList": [],
+                }],
+            },
+        }
+        self.assertFalse(_has_visible_submission_readiness_body_field(contract))
 
-    def test_notice_respects_native_hidden_visibility(self):
-        source = {"model": "project.project"}
-        baseline, patch = _readiness_patch()
+    def test_hidden_readiness_field_is_not_detected(self):
         readiness = _field_node("field.submission_readiness_display.occ.1", "submission_readiness_display")
-
-        # Field itself hidden.
         field_hidden = {
             "layoutContract": {
                 "containerTree": [{
@@ -173,7 +131,6 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        # Parent group hidden.
         group_hidden = {
             "layoutContract": {
                 "containerTree": [{
@@ -187,16 +144,10 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        with patch:
-            _inject_submission_readiness_notice(field_hidden, source, self.env)
-            _inject_submission_readiness_notice(group_hidden, source, self.env)
-        self.assertNotIn("noticeContract", field_hidden)
-        self.assertNotIn("noticeContract", group_hidden)
-        baseline.build_readiness.assert_not_called()
+        self.assertFalse(_has_visible_submission_readiness_body_field(field_hidden))
+        self.assertFalse(_has_visible_submission_readiness_body_field(group_hidden))
 
-    def test_notice_finds_any_visible_occurrence_among_multiple(self):
-        source = {"model": "project.project"}
-        baseline, patch = _readiness_patch()
+    def test_any_visible_occurrence_among_multiple_is_detected(self):
         visible = _field_node("field.submission_readiness_display.occ.2", "submission_readiness_display")
         hidden = {**_field_node("field.submission_readiness_display.occ.1", "submission_readiness_display"), "invisible": True}
 
@@ -214,17 +165,9 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 },
             }
 
-        with patch:
-            # Hidden first, visible later: the visible occurrence must win.
-            hidden_first = group_with([dict(hidden), dict(visible)])
-            _inject_submission_readiness_notice(hidden_first, source, self.env)
-            self.assertIn("noticeContract", hidden_first)
-            # Visible first, hidden later.
-            visible_first = group_with([dict(visible), dict(hidden)])
-            _inject_submission_readiness_notice(visible_first, source, self.env)
-            self.assertIn("noticeContract", visible_first)
-            # All hidden.
-            all_hidden = group_with([dict(hidden), dict(hidden)])
-            _inject_submission_readiness_notice(all_hidden, source, self.env)
-            self.assertNotIn("noticeContract", all_hidden)
-        self.assertEqual(baseline.build_readiness.call_count, 2)
+        # Hidden first, visible later: the visible occurrence must win.
+        self.assertTrue(_has_visible_submission_readiness_body_field(group_with([dict(hidden), dict(visible)])))
+        # Visible first, hidden later.
+        self.assertTrue(_has_visible_submission_readiness_body_field(group_with([dict(visible), dict(hidden)])))
+        # All hidden.
+        self.assertFalse(_has_visible_submission_readiness_body_field(group_with([dict(hidden), dict(hidden)])))

@@ -350,6 +350,12 @@
         </template>
       </component>
 
+      <p
+        v-else-if="nodeType(node) === 'text' && nodeText(node)"
+        class="native-static-text native-inline-text"
+        :data-native-text-presentation="nativeTextPresentation(node).kind"
+      >{{ nodeText(node) }}</p>
+
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
         :class="[...nodeClassList(node), ...declaredPresentationTokens(node)]"
