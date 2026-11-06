@@ -108,32 +108,60 @@ def changed_tests(base: str, head: str) -> list[dict]:
     return rows
 
 
-def verify_logs(rows: list[dict], logs: list[str]) -> list[dict]:
-    text = '\n'.join(logs)
-    python_outcomes = _python_outcomes(text)
+def verify_logs(rows: list[dict], sources: list[dict]) -> list[dict]:
+    """Match each row inside its own receipt scope, never a merged log blob.
+
+    Each ``source`` is ``{'module', 'kind', 'execution', 'text'}`` read from one
+    receipt.  Two addons may own a same-named test file; binding every row to
+    its receipt's ``(module, kind, execution)`` keeps a skipped method in addon
+    A from absorbing a passed method in addon B, regardless of source order.
+    """
+    by_scope: dict[tuple[str, str, str], str] = {}
+    for source in sources:
+        module = str(source.get('module') or '')
+        kind = str(source.get('kind') or '')
+        execution = str(source.get('execution') or '')
+        text = str(source.get('text') or '')
+        key = (module, kind, execution)
+        by_scope[key] = by_scope[key] + '\n' + text if key in by_scope else text
+
     result = []
     for row in rows:
-        identity = re.escape(row['logger']) + r': Starting ' + re.escape(row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
-        # An overall non-zero suite cannot stand in for the changed method.
+        module = row['module']
+        matched = False
+        skipped = False
         if row.get('kind') == 'python':
-            if python_outcomes:
-                # The executor records every method's full test.id() and exact
-                # outcome. Match the same identity instead of parsing wrapped
-                # verbose `... ok` text (docstrings and test-printed logs split
-                # the method name and `ok` across lines and were miscounted).
-                test_id = Path(row['path']).stem + '.' + row['class'] + '.' + row['method']
-                outcome = python_outcomes.get(test_id)
-                matched = outcome == 'passed'
-                skipped = outcome == 'skipped'
-            else:
-                # Legacy receipts predate the structured marker. Keep the
-                # verbosity-2 fallback for ORM-independent old python logs.
-                python_identity = r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?' + re.escape(
-                    Path(row['path']).stem + '.' + row['class']) + r'(?:\.' + re.escape(
-                    row['method']) + r')?\)'
-                matched = bool(re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text))
-                skipped = bool(re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text))
+            stem = Path(row['path']).stem
+            test_id = stem + '.' + row['class'] + '.' + row['method']
+            # Prefer the per-file execution scope, then the module-level python
+            # scope for a pure-python module without per-file execution names.
+            for scope_key in ((module, 'python', stem), (module, 'python', '')):
+                text = by_scope.get(scope_key)
+                if text is None:
+                    continue
+                outcomes = _python_outcomes(text)
+                if outcomes:
+                    outcome = outcomes.get(test_id)
+                    if outcome is None:
+                        continue
+                    matched = outcome == 'passed'
+                    skipped = outcome == 'skipped'
+                    break
+                python_identity = (
+                    r'(?m)^' + re.escape(row['method']) + r' \((?:[\w.]+\.)?'
+                    + re.escape(stem + '.' + row['class']) + r'(?:\.'
+                    + re.escape(row['method']) + r')?\)'
+                )
+                if re.search(python_identity + r'[^\n]*\.\.\. ok(?:\n|$)', text):
+                    matched = True
+                if re.search(python_identity + r'[^\n]*\.\.\. skipped(?:[ \n]|$)', text):
+                    skipped = True
+                if matched or skipped:
+                    break
         else:
+            text = by_scope.get((module, 'orm', ''), '')
+            identity = re.escape(row['logger']) + r': Starting ' + re.escape(
+                row['class'] + '.' + row['method']) + r'(?:\s|\(|$)'
             matched = bool(re.search(identity, text))
             skipped = any('skipp' in line.lower() and row['class'] + '.' + row['method'] in line
                           for line in text.splitlines())
@@ -173,7 +201,8 @@ def managed_report(head: str, log: str) -> dict:
     if not summaries or any(int(f) or int(e) for f, e, _ in summaries) or int(summaries[-1][2]) <= 0:
         raise ValueError('managed ORM evidence lacks a passing nonzero summary')
     rows = managed_tests(head)
-    observed = verify_logs([dict(r, owner='backend_suite') for r in rows], [log])
+    observed = verify_logs([dict(r, owner='backend_suite') for r in rows],
+                           [{'module': MANAGED_MODULE, 'kind': 'orm', 'execution': '', 'text': log}])
     return {'schema': 'managed-changed-tests/v1', 'head': head, 'owner': MANAGED_TARGET,
             'log_sha256': hashlib.sha256(log.encode()).hexdigest(),
             'executed': [r['selector'] for r in observed if r['status'] == 'executed']}
@@ -291,7 +320,16 @@ def main() -> None:
         return
     if args.receipts is None or args.output is None:
         parser.error('receipt reconciliation requires --receipts and --output')
-    rows = verify_logs(rows, [(p.parent / 'execution.log').read_text() for p in args.receipts.rglob('receipt.json')])
+    sources = []
+    for path in args.receipts.rglob('receipt.json'):
+        receipt = json.loads(path.read_text())
+        sources.append({
+            'module': receipt['module'],
+            'kind': receipt.get('kind', ''),
+            'execution': receipt.get('execution', ''),
+            'text': (path.parent / 'execution.log').read_text(),
+        })
+    rows = verify_logs(rows, sources)
     managed = None
     if args.discover_managed and any(r['owner'] == MANAGED_TARGET for r in rows):
         if not 0 <= args.wait_managed_seconds <= 7200:

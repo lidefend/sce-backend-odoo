@@ -921,7 +921,7 @@ def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dic
                     # attempt is eligible; attempt-number names alone are insufficient.
                     raw = fetch(f"actions/artifacts/{artifact['id']}/zip")
                     members = archive_members(raw)
-                    log = members[ISOLATED_MODULE+'/execution.log'].decode()
+                    log = members[_module_receipt_prefix(ISOLATED_MODULE, members) + 'execution.log'].decode()
                     markers = [json.loads(x[len(ISOLATED_MARKER):]) for x in log.splitlines()
                                if x.startswith(ISOLATED_MARKER)]
                     if markers != [proof]:

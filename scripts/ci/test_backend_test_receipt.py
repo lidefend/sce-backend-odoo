@@ -312,7 +312,9 @@ class IsolatedPythonDecisionTest(unittest.TestCase):
               [('addons/example/test.py','c'*40),*recipe['authority_blobs'].items()]]
         stream=io.BytesIO()
         with zipfile.ZipFile(stream,'w') as archive:
-            archive.writestr(receipt.ISOLATED_MODULE+'/execution.log',receipt.ISOLATED_MARKER+json.dumps(proof)+'\n')
+            archive.writestr(receipt.ISOLATED_MODULE+'/python/receipt.json', b'{}')
+            archive.writestr(receipt.ISOLATED_MODULE+'/python/execution.log',
+                             receipt.ISOLATED_MARKER+json.dumps(proof)+'\n')
         data={'actions/runs?status=success&per_page=30':{'workflow_runs':[run]},
               'actions/runs/10/artifacts?per_page=100':{'artifacts':[{'id':20,'name':'backend-execution-10-1-0'}]},
               'git/trees/'+tree_sha+'?recursive=1':{'sha':tree_sha,'truncated':False,'tree':rows},
