@@ -32,7 +32,7 @@
       ]
     },
     "role_release_projection_collector": {
-      "target": "acceptance.frontend.role_release_projection",
+      "target": "verify.frontend.role_release_projection",
       "kind": "runtime",
       "inputs": [
         "scripts/verify/frontend_role_release_projection.py",
