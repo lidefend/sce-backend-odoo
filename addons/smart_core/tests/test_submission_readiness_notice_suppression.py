@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import sys
+from unittest import mock
+
 from odoo.tests import TransactionCase
 
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
-    _has_submission_readiness_body_field,
+    _inject_submission_readiness_notice,
     _suppress_notice_owned_body_fields,
 )
 
@@ -16,6 +19,26 @@ def _field_node(container_id: str, name: str) -> dict:
         "children": [],
         "widgetList": [],
     }
+
+
+def _readiness_patch():
+    """Provide a governed readiness projection without installing P1 modules."""
+    baseline = mock.MagicMock()
+    baseline.build_readiness = mock.MagicMock(return_value={
+        "status": "ready",
+        "reason_code": "OK",
+        "message": "当前可提交；提示项及提交时的重新校验仍然适用。",
+        "next_step": {"action": "submit_record", "label": "提交业务记录"},
+    })
+    services = mock.MagicMock()
+    services.baseline_readiness = baseline
+    core = mock.MagicMock()
+    core.services = services
+    return mock.patch.dict(sys.modules, {
+        "odoo.addons.smart_construction_core": core,
+        "odoo.addons.smart_construction_core.services": services,
+        "odoo.addons.smart_construction_core.services.baseline_readiness": baseline,
+    })
 
 
 class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
@@ -88,19 +111,7 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
         self.assertNotIn("visible", group["children"][0])
 
     def test_notice_scope_requires_a_declared_readiness_body_field(self):
-        with_field = {
-            "layoutContract": {
-                "containerTree": [{
-                    "containerId": "group.readiness",
-                    "containerType": "group",
-                    "type": "group",
-                    "title": "办理前检查",
-                    "children": [_field_node("field.submission_readiness_display.occ.1", "submission_readiness_display")],
-                    "widgetList": [],
-                }],
-            },
-        }
-        self.assertTrue(_has_submission_readiness_body_field(with_field))
+        source = {"model": "project.project"}
         # The quick-create project form never declares 办理前检查, so it must
         # not receive the page-header notice.
         without_field = {
@@ -115,4 +126,26 @@ class SubmissionReadinessNoticeSuppressionTests(TransactionCase):
                 }],
             },
         }
-        self.assertFalse(_has_submission_readiness_body_field(without_field))
+        _inject_submission_readiness_notice(without_field, source, self.env)
+        self.assertNotIn("noticeContract", without_field)
+
+        # A view that declares the field must produce exactly one notice.
+        with_field = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "group.readiness",
+                    "containerType": "group",
+                    "type": "group",
+                    "title": "办理前检查",
+                    "children": [_field_node("field.submission_readiness_display.occ.1", "submission_readiness_display")],
+                    "widgetList": [],
+                }],
+            },
+        }
+        with _readiness_patch():
+            _inject_submission_readiness_notice(with_field, source, self.env)
+        self.assertIn("noticeContract", with_field)
+        readiness = with_field["noticeContract"]["submissionReadiness"]
+        self.assertTrue(readiness["visible"])
+        self.assertEqual(readiness["status"], "ready")
+        self.assertFalse(with_field["layoutContract"]["containerTree"][0]["children"][0]["visible"])
