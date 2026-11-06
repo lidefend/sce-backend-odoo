@@ -514,6 +514,36 @@ class ExecutionReceiptTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'overwrite'):
             self.record()
 
+    def test_distinct_executions_do_not_collide_in_same_module_kind(self):
+        first = self.record(execution='test_boundaries')
+        second = self.record(execution='test_mobile_compact')
+        self.assertEqual('test_boundaries', first['execution'])
+        self.assertEqual('test_mobile_compact', second['execution'])
+        self.assertNotEqual(first['receipt_sha256'], second['receipt_sha256'])
+        self.assertTrue((self.output / 'example' / 'python' / 'test_boundaries' / 'receipt.json').exists())
+        self.assertTrue((self.output / 'example' / 'python' / 'test_mobile_compact' / 'receipt.json').exists())
+
+    def test_duplicate_execution_is_refused(self):
+        self.record(execution='test_boundaries')
+        with self.assertRaisesRegex(ValueError, 'overwrite'):
+            self.record(execution='test_boundaries')
+
+    def test_invalid_execution_name_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'invalid execution name'):
+            self.record(execution='../escape')
+        with self.assertRaisesRegex(ValueError, 'invalid execution name'):
+            receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+                head=self.head, status=0, log_status=0, log=self.log, execution='../escape')
+
+    def test_archive_attempt_execution_namespaces_attempt_path(self):
+        result = receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+            head=self.head, status=0, log_status=0, log=self.log, execution='test_boundaries')
+        self.assertEqual('test_boundaries', result['execution'])
+        self.assertTrue((self.output / 'attempts' / 'example' / 'python' / 'test_boundaries' / '1' / 'attempt.json').exists())
+        receipt.archive_attempt(output=self.output, module='example', kind='python', attempt=1,
+            head=self.head, status=0, log_status=0, log=self.log, execution='test_mobile_compact')
+        self.assertTrue((self.output / 'attempts' / 'example' / 'python' / 'test_mobile_compact' / '1' / 'attempt.json').exists())
+
     def test_symlink_evidence_rejected(self):
         result = self.record()
         path=self.output/'example'/'python'/'execution.log';path.unlink();path.symlink_to(self.log)

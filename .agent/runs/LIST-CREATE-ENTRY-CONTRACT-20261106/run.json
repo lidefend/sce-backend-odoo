@@ -23,6 +23,9 @@
     "scripts/ci/test_backend_changed_test_coverage.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/run_mixed_python_tests.py",
     "scripts/test/frontend_acceptance_release_snapshot.py",
     "make/runtime_ops.mk",
     "docs/architecture/frontend_contract_basis_ledger.json",
@@ -57,8 +60,46 @@
         "scripts/verify/frontend_contract_basis_guard.py",
         "docs/architecture/frontend_contract_basis_ledger.json"
       ]
+    },
+    "L1_ci_receipt_unit": {
+      "target": "python3 -m unittest test_backend_changed_test_coverage test_backend_test_receipt test_backend_suite_plan",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 149,
+      "inputs": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/test_backend_changed_test_coverage.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/run_mixed_python_tests.py"
+      ]
+    },
+    "L1_boundary_python": {
+      "target": "python3 scripts/ci/run_mixed_python_tests.py <file>",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 300,
+      "detail": {
+        "test_ui_contract_v2_boundaries.py": 163,
+        "test_unified_page_contract_v2_mobile_compact.py": 137
+      },
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+      ]
+    },
+    "L1_frontend_types": {
+      "target": "vue-tsc --noEmit",
+      "kind": "offline",
+      "status": "passed",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "独立复核与外部归档后执行 pr.publish.preflight 与 pr.push"
+  "next_exact_step": "提交本批自有文件（排除 daily_runtime_release_orchestration.py）后，以完整 EXPECTED_HEAD 执行 pr.push（不 pr.ready）；远端 professional_quality_gate 跑通同一模块一次 ORM + 两个 Python 文件端到端回执后，按新 HEAD 补列表回执并注明关系回执复用 SHA"
 }

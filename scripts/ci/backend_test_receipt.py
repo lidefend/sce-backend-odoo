@@ -155,17 +155,22 @@ def scope_reference(raw: bytes, *, head: str, base: str, module: str) -> dict:
 
 def archive_attempt(*, output: Path, module: str, kind: str, attempt: int, head: str,
                     status: int, log_status: int, log: Path, database: str = '',
-                    secrets_file: Path | None = None) -> dict:
+                    secrets_file: Path | None = None, execution: str = '') -> dict:
     if (not re.fullmatch('[A-Za-z_][A-Za-z0-9_]*',module)
             or kind not in ('orm', 'python')
             or not re.fullmatch('[0-9a-f]{40}',head) or type(attempt) is not int or attempt <= 0
             or any(type(v) is not int or not 0 <= v <= 255 for v in (status,log_status))):
         raise ValueError('invalid attempt identity or exit status')
+    if execution and not re.fullmatch('[A-Za-z_][A-Za-z0-9_-]*', execution):
+        raise ValueError('invalid execution name')
     text = redacted_log(log,secrets_file)
-    target = output/'attempts'/module/kind/str(attempt)
+    attempt_root = output/'attempts'/module/kind
+    if execution:
+        attempt_root = attempt_root / execution
+    target = attempt_root / str(attempt)
     target.mkdir(parents=True,exist_ok=False)
     (target/'execution.log').write_text(text,encoding='utf-8')
-    result = {'schema':'backend-test-attempt/v1','module':module,'kind':kind,'attempt':attempt,
+    result = {'schema':'backend-test-attempt/v1','module':module,'kind':kind,'execution':execution,'attempt':attempt,
               'source_head':head,'database':database,'process_exit_code':status,'log_exit_code':log_status,
               'log_sha256':digest((target/'execution.log').read_bytes()),
               'interpretation':'diagnostic_only_not_test_success','reuse_ready':False}
@@ -196,7 +201,7 @@ def workflow_definition_observation(environment: dict | None = None) -> dict:
 def record(root: Path, *, module: str, kind: str, head: str, base: str,
            database: str, status: int, log: Path, context_file: Path, output: Path,
            now: datetime | None = None, selection: str = '', duration_seconds: float | None = None, secrets_file: Path | None = None, scope_plan: Path | None = None,
-           readback: dict | Path | None = None) -> dict:
+           readback: dict | Path | None = None, execution: str = '') -> dict:
     if kind not in ('orm', 'python'):
         raise ValueError('unknown executor kind')
     if kind == 'orm' and (not selection or not database):
@@ -205,6 +210,8 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
         raise ValueError('invalid measured duration')
     if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', module):
         raise ValueError('invalid module')
+    if execution and not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]*', execution):
+        raise ValueError('invalid execution name')
     if not re.fullmatch(r'[0-9a-f]{40}',head) or (base and not re.fullmatch(r'[0-9a-f]{40}',base)):
         raise ValueError('exact source/base commits required')
     if command('git', 'rev-parse', 'HEAD', cwd=root) != head:
@@ -241,6 +248,8 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     now = now or datetime.now(timezone.utc)
     output.mkdir(parents=True, exist_ok=True)
     target = output / module / kind
+    if execution:
+        target = target / execution
     if target.exists():
         raise ValueError('refuse to overwrite existing target evidence')
     target.mkdir(parents=True, exist_ok=False)
@@ -254,7 +263,7 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     if not (scope and scope.get('dependency_closure_complete')):
         blockers.append('target_dependency_closure_not_certified')
     receipt = {
-        'schema': SCHEMA, 'module': module, 'kind': kind, 'source_head': head,
+        'schema': SCHEMA, 'module': module, 'kind': kind, 'execution': execution, 'source_head': head,
         'source_tree': tree, 'integration_base': base, 'database': database, 'scope_plan':scope,
         'target': f'make test MODULE={module}' if kind == 'orm' else f'unittest discover {candidates[0]}/tests',
         'selection': selection if kind == 'orm' else 'test*.py',
@@ -1075,6 +1084,7 @@ def main() -> None:
     parser.add_argument('--base', default='')
     parser.add_argument('--module')
     parser.add_argument('--kind', choices=('orm', 'python'))
+    parser.add_argument('--execution', default='')
     parser.add_argument('--database', default='')
     parser.add_argument('--selection', default='')
     parser.add_argument('--duration-seconds', type=float)
@@ -1108,13 +1118,13 @@ def main() -> None:
                         database=args.database, status=args.status, log=args.log,
                         context_file=args.context, output=args.output, selection=args.selection,
                         duration_seconds=args.duration_seconds, secrets_file=args.secrets_file,
-                        scope_plan=args.scope_plan, readback=args.readback)
+                        scope_plan=args.scope_plan, readback=args.readback, execution=args.execution)
         print(json.dumps({'module': result['module'], 'test_count': result['test_count'],
                           'receipt_sha256': result['receipt_sha256'], 'reuse_ready': False}))
     elif args.mode == 'archive-attempt':
         print(json.dumps(archive_attempt(output=args.output,module=args.module,kind=args.kind,attempt=args.attempt,
              head=args.head,status=args.status,log_status=args.log_status,log=args.log,
-             database=args.database,secrets_file=args.secrets_file)))
+             database=args.database,secrets_file=args.secrets_file,execution=args.execution)))
     elif args.mode == 'verify-contract-source':
         print(json.dumps(contract_source_binding(json.loads(args.contract.read_text()),
                                                 json.loads(args.source_payload.read_text()))))

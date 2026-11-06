@@ -530,17 +530,23 @@ jobs:
           for mixed_file in ${MIXED_PYTHON_FILES:-}; do
             attempted=$((attempted + 1))
             mixed_module="$(printf '%s' "${mixed_file}" | cut -d/ -f2)"
+            mixed_execution="$(basename "${mixed_file}" .py)"
             mixed_log="${RUNNER_TEMP}/backend-suite-mixed-python-${mixed_module}-$(basename "${mixed_file}" .py)-${GITHUB_RUN_ID}.log"
             echo "===== backend mixed Python unit file: ${mixed_file} ====="
             mixed_started=${SECONDS}
-            python3 "${mixed_file}" -v 2>&1 | tee "${mixed_log}"
+            # Each mixed pure-python file runs in its own process through the
+            # governed discover runner so verbose lines carry the
+            # ``<filename>.Class.method`` identity the coverage verifier
+            # requires (python3 <file> -v emits __main__.Class.method, and
+            # `python3 -m unittest <file>` imports the Odoo package __init__).
+            python3 scripts/ci/run_mixed_python_tests.py "${mixed_file}" 2>&1 | tee "${mixed_log}"
             pipeline_status=("${PIPESTATUS[@]}")
             mixed_duration=$((SECONDS - mixed_started))
             mixed_status="${pipeline_status[0]}"
             mixed_log_status="${pipeline_status[1]}"
             mixed_evidence_failed=0
             if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
-                --module "${mixed_module}" --kind python --attempt 1 --head "${HEAD_SHA}" \
+                --module "${mixed_module}" --kind python --execution "${mixed_execution}" --attempt 1 --head "${HEAD_SHA}" \
                 --status "${mixed_status}" --log-status "${mixed_log_status}" \
                 --log "${mixed_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
               echo "::error::attempt diagnostic collection failed for ${mixed_file}"
@@ -554,7 +560,7 @@ jobs:
               echo "::error::backend mixed Python unit file collected zero tests: ${mixed_file}"
               failed=1
             elif ! python3 scripts/ci/backend_test_receipt.py record \
-                --module "${mixed_module}" --kind python --head "${HEAD_SHA}" --base "${receipt_base}" \
+                --module "${mixed_module}" --kind python --execution "${mixed_execution}" --head "${HEAD_SHA}" --base "${receipt_base}" \
                 --secrets-file "${ENV_FILE}" --duration-seconds "${mixed_duration}" --status 0 --log "${mixed_log}" \
                 --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}"; then
               echo "::error::backend execution evidence collection failed for mixed Python file ${mixed_file}"

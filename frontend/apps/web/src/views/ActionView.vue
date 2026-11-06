@@ -1558,7 +1558,8 @@ const canCreateRecord = computed(() => {
   if (!entry.authorized) return false;
   const targetType = String(entry.target.type || '').trim();
   if (targetType === 'action') {
-    return toPositiveInt(entry.target.action_id) !== null;
+    return toPositiveInt(entry.target.action_id) !== null
+      && toPositiveInt(entry.target.menu_id) !== null;
   }
   if (targetType !== 'record_create') return false;
   const targetModel = String(entry.target.model || '').trim();
@@ -1759,9 +1760,9 @@ async function openCreateRecord() {
   const targetType = String(entry.target.type || '').trim();
   if (targetType === 'action') {
     const targetActionId = toPositiveInt(entry.target.action_id);
-    if (!targetActionId) return;
     const targetMenuId = toPositiveInt(entry.target.menu_id);
-    openHierarchyAction({ action_id: targetActionId, menu_id: targetMenuId ?? undefined });
+    if (!targetActionId || !targetMenuId) return;
+    openHierarchyAction({ action_id: targetActionId, menu_id: targetMenuId });
     return;
   }
   if (targetType !== 'record_create') return;

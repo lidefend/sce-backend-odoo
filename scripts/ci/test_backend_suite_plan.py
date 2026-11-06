@@ -131,6 +131,22 @@ class FrozenExecutionPlanTest(unittest.TestCase):
                     [dict(r, module='a') for r in receipts]):
             with self.assertRaises(ValueError): planner.verify_execution_coverage(self.plan, bad)
 
+    def test_same_module_orm_and_multiple_python_executions_are_distinct(self):
+        plan = {'base': 'b' * 40, 'head': 'a' * 40, 'shards': [{'index': 0, 'modules': ['core']}]}
+        base = {'source_head': plan['head'], 'integration_base': plan['base'],
+                'exit_code': 0, 'test_count': 23, 'module': 'core'}
+        receipts = [
+            {**base, 'kind': 'orm', 'execution': ''},
+            {**base, 'kind': 'python', 'execution': 'test_ui_contract_v2_boundaries', 'test_count': 162},
+            {**base, 'kind': 'python', 'execution': 'test_unified_page_contract_v2_mobile_compact', 'test_count': 137},
+        ]
+        planner.verify_execution_coverage(plan, receipts)
+        with self.assertRaises(ValueError):
+            planner.verify_execution_coverage(plan, receipts + [dict(receipts[2])])
+        with self.assertRaises(ValueError):
+            planner.verify_execution_coverage(plan, receipts + [
+                {**base, 'kind': 'python', 'execution': 'bad/name', 'test_count': 1}])
+
 
 class InputInventoryTest(unittest.TestCase):
     def setUp(self):

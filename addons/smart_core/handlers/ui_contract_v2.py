@@ -4526,6 +4526,11 @@ def _merge_route_default_context(context: Any, context_raw: Any) -> dict[str, An
             json_parsed = None
         if isinstance(json_parsed, dict):
             parsed = json_parsed
+    if not isinstance(parsed, dict):
+        # A non-object route literal (for example '[]' or '1') carries no
+        # operation facts; reject it by returning the trusted context unchanged
+        # instead of failing on `.items()`.
+        return merged
     operation_keys = ("create", "edit", "write", "delete", "unlink", "duplicate")
     for key, value in parsed.items():
         normalized_key = str(key or "").strip()

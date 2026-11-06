@@ -51,6 +51,15 @@ class TestNavigation(TransactionCase):
         self.assertEqual('pending', coverage.verify_logs(rows, ['Ran 9 tests\nOK'])[0]['status'])
         self.assertEqual('pending', coverage.verify_logs(rows, [good.replace('ok', 'skipped')])[0]['status'])
 
+    def test_python_direct_file_run_main_identity_is_rejected(self):
+        # `python3 <file> -v` imports the file as __main__; the coverage
+        # verifier must refuse it because it cannot bind __main__ back to the
+        # changed file. The governed discover runner emits the filename stem.
+        rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
+                                  'addons/example/tests/test_python.py')
+        bad = 'test_one (__main__.TestThing.test_one) ... ok\n'
+        self.assertEqual('pending', coverage.verify_logs(rows, [bad])[0]['status'])
+
     def test_nested_local_odoo_import_does_not_reclassify_pure_unittest_as_orm(self):
         # A standalone unittest that locally imports an odoo helper inside one
         # test method must stay kind=python; only module-level odoo imports
