@@ -89,6 +89,7 @@
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
-    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json"
+    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+    "fix/ci-backend-coverage-skip-detection": ".agent/runs/CI-HISTORY-EVIDENCE-01/run.json"
   }
 }

@@ -49,6 +49,29 @@ class TestNavigation(TransactionCase):
             'TestNavigation.test_upgrade skipped')])
         self.assertEqual('pending', result[0]['status'])
 
+    def test_selection_tags_line_does_not_mark_executed_method_as_skipped(self):
+        # The shard log opens with the ``dev test ... tags=`` selection line
+        # listing every selector.  A sibling method named
+        # ``test_notice_skipped_*`` supplies the literal ``skipp`` substring,
+        # which must not make an actually-executed sibling row look skipped.
+        source = '''from odoo.tests.common import TransactionCase
+class SubmissionReadinessNoticeP1Tests(TransactionCase):
+    def test_notice_injected_for_declared_field(self): pass
+    def test_notice_skipped_without_declared_field(self): pass
+'''
+        rows = coverage.inventory(source, 'addons/smart_construction_core/tests/test_submission_readiness_notice_p1.py')
+        log = (
+            '[22:51:30] dev test (upgrade + tests) DB=sc_suite_ci_smart_construction_core '
+            'tags=sc_smoke/smart_construction_core,sc_gate/smart_construction_core,'
+            '/smart_construction_core:SubmissionReadinessNoticeP1Tests.test_notice_injected_for_declared_field,'
+            '/smart_construction_core:SubmissionReadinessNoticeP1Tests.test_notice_skipped_without_declared_field\n'
+            'odoo.addons.smart_construction_core.tests.test_submission_readiness_notice_p1: '
+            'Starting SubmissionReadinessNoticeP1Tests.test_notice_injected_for_declared_field ...\n'
+        )
+        result = coverage.verify_logs(rows, [self.orm_src(log, module='smart_construction_core')])
+        self.assertEqual('executed', result[0]['status'], 'executed method must not be marked skipped by the tags line')
+        self.assertEqual('pending', result[1]['status'], 'method without a Starting marker stays pending')
+
     def test_python_changed_method_requires_verbose_success_identity(self):
         rows = coverage.inventory('import unittest\nclass TestThing(unittest.TestCase):\n def test_one(self): pass\n',
                                   'addons/example/tests/test_python.py')
