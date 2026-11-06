@@ -227,6 +227,15 @@ async function waitForRecordSurface(page) {
     return !text.includes('正在加载页面');
   }, null, { timeout: 45000 });
   await page.waitForFunction(() => document.querySelectorAll('[data-field-name]').length > 0, null, { timeout: 45000 });
+  // The page title publishes a loading suffix while the record surface is
+  // still settling.  Sampling it here would compare a transient "··· 加载中"
+  // title against the settled title and report a false title-restore failure.
+  // Wait until the declared title stops carrying a loading suffix before any
+  // recordSnapshot is taken, so before/after compare the same ready state.
+  await page.waitForFunction(() => {
+    const title = String(document.querySelector('.template-page-title, h1')?.textContent || '');
+    return !/(加载中|正在加载|正在初始化)/.test(title);
+  }, null, { timeout: 45000 });
   await page.waitForTimeout(600);
 }
 
