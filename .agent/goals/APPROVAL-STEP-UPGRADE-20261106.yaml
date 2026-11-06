@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: APPROVAL-STEP-UPGRADE-20261106
+  status: active
+  formal_product_layer: P1
+  objective: 正式维护审批步骤顺序驱动新申请且连续模块升级不覆盖

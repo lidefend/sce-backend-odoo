@@ -210,7 +210,11 @@ def load_registry(path: Path) -> dict:
         paths = rule.get("paths")
         if not isinstance(paths, list) or not paths or not all(isinstance(p, str) and p for p in paths):
             raise BindingError(f"rule {rule_id!r} needs non-empty path globs")
-        if rule.get("condition") not in (None, "manifest_version_only"):
+        if rule.get("condition") not in (
+            None,
+            "manifest_version_only",
+            "approval_policy_initialization_only",
+        ):
             raise BindingError(f"unsupported rule condition: {rule.get('condition')!r}")
         suites_for_rule = rule.get("suites")
         if not isinstance(suites_for_rule, list):
@@ -432,10 +436,63 @@ def manifest_version_only(before: str, after: str) -> bool:
             == {k: v for k, v in new.items() if k != "version"})
 
 
+def _mask_approval_initializer(tree: ast.Module) -> bool:
+    """Replace the approval initializer method with a sentinel node.
+
+    Return True only when the expected class and method both exist; otherwise the
+    delta cannot be proven to be confined to the initializer and the caller must
+    fail closed.
+    """
+    found = False
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef) or node.name != "ScApprovalPolicy":
+            continue
+        for index, item in enumerate(node.body):
+            if (
+                isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and item.name == "apply_user_visible_approval_templates"
+            ):
+                node.body[index] = ast.Expr(
+                    value=ast.Constant(value="<masked-approval-initializer>")
+                )
+                found = True
+    return found
+
+
+def approval_policy_initialization_only(before: str, after: str) -> bool:
+    """True only when the delta is confined to the approval initializer method.
+
+    ``approval_policy.py`` is a shared model file. A whole-file exemption would
+    let future edits to submission review, tier sync or CRUD overrides bypass
+    list/relation browser suites, so the exception is accepted only when the
+    module outside ``apply_user_visible_approval_templates`` is equivalent after
+    parsing.
+    """
+    try:
+        old_tree, new_tree = ast.parse(before), ast.parse(after)
+    except (SyntaxError, ValueError, TypeError, RecursionError):
+        return False
+    if not _mask_approval_initializer(old_tree) or not _mask_approval_initializer(new_tree):
+        return False
+    try:
+        return ast.dump(old_tree, include_attributes=False) == ast.dump(
+            new_tree, include_attributes=False
+        )
+    except (TypeError, RecursionError):
+        return False
+
+
+CONDITION_HANDLERS = {
+    "manifest_version_only": manifest_version_only,
+    "approval_policy_initialization_only": approval_policy_initialization_only,
+}
+
+
 def rule_condition_matches(rule: dict, path: str, base: str, head: str) -> bool:
     if not rule.get("condition"):
         return True
-    if rule["condition"] != "manifest_version_only":
+    handler = CONDITION_HANDLERS.get(rule["condition"])
+    if handler is None:
         return False
     try:
         before = str(_git("show", f"{base}:{path}"))
@@ -443,7 +500,7 @@ def rule_condition_matches(rule: dict, path: str, base: str, head: str) -> bool:
         # dependency edits using the older committed manifest.
         after = ((ROOT / path).read_text() if head == str(_git("rev-parse", "HEAD"))
                  else str(_git("show", f"{head}:{path}")))
-        return manifest_version_only(before, after)
+        return handler(before, after)
     except (OSError, ValueError, BindingError, subprocess.CalledProcessError):
         return False
 

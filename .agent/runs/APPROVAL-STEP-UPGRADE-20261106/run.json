@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "APPROVAL-STEP-UPGRADE-20261106",
+  "branch": "fix/approval-step-maintenance-upgrade-20261106",
+  "baseline_sha": "ef3851c103f74a10a767d30156561d4d015489e6",
+  "status": "verification_pending",
+  "goal": ".agent/goals/APPROVAL-STEP-UPGRADE-20261106.yaml",
+  "record": ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
+  "scope": [
+    ".agent/runs/APPROVAL-STEP-UPGRADE-20261106/run.json",
+    ".agent/goals/APPROVAL-STEP-UPGRADE-20261106.yaml",
+    ".agent/active-runs.json",
+    "addons/smart_construction_core/models/support/approval_policy.py",
+    "addons/smart_construction_core/data/approval_policy_tier_sync.xml",
+    "addons/smart_construction_core/tests/test_approval_step_upgrade.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "scripts/test/payment_approval_upgrade_rehearsal.py",
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/test_local_test_runner.py",
+    "make/dev.mk",
+    "docs/architecture/approval_step_maintenance_upgrade.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "addons/smart_construction_core/data/approval_policy_seed.xml",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+  ],
+  "checks": {},
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local.test sc_test; fresh once per attempt, two upgrades within same locked attempt; daily dev untouched"
+  },
+  "layer": {
+    "formal_product_layer": "P1 seed write authority; P4 bounded existing runner extension and acceptance-rule classification",
+    "layer_target": "sc.approval.policy initialization",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "standard product initialization, administrator facts preserved",
+    "why_here": "Fix actual template writes, no front-end or runtime reordering",
+    "blast_radius": "default approval templates at install/upgrade",
+    "exclusions": [
+      "actual payment/reversal",
+      "new approval engine",
+      "ACL expansion",
+      "daily database writes",
+      "PR814/815 source"
+    ]
+  },
+  "blockers": [],
+  "next_exact_step": "publish Draft PR via make pr.push and make pr.create --draft; then report PR URL and four-layer status.",
+  "governance_classification": {
+    "list_surface_structure": "not applicable: change writes sc.approval.step seed records and the install-only initializer only; no list view, field set, action, layout or runtime error surface is touched",
+    "relation_roundtrip": "not applicable: no relation field definition, default, read/write, permission or status logic is changed",
+    "rules_added": [
+      "approval-policy-initialization (exact: approval_policy_seed.xml, approval_policy_tier_sync.xml, test_approval_step_upgrade.py)",
+      "approval-policy-initializer-method (condition approval_policy_initialization_only on approval_policy.py; other method changes keep construction-product-runtime)"
+    ]
+  },
+  "execution_results": {
+    "runner_unit": {
+      "status": "passed",
+      "count": 14,
+      "log": ".runtime/approval-upgrade-runner-unit-rebase.log"
+    },
+    "lightweight": {
+      "status": "passed",
+      "log": ".runtime/approval-upgrade-l1-rebase.log"
+    },
+    "orm_and_real_upgrades": {
+      "status": "passed",
+      "orm_tests": 5,
+      "actual_upgrades": 2,
+      "receipt": ".runtime/test-baseline/1793920598531059656/receipt.json",
+      "base": "ef3851c103f74a10a767d30156561d4d015489e6",
+      "initial_source_identity": "origin/main ef3851c10 + candidate a1de5de26 (clean); receipt proves source/profile/image unchanged throughout attempt",
+      "comparison": "embedded in receipt.upgrade_rehearsal (prepare/after_upgrade_1/after_upgrade_2 all passed)",
+      "database": "sc_test",
+      "limits": "synthetic test company; no daily deployment, payment or reversal"
+    },
+    "failed_attempts": [
+      {
+        "receipt": ".runtime/test-baseline/1793906806415953580/receipt.json",
+        "reason": "test maintainer pointed at noncustomer platform company; fixed using existing BusinessTransactionCase"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907044832291778/receipt.json",
+        "reason": "test confused review approved status with aggregate validated status"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907287523637739/receipt.json",
+        "reason": "upgrade comparison failed; normalized many2one serialization and found default seed recreation path"
+      },
+      {
+        "receipt": ".runtime/test-baseline/1793907667860543470/receipt.json",
+        "reason": "owned attempt stopped when seed recreation defect confirmed; not a pass"
+      }
+    ],
+    "runner_environment_option": {
+      "status": "passed",
+      "count": 14,
+      "log": ".runtime/approval-upgrade-runner-unit-rebase.log"
+    },
+    "pre_existing_out_of_scope_failures": [
+      {
+        "target": "verify.local.development_lifecycle.unit",
+        "failures": 2,
+        "tests": [
+          "scripts.verify.test_local_development_lifecycle.LocalDevelopmentLifecycleTest.test_fresh_prepare_creates_restricted_canonical_identity",
+          "scripts.verify.test_local_development_lifecycle.LocalDevelopmentLifecycleTest.test_exact_rebuild_authority_allows_prepare_over_isolated_volumes"
+        ],
+        "classification": "validation_tool_defect (P4 local.clean tooling), pre-existing on origin/main",
+        "reason": "local_clean_env_prepare.sh exits 1 under set -euo pipefail when SOURCE_ENV_FILE lacks SC_ENTRY_SHARED_SECRET; files byte-identical to origin/main and outside candidate scope",
+        "owned_runner_test": "scripts.verify.test_local_test_runner passed 14/14"
+      }
+    ]
+  },
+  "sync_attempt": {
+    "main": "ef3851c103f74a10a767d30156561d4d015489e6",
+    "status": "synced",
+    "log": ".runtime/approval-current-main-sync.log",
+    "reason": "candidate make/dev.mk parameter-only change rejected by exact generator Make authority",
+    "resolution": "keep Make recipe unchanged; candidate re-based onto exact origin/main ef3851c10 with 4 owned commits; run baseline_sha updated to ef3851c10"
+  }
+}

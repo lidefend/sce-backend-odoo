@@ -132,18 +132,54 @@ def cleanup_carrier(name, env):
     return 'removed_exact_carrier'
 
 
+def upgrade_rehearsal_script(scenario, module):
+    if not scenario:
+        return ''
+    if scenario != 'payment_approval_order' or module != 'smart_construction_core':
+        raise ValueError('upgrade rehearsal requires the explicit payment approval module')
+    return r"""
+common=(--db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" -d sc_test --db-filter='^sc_test$' --data-dir=/tmp/sc-test-data --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux --without-demo=all --no-http --workers=0 --max-cron-threads=0)
+export SC_TEST_UPGRADE_REHEARSAL=payment_approval_order
+for phase in prepare after_upgrade_1 after_upgrade_2; do
+  if [ "$phase" != prepare ]; then
+    echo "LOCAL_TEST_REAL_UPGRADE=$phase"
+    python3 /usr/bin/odoo "${common[@]}" -u smart_construction_core --stop-after-init
+  fi
+  export SC_APPROVAL_UPGRADE_PHASE="$phase"
+  python3 /usr/bin/odoo shell "${common[@]}" --shell-interface=python < /mnt/scripts/test/payment_approval_upgrade_rehearsal.py
+done
+"""
+
+
+def upgrade_rehearsal_outcome(log, scenario):
+    if not scenario:
+        return []
+    rows = [json.loads(row) for row in re.findall(r'^APPROVAL_UPGRADE_EVIDENCE=(.+)$', log, re.M)]
+    phases = ['prepare', 'after_upgrade_1', 'after_upgrade_2']
+    if ([row.get('phase') for row in rows] != phases
+            or any(row.get('status') != 'passed' or row.get('database') != 'sc_test' for row in rows)
+            or re.findall(r'^LOCAL_TEST_REAL_UPGRADE=(.+)$', log, re.M) != phases[1:]):
+        raise ValueError('missing/duplicate/failed real upgrade rehearsal phases')
+    return rows
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('action', choices=['prepare', 'up', 'down', 'test'])
     ap.add_argument('--env-file', type=Path, default=PROFILE)
     ap.add_argument('--module', default='')
     ap.add_argument('--tags', default='')
+    ap.add_argument('--upgrade-scenario', choices=['', 'payment_approval_order'],
+                    default=os.environ.get('LOCAL_TEST_UPGRADE_SCENARIO', ''))
     ap.add_argument('--order', choices=['forward','reverse','random'], default='forward')
     args = ap.parse_args(argv)
     try:
         if not ORDER_DRIVER.is_file() or ORDER_DRIVER.is_symlink():
             raise ValueError('ordered test driver missing or unsafe')
         module, tags = selection(args.module, args.tags) if args.action == 'test' else ('', '')
+        rehearsal_script = upgrade_rehearsal_script(args.upgrade_scenario, module)
+        if rehearsal_script and args.action != 'test':
+            raise ValueError('upgrade rehearsal is only a fresh test attempt')
         values = profile(args.env_file)
         profile_sha = hashlib.sha256(PROFILE.read_bytes()).hexdigest()
         env = {k: os.environ[k] for k in ('PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONFIG') if k in os.environ}
@@ -193,6 +229,8 @@ python3 -c 'import importlib.metadata as m,hashlib; print("LOCAL_TEST_PACKAGES="
 python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"; print("LOCAL_TEST_IDENTITY=sc-local-test/sc_test/test")'
 exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" -d sc_test --db-filter='^sc_test$' --data-dir=/tmp/sc-test-data --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux -i "$SC_TEST_MODULE" --without-demo=all --no-http --workers=0 --max-cron-threads=0 --test-enable --test-tags="$SC_TEST_TAGS" --stop-after-init --log-level=test
 '''
+            if rehearsal_script:
+                script = script.replace('exec python3 /tmp/odoo_ordered_tests.py', 'python3 /tmp/odoo_ordered_tests.py') + rehearsal_script
             run = dc + ['run', '--name', carrier, '--rm', '--no-deps', '-T', '-v', str(ORDER_DRIVER) + ':/tmp/odoo_ordered_tests.py:ro', '-v', str(ROOT / 'config') + ':/mnt/config:ro', '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0', '-e', 'SC_TEST_ORDER=' + args.order, '-e', 'SC_TEST_ORDER_SEED=20261026', '-e', 'SC_TEST_MODULE=' + module, '-e', 'SC_TEST_TAGS=' + tags, '--entrypoint', 'bash', 'odoo', '-ec', script]
             process_status = 1
             cleanup = 'not_run'
@@ -219,14 +257,16 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
             source_after = source_fingerprint(env)
             profile_unchanged = profile_sha == hashlib.sha256(PROFILE.read_bytes()).hexdigest()
             image_after = command(['docker','image','inspect',config['services']['odoo']['image'],'--format','{{.Id}}'],env).stdout.strip()
+            rehearsal = []
             try:
+                rehearsal = upgrade_rehearsal_outcome(text, args.upgrade_scenario)
                 cases = outcome(text, module) if guard.returncode == 0 and source_before == source_after and image_id == image_after and profile_unchanged else []
             except ValueError:
                 cases = []
             receipt = dict(schema='local-test-execution/v1', head=head_before, source_fingerprint=source_before, source_unchanged=source_before == source_after, cleanup=cleanup,
                 dirty=command(['git','status','--porcelain'],env).stdout, profile=IDENTITY, purpose='test',
                 profile_sha256=profile_sha, profile_unchanged=profile_unchanged, image_id=image_id, image_unchanged=image_id == image_after, module=module, tags=tags, order=args.order, seed=20261026, execution_order=[f'{m}:{case}' for m,case in START.findall(text)], packages_sha256=(re.findall(r'^LOCAL_TEST_PACKAGES=([a-f0-9]{64})$',text,re.M) or ['missing'])[0], fresh_database=True, transient_application_state=True,
-                cases=cases, count=len(cases), status='passed' if cases else 'failed', log=str(log.relative_to(ROOT)),
+                upgrade_rehearsal=rehearsal, cases=cases, count=len(cases), status='passed' if cases else 'failed', log=str(log.relative_to(ROOT)),
                 log_sha256=hashlib.sha256(log.read_bytes()).hexdigest(), process_status=process_status, guard_status=guard.returncode)
             (output / 'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
             print(guard.stdout, guard.stderr, '[local.test] receipt=' + str(output / 'receipt.json'), sep='\n')
