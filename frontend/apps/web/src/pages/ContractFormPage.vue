@@ -51,6 +51,16 @@
         <ScInlineState v-if="renderProfile === 'readonly' && !isConfigurationPreview && recordActionDenialMessages.length" data-record-action-denials>
           <span v-for="message in recordActionDenialMessages" :key="message">{{ message }}</span>
         </ScInlineState>
+        <ScInlineState
+          v-if="!isConfigurationPreview && submissionReadinessNotice?.visible === true"
+          :state="submissionReadinessState"
+          data-submission-readiness
+          :data-submission-status="submissionReadinessNotice.status"
+        >
+          <strong>{{ submissionReadinessNotice.statusLabel }}</strong>
+          <span>{{ submissionReadinessNotice.message }}</span>
+          <span v-if="submissionReadinessNotice.nextStep">{{ submissionReadinessNotice.nextStep }}</span>
+        </ScInlineState>
     <ScInlineState v-if="isConfigurationPreview" class="configuration-preview-banner" data-configuration-preview>
       <strong>未发布配置预览 · 不产生业务写入</strong>
       <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
@@ -1329,6 +1339,18 @@ const standardDetailComposition = createStandardDetailCompositionRuntime(() => c
  */
 const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
 const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
+
+const submissionReadinessNotice = computed(() => {
+  const notice = (contract.value as { noticeContract?: Record<string, unknown> } | undefined)?.noticeContract;
+  const readiness = notice?.submissionReadiness;
+  if (!readiness || typeof readiness !== 'object') return null;
+  return readiness as Record<string, unknown>;
+});
+
+const submissionReadinessState = computed(() => {
+  const status = String(submissionReadinessNotice.value?.status || '');
+  return status === 'forbidden' ? 'error' : status === 'ready' ? 'success' : status === 'no_data' ? 'empty' : 'info';
+});
 const rights = computed(() => {
   const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
   // The page does not judge its own access: the store owns the single verdict

@@ -676,7 +676,9 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     collect(raw_layout)
     declarations = [n for n in raw_nodes if n.get("componentKey") in KEYS]
     if not declarations:
-        return _assemble_unified_page_contract_v2(source_contract, **kwargs)
+        contract = _assemble_unified_page_contract_v2(source_contract, **kwargs)
+        _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
+        return contract
     references = set()
     for node in declarations:
         config = node.get("componentConfig")
@@ -733,7 +735,61 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             draft_feedback=draft_feedback,
             parsed_view=parsed_view,
         )
+        _inject_submission_readiness_notice(contract, source_contract, node_actor_env)
         return contract
+
+
+def _inject_submission_readiness_notice(contract: dict[str, Any], source_contract: dict[str, Any], node_actor_env) -> None:
+    """Publish the native submission readiness as a structured page-header notice.
+
+    The notice reuses ``build_readiness`` so the terminal never parses the
+    multi-line ``submission_readiness_display`` text and never derives submit
+    authorization from the status label. It is declarative and fail-closed: when
+    the readiness service cannot run, no notice is injected.
+    """
+    if node_actor_env is None:
+        return
+    source = _dict(source_contract)
+    ui = _dict(source.get("ui")) or source
+    model = _text(source.get("model") or ui.get("model"))
+    if model not in ("project.project", "payment.request"):
+        return
+    record_id = _positive_int(
+        source.get("record_id") or source.get("recordId")
+        or ui.get("record_id") or ui.get("recordId"),
+        0,
+    )
+    visible = record_id == 0
+    if record_id:
+        try:
+            record = node_actor_env[model].browse(record_id).exists()
+            if model == "project.project":
+                visible = (
+                    _text(record.lifecycle_state) == "draft"
+                    and _text(record.sc_approval_state) == "draft"
+                )
+            else:
+                visible = _text(record.state) in ("draft", "rejected")
+        except Exception:
+            visible = False
+    try:
+        from odoo.addons.smart_construction_core.services.baseline_readiness import build_readiness
+        result = build_readiness(node_actor_env, model, record_id)
+    except Exception:
+        return
+    labels = {"ready": "可提交", "blocked": "待处理", "no_data": "暂无记录", "forbidden": "无权限"}
+    status = _text(result.get("status"))
+    next_step = _dict(result.get("next_step"))
+    contract.setdefault("noticeContract", {})["submissionReadiness"] = {
+        "visible": bool(visible),
+        "status": status,
+        "statusLabel": labels.get(status, status),
+        "message": _text(result.get("message")),
+        "nextStep": _text(next_step.get("label")),
+        "nextStepAction": _text(next_step.get("action")),
+        "reasonCode": _text(result.get("reason_code")),
+        "sourceAuthority": "smart_construction_core.services.baseline_readiness.build_readiness",
+    }
 
 
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
