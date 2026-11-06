@@ -119,12 +119,9 @@ def _projection_problem_summary(problem: dict[str, Any]) -> dict[str, Any]:
 
 
 def _strict_positive_int(value: Any) -> int:
-    if isinstance(value, bool):
-        raise ValueError("boolean is not a snapshot id")
-    parsed = int(value)
-    if parsed <= 0:
-        raise ValueError("snapshot id must be positive")
-    return parsed
+    if type(value) is not int or value <= 0:
+        raise ValueError("snapshot id must be a positive integer")
+    return value
 
 
 def validate_role_release_projection(
@@ -173,6 +170,8 @@ def validate_role_release_projection(
     if not str(inner.get("fingerprint") or "").strip():
         raise EvidenceError("ROLE_RELEASE_PROJECTION_RECEIPT_FINGERPRINT_MISSING")
     snapshot = report.get("release_snapshot") or {}
+    if not isinstance(snapshot, dict):
+        raise EvidenceError("ROLE_RELEASE_PROJECTION_SNAPSHOT_NOT_OBJECT")
     try:
         snapshot_id = _strict_positive_int(snapshot.get("snapshot_id") or 0)
     except (TypeError, ValueError) as exc:

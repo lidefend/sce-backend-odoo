@@ -321,6 +321,34 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
 
+    def test_receipt_snapshot_id_float_rejected(self):
+        receipt = json.loads(json.dumps(self.RECEIPT))
+        receipt["receipt"]["snapshot_id"] = 3.5
+        with self.assertRaises(EvidenceError) as ctx:
+            validate_role_release_projection(self._report(), SHA, receipt)
+        self.assertIn("ROLE_RELEASE_PROJECTION_RECEIPT_SNAPSHOT_ID_INVALID", str(ctx.exception))
+
+    def test_collection_snapshot_id_float_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"]["snapshot_id"] = 3.5
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
+
+    def test_collection_snapshot_id_string_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"]["snapshot_id"] = "3"
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_ID_INVALID", str(ctx.exception))
+
+    def test_collection_snapshot_not_object_rejected(self):
+        def mutate(report, _manifest):
+            report["release_snapshot"] = [1]
+        with self.assertRaises(EvidenceError) as ctx:
+            self._validate(self._report(mutate))
+        self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_NOT_OBJECT", str(ctx.exception))
+
     def test_same_count_wrong_identity_rejected(self):
         def mutate(report, _manifest):
             identities = report["roles"]["pm"]["p0"]["primary_home_identities"]
