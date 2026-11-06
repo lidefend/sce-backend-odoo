@@ -12,8 +12,9 @@ assert.equal(target.cases.length, 7);
 const browser = await launchChromium();
 try {
   const selected = process.env.READINESS_CASE_KEYS?.split(',').filter(Boolean);
-  if (selected) assert.ok(selected.every(key => target.cases.some(item => item.key === key)));
-  for (const item of target.cases.filter(item => !selected || selected.includes(item.key))) {
+  if (selected && selected.length) assert.ok(selected.every(key => target.cases.some(item => item.key === key)));
+  const runKeys = selected && selected.length ? selected : target.cases.map(item => item.key);
+  for (const item of target.cases.filter(item => runKeys.includes(item.key))) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const page = await context.newPage();
     const responses = [];
