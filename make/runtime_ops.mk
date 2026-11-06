@@ -1487,6 +1487,9 @@ verify.frontend.release.audit:
 		$(MAKE) --no-print-directory verify.frontend.page_identity.browser || status=$$?; \
 	fi; \
 	if [ "$$status" -eq 0 ]; then \
+		$(MAKE) --no-print-directory verify.frontend.role_release_projection || status=$$?; \
+	fi; \
+	if [ "$$status" -eq 0 ]; then \
 		$(MAKE) --no-print-directory verify.frontend.delivery_hardening.release.browser || status=$$?; \
 	fi; \
 	python3 scripts/verify/frontend_release_audit.py || status=$$?; \
