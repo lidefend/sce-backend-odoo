@@ -31,6 +31,8 @@
     "docs/architecture/frontend_contract_basis_ledger.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/list-create-entry-contract-20261106/record.md",
     ".agent/goals/LIST-CREATE-ENTRY-CONTRACT-20261106.yaml",
