@@ -36,6 +36,16 @@
         "frontend/apps/web/src/layouts/AppShell.vue",
         "scripts/verify/frontend_navigation_initialization_race.test.mjs"
       ]
+    },
+    "list_surface_structure": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/app/canonicalNavigation.ts",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "readback": { "artifact": ".runtime/final-acceptance/list-surface-structure.json" }
     }
   },
   "layer": {
