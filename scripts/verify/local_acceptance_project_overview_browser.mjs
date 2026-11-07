@@ -32,9 +32,10 @@ async function openCase(key, route, { expectNotice, expectOverviewText, expectOv
     await page.goto(`${base}/${route}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-form-model]', { timeout: 30000 });
     if (expectOverviewText) {
+      const expected = squashed(expectOverviewText);
       await page.waitForFunction(
-        (expected) => squashed(document.body.innerText).includes(expected),
-        squashed(expectOverviewText),
+        (expected) => document.body.innerText.replace(/\s+/g, '').includes(expected),
+        expected,
         { timeout: 30000 },
       );
     }
