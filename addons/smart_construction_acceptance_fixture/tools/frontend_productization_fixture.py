@@ -103,7 +103,7 @@ LIFECYCLE_FIXTURE_DEPENDENT_MODELS = (
 NON_DRAFT_FIXTURE_XMLID = "fe_project_non_draft"
 NON_DRAFT_FIXTURE_NAME = "FE Project NonDraft"
 NON_DRAFT_FIXTURE_CODE = "FE-ND"
-NON_DRAFT_FIXTURE_STATE = {"lifecycle_state": "in_progress", "sc_approval_state": "approved"}
+NON_DRAFT_FIXTURE_STATE = {"lifecycle_state": "in_progress"}
 
 
 # Dedicated carrier for the 日常合同 (sc.general.contract) browser acceptance.
@@ -459,6 +459,10 @@ def _project(env, suffix, company, manager, partner):
 
 
 def _non_draft_project(env, company, manager, partner):
+    # The completion-degree hiding rule only depends on ``lifecycle_state``.
+    # ``sc_approval_state`` is forced to ``draft`` by the model's create guard
+    # (it may only move through the submit/approve actions), so this carrier
+    # stays at the create default without attempting a synthetic approval.
     values = {
         "name": NON_DRAFT_FIXTURE_NAME,
         "code": NON_DRAFT_FIXTURE_CODE,
@@ -470,7 +474,6 @@ def _non_draft_project(env, company, manager, partner):
         "funding_enabled": True,
         "active": True,
         "lifecycle_state": NON_DRAFT_FIXTURE_STATE["lifecycle_state"],
-        "sc_approval_state": NON_DRAFT_FIXTURE_STATE["sc_approval_state"],
     }
     if "project_code" in env["project.project"]._fields:
         values["project_code"] = NON_DRAFT_FIXTURE_CODE
