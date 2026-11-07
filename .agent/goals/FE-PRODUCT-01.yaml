@@ -1,0 +1,22 @@
+id: FE-PRODUCT-01
+status: active
+objective: 前端产品表达体系收敛：平台/行业 Renderer 扩展机制、九类业务事实单源表达、静态守卫，并收口 FE-PERF-01 性能治理成果。
+scope:
+  - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
+  - addons/smart_core/delivery/runtime_route_authority.py
+  - addons/smart_core/utils/load_contract_response_cache.py
+  - frontend/apps/web/src
+  - frontend/apps/web/scripts
+  - scripts/contract/generate_semantic_registry.py
+  - scripts/verify/frontend_expression_guard.py
+  - scripts/verify/test_frontend_expression_guard.py
+  - docs/frontend_productization
+exclusions:
+  - 后端业务契约与 ACL/Record Rule
+  - BOQ 等其他行业组件迁移
+  - 付款申请完整六阶段提交/异常恢复（EXP-03D）
+acceptance:
+  - 生成器按 category 拆分，平台 carrier 不含行业 key
+  - 统一 Resolver fail-closed，行业注册早于 App.mount
+  - 付款结算明细行业组件真实 DOM 渲染
+  - G1-G4/G9/G10 与字段渲染守卫接入 ci.local.iteration
