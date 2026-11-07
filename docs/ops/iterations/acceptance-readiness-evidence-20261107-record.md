@@ -11,8 +11,8 @@
 
 ## 夹具最小变更
 
-- 新增非草稿载体 `fe_project_non_draft`（lifecycle_state=in_progress, sc_approval_state=approved），
-  由 pm 管理并关注，与 FE Project A/B/C 分离。
+- 新增非草稿载体 `fe_project_non_draft`（`lifecycle_state=in_progress`；`sc_approval_state` 保持 create
+  默认 draft，因为立项审批只能由提交/审批动作产生），由 pm 管理并关注，与 FE Project A/B/C 分离。
 - `fixture_role_project_a_member` 增加 `group_sc_entry_p11`（菜单 382 的只读入口），
   不扩提交能力（`_has_initiation_submit_access` 只认 project_user/manager/super_admin）。
 
