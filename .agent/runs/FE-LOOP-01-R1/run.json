@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "07edc93db10381806f80ffe5db4995306153a456",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-LOOP-01-R1.yaml",
+    ".agent/runs/FE-LOOP-01-R1/run.json",
+    "docs/ops/iterations/FE-LOOP-01-R1.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "frontend/packages/ui/tsconfig.json",
+    "frontend/packages/ui/src/css-modules.d.ts",
+    "frontend/packages/ui/src/components/primitives/SceneReviewPanel.vue",
+    "frontend/apps/web/package.json",
+    "make/frontend.mk",
+    "make/codex.mk",
+    "scripts/verify/test_pr_publish_preflight.py",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "run_context_unit": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter_unit": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_parity_unit": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/packages/ui/src",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "pr_publish_preflight_unit": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/git_safe_push.sh",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ],
+      "kind": "offline"
+    },
+    "execution_policy_unit": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "results": {
+    "finding_1": "Pure unmapped source now returns BLOCKED with exit 2; docs-only remains NOT_RUN without a PASS claim.",
+    "finding_2": "Shared UI lint and strict typecheck are real base-target dependencies; web lint covers .tsx.",
+    "tsx_probe": "Temporary web and shared UI .tsx probes were linted and strict-typechecked, then removed.",
+    "validation": "ci.local.iteration PASS with 6 executed targets and no registration/unmapped/environment gaps.",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261107T112513Z-552260-441686588/receipt.json",
+    "review_publication": "PR_PUBLISH_MODE=review requires clean exact HEAD, ci.local.iteration and generated-evidence preflight; default merge mode still requires merge-time runtime evidence.",
+    "runtime_evidence": "list_surface_structure blocked by environment_defect before browser assertions because the acceptance backend artifact is bound to unmerged ac7a858fd while main has a different addons tree.",
+    "merge": "not performed"
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the exact FE-LOOP-01-R1 HEAD with PR_PUBLISH_MODE=review, rerun remote gates, and leave the PR unmerged for independent review.",
+  "id": "FE-LOOP-01-R1",
+  "branch": "fix/fe-loop-01-r1-boundary-20261107",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-LOOP-01-R1.yaml",
+  "record": "docs/ops/iterations/FE-LOOP-01-R1.md"
+}

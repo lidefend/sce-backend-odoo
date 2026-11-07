@@ -33,7 +33,12 @@ from scripts.ops.agent_run_context import (
 WATCH_ROOTS = (
     "frontend/apps/web/src",
     "frontend/apps/web/scripts",
+    "frontend/apps/web/package.json",
+    "frontend/apps/web/.eslintrc.cjs",
+    "frontend/apps/web/tsconfig.strict.json",
     "frontend/packages/ui/src",
+    "frontend/packages/ui/package.json",
+    "frontend/packages/ui/tsconfig.json",
     "scripts/verify/frontend_",
 )
 STATE_PATH = ROOT / ".runtime/frontend-dev-validation/status.json"
@@ -69,6 +74,16 @@ class Rule:
 
 
 RULES = (
+    # Lint/typecheck configuration is part of the executable validation
+    # contract. Changing a source root or supported extension must rerun both
+    # source-wide targets rather than fall through as an unclassified path.
+    Rule((
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/tsconfig.json",
+    ), BASE_FRONTEND_TARGETS),
     # Renderer registration is one executable contract spanning the generated
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
@@ -205,6 +220,12 @@ RULES = (
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
     ), (
         "verify.baseline.iteration.execution.policy",
+    )),
+    Rule((
+        "make/codex.mk",
+        "scripts/verify/test_pr_publish_preflight.py",
+    ), (
+        "verify.pr.push.unit",
     )),
     # The baseline-backed iteration policy guard is the authority for the
     # governed make lanes: it asserts that each lane still declares the targets
@@ -812,19 +833,6 @@ def execute_targets(
             reason="an unchanged recorded failure must be diagnosed before retry",
             notRunTargets=targets,
         )
-    if not targets:
-        payload.update(status="not_run", reason="no relevant L2 checks")
-        receipt = _write_receipt(receipt_directory, payload)
-        write_state(
-            status="not_run",
-            paths=paths,
-            targets=[],
-            returncode=0,
-            receipt=_json_path(receipt, root),
-            reason=payload["reason"],
-        )
-        print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
-        return 0
     if payload["status"] == "blocked":
         receipt = _write_receipt(receipt_directory, payload)
         write_state(
@@ -841,6 +849,19 @@ def execute_targets(
             f"reason={payload['reason']} receipt={_json_path(receipt, root)}"
         )
         return 2
+    if not targets:
+        payload.update(status="not_run", reason="no relevant L2 checks")
+        receipt = _write_receipt(receipt_directory, payload)
+        write_state(
+            status="not_run",
+            paths=paths,
+            targets=[],
+            returncode=0,
+            receipt=_json_path(receipt, root),
+            reason=payload["reason"],
+        )
+        print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
+        return 0
 
     print(
         f"[frontend.dev.incremental] EXECUTE paths={len(paths)} "

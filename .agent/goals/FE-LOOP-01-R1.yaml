@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: FE-LOOP-01-R1
+  title: 验证闭环边界修复
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: frontend incremental execution fail-closed and shared UI static validation coverage
+  module: frontend quality feedback loop
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    未映射变更的退出语义、共享 UI 基础检查范围和执行命令一致性都属于交付验证工具链。
+  why_not_elsewhere: >
+    不通过新增业务特判、浏览器验收或候选构建替代真实静态检查；不修改 #834 或
+    FE-RENDERER-02 的 Renderer 产品语义。
+  blast_radius:
+    paths:
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - frontend/packages/ui/tsconfig.json
+      - frontend/packages/ui/src/css-modules.d.ts
+      - frontend/packages/ui/src/components/primitives/SceneReviewPanel.vue
+      - frontend/apps/web/package.json
+      - make/frontend.mk
+      - make/codex.mk
+      - scripts/verify/test_pr_publish_preflight.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - .agent/
+      - docs/ops/iterations/FE-LOOP-01-R1.md
+    runtime: none
+    product_behavior: no intentional change; one unused binding is removed to make shared UI lint pass
+  objective: >
+    修复纯未映射源码被错误记为 NOT_RUN 并返回成功的问题，并为共享 UI 包建立由基础
+    lint/typecheck 目标实际消费的全量 TS/TSX/Vue 静态验证。
+  acceptance:
+    - 纯未映射源码在规划与真实执行层均 BLOCKED，退出码非零
+    - 已识别非源码变更仍允许 NOT_RUN 且 verificationPassed=false
+    - shared UI TS/TSX/Vue 全部进入 ESLint 扫描
+    - shared UI TS/TSX/Vue 全部进入独立 strict TypeScript 工程
+    - verify.frontend.lint.src 与 verify.frontend.typecheck.strict 实际消费 shared UI 子目标
+    - 规划器覆盖 Web/UI 的 TS/TSX/Vue 基础目标
+    - 源码根、扩展名和执行命令覆盖范围通过一致性测试锁定
+    - 非合并 PR 可通过 review 发布模式推送；默认 merge 模式继续要求合并期运行时证据
+  exclusions:
+    - pr_834_changes
+    - renderer_architecture_change
+    - product_feature_change
+    - candidate_build
+    - deployment
+    - merge
+  rollback: 回退本批 P4 修复和治理记录；无数据库或运行时数据恢复。
