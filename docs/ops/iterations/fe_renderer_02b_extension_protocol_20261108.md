@@ -52,7 +52,7 @@ Contract V2 支持区间、真实宿主能力、安装和卸载生命周期纳�
 
 - `make ci.local.iteration`：PASS，15 个必需 target，`notRunTargets=[]`、
   `blockedTargets=[]`、`unmappedPathCount=0`。
-- Receipt：`.runtime/frontend-dev-validation/executions/20261107T172716Z-2400075-950608345/receipt.json`。
+- Receipt：`.runtime/frontend-dev-validation/executions/20261107T173213Z-2426466-300687987/receipt.json`。
 - Semantic registry：44 个 Python 测试及四项 carrier 一致性检查 PASS。
 - Professional component registry：Node 版本/能力/生命周期断言与 162 个守卫测试 PASS。
 - Professional detail collection：真实 FormSection SSR 149 checks PASS，其中包含
@@ -63,7 +63,7 @@ Contract V2 支持区间、真实宿主能力、安装和卸载生命周期纳�
 
 ## L3 真实旅程
 
-- 候选：`daa9ffdccb9ff8ecc14770c23f46318fd0a55220`。
+- 候选：`e7af8839fc888707407d4537a7f985cf763f42d8`。
 - 环境：`sc-local-dev / sc_dev_demo / ^sc_dev_demo$`，后端 source mount 与
   `SC_SOURCE_REVISION` 均绑定候选 SHA，前端候选服务运行于 `127.0.0.1:5176`。
 - 入口：`make verify.local.dev.payment_request.settlement_component.journey`。
@@ -74,9 +74,9 @@ Contract V2 支持区间、真实宿主能力、安装和卸载生命周期纳�
 - Fixture：治理重置后恢复原始行数、结算关系、状态与金额基线。
 - 证据：
   `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-summary.json`
-  `sha256=14e3836230ccae7f66dce7fe40483e097cbe0c262d222bb90921416f07117d0c`；
+  `sha256=f912bf52850d814926138e72fb7f71b92bcbd833d43ff69156dc080367474bf0`；
   `remove-summary.json`
-  `sha256=c26598e8a3da9a7ca8f390b85b783b69e7bee453f10f98a04cfec94d1fc9a34d`；
+  `sha256=a1ccd238ce12f6e694e9dbf22ef269e9aaaac6460cb441ba70888ecda13d9d9a`；
   两阶段截图及失败兜底截图保存在同目录。
 
 ## 未记为通过

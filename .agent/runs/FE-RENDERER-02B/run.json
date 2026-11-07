@@ -230,11 +230,11 @@
   },
   "blockers": [],
   "results": {
-    "l1_l2": "PASS: 15 required incremental targets executed on clean HEAD daa9ffdcc, receipt .runtime/frontend-dev-validation/executions/20261107T172716Z-2400075-950608345/receipt.json; notRunTargets=[] blockedTargets=[] unmappedPathCount=0",
+    "l1_l2": "PASS: 15 required incremental targets executed on clean code-evidence HEAD e7af8839f, receipt .runtime/frontend-dev-validation/executions/20261107T173213Z-2426466-300687987/receipt.json; notRunTargets=[] blockedTargets=[] unmappedPathCount=0",
     "incremental_rule_closure": "PASS: FormSection and relation_heading_component_test now select verify.frontend.professional_detail_collection.unit; 77 planner tests and the 149-check FormSection SSR suite executed",
     "protocol": "rendererVersion, Contract V2 range, capability providers, host capability enforcement and atomic unregister implemented",
     "tests": "professional component registry 162 guard tests; FormSection SSR 149 checks; semantic registry 44 Python tests",
-    "l3": "PASS: payment settlement component journey on candidate daa9ffdcc; introduce and remove each emitted one declared write, authoritative reload passed, browser errors=[], fixture reset restored baseline",
+    "l3": "PASS: payment settlement component journey on candidate e7af8839f; introduce and remove each emitted one declared write, authoritative reload passed, browser errors=[], fixture reset restored baseline",
     "runtime_plan": "NOT_RUN (non-product evidence carry-forward): frontend_presentation and list_surface_structure are bound to pre-squash FE-RENDERER-02A head 2672449, which is not an ancestor of this candidate; no pass is claimed for those suites",
     "remote_gates": "NOT_RUN: PR publication and exact-head CI remain pending"
   },
