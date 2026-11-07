@@ -1,0 +1,95 @@
+{
+  "schema": "frontend-component-authority-map/v1",
+  "principles": [
+    "unify_business_semantics_not_components",
+    "platform_design_system_expression_industry_extension_enterprise_config_layers",
+    "public_components_have_a_single_authoritative_consumer"
+  ],
+  "facts": {
+    "money": {
+      "semantic_owner": "model field type monetary + currency_id precision",
+      "contract_source": "dataContract.mainData + fields[].type=monetary + currency field",
+      "authoritative_consumer": "ScMoney + shared formatMoney(value, currency, precision, locale)",
+      "allowed_adapters": ["list_cell", "detail_readonly", "form_input", "approval_summary"],
+      "forbidden_duplicates": ["local_fmtMoney", "per_component_precision_or_separator_rules"],
+      "known_violations": ["components/professional-fields/PaymentSettlementIntroduceDialog.vue:271"]
+    },
+    "date": {
+      "semantic_owner": "field type date/datetime + user locale/timezone",
+      "contract_source": "fields[].type + statusContract readonly/required",
+      "authoritative_consumer": "ScDatePicker (primitive interaction) -> ScDateField (form field expression)",
+      "list_authority": "formatTemporalFieldValue(value, 'compact')",
+      "layer_registered": true,
+      "allowed_adapters": ["list_cell", "detail_readonly", "form_field"],
+      "forbidden_duplicates": ["inline_date_widgets_bypassing_both_layers", "custom_date_formatting_in_business_components"],
+      "known_violations": []
+    },
+    "status": {
+      "semantic_owner": "contract statusContract + field status",
+      "contract_source": "statusContract.widgetStatus/containerStatus/globalStatus + field status",
+      "authoritative_consumer": "ScStatusBadge (primitive) <- ProductRecordStatus (record-level)",
+      "allowed_adapters": ["list_status_column", "detail_status", "form_status_strip"],
+      "forbidden_duplicates": ["business_component_status_label_or_tone_mapping"],
+      "known_violations": []
+    },
+    "empty": {
+      "semantic_owner": "platform empty-value constant",
+      "contract_source": "missing/null/false field value",
+      "authoritative_consumer": "FIELD_VALUE_EMPTY_TEXT in utils/fieldSemantics.ts",
+      "allowed_adapters": ["list", "detail", "form", "summary"],
+      "forbidden_duplicates": ["ad_hoc_empty_literals", "undeclared_numeric_empty_text"],
+      "known_violations": []
+    },
+    "relation": {
+      "semantic_owner": "relation_entry declaration + field type",
+      "contract_source": "field descriptor relation_entry",
+      "authoritative_consumer": "ProfessionalBaseFieldControl relation branch (v2 form), ViewRelationalRenderer (view), ScRelationField (primitive)",
+      "allowed_adapters": ["many2one", "many2many", "one2many", "label", "search", "readonly", "lines"],
+      "forbidden_duplicates": ["business_component_direct_relation_io", "custom_relation_dialog_outside_relation_entry"],
+      "known_violations": ["components/professional-fields/PaymentSettlementIntroduceDialog.vue"]
+    },
+    "readonly": {
+      "semantic_owner": "field policy + record capability",
+      "contract_source": "field readonly policy + effectiveRecordCapabilities",
+      "authoritative_consumer": "ProfessionalBusinessValueControl (readonly value), ProfessionalBaseFieldControl (read/write decision)",
+      "allowed_adapters": ["form", "detail", "list"],
+      "forbidden_duplicates": ["component_local_readonly_inference"],
+      "known_violations": []
+    },
+    "permission": {
+      "semantic_owner": "contract authorization results",
+      "contract_source": "effectiveRecordCapabilities + action authority + relation can_*",
+      "authoritative_consumer": "contract authorization + contractGapError fail-closed",
+      "allowed_adapters": ["button_disable", "entry_visibility", "relation_open_create"],
+      "forbidden_duplicates": ["frontend_permission_inference_from_model_or_method_name"],
+      "known_violations": []
+    },
+    "validation": {
+      "semantic_owner": "contract validation_rules + backend errors",
+      "contract_source": "validation_rules + BusinessFieldError receipts",
+      "authoritative_consumer": "ProductFormErrorSummary wrapping ScErrorSummary",
+      "allowed_adapters": ["summary", "field_hint", "focus_position"],
+      "forbidden_duplicates": ["second_fieldErrors_producer", "page_local_error_aggregation"],
+      "known_violations": []
+    },
+    "action": {
+      "semantic_owner": "actionContract.actionRuleList + workflow semantics + authorization",
+      "contract_source": "actionContract + workflowActionAvailability + actionRuleAuthority",
+      "authoritative_consumer": "Action Surface Renderer Registry (app/renderers/actionSurfaceRendererRegistry.ts)",
+      "allowed_adapters": ["page_header", "row", "batch", "approval"],
+      "forbidden_duplicates": ["unregistered_action_dispatch", "same_action_multiple_destinations"],
+      "known_violations": []
+    }
+  },
+  "layers": {
+    "platform_design_system": ["components/design-system/Sc*"],
+    "platform_expression": ["app/presentation/*", "app/contracts/v2/*"],
+    "industry_extension": ["components/business/*", "components/boq/*", "components/professional-fields/paymentSettlement*"],
+    "enterprise_config": ["low-code runtime configuration, not source components"]
+  },
+  "current_boundary_leaks": [
+    "components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "components/professional-fields/paymentSettlementIntroduceModel.ts",
+    "components/professional-fields/paymentSettlementDetailCollectionModel.ts"
+  ]
+}

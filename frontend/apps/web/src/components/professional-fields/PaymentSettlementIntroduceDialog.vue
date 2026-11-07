@@ -196,7 +196,7 @@ import ScInput from '../design-system/ScInput.vue';
 import ScDialog from '../design-system/ScDialog.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
-import { formatMonetaryDisplayValue } from '../template/formSection.mapper';
+import { formatMonetaryDisplayValue } from '../../utils/money';
 import {
   ratioSettlementApplyAmounts,
   ratioSettlementApplyTotal,

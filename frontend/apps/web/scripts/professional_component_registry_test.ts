@@ -6,6 +6,9 @@ import {
   resolveContractProfessionalComponent,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
+  registerIndustryRenderer,
+  registerIndustryRegistration,
+  resolveIndustryRendererComponent,
   type ProfessionalComponentRegistration,
   type ProfessionalComponentRenderer,
 } from '../src/app/presentation/professionalComponentRegistry';
@@ -50,9 +53,31 @@ assert.equal(resolveProfessionalComponent({
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.table', fieldType: 'one2many', presentationMode: 'workspace', renderProfile: 'edit',
 }).renderer, 'ProfessionalDetailCollectionControl');
+assert.throws(() => resolveProfessionalComponent({
+  componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
+}), /PROFESSIONAL_COMPONENT_UNREGISTERED/);
+const dummyIndustryComponent = {} as never;
+registerIndustryRenderer('PaymentSettlementDetailCollectionControl', dummyIndustryComponent);
+assert.throws(() => registerIndustryRenderer('PaymentSettlementDetailCollectionControl', dummyIndustryComponent), /INDUSTRY_RENDERER_DUPLICATE/);
+assert.equal(resolveIndustryRendererComponent('PaymentSettlementDetailCollectionControl'), dummyIndustryComponent);
+assert.equal(resolveIndustryRendererComponent('unknown.renderer'), null);
+registerIndustryRegistration({
+  componentKey: 'sc.payment.settlement_detail_collection',
+  semanticType: 'payment_settlement_detail_collection',
+  supportedFieldTypes: ['one2many'],
+  readiness: 'ready',
+  renderer: 'PaymentSettlementDetailCollectionControl',
+});
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
 }).renderer, 'PaymentSettlementDetailCollectionControl');
+assert.throws(() => registerIndustryRegistration({
+  componentKey: 'sc.payment.settlement_detail_collection',
+  semanticType: 'payment_settlement_detail_collection',
+  supportedFieldTypes: ['one2many'],
+  readiness: 'ready',
+  renderer: 'PaymentSettlementDetailCollectionControl',
+}), /INDUSTRY_REGISTRATION_DUPLICATE/);
 const optionalDetails = optionalDetailCollectionConfig({
   key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
   componentConfig: {
@@ -211,7 +236,7 @@ for (const componentKey of [
   );
 }
 
-assert.equal(professionalComponentRegistrations.length, 26);
+assert.equal(professionalComponentRegistrations.length, 25);
 const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
 const everyFieldType = [
   'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',

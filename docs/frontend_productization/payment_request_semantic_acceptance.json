@@ -1,0 +1,74 @@
+{
+  "schema": "payment-request-semantic-acceptance/v1",
+  "sample_model": "payment.request",
+  "phase": "EXP-03A_baseline",
+  "product_code_changed": false,
+  "facts": {
+    "money": {
+      "verdict": "DEVIATION",
+      "render_authority": "ScMoney",
+      "render_authority_consumed_by": [
+        "pages/ListPage.vue:1650",
+        "components/professional-fields/ProfessionalBusinessValueControl.vue:13",
+        "components/role-home/WorkspaceHome.vue:21",
+        "components/business/MyWorkApprovalWorkspace.vue:49"
+      ],
+      "formatter_authority": "missing single source",
+      "formatter_split_across": [
+        "components/template/formSection.mapper.ts:138/150",
+        "pages/ListPage.vue:1978",
+        "components/professional-fields/PaymentSettlementIntroduceDialog.vue:271"
+      ]
+    },
+    "date": {
+      "verdict": "PASS",
+      "form_field_authority": "ScDateField",
+      "primitive": "ScDatePicker",
+      "list_formatter": "formatTemporalFieldValue",
+      "note": "hierarchy is factual but not yet declared in authority map"
+    },
+    "status": {
+      "verdict": "PASS",
+      "primitive": "ScStatusBadge",
+      "record_wrapper": "ProductRecordStatus",
+      "list_tone": "resolveStatusTone",
+      "page_error_panel": "StatusPanel (distinct from business status)"
+    },
+    "empty": {
+      "verdict": "PASS",
+      "authority": "FIELD_VALUE_EMPTY_TEXT",
+      "numeric_variant": "COLLECTION_NUMERIC_EMPTY_TEXT"
+    },
+    "relation": {
+      "verdict": "DEVIATION",
+      "platform_authority": "relation_entry -> ScSelect + relationOptions (form), ViewRelationalRenderer (view)",
+      "boundary_leak": "components/professional-fields/PaymentSettlementIntroduceDialog.vue"
+    },
+    "readonly": {
+      "verdict": "PASS",
+      "authority": "ProfessionalBusinessValueControl + ProfessionalBaseFieldControl.readonly",
+      "source": "contract field readonly policy"
+    },
+    "permission": {
+      "verdict": "NOT_VERIFIED",
+      "structure": "contract authorization + contractGapError fail-closed",
+      "pending": "role matrix browser journey"
+    },
+    "validation": {
+      "verdict": "NOT_VERIFIED",
+      "structure": "ProductFormErrorSummary <- ScErrorSummary; single fieldErrors producer saveRecordHelpers",
+      "pending": "real submit journey (summary/field/focus consistency)"
+    },
+    "action": {
+      "verdict": "NOT_VERIFIED",
+      "structure": "Action Surface Renderer Registry + workflowActionAvailability + actionRuleAuthority",
+      "pending": "real submit/approval journey"
+    }
+  },
+  "known_deviations": [
+    "money_formatter_not_single_sourced",
+    "industry_payment_settlement_dialog_in_generic_professional_fields",
+    "date_layer_hierarchy_undeclared"
+  ],
+  "not_verified_reason": "EXP-03A is read-only structure mapping; EXP-03 browser journey uses isolated acceptance data and role matrix before PASS."
+}

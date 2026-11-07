@@ -9,6 +9,7 @@ import './styles/product-patterns.css';
 import { bootTheme, bootThemeProfile } from './styles/theme';
 import { startThemeApplicationRuntime, stopThemeApplicationRuntime } from './styles/themeApplicationRuntime';
 import { installStaleAssetRecovery } from './app/staleAssetRecovery';
+import { registerIndustryRenderers } from './extensions/industryRenderers';
 
 installStaleAssetRecovery();
 
@@ -32,5 +33,6 @@ const session = useSessionStore();
 session.restore();
 
 bootstrapApp();
+registerIndustryRenderers();
 
 app.mount('#app');

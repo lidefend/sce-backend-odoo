@@ -4,6 +4,6 @@ export const PAYMENT_SETTLEMENT_DETAIL_COLLECTION_COMPONENT_KEY = 'sc.payment.se
 
 export function isPaymentSettlementDetailCollectionField(field: FormSectionFieldSchema): boolean {
   return field.componentKey === PAYMENT_SETTLEMENT_DETAIL_COLLECTION_COMPONENT_KEY
-    && field.componentRenderer === 'PaymentSettlementDetailCollectionControl'
+    && String(field.componentRenderer || '') === 'PaymentSettlementDetailCollectionControl'
     && String(field.type || '').trim().toLowerCase() === 'one2many';
 }

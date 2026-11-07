@@ -1,0 +1,54 @@
+{
+  "schema": "renderer-extension-registry/v1",
+  "declaration_source": "contracts/registry/semantic.yaml + contracts/registry/component.yaml",
+  "split_by": "category (platform | industry)",
+  "carriers": {
+    "platform": {
+      "runtime": "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+      "frontend": "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+      "content": "componentKey entries with category=platform"
+    },
+    "industry": {
+      "manifest": "contracts/generated/industry_renderer_manifest.json",
+      "content": "componentKey entries with category=industry",
+      "owned_by": "industry module (e.g. smart_construction_core)"
+    }
+  },
+  "registration": {
+    "componentKey": "string",
+    "semanticType": "string",
+    "supportedFieldTypes": "string[]",
+    "renderer": "string",
+    "rendererVersion": "string",
+    "capabilities": "string[]",
+    "readiness": "ready | readable_fallback | fail_closed",
+    "component": "async component reference (frontend only)"
+  },
+  "timing": {
+    "platform_renderers": "builtin at FormSection module load",
+    "industry_renderers": "registered by industry module at app bootstrap",
+    "late_registration": "forbidden after first render (fail-closed)"
+  },
+  "fail_closed": {
+    "unknown_component_key": "PROFESSIONAL_COMPONENT_UNREGISTERED",
+    "unknown_renderer": "SEMANTIC_REGISTRY_UNKNOWN_RENDERER",
+    "duplicate_component_key": "bootstrap refusal",
+    "duplicate_semantic": "bootstrap refusal",
+    "version_mismatch": "rendering refusal",
+    "capability_missing": "rendering refusal"
+  },
+  "contract_binding": {
+    "field": "contractRegistryEntry.version",
+    "manifest_field": "rendererVersion",
+    "mismatch_action": "fail-closed"
+  },
+  "form_section_contract": {
+    "role": "single dispatcher",
+    "direct_industry_imports": "forbidden",
+    "resolution": "resolveRendererComponent(componentRenderer) -> <component :is>"
+  },
+  "migration_scope": {
+    "first_target": "sc.payment.settlement_detail_collection",
+    "deferred": ["boq", "other industry renderers"]
+  }
+}

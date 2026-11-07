@@ -296,6 +296,11 @@ verify.frontend.professional_component_registry.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_component_registry_guard.py
 	@python3 scripts/verify/frontend_professional_component_registry_guard.py
 
+.PHONY: verify.frontend.expression.unit
+verify.frontend.expression.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_expression_guard
+	@python3 scripts/verify/frontend_expression_guard.py --check
+
 # 列表投影的契约就绪语义：契约未到达不投射、未声明的 batch_policy 不视为缺口，
 # 已声明但不完整的 batch_policy 仍然 fail-closed。
 verify.frontend.contract_shape_projection.unit: guard.prod.forbid

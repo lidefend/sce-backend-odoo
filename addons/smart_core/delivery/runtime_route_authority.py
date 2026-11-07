@@ -14,12 +14,48 @@ never re-used by callers as a publication answer.
 """
 from __future__ import annotations
 
+from weakref import WeakKeyDictionary
+
 ROUTE_AUTHORITY_BUCKETS = (
     "primary_actions",
     "role_home_actions",
     "contextual_actions",
     "admin_actions",
 )
+
+
+_GROUP_XMLID_REQUEST_MEMO: "WeakKeyDictionary[object, dict]" = WeakKeyDictionary()
+
+
+def _request_cached_user_group_xmlids(env) -> set:
+    """Resolve the principal's effective group xmlids once per request.
+
+    The memo is keyed by the cursor object, which is scoped to one request
+    transaction. A pooled cursor reused for a different principal or a changed
+    group-id set recomputes instead of reusing a stale snapshot; the entry is
+    released with the cursor object, so no identity ever crosses an HTTP
+    request. The returned value is identical to
+    ``IdentityResolver.user_group_xmlids`` for the same principal, so the
+    ``published_route_authority`` cache-key semantics are unchanged.
+    """
+    from ..identity.identity_resolver import IdentityResolver
+
+    user = env.user
+    if user is None:
+        return set()
+    memo = _GROUP_XMLID_REQUEST_MEMO.get(env.cr)
+    if memo is None:
+        memo = {}
+        _GROUP_XMLID_REQUEST_MEMO[env.cr] = memo
+    uid = int(user.id)
+    group_ids = tuple(sorted(int(group_id) for group_id in (user.groups_id.ids or ())))
+    key = (uid, group_ids)
+    cached = memo.get(key)
+    if cached is not None and cached[0] == group_ids:
+        return cached[1]
+    xmlids = IdentityResolver(env).user_group_xmlids(user)
+    memo[key] = (group_ids, xmlids)
+    return xmlids
 
 
 def _positive_int(value) -> int:
@@ -92,9 +128,7 @@ def principal_group_signature(env) -> str:
     try:
         import hashlib
 
-        from ..identity.identity_resolver import IdentityResolver
-
-        xmlids = IdentityResolver(env).user_group_xmlids(env.user)
+        xmlids = _request_cached_user_group_xmlids(env)
         joined = "\n".join(sorted(str(item) for item in (xmlids or ()) if item))
         return hashlib.sha1(joined.encode("utf-8")).hexdigest()
     except Exception:
