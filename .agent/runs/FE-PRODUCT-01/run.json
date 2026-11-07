@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "7ce16d98a19baf2acc66e817a21f559d98b0721e",
+  "baseline_sha": "3e5b9f144cf6b3e7c29a695b2e8db3eed09a01ec",
   "scope": [
     "addons/smart_core/",
     "frontend/apps/web/",
