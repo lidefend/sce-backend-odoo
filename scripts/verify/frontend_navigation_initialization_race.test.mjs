@@ -168,6 +168,67 @@ assert.equal(
   'missing menu/action pair must fail closed',
 );
 
+// Identity values must be legal positive integers.  Booleans, decimals,
+// non-safe integers and numeric strings must never coerce into a menu identity.
+assert.equal(
+  createNavigationSelectionSnapshot({ ...ledgerNode(382, '项目台账'), menu_id: true }, sharedActionAuthority),
+  null,
+  'boolean menu_id must fail closed',
+);
+assert.equal(
+  createNavigationSelectionSnapshot(
+    { ...ledgerNode(382, '项目台账'), meta: { ...ledgerNode(382, '项目台账').meta, action_id: 590.5 } },
+    sharedActionAuthority,
+  ),
+  null,
+  'decimal action_id must fail closed',
+);
+assert.equal(
+  createNavigationSelectionSnapshot(
+    { ...ledgerNode(382, '项目台账'), menu_id: Number.MAX_SAFE_INTEGER + 1 },
+    sharedActionAuthority,
+  ),
+  null,
+  'non-safe integer menu_id must fail closed',
+);
+assert.equal(
+  createNavigationSelectionSnapshot({ ...ledgerNode(382, '项目台账'), menu_id: '382' }, sharedActionAuthority),
+  null,
+  'numeric string menu_id must fail closed',
+);
+assert.equal(
+  createNavigationSelectionSnapshot(
+    { ...ledgerNode(382, '项目台账'), meta: { ...ledgerNode(382, '项目台账').meta, action_id: '590' } },
+    sharedActionAuthority,
+  ),
+  null,
+  'numeric string action_id must fail closed',
+);
+
+// Conflicting duplicated (menu_id, action_id) authority records are ambiguous
+// and must fail closed; identical duplicates are harmless.
+const firstLedgerAuthority = sharedActionAuthority.primary_actions[0];
+assert.equal(
+  createNavigationSelectionSnapshot(
+    ledgerNode(382, '项目台账'),
+    {
+      ...sharedActionAuthority,
+      primary_actions: [
+        firstLedgerAuthority,
+        { ...firstLedgerAuthority, route: '/a/590?menu_id=382&conflict=1' },
+      ],
+    },
+  ),
+  null,
+  'conflicting duplicate authority must fail closed',
+);
+const identicalDuplicateSnapshot = createNavigationSelectionSnapshot(
+  ledgerNode(382, '项目台账'),
+  { ...sharedActionAuthority, primary_actions: [firstLedgerAuthority, { ...firstLedgerAuthority }] },
+);
+assert.ok(identicalDuplicateSnapshot, 'identical duplicate authority records are not ambiguous');
+assert.equal(identicalDuplicateSnapshot.menuId, 382);
+
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
 assert.match(appShell, /v-else-if="canonicalNavigationBroken"/);
