@@ -2383,11 +2383,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.standard_preview.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.standard_public_auth.browser": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

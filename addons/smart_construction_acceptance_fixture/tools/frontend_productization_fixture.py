@@ -44,6 +44,14 @@ FIXTURE_BUSINESS_SCENARIOS = (
     "equipment.management", "administration.office",
 )
 
+ACCEPTANCE_SCENARIO_BINDINGS = (
+    (
+        "project.management",
+        "smart_construction_core.menu_sc_project_kanban",
+        "view",
+    ),
+)
+
 
 def _ensure_business_scenarios(env, companies):
     """Apply fixture-owned enterprise choices through the native model API."""
@@ -70,6 +78,69 @@ def _ensure_business_scenarios(env, companies):
         if not record.enabled or record.company_id.id != company.id or record.scene_key != scene_key:
             raise RuntimeError("fixture business scene readback failed: " + xmlid)
     return len(plan)
+
+
+def _ensure_acceptance_scenario_bindings(env):
+    """Bind declared acceptance surfaces to their product scenario.
+
+    Product menus whose release is declared in ``product_menu_source.json`` may
+    predate the one-shot scenario seed. The isolated acceptance database must
+    still exercise the declared product route, so this fixture reconciles only
+    the exact missing menu/scenario bindings it names. Existing maintained
+    bindings are validated and never adopted or rebound.
+    """
+    Scenario = env["sc.product.scenario"].sudo().with_context(active_test=False)
+    Entry = env["sc.product.scenario.entry"].sudo()
+    reconciled = []
+    desired_xmlids = {
+        "fe_acceptance_binding_%s" % menu_xmlid.rsplit(".", 1)[-1]
+        for _scenario_code, menu_xmlid, _intent in ACCEPTANCE_SCENARIO_BINDINGS
+    }
+    fixture_metadata = env["ir.model.data"].sudo().search([
+        ("module", "=", MODULE),
+        ("model", "=", "sc.product.scenario.entry"),
+        ("name", "=like", "fe_acceptance_binding_%"),
+    ])
+    for metadata in fixture_metadata:
+        if metadata.name in desired_xmlids:
+            continue
+        stale = Entry.browse(metadata.res_id).exists()
+        if stale:
+            stale.unlink()
+    for scenario_code, menu_xmlid, intent in ACCEPTANCE_SCENARIO_BINDINGS:
+        scenario = Scenario.search([("code", "=", scenario_code)], limit=1)
+        if not scenario:
+            raise RuntimeError("missing acceptance scenario: %s" % scenario_code)
+        menu = _ref(env, menu_xmlid)
+        if menu._name != "ir.ui.menu" or not menu.action:
+            raise RuntimeError("acceptance scenario target must be an action menu: %s" % menu_xmlid)
+        xmlid = "fe_acceptance_binding_%s" % menu_xmlid.rsplit(".", 1)[-1]
+        owned = env.ref("%s.%s" % (MODULE, xmlid), raise_if_not_found=False)
+        if owned and (
+            owned._name != "sc.product.scenario.entry"
+            or owned.scenario_id != scenario
+            or owned.menu_id != menu
+        ):
+            raise RuntimeError("acceptance scenario binding identity mismatch: %s" % xmlid)
+        entry = owned or Entry.search([("menu_id", "=", menu.id)], limit=1)
+        if entry and entry.scenario_id != scenario:
+            raise RuntimeError(
+                "menu %s is already bound to scenario %s"
+                % (menu_xmlid, entry.scenario_id.code or entry.scenario_id.id)
+            )
+        if not entry:
+            entry = Entry.create({
+                "scenario_id": scenario.id,
+                "menu_id": menu.id,
+                "intent": intent,
+                "sequence": 10,
+            })
+            _bind_xmlid(env, xmlid, entry)
+        entry.invalidate_recordset(["menu_xmlid", "scenario_id", "menu_id", "intent"])
+        if entry.menu_xmlid != menu_xmlid or entry.scenario_id != scenario:
+            raise RuntimeError("acceptance scenario binding readback failed: %s" % menu_xmlid)
+        reconciled.append(menu_xmlid)
+    return reconciled
 
 # Dedicated carrier for the project lifecycle browser acceptance.
 #
@@ -971,7 +1042,91 @@ def _reconcile_payment_facts(env, requests, finance):
         )
 
 
-def _payment_journey(env, project, contract, partner, finance):
+def _ensure_payment_request_approval_policy(env, company, reviewer_group):
+    """Ensure the acceptance company consumes a real payment approval policy.
+
+    The seeded standard policy is shared/company scoped according to the target
+    database. The isolated acceptance company must resolve the same explicit
+    finance-manager step. An existing local or active shared policy is reused;
+    an explicitly disabled local policy fails closed instead of being overridden.
+    """
+    Policy = env["sc.approval.policy"].sudo().with_context(active_test=False)
+    local = Policy.search(
+        [("target_model", "=", "payment.request"), ("company_id", "=", company.id)],
+        order="sequence, id",
+        limit=1,
+    )
+    if local:
+        if not local.active or not local.approval_required or local.mode == "none":
+            raise RuntimeError(
+                "acceptance payment approval policy is explicitly disabled: %s"
+                % (local.code or local.display_name)
+            )
+        return local
+    shared = Policy.search(
+        [
+            ("target_model", "=", "payment.request"),
+            ("company_id", "=", False),
+        ],
+        order="sequence, id",
+        limit=1,
+    )
+    if shared:
+        if not shared.active or not shared.approval_required or shared.mode == "none":
+            raise RuntimeError(
+                "shared payment approval policy is explicitly disabled: %s"
+                % (shared.code or shared.display_name)
+            )
+        return shared
+    policy = _upsert(
+        env,
+        "sc.approval.policy",
+        "fe_payment_request_approval_policy",
+        [
+            ("target_model", "=", "payment.request"),
+            ("company_id", "=", company.id),
+        ],
+        {
+            "name": "FE 付款申请审批",
+            "code": "fe_acceptance_payment_request_approval",
+            "active": True,
+            "sequence": 70,
+            "company_id": company.id,
+            "target_model": "payment.request",
+            "approval_required": True,
+            "trigger": "submit",
+            "mode": "single",
+            "runtime_state": "tier_validation",
+            "manager_scope_key": "finance_manager",
+            "manager_group_id": reviewer_group.id,
+            "note": "Isolated acceptance fixture: finance manager reviews payment requests.",
+        },
+    )
+    step = _upsert(
+        env,
+        "sc.approval.step",
+        "fe_payment_request_approval_step",
+        [
+            ("policy_id", "=", policy.id),
+            ("sequence", "=", 10),
+        ],
+        {
+            "policy_id": policy.id,
+            "active": True,
+            "sequence": 10,
+            "name": "财务经理审批",
+            "approval_scope_key": "finance_manager",
+            "approve_group_id": reviewer_group.id,
+            "condition_note": "验收环境付款申请由财务经理审批。",
+        },
+    )
+    policy.sync_tier_definitions()
+    if not step.tier_definition_id:
+        raise RuntimeError("acceptance payment approval step did not sync a tier definition")
+    return policy
+
+
+def _payment_journey(env, project, contract, partner, finance, finance_reviewer):
     """Reconcile the isolated FE-B04/B05 mutation journeys to deterministic starts."""
     settlement = _upsert(
         env,
@@ -1265,15 +1420,49 @@ def _payment_journey(env, project, contract, partner, finance):
             ("res_id", "=", row.id),
         ]).unlink()
         env.cr.execute(
-            "UPDATE payment_request SET state=%s, validation_status=%s, create_uid=%s WHERE id=%s",
-            (
-                state,
-                "validated" if state in ("approved", "done") else "no",
-                finance.id,
-                row.id,
-            ),
+            "UPDATE payment_request SET state=%s, validation_status=%s, reject_reason=NULL, create_uid=%s WHERE id=%s",
+            ("submit" if state in ("submit", "approved") else state, "no", finance.id, row.id),
         )
         row.invalidate_recordset(["state", "validation_status", "create_uid"])
+        if state in ("submit", "approved"):
+            policy = env["sc.approval.policy"].sudo().get_active_policy(
+                "payment.request",
+                company=row.company_id,
+            )
+            routed = env["sc.approval.policy"]._start_submission_review(
+                row.with_company(row.company_id).with_context(
+                    allowed_company_ids=[row.company_id.id]
+                )
+            )
+            if not routed:
+                raise RuntimeError(
+                    "approval fixture did not route the submission into review "
+                    "(policy=%s active=%s required=%s mode=%s company=%s)"
+                    % (
+                        policy.code or "(none)",
+                        bool(policy.active),
+                        bool(policy.approval_required),
+                        policy.mode or "(none)",
+                        policy.company_id.id or "(shared)",
+                    )
+                )
+            if not row.review_ids:
+                raise RuntimeError("approval fixture produced no real review chain")
+            row.review_ids.sudo().write({"reviewer_ids": [(6, 0, [finance_reviewer.id])]})
+            row.invalidate_recordset(["review_ids", "validation_status", "can_review"])
+            reviewer_actor = row.with_user(finance_reviewer).with_context(
+                allowed_company_ids=[row.company_id.id],
+                company_id=row.company_id.id,
+            )
+            if not reviewer_actor.can_review:
+                raise RuntimeError("approval fixture reviewer cannot review the current step")
+            if state == "approved":
+                reviewer_actor.action_approval_decision()
+                row.invalidate_recordset(["state", "validation_status", "review_ids"])
+                if row.state != "approved" or row.validation_status != "validated":
+                    raise RuntimeError(
+                        "approval fixture did not complete through the real review chain"
+                    )
         return row
 
     approval_request = _approval_request(
@@ -1372,6 +1561,11 @@ def ensure_fixture(env) -> Dict[str, Any]:
     company_a = _company(env, "A")
     company_b = _company(env, "B")
     _ensure_business_scenarios(env, (company_a, company_b))
+    scenario_bindings = _ensure_acceptance_scenario_bindings(env)
+    from odoo.addons.smart_construction_core.services.product_menu_source import (
+        load_published_menu_release_states,
+    )
+    menu_release_states = load_published_menu_release_states(env)
     activity_company = company_a
     activity_journal = _activity_journal(env, activity_company)
 
@@ -1382,6 +1576,17 @@ def ensure_fixture(env) -> Dict[str, Any]:
         company_a,
         [company_a, company_b],
         ["smart_construction_core.group_sc_role_finance_manager"],
+    )
+    finance_reviewer = _user(
+        env,
+        "fixture_role_finance_reviewer",
+        "Acceptance Fixture Finance Reviewer",
+        company_a,
+        [company_a],
+        [
+            "smart_construction_core.group_sc_role_finance_manager",
+            "smart_construction_core.group_sc_cap_finance_manager",
+        ],
     )
     finance_user = _user(
         env,
@@ -1449,6 +1654,11 @@ def ensure_fixture(env) -> Dict[str, Any]:
         },
     )
     pfl035_execution_policy.sync_tier_definitions()
+    payment_request_policy = _ensure_payment_request_approval_policy(
+        env,
+        company_a,
+        finance_manager_group,
+    )
     project_member = _user(
         env,
         "fixture_role_project_a_member",
@@ -1458,6 +1668,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [
             "smart_construction_core.group_sc_cap_project_read",
             "smart_construction_core.group_sc_cap_business_initiator",
+            "smart_construction_core.group_sc_entry_p01",
             # Read-only entry visibility for the project overview (menu 382)
             # so this member can open the form while still lacking any submit
             # capability. Submit access only depends on
@@ -1472,7 +1683,10 @@ def ensure_fixture(env) -> Dict[str, Any]:
         "Acceptance Fixture PM",
         company_a,
         [company_a],
-        ["smart_construction_core.group_sc_role_project_manager"],
+        [
+            "smart_construction_core.group_sc_role_project_manager",
+            "smart_construction_core.group_sc_entry_p01",
+        ],
     )
     contract_operator = _user(
         env,
@@ -1752,6 +1966,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         contract_a,
         partner_a,
         finance,
+        finance_reviewer,
     )
     _reconcile_project_company(env)
 
@@ -1759,6 +1974,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         "db": env.cr.dbname,
         "users": [
             finance.login,
+            finance_reviewer.login,
             finance_user.login,
             empty_finance.login,
             project_member.login,
@@ -1803,6 +2019,15 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "activity_moves": 1,
             "labor_usage_tickets": len(labor_usage_ticket),
         },
+        "scenario_bindings": scenario_bindings,
+        "project_menu_release_states": {
+            menu_xmlid: menu_release_states.get(menu_xmlid, "")
+            for menu_xmlid in (
+                "smart_construction_core.menu_sc_project_kanban",
+                "smart_construction_core.menu_sc_project_dashboard",
+            )
+        },
+        "payment_request_approval_policy": payment_request_policy.code,
         "journey": {
             "settlement": journey_settlement.name,
             "payment_request": journey_request.name,

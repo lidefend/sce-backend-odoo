@@ -433,7 +433,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-approval-runtime|standard-my-work-approval-runtime|standard-my-work-approval-browser|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -478,6 +478,55 @@ PYPROBE
 )"
         fi
         docker exec -i -e SC_APPROVAL_RUNTIME_SCOPE="${SC_APPROVAL_RUNTIME_SCOPE:-all}" -e SC_EXPENSE_CREATE_PROBE_JSON="$expense_create_probe_json" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
+        ;;
+      standard-my-work-approval-runtime)
+        docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_my_work_approval_runtime.py"
+        ;;
+      standard-my-work-approval-browser)
+        [[ ( "$PROFILE" == local || "$PROFILE" == candidate ) && "$DB_NAME" == "$(standard_expected_db)" && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        candidate_identity_guard
+        candidate_db_uuid_guard
+        [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: My Work approval browser requires frozen candidate" >&2; exit 2; }
+        preview_identity="$(python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity)"
+        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        preview_values="$(PREVIEW_IDENTITY_JSON="$preview_identity" EXPECTED_SHA="$expected_sha" python3 - <<'PYMYWORKPREVIEW'
+import json, os
+identity = json.loads(os.environ['PREVIEW_IDENTITY_JSON'])
+assert identity['dirty_scope'] == '', identity['dirty_scope']
+print(json.dumps({
+    'base_sha': identity['base_sha'],
+    'entry': identity['entry'],
+    'entry_sha256': identity['entry_sha256'],
+}, separators=(',', ':')))
+PYMYWORKPREVIEW
+)"
+        resolution_output="$(docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_my_work_approval_runtime_ids.py" 2>&1)"
+        targets_json="$(RESOLUTION_OUTPUT="$resolution_output" python3 - <<'PYMYWORKTARGETS'
+import json, os
+prefix = 'FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON='
+rows = [line[len(prefix):] for line in os.environ['RESOLUTION_OUTPUT'].splitlines() if line.startswith(prefix)]
+assert len(rows) == 1, 'expected one authoritative My Work target resolution'
+print(rows[0])
+PYMYWORKTARGETS
+)"
+        preview_base_sha="$(PREVIEW_VALUES="$preview_values" python3 -c 'import json,os; print(json.loads(os.environ["PREVIEW_VALUES"])["base_sha"])')"
+        preview_entry="$(PREVIEW_VALUES="$preview_values" python3 -c 'import json,os; print(json.loads(os.environ["PREVIEW_VALUES"])["entry"])')"
+        preview_entry_sha256="$(PREVIEW_VALUES="$preview_values" python3 -c 'import json,os; print(json.loads(os.environ["PREVIEW_VALUES"])["entry_sha256"])')"
+        git -C "$ROOT_DIR" merge-base --is-ancestor "$preview_base_sha" "$expected_sha" || {
+          echo "DENY: preview base is not an ancestor of the candidate" >&2; exit 2;
+        }
+        git -C "$ROOT_DIR" diff --quiet "$preview_base_sha" "$expected_sha" -- frontend || {
+          echo "DENY: preview bundle does not include the candidate frontend tree" >&2; exit 2;
+        }
+        SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \
+          FRONTEND_URL="$(standard_preview_url)" ACCEPTANCE_BASE_URL="$(standard_preview_url)" BASE_URL="$(standard_preview_url)" \
+          SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
+          SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_PREVIEW_BASE_SHA="$preview_base_sha" \
+          SC_ACCEPTANCE_PREVIEW_ENTRY="$preview_entry" SC_ACCEPTANCE_PREVIEW_ENTRY_SHA256="$preview_entry_sha256" \
+          SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false SC_ACCEPTANCE_TARGET_MODE=managed \
+          SC_ACCEPTANCE_FIXTURE_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" SC_ACCEPTANCE_BOOTSTRAP_SECRET= \
+          FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON="$targets_json" ARTIFACTS_DIR=.runtime/final-acceptance/my-work-approval \
+          node "$ROOT_DIR/scripts/verify/frontend_my_work_approval_browser.mjs"
         ;;
       standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
       standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;

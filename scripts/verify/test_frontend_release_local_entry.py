@@ -353,6 +353,72 @@ load_profile
             self.assertIn("frontend_page_identity_runtime_metadata.py", operation)
             self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
 
+    def test_my_work_approval_local_lane_uses_managed_5180_profile(self) -> None:
+        runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        block = runtime_make.split(
+            "verify.frontend.my_work_approval.runtime:", 1
+        )[1].split("\nverify.frontend.delivery_hardening.browser:", 1)[0]
+        self.assertIn("standard-my-work-approval-runtime", block)
+        self.assertIn("standard-my-work-approval-browser", block)
+        local_browser = block.split(
+            "verify.frontend.my_work_approval.browser:", 1
+        )[1].split("\nelse", 1)[0]
+        self.assertIn("acceptance.frontend.fixture", local_browser)
+        self.assertIn("acceptance.runtime.contract_receipt", local_browser)
+        self.assertNotIn("$(RUN_ENV)", local_browser)
+
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        browser_operation = runtime.split(
+            "standard-my-work-approval-browser)", 1
+        )[1].split("        ;;", 1)[0]
+        for token in (
+            "candidate_identity_guard",
+            "candidate_db_uuid_guard",
+            "frontend_standard_preview.py\" identity",
+            "frontend_my_work_approval_runtime_ids.py",
+            "SC_ACCEPTANCE_EXPECTED_SHA",
+            "SC_ACCEPTANCE_PREVIEW_BASE_SHA",
+            "frontend_my_work_approval_browser.mjs",
+        ):
+            self.assertIn(token, browser_operation)
+
+        browser = (ROOT / "scripts/verify/frontend_my_work_approval_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("fixture_role_finance_reviewer", browser)
+        self.assertIn("/api/runtime-version", browser)
+        self.assertIn("runtimeVersion.source_revision === EXPECTED_SHA", browser)
+        runtime_ids = (
+            ROOT / "scripts/verify/frontend_my_work_approval_runtime_ids.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            'payment_menu = "smart_construction_core.menu_sc_user_payment_apply"',
+            runtime_ids,
+        )
+        self.assertNotIn("menu_sc_user_payment_apply_acceptance", runtime_ids)
+        login = browser.split("async function login(", 1)[1].split(
+            "async function logout(", 1
+        )[0]
+        self.assertIn('input[autocomplete="username"]', login)
+        self.assertIn('input[autocomplete="current-password"]', login)
+        self.assertIn("await database.count()", login)
+        self.assertNotIn("nth(2)", login)
+
+        diagnostic = (ROOT / "scripts/verify/frontend_menu_navigation_diagnostic.py").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "fe_user_config_admin",
+            "fe_user_pm",
+            "fe_user_project_a_member",
+            "menu_sc_project_kanban",
+            "surface_location",
+            "published_in_runtime_nav",
+        ):
+            self.assertIn(token, diagnostic)
+
     def test_ci_starts_http_carrier_after_install_and_stops_after_first_browser_failure(self) -> None:
         operation = (
             ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"

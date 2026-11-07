@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01-R1
+  title: 业务语义验收环境闭合
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: isolated acceptance fixture, released-navigation test data and managed browser evidence
+  module: smart_construction_acceptance_fixture, business-entry matrix, My Work approval browser and acceptance runtime wiring
+  standard_vs_user_specific: acceptance_test_infrastructure
+  why_here: >
+    Kanban 导航缺失和审批人缺失只影响隔离验收 fixture、测试身份和受管浏览器入口；
+    修复它们属于 P4 验证与交付工具职责，不应通过修改业务契约或生产权限实现。
+  why_not_elsewhere: >
+    不修改 businessValuePresentation、Contract V2、Renderer Extension Protocol、生产 ACL、
+    Record Rule、菜单权限或审批业务规则。产品语义已经通过 18/18 L2，禁止以测试绿化为由改变它。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01-R1.yaml
+      - .agent/runs/FE-RENDERER-02C-01-R1/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_r1_fixture_closure_20261108.md
+      - addons/smart_construction_acceptance_fixture
+      - scripts/verify/frontend_my_work_approval_browser.mjs
+      - scripts/verify/frontend_my_work_approval_runtime_ids.py
+      - scripts/verify/frontend_delivery_hardening_runtime_ids.py
+      - scripts/verify/business_entry_matrix_overlay.json
+      - scripts/verify/business_entry_matrix_browser.mjs
+      - scripts/verify/business_entry_matrix_scope.mjs
+      - scripts/dev/frontend_acceptance_runtime.sh
+      - scripts/verify/test_frontend_standard_preview.py
+      - scripts/verify/test_business_entry_matrix_model.py
+      - scripts/verify/test_business_entry_matrix_incremental.py
+      - scripts/verify/frontend_acceptance_login_probe.py
+      - make/runtime_ops.mk
+      - make/frontend.mk
+    runtime: isolated acceptance profile local/sc-fe-r2-p1-01/sc_frontend_acceptance on ports 5180 and 18082
+    product_behavior: none; only test fixture identities, released navigation/reviewer data and evidence entry semantics may change
+  objective: >
+    在不改变产品语义、契约、生产权限和审批规则的前提下，修复隔离验收环境中的
+    Kanban released-navigation 与审批人分配，使两个真实 browser suite 在受管 5180
+    profile 上通过并绑定精确候选身份。
+  acceptance:
+    - 三个正式业务 fixture 角色均通过正常导航进入 Kanban，同时证明页面可访问和业务数据权限正确
+    - My Work 审批摘要浏览器使用当前受管 5180 profile，不依赖旧 .env.dev Compose 环境
+    - 当前审批步骤存在合法真实审批人，未授权用户不能审批
+    - 浏览器错误、控制台错误和意外 HTTP 失败均为零
+    - fixture 修复前后差异、前置条件、bundle、SC_SOURCE_REVISION 和证据均由受管 recorder 绑定
+    - 最新候选工作树 clean
+  exclusions:
+    - business_value_presentation_change
+    - contract_v2_schema_change
+    - renderer_extension_protocol_change
+    - production_acl_or_record_rule_change
+    - production_menu_permission_change
+    - approval_business_rule_change
+    - sudo_bypass
+    - pr_834_change
+    - deployment
+    - merge
+    - timezone_contract_extension
+    - boq_money_contract_extension
+  rollback: >
+    回退本批 fixture、导航测试数据和受管 browser wiring；随后通过既有
+    make acceptance.frontend.fixture 恢复隔离验收 fixture。不得回写生产 ACL、Record Rule、
+    菜单或审批规则，也不得修改 FE-RENDERER-02C-01 的产品实现提交。

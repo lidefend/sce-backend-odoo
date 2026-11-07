@@ -10,6 +10,11 @@ const DB_NAME = process.env.DB_NAME || 'sc_frontend_acceptance';
 const PASSWORD = process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const OUTPUT_DIR = process.env.ARTIFACTS_DIR || 'artifacts/frontend-my-work-approval';
 const TARGETS = JSON.parse(process.env.FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON || '{}');
+const EXPECTED_SHA = String(process.env.SC_ACCEPTANCE_EXPECTED_SHA || '').trim();
+const PREVIEW_BASE_SHA = String(process.env.SC_ACCEPTANCE_PREVIEW_BASE_SHA || '').trim();
+const PREVIEW_ENTRY = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY || '').trim();
+const PREVIEW_ENTRY_SHA256 = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY_SHA256 || '').trim();
+const APPROVAL_REVIEWER_LOGIN = String(process.env.FRONTEND_APPROVAL_REVIEWER_LOGIN || 'fixture_role_finance_reviewer').trim();
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 function check(value, message) { if (!value) throw new Error(message); }
@@ -42,9 +47,12 @@ function assertClean(state, step, allowed = []) {
 
 async function login(page, user) {
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input');
-  await inputs.nth(0).fill(user); await inputs.nth(1).fill(PASSWORD);
-  if (await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(DB_NAME);
+  const username = page.locator('#login-username, input[autocomplete="username"]').first();
+  const password = page.locator('#login-password, input[autocomplete="current-password"]').first();
+  await username.fill(user);
+  await password.fill(PASSWORD);
+  const database = page.locator('#login-db, input[name="db"], input[autocomplete="organization"]').first();
+  if (await database.count() && await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
@@ -97,14 +105,35 @@ async function noOverflow(page, label) {
 
 async function main() {
   for (const key of ['draft', 'approval', 'reject', 'completed', 'settlement', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing target ${key}`);
+  check(/^[0-9a-f]{40}$/.test(EXPECTED_SHA), 'exact expected candidate SHA is required');
+  check(/^[0-9a-f]{40}$/.test(PREVIEW_BASE_SHA), 'exact preview base SHA is required');
+  check(Boolean(PREVIEW_ENTRY && /^[0-9a-f]{64}$/.test(PREVIEW_ENTRY_SHA256)), 'preview bundle identity is required');
   const browser = await launchChromium({ headless: true });
-  const report = { pass: false, j07: {}, j08: {}, responsive: [], failure_paths: {}, isolation: {} };
+  const report = {
+    pass: false,
+    provenance: {
+      base_url: BASE_URL,
+      database: DB_NAME,
+      expected_sha: EXPECTED_SHA,
+      preview_base_sha: PREVIEW_BASE_SHA,
+      preview_entry: PREVIEW_ENTRY,
+      preview_entry_sha256: PREVIEW_ENTRY_SHA256,
+      approval_reviewer_login: APPROVAL_REVIEWER_LOGIN,
+    },
+    j07: {}, j08: {}, responsive: [], failure_paths: {}, isolation: {},
+  };
   let page;
   let runtime;
   try {
     page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
     runtime = captureRuntime(page);
     const releasedNavigation = captureReleasedNavigation(page);
+    const runtimeVersionResponse = await page.request.get(`${BASE_URL}/api/runtime-version`);
+    check(runtimeVersionResponse.ok(), `runtime identity request failed: ${runtimeVersionResponse.status()}`);
+    const runtimeVersion = await runtimeVersionResponse.json();
+    report.provenance.runtime_version = runtimeVersion;
+    check(runtimeVersion.source_revision === EXPECTED_SHA, `served revision ${runtimeVersion.source_revision || 'unknown'} != expected ${EXPECTED_SHA}`);
+    check(runtimeVersion.database === DB_NAME, `served database ${runtimeVersion.database || 'unknown'} != ${DB_NAME}`);
     await login(page, 'fixture_role_finance');
     applyReleasedNavigationTarget(
       TARGETS,
@@ -193,7 +222,7 @@ async function main() {
     const createdIdentifier = createdName.match(/PRQ\d+/)?.[0] || createdName;
     await logout(page);
 
-    await login(page, 'fixture_role_executive');
+    await login(page, APPROVAL_REVIEWER_LOGIN);
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const approvalCard = page.locator('.work-card').filter({ hasText: createdIdentifier }).first();
@@ -211,11 +240,11 @@ async function main() {
     await page.locator('.financial-workspace__status[data-state="approved"]').waitFor({ timeout: 45000 });
     check((await page.locator('body').innerText()).includes(createdIdentifier), 'J08 finance cannot see approved result');
     assertClean(runtime, 'J08');
-    report.j08 = { status: 'PASS', created: createdName, save_refresh_edit_submit: 'PASS', executive_approval: 'PASS' };
+    report.j08 = { status: 'PASS', created: createdName, save_refresh_edit_submit: 'PASS', reviewer_approval: 'PASS' };
 
     // Explicit reject validation and unauthorized isolation.
     await logout(page);
-    await login(page, 'fixture_role_executive');
+    await login(page, APPROVAL_REVIEWER_LOGIN);
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const rejectCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-REJECT-001' });

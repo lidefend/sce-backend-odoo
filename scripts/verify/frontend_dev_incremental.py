@@ -368,6 +368,23 @@ RULES = (
     ), (
         "verify.baseline.iteration.execution.policy",
     )),
+    Rule((
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+    ), (
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    ), (
+        "verify.daily_dev.acceptance_fixture.unit",
+    )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",

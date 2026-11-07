@@ -157,7 +157,9 @@ verify.frontend.standard_page_type.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-browser
 verify.frontend.standard_preview.unit: guard.prod.forbid
 	@node --test frontend/apps/web/scripts/standard_project_save_scope_test.mjs
-	@python3 -m unittest scripts.verify.test_frontend_standard_preview scripts.verify.test_frontend_standard_preview_candidate
+	@node --check scripts/verify/frontend_my_work_approval_browser.mjs
+	@python3 -m py_compile scripts/verify/frontend_menu_navigation_diagnostic.py scripts/verify/frontend_my_work_approval_runtime.py scripts/verify/frontend_my_work_approval_runtime_ids.py scripts/verify/test_frontend_release_local_entry.py
+	@python3 -m unittest scripts.verify.test_frontend_standard_preview scripts.verify.test_frontend_standard_preview_candidate scripts.verify.test_frontend_release_local_entry
 	@bash -n scripts/dev/frontend_acceptance_runtime.sh
 
 verify.business_config.safe_open_acceptance: guard.prod.forbid
@@ -1400,11 +1402,20 @@ verify.frontend.form_canvas_wide_grid.audit: guard.prod.forbid check-compose-pro
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) FE_PRO_04WR2_PHASE=$${FE_PRO_04WR2_PHASE:-baseline} FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$$FRONTEND_DELIVERY_HARDENING_TARGETS_JSON" node scripts/verify/frontend_product_design_system_audit.mjs
 
-verify.frontend.my_work_approval.runtime: guard.prod.forbid check-compose-project check-compose-env
+verify.frontend.my_work_approval.runtime: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/frontend_my_work_approval_runtime.py addons/smart_construction_core/services/payment_request_work_item_service.py
+ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-my-work-approval-runtime
+else
 	@$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_my_work_approval_runtime.py
+endif
 
-verify.frontend.my_work_approval.browser: guard.prod.forbid check-compose-project check-compose-env
+verify.frontend.my_work_approval.browser: guard.prod.forbid
+ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)
+	@$(MAKE) --no-print-directory acceptance.frontend.fixture
+	@$(MAKE) --no-print-directory acceptance.runtime.contract_receipt
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-my-work-approval-browser
+else
 	@set -e; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_my_work_approval_runtime_ids.py 2>&1 )"; \
@@ -1412,6 +1423,7 @@ verify.frontend.my_work_approval.browser: guard.prod.forbid check-compose-projec
 	$(MAKE) --no-print-directory backend.acceptance.up; $(MAKE) --no-print-directory frontend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ARTIFACTS_DIR=artifacts/frontend-my-work-approval FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON="$${FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON}" node scripts/verify/frontend_my_work_approval_browser.mjs
+endif
 
 verify.frontend.delivery_hardening.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \

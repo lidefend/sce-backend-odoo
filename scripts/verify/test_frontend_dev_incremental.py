@@ -311,7 +311,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.baseline.iteration.execution.policy"],
+                    [
+                        "verify.baseline.iteration.execution.policy",
+                        "verify.frontend.standard_preview.unit",
+                    ]
+                    if path == "make/runtime_ops.mk"
+                    else ["verify.baseline.iteration.execution.policy"],
                 )
         self.assertEqual(
             select_targets(["make/ci.mk"]),
@@ -320,6 +325,27 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.ci.workflow.contract",
             ],
         )
+
+    def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
+        for path in (
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/verify/frontend_menu_navigation_diagnostic.py",
+            "scripts/verify/frontend_my_work_approval_browser.mjs",
+            "scripts/verify/frontend_my_work_approval_runtime.py",
+            "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+            "scripts/verify/test_frontend_release_local_entry.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.standard_preview.unit", select_targets([path]))
+        for path in (
+            "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+            "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.daily_dev.acceptance_fixture.unit"],
+                )
 
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
         self.assertEqual(

@@ -53,6 +53,71 @@ class TestBusinessSceneLifecycle(TransactionCase):
         a.set_enabled(True)
         self.assertTrue(self._allowed(self.company_a))
 
+    def test_project_kanban_fixture_binding_is_released_for_all_business_roles(self):
+        menu = self.env.ref("smart_construction_core.menu_sc_project_kanban")
+        entry = self.env["sc.product.scenario.entry"].sudo().search(
+            [("menu_id", "=", menu.id)],
+            limit=1,
+        )
+        self.assertTrue(entry, "project Kanban must have an acceptance scenario binding")
+        self.assertEqual(entry.scenario_id.code, "project.management")
+
+        for login in (
+            "fixture_role_config_admin",
+            "fixture_role_pm",
+            "fixture_role_project_a_member",
+        ):
+            user = self.env["res.users"].sudo().search([("login", "=", login)], limit=1)
+            self.assertTrue(user, login)
+            actor = self.env(
+                user=user.id,
+                context=dict(
+                    self.env.context,
+                    allowed_company_ids=[self.company_a.id],
+                    company_id=self.company_a.id,
+                ),
+            )
+            authority = published_route_authority(actor)
+            self.assertTrue(
+                menu_publication_decision(authority, menu.id, menu.action.id),
+                "%s must receive the released project Kanban route" % login,
+            )
+            self.assertTrue(
+                actor["project.project"].check_access_rights("read", raise_exception=False),
+                "%s must retain project read ACL" % login,
+            )
+            self.assertGreater(
+                actor["project.project"].search_count([
+                    ("company_id", "=", self.company_a.id),
+                ]),
+                0,
+                "%s must receive the fixture company's project data" % login,
+            )
+
+    def test_payment_approval_fixture_assigns_a_real_current_reviewer(self):
+        request = self.env.ref(
+            "smart_construction_acceptance_fixture.fe_journey_payment_request_approval_a"
+        )
+        reviewer = self.env.ref(
+            "smart_construction_acceptance_fixture.fe_user_finance_reviewer"
+        )
+        pending = request.review_ids.filtered(
+            lambda review: review.status in ("waiting", "pending")
+        )
+        self.assertTrue(pending, "the approval fixture must contain a live review instance")
+        self.assertIn(reviewer, pending.mapped("reviewer_ids"))
+        self.assertTrue(
+            request.with_user(reviewer).with_context(
+                allowed_company_ids=[self.company_a.id],
+                company_id=self.company_a.id,
+            ).can_review,
+            "the assigned finance reviewer must own the current approval step",
+        )
+        member = self.env.ref(
+            "smart_construction_acceptance_fixture.fe_user_project_a_member"
+        )
+        self.assertFalse(request.with_user(member).can_review)
+
     def test_missing_state_denies_and_legacy_key_does_not_enable_business(self):
         self._state(self.company_a).unlink()
         self.assertFalse(self._allowed(self.company_a))
