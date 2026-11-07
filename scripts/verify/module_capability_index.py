@@ -328,18 +328,23 @@ def _reverse_index() -> dict[str, list[dict]]:
 def _mechanism_impact() -> dict[str, list[str]]:
     """Map a mechanism-providing module to capabilities whose provider uses it."""
     cat = json.loads(CATALOG.read_text(encoding="utf-8"))["capabilities"]
+    # Scan model files once with the AST classifier instead of spawning the
+    # external ``rg`` binary once per provider. A non-zero ``rg`` exit was
+    # silently treated as "no match" and, on the scheduled self-hosted runner,
+    # dropped ``sc.settlement.order`` although the model file is present. The
+    # AST scan is deterministic and matches ``_mechanism_dependencies``.
+    model_texts: dict[str, str] = {}
+    for f in (ROOT / "addons/smart_construction_core/models").rglob("*.py"):
+        model_texts[str(f.relative_to(ROOT))] = f.read_text(encoding="utf-8", errors="ignore")
     impact: dict[str, set[str]] = {}
     for c in cat:
         for p in c.get("providers", []):
             if p.get("provider_type") != "odoo_model":
                 continue
             ref = p.get("provider_ref") or ""
-            proc = subprocess.run(
-                ["rg", "-l", rf'_name\s*=\s*["\']{re.escape(ref)}["\']', str(ROOT / "addons/smart_construction_core/models")],
-                cwd=ROOT, text=True, capture_output=True, timeout=30,
-            )
-            for f in proc.stdout.splitlines():
-                text = Path(f.strip()).read_text(encoding="utf-8", errors="ignore")
+            for text in model_texts.values():
+                if not _name_declares(text, ref):
+                    continue
                 for mixin, (module, _source) in MECHANISM_MIXINS.items():
                     if _inherit_declares(text, mixin):
                         impact.setdefault(module, set()).add(c["capability_key"])

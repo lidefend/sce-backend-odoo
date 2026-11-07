@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-MECHANISM-IMPACT-20261107",
+  "branch": "fix/scheduled-ci-mechanism-impact-rg",
+  "baseline_sha": "4ad25ec9cc5739db7cb50fc2c61298fb9ea28535",
+  "status": "active",
+  "goal": ".agent/goals/CI-SCHEDULED-MECHANISM-IMPACT-20261107.yaml",
+  "record": "docs/ops/iterations/ci-scheduled-mechanism-impact-20261107-record.md",
+  "scope": [
+    "scripts/verify/module_capability_index.py",
+    "scripts/verify/test_module_capability_index.py",
+    "docs/ops/iterations/ci-scheduled-mechanism-impact-20261107-record.md",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and pure-python CI unit tests"
+  },
+  "checks": {
+    "capability_module_tooling_unit": {
+      "target": "verify.capability.module_tooling.unit",
+      "inputs": [
+        "scripts/verify/module_capability_index.py",
+        "scripts/verify/test_module_capability_index.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "提交纯 Python 扫描修复，跑 ci.local.iteration + module_tooling 单测，再 pr.push + pr.create（Draft）",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "scripts/verify 能力索引",
+    "module": "scripts/verify",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "机制影响映射是只读能力索引，不携带产品语义",
+    "why_not_elsewhere": "不改产品契约、不改前端渲染、不扩数据库写入",
+    "blast_radius": "定时 professional_quality_gate / merge_policy_gate 与 verify.capability.module_tooling.unit"
+  }
+}

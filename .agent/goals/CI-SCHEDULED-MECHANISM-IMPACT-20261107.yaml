@@ -1,0 +1,23 @@
+schema_version: 1
+goal:
+  id: CI-SCHEDULED-MECHANISM-IMPACT-20261107
+  status: active
+  title: 修复定时全量质量门禁的机制影响映射误漏
+  formal_product_layer: P4
+  layer_target: scripts/verify/module_capability_index.py
+  module: scripts/verify
+  standard_vs_user_specific: platform_mechanism
+  objective: >
+    定时 professional_quality_gate 在 verify.capability.module_tooling.unit 失败：
+    test_mechanism_impact_maps_oca_to_capabilities 期望 contract.settlement.audit 在
+    base_tier_validation，实际缺失。根因是 _mechanism_impact() 用外部 rg 子进程逐 capability
+    找 _name 模型文件，非零退出被静默当空结果；调度 runner 上 rg 环境敏感导致
+    sc.settlement.order 漏掉。改为纯 Python AST 扫描，与 _mechanism_dependencies 同口径。
+  why_here: >
+    机制影响映射是 CI 验证工具，不携带产品语义；纯 Python 扫描消除外部二进制依赖，结果确定。
+  why_not_elsewhere:
+    - 不改产品契约/业务语义。
+    - 不降低覆盖要求。
+    - 不动 #828/#829 已合并内容。
+  scope: [scripts/verify/module_capability_index.py, scripts/verify/test_module_capability_index.py]
+  exclusions: [产品模块, 共享 local.dev 运行态, 生产部署与合并授权]
