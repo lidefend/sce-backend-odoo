@@ -25,6 +25,16 @@ def target(menu_xmlid, record_xmlid):
     }
 
 
+def settlement_target(record_xmlid):
+    row = ref(record_xmlid)
+    menu_xmlid = "smart_construction_core.menu_sc_settlement_order"
+    if str(row.settlement_type or "") == "out":
+        menu_xmlid = "smart_construction_core.menu_sc_p1_expense_settlement"
+    elif str(row.settlement_type or "") == "in":
+        menu_xmlid = "smart_construction_core.menu_sc_p1_income_settlement"
+    return target(menu_xmlid, record_xmlid)
+
+
 payment_menu = "smart_construction_core.menu_sc_user_payment_apply"
 company_a = ref("smart_construction_acceptance_fixture.fe_company_a")
 company_b = ref("smart_construction_acceptance_fixture.fe_company_b")
@@ -34,13 +44,7 @@ payload = {
     "approval": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_approval_a"),
     "reject": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_reject_a"),
     "completed": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_completed_a"),
-    "settlement": target(
-        "smart_construction_core.menu_sc_settlement_order",
-        "smart_construction_acceptance_fixture.fe_journey_settlement_a",
-    ),
-    "work_settlement": target(
-        "smart_construction_core.menu_sc_settlement_order",
-        "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
-    ),
+    "settlement": settlement_target("smart_construction_acceptance_fixture.fe_journey_settlement_a"),
+    "work_settlement": settlement_target("smart_construction_acceptance_fixture.fe_b05_work_settlement_a"),
 }
 print("FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON=" + json.dumps(payload, ensure_ascii=True, separators=(",", ":")))

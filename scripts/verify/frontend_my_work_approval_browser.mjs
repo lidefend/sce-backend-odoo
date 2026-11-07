@@ -213,6 +213,13 @@ async function main() {
       ['draft', 'approval', 'reject', 'completed'],
       await releasedNavigation.targetByMenuXmlid(TARGETS.draft.menu_xmlid),
     );
+    for (const key of ['settlement', 'work_settlement']) {
+      applyReleasedNavigationTarget(
+        TARGETS,
+        [key],
+        await releasedNavigation.targetByMenuXmlid(TARGETS[key].menu_xmlid),
+      );
+    }
     resetRuntime(runtime);
 
     // J07: authoritative counts, detail round-trip, submit and company A/B/A invalidation.
