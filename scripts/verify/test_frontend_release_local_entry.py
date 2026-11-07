@@ -394,6 +394,8 @@ load_profile
         self.assertIn('data-professional-workflow-component="statusbar"][data-workflow-current=', browser)
         self.assertIn("selectProjectContext", browser)
         self.assertIn("approval summary lost the authoritative money value", browser)
+        self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
+        self.assertIn("J07 confirmation focus did not enter", browser)
         self.assertNotIn('.financial-workspace[data-workspace-kind=', browser)
         runtime_ids = (
             ROOT / "scripts/verify/frontend_my_work_approval_runtime_ids.py"

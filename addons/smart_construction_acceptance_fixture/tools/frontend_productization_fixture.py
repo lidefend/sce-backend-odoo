@@ -1372,9 +1372,15 @@ def _payment_journey(env, project, contract, partner, finance, finance_reviewer)
             "datas": "RkUtQjA1IGF1dGhvcml0YXRpdmUgam91cm5leSBhdHRhY2htZW50",
             "res_model": "payment.request",
             "res_id": request.id,
+            "company_id": request.company_id.id,
             "mimetype": "text/plain",
         },
     )
+    if attachment.company_id.id != request.company_id.id:
+        raise RuntimeError(
+            "fixture payment attachment company scope mismatch: %s != %s"
+            % (attachment.company_id.id, request.company_id.id)
+        )
     request.sudo().write({"attachment_ids": [(6, 0, [attachment.id])]})
 
     def _approval_request(xmlid_name, name, state):

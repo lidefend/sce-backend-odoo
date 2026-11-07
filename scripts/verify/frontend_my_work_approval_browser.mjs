@@ -206,7 +206,12 @@ async function main() {
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });
     const confirm = dialog.getByRole('button', { name: '确认提交' });
-    check(await confirm.evaluate((node) => node === document.activeElement), 'J07 confirmation focus did not enter');
+    await page.waitForFunction(() => {
+      const primary = document.querySelector('.intent-dialog .dialog-actions button:last-child');
+      return primary !== null && primary === document.activeElement;
+    }, null, { timeout: 5000 }).catch(() => {
+      throw new Error('J07 confirmation focus did not enter');
+    });
     await confirm.press('Enter');
     await dialog.waitFor({ state: 'hidden', timeout: 45000 });
     await page.locator('.work-section[data-section-key="todo"] .work-card').filter({ hasText: 'FE-JOURNEY-PAYMENT-001' }).waitFor({ state: 'detached', timeout: 45000 });
