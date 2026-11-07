@@ -2,17 +2,17 @@
   "schema_version": 1,
   "id": "NAV-01-SIDEBAR-CANONICAL",
   "branch": "codex/nav-01-sidebar-canonical",
-  "baseline_sha": "fdd039b428535fb2a7806787b042a6513b0f58be",
+  "baseline_sha": "e2336d9f5e198ffb667087d6bd55bec957edf030",
   "status": "active",
   "goal": ".agent/goals/NAV-01-SIDEBAR-CANONICAL.yaml",
   "record": "docs/ops/iterations/fe-mainline-experience-20261106/nav-01-source-diagnosis.md",
   "scope": [
-    "frontend/apps/web/src/layouts/AppShell.vue",
-    "frontend/apps/web/src/app/canonicalNavigation.ts",
-    "frontend/apps/web/src/components/product-shell/",
-    "frontend/apps/web/src/components/MenuTree.vue",
-    "scripts/verify/frontend_navigation_shell_guard.py",
-    "scripts/verify/frontend_navigation_initialization_race.test.mjs"
+    ".agent/",
+    "docs/ops/iterations/fe-mainline-experience-20261106/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "frontend/apps/web/src/",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "runtime",
