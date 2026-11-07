@@ -302,3 +302,33 @@ export function canonicalNavigationNodeByMenuId(
   }
   return null;
 }
+
+/**
+ * Filter the canonical menu by a visible-text search term while preserving the
+ * ancestor chain of every match.  This is presentation-only filtering: it never
+ * changes node identity, state, or authority, and it never promotes a node the
+ * server did not already publish.
+ */
+export function filterCanonicalNavigationByText(
+  nodes: CanonicalNavigationNode[],
+  term: string,
+): CanonicalNavigationNode[] {
+  const query = term.trim().toLowerCase();
+  if (!query) return nodes;
+  const matches = (node: CanonicalNavigationNode): boolean => (
+    node.label.toLowerCase().includes(query)
+    || node.key.toLowerCase().includes(query)
+  );
+  const keep = (node: CanonicalNavigationNode): CanonicalNavigationNode | null => {
+    const children = node.children
+      .map(keep)
+      .filter((child): child is CanonicalNavigationNode => child !== null);
+    if (matches(node) || children.length) {
+      return { ...node, children };
+    }
+    return null;
+  };
+  return nodes
+    .map(keep)
+    .filter((node): node is CanonicalNavigationNode => node !== null);
+}

@@ -51,11 +51,11 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"{component} lacks exact semantic identity")
         if BUSINESS_IDENTITY.search(text):
             errors.append(f"{component} contains business-specific identity")
-        if f"<{component}" not in shell and component != "ProductSideNavigation":
+        if f"<{component}" not in shell and component != "ProductScenarioNavigation":
             errors.append(f"AppShell does not consume {component}")
 
-    if "<ProductScenarioNavigation" not in shell or ':model="scenarioNavigation"' not in shell or "<ProductSideNavigation" in shell:
-        errors.append("AppShell must render only ProductScenarioNavigation from the server scenario model")
+    if "<ProductSideNavigation" not in shell or ":nodes=\"menuSearchNodes\"" not in shell or "<ProductScenarioNavigation" in shell:
+        errors.append("AppShell must render the canonical navigation model through the official TDesign menu wrapper")
     context_indicator = read(root, "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue")
     context_projection = shell.split("<WorkspaceContextIndicator", 1)[-1].split("/>", 1)[0]
     if ':show-record="showRecordContext"' not in context_projection or "v-if=" in context_projection:

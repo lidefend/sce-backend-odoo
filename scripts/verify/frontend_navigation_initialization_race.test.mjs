@@ -75,12 +75,13 @@ assert.equal(createNavigationSelectionSnapshot(node, null), null);
 
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
-assert.match(appShell, /<ProductScenarioNavigation\s+v-if="navigationReady && scenarioNavigation"/);
 assert.match(appShell, /v-else-if="scenarioNavigationBroken"/);
-assert.doesNotMatch(appShell, /<ProductSideNavigation\b/, 'missing scenario authority must not expose a legacy fallback');
+assert.match(appShell, /<ProductSideNavigation\s+v-if="navigationReady && navigationNodes\.length"/, 'visible navigation must consume the canonical navigation model');
+assert.doesNotMatch(appShell, /<ProductScenarioNavigation\b/, 'visible navigation must not consume the scenario classification component');
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
 assert.match(appShell, /createScenarioSelectionSnapshot\(entry, session\.routeAuthority\)/);
 assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);
+assert.match(appShell, /createNavigationSelectionSnapshot\(node\.source, session\.routeAuthority\)/, 'canonical menu click must consume the immutable navigation snapshot');
 assert.doesNotMatch(appShell, /findRouteAuthority\(session\.routeAuthority/, 'menu click must not re-read mutable route authority');
 assert.doesNotMatch(appShell, /node\.menu_id\s*=(?!=)/, 'menu click must not mutate the selected node');
 

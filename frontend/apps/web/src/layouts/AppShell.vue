@@ -166,18 +166,16 @@
           <span>请在配置中心维护业务场景后重试，业务入口保持关闭。</span>
         </div>
         <div class="menu">
-          <ProductScenarioNavigation
-            v-if="navigationReady && scenarioNavigation"
-            :model="scenarioNavigation"
+          <ProductSideNavigation
+            v-if="navigationReady && navigationNodes.length"
+            :nodes="menuSearchNodes"
             :active-menu-id="activeMenuId"
             :collapsed="sidebarCompact"
             :search="query"
-            :expanded-centers="session.scenarioExpandedCenters"
-            :expanded-scenarios="session.scenarioExpandedScenarios"
-            @select="handleScenarioSelect"
-            @toggle-center="session.toggleScenarioCenter"
-            @toggle-scenario="session.toggleScenarioExpanded"
-            @ensure-expanded="handleScenarioEnsureExpanded"
+            :expanded-keys="session.menuExpandedKeys"
+            @select="handleCanonicalSelect"
+            @toggle="session.toggleMenuExpanded"
+            @ensure-expanded="session.ensureMenuExpanded"
             @update:search="query = $event"
           />
         </div>
@@ -390,7 +388,10 @@
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ProductScenarioNavigation from '../components/product-shell/ProductScenarioNavigation.vue';
+import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
 import { createScenarioSelectionSnapshot, type ScenarioNavEntry, type ScenarioNavigationModel } from '../app/scenarioSurface';
+import { filterCanonicalNavigationByText } from '../app/canonicalNavigation';
+import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
 import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcrumb.vue';
@@ -434,7 +435,7 @@ import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { isAuthorizedSceneNavigation, isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
-import type { BusinessScopeOperationOption, NavNode, RecordContextOption } from '@sc/schema';
+import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
   TRACE_BUFFER_MAX_ENTRIES,
@@ -517,6 +518,7 @@ let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
 const navigationNodes = computed(() => session.navigationModel?.nodes || []);
+const menuSearchNodes = computed(() => filterCanonicalNavigationByText(navigationNodes.value, query.value));
 const scenarioNavigation = computed<ScenarioNavigationModel | null>(() => session.scenarioSurface);
 const roleSurface = computed(() => session.roleSurface);
 const shellLogoText = computed(() => config.appBrand.shellLogoText || 'SC');
@@ -1482,6 +1484,22 @@ function handleScenarioSelect(entry: ScenarioNavEntry) {
   query.value = '';
   closeMobileSidebar();
   router.push(selection.route).catch(() => {});
+}
+
+function handleCanonicalSelect(node: CanonicalNavigationNode) {
+  if (!navigationReady.value) return;
+  if (node.state !== 'enabled' || !node.route) return;
+  const selection = createNavigationSelectionSnapshot(node.source, session.routeAuthority);
+  if (!selection) return;
+  const target = router.resolve(node.route);
+  const scope = {
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+    selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+  };
+  if (!routeAuthorityContextAllowed(selection.authority, target.query, scope)) return;
+  query.value = '';
+  closeMobileSidebar();
+  router.push(node.route).catch(() => {});
 }
 
 function handleScenarioEnsureExpanded(centerKey: string, scenarioKey: string) {
