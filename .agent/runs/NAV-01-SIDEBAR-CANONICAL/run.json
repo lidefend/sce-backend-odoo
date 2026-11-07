@@ -15,8 +15,8 @@
     "scripts/verify/"
   ],
   "environment": {
-    "kind": "runtime",
-    "authority": "isolated acceptance sc-fe-r2-p1-01 / sc_frontend_acceptance / frontend 5175"
+    "kind": "offline",
+    "authority": "existing local Make tools and registered unit targets"
   },
   "checks": {
     "navigation_shell": {
