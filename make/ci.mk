@@ -1007,8 +1007,7 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
-	@python3 -m unittest scripts.verify.test_frontend_expression_guard
-	@python3 scripts/verify/frontend_expression_guard.py --check
+	@$(MAKE) --no-print-directory verify.frontend.expression.unit
 	@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree
 	@python3 scripts/ci/trusted_scan_scope.py
 	@if test -z "$$(git status --porcelain=v1 --untracked-files=all)"; then \
