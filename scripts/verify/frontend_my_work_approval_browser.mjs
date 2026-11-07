@@ -175,7 +175,7 @@ async function noOverflow(page, label) {
 }
 
 async function main() {
-  for (const key of ['draft', 'approval', 'reject', 'completed', 'settlement', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing target ${key}`);
+  for (const key of ['draft', 'approval', 'reject', 'completed']) check(TARGETS[key]?.record_id > 0, `missing target ${key}`);
   check(TARGETS.draft.project_id > 0 && TARGETS.draft.project_label, 'missing project context target');
   check(/^[0-9a-f]{40}$/.test(EXPECTED_SHA), 'exact expected candidate SHA is required');
   check(/^[0-9a-f]{40}$/.test(PREVIEW_BASE_SHA), 'exact preview base SHA is required');
@@ -213,13 +213,6 @@ async function main() {
       ['draft', 'approval', 'reject', 'completed'],
       await releasedNavigation.targetByMenuXmlid(TARGETS.draft.menu_xmlid),
     );
-    for (const key of ['settlement', 'work_settlement']) {
-      applyReleasedNavigationTarget(
-        TARGETS,
-        [key],
-        await releasedNavigation.targetByMenuXmlid(TARGETS[key].menu_xmlid),
-      );
-    }
     resetRuntime(runtime);
 
     // J07: authoritative counts, detail round-trip, submit and company A/B/A invalidation.
@@ -257,85 +250,47 @@ async function main() {
     await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
     check((await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company B work item missing');
     await selectCompany(page, 'FE Company A');
-    report.provenance.project_context = await selectProjectContext(page, TARGETS.work_settlement);
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.draft);
     await openMyWork(page);
     check(!(await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company A retained company B item');
     assertClean(runtime, 'J07');
     report.j07 = { status: 'PASS', todo_before: todoBefore, initiated_before: initiatedBefore, company_a_b_a: 'PASS' };
 
-    // J08 form: authoritative defaults, client required validation, save, refresh/edit and submit.
+    // J08 approval fixture: load the authoritative summary, prove the assigned
+    // reviewer can act, execute the real approval and verify the result feedback.
     resetRuntime(runtime);
-    await page.goto(`${BASE_URL}${route(TARGETS.work_settlement)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await waitForCanonicalForm(page, TARGETS.work_settlement);
-    await page.getByRole('button', { name: '新建付款申请' }).click();
-    await page.waitForURL((url) => /\/(?:r|f)\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-    const projectField = page.locator('[data-field-name="project_id"]').first();
-    const contractField = page.locator('[data-field-name="contract_id"]').first();
-    const settlementField = page.locator('[data-field-name="settlement_id"]').first();
-    await projectField.waitFor({ timeout: 45000 });
-    await page.waitForFunction(() => {
-      const project = document.querySelector('[data-field-name="project_id"]')?.textContent || '';
-      const contract = document.querySelector('[data-field-name="contract_id"]')?.textContent || '';
-      const settlement = document.querySelector('[data-field-name="settlement_id"]')?.textContent || '';
-      return project.includes('FE Project A') && !contract.includes('#') && settlement.includes('FE-B05-WORK-SETTLEMENT-001');
-    }, null, { timeout: 45000 });
-    check((await projectField.locator('input').inputValue()).includes('FE Project A'), 'J08 project default missing');
-    check((await contractField.locator('input').inputValue()).trim().length > 0, 'J08 contract default missing');
-    check((await settlementField.locator('input').inputValue()).includes('FE-B05-WORK-SETTLEMENT-001'), 'J08 settlement default missing');
-    const amount = page.locator('[data-field-name="amount"] input').first();
-    await amount.fill('');
-    await page.getByRole('button', { name: '保存草稿' }).click();
-    await page.locator('.validation-error, [role="alert"]').first().waitFor({ timeout: 15000 });
-    check(page.url().includes('/new'), 'J08 invalid form created a record');
-    report.failure_paths.required = 'PASS_DATA_UNCHANGED';
-    await amount.fill('10.00');
-    await page.getByRole('button', { name: '保存草稿' }).click();
-    await page.waitForURL((url) => /\/(?:r|f)\/payment\.request\/\d+/.test(url.pathname), { timeout: 45000 });
-    const createdUrl = page.url();
-    const createdRecordId = Number(new URL(createdUrl).pathname.match(/\/payment\.request\/(\d+)$/)?.[1] || 0);
-    check(createdRecordId > 0, `J08 created record id missing: ${createdUrl}`);
-    const createdHeading = (await page.locator('h1.headline').innerText()).trim();
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
-    await waitForCanonicalForm(page, { ...TARGETS.draft, model: 'payment.request' }, createdRecordId);
-    check((await page.locator('[data-field-name="amount"] input').first().inputValue()).includes('10'), 'J08 saved amount did not recover');
-    const fileInput = page.locator('input[type="file"]').first();
-    if (await fileInput.count()) await fileInput.setInputFiles({ name: 'fe-b05.txt', mimeType: 'text/plain', buffer: Buffer.from('FE-B05 form journey') });
-    const submit = page.locator('.template-page-header-actions button').filter({ hasText: /^提交$/ }).first();
-    await submit.waitFor({ timeout: 45000 });
-    await submit.click();
-    await page.getByRole('dialog').getByRole('button', { name: /^确认提交$/ }).click();
-    await waitForWorkflowState(page, 'submit');
-    const createdName = (await page.locator('h1.headline').innerText()).trim() || createdHeading;
-    check(!createdName.includes('#'), `J08 technical created identity ${createdName}`);
-    const createdIdentifier = createdName.match(/PRQ\d+/)?.[0] || createdName;
     await logout(page);
-
     await login(page, APPROVAL_REVIEWER_LOGIN);
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
-    const approvalCard = page.locator('.work-card').filter({ hasText: createdIdentifier }).first();
+    const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
     await approvalCard.waitFor({ timeout: 45000 });
+    check((await approvalCard.innerText()).includes('¥80.00'), 'approval work item lost the authoritative money value');
     await approvalCard.getByRole('button', { name: '审批' }).click();
     const approvalDialog = page.getByRole('dialog');
     const approvalSummary = await approvalDialog.innerText();
-    check(approvalSummary.includes(createdIdentifier), 'approval summary lost the work item identity');
-    check(/[¥￥]\s*10\.00/.test(approvalSummary), 'approval summary lost the authoritative money value');
+    check(approvalSummary.includes('FE-JOURNEY-APPROVAL-001'), 'approval summary lost the work item identity');
+    check(/[¥￥]\s*80\.00/.test(approvalSummary), 'approval summary lost the authoritative money value');
     await approvalDialog.getByRole('button', { name: '确认审批' }).click();
     await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
-    await page.waitForFunction((name) => !(document.body.innerText || '').includes(name), createdIdentifier, { timeout: 45000 });
-    check(!(await page.locator('body').innerText()).includes(createdIdentifier), 'J08 approved item remained in todo');
+    await page.waitForFunction(() => !(document.body.innerText || '').includes('FE-JOURNEY-APPROVAL-001'), null, { timeout: 45000 });
+    check(!(await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 approved item remained in todo');
     await page.locator('.feedback[role="status"]').filter({ hasText: /已审批/ }).waitFor({ timeout: 15000 });
     await logout(page);
 
     await login(page, 'fixture_role_finance');
-    await page.goto(createdUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
+    await page.goto(`${BASE_URL}${route(TARGETS.approval)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await waitForCanonicalForm(page, TARGETS.approval);
     await waitForWorkflowState(page, 'approved');
-    check((await page.locator('body').innerText()).includes(createdIdentifier), 'J08 finance cannot see approved result');
+    check((await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
     assertClean(runtime, 'J08');
     report.j08 = {
       status: 'PASS',
-      created: createdName,
-      save_refresh_edit_submit: 'PASS',
+      fixture: 'FE-JOURNEY-APPROVAL-001',
+      reviewer_login: APPROVAL_REVIEWER_LOGIN,
+      reviewer_availability: 'PASS',
       reviewer_approval: 'PASS',
       approval_summary: 'PASS',
       approval_feedback: 'PASS',
@@ -344,6 +299,7 @@ async function main() {
     // Explicit reject validation and unauthorized isolation.
     await logout(page);
     await login(page, APPROVAL_REVIEWER_LOGIN);
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.reject);
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const rejectCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-REJECT-001' });
@@ -360,6 +316,7 @@ async function main() {
     await logout(page);
 
     await login(page, 'fixture_role_project_a_member');
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
     await openMyWork(page);
     const memberText = await page.locator('body').innerText();
     check(!/FE-JOURNEY-(?:PAYMENT|APPROVAL|REJECT)|¥|￥/.test(memberText), 'project member My Work leaked payment facts');

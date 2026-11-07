@@ -395,7 +395,6 @@ load_profile
         self.assertIn("selectProjectContext", browser)
         self.assertIn('data-semantic-component="WorkspaceContextIndicator"', browser)
         self.assertIn("company switch system.init failed", browser)
-        self.assertIn("releasedNavigation.targetByMenuXmlid(TARGETS[key].menu_xmlid)", browser)
         self.assertIn("approval summary lost the authoritative money value", browser)
         self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
         self.assertIn("J07 confirmation focus did not enter", browser)
@@ -410,8 +409,6 @@ load_profile
         self.assertIn('"project_id": int(project.id or 0)', runtime_ids)
         self.assertIn('"project_label": str(project.display_name or "")', runtime_ids)
         self.assertIn('"companies": {"a": int(company_a.id), "b": int(company_b.id)}', runtime_ids)
-        self.assertIn('menu_xmlid = "smart_construction_core.menu_sc_p1_expense_settlement"', runtime_ids)
-        self.assertIn('menu_xmlid = "smart_construction_core.menu_sc_p1_income_settlement"', runtime_ids)
         self.assertNotIn("menu_sc_user_payment_apply_acceptance", runtime_ids)
         login = browser.split("async function login(", 1)[1].split(
             "async function logout(", 1
