@@ -53,6 +53,7 @@ goal:
     - GitHub 与 Gitee 正式门禁计划都携带 control_plane_changed
     - 没有后端运行时影响时 backend_impact_plan 返回空模块，不依赖历史复用证据
     - 五种 CI 场景有非零分类矩阵测试
+    - professional quality 工作流为 workflow contract 的真实沙箱测试准备 bubblewrap
     - 未知路径仍触发 HIGH_RISK/full fail-closed
   exclusions:
     - product_runtime_change

@@ -148,11 +148,13 @@
     "ci_suite_tests": 147,
     "planner_tests": 68,
     "ci_local_iteration": "PASS; 7 targets executed, notRunTargets=0",
-    "receipt": ".runtime/frontend-dev-validation/executions/20261107T122423Z-871563-576496319/receipt.json",
-    "external_state": "No push, PR, merge, browser acceptance, candidate build or deployment."
+    "receipt": ".runtime/frontend-dev-validation/executions/20261107T123351Z-933090-922652996/receipt.json",
+    "remote_gate_recovery": "PR #837 at e278ca363 failed professional_quality_checks because /usr/bin/bwrap was absent; merge_policy_gate failed only through its exact-head fact dependency. The P4 workflow now installs and probes bubblewrap before owning control-plane checks, with a contract test binding that order.",
+    "workflow_contract_tests": "PASS after dependency fix; 391 executed unittest cases across the target.",
+    "external_state": "PR #837 created after owner integration authorization; no merge, browser acceptance, candidate build or deployment."
   },
   "blockers": [],
-  "next_exact_step": "Wait for publication authorization for the clean local FE-LOOP-02 candidate; do not merge without a new owner instruction.",
+  "next_exact_step": "After the bubblewrap dependency fix, rerun local iteration, refreeze and publish the exact candidate, then merge only after all required checks pass on the new HEAD and current main.",
   "id": "FE-LOOP-02",
   "branch": "fix/fe-loop-02-ci-path-ownership-20261107",
   "status": "verification_pending",

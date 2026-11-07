@@ -98,6 +98,24 @@
 - `verify.frontend.dev.incremental.unit`：68 tests PASS。
 - `make ci.local.iteration`：7 个必需目标全部 PASS。
 - 执行回执：
-  `.runtime/frontend-dev-validation/executions/20261107T122423Z-871563-576496319/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261107T123351Z-933090-922652996/receipt.json`
+
+### 远端门禁环境缺陷与修复
+
+第一次远端执行绑定 `e278ca363cfbde42ba5d1b336e469b1e41dc9a5d`。`public_guard`、
+`frontend_release_gate` 前置结果及专业质量授权/兼容检查成功；`professional_quality_checks`
+在 `verify.ci.workflow.contract` 的真实沙箱测试中失败，原始错误为：
+
+```text
+FileNotFoundError: [Errno 2] No such file or directory: '/usr/bin/bwrap'
+```
+
+失败分类为 `environment_defect`。`merge_policy_gate` 的失败是精确 HEAD 事实检查依赖
+`professional_quality_gate` 失败后的联动结果，不是独立产品缺陷。
+
+恢复事实：`professional_quality_checks` 的受管依赖准备步骤现在同时安装 `ripgrep` 和
+`bubblewrap`，并在执行控制面检查前运行 `command -v bwrap` 与 `bwrap --version`。
+`test_ci_risk_workflow_contract.py` 新增契约测试，锁定该依赖和无条件执行顺序。
+本地 `make verify.ci.workflow.contract` 已以 391 个实际 unittest 用例通过。
 
 本批未修改产品运行时、浏览器验收、候选构建或部署。

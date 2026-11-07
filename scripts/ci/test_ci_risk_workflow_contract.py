@@ -149,6 +149,20 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertIn(gate, names)
             self.assertLess(names.index(pin_name), names.index(gate), f"{gate} must run after the pin")
 
+    def test_professional_gate_prepares_bubblewrap_for_real_sandbox_contract(self) -> None:
+        """The workflow contract executes the formal executor's real bwrap tests."""
+        workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
+        names = [step.get("name") for step in steps]
+        prep_name = "Prepare governed verification dependencies"
+        tool_name = "Run owning tool checks for changed control plane"
+        prep = steps[names.index(prep_name)]
+        self.assertNotIn("if", prep)
+        self.assertIn("sudo apt-get install -y ripgrep bubblewrap", prep["run"])
+        self.assertIn("command -v bwrap", prep["run"])
+        self.assertIn("bwrap --version", prep["run"])
+        self.assertLess(names.index(prep_name), names.index(tool_name))
+
     def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
         text = self.text("public_guard.yml")
         self.assertIn("name: public_guard_classify", text)

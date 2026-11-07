@@ -225,7 +225,7 @@ Generated from repository source files. This report is informational during the 
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 495 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 497 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 493 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
