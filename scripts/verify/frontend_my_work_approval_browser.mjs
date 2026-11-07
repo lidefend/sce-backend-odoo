@@ -90,15 +90,40 @@ async function openMyWork(page) {
 }
 
 async function selectCompany(page, companyName) {
-  const select = page.locator('label.business-scope-field select').filter({ has: page.locator(`option:has-text("${companyName}")`) }).first();
-  await select.waitFor({ timeout: 30000 });
+  const expectedCompanyId = Number(companyName === 'FE Company A' ? TARGETS.companies?.a : companyName === 'FE Company B' ? TARGETS.companies?.b : 0);
+  check(expectedCompanyId > 0, `missing governed company identity for ${companyName}`);
+  const contextIndicator = page.locator('[data-semantic-component="WorkspaceContextIndicator"]:visible');
+  await contextIndicator.waitFor({ timeout: 30000 });
+  check(await contextIndicator.count() === 1, 'workspace context indicator identity is not unique');
+  const trigger = contextIndicator.getByRole('button', { name: /^切换公司：/ });
+  await trigger.waitFor({ timeout: 30000 });
+  check(await trigger.count() === 1, 'company switch trigger identity is not unique');
+  await trigger.click();
+  const panel = page.locator('.workspace-scope-panel').filter({
+    has: page.getByRole('heading', { name: '公司空间', exact: true }),
+  });
+  await panel.waitFor({ timeout: 30000 });
+  const option = panel.locator('.workspace-scope-options > button').filter({ hasText: companyName }).first();
+  await option.waitFor({ timeout: 30000 });
+  if (await option.getAttribute('aria-current') === 'true') {
+    await option.click();
+    return;
+  }
   const init = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
-    try { return JSON.parse(response.request().postData() || '{}')?.intent === 'system.init'; } catch { return false; }
+    try {
+      const payload = JSON.parse(response.request().postData() || '{}');
+      const requestCompanyId = Number(payload?.context?.company_id || payload?.params?.context?.company_id || payload?.params?.company_id || 0);
+      return payload?.intent === 'system.init' && requestCompanyId === expectedCompanyId;
+    } catch {
+      return false;
+    }
   }, { timeout: 45000 });
-  await select.selectOption({ label: companyName });
-  await init;
-  await page.waitForTimeout(300);
+  await option.click();
+  const response = await init;
+  check(response.ok(), `company switch system.init failed: ${response.status()}`);
+  await panel.waitFor({ state: 'hidden', timeout: 45000 });
+  await contextIndicator.getByRole('button', { name: `切换公司：${companyName}`, exact: true }).waitFor({ timeout: 45000 });
 }
 
 async function selectProjectContext(page, target) {
@@ -225,6 +250,7 @@ async function main() {
     await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
     check((await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company B work item missing');
     await selectCompany(page, 'FE Company A');
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.work_settlement);
     await openMyWork(page);
     check(!(await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company A retained company B item');
     assertClean(runtime, 'J07');

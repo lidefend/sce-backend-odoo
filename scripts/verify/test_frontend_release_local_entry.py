@@ -393,6 +393,8 @@ load_profile
         self.assertIn('data-product-page-mode="form"][data-state="ok"][data-form-model=', browser)
         self.assertIn('data-professional-workflow-component="statusbar"][data-workflow-current=', browser)
         self.assertIn("selectProjectContext", browser)
+        self.assertIn('data-semantic-component="WorkspaceContextIndicator"', browser)
+        self.assertIn("company switch system.init failed", browser)
         self.assertIn("approval summary lost the authoritative money value", browser)
         self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
         self.assertIn("J07 confirmation focus did not enter", browser)
@@ -406,6 +408,7 @@ load_profile
         )
         self.assertIn('"project_id": int(project.id or 0)', runtime_ids)
         self.assertIn('"project_label": str(project.display_name or "")', runtime_ids)
+        self.assertIn('"companies": {"a": int(company_a.id), "b": int(company_b.id)}', runtime_ids)
         self.assertNotIn("menu_sc_user_payment_apply_acceptance", runtime_ids)
         login = browser.split("async function login(", 1)[1].split(
             "async function logout(", 1

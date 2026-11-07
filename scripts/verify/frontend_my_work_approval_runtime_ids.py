@@ -26,7 +26,10 @@ def target(menu_xmlid, record_xmlid):
 
 
 payment_menu = "smart_construction_core.menu_sc_user_payment_apply"
+company_a = ref("smart_construction_acceptance_fixture.fe_company_a")
+company_b = ref("smart_construction_acceptance_fixture.fe_company_b")
 payload = {
+    "companies": {"a": int(company_a.id), "b": int(company_b.id)},
     "draft": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_a"),
     "approval": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_approval_a"),
     "reject": target(payment_menu, "smart_construction_acceptance_fixture.fe_journey_payment_request_reject_a"),
