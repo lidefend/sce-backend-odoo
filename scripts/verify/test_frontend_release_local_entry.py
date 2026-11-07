@@ -396,6 +396,8 @@ load_profile
         self.assertIn('data-semantic-component="WorkspaceContextIndicator"', browser)
         self.assertIn("company switch system.init failed", browser)
         self.assertIn("approval summary lost the authoritative money value", browser)
+        self.assertIn("PASS_VISIBLE_WORKLIST_STATE_UPDATE", browser)
+        self.assertIn("pending_inline_feedback", browser)
         self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
         self.assertIn("J07 confirmation focus did not enter", browser)
         self.assertNotIn('.financial-workspace[data-workspace-kind=', browser)

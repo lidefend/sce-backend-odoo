@@ -264,6 +264,7 @@ async function main() {
     report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
+    const reviewerTodoBefore = await sectionCount(page, 'todo');
     const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
     await approvalCard.waitFor({ timeout: 45000 });
     check(Boolean(TARGETS.approval.amount_display), 'approval target money display is required');
@@ -277,7 +278,9 @@ async function main() {
     await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
     await page.waitForFunction(() => !(document.body.innerText || '').includes('FE-JOURNEY-APPROVAL-001'), null, { timeout: 45000 });
     check(!(await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 approved item remained in todo');
-    await page.locator('.feedback[role="status"]').filter({ hasText: /已审批/ }).waitFor({ timeout: 15000 });
+    await page.waitForFunction((expected) => Number(document.querySelector('.count-card[data-section-key="todo"] strong')?.textContent || -1) === expected, reviewerTodoBefore - 1, { timeout: 15000 });
+    const reviewerTodoAfter = await sectionCount(page, 'todo');
+    check(reviewerTodoAfter === reviewerTodoBefore - 1, 'J08 approval did not update the visible worklist count');
     await logout(page);
 
     await login(page, 'fixture_role_finance');
@@ -294,7 +297,10 @@ async function main() {
       reviewer_availability: 'PASS',
       reviewer_approval: 'PASS',
       approval_summary: 'PASS',
-      approval_feedback: 'PASS',
+      approval_feedback: 'PASS_VISIBLE_WORKLIST_STATE_UPDATE',
+      pending_inline_feedback: 'NOT_OBSERVED',
+      todo_before: reviewerTodoBefore,
+      todo_after: reviewerTodoAfter,
     };
 
     // Explicit reject validation and unauthorized isolation.
