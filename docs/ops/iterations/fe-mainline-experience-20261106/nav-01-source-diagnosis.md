@@ -34,3 +34,11 @@
 - 搜索：规范节点过滤，不依赖场景导航组件。
 - 视觉体系：MenuTree/CanonicalNavigationMenuNode 真正被消费。
 - 旧实现：ProductScenarioNavigation 保留但不再作为数据权威。
+
+## 6. C/D 运行态验收（PM / 隔离环境）
+
+- 搜索过滤：输入“项目台账”后 canonical 节点从 30 → 4（系统菜单→项目中心→项目台账→项目台账），父链保留。
+- 叶子路由：点击叶子后导航到 /a/590?menu_id=382。
+- 展开：系统菜单默认折叠，点击后项目中心可见。
+- 响应式：390px 无横向溢出（scrollWidth=clientWidth=390）。
+- 新旧对账（PM）：canonical 叶子 19 条、scenario 入口 19 条，scenario-only 与 canonical-only 均为空，19/19 全部一致，无入口丢失。
