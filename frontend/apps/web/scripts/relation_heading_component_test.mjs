@@ -12,7 +12,9 @@ import { createSSRApp, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import Section from '${source}/components/template/FormSection.vue';
 import Tree from '${source}/components/template/NativeFormTreeRenderer.vue';
-export async function render({label, hidden=false, state='empty', readonly=true, outer=false, name='line_ids'}) {
+import { registerIndustryRenderers } from '${source}/extensions/industryRenderers';
+registerIndustryRenderers();
+export async function render({label, hidden=false, state='empty', readonly=true, outer=false, name='line_ids', industry=false, noAdapter=false}) {
  const rows=state==='populated'?[{key:'row-1',id:1,values:{name:'完整关系记录'}}]:[];
  const columns=[{name:'name',label:'记录名称',ttype:'char',required:false,readonly:true}];
  const adapter={busy:false,showOne2manyErrors:false,readContext:{},
@@ -28,10 +30,16 @@ export async function render({label, hidden=false, state='empty', readonly=true,
  const field={key:'test-field',name,label,type:'one2many',value:[],readonly,hideLabel:hidden,required:false,span:24,
   componentKey:'sc.relation.table',componentRenderer:'ProfessionalDetailCollectionControl',one2manyPageSize:20,
   descriptor:{relation:'x.line'},renderProfile:readonly?'readonly':'edit',presentationMode:'task'};
- const props={title:'',columns:1,fields:[field],relationAdapter:adapter};
+ const industryField={...field,componentKey:'sc.payment.settlement_detail_collection',
+  componentRenderer:'PaymentSettlementDetailCollectionControl',pageContractVersion:'2.2.0',
+  componentConfig:{optionalDetails:{entryLabel:'按明细填写',populatedLabel:'明细',
+    directAmountMessage:'直接填写金额',linkedAmountMessage:'以明细合计为准',
+    lastRowRemovalActionLabel:'停用明细',lastRowRemovalMessage:'保留最后合计'}}};
+ const activeField=industry?industryField:field;
+ const props={title:'',columns:1,fields:[activeField],relationAdapter:industry&&noAdapter?undefined:adapter};
  const treeProps={nodes:[{type:'group',name:'outer',string:label,label,columns:1,span:24,children:[{type:'field',name,span:24}]}],
-  fieldSchemasForNodes:nodes=>nodes.filter(n=>n.type==='field').map(()=>field),isNodeVisible:()=>true,
-  relationAdapter:adapter,preferReadonlyFacts:true};
+  fieldSchemasForNodes:nodes=>nodes.filter(n=>n.type==='field').map(()=>activeField),isNodeVisible:()=>true,
+  relationAdapter:industry&&noAdapter?undefined:adapter,preferReadonlyFacts:true};
  const app=createSSRApp({render:()=>outer?h(Tree,treeProps):h(Section,props)});
  const warnings=[];app.config.warnHandler=message=>warnings.push(message);
  const html=await renderToString(app);
@@ -65,4 +73,10 @@ for(const state of ['empty','loading','populated']) {
  observations.push({outer:true,hidden:true,state,titleOccurrences:1});
 }
 fs.writeFileSync(`${root}/.runtime/fepc11-component-observations.json`,JSON.stringify({kind:'actual_component_SSR',checks,observations},null,2)+'\n');
+const missingCapability=await render({label:'结算明细',industry:true,noAdapter:true,readonly:false});
+assert.ok(missingCapability.html.includes('data-field-fail-closed="PaymentSettlementDetailCollectionControl"'),
+  'a registered industry Renderer without its required host capability must fail closed');checks++;
+const providedCapability=await render({label:'结算明细',industry:true,noAdapter:false,readonly:false});
+assert.ok(providedCapability.html.includes('data-semantic-component="PaymentSettlementDetailCollectionControl"'),
+  'the industry Renderer must render when all host capabilities are provided');checks++;
 console.log(`[relation-heading-component] PASS scenarios=${observations.length} checks=${checks} actual FormSection/NativeFormTreeRenderer/X2ManyRelationRenderer`);

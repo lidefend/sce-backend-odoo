@@ -53,6 +53,8 @@
           :data-field-type="detailFactField(item).type"
           :data-widget-type="detailFactField(item).widget || undefined"
           :data-component-renderer="detailFactField(item).componentRenderer || undefined"
+          :data-component-renderer-version="detailFactField(item).componentRendererVersion || undefined"
+          :data-component-supported-contract-version="detailFactField(item).componentSupportedContractVersion || undefined"
           :data-native-locator="detailFactField(item).nativeLocator || undefined"
           :data-source-position="detailFactField(item).sourcePosition ?? undefined">
         <NativeWeightedRelationDisplay
@@ -119,7 +121,10 @@
           :data-component-key="field.componentKey || undefined"
           :data-component-readiness="field.componentReadiness || undefined"
           :data-component-renderer="field.componentRenderer || undefined"
+          :data-component-renderer-version="field.componentRendererVersion || undefined"
+          :data-component-supported-contract-version="field.componentSupportedContractVersion || undefined"
           :data-contract-component-version="field.contractVersion || undefined"
+          :data-page-contract-version="field.pageContractVersion || undefined"
           :data-component-fallback="field.componentFallback || undefined"
           :data-form-semantic-role="field.semanticRole || undefined"
           :data-form-section-target="field.sectionNavigationTarget || undefined"
@@ -475,6 +480,7 @@ import {
   type ScTaskActionDescriptor,
 } from './taskActionResolver';
 import {
+  FORM_RELATION_ONE2MANY_CAPABILITY,
   isIndustryComponentKey,
   isRegisteredComponentKey,
   PROFESSIONAL_COMPONENT_RENDERERS,
@@ -770,9 +776,17 @@ function industryRendererFor(field: FormSectionFieldSchema) {
     componentKey: field.componentKey,
     componentRenderer: field.componentRenderer,
     fieldType: field.type,
+    pageContractVersion: field.pageContractVersion,
     presentationMode: field.presentationMode,
     renderProfile: field.renderProfile,
+    capabilities: providedIndustryRendererCapabilities(field),
   });
+}
+
+function providedIndustryRendererCapabilities(field: FormSectionFieldSchema) {
+  return props.relationAdapter && String(field.type || '').trim().toLowerCase() === 'one2many'
+    ? [FORM_RELATION_ONE2MANY_CAPABILITY]
+    : [];
 }
 
 function usesIndustryRenderer(field: FormSectionFieldSchema) {

@@ -1315,9 +1315,17 @@ assert.equal(
 assert.deepEqual(
   {
     version: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractVersion,
+    rendererVersion: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.rendererVersion,
+    supportedContractVersion: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.supportedContractVersion,
+    pageContractVersion: structurePresentationFields.find((field) => field.fieldCode === 'name')?.pageContractVersion,
   },
-  { version: '1.0' },
-  'the delivered component identity version must reach the professional component resolution',
+  {
+    version: '1.0',
+    rendererVersion: '1.0.0',
+    supportedContractVersion: '>=2.0.0 <2.3.0',
+    pageContractVersion: '2.2.0',
+  },
+  'component identity, renderer version and page Contract V2 version must reach the presentation model',
 );
 
 const missingComponentRegistrySnapshot = snapshot();

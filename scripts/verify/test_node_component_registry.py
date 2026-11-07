@@ -69,11 +69,44 @@ class NodeRegistryTests(unittest.TestCase):
 
     def test_node_forbidden_field_attributes(self):
         self.node()
-        for name, value in [('semantic', 'text'), ('field_types', ['char']), ('renderer', 'FormSectionField'), ('readiness', 'ready')]:
+        for name, value in [
+            ('semantic', 'text'),
+            ('field_types', ['char']),
+            ('renderer', 'FormSectionField'),
+            ('renderer_version', '1.0.0'),
+            ('contract_version', '>=2.0.0 <2.3.0'),
+            ('capabilities', ['form.relation.one2many']),
+            ('readiness', 'ready'),
+        ]:
             with self.subTest(name=name):
                 candidate = copy.deepcopy(self.component)
                 candidate['components'][self.key][name] = value
                 with self.assertRaises(SystemExit): self.render(candidate)
+
+    def test_industry_capability_and_versions_are_projected(self):
+        frontend = generator.render_frontend_registry(self.component, version=self.version)
+        industry = generator.render_industry_manifest(self.component, version=self.version)
+        self.assertIn("'form.relation.one2many': 'FormSection.relationAdapter'", frontend)
+        self.assertIn("rendererVersion: '1.0.0'", industry)
+        self.assertIn("supportedContractVersion: '>=2.0.0 <2.3.0'", industry)
+        self.assertIn("requiredCapabilities: ['form.relation.one2many']", industry)
+
+    def test_requiring_an_undeclared_capability_is_rejected(self):
+        self.component['components']['sc.payment.settlement_detail_collection']['capabilities'] = [
+            'form.relation.undeclared'
+        ]
+        with self.assertRaisesRegex(SystemExit, 'requires undeclared capability'):
+            generator.render_industry_manifest(self.component, version=self.version)
+
+    def test_capability_provider_is_required_for_required_capability(self):
+        self.component['capability_providers'] = {}
+        with self.assertRaisesRegex(SystemExit, 'requires undeclared capability'):
+            generator.render_industry_manifest(self.component, version=self.version)
+
+    def test_platform_capabilities_are_rejected_before_a_host_consumer_exists(self):
+        self.component['components']['sc.input.text']['capabilities'] = ['form.relation.one2many']
+        with self.assertRaisesRegex(SystemExit, 'platform component .* capabilities'):
+            generator.render_frontend_registry(self.component, version=self.version)
 
     def test_unknown_kind_and_attributes_rejected(self):
         for extra in ({'kind': 'other'}, {'surprise': True}, {'kind': None}):

@@ -75,6 +75,16 @@ class Rule:
 
 RULES = (
     Rule((
+        "contracts/registry/",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "contracts/generated/contract_structure_fingerprint.json",
+    ), (
+        "verify.contract.structure_lock",
+    )),
+    Rule((
         ".agent/",
     ), (
         "verify.agent.ledger.unit",
@@ -159,6 +169,12 @@ RULES = (
     Rule((
         "scripts/verify/frontend_professional_detail_collection_guard.py",
         "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+    ), (
+        "verify.frontend.professional_detail_collection.unit",
+    )),
+    Rule((
+        "/components/template/FormSection.vue",
+        "frontend/apps/web/scripts/relation_heading_component_test.mjs",
     ), (
         "verify.frontend.professional_detail_collection.unit",
     )),

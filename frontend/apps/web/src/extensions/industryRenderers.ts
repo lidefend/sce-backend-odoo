@@ -1,7 +1,10 @@
 import type { Component } from 'vue';
 import PaymentSettlementDetailCollectionControl from '../components/professional-fields/PaymentSettlementDetailCollectionControl.vue';
 import { INDUSTRY_RENDERER_ROWS } from '../app/presentation/industry_renderer_manifest.generated';
-import { registerIndustryRendererExtensions } from '../app/presentation/professionalComponentRegistry';
+import {
+  registerIndustryRendererExtensions,
+  unregisterIndustryRendererExtensions,
+} from '../app/presentation/professionalComponentRegistry';
 
 /**
  * Industry renderer implementations are resolved by the generated manifest's
@@ -20,4 +23,9 @@ export function registerIndustryRenderers(): void {
     }
     return { row, component };
   }));
+}
+
+/** Remove the complete manifest set only after every key has been validated. */
+export function unregisterIndustryRenderers(): void {
+  unregisterIndustryRendererExtensions(INDUSTRY_RENDERER_ROWS.map((row) => row.componentKey));
 }

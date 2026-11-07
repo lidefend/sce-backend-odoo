@@ -702,8 +702,8 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("professionalComponentRegistry.ts"):
                 return value.replace(
-                    "declaredRenderer(row.renderer),",
-                    "row.renderer as unknown as ProfessionalComponentRenderer,",
+                    "registration(row, declaredRenderer(row.renderer))",
+                    "registration(row, row.renderer as unknown as ProfessionalComponentRenderer)",
                     1,
                 )
             return value
@@ -715,8 +715,8 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("semantic_registry.generated.ts"):
                 return value.replace(
-                    "renderer: 'FormSectionField'},",
-                    "renderer: 'GhostControl' as unknown as string},",
+                    "renderer: 'FormSectionField', rendererVersion:",
+                    "renderer: 'GhostControl' as unknown as string, rendererVersion:",
                     1,
                 )
             return value
@@ -2249,7 +2249,9 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                     "  {componentKey: 'sc.payment.settlement_detail_collection', "
                     "semanticType: 'payment_settlement_detail_collection', "
                     "supportedFieldTypes: ['one2many'], readiness: 'ready', "
-                    "renderer: 'PaymentSettlementDetailCollectionControl'},\n];\n",
+                    "renderer: 'PaymentSettlementDetailCollectionControl', "
+                    "rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.3.0', "
+                    "requiredCapabilities: ['form.relation.one2many']},\n];\n",
                     1,
                 )
             return value
@@ -2267,7 +2269,8 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                     "];\n",
                     "  {componentKey: 'sc.value.money', semanticType: 'money', "
                     "supportedFieldTypes: ['monetary'], readiness: 'ready', "
-                    "renderer: 'ProfessionalBusinessValueControl'},\n];\n",
+                    "renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', "
+                    "supportedContractVersion: '>=2.0.0 <2.3.0', requiredCapabilities: []},\n];\n",
                     1,
                 )
             return value
@@ -2299,7 +2302,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("main.ts"):
-                return value.replace("registerIndustryRenderers();\n", "", 1) + (
+                return value.replace("\nregisterIndustryRenderers();\n", "\n", 1) + (
                     "\nregisterIndustryRenderers();\n"
                 )
             return value
@@ -2353,6 +2356,114 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
 
         self.assertTrue(any(
             "INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY" in failure
+            for failure in validate(source)
+        ))
+
+    def test_capability_provider_drift_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("semantic_registry.generated.ts"):
+                return value.replace(
+                    "  'form.relation.one2many': 'FormSection.relationAdapter',\n",
+                    "",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "capability providers differ" in failure
+            for failure in validate(source)
+        ))
+
+    def test_platform_component_capability_declaration_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("semantic_registry.generated.ts"):
+                return value.replace(
+                    "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
+                    "supportedContractVersion: '>=2.0.0 <2.3.0', requiredCapabilities: []",
+                    "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
+                    "supportedContractVersion: '>=2.0.0 <2.3.0', "
+                    "requiredCapabilities: ['form.relation.one2many']",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "declares capabilities without a platform host consumer" in failure
+            for failure in validate(source)
+        ))
+
+    def test_invalid_renderer_version_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("industry_renderer_manifest.generated.ts"):
+                return value.replace("rendererVersion: '1.0.0'", "rendererVersion: '1.0'", 1)
+            return value
+
+        failures = validate(source)
+        self.assertTrue(any("protocol metadata" in failure or "invalid rendererVersion" in failure for failure in failures))
+
+    def test_invalid_contract_version_range_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("industry_renderer_manifest.generated.ts"):
+                return value.replace(
+                    "supportedContractVersion: '>=2.0.0 <2.3.0'",
+                    "supportedContractVersion: '^2'",
+                    1,
+                )
+            return value
+
+        failures = validate(source)
+        self.assertTrue(any("protocol metadata" in failure or "invalid supportedContractVersion" in failure for failure in failures))
+
+    def test_industry_rows_without_capability_metadata_fail(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("industry_renderer_manifest.generated.ts"):
+                return value.replace(", requiredCapabilities: ['form.relation.one2many']", "")
+            return value
+
+        self.assertTrue(any(
+            "protocol metadata" in failure
+            or "industry renderer manifest does not contain exactly" in failure
+            for failure in validate(source)
+        ))
+
+    def test_form_section_page_contract_version_is_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace("    pageContractVersion: field.pageContractVersion,\n", "", 1)
+            return value
+
+        self.assertTrue(any(
+            "revalidate the page Contract V2 version" in failure
+            for failure in validate(source)
+        ))
+
+    def test_form_section_host_capabilities_are_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace("    capabilities: providedIndustryRendererCapabilities(field),\n", "", 1)
+            return value
+
+        self.assertTrue(any(
+            "provide the declared host capabilities" in failure
+            for failure in validate(source)
+        ))
+
+    def test_main_runtime_disposal_unregister_is_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("main.ts"):
+                return value.replace("    unregisterIndustryRenderers();\n", "", 1)
+            return value
+
+        self.assertTrue(any(
+            "unregister industry renderers during runtime disposal" in failure
             for failure in validate(source)
         ))
 

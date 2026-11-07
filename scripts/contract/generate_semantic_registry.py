@@ -236,9 +236,16 @@ export type SemanticRegistryRow = {
   readonly supportedFieldTypes: readonly string[];
   readonly readiness: SemanticRegistryReadiness;
   readonly renderer: string;
+  readonly rendererVersion: string;
+  readonly supportedContractVersion: string;
+  readonly requiredCapabilities: readonly string[];
 };
 
 export const SEMANTIC_REGISTRY_VERSION = __VERSION__;
+
+export const RENDERER_CAPABILITY_PROVIDERS: Readonly<Record<string, string>> = Object.freeze({
+__CAPABILITY_PROVIDERS__
+});
 
 export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
 """
@@ -282,6 +289,12 @@ def component_rows(component: dict, categories: dict[str, str]) -> tuple[list[di
     components = component.get("components") or {}
     defaults = component.get("defaults") if isinstance(component.get("defaults"), dict) else {}
     default_readiness = str(defaults.get("readiness") or "ready")
+    default_renderer_version = str(defaults.get("renderer_version") or "")
+    default_contract_version = str(defaults.get("contract_version") or "")
+    default_capabilities = defaults.get("capabilities") or []
+    capability_providers = component.get("capability_providers") or {}
+    if not isinstance(capability_providers, dict):
+        raise SystemExit("[generate-semantic-registry] FAIL: capability_providers must be a mapping")
     platform: list[dict] = []
     industry: list[dict] = []
     for key, entry in components.items():
@@ -304,12 +317,33 @@ def component_rows(component: dict, categories: dict[str, str]) -> tuple[list[di
                 f"[generate-semantic-registry] FAIL: component {key!r} names semantic "
                 f"{semantic!r} without a declared category"
             )
+        renderer_version = str(entry.get("renderer_version") or default_renderer_version)
+        supported_contract_version = str(entry.get("contract_version") or default_contract_version)
+        required_capabilities = entry.get("capabilities", default_capabilities)
+        if not isinstance(required_capabilities, (list, tuple)):
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: component {key!r} capabilities must be a list"
+            )
+        if category != "industry" and required_capabilities:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: platform component {key!r} declares "
+                "renderer capabilities before the platform host enforces them"
+            )
+        for capability in required_capabilities:
+            if str(capability) not in capability_providers:
+                raise SystemExit(
+                    f"[generate-semantic-registry] FAIL: component {key!r} requires undeclared "
+                    f"capability {capability!r}"
+                )
         row = {
             "componentKey": key,
             "semantic": semantic,
             "fieldTypes": field_types,
             "readiness": str(entry.get("readiness") or default_readiness),
             "renderer": renderer,
+            "rendererVersion": renderer_version,
+            "supportedContractVersion": supported_contract_version,
+            "requiredCapabilities": tuple(str(item) for item in required_capabilities),
         }
         (industry if category == "industry" else platform).append(row)
     return platform, industry
@@ -323,7 +357,9 @@ def render_frontend_rows(rows: list[dict]) -> str:
             "  {"
             f"componentKey: {row['componentKey']!r}, semanticType: {row['semantic']!r}, "
             f"supportedFieldTypes: [{types}], readiness: {row['readiness']!r}, "
-            f"renderer: {row['renderer']!r}"
+            f"renderer: {row['renderer']!r}, rendererVersion: {row['rendererVersion']!r}, "
+            f"supportedContractVersion: {row['supportedContractVersion']!r}, "
+            f"requiredCapabilities: [{', '.join(repr(item) for item in row['requiredCapabilities'])}]"
             "},"
         )
     return "\n".join(lines)
@@ -339,10 +375,15 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
     validate_component_registry(component)
     platform_rows, _industry_rows = component_rows(component, semantic_categories(root))
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
+    capability_providers = component.get("capability_providers") or {}
+    provider_lines = "\n".join(
+        f"  {provider!r}: {str(owner)!r},"
+        for provider, owner in sorted(capability_providers.items())
+    )
     return (
         FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
             "__VERSION__", str(version)
-        )
+        ).replace("__CAPABILITY_PROVIDERS__", provider_lines)
         + render_frontend_rows(platform_rows)
         + "\n];\n"
         + "\nexport const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({\n"

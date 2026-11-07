@@ -266,6 +266,7 @@ function fieldFromWidget(
   structure: ContractV2FormStructureContract | undefined,
   componentRegistry: ContractV2Dictionary,
   clientType: string,
+  pageContractVersion: string,
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
@@ -276,9 +277,9 @@ function fieldFromWidget(
   const componentResolution = resolveContractProfessionalComponent({
     componentKey: widget.componentKey,
     fieldType,
+    pageContractVersion,
     presentationMode,
     renderProfile: mode,
-    capabilities: widget.capabilities,
     clientType,
     contractRegistryEntry: componentRegistry[widget.componentKey],
   });
@@ -338,6 +339,7 @@ function fieldFromWidget(
     fieldType,
     componentKey: widget.componentKey,
     componentResolution,
+    pageContractVersion,
     presentationMode,
     renderProfile: mode,
     span: widget.span,
@@ -385,6 +387,7 @@ function presentNode(
   structure: ContractV2FormStructureContract | undefined,
   componentRegistry: ContractV2Dictionary,
   clientType: string,
+  pageContractVersion: string,
   ancestorTitle = '',
   modifierValues?: ContractV2Dictionary,
 ): CanonicalFormNode {
@@ -431,6 +434,7 @@ function presentNode(
       structure,
       componentRegistry,
       clientType,
+      pageContractVersion,
       store,
     )
   ));
@@ -507,7 +511,7 @@ function presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
         mode, presentationMode, pageCanEdit, visible, disabled, readonly, actionsByIdentity, actionsByNativeOccurrence,
         authoritativeFieldLabels, structure, componentRegistry, clientType,
-        rawTitle || ancestorTitle, modifierValues,
+        pageContractVersion, rawTitle || ancestorTitle, modifierValues,
       )
     )),
   };
@@ -732,7 +736,7 @@ export function presentContractV2Form(
     presentNode(
       container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, contractAuthLevelDeniesAccess(pageAuthLevel), false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
-      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType, '', runtimeValuesMerged,
+      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType, snapshot.pageInfo.contractVersion, '', runtimeValuesMerged,
     )
   ));
   const explicitNodes = projectNodeComponents(snapshot, context?.feedbackEvaluations);

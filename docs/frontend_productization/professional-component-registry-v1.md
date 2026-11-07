@@ -28,6 +28,7 @@ Every registration declares:
 
 - component key and semantic type;
 - supported field types, presentation modes, and render profiles;
+- renderer implementation version and supported Contract V2 version range;
 - required capabilities;
 - renderer and explicit fallback;
 - readiness: `ready`, `readable_fallback`, or `fail_closed`.
@@ -70,6 +71,24 @@ union. A failed batch leaves no half registration behind.
 platform renderer or a manifest-declared industry renderer. The runtime check,
 not the TypeScript union alone, is the authority for the industry branch.
 
+Each registration also carries:
+
+- `rendererVersion`: strict `major.minor.patch`;
+- `supportedContractVersion`: a bounded Contract V2 range such as
+  `>=2.0.0 <2.3.0`;
+- `requiredCapabilities`: capabilities consumed by the renderer implementation.
+
+Capabilities and their providers are declared once under
+`contracts/registry/component.yaml: capability_providers` and projected into
+`RENDERER_CAPABILITY_PROVIDERS`. Registration rejects a capability without a
+declared provider. The current industry Renderer requires
+`form.relation.one2many`, which `FormSection.relationAdapter` provides only while
+the host actually supplies a relation adapter.
+
+Platform field components may not declare host capabilities until the platform
+renderer dispatcher itself has an equivalent enforcement point; the declaration
+lint rejects such rows instead of accepting a declared-but-unconsumed capability.
+
 `FORM_SECTION_TYPE_DIRECTED_RENDERER` (`FormSectionField`) is the deliberate
 sentinel for "no professional control owns this field; the section's own
 type-directed control renders it". It is named rather than implied, so a
@@ -78,12 +97,14 @@ reaches the template. It is also the one union member that needs no branch of
 its own.
 
 `FormSection` fails closed when a componentKey is unknown, when a registered
-industry renderer is missing, or when the field's field type, presentation mode,
-render profile or renderer identity does not match its registration. The field
-renders a visible, non-editable alert carrying `data-field-fail-closed` instead
-of a silently editable input. The check runs before every other renderer branch,
-because the branches that select a control from field type alone would
-otherwise absorb a violation the registry should have caught.
+industry renderer is missing, when the page Contract V2 version is outside the
+renderer's supported range, when a required host capability is unavailable, or
+when the field's field type, presentation mode, render profile or renderer
+identity does not match its registration. The field renders a visible,
+non-editable alert carrying `data-field-fail-closed` instead of a silently
+editable input. The check runs before every other renderer branch, because the
+branches that select a control from field type alone would otherwise absorb a
+violation the registry should have caught.
 
 `frontend_professional_component_registry_guard` holds both halves: the union
 is closed and typed, and every union member other than the sentinel is
@@ -280,11 +301,18 @@ industry registration must precede `bootstrapApp()` and `app.mount()`, and
 - A registration is not a dynamic component loader. Its renderer name is an
   auditable authorization target for the current production renderer.
 
-## Deliberately not delivered
+## Runtime lifecycle
 
-This boundary batch does not implement `rendererVersion`, a renderer-to-contract
-version range, non-empty runtime capabilities, capability provisioning, or
-industry module install/uninstall lifecycle. `contractVersion` is still the
-Contract V2 component binding supplied by the contract; it is not an
-implementation-version compatibility protocol. Capabilities remain an empty
-placeholder until an owning registry/provider and runtime consumer exist.
+Registration is atomic and occurs before application bootstrap and mount.
+Unregistration is atomic: every requested componentKey is validated before any
+renderer, componentKey or semantic row is removed. The industry extension entry
+registers on application startup and unregisters during Vite runtime disposal.
+Unknown, duplicate, partially registered and mismatched lifecycle operations fail
+closed.
+
+`contractVersion` in the resolution continues to represent the delivered
+component-registry binding version (for example `1.0`) and is shown as
+`data-contract-component-version`. The page Contract V2 version and renderer
+support metadata are emitted separately as
+`data-page-contract-version`, `data-component-renderer-version` and
+`data-component-supported-contract-version`.

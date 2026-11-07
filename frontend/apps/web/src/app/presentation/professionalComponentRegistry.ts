@@ -1,7 +1,18 @@
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from './canonicalFormRenderModel';
 import { PROFESSIONAL_BASE_FIELD_TYPES } from '../../components/professional-fields/professionalBaseFieldModel';
-import { SEMANTIC_REGISTRY_ROWS } from './semantic_registry.generated';
-import type { SemanticRegistryReadiness } from './semantic_registry.generated';
+import {
+  RENDERER_CAPABILITY_PROVIDERS,
+  SEMANTIC_REGISTRY_ROWS,
+} from './semantic_registry.generated';
+import type {
+  SemanticRegistryReadiness,
+  SemanticRegistryRow,
+} from './semantic_registry.generated';
+import {
+  parseRendererContractVersionRange,
+  parseRendererVersion,
+  rendererSupportsContractVersion,
+} from './rendererProtocolVersion';
 import type { Component } from 'vue';
 
 /**
@@ -34,6 +45,7 @@ export type ProfessionalComponentRenderer = typeof PROFESSIONAL_COMPONENT_RENDER
 
 /** The sentinel that routes a field to the section's own type-directed control. */
 export const FORM_SECTION_TYPE_DIRECTED_RENDERER: ProfessionalComponentRenderer = 'FormSectionField';
+export const FORM_RELATION_ONE2MANY_CAPABILITY = 'form.relation.one2many';
 
 export type ProfessionalComponentRegistration = {
   componentKey: string;
@@ -42,6 +54,8 @@ export type ProfessionalComponentRegistration = {
   supportedPresentationModes: readonly CanonicalFormPresentationMode[];
   supportedRenderProfiles: readonly CanonicalFormRenderMode[];
   requiredCapabilities: readonly string[];
+  rendererVersion: string;
+  supportedContractVersion: string;
   renderer: ProfessionalComponentRenderer;
   rendererByFieldType: Readonly<Record<string, ProfessionalComponentRenderer>>;
   fallback: string | null;
@@ -55,6 +69,8 @@ export type IndustryComponentRegistration = {
   supportedPresentationModes: readonly CanonicalFormPresentationMode[];
   supportedRenderProfiles: readonly CanonicalFormRenderMode[];
   requiredCapabilities: readonly string[];
+  rendererVersion: string;
+  supportedContractVersion: string;
   renderer: string;
   fallback: string | null;
   readiness: ProfessionalComponentReadiness;
@@ -68,10 +84,13 @@ export type ProfessionalComponentResolution = {
   supportedRenderProfiles: readonly CanonicalFormRenderMode[];
   requiredCapabilities: readonly string[];
   renderer: string;
+  rendererVersion: string;
+  supportedContractVersion: string;
   fallback: string | null;
   readiness: ProfessionalComponentReadiness;
   fieldType: string;
   contractVersion: string;
+  pageContractVersion: string;
 };
 
 export type IndustryRendererExtension = {
@@ -81,6 +100,9 @@ export type IndustryRendererExtension = {
     supportedFieldTypes: readonly string[];
     readiness: SemanticRegistryReadiness;
     renderer: string;
+    rendererVersion: string;
+    supportedContractVersion: string;
+    requiredCapabilities: readonly string[];
   };
   component: Component;
 };
@@ -89,26 +111,30 @@ const FORM_MODES = ['task', 'workspace'] as const;
 const FORM_PROFILES = ['create', 'edit', 'readonly'] as const;
 
 function registration(
-  componentKey: string,
-  semanticType: string,
-  supportedFieldTypes: readonly string[],
-  readiness: ProfessionalComponentReadiness = 'ready',
+  row: SemanticRegistryRow,
   renderer: ProfessionalComponentRenderer = FORM_SECTION_TYPE_DIRECTED_RENDERER,
 ): ProfessionalComponentRegistration {
+  const rendererVersion = validatedRendererVersion(row.componentKey, row.rendererVersion);
+  const supportedContractVersion = validatedContractVersionRange(row.componentKey, row.supportedContractVersion);
+  const requiredCapabilities = validatedCapabilities(row.componentKey, row.requiredCapabilities);
   const rendererByFieldType: Readonly<Record<string, ProfessionalComponentRenderer>> = Object.freeze(Object.fromEntries(
-    (renderer === FORM_SECTION_TYPE_DIRECTED_RENDERER ? supportedFieldTypes : [])
+    (renderer === FORM_SECTION_TYPE_DIRECTED_RENDERER ? row.supportedFieldTypes : [])
       .filter((fieldType) => (PROFESSIONAL_BASE_FIELD_TYPES as readonly string[]).includes(fieldType))
       .map((fieldType) => [fieldType, 'ProfessionalBaseFieldControl'] as [string, ProfessionalComponentRenderer]),
   ));
   return Object.freeze({
-    componentKey, semanticType, supportedFieldTypes,
+    componentKey: row.componentKey,
+    semanticType: row.semanticType,
+    supportedFieldTypes: row.supportedFieldTypes,
     supportedPresentationModes: FORM_MODES,
     supportedRenderProfiles: FORM_PROFILES,
-    requiredCapabilities: Object.freeze([]),
+    requiredCapabilities,
+    rendererVersion,
+    supportedContractVersion,
     renderer,
     rendererByFieldType,
-    fallback: readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
-    readiness,
+    fallback: row.readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
+    readiness: row.readiness,
   });
 }
 
@@ -121,6 +147,30 @@ function registration(
  */
 const RENDERER_NAMES: ReadonlySet<string> = new Set(PROFESSIONAL_COMPONENT_RENDERERS);
 
+function validatedRendererVersion(componentKey: string, value: string): string {
+  if (!parseRendererVersion(value)) {
+    throw new Error(`SEMANTIC_REGISTRY_RENDERER_VERSION_INVALID:${componentKey}:${value}`);
+  }
+  return String(value).trim();
+}
+
+function validatedContractVersionRange(componentKey: string, value: string): string {
+  if (!parseRendererContractVersionRange(value)) {
+    throw new Error(`SEMANTIC_REGISTRY_CONTRACT_VERSION_INVALID:${componentKey}:${value}`);
+  }
+  return String(value).trim();
+}
+
+function validatedCapabilities(componentKey: string, capabilities: readonly string[]): readonly string[] {
+  const normalized = [...new Set(capabilities.map((capability) => normalizedIdentity(capability)).filter(Boolean))];
+  for (const capability of normalized) {
+    if (!RENDERER_CAPABILITY_PROVIDERS[capability]) {
+      throw new Error(`SEMANTIC_REGISTRY_CAPABILITY_UNPROVIDED:${componentKey}:${capability}`);
+    }
+  }
+  return Object.freeze(normalized);
+}
+
 function declaredRenderer(value: string): ProfessionalComponentRenderer {
   if (!RENDERER_NAMES.has(value)) {
     throw new Error(`SEMANTIC_REGISTRY_UNKNOWN_RENDERER:${value}`);
@@ -128,13 +178,9 @@ function declaredRenderer(value: string): ProfessionalComponentRenderer {
   return value as ProfessionalComponentRenderer;
 }
 
-const REGISTRATIONS: readonly ProfessionalComponentRegistration[] = SEMANTIC_REGISTRY_ROWS.map((row) => registration(
-  row.componentKey,
-  row.semanticType,
-  row.supportedFieldTypes,
-  row.readiness,
-  declaredRenderer(row.renderer),
-));
+const REGISTRATIONS: readonly ProfessionalComponentRegistration[] = SEMANTIC_REGISTRY_ROWS.map(
+  (row) => registration(row, declaredRenderer(row.renderer)),
+);
 
 export const professionalComponentRegistrations: readonly ProfessionalComponentRegistration[] = Object.freeze([...REGISTRATIONS]);
 const professionalComponentRegistry: ReadonlyMap<string, ProfessionalComponentRegistration> = new Map(
@@ -218,13 +264,18 @@ export function registerIndustryRendererExtensions(
     if (!supportedFieldTypes.length) {
       throw new Error(`INDUSTRY_REGISTRATION_FIELD_TYPES_MISSING:${componentKey}`);
     }
+    const rendererVersion = validatedRendererVersion(componentKey, row.rendererVersion);
+    const supportedContractVersion = validatedContractVersionRange(componentKey, row.supportedContractVersion);
+    const requiredCapabilities = validatedCapabilities(componentKey, row.requiredCapabilities);
     const registration: IndustryComponentRegistration = Object.freeze({
       componentKey,
       semanticType,
       supportedFieldTypes: Object.freeze(supportedFieldTypes),
       supportedPresentationModes: FORM_MODES,
       supportedRenderProfiles: FORM_PROFILES,
-      requiredCapabilities: Object.freeze([]),
+      requiredCapabilities,
+      rendererVersion,
+      supportedContractVersion,
       renderer,
       fallback: row.readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
       readiness: row.readiness,
@@ -239,6 +290,30 @@ export function registerIndustryRendererExtensions(
   for (const [componentKey, registration] of stagedRegistrations) {
     industryRegistrations.set(componentKey, registration);
     industrySemanticIndex.set(registration.semanticType, registration);
+  }
+}
+
+/**
+ * Remove one industry extension set atomically.
+ *
+ * Every requested componentKey must currently be registered before any runtime
+ * state is mutated. This keeps module teardown from partially unregistering a
+ * set and leaving a semantic row pointing at a missing renderer.
+ */
+export function unregisterIndustryRendererExtensions(componentKeys: readonly string[]): void {
+  const keys = [...new Set(componentKeys.map((componentKey) => normalizedIdentity(componentKey)).filter(Boolean))];
+  if (!keys.length) return;
+  const registrations = keys.map((componentKey) => {
+    const registration = industryRegistrations.get(componentKey);
+    if (!registration) {
+      throw new Error(`INDUSTRY_REGISTRATION_UNREGISTER_UNKNOWN:${componentKey}`);
+    }
+    return registration;
+  });
+  for (const registration of registrations) {
+    industryRegistrations.delete(registration.componentKey);
+    industrySemanticIndex.delete(registration.semanticType);
+    industryRendererComponents.delete(registration.renderer);
   }
 }
 
@@ -257,6 +332,7 @@ export type IndustryRendererResolutionInput = {
   componentKey?: string;
   componentRenderer?: string;
   fieldType: string;
+  pageContractVersion?: string;
   presentationMode?: CanonicalFormPresentationMode;
   renderProfile?: CanonicalFormRenderMode;
   capabilities?: readonly string[];
@@ -277,10 +353,10 @@ export function resolveIndustryRendererForField(
   if (!registration || registration.readiness === 'fail_closed') return null;
   const fieldType = normalizedIdentity(input.fieldType).toLowerCase();
   if (!fieldType || !registration.supportedFieldTypes.includes(fieldType)) return null;
-  if (input.presentationMode !== undefined
-    && !registration.supportedPresentationModes.includes(input.presentationMode)) return null;
-  if (input.renderProfile !== undefined
-    && !registration.supportedRenderProfiles.includes(input.renderProfile)) return null;
+  const pageContractVersion = normalizedIdentity(input.pageContractVersion);
+  if (!rendererSupportsContractVersion(registration.supportedContractVersion, pageContractVersion)) return null;
+  if (!input.presentationMode || !registration.supportedPresentationModes.includes(input.presentationMode)) return null;
+  if (!input.renderProfile || !registration.supportedRenderProfiles.includes(input.renderProfile)) return null;
   const capabilities = new Set(input.capabilities || []);
   if (registration.requiredCapabilities.some((capability) => !capabilities.has(capability))) return null;
   if (normalizedIdentity(input.componentRenderer) !== registration.renderer) return null;
@@ -310,12 +386,14 @@ export function componentKeyForSemantic(semantic: string): string | null {
 export type ProfessionalComponentResolutionInput = {
   componentKey: string;
   fieldType: string;
+  pageContractVersion?: string;
   presentationMode: CanonicalFormPresentationMode;
   renderProfile: CanonicalFormRenderMode;
   capabilities?: readonly string[];
 };
 
 export type ContractProfessionalComponentResolutionInput = ProfessionalComponentResolutionInput & {
+  pageContractVersion: string;
   clientType: string;
   contractRegistryEntry: unknown;
 };
@@ -333,6 +411,10 @@ const CONTRACT_FORBIDDEN_RENDER_KEYS = ['adapter', 'selectedAdapter', 'selected_
 function contractComponentBinding(input: ContractProfessionalComponentResolutionInput) {
   const entry = asRecord(input.contractRegistryEntry);
   if (!Object.keys(entry).length) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:${input.componentKey}`);
+  const pageContractVersion = normalizedIdentity(input.pageContractVersion);
+  if (!parseRendererVersion(pageContractVersion)) {
+    throw new Error(`PROFESSIONAL_COMPONENT_PAGE_CONTRACT_VERSION_INVALID:${input.componentKey}:${pageContractVersion}`);
+  }
   const version = String(entry.version || '').trim();
   if (!version) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING:${input.componentKey}`);
   CONTRACT_FORBIDDEN_RENDER_KEYS.forEach((key) => {
@@ -354,6 +436,7 @@ export function resolveProfessionalComponentRegistration(
 function resolveRegistrationEntry(
   entry: ProfessionalComponentRegistration | IndustryComponentRegistration | undefined,
   input: ProfessionalComponentResolutionInput,
+  checkCapabilities = true,
 ): ProfessionalComponentResolution {
   if (!entry || entry.readiness === 'fail_closed') throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
   const fieldType = input.fieldType.trim().toLowerCase();
@@ -367,9 +450,18 @@ function resolveRegistrationEntry(
   if (!entry.supportedRenderProfiles.includes(input.renderProfile)) {
     throw new Error(`PROFESSIONAL_COMPONENT_RENDER_PROFILE_MISMATCH:${input.componentKey}:${input.renderProfile}`);
   }
-  const capabilities = new Set(input.capabilities || []);
-  const missing = entry.requiredCapabilities.filter((capability) => !capabilities.has(capability));
-  if (missing.length) throw new Error(`PROFESSIONAL_COMPONENT_CAPABILITY_MISSING:${input.componentKey}:${missing.join(',')}`);
+  const pageContractVersion = normalizedIdentity(input.pageContractVersion);
+  if (pageContractVersion
+    && !rendererSupportsContractVersion(entry.supportedContractVersion, pageContractVersion)) {
+    throw new Error(
+      `PROFESSIONAL_COMPONENT_CONTRACT_VERSION_UNSUPPORTED:${input.componentKey}:${pageContractVersion}:${entry.supportedContractVersion}`,
+    );
+  }
+  if (checkCapabilities) {
+    const capabilities = new Set(input.capabilities || []);
+    const missing = entry.requiredCapabilities.filter((capability) => !capabilities.has(capability));
+    if (missing.length) throw new Error(`PROFESSIONAL_COMPONENT_CAPABILITY_MISSING:${input.componentKey}:${missing.join(',')}`);
+  }
   const renderer = (
     'rendererByFieldType' in entry ? entry.rendererByFieldType[fieldType] : undefined
   ) || entry.renderer;
@@ -381,10 +473,13 @@ function resolveRegistrationEntry(
     supportedRenderProfiles: entry.supportedRenderProfiles,
     requiredCapabilities: entry.requiredCapabilities,
     renderer,
+    rendererVersion: entry.rendererVersion,
+    supportedContractVersion: entry.supportedContractVersion,
     fallback: entry.fallback,
     readiness: entry.readiness,
     fieldType,
     contractVersion: '',
+    pageContractVersion,
   });
 }
 
@@ -401,6 +496,14 @@ export function resolveProfessionalComponent(
 export function resolveContractProfessionalComponent(
   input: ContractProfessionalComponentResolutionInput,
 ): ProfessionalComponentResolution {
-  const local = resolveProfessionalComponent(input);
+  if (!parseRendererVersion(input.pageContractVersion)) {
+    throw new Error(
+      `PROFESSIONAL_COMPONENT_PAGE_CONTRACT_VERSION_INVALID:${input.componentKey}:${input.pageContractVersion}`,
+    );
+  }
+  const entry = professionalComponentRegistry.get(input.componentKey)
+    || industryRegistrations.get(input.componentKey);
+  if (!entry) throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
+  const local = resolveRegistrationEntry(entry, input, false);
   return Object.freeze({ ...local, ...contractComponentBinding(input) });
 }

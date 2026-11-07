@@ -35,7 +35,10 @@ export type FormSectionFieldSchema = {
   componentKey?: string;
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';
   componentRenderer?: string;
+  componentRendererVersion?: string;
+  componentSupportedContractVersion?: string;
   contractVersion?: string;
+  pageContractVersion?: string;
   componentFallback?: string | null;
   presentationMode?: CanonicalFormPresentationMode;
   renderProfile?: CanonicalFormRenderMode;
