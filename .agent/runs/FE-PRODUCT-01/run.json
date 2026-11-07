@@ -2,17 +2,14 @@
   "schema_version": 1,
   "baseline_sha": "7ce16d98a19baf2acc66e817a21f559d98b0721e",
   "scope": [
-    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
-    "addons/smart_core/delivery/runtime_route_authority.py",
-    "addons/smart_core/utils/load_contract_response_cache.py",
-    "addons/smart_core/tests/test_load_contract_response_cache.py",
-    "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
-    "frontend/apps/web/src",
-    "frontend/apps/web/scripts/professional_component_registry_test.ts",
-    "scripts/contract/generate_semantic_registry.py",
-    "scripts/verify/frontend_expression_guard.py",
-    "scripts/verify/test_frontend_expression_guard.py",
-    "docs/frontend_productization"
+    "addons/smart_core/",
+    "frontend/apps/web/",
+    "scripts/contract/",
+    "scripts/verify/",
+    "make/",
+    "docs/",
+    "contracts/generated/",
+    ".agent/"
   ],
   "environment": {
     "kind": "offline",
