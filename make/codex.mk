@@ -275,6 +275,7 @@ codex.run: guard.prod.forbid
 .PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
 
 PR_BASE ?= main
+PR_PUBLISH_MODE ?= merge
 PR_TITLE ?=
 PR_BODY_FILE ?= artifacts/pr_body.md
 PR_DRAFT ?= 0
@@ -400,7 +401,15 @@ pr.publish.preflight: guard.prod.forbid
 	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
 	'
 	@$(MAKE) --no-print-directory ci.local.iteration
-	@python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --stage merge --require-ready
+	@case "$(PR_PUBLISH_MODE)" in \
+	  merge) \
+	    python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --stage merge --require-ready ;; \
+	  review) \
+	    echo "[pr.publish.preflight] REVIEW_ONLY merge-time runtime evidence may remain pending"; \
+	    python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --stage merge ;; \
+	  *) \
+	    echo "❌ pr.publish.preflight: PR_PUBLISH_MODE must be merge or review" >&2; exit 2 ;; \
+	esac
 
 pr.push: guard.prod.forbid pr.publish.preflight
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh

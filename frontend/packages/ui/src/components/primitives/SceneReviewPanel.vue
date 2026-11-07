@@ -5,7 +5,7 @@ import type { SceneReviewPanel } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
 import SceneButton from './SceneButton.vue';
 
-const props = defineProps<{ panel: SceneReviewPanel; open: boolean }>();
+defineProps<{ panel: SceneReviewPanel; open: boolean }>();
 const emit = defineEmits<{ 'update:open': [value: boolean] }>();
 const { kit, runtime } = useSceneUiKit();
 const componentModel = computed(() => runtime.value?.componentModel || 'native');
