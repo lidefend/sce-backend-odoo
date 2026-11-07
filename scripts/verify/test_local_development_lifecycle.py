@@ -742,6 +742,9 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         journey = (
             ROOT / "scripts/verify/local_dev_payment_settlement_component_journey.sh"
         ).read_text(encoding="utf-8")
+        browser = (
+            ROOT / "scripts/verify/local_dev_payment_settlement_component_journey.mjs"
+        ).read_text(encoding="utf-8")
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', journey)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', journey)
         self.assertNotIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', journey)
@@ -755,6 +758,9 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("confirmation removed it and preserved amount", journey)
         self.assertIn('FRONTEND_URL="http://127.0.0.1:5176"', journey)
         self.assertIn('[[ "$(git -C "$ROOT_DIR" rev-parse HEAD)" == "$CANDIDATE_GIT_HEAD" ]]', journey)
+        self.assertIn("name: /^(保存草稿|保存修改)$/", browser)
+        self.assertIn("const [response] = await Promise.all([", browser)
+        self.assertNotIn("name: /^保存修改$/", browser)
         resolver = (
             ROOT / "scripts/verify/local_dev_payment_settlement_component_ids.py"
         ).read_text(encoding="utf-8")

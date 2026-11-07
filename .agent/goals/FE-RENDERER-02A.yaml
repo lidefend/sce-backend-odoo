@@ -51,6 +51,8 @@ goal:
       - scripts/verify/static_proxy_target_test.mjs
       - scripts/verify/test_local_dev_candidate_frontend.py
       - scripts/verify/test_frontend_acceptance_runtime_profile.py
+      - scripts/verify/local_dev_payment_settlement_component_journey.mjs
+      - scripts/verify/test_local_development_lifecycle.py
     runtime: payment settlement form surface only, through the registered local development lane
     product_behavior: preserve the current payment settlement detail collection behavior while removing platform coupling
   objective: >

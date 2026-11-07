@@ -223,8 +223,10 @@ async function runRemove() {
       return false;
     }
   }, { timeout: 30000 });
-  await page.getByRole('button', { name: /^保存修改$/ }).first().click();
-  const response = await writeResponse;
+  const [response] = await Promise.all([
+    writeResponse,
+    page.getByRole('button', { name: /^(保存草稿|保存修改)$/ }).first().click(),
+  ]);
   const responseBody = await response.json();
   check(response.ok(), 'last-detail removal save failed', { status: response.status(), responseBody });
   check(responseBody?.ok !== false, 'last-detail removal returned failure', responseBody);

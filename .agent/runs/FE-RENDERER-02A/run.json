@@ -39,7 +39,9 @@
     "scripts/dev/local_dev_candidate_frontend.py",
     "scripts/verify/static_proxy_target_test.mjs",
     "scripts/verify/test_local_dev_candidate_frontend.py",
-    "scripts/verify/test_frontend_acceptance_runtime_profile.py"
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
+    "scripts/verify/test_local_development_lifecycle.py"
   ],
   "environment": {
     "kind": "offline",
@@ -238,6 +240,16 @@
         "scripts/verify/static_proxy_target_test.mjs",
         "scripts/verify/test_local_dev_candidate_frontend.py",
         "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "local_development_lifecycle": {
+      "target": "verify.local.dev.payment_settlement_journey.unit",
+      "inputs": [
+        "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
+        "scripts/verify/local_dev_payment_settlement_component_journey.sh",
+        "scripts/verify/test_local_development_lifecycle.py",
         "make/dev.mk"
       ],
       "kind": "offline"

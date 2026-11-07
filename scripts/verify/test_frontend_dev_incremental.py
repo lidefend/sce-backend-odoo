@@ -549,6 +549,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.local.dev.static_proxy_target.unit"],
         )
 
+    def test_payment_settlement_journey_keeps_local_lifecycle_contract(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
+                "scripts/verify/local_dev_payment_settlement_component_journey.sh",
+                "scripts/verify/test_local_development_lifecycle.py",
+            ]),
+            ["verify.local.dev.payment_settlement_journey.unit"],
+        )
+
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(
             select_targets([
