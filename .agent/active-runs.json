@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/fe-renderer-02c-01-business-semantics-20261108": ".agent/runs/FE-RENDERER-02C-01/run.json",
     "fix/fe-renderer-02b-extension-protocol-20261108": ".agent/runs/FE-RENDERER-02B/run.json",
     "fix/fe-renderer-02a-p0-renderer-boundary-20261107": ".agent/runs/FE-RENDERER-02A/run.json",
     "fix/fe-loop-02-ci-path-ownership-20261107": ".agent/runs/CI-SCOPE-01-R1/run.json",

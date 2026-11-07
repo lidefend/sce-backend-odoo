@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01
+  title: 业务语义单源收敛
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 frontend semantic interpretation and cross-surface presentation
+  module: canonical presentation, FormSection, list/detail/Kanban/approval consumers, Sc value primitives and industry adapters
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    金额、日期、状态和空值如何从契约解释并跨页面一致呈现，是所有业务模型共享的平台前端语义，
+    必须由 P0 契约消费与表达层统一拥有。
+  why_not_elsewhere: >
+    不修改 Contract V2 Schema，不在具体业务页面重复实现格式化或状态判断，不把平台语义放进行业
+    Renderer，也不以新增 Renderer 代替统一表达。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01.yaml
+      - .agent/runs/FE-RENDERER-02C-01/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_business_semantics_20261108.md
+      - docs/architecture/frontend_business_semantics_authority_audit_v1.md
+      - docs/architecture
+      - contracts/registry
+      - frontend/apps/web/src/app/presentation
+      - frontend/apps/web/src/components
+      - frontend/packages/ui/src
+      - scripts/verify
+    runtime: representative form, list, detail, Kanban and approval surfaces using the existing governed local development lane
+    product_behavior: preserve declared facts while making money, date, status and empty-value presentation consistent
+  objective: >
+    完成只读语义消费审计，建立金额、日期、状态、空值从契约到表单、列表、详情、Kanban、审批和
+    行业组件的单源矩阵；按 P1/P2 顺序实施最小修复并建立防回归守卫。
+  acceptance:
+    - 建立四类业务事实的声明、解析、表达适配器和真实消费者矩阵
+    - Kanban 不再通过字段名推断金额或百分比
+    - 状态 label/tone 只消费 statusContract
+    - 金额格式只消费契约币种、精度与统一金额工具
+    - 日期与空值规则按现有契约建立统一适配器
+    - 增加跨页面一致性和重复实现守卫
+    - 代表性表单、列表、详情、Kanban 与审批证据绑定实际 HEAD
+    - 不修改 Contract V2 Schema、Renderer Extension Protocol 或 PR #834
+  exclusions:
+    - contract_v2_schema_change
+    - renderer_extension_protocol_change
+    - new_industry_renderer
+    - shared_ui_large_scale_rewrite
+    - native_view_compatibility_removal
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退本批单源适配器、消费者改造、守卫和文档；保留 FE-RENDERER-02A/02B 的平台/行业边界、
+    Renderer 版本与能力协议，不恢复页面局部格式化或字段名推断。

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "5d184f4831ddbc4819bc5540341b05cd6fb413bb",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-01.yaml",
+    ".agent/runs/FE-RENDERER-02C-01/run.json",
+    "docs/architecture/frontend_business_semantics_authority_audit_v1.md",
+    "docs/ops/iterations/fe_renderer_02c_01_business_semantics_20261108.md",
+    "docs/architecture",
+    "contracts/registry",
+    "frontend/apps/web/src/app/presentation",
+    "frontend/apps/web/src/components",
+    "frontend/apps/web/scripts",
+    "frontend/packages/ui/src",
+    "scripts/verify"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools for audit and L2; registered local development lane for representative browser evidence"
+  },
+  "checks": {},
+  "blockers": [],
+  "results": {
+    "audit": "PASS: read-only source inventory completed; matrix and findings are recorded in docs/architecture/frontend_business_semantics_authority_audit_v1.md",
+    "contract_limit": "NOT_RUN: user timezone/date-format authority is absent from current Contract V2 page input; no timezone conversion is inferred"
+  },
+  "next_exact_step": "Implement the shared business-value presentation authority and migrate the audited consumers without changing Contract V2.",
+  "id": "FE-RENDERER-02C-01",
+  "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
+  "status": "active",
+  "goal": ".agent/goals/FE-RENDERER-02C-01.yaml",
+  "record": "docs/ops/iterations/fe_renderer_02c_01_business_semantics_20261108.md"
+}
