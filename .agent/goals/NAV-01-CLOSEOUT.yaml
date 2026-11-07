@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: NAV-01-CLOSEOUT
+  status: active
+  title: NAV-01 第一阶段合并后收口
+  formal_product_layer: P4
+  layer_target: ops delivery tool (agent run ledger + branch custody)
+  module: ops
+  standard_vs_user_specific: platform mechanism bookkeeping
+  objective: >-
+    PR #832 合并后，将 NAV-01-SIDEBAR-CANONICAL 运行与目标标记为 completed，
+    解除 .agent/active-runs.json 对该分支的绑定，并删除已合入 main 的主题分支。
+  why_here: 运行生命周期与分支保留是 P4 交付台账职责，不承载产品语义。
+  why_not_elsewhere:
+    - 不修改前端/后端产品代码、契约与授权。
+  scope:
+    - .agent/active-runs.json
+    - .agent/goals/NAV-01-SIDEBAR-CANONICAL.yaml
+    - .agent/runs/NAV-01-SIDEBAR-CANONICAL/run.json
+  exclusions:
+    - 后端导航契约与授权
+    - scenarioSurface 与 ProductScenarioNavigation

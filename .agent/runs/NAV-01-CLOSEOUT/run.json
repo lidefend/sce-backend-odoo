@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "NAV-01-CLOSEOUT",
+  "branch": "codex/nav-01-sidebar-canonical-closeout",
+  "baseline_sha": "fda88ee608bda0349374c628a70095aa67a5124f",
+  "status": "active",
+  "goal": ".agent/goals/NAV-01-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/fe-mainline-experience-20261106/nav-01-source-diagnosis.md",
+  "scope": [
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and ledger guards"
+  },
+  "checks": {
+    "ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/",
+        ".agent/runs/",
+        ".agent/context.yaml",
+        "scripts/verify/agent_ledger_consistency_guard.py"
+      ]
+    }
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "agent run ledger and branch custody",
+    "module": "ops",
+    "standard_vs_user_specific": "platform mechanism bookkeeping",
+    "why_here": "run lifecycle and branch retention are delivery-tool bookkeeping",
+    "why_not_elsewhere": "no product/contract/authorization semantics changed",
+    "blast_radius": ".agent ledger index only"
+  },
+  "validation_results": [
+    { "command": "make verify.agent.ledger.unit", "status": "passed" }
+  ],
+  "reconciliation": {},
+  "blockers": [],
+  "next_exact_step": "push closeout branch, merge bookkeeping PR, then delete merged NAV-01 topic branch"
+}
