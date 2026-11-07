@@ -21,3 +21,12 @@
 - `local_acceptance_project_overview_browser.mjs` 增 `project-non-draft`（notice=0、完成度文本缺失）
   与 `project-forbidden`（notice=1、正文 0、标签含无权限）。
 - `frontend_readiness_non_draft_resolver.py` 只读解析非草稿载体 ID。
+
+## 实采结果（local / sc_frontend_acceptance / 2b0bc8b7b）
+
+- `project-draft-overview`：notice=1、body=0、完成度 1/3 —— PASS。
+- `project-new`：notice=1、body=0 —— PASS。
+- `project-non-draft`（载体 id=32, lifecycle=in_progress）：notice=0、完成度文本缺失 —— PASS。
+- `project-forbidden`（fixture_role_project_a_member）：notice=1、body=0、标签无权限 —— PASS。
+- 权限未扩大：`fixture_role_project_a_member` 的 `_has_initiation_submit_access()` 仍为 False。
+- `acceptance.frontend.fixture_guard` PASS、`verify.frontend.fixture.nonfixture` PASS。
