@@ -34,7 +34,6 @@ export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
   {componentKey: 'sc.relation.many2one', semanticType: 'relation', supportedFieldTypes: ['many2one'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl'},
   {componentKey: 'sc.relation.many2many', semanticType: 'relation_collection', supportedFieldTypes: ['many2many'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl'},
   {componentKey: 'sc.relation.table', semanticType: 'detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'ProfessionalDetailCollectionControl'},
-  {componentKey: 'sc.payment.settlement_detail_collection', semanticType: 'payment_settlement_detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'PaymentSettlementDetailCollectionControl'},
   {componentKey: 'sc.select.tags', semanticType: 'tag_collection', supportedFieldTypes: ['many2many'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl'},
   {componentKey: 'sc.button.action', semanticType: 'action', supportedFieldTypes: ['action'], readiness: 'ready', renderer: 'FormSectionField'},
   {componentKey: 'sc.auth.credential_entry', semanticType: 'credential_entry', supportedFieldTypes: ['char'], readiness: 'ready', renderer: 'FormSectionField'},

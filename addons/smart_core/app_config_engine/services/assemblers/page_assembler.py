@@ -4240,9 +4240,31 @@ class PageAssembler:
             visible_menu_ids = set()
         action_by_model = {}
         menu_by_action = {}
-        menus = self.env["ir.ui.menu"].browse(sorted(visible_menu_ids)).exists()
-        menus = menus.sorted(key=lambda row: (row.sequence, row.id))
-        for menu in menus:
+        # 只为目标关系模型解析候选菜单，而不是浏览并扫描全部可见菜单。
+        # ``_visible_menu_ids()`` 仍作为权限事实参与（候选菜单的祖先链必须可见），
+        # 但候选集被缩小到 action.res_model 命中的菜单；选择顺序与原有
+        # (sequence, id) 排序完全一致。
+        candidate_menus = []
+        if visible_menu_ids:
+            candidate_action_ids = set(
+                self.env["ir.actions.act_window"].sudo().search(
+                    [("res_model", "in", sorted(relation_models))]
+                ).ids
+            )
+            if candidate_action_ids:
+                candidate_menu_ids = set(
+                    self.env["ir.ui.menu"].sudo().search([
+                        ("id", "in", sorted(visible_menu_ids)),
+                        ("action", "in", [
+                            "ir.actions.act_window,%d" % action_id
+                            for action_id in sorted(candidate_action_ids)
+                        ]),
+                    ]).ids
+                )
+                candidate_menus = self.env["ir.ui.menu"].browse(
+                    sorted(candidate_menu_ids)
+                ).exists().sorted(key=lambda row: (row.sequence, row.id))
+        for menu in candidate_menus:
             if not self._relation_menu_chain_is_visible(menu, visible_menu_ids):
                 continue
             act = menu.action

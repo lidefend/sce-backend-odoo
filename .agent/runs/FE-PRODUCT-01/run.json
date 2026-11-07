@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "3e5b9f144cf6b3e7c29a695b2e8db3eed09a01ec",
+  "scope": [
+    "addons/smart_core/",
+    "frontend/apps/web/",
+    "scripts/contract/",
+    "scripts/verify/",
+    "make/",
+    "docs/",
+    "contracts/generated/",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.frontend.expression.unit",
+      "inputs": [
+        "scripts/verify/frontend_expression_guard.py",
+        "scripts/verify/test_frontend_expression_guard.py",
+        "docs/frontend_productization/frontend_expression_ledger_v1.json",
+        "frontend/apps/web/src/utils/money.ts",
+        "frontend/apps/web/src/utils/money.test.ts"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "resolve run, run ci.local.iteration, then prepare pr.push preview",
+  "id": "FE-PRODUCT-01",
+  "branch": "codex/fe-perf-product-expression",
+  "status": "active",
+  "goal": ".agent/goals/FE-PRODUCT-01.yaml",
+  "record": "docs/ops/iterations/FE-PRODUCT-01.md"
+}

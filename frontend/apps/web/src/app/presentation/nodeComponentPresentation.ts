@@ -1,5 +1,6 @@
 import { contractGapError } from '../contract/contractGap';
-import { NODE_COMPONENT_REGISTRATIONS, SEMANTIC_REGISTRY_ROWS } from './semantic_registry.generated';
+import { NODE_COMPONENT_REGISTRATIONS } from './semantic_registry.generated';
+import { isRegisteredComponentKey } from './professionalComponentRegistry';
 import type { ContractV2Container, ContractV2Snapshot } from '../contracts/v2/types';
 
 export type NodeComponentPresentation = {
@@ -76,7 +77,7 @@ export function projectNodeComponents(
     const key = node.componentKey;
     if (!key) continue;
     if (!NODE_COMPONENT_REGISTRATIONS[key]) {
-      if (!SEMANTIC_REGISTRY_ROWS.some((row) => row.componentKey === key)) reject(`${node.containerId}.componentKey`);
+      if (!isRegisteredComponentKey(key)) reject(`${node.containerId}.componentKey`);
       continue;
     }
     unique(node.containerId);

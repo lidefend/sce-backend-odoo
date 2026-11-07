@@ -1,0 +1,68 @@
+{
+  "schema": "frontend-expression-ledger/v1",
+  "g1_money": {
+    "authority_files": [
+      "frontend/apps/web/src/utils/money.ts"
+    ],
+    "adapter_files": [
+      "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue"
+    ],
+    "adapter_rule": "adapter delegates to formatMonetaryDisplayValue; it must not re-implement currency/precision/separator rules"
+  },
+  "g2_date": {
+    "primitive_files": [
+      "frontend/apps/web/src/components/design-system/ScDatePicker.vue",
+      "frontend/apps/web/src/components/design-system/ScDateField.vue"
+    ],
+    "bridge_files": [
+      "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts"
+    ],
+    "list_adapter": "formatTemporalFieldValue"
+  },
+  "g3_empty": {
+    "authority_files": [
+      "frontend/apps/web/src/utils/fieldSemantics.ts"
+    ],
+    "registered_consumers": [
+      "frontend/apps/web/src/utils/display.ts",
+      "frontend/apps/web/src/utils/semantic.ts"
+    ]
+  },
+  "g4_status": {
+    "authority_files": [
+      "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts"
+    ]
+  },
+  "g9_action": {
+    "authority_files": [],
+    "rule": "direct intentRequest({..., intent: 'execute', ...}) is forbidden outside the action runtime registry"
+  },
+  "g10_industry": {
+    "allowed_files": [
+      "frontend/apps/web/scripts/professional_component_registry_test.ts",
+      "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts",
+      "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
+      "frontend/apps/web/src/components/professional-fields/paymentSettlementDetailCollectionModel.ts",
+      "frontend/apps/web/src/extensions/industryRenderers.ts"
+    ]
+  },
+  "g_field_render_a": {
+    "dispatcher_files": [
+      "frontend/apps/web/src/components/template/FormSection.vue"
+    ],
+    "internal_dirs": [
+      "frontend/apps/web/src/components/professional-fields/"
+    ]
+  },
+  "g_field_render_c": {
+    "registration_files": [
+      "frontend/apps/web/src/extensions/industryRenderers.ts"
+    ]
+  },
+  "pending_rules": {
+    "g5_relation": "precise relation-entry consumption guard deferred",
+    "g6_readonly": "readonly source-of-truth guard deferred",
+    "g7_permission": "covered by scripts/verify/frontend_contract_basis_guard.py",
+    "g8_validation": "second fieldErrors producer guard deferred"
+  }
+}
