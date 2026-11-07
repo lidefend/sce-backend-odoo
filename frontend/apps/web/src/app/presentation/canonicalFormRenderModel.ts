@@ -45,6 +45,7 @@ export type CanonicalFormField = {
   fieldType: string;
   componentKey: string;
   componentResolution: import('./professionalComponentRegistry').ProfessionalComponentResolution;
+  pageContractVersion: string;
   presentationMode: CanonicalFormPresentationMode;
   renderProfile: CanonicalFormRenderMode;
   span: number;

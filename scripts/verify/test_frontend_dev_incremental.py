@@ -29,6 +29,21 @@ from scripts.verify.frontend_style_system_guard import (
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "contracts/registry/component.yaml",
+                "contracts/registry/registry.schema.json",
+            ]),
+            ["verify.semantic.registry.lint"],
+        )
+
+    def test_contract_structure_fingerprint_keeps_its_lock(self) -> None:
+        self.assertEqual(
+            select_targets(["contracts/generated/contract_structure_fingerprint.json"]),
+            ["verify.contract.structure_lock"],
+        )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

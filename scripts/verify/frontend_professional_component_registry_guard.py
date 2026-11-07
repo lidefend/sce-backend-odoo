@@ -36,7 +36,21 @@ GENERATED_REGISTRY_SOURCE = "SEMANTIC_REGISTRY_ROWS"
 # pass with its renderer silently unchecked.
 GENERATED_ROW_RE = re.compile(
     r"componentKey:\s*'([^']+)',\s*semanticType:\s*'[^']*',\s*"
-    r"supportedFieldTypes:\s*\[[^\]]*\],\s*readiness:\s*'[^']+',\s*renderer:\s*'([^']+)'\}"
+    r"supportedFieldTypes:\s*\[[^\]]*\],\s*readiness:\s*'[^']+',\s*"
+    r"renderer:\s*'([^']+)',\s*rendererVersion:\s*'[^']+',\s*"
+    r"supportedContractVersion:\s*'[^']+',\s*requiredCapabilities:\s*\[[^\]]*\]\}"
+)
+GENERATED_ROW_PROTOCOL_RE = re.compile(
+    r"componentKey:\s*'([^']+)',\s*semanticType:\s*'[^']*',\s*"
+    r"supportedFieldTypes:\s*\[[^\]]*\],\s*readiness:\s*'[^']+',\s*"
+    r"renderer:\s*'([^']+)',\s*rendererVersion:\s*'([^']+)',\s*"
+    r"supportedContractVersion:\s*'([^']+)',\s*requiredCapabilities:\s*\[([^\]]*)\]\}"
+)
+GENERATED_PROVIDER_RE = re.compile(r"^\s*'([^']+)':\s*'([^']+)',\s*$", re.M)
+SEMVER_RE = re.compile(r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$")
+CONTRACT_RANGE_RE = re.compile(
+    r"^>=(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*) "
+    r"<(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$"
 )
 SECOND_REGISTRY_TABLE_RE = re.compile(r"\bregistration\s*\(\s*'([^']+)'")
 
@@ -66,7 +80,8 @@ FAIL_CLOSED_PREDICATE = "function declaresUnknownComponentRenderer("
 IDENTIFIER = re.compile(r"[A-Za-z_$][\w$]*")
 SEMANTIC_MARKERS = (
     "data-component-key", "data-component-readiness", "data-component-renderer",
-    "data-component-fallback", "data-contract-component-version",
+    "data-component-renderer-version", "data-component-supported-contract-version",
+    "data-component-fallback", "data-contract-component-version", "data-page-contract-version",
 )
 SEMANTIC_BINDINGS = tuple(rf":{marker}\s*=" for marker in SEMANTIC_MARKERS)
 ALERT_ROLE = re.compile(r"""\brole\s*=\s*(?:"alert"|'alert')""")
@@ -1684,7 +1699,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     # an apostrophe in markup text cannot open a literal that swallows them.
     required_registration_fields = (
         "componentKey", "semanticType", "supportedFieldTypes", "supportedPresentationModes",
-        "supportedRenderProfiles", "requiredCapabilities", "renderer", "rendererByFieldType", "fallback", "readiness",
+        "supportedRenderProfiles", "requiredCapabilities", "renderer", "rendererVersion",
+        "supportedContractVersion", "rendererByFieldType", "fallback", "readiness",
     )
     for marker in required_registration_fields:
         if marker not in registry:
@@ -1695,6 +1711,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "PROFESSIONAL_COMPONENT_CAPABILITY_MISSING",
         "PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING", "PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING",
         "PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN",
+        "PROFESSIONAL_COMPONENT_PAGE_CONTRACT_VERSION_INVALID",
+        "PROFESSIONAL_COMPONENT_CONTRACT_VERSION_UNSUPPORTED",
+        "SEMANTIC_REGISTRY_RENDERER_VERSION_INVALID",
+        "SEMANTIC_REGISTRY_CONTRACT_VERSION_INVALID",
+        "SEMANTIC_REGISTRY_CAPABILITY_UNPROVIDED",
     ):
         if marker not in registry:
             failures.append(f"registry missing fail-closed invariant {marker}")
@@ -1834,6 +1855,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "resolveIndustryRendererForField",
         "isIndustryComponentKey",
         "isRegisteredComponentKey",
+        "unregisterIndustryRendererExtensions",
+        "INDUSTRY_REGISTRATION_UNREGISTER_UNKNOWN",
     ):
         if marker not in registry:
             failures.append(f"registry missing industry boundary invariant {marker}")
@@ -1843,6 +1866,17 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     components = component_declaration.get("components") if isinstance(component_declaration, dict) else {}
     semantics = semantics if isinstance(semantics, dict) else {}
     components = components if isinstance(components, dict) else {}
+    declared_capability_providers = (
+        component_declaration.get("capability_providers")
+        if isinstance(component_declaration.get("capability_providers"), dict)
+        else {}
+    )
+    generated_capability_providers = dict(GENERATED_PROVIDER_RE.findall(generated_registry))
+    if generated_capability_providers != {
+        str(capability): str(provider)
+        for capability, provider in declared_capability_providers.items()
+    }:
+        failures.append("generated renderer capability providers differ from component.yaml")
     industry_component_keys = {
         key for key, entry in components.items()
         if isinstance(entry, dict) and entry.get("kind", "field") == "field"
@@ -1854,6 +1888,30 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     } - industry_component_keys
     platform_rows = generated_registry_rows(generated_registry)
     industry_rows = generated_registry_rows(industry_manifest)
+    platform_protocol_rows = GENERATED_ROW_PROTOCOL_RE.findall(generated_registry)
+    industry_protocol_rows = GENERATED_ROW_PROTOCOL_RE.findall(industry_manifest)
+    if len(platform_protocol_rows) != len(platform_rows):
+        failures.append("platform carrier rows do not all declare renderer and contract protocol metadata")
+    if len(industry_protocol_rows) != len(industry_rows):
+        failures.append("industry manifest rows do not all declare renderer and contract protocol metadata")
+    for component_key, _renderer, renderer_version, contract_range, _capabilities in (
+        platform_protocol_rows + industry_protocol_rows
+    ):
+        if not SEMVER_RE.fullmatch(renderer_version):
+            failures.append(f"component {component_key} has an invalid rendererVersion")
+        if not CONTRACT_RANGE_RE.fullmatch(contract_range):
+            failures.append(f"component {component_key} has an invalid supportedContractVersion range")
+    for component_key, _renderer, _renderer_version, _contract_range, capabilities in platform_protocol_rows:
+        if re.findall(r"'([^']+)'", capabilities):
+            failures.append(
+                f"platform component {component_key} declares capabilities without a platform host consumer"
+            )
+    for component_key, _renderer, _renderer_version, _contract_range, capabilities in industry_protocol_rows:
+        for capability in re.findall(r"'([^']+)'", capabilities):
+            if capability not in generated_capability_providers:
+                failures.append(
+                    f"industry component {component_key} requires unprovided capability {capability}"
+                )
     platform_row_keys = {component_key for component_key, _renderer in platform_rows}
     industry_row_keys = {component_key for component_key, _renderer in industry_rows}
     if platform_row_keys != platform_component_keys:
@@ -1868,9 +1926,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("platform and industry carriers contain overlapping component keys")
     if "INDUSTRY_RENDERER_ROWS" not in industry_extension:
         failures.append("industry extension entry does not consume the generated industry manifest")
-    if "registerIndustryRendererExtensions(" not in industry_extension:
+    if re.search(r"(?m)^\s{2,}registerIndustryRendererExtensions\(", industry_extension) is None:
         failures.append("industry extension entry does not use the atomic registration API")
-    registration_call = main.find("registerIndustryRenderers();")
+    if re.search(r"(?m)^\s{2,}unregisterIndustryRendererExtensions\(", industry_extension) is None:
+        failures.append("industry extension entry does not use the atomic unregistration API")
+    if "unregisterIndustryRenderers();" not in main:
+        failures.append("main does not unregister industry renderers during runtime disposal")
+    registration_match = re.search(r"(?m)^registerIndustryRenderers\(\);\s*$", main)
+    registration_call = registration_match.start() if registration_match else -1
     mount_call = main.find("app.mount(")
     bootstrap_call = main.find("bootstrapApp();")
     if registration_call < 0:
@@ -1886,6 +1949,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             )
     if "resolveIndustryRendererForField(" not in renderer:
         failures.append("FormSection does not dispatch industry fields through the unified resolver")
+    if "pageContractVersion: field.pageContractVersion" not in renderer:
+        failures.append("FormSection does not revalidate the page Contract V2 version")
+    if "providedIndustryRendererCapabilities(field)" not in renderer:
+        failures.append("FormSection does not provide the declared host capabilities")
     if ':is="industryRendererFor(field)"' not in renderer:
         failures.append("FormSection does not bind the industry resolver result to a render element")
     if 'v-else-if="usesIndustryRenderer(field)"' not in renderer:

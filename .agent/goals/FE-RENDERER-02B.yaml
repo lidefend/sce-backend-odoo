@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02B
+  title: Renderer 扩展协议与生命周期完善
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: frontend Renderer extension protocol and host capability boundary
+  module: semantic/component registry generator, professional Renderer resolver and FormSection host
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Renderer 版本、Contract V2 支持区间、能力提供者、注册和卸载都是所有行业共享的平台机制，
+    必须由 P0 声明和验证，不能藏在行业组件或页面代码中。
+  why_not_elsewhere: >
+    不在付款业务组件中自证版本和能力，不修改 Contract V2 Schema，不迁移第二个行业组件，
+    也不把未消费的空能力数组当作能力治理完成。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02B.yaml
+      - .agent/runs/FE-RENDERER-02B/run.json
+      - docs/ops/iterations/fe_renderer_02b_extension_protocol_20261108.md
+      - contracts/registry/component.yaml
+      - contracts/registry/registry.schema.json
+      - contracts/generated/contract_structure_fingerprint.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - scripts/contract/generate_semantic_registry.py
+      - frontend/apps/web/src/app/presentation
+      - frontend/apps/web/src/components/template/FormSection.vue
+      - frontend/apps/web/src/extensions/industryRenderers.ts
+      - frontend/apps/web/src/main.ts
+      - frontend/apps/web/scripts/professional_component_registry_test.ts
+      - scripts/verify
+    runtime: payment settlement form surface through the existing governed local development lane
+    product_behavior: preserve existing field rendering while making protocol mismatches fail closed
+  objective: >
+    将 componentKey、rendererVersion、Contract V2 支持区间和真实平台能力纳入统一注册协议；
+    行业模块注册必须在首个页面渲染前完成，并在卸载时原子移除。
+  acceptance:
+    - component.yaml 生成 rendererVersion、Contract V2 支持区间和 capability provider
+    - 真实行业组件声明其需要的宿主能力，平台声明能力 provider
+    - Contract V2 页面版本不在支持区间时拒绝
+    - 宿主能力缺失时拒绝且 FormSection 显示 fail-closed
+    - 重复注册、未知注册、身份不匹配和非法卸载均拒绝
+    - 安装与卸载生命周期有正负例测试
+    - 不修改 Contract V2 Schema，不新增第二个行业 Renderer
+    - L1/L2、真实浏览器和远端门禁按受管流程完成
+  exclusions:
+    - contract_v2_schema_change
+    - second_industry_renderer
+    - payment_business_semantics_change
+    - money_date_status_expression_change
+    - shared_ui_refactor
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退本批协议声明、生成器、Resolver 和测试；保留已合入的 FE-RENDERER-02A
+    平台/行业 carrier 分离，不恢复 FormSection 对行业组件的直接依赖。

@@ -75,6 +75,16 @@ class Rule:
 
 RULES = (
     Rule((
+        "contracts/registry/",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "contracts/generated/contract_structure_fingerprint.json",
+    ), (
+        "verify.contract.structure_lock",
+    )),
+    Rule((
         ".agent/",
     ), (
         "verify.agent.ledger.unit",

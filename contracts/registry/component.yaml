@@ -14,6 +14,9 @@ registry: component
 # 未逐项覆盖时生效的默认值。
 defaults:
   field_contract_version: "1.0"
+  renderer_version: "1.0.0"
+  contract_version: ">=2.0.0 <2.3.0"
+  capabilities: []
   presentation_modes: [task, workspace]
   render_profiles: [create, edit, readonly]
   readiness: ready
@@ -29,6 +32,11 @@ renderers:
   - ProfessionalRelationFieldControl
   - ProfessionalDetailCollectionControl
   - PaymentSettlementDetailCollectionControl
+
+# 宿主能力由平台运行时提供，行业 Renderer 只声明依赖。能力名和提供者进入
+# 同一份契约声明，生成器不得接受未登记的能力。
+capability_providers:
+  form.relation.one2many: FormSection.relationAdapter
 
 components:
   sc.feedback.message: {kind: node, version: "1.0.0"}
@@ -46,7 +54,7 @@ components:
   sc.relation.many2one: {semantic: relation, field_types: [many2one], renderer: ProfessionalRelationFieldControl}
   sc.relation.many2many: {semantic: relation_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
   sc.relation.table: {semantic: detail_collection, field_types: [one2many], renderer: ProfessionalDetailCollectionControl}
-  sc.payment.settlement_detail_collection: {semantic: payment_settlement_detail_collection, field_types: [one2many], renderer: PaymentSettlementDetailCollectionControl}
+  sc.payment.settlement_detail_collection: {semantic: payment_settlement_detail_collection, field_types: [one2many], renderer: PaymentSettlementDetailCollectionControl, capabilities: [form.relation.one2many]}
   sc.select.tags: {semantic: tag_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
   sc.button.action: {semantic: action, field_types: [action], renderer: FormSectionField}
   sc.auth.credential_entry: {semantic: credential_entry, field_types: [char], renderer: FormSectionField}

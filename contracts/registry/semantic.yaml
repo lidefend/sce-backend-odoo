@@ -13,9 +13,9 @@
 # semantic，再经 component.yaml 得到组件键。新增业务字段时，只要命中已有
 # 规则、或由上层契约直接声明 `semantic`，就不需要新增任何前后端映射代码。
 #
-# 范围边界（本轮明确不做，避免引入新的"已声明未消费"缺口）：
-# - 不声明 capabilities：当前没有运行时消费方，声明即为悬空能力声明，
-#   与 00 清单 G8 登记的 extensions 占位同类；能力语义随行为运行时（02）落地。
+# 范围边界：
+# - 语义文件不声明 capabilities；Renderer 实现所需能力及平台 provider 在
+#   component.yaml 中声明，并由 FormSection 宿主在运行时提供和校验。
 # - 不声明状态机：状态与转移的归属见 docs/contract-runtime-state-ownership.md。
 registry: semantic
 

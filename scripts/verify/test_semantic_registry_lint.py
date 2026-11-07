@@ -171,6 +171,30 @@ class NegativeCaseTest(unittest.TestCase):
         )
         self.assert_detected("undeclared semantic 'nope'")
 
+    def test_undeclared_capability_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.component,
+            "capabilities: [form.relation.one2many]",
+            "capabilities: [form.relation.unknown]",
+        )
+        self.assert_detected("requires undeclared capability 'form.relation.unknown'")
+
+    def test_empty_capability_provider_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.component,
+            "form.relation.one2many: FormSection.relationAdapter",
+            "form.relation.one2many: '   '",
+        )
+        self.assert_detected("capability 'form.relation.one2many' declares no provider")
+
+    def test_platform_capability_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.component,
+            "sc.input.text: {semantic: text, field_types: [char], renderer: FormSectionField}",
+            "sc.input.text: {semantic: text, field_types: [char], renderer: FormSectionField, capabilities: [form.relation.one2many]}",
+        )
+        self.assert_detected("platform component 'sc.input.text' declares capabilities")
+
     def test_frontend_second_vocabulary_is_detected(self) -> None:
         # The registry module must consume the generated table; a hand-written
         # registration list would re-create the second vocabulary.
@@ -195,7 +219,8 @@ class NegativeCaseTest(unittest.TestCase):
             self.tree.generated_frontend,
             "  {componentKey: 'sc.value.money', semanticType: 'money', "
             "supportedFieldTypes: ['monetary'], readiness: 'ready', "
-            "renderer: 'ProfessionalBusinessValueControl'},\n",
+            "renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', "
+            "supportedContractVersion: '>=2.0.0 <2.3.0', requiredCapabilities: []},\n",
             "",
         )
         self.assert_detected("component 'sc.value.money' has no frontend registration")
@@ -221,7 +246,9 @@ class NegativeCaseTest(unittest.TestCase):
             "  {componentKey: 'sc.payment.settlement_detail_collection', "
             "semanticType: 'payment_settlement_detail_collection', "
             "supportedFieldTypes: ['one2many'], readiness: 'ready', "
-            "renderer: 'PaymentSettlementDetailCollectionControl'},\n",
+            "renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', "
+            "supportedContractVersion: '>=2.0.0 <2.3.0', "
+            "requiredCapabilities: ['form.relation.one2many']},\n",
             "",
         )
         self.assert_detected("industry component 'sc.payment.settlement_detail_collection' is missing")
@@ -307,12 +334,8 @@ class NegativeCaseTest(unittest.TestCase):
         # satisfied) and require the carrier guard to notice.
         self.tree.edit(
             self.tree.generated_frontend,
-            "{componentKey: 'sc.input.text', semanticType: 'text', "
-            "supportedFieldTypes: ['char'], readiness: 'ready', "
-            "renderer: 'FormSectionField'}",
-            "{componentKey: 'sc.input.text', semanticType: 'text', "
-            "supportedFieldTypes: ['char'], readiness: 'fail_closed', "
-            "renderer: 'FormSectionField'}",
+            "readiness: 'ready', renderer: 'FormSectionField'",
+            "readiness: 'fail_closed', renderer: 'FormSectionField'",
         )
         self.assert_detected("semantic_registry.generated.ts: out of sync with the declaration")
 

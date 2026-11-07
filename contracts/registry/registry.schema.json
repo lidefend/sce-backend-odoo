@@ -121,6 +121,23 @@
           "uniqueItems": true
         },
         "renderer": { "type": "string", "minLength": 1 },
+        "renderer_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^>=(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*) <(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
         "presentation_modes": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
@@ -139,14 +156,30 @@
     },
     "componentRegistry": {
       "type": "object",
-      "required": ["registry", "defaults", "type_directed_renderer", "renderers", "components"],
+      "required": ["registry", "defaults", "type_directed_renderer", "renderers", "capability_providers", "components"],
       "properties": {
         "registry": { "const": "component" },
         "defaults": {
           "type": "object",
-          "required": ["presentation_modes", "render_profiles", "readiness", "field_contract_version"],
+          "required": ["presentation_modes", "render_profiles", "readiness", "field_contract_version", "renderer_version", "contract_version", "capabilities"],
           "properties": {
             "field_contract_version": { "const": "1.0" },
+            "renderer_version": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+            },
+            "contract_version": {
+              "type": "string",
+              "pattern": "^>=(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*) <(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+              },
+              "uniqueItems": true
+            },
             "presentation_modes": {
               "type": "array",
               "items": { "type": "string", "minLength": 1 },
@@ -169,6 +202,16 @@
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1,
           "uniqueItems": true
+        },
+        "capability_providers": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "components": {
           "type": "object",

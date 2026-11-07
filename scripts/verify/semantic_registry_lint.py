@@ -230,6 +230,11 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
     semantics = semantic_doc.get("semantics") if isinstance(semantic_doc.get("semantics"), dict) else {}
     components = component_doc.get("components") if isinstance(component_doc.get("components"), dict) else {}
     renderers = component_doc.get("renderers") if isinstance(component_doc.get("renderers"), list) else []
+    capability_providers = (
+        component_doc.get("capability_providers")
+        if isinstance(component_doc.get("capability_providers"), dict)
+        else {}
+    )
     derivation = semantic_doc.get("derivation") if isinstance(semantic_doc.get("derivation"), dict) else {}
     rules = derivation.get("rules") if isinstance(derivation.get("rules"), list) else []
 
@@ -265,6 +270,19 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         primary = str((entry or {}).get("semantic") or "")
         if primary not in semantics:
             errors.append(f"component.yaml: component '{key}' declares undeclared semantic '{primary}'")
+        for capability in (entry or {}).get("capabilities") or []:
+            if str(capability) not in capability_providers:
+                errors.append(
+                    f"component.yaml: component '{key}' requires undeclared capability '{capability}'"
+                )
+        primary_category = str((semantics.get(primary) or {}).get("category") or "")
+        if (entry or {}).get("capabilities") and primary_category != "industry":
+            errors.append(
+                f"component.yaml: platform component '{key}' declares capabilities without a host consumer"
+            )
+    for capability, provider in sorted(capability_providers.items()):
+        if not str(provider or "").strip():
+            errors.append(f"component.yaml: capability '{capability}' declares no provider")
 
     declared_rule_semantics: set[str] = set()
     for index, rule in enumerate(rules):
@@ -409,6 +427,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         "semantics": len(semantics),
         "components": len(components),
         "renderers": len(renderer_set),
+        "capability_providers": len(capability_providers),
         "derivation_rules": len(rules),
         "derivation_default": derivation_default,
         "semantics_with_derivation_rule": len(declared_rule_semantics),
