@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: NAV-01-SIDEBAR-CANONICAL
-  status: active
+  status: completed
   title: 独立前端侧边栏导航体系收敛（第一阶段）
   formal_product_layer: P0
   layer_target: 通用前端运行时（AppShell 侧边栏导航）

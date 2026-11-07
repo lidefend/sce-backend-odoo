@@ -3,7 +3,7 @@
   "id": "NAV-01-SIDEBAR-CANONICAL",
   "branch": "codex/nav-01-sidebar-canonical",
   "baseline_sha": "e2336d9f5e198ffb667087d6bd55bec957edf030",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/NAV-01-SIDEBAR-CANONICAL.yaml",
   "record": "docs/ops/iterations/fe-mainline-experience-20261106/nav-01-source-diagnosis.md",
   "scope": [
@@ -72,5 +72,5 @@
     "conclusion": "19/19 全部一致，无入口丢失"
   },
   "blockers": [],
-  "next_exact_step": "run governed pr.push and create independent Draft PR"
+  "next_exact_step": "merged via PR #832 (squash fda88ee60); run goal completed and branch binding retired"
 }

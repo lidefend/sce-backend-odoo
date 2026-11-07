@@ -93,6 +93,6 @@
     "fix/ci-backend-coverage-skip-detection": ".agent/runs/CI-HISTORY-EVIDENCE-01/run.json",
     "fix/scheduled-ci-mechanism-impact-rg": ".agent/runs/CI-SCHEDULED-MECHANISM-IMPACT-20261107/run.json",
     "fix/acceptance-fixture-readiness-evidence": ".agent/runs/ACCEPTANCE-READINESS-EVIDENCE-20261107/run.json",
-    "codex/nav-01-sidebar-canonical": ".agent/runs/NAV-01-SIDEBAR-CANONICAL/run.json"
+    "codex/nav-01-sidebar-canonical-closeout": ".agent/runs/NAV-01-CLOSEOUT/run.json"
   }
 }
