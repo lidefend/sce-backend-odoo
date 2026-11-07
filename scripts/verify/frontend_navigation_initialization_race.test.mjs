@@ -72,12 +72,110 @@ assert.equal(snapshot.meta.action_id, 723, 'selection metadata must remain immut
 assert.equal(createNavigationSelectionSnapshot({ ...node, meta: { ...node.meta, action_id: 506 } }, authority), null);
 assert.equal(createNavigationSelectionSnapshot(node, null), null);
 
+// Two menus sharing the same action_id must each bind to their own
+// server-owned (menu_id, action_id) authority.  Matching action_id alone is a
+// menu-identity cross-match and must fail closed.
+const sharedActionAuthority = {
+  contract_version: '2.0.0',
+  schema_version: '2.0.0',
+  primary_actions: [
+    {
+      route_kind: 'PRIMARY_NAV',
+      menu_id: 382,
+      menu_xmlid: 'smart_construction_core.menu_project_ledger',
+      action_id: 590,
+      action_xmlid: 'smart_construction_core.action_project_ledger',
+      name: '项目台账',
+    },
+    {
+      route_kind: 'PRIMARY_NAV',
+      menu_id: 410,
+      menu_xmlid: 'smart_construction_core.menu_project_other',
+      action_id: 590,
+      action_xmlid: 'smart_construction_core.action_project_ledger',
+      name: '另一个菜单入口',
+    },
+  ],
+  role_home_actions: [],
+  contextual_actions: [],
+  admin_actions: [],
+};
+const ledgerNode = (menuId, label) => ({
+  menu_id: menuId,
+  label,
+  meta: {
+    action_id: 590,
+    model: 'project.project',
+    view_modes: ['tree', 'form'],
+    entry_target: {
+      type: 'compatibility',
+      route: `/a/590?menu_id=${menuId}`,
+      compatibility_refs: { menu_id: menuId, action_id: 590, model: 'project.project' },
+    },
+  },
+});
+
+const ledgerSnapshot = createNavigationSelectionSnapshot(ledgerNode(382, '项目台账'), sharedActionAuthority);
+assert.ok(ledgerSnapshot);
+assert.equal(ledgerSnapshot.menuId, 382);
+assert.equal(ledgerSnapshot.actionId, 590);
+assert.equal(ledgerSnapshot.authorityKey, 'PRIMARY_NAV:smart_construction_core.menu_project_ledger:smart_construction_core.action_project_ledger');
+
+const otherSnapshot = createNavigationSelectionSnapshot(ledgerNode(410, '另一个菜单入口'), sharedActionAuthority);
+assert.ok(otherSnapshot);
+assert.equal(otherSnapshot.menuId, 410);
+assert.equal(otherSnapshot.actionId, 590);
+assert.equal(otherSnapshot.authorityKey, 'PRIMARY_NAV:smart_construction_core.menu_project_other:smart_construction_core.action_project_ledger');
+
+// A group menu resolves to its first actionable child; the snapshot must keep
+// the clicked source menu separate from the resolved target and bind authority
+// to the target (menu_id, action_id), never to the source container.
+const groupNode = {
+  menu_id: 100,
+  label: '项目中心',
+  children: [
+    ledgerNode(382, '项目台账'),
+  ],
+};
+const groupSnapshot = createNavigationSelectionSnapshot(groupNode, sharedActionAuthority);
+assert.ok(groupSnapshot);
+assert.equal(groupSnapshot.sourceMenuId, 100);
+assert.equal(groupSnapshot.menuId, 382);
+assert.equal(groupSnapshot.actionId, 590);
+assert.equal(groupSnapshot.authorityKey, 'PRIMARY_NAV:smart_construction_core.menu_project_ledger:smart_construction_core.action_project_ledger');
+
+// A menu must not reuse another menu's authority record just because they share
+// an action_id; the exact (menu_id, action_id) pair must exist.
+assert.equal(
+  createNavigationSelectionSnapshot(
+    ledgerNode(410, '另一个菜单入口'),
+    { ...sharedActionAuthority, primary_actions: [sharedActionAuthority.primary_actions[0]] },
+  ),
+  null,
+  'menu 410/action 590 must not reuse menu 382 authority',
+);
+assert.equal(
+  createNavigationSelectionSnapshot(
+    ledgerNode(382, '项目台账'),
+    { ...sharedActionAuthority, primary_actions: [{ ...sharedActionAuthority.primary_actions[0], action_id: 999 }] },
+  ),
+  null,
+  'wrong action pairing must fail closed',
+);
+assert.equal(
+  createNavigationSelectionSnapshot(ledgerNode(999, '不存在的菜单'), sharedActionAuthority),
+  null,
+  'missing menu/action pair must fail closed',
+);
+
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
 assert.match(appShell, /v-else-if="canonicalNavigationBroken"/);
+assert.match(appShell, /v-else-if="canonicalNavigationEmpty"/);
 assert.match(appShell, /<ProductSideNavigation\s+v-if="navigationReady && navigationNodes\.length"/, 'visible navigation must consume the canonical navigation model');
 assert.doesNotMatch(appShell, /<ProductScenarioNavigation\b/, 'visible navigation must not consume the scenario classification component');
 assert.match(appShell, /canonicalNavigationBroken = computed\(\(\) => navigationReady\.value && !session\.navigationModel\)/, 'canonical decode failure must drive the navigation error state');
+assert.match(appShell, /canonicalNavigationEmpty = computed\(\(\) => \([\s\S]*?navigationNodes\.value\.length === 0[\s\S]*?\)\);/);
 assert.doesNotMatch(appShell, /scenarioNavigationBroken|scenarioSurface/, 'scenario classification must not gate visible navigation');
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
 assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);

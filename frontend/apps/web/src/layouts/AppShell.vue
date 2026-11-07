@@ -165,6 +165,10 @@
           <strong>导航配置不可用</strong>
           <span>业务菜单未能完成校验，业务入口保持关闭。</span>
         </div>
+        <div v-else-if="canonicalNavigationEmpty" class="navigation-loading" role="status">
+          <strong>暂无可用业务入口</strong>
+          <span>当前账号或公司未获得可用的业务菜单，请联系管理员维护授权后刷新。</span>
+        </div>
         <div class="menu">
           <ProductSideNavigation
             v-if="navigationReady && navigationNodes.length"
@@ -645,6 +649,11 @@ const navigationReady = computed(() => (
   && Boolean(session.routeAuthority)
 ));
 const canonicalNavigationBroken = computed(() => navigationReady.value && !session.navigationModel);
+const canonicalNavigationEmpty = computed(() => (
+  navigationReady.value
+  && Boolean(session.navigationModel)
+  && navigationNodes.value.length === 0
+));
 const initError = computed(() => session.initError);
 const initTraceId = computed(() => session.initTraceId);
 const showSceneErrors = computed(() => import.meta.env.DEV && sceneRegistryErrors.length > 0);

@@ -61,14 +61,14 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
   const actionId = positiveInteger(target?.action_id || target?.meta?.action_id);
   if (!menuId) return null;
 
-  // One identity rule for every entry, identical to findRouteAuthority:
-  // the server-owned (menu_id, action_id) pair.  A scene entry simply has no
-  // business action (action_id 0); where it navigates is decided by the
-  // server-owned entry_target, never by a second frontend rule.
+  // One identity rule for every entry: the server-owned (menu_id, action_id)
+  // pair must match exactly.  A scene entry has no business action (action_id
+  // 0); where it navigates is decided by the server-owned entry_target, never
+  // by a second frontend rule.  Matching action_id alone would let two menus
+  // that share an action pick whichever authority record appears first.
   const authority = authorityEntries(routeAuthority).find((entry) => (
-    actionId > 0
-      ? positiveInteger(entry?.action_id) === actionId
-      : positiveInteger(entry?.menu_id) === menuId
+    positiveInteger(entry?.menu_id) === menuId
+    && positiveInteger(entry?.action_id) === actionId
   ));
   if (!authority) return null;
 
