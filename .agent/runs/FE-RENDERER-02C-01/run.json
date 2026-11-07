@@ -288,7 +288,11 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
+  "blockers": [
+    "Kanban browser: acceptance fixture release navigation omits smart_construction_core.action_project_dashboard for fixture_role_config_admin, fixture_role_pm and fixture_role_project_a_member; observed 403",
+    "Approval browser: existing verify.frontend.my_work_approval.browser requires legacy .env.dev Compose variables and is not runnable against the managed 5180 profile",
+    "Approval runtime: verify.business_config.approval_runtime fails after fixture reset with no authorized reviewer for current step"
+  ],
   "results": {
     "audit": "PASS: read-only source inventory completed; matrix and findings are recorded in docs/architecture/frontend_business_semantics_authority_audit_v1.md",
     "implementation": "PASS: shared business-value authority, cross-surface consumers, empty-value convergence and anti-regression guards implemented",
@@ -296,12 +300,17 @@
     "validation_tool_defect_closed": "PASS: localized-display and collection-status tests updated and selected by the incremental planner after utils/semantic.ts removal",
     "contract_limit": "NOT_RUN: user timezone/date-format authority is absent from current Contract V2 page input; no timezone conversion is inferred",
     "boq_amount_limit": "PARTIAL: BOQ preview empty value is unified, but payload declares neither currency nor precision; amount semantics remain unclaimed",
-    "browser": "NOT_RUN: clean candidate preview/backend rebind and representative form/list/detail/Kanban/approval browser evidence still required"
+    "browser": "PARTIAL: project form, contract form/detail and payment request list PASS on clean candidate 77447ff333f6b5e890e7ef21df743ec70d1c5e5d; Kanban and approval remain blocked by acceptance fixture navigation/reviewer facts",
+    "l4_evidence": "PASS: preview build and 5180/18082 candidate binding; project presentation 1 target PASS; contract form/detail 4 viewports PASS; list 6 viewports records 30/30 gated 316/316 negatives 5/5 runtime_errors=0",
+    "kanban_browser": "BLOCKED: released navigation action_project_dashboard absent for three registered fixture roles and a 403 was observed",
+    "approval_browser": "NOT_RUN: managed my-work approval browser entry requires legacy .env.dev Compose environment rather than the active 5180 profile",
+    "approval_runtime": "BLOCKED: enabled submission and configuration-isolation checks completed, but review approval failed with no authorized reviewer for current step",
+    "timezone": "NOT_RUN: Contract V2 page input still declares no user timezone/date-format authority"
   },
-  "next_exact_step": "Prepare and review generated evidence, commit the clean candidate, then rebuild the governed acceptance preview and collect representative L4 browser evidence.",
+  "next_exact_step": "Resolve the acceptance fixture Kanban release-navigation and approval-reviewer blockers, then complete Kanban and approval browser evidence without weakening the recorded matrix.",
   "id": "FE-RENDERER-02C-01",
   "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-RENDERER-02C-01.yaml",
   "record": "docs/ops/iterations/fe_renderer_02c_01_business_semantics_20261108.md"
 }
