@@ -7,6 +7,9 @@
         :field="field"
         :descriptor="fields?.[field.name || '']"
         :value="record?.[field.name || '']"
+        :currency-value="fields?.[field.name || '']?.currency_field
+          ? record?.[fields?.[field.name || '']?.currency_field || '']
+          : undefined"
         :parent-id="parentId"
         :editing="editing"
         :draft-name="draftName"

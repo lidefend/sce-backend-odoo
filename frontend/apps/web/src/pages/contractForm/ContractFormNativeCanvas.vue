@@ -98,7 +98,7 @@
     >
       <template #readonly="{ field }">
         <div class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
-          <span v-if="isEmptyValue(field.value, field.type)">{{ resolveReadonlyEmptyText(field, '未填写') }}</span>
+          <span v-if="isEmptyValue(field.value, field.type)">{{ resolveReadonlyEmptyText(field) }}</span>
           <!-- eslint-disable vue/no-v-html -- 值先经 sanitizeReadonlyHtml 净化 -->
           <div
             v-else-if="field.type === 'html'"
@@ -106,7 +106,13 @@
             v-html="sanitizeReadonlyHtml(field.value)"
           />
           <!-- eslint-enable vue/no-v-html -->
-          <FieldValue v-else :value="field.value" :field="field.descriptor" />
+          <FieldValue
+            v-else
+            :value="field.value"
+            :field="field.descriptor"
+            :digits="field.digits"
+            :currency-label="field.currencyLabel"
+          />
         </div>
       </template>
       <template #chatter>

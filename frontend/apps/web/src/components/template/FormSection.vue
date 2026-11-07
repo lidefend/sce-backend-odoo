@@ -459,7 +459,7 @@ import { isProfessionalRelationField } from '../professional-fields/professional
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
-import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
+import { formatMonetaryDisplayValue, monetaryInputStep } from '../../app/presentation/businessValuePresentation';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -951,7 +951,7 @@ function readonlyText(field: FormSectionFieldSchema) {
       field.digits,
       field.currencyLabel,
       'zh-CN',
-      resolveReadonlyEmptyText(field, '-'),
+      resolveReadonlyEmptyText(field),
     );
   }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
@@ -961,7 +961,7 @@ function readonlyText(field: FormSectionFieldSchema) {
   return formatDisplayValue(
     normalizedValue,
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
-    { emptyText: resolveReadonlyEmptyText(field, '-') },
+    { emptyText: resolveReadonlyEmptyText(field) },
   );
 }
 

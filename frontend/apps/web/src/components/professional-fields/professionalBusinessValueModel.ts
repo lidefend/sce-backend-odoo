@@ -1,4 +1,6 @@
 import type { FormSectionFieldSchema } from '../template/formSection.types';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
+import { formatBusinessPercentage } from '../../app/presentation/businessValuePresentation';
 
 export const PROFESSIONAL_BUSINESS_VALUE_KEYS = Object.freeze([
   'sc.value.money',
@@ -46,22 +48,13 @@ export function normalizeBusinessValueChoiceOptions(
   }));
 }
 
-export function statusSemantic(value: unknown): 'default' | 'info' | 'success' | 'warning' | 'danger' {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (['done', 'approved', 'paid', 'success', 'completed', 'closed'].includes(normalized)) return 'success';
-  if (['rejected', 'cancel', 'cancelled', 'failed', 'error'].includes(normalized)) return 'danger';
-  if (['pending', 'waiting', 'draft', 'warning'].includes(normalized)) return 'warning';
-  return normalized ? 'info' : 'default';
-}
-
 export function formatPercentage(value: unknown): string {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? `${numeric.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}%` : '—';
+  return formatBusinessPercentage(value, FIELD_VALUE_EMPTY_TEXT);
 }
 
 export function formatDuration(value: unknown): string {
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return '—';
+  if (!Number.isFinite(numeric)) return FIELD_VALUE_EMPTY_TEXT;
   const hours = Math.trunc(numeric);
   const minutes = Math.round((numeric - hours) * 60);
   return minutes ? `${hours} 小时 ${minutes} 分钟` : `${hours} 小时`;

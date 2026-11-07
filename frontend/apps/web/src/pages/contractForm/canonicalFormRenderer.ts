@@ -5,9 +5,9 @@ import type { RelationFieldAdapter } from '../../components/template/relationFie
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
 import {
   normalizeMonetaryDigits,
-  projectMany2oneCapabilities,
   resolveCurrencyDisplayLabel,
-} from '../../components/template/formSection.mapper';
+} from '../../app/presentation/businessValuePresentation';
+import { projectMany2oneCapabilities } from '../../components/template/formSection.mapper';
 import {
   MANY2ONE_CREATE_OPTION,
   MANY2ONE_OPEN_RECORD_OPTION,

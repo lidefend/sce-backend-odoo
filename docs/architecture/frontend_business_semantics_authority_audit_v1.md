@@ -118,3 +118,23 @@ Contract V2
 - 不声明用户时区转换已经完成。
 - 不改造 `@sc/ui` 或 TDesign 官方组件映射。
 - 不为付款结算行业组件新增业务语义；仅要求它继续复用平台金额适配器。
+
+## 实施后对账
+
+以下记录审计后发现问题的实施状态；原审计证据保留为只读基线事实。
+
+| 审计项 | 实施状态 | 单一权威 / 证据 |
+| --- | --- | --- |
+| 详情金额缺少币种/精度 | 已修复 | `FieldValue` 消费 `currencyValue`、`currencyLabel`、`digits`；View 与 canonical/native form 只透传契约元数据 |
+| Kanban 字段名推断金额/百分比 | 已修复 | 删除 `utils/semantic.ts`；`collectionKanbanPresentation.ts` 只消费列声明，字段名反例测试通过 |
+| 状态第二套 label/tone | 已修复 | selection 提供 label；`collectionStatusPresentation.ts` 是唯一 tone 策略；Professional 与审批不再维护本地 tone 表 |
+| 空值口径分裂 | 已修复 | 普通字段统一 `--`；合同声明的 `readonly_empty_text` 优先；原生表单、明细集合、关系搜索、BOQ 预览与结算组件不再本地使用 `-`、`—`、`未填写` |
+| 日期展示入口分裂 | 部分完成 | 表单/列表/详情/Kanban/审批统一消费 `fieldSemantics` 时间适配；时区转换仍待契约声明 |
+| 金额工具归属不清 | 已修复 | 金额、百分比、状态和声明值入口移至 `app/presentation/businessValuePresentation.ts` |
+
+### 保持为明确缺口的项
+
+- Contract V2 未声明用户时区、日期格式和 locale，因此本轮不执行 UTC→用户时区换算。
+- BOQ 导入预检 payload 只有 `amount`，没有币种和精度；本轮只统一空值，不推断其金额语义。
+- `one2manyUtils.ts` 的内联编辑 model-value 仍与只读展示共用格式化路径，未在本批拆分；
+  该文件已有登记例外，避免改变输入值形状。

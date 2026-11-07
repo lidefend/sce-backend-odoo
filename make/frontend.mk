@@ -326,6 +326,13 @@ verify.frontend.professional_business_value.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_business_value_guard.py
 	@python3 scripts/verify/frontend_professional_business_value_guard.py
 
+.PHONY: verify.frontend.business_semantics.unit
+verify.frontend.business_semantics.unit: guard.prod.forbid verify.frontend.localized_display.unit verify.frontend.collection_status_presentation.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/business_semantics_consistency_test.ts --bundle --platform=node --format=esm --outfile=/tmp/business-semantics-consistency-test.mjs >/dev/null
+	@node /tmp/business-semantics-consistency-test.mjs
+	@python3 -m unittest scripts/verify/test_frontend_business_semantics_guard.py
+	@python3 scripts/verify/frontend_business_semantics_guard.py
+
 .PHONY: verify.frontend.professional_relation_field.unit
 verify.frontend.professional_relation_field.unit: guard.prod.forbid
 	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind attachment

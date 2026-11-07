@@ -24,7 +24,12 @@ goal:
       - contracts/registry
       - frontend/apps/web/src/app/presentation
       - frontend/apps/web/src/components
+      - frontend/apps/web/src/pages
+      - frontend/apps/web/src/utils
+      - frontend/apps/web/src/views
+      - frontend/apps/web/scripts
       - frontend/packages/ui/src
+      - make/frontend.mk
       - scripts/verify
     runtime: representative form, list, detail, Kanban and approval surfaces using the existing governed local development lane
     product_behavior: preserve declared facts while making money, date, status and empty-value presentation consistent

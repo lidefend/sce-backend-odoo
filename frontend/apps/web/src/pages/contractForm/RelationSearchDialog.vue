@@ -70,7 +70,7 @@
             <span v-if="dialog.columns.length > 1" class="relation-dialog-result-facts">
               <span v-for="column in dialog.columns.slice(1)" :key="`${row.id}-card-${column.name}`">
                 <small>{{ column.label }}</small>
-                <em>{{ relationSearchCell(row, column.name) || '未填写' }}</em>
+                <em>{{ relationSearchCell(row, column.name) || FIELD_VALUE_EMPTY_TEXT }}</em>
               </span>
             </span>
           </span>
@@ -106,7 +106,11 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
+import {
+  FIELD_VALUE_EMPTY_TEXT,
+  FIELD_VALUE_FALSE_TEXT,
+  FIELD_VALUE_TRUE_TEXT,
+} from '../../utils/fieldSemantics.ts';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScTable from '../../components/design-system/ScTable.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';

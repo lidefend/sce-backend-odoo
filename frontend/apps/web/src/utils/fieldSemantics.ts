@@ -50,12 +50,6 @@ export const FIELD_VALUE_EMPTY_TEXT = '--';
 export const FIELD_VALUE_TRUE_TEXT = '是';
 export const FIELD_VALUE_FALSE_TEXT = '否';
 
-/**
- * 数值列在集合视图缺少取值时的呈现口径。这是既有的集合密度策略，在此登记为有意声明，
- * 不代表记录／表单路径应采用同一取值；改口径需要产品决定，不在前端自行猜测。
- */
-export const COLLECTION_NUMERIC_EMPTY_TEXT = '0';
-
 export const ATTACHMENT_REFERENCE_URL_SOURCE = '(?:legacy-file-id|legacy-file|https?|file):\\/\\/|\\/web\\/content\\/';
 
 const ATTACHMENT_REFERENCE_PATTERN = new RegExp(`\\|\\s*(?:${ATTACHMENT_REFERENCE_URL_SOURCE})`, 'i');

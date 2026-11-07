@@ -153,7 +153,11 @@ import { computed, h, nextTick, onActivated, onBeforeUnmount, onMounted, ref, us
 import ScIcon from '../design-system/ScIcon.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { requireDeclaredNumber } from '../../app/contract/contractGap';
-import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../template/formSection.mapper';
+import {
+  formatMonetaryDisplayValue,
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../../app/presentation/businessValuePresentation';
 import {
   applyWorksheetDomainTab,
   collectNodeIds,

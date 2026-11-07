@@ -19,7 +19,7 @@ assert.equal(resolveSelectionLabel('joint', operationStrategy), '联营项目');
 assert.equal(resolveSelectionLabel(['direct', '公司直营'], operationStrategy), '公司直营');
 // 声明选项存在但值不在选择集：返回 null，KanbanPage 据此走 ContractGapError，不静默兜底英文。
 assert.equal(resolveSelectionLabel('self_run', operationStrategy), null);
-// 普通非 selection 字段无声明选择项：保持原行为（null → semanticValueByField）。
+// 普通非 selection 字段无声明选择项：保持原行为（null → 通用字段展示）。
 assert.equal(resolveSelectionLabel('direct'), null);
 assert.equal(resolveSelectionLabel('unknown', operationStrategy), null);
 

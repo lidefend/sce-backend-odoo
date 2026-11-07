@@ -9,6 +9,7 @@ import {
   projectBoqImportPreview,
   type BoqImportPreviewIntentData,
 } from '../src/app/presentation/boqImportPreview';
+import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
 
 const READY_RAW: BoqImportPreviewIntentData = {
   ok: true,
@@ -218,9 +219,9 @@ assert.ok(noError.errorMessage.length > 0);
 // ── 金额格式化 ──────────────────────────────────────────────
 assert.equal(formatBoqPreviewAmount(0), '0');
 assert.equal(formatBoqPreviewAmount(1234.5), '1,234.5');
-assert.equal(formatBoqPreviewAmount(null), '—');
-assert.equal(formatBoqPreviewAmount(undefined), '—');
-assert.equal(formatBoqPreviewAmount(Number.NaN), '—');
+assert.equal(formatBoqPreviewAmount(null), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatBoqPreviewAmount(undefined), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatBoqPreviewAmount(Number.NaN), FIELD_VALUE_EMPTY_TEXT);
 
 // ── 非数字计数的字符串容错 ──────────────────────────────────
 const stringyCounts = projectBoqImportPreview({

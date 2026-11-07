@@ -6,26 +6,299 @@
     ".agent/goals/FE-RENDERER-02C-01.yaml",
     ".agent/runs/FE-RENDERER-02C-01/run.json",
     "docs/architecture/frontend_business_semantics_authority_audit_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe_renderer_02c_01_business_semantics_20261108.md",
     "docs/architecture",
     "contracts/registry",
+    "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
     "frontend/apps/web/src/app/presentation",
+    "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+    "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
     "frontend/apps/web/src/components",
+    "frontend/apps/web/src/components/FieldValue.vue",
+    "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+    "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+    "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts",
+    "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/components/template/formSection.mapper.ts",
+    "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewGroupRenderer.vue",
+    "frontend/apps/web/src/pages",
+    "frontend/apps/web/src/pages/KanbanPage.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+    "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/src/utils",
+    "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/apps/web/src/utils/semantic.ts",
+    "frontend/apps/web/src/views",
+    "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/scripts",
+    "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/collection_kanban_selection_label_test.ts",
+    "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/packages/ui/src",
+    "make/frontend.mk",
+    "scripts/verify/frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_business_semantics_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_collection_status_presentation.test.mjs",
+    "scripts/verify/frontend_localized_display_contract_test.ts",
     "scripts/verify"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing local Make tools for audit and L2; registered local development lane for representative browser evidence"
   },
-  "checks": {},
+  "checks": {
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/components/FieldValue.vue",
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_collection_status_presentation.test.mjs",
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_page_size": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_surface_gate": {
+      "target": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/formSection.mapper.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "collection_action_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/action",
+        "frontend/apps/web/src/components/product-list",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/scripts/collection_action_settlement_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_v2_occurrence_authority": {
+      "target": "verify.frontend.contract_v2_occurrence_authority.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2",
+        "frontend/apps/web/src/app/presentation",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint_source": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+        "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
   "blockers": [],
   "results": {
     "audit": "PASS: read-only source inventory completed; matrix and findings are recorded in docs/architecture/frontend_business_semantics_authority_audit_v1.md",
-    "contract_limit": "NOT_RUN: user timezone/date-format authority is absent from current Contract V2 page input; no timezone conversion is inferred"
+    "implementation": "PASS: shared business-value authority, cross-surface consumers, empty-value convergence and anti-regression guards implemented",
+    "l2": "PASS: 18 required targets executed with zero blocked/not-run/unmapped targets; receipt=.runtime/frontend-dev-validation/executions/20261107T204921Z-3336201-702268851/receipt.json",
+    "validation_tool_defect_closed": "PASS: localized-display and collection-status tests updated and selected by the incremental planner after utils/semantic.ts removal",
+    "contract_limit": "NOT_RUN: user timezone/date-format authority is absent from current Contract V2 page input; no timezone conversion is inferred",
+    "boq_amount_limit": "PARTIAL: BOQ preview empty value is unified, but payload declares neither currency nor precision; amount semantics remain unclaimed",
+    "browser": "NOT_RUN: clean candidate preview/backend rebind and representative form/list/detail/Kanban/approval browser evidence still required"
   },
-  "next_exact_step": "Implement the shared business-value presentation authority and migrate the audited consumers without changing Contract V2.",
+  "next_exact_step": "Prepare and review generated evidence, commit the clean candidate, then rebuild the governed acceptance preview and collect representative L4 browser evidence.",
   "id": "FE-RENDERER-02C-01",
   "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
   "status": "active",

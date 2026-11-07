@@ -56,6 +56,26 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.professional_detail_collection.unit"],
         )
 
+    def test_business_value_semantics_select_cross_page_executor(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+            "frontend/apps/web/src/pages/KanbanPage.vue",
+            "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+            "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+            "scripts/verify/frontend_business_semantics_guard.py",
+            "scripts/verify/frontend_localized_display_contract_test.ts",
+            "scripts/verify/frontend_collection_status_presentation.test.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.business_semantics.unit",
+                    select_targets([path]),
+                )
+        self.assertIn(
+            "verify.frontend.boq_import_preview.unit",
+            select_targets(["frontend/apps/web/src/app/presentation/boqImportPreview.ts"]),
+        )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

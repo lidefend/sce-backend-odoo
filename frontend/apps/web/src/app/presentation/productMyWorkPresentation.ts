@@ -1,5 +1,6 @@
 import type { ProductMyWorkFact } from '../../api/myWork';
-import { formatMonetaryDisplayValue } from '../../components/template/formSection.mapper';
+import { formatMonetaryDisplayValue } from './businessValuePresentation';
+import { FIELD_VALUE_EMPTY_TEXT, formatTemporalFieldValue } from '../../utils/fieldSemantics';
 
 export type ProductMyWorkFactPresentation = {
   key: string;
@@ -15,14 +16,20 @@ function normalizedDigits(value: unknown) {
 export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
   if (fact.display_role === 'money') {
     const money = fact.money;
-    if (money?.value == null || !Number.isFinite(Number(money.value))) return '未填写';
+    if (money?.value == null || !Number.isFinite(Number(money.value))) return FIELD_VALUE_EMPTY_TEXT;
     const digits = normalizedDigits(money.digits);
-    return formatMonetaryDisplayValue(Number(money.value), [20, digits], money.currency || money.currency_symbol || '');
+    return formatMonetaryDisplayValue(
+      Number(money.value),
+      [20, digits],
+      money.currency || money.currency_symbol || '',
+      'zh-CN',
+      FIELD_VALUE_EMPTY_TEXT,
+    );
   }
   if (fact.display_role === 'datetime') {
-    return fact.value ? String(fact.value).replace('T', ' ').slice(0, 16) : '未知';
+    return formatTemporalFieldValue(fact.value, 'compact') || FIELD_VALUE_EMPTY_TEXT;
   }
-  return fact.value || '未填写';
+  return String(fact.value ?? '').trim() || FIELD_VALUE_EMPTY_TEXT;
 }
 
 export function partitionProductMyWorkFacts(

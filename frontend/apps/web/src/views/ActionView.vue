@@ -302,6 +302,8 @@
       :status-fields="kanbanStatusFields"
       :field-labels="kanbanFieldLabels"
       :field-selections="kanbanFieldSelections"
+      :column-options="listColumnOptions"
+      :status-field="listProfile?.status_field || ''"
       :title-field="kanbanTitleField"
       :subtitle="vm.page.subtitle"
       :status-label="vm.page.statusLabel"

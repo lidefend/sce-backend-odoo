@@ -92,7 +92,7 @@
               />
             </span>
             <span class="settle-col-name" :title="line.name">{{ line.name }}</span>
-            <span class="settle-col-contract" :title="line.contract_name">{{ line.contract_name || '—' }}</span>
+            <span class="settle-col-contract" :title="line.contract_name">{{ line.contract_name || FIELD_VALUE_EMPTY_TEXT }}</span>
             <span class="settle-col-amount">{{ fmtMoney(line.amount) }}</span>
             <span class="settle-col-applied">{{ fmtMoney(line.applied) }}</span>
             <span class="settle-col-remaining">{{ fmtMoney(line.remaining) }}</span>
@@ -120,7 +120,7 @@
               <span class="settle-history-name" :title="req.name">{{ req.name }}</span>
               <span class="settle-history-state" :class="'is-' + req.state">{{ req.state_label }}</span>
               <span class="settle-history-amount">{{ fmtMoney(req.applied_to_settlement || req.amount) }}</span>
-              <span class="settle-history-date">{{ req.date_request || '—' }}</span>
+              <span class="settle-history-date">{{ formatTemporalFieldValue(req.date_request, 'compact') || FIELD_VALUE_EMPTY_TEXT }}</span>
             </div>
           </div>
         </div>
@@ -196,7 +196,8 @@ import ScInput from '../design-system/ScInput.vue';
 import ScDialog from '../design-system/ScDialog.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
-import { formatMonetaryDisplayValue } from '../template/formSection.mapper';
+import { formatMonetaryDisplayValue } from '../../app/presentation/businessValuePresentation';
+import { FIELD_VALUE_EMPTY_TEXT, formatTemporalFieldValue } from '../../utils/fieldSemantics';
 import {
   ratioSettlementApplyAmounts,
   ratioSettlementApplyTotal,

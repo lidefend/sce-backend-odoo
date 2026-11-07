@@ -15,7 +15,7 @@
         v-else-if="kind === 'sc.display.status'"
         :value="String(field.inputValue ?? field.value ?? '')"
         :label="displayText"
-        :semantic="statusSemantic(field.inputValue ?? field.value)"
+        :semantic="statusBadgeSemantic(field.inputValue ?? field.value)"
       />
       <span v-else class="professional-business-value__readonly">{{ displayText }}</span>
     </template>
@@ -53,15 +53,20 @@ import ScInput from '../design-system/ScInput.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
-import { formatMonetaryDisplayValue, formatMonetaryInputValue, monetaryInputStep } from '../template/formSection.mapper';
+import {
+  presentDeclaredBusinessValue,
+  formatMonetaryDisplayValue,
+  formatMonetaryInputValue,
+  monetaryInputStep,
+} from '../../app/presentation/businessValuePresentation';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   businessValueKind,
   formatDuration,
   formatPercentage,
   normalizeBusinessValueChoiceOptions,
-  statusSemantic,
 } from './professionalBusinessValueModel';
+import { statusBadgeSemantic } from '../../app/presentation/businessValuePresentation';
 import { resolveReadonlyEmptyText } from './professionalBaseFieldModel';
 
 const props = defineProps<{
@@ -104,8 +109,16 @@ const displayText = computed(() => {
   if (kind.value === 'sc.value.percentage') return formatPercentage(value);
   if (kind.value === 'sc.value.duration') return formatDuration(value);
   if (kind.value === 'sc.display.status') {
-    const selected = props.field.selectionOptions?.find((option) => String(option.value) === String(props.field.inputValue ?? value));
-    return selected?.label || String(value ?? emptyDisplayText.value) || emptyDisplayText.value;
+    return presentDeclaredBusinessValue({
+      field: {
+        name: props.field.name,
+        type: props.field.type,
+        componentKey: props.field.componentKey,
+        selection: props.field.selectionOptions,
+      },
+      value: props.field.inputValue ?? value,
+      emptyText: emptyDisplayText.value,
+    }).text;
   }
   return String(value ?? emptyDisplayText.value) || emptyDisplayText.value;
 });
