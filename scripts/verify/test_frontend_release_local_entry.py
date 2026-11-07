@@ -390,6 +390,11 @@ load_profile
         self.assertIn("fixture_role_finance_reviewer", browser)
         self.assertIn("/api/runtime-version", browser)
         self.assertIn("runtimeVersion.source_revision === EXPECTED_SHA", browser)
+        self.assertIn('data-product-page-mode="form"][data-state="ok"][data-form-model=', browser)
+        self.assertIn('data-professional-workflow-component="statusbar"][data-workflow-current=', browser)
+        self.assertIn("selectProjectContext", browser)
+        self.assertIn("approval summary lost the authoritative money value", browser)
+        self.assertNotIn('.financial-workspace[data-workspace-kind=', browser)
         runtime_ids = (
             ROOT / "scripts/verify/frontend_my_work_approval_runtime_ids.py"
         ).read_text(encoding="utf-8")
@@ -397,6 +402,8 @@ load_profile
             'payment_menu = "smart_construction_core.menu_sc_user_payment_apply"',
             runtime_ids,
         )
+        self.assertIn('"project_id": int(project.id or 0)', runtime_ids)
+        self.assertIn('"project_label": str(project.display_name or "")', runtime_ids)
         self.assertNotIn("menu_sc_user_payment_apply_acceptance", runtime_ids)
         login = browser.split("async function login(", 1)[1].split(
             "async function logout(", 1

@@ -19,6 +19,21 @@ fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 function check(value, message) { if (!value) throw new Error(message); }
 function route(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
+function canonicalForm(page, target, recordId = target.record_id) {
+  return page.locator(`[data-product-page-mode="form"][data-state="ok"][data-form-model="${target.model}"][data-form-record="${recordId}"]`);
+}
+
+async function waitForCanonicalForm(page, target, recordId = target.record_id) {
+  const form = canonicalForm(page, target, recordId);
+  await form.waitFor({ timeout: 45000 });
+  return form;
+}
+
+async function waitForWorkflowState(page, state) {
+  const statusbar = page.locator(`[data-professional-workflow-component="statusbar"][data-workflow-current="${state}"]`);
+  await statusbar.waitFor({ timeout: 45000 });
+  return statusbar;
+}
 
 function captureRuntime(page) {
   const state = { consoleErrors: [], pageErrors: [], responses: [] };
@@ -86,6 +101,37 @@ async function selectCompany(page, companyName) {
   await page.waitForTimeout(300);
 }
 
+async function selectProjectContext(page, target) {
+  check(target.project_id > 0, 'project context target id is required');
+  check(Boolean(target.project_label), 'project context target label is required');
+  const trigger = page.getByRole('button', { name: /项目空间：切换项目|切换项目/ }).first();
+  await trigger.click();
+  const panel = page.locator('section[aria-labelledby="record-context-space-title"]');
+  await panel.waitFor({ timeout: 30000 });
+  const option = panel.getByRole('button').filter({ hasText: target.project_label }).first();
+  await option.waitFor({ timeout: 30000 });
+  const initResponse = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const payload = JSON.parse(response.request().postData() || '{}');
+      return payload?.intent === 'system.init'
+        && Number(payload?.params?.current_project_id || 0) === Number(target.project_id);
+    } catch {
+      return false;
+    }
+  }, { timeout: 45000 });
+  await option.click();
+  const response = await initResponse;
+  check(response.ok(), `project context system.init failed: ${response.status()}`);
+  const request = JSON.parse(response.request().postData() || '{}');
+  check(Number(request?.params?.current_project_id || 0) === Number(target.project_id), 'project context was not carried by system.init');
+  return {
+    project_id: Number(target.project_id),
+    project_label: target.project_label,
+    system_init_project_id: Number(request.params.current_project_id),
+  };
+}
+
 async function sectionCount(page, key) {
   return Number((await page.locator(`.count-card[data-section-key="${key}"] strong`).innerText()).trim());
 }
@@ -105,6 +151,7 @@ async function noOverflow(page, label) {
 
 async function main() {
   for (const key of ['draft', 'approval', 'reject', 'completed', 'settlement', 'work_settlement']) check(TARGETS[key]?.record_id > 0, `missing target ${key}`);
+  check(TARGETS.draft.project_id > 0 && TARGETS.draft.project_label, 'missing project context target');
   check(/^[0-9a-f]{40}$/.test(EXPECTED_SHA), 'exact expected candidate SHA is required');
   check(/^[0-9a-f]{40}$/.test(PREVIEW_BASE_SHA), 'exact preview base SHA is required');
   check(Boolean(PREVIEW_ENTRY && /^[0-9a-f]{64}$/.test(PREVIEW_ENTRY_SHA256)), 'preview bundle identity is required');
@@ -135,6 +182,7 @@ async function main() {
     check(runtimeVersion.source_revision === EXPECTED_SHA, `served revision ${runtimeVersion.source_revision || 'unknown'} != expected ${EXPECTED_SHA}`);
     check(runtimeVersion.database === DB_NAME, `served database ${runtimeVersion.database || 'unknown'} != ${DB_NAME}`);
     await login(page, 'fixture_role_finance');
+    report.provenance.project_context = await selectProjectContext(page, TARGETS.draft);
     applyReleasedNavigationTarget(
       TARGETS,
       ['draft', 'approval', 'reject', 'completed'],
@@ -148,7 +196,7 @@ async function main() {
     const initiatedBefore = await assertCountMatches(page, 'initiated');
     check(todoBefore > 0 && initiatedBefore > 0, 'J07 finance work sections are empty');
     await page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-PAYMENT-001' }).getByRole('button', { name: '打开详情' }).click();
-    await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+    await waitForCanonicalForm(page, TARGETS.draft);
     check((await page.locator('body').innerText()).includes('FE-JOURNEY-PAYMENT-001'), 'J07 detail identity missing');
     await page.goBack();
     await page.locator('.product-work').waitFor({ timeout: 45000 });
@@ -180,7 +228,7 @@ async function main() {
     // J08 form: authoritative defaults, client required validation, save, refresh/edit and submit.
     resetRuntime(runtime);
     await page.goto(`${BASE_URL}${route(TARGETS.work_settlement)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.locator('.financial-workspace[data-workspace-kind="settlement"]').waitFor({ timeout: 45000 });
+    await waitForCanonicalForm(page, TARGETS.work_settlement);
     await page.getByRole('button', { name: '新建付款申请' }).click();
     await page.waitForURL((url) => /\/(?:r|f)\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
     const projectField = page.locator('[data-field-name="project_id"]').first();
@@ -206,9 +254,11 @@ async function main() {
     await page.getByRole('button', { name: '保存草稿' }).click();
     await page.waitForURL((url) => /\/(?:r|f)\/payment\.request\/\d+/.test(url.pathname), { timeout: 45000 });
     const createdUrl = page.url();
+    const createdRecordId = Number(new URL(createdUrl).pathname.match(/\/payment\.request\/(\d+)$/)?.[1] || 0);
+    check(createdRecordId > 0, `J08 created record id missing: ${createdUrl}`);
     const createdHeading = (await page.locator('h1.headline').innerText()).trim();
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.locator('.financial-workspace[data-workspace-kind="payment_request"]').waitFor({ timeout: 45000 });
+    await waitForCanonicalForm(page, { ...TARGETS.draft, model: 'payment.request' }, createdRecordId);
     check((await page.locator('[data-field-name="amount"] input').first().inputValue()).includes('10'), 'J08 saved amount did not recover');
     const fileInput = page.locator('input[type="file"]').first();
     if (await fileInput.count()) await fileInput.setInputFiles({ name: 'fe-b05.txt', mimeType: 'text/plain', buffer: Buffer.from('FE-B05 form journey') });
@@ -216,7 +266,7 @@ async function main() {
     await submit.waitFor({ timeout: 45000 });
     await submit.click();
     await page.getByRole('dialog').getByRole('button', { name: /^确认提交$/ }).click();
-    await page.locator('.financial-workspace__status[data-state="submit"]').waitFor({ timeout: 15000 });
+    await waitForWorkflowState(page, 'submit');
     const createdName = (await page.locator('h1.headline').innerText()).trim() || createdHeading;
     check(!createdName.includes('#'), `J08 technical created identity ${createdName}`);
     const createdIdentifier = createdName.match(/PRQ\d+/)?.[0] || createdName;
@@ -229,18 +279,29 @@ async function main() {
     await approvalCard.waitFor({ timeout: 45000 });
     await approvalCard.getByRole('button', { name: '审批' }).click();
     const approvalDialog = page.getByRole('dialog');
+    const approvalSummary = await approvalDialog.innerText();
+    check(approvalSummary.includes(createdIdentifier), 'approval summary lost the work item identity');
+    check(/[¥￥]\s*10\.00/.test(approvalSummary), 'approval summary lost the authoritative money value');
     await approvalDialog.getByRole('button', { name: '确认审批' }).click();
     await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
     await page.waitForFunction((name) => !(document.body.innerText || '').includes(name), createdIdentifier, { timeout: 45000 });
     check(!(await page.locator('body').innerText()).includes(createdIdentifier), 'J08 approved item remained in todo');
+    await page.locator('.feedback[role="status"]').filter({ hasText: /已审批/ }).waitFor({ timeout: 15000 });
     await logout(page);
 
     await login(page, 'fixture_role_finance');
     await page.goto(createdUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.locator('.financial-workspace__status[data-state="approved"]').waitFor({ timeout: 45000 });
+    await waitForWorkflowState(page, 'approved');
     check((await page.locator('body').innerText()).includes(createdIdentifier), 'J08 finance cannot see approved result');
     assertClean(runtime, 'J08');
-    report.j08 = { status: 'PASS', created: createdName, save_refresh_edit_submit: 'PASS', reviewer_approval: 'PASS' };
+    report.j08 = {
+      status: 'PASS',
+      created: createdName,
+      save_refresh_edit_submit: 'PASS',
+      reviewer_approval: 'PASS',
+      approval_summary: 'PASS',
+      approval_feedback: 'PASS',
+    };
 
     // Explicit reject validation and unauthorized isolation.
     await logout(page);

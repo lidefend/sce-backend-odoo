@@ -12,6 +12,7 @@ def target(menu_xmlid, record_xmlid):
     menu = ref(menu_xmlid)
     row = ref(record_xmlid)
     action = menu.action
+    project = row.project_id if "project_id" in row._fields else row.browse([])
     return {
         "model": row._name,
         "record_id": int(row.id),
@@ -19,6 +20,8 @@ def target(menu_xmlid, record_xmlid):
         "menu_id": int(menu.id),
         "menu_xmlid": menu_xmlid,
         "name": str(row.display_name),
+        "project_id": int(project.id or 0),
+        "project_label": str(project.display_name or ""),
     }
 
 
