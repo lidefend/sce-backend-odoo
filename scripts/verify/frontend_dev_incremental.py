@@ -173,6 +173,12 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "/components/template/FormSection.vue",
+        "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+    ), (
+        "verify.frontend.professional_detail_collection.unit",
+    )),
+    Rule((
         "scripts/verify/semantic_registry_lint.py",
         "scripts/verify/test_semantic_registry_lint.py",
         "scripts/verify/test_node_component_registry.py",

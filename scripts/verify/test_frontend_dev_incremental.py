@@ -44,6 +44,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.contract.structure_lock"],
         )
 
+    def test_form_section_host_changes_select_ssr_detail_collection(self) -> None:
+        self.assertIn(
+            "verify.frontend.professional_detail_collection.unit",
+            select_targets(["frontend/apps/web/src/components/template/FormSection.vue"]),
+        )
+
+    def test_relation_heading_ssr_test_selects_its_executor(self) -> None:
+        self.assertEqual(
+            select_targets(["frontend/apps/web/scripts/relation_heading_component_test.mjs"]),
+            ["verify.frontend.professional_detail_collection.unit"],
+        )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

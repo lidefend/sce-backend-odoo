@@ -42,17 +42,46 @@ Contract V2 支持区间、真实宿主能力、安装和卸载生命周期纳�
   fail-closed，以及能力提供后正常渲染行业组件。
 - 生成器覆盖 capability/provider 投影、平台能力拒绝、未知能力拒绝和 carrier
   一致性。
+- `FormSection.vue` 与 `relation_heading_component_test.mjs` 的变更现在自动选择
+  `verify.frontend.professional_detail_collection.unit`，避免专项检查已登记但
+  增量调度遗漏执行。
 
 ## 当前状态
 
-实现与 L1/L2 已完成。
+实现、L1/L2 和受管 L3 已完成，远端门禁待候选发布后核验。
 
-- `make ci.local.iteration`：PASS，14 个必需 target，`notRunTargets=[]`，
-  `unmappedPathCount=0`。
-- Receipt：`.runtime/frontend-dev-validation/executions/20261107T170846Z-2296061-428503222/receipt.json`。
+- `make ci.local.iteration`：PASS，15 个必需 target，`notRunTargets=[]`、
+  `blockedTargets=[]`、`unmappedPathCount=0`。
+- Receipt：`.runtime/frontend-dev-validation/executions/20261107T172716Z-2400075-950608345/receipt.json`。
 - Semantic registry：44 个 Python 测试及四项 carrier 一致性检查 PASS。
 - Professional component registry：Node 版本/能力/生命周期断言与 162 个守卫测试 PASS。
 - Professional detail collection：真实 FormSection SSR 149 checks PASS，其中包含
   行业 Renderer 已注册但能力缺失时 fail-closed、能力提供后正常渲染。
+- Incremental planner：77 个测试 PASS，覆盖 FormSection 和 SSR 测试入口对专项
+  target 的自动选择。
 - Lint 0 error；strict typecheck PASS；component inventory required=33 missing=0。
-- 生成器刷新、真实浏览器和远端门禁尚待执行。
+
+## L3 真实旅程
+
+- 候选：`daa9ffdccb9ff8ecc14770c23f46318fd0a55220`。
+- 环境：`sc-local-dev / sc_dev_demo / ^sc_dev_demo$`，后端 source mount 与
+  `SC_SOURCE_REVISION` 均绑定候选 SHA，前端候选服务运行于 `127.0.0.1:5176`。
+- 入口：`make verify.local.dev.payment_request.settlement_component.journey`。
+- 引入阶段：0 → 1 条明细，权威重载后金额 `2400.00` 等于明细合计，
+  declared write 1 次，`errors=[]`。
+- 删除阶段：取消保留明细、确认删除进入待保存状态、撤销恢复、再次确认后保存；
+  declared write 1 次，权威重载后 0 条明细且金额规则恢复，`errors=[]`。
+- Fixture：治理重置后恢复原始行数、结算关系、状态与金额基线。
+- 证据：
+  `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-summary.json`
+  `sha256=14e3836230ccae7f66dce7fe40483e097cbe0c262d222bb90921416f07117d0c`；
+  `remove-summary.json`
+  `sha256=c26598e8a3da9a7ca8f390b85b783b69e7bee453f10f98a04cfec94d1fc9a34d`；
+  两阶段截图及失败兜底截图保存在同目录。
+
+## 未记为通过
+
+`frontend_presentation` 与 `list_surface_structure` 的既有证据绑定在
+FE-RENDERER-02A squash 前提交 `2672449`，不是当前候选祖先，验证计划按
+fail-closed 标为 `BLOCKED`。本批未重跑这两个完整页面矩阵，也不声称它们通过；
+付款结算目标页面的 L3 证据独立成立。最终以新提交的精确 HEAD 五项远端门禁为准。

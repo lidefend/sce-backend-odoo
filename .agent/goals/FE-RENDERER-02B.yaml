@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RENDERER-02B
   title: Renderer 扩展协议与生命周期完善
-  status: active
+  status: verification_pending
   formal_product_layer: P0 platform kernel product
   layer_target: frontend Renderer extension protocol and host capability boundary
   module: semantic/component registry generator, professional Renderer resolver and FormSection host
