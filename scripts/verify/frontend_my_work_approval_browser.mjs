@@ -266,12 +266,13 @@ async function main() {
     await page.locator('.count-card[data-section-key="todo"]').click();
     const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
     await approvalCard.waitFor({ timeout: 45000 });
-    check((await approvalCard.innerText()).includes('¥80.00'), 'approval work item lost the authoritative money value');
+    check(Boolean(TARGETS.approval.amount_display), 'approval target money display is required');
+    check((await approvalCard.innerText()).includes(TARGETS.approval.amount_display), 'approval work item lost the authoritative money value');
     await approvalCard.getByRole('button', { name: '审批' }).click();
     const approvalDialog = page.getByRole('dialog');
     const approvalSummary = await approvalDialog.innerText();
     check(approvalSummary.includes('FE-JOURNEY-APPROVAL-001'), 'approval summary lost the work item identity');
-    check(/[¥￥]\s*80\.00/.test(approvalSummary), 'approval summary lost the authoritative money value');
+    check(approvalSummary.includes(TARGETS.approval.amount_display), 'approval summary lost the authoritative money value');
     await approvalDialog.getByRole('button', { name: '确认审批' }).click();
     await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
     await page.waitForFunction(() => !(document.body.innerText || '').includes('FE-JOURNEY-APPROVAL-001'), null, { timeout: 45000 });

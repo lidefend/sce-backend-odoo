@@ -13,6 +13,11 @@ def target(menu_xmlid, record_xmlid):
     row = ref(record_xmlid)
     action = menu.action
     project = row.project_id if "project_id" in row._fields else row.browse([])
+    currency = row.currency_id if "currency_id" in row._fields else row.browse([])
+    amount = row.amount if "amount" in row._fields else 0.0
+    digits = int((currency.decimal_places if currency else 2) or 2)
+    symbol = str(currency.symbol or "") if currency else ""
+    amount_display = "%s%s" % (symbol, format(float(amount or 0.0), ",.%df" % digits))
     return {
         "model": row._name,
         "record_id": int(row.id),
@@ -22,6 +27,7 @@ def target(menu_xmlid, record_xmlid):
         "name": str(row.display_name),
         "project_id": int(project.id or 0),
         "project_label": str(project.display_name or ""),
+        "amount_display": amount_display,
     }
 
 

@@ -408,6 +408,7 @@ load_profile
         )
         self.assertIn('"project_id": int(project.id or 0)', runtime_ids)
         self.assertIn('"project_label": str(project.display_name or "")', runtime_ids)
+        self.assertIn('"amount_display": amount_display', runtime_ids)
         self.assertIn('"companies": {"a": int(company_a.id), "b": int(company_b.id)}', runtime_ids)
         self.assertNotIn("menu_sc_user_payment_apply_acceptance", runtime_ids)
         login = browser.split("async function login(", 1)[1].split(
