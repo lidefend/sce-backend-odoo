@@ -13,6 +13,8 @@ from unittest import mock
 from scripts.verify.frontend_dev_incremental import (
     BASE_FRONTEND_TARGETS,
     FALLBACK_TARGET,
+    FRONTEND_SOURCE_ROOTS,
+    FRONTEND_SOURCE_SUFFIXES,
     RULES,
     execute_targets,
     iteration_plan,
@@ -256,7 +258,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         # validated by that guard; without this route the lane was reported as
         # an unmapped path whose L2 target could only be picked by hand.
         for path in (
-            "make/codex.mk",
             "make/runtime_ops.mk",
             "make/dev.mk",
             "make/ci.mk",
@@ -266,6 +267,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.baseline.iteration.execution.policy"],
                 )
+
+    def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
+        self.assertEqual(
+            select_targets(["make/codex.mk"]),
+            [
+                "verify.baseline.iteration.execution.policy",
+                "verify.pr.push.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/test_pr_publish_preflight.py"]),
+            ["verify.pr.push.unit"],
+        )
 
     def test_every_recommended_target_is_defined_by_a_makefile(self) -> None:
         # A recommendation that no makefile defines would break the smallest
@@ -398,6 +412,34 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_single_ts_change_always_selects_lint_and_strict_typecheck(self) -> None:
         targets = select_targets(["frontend/apps/web/src/utils/money.ts"])
         self.assertEqual(targets, list(BASE_FRONTEND_TARGETS))
+
+    def test_web_tsx_change_uses_the_same_base_targets(self) -> None:
+        targets = select_targets(["frontend/apps/web/src/components/Probe.tsx"])
+        self.assertEqual(targets, list(BASE_FRONTEND_TARGETS))
+
+    def test_shared_ui_ts_tsx_and_vue_use_base_targets(self) -> None:
+        for path in (
+            "frontend/packages/ui/src/primitives.ts",
+            "frontend/packages/ui/src/components/Probe.tsx",
+            "frontend/packages/ui/src/components/SceneObjectPage.vue",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                for target in BASE_FRONTEND_TARGETS:
+                    self.assertIn(target, targets)
+
+    def test_frontend_lint_and_typecheck_config_changes_use_base_targets(self) -> None:
+        for path in (
+            "frontend/apps/web/package.json",
+            "frontend/apps/web/.eslintrc.cjs",
+            "frontend/apps/web/tsconfig.strict.json",
+            "frontend/packages/ui/package.json",
+            "frontend/packages/ui/tsconfig.json",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                for target in BASE_FRONTEND_TARGETS:
+                    self.assertIn(target, targets)
 
     def test_mixed_frontend_and_backend_keeps_base_and_both_specialties(self) -> None:
         targets = select_targets([
@@ -587,6 +629,63 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertFalse(payload["testsRun"])
 
 
+class FrontendCoverageContractTest(unittest.TestCase):
+    root = Path(__file__).resolve().parents[2]
+
+    def target_block(self, text: str, target: str) -> str:
+        match = re.search(
+            rf"(?m)^{re.escape(target)}\s*:[^\n]*(?:\n\t[^\n]*)*",
+            text,
+        )
+        self.assertIsNotNone(match, f"missing make target: {target}")
+        return match.group(0)
+
+    def test_base_targets_consume_shared_ui_checks(self) -> None:
+        makefile = (self.root / "make/frontend.mk").read_text(encoding="utf-8")
+        lint_header = re.search(
+            r"(?m)^verify\.frontend\.lint\.src\s*:([^\n]*)",
+            makefile,
+        )
+        typecheck_header = re.search(
+            r"(?m)^verify\.frontend\.typecheck\.strict\s*:([^\n]*)",
+            makefile,
+        )
+        self.assertIsNotNone(lint_header)
+        self.assertIsNotNone(typecheck_header)
+        self.assertIn("verify.frontend.ui.lint", lint_header.group(1))
+        self.assertIn("verify.frontend.ui.typecheck.strict", typecheck_header.group(1))
+
+        lint = self.target_block(makefile, "verify.frontend.ui.lint")
+        self.assertIn("../../packages/ui/src", lint)
+        self.assertIn("--ext .ts,.tsx,.vue", lint)
+        typecheck = self.target_block(makefile, "verify.frontend.ui.typecheck.strict")
+        self.assertIn("-p frontend/packages/ui/tsconfig.json", typecheck)
+
+    def test_web_lint_script_covers_supported_typescript_suffixes(self) -> None:
+        package = json.loads(
+            (self.root / "frontend/apps/web/package.json").read_text(encoding="utf-8")
+        )
+        self.assertIn("--ext .ts,.tsx,.vue", package["scripts"]["lint:src"])
+
+    def test_shared_ui_tsconfig_covers_supported_source_suffixes(self) -> None:
+        config = json.loads(
+            (self.root / "frontend/packages/ui/tsconfig.json").read_text(encoding="utf-8")
+        )
+        include = set(config["include"])
+        self.assertIn("src/**/*.ts", include)
+        self.assertIn("src/**/*.tsx", include)
+        self.assertIn("src/**/*.vue", include)
+
+    def test_planner_roots_and_suffixes_all_select_base_checks(self) -> None:
+        for root in FRONTEND_SOURCE_ROOTS:
+            for suffix in FRONTEND_SOURCE_SUFFIXES:
+                path = f"{root}__coverage_probe{suffix}"
+                with self.subTest(path=path):
+                    targets = select_targets([path])
+                    for target in BASE_FRONTEND_TARGETS:
+                        self.assertIn(target, targets)
+
+
 class IncrementalExecutionTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -644,6 +743,39 @@ class IncrementalExecutionTest(unittest.TestCase):
             self.assertEqual(len(row["logSha256"]), 64)
             self.assertTrue((self.root / row["log"]).is_file())
 
+    def test_tsx_execution_uses_the_same_base_targets(self) -> None:
+        path = "frontend/apps/web/src/NewSurface.tsx"
+        self.root.joinpath(path).write_text("export const probe = true;\n", encoding="utf-8")
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            paths=[path],
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            [row["target"] for row in receipt["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertTrue(receipt["verificationPassed"])
+
+    def test_shared_ui_source_execution_includes_base_and_focused_checks(self) -> None:
+        path = "frontend/packages/ui/src/components/Probe.tsx"
+        self.root.joinpath(path).parent.mkdir(parents=True)
+        self.root.joinpath(path).write_text("export const probe = true;\n", encoding="utf-8")
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.frontend.primitive_adapter.unit:\n"
+            "\t@printf 'primitive adapter executed\\n'\n"
+            "verify.frontend.page_pattern_reference_parity.unit:\n"
+            "\t@printf 'page pattern executed\\n'\n",
+            encoding="utf-8",
+        )
+        required = set(select_targets([path]))
+        code, receipt = self.execute(registered=required, paths=[path])
+        self.assertEqual(code, 0)
+        self.assertTrue(set(BASE_FRONTEND_TARGETS).issubset(receipt["requiredTargets"]))
+        self.assertIn("verify.frontend.primitive_adapter.unit", receipt["requiredTargets"])
+        self.assertTrue(receipt["verificationPassed"])
+
     def test_missing_run_registration_blocks_before_any_target_runs(self) -> None:
         code, receipt = self.execute(registered={"verify.frontend.lint.src"})
         self.assertEqual(code, 2)
@@ -685,6 +817,20 @@ class IncrementalExecutionTest(unittest.TestCase):
         )
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "not_run")
+        self.assertFalse(receipt["testsRun"])
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_pure_unmapped_source_is_blocked_with_nonzero_exit(self) -> None:
+        path = "addons/smart_core/models/example.py"
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            paths=[path],
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(receipt["unmappedPaths"], [path])
+        self.assertEqual(receipt["requiredTargets"], [])
+        self.assertEqual(receipt["targetResults"], [])
         self.assertFalse(receipt["testsRun"])
         self.assertFalse(receipt["verificationPassed"])
 

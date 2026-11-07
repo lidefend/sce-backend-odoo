@@ -87,6 +87,15 @@ pr.create: pr.publish.preflight
         self.assertIsNotNone(m)
         self.assertIn("pr.publish.preflight", m.group(1))
 
+    def test_review_publication_is_explicit_and_merge_keeps_runtime_gate(self):
+        makefile = (ROOT / "make" / "codex.mk").read_text(encoding="utf-8")
+        self.assertIn("PR_PUBLISH_MODE ?= merge", makefile)
+        block = re.search(r"(?m)^pr\.publish\.preflight:[^\n]*\n(?:\t[^\n]*\n)+", makefile)
+        self.assertIsNotNone(block)
+        self.assertIn("REVIEW_ONLY merge-time runtime evidence may remain pending", block.group())
+        self.assertIn("--stage merge --require-ready", block.group())
+        self.assertIn("PR_PUBLISH_MODE must be merge or review", block.group())
+
 
 if __name__ == "__main__":
     unittest.main()

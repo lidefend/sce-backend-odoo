@@ -3,7 +3,7 @@
 # ======================================================
 include make/frontend_professional_extensions.mk
 
-.PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.lint.src verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
+.PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.ui.typecheck.strict verify.frontend.lint.src verify.frontend.ui.lint verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
 .PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser verify.frontend.primitive_adapter.unit
 
 fe.install:
@@ -52,7 +52,10 @@ verify.frontend.build: guard.prod.forbid
 prod.frontend.build: guard.prod.danger check-compose-project check-compose-env
 	@bash scripts/dev/frontend_static_build.sh
 
-verify.frontend.typecheck.strict: guard.prod.forbid
+verify.frontend.ui.typecheck.strict: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/vue-tsc --noEmit -p frontend/packages/ui/tsconfig.json
+
+verify.frontend.typecheck.strict: guard.prod.forbid verify.frontend.ui.typecheck.strict
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 
 verify.frontend.chart_engine.guard: guard.prod.forbid
@@ -690,7 +693,10 @@ verify.frontend.quick.gate: verify.frontend.contract_consumption_verdicts.unit
 verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
 verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
 
-verify.frontend.lint.src: guard.prod.forbid
+verify.frontend.ui.lint: guard.prod.forbid
+	@cd frontend/apps/web && node_modules/.bin/eslint --no-eslintrc --config .eslintrc.cjs ../../packages/ui/src --ext .ts,.tsx,.vue
+
+verify.frontend.lint.src: guard.prod.forbid verify.frontend.ui.lint
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
 .PHONY: verify.frontend.lint
