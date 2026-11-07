@@ -59,6 +59,16 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(self.lane(".agent/context.yaml"), "HIGH_RISK")
         self.assertEqual(self.lane(".agent/decisions/runtime-authority.yaml"), "HIGH_RISK")
 
+    def test_missing_or_unsafe_path_ownership_registry_is_rejected(self) -> None:
+        from ci_risk_classifier import load_policy
+        for bad in ("", "../ownership.json", "/tmp/ownership.json",
+                    "config/ci/missing-ownership.json", 1):
+            with self.subTest(value=bad):
+                policy = load_policy()
+                policy["path_ownership_registry"] = bad
+                with self.assertRaises(ValueError):
+                    classify(["docs/readme.md"], event_name="pull_request", policy=policy)
+
     def test_version_only_change_is_fast_but_not_unclassified(self) -> None:
         result = classify(["VERSION"], event_name="pull_request")
         self.assertEqual(result.lane, "FAST")
@@ -106,7 +116,9 @@ class CIRiskClassifierTests(unittest.TestCase):
         )
         self.assertEqual(result.lane, "STANDARD")
         self.assertTrue(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
         self.assertFalse(result.frontend_changed)
+        self.assertEqual(result.professional_mode, "governance")
 
     def test_frontend_guard_name_cannot_override_identity_high_risk_rule(self) -> None:
         result = classify(
@@ -153,6 +165,25 @@ class CIRiskClassifierTests(unittest.TestCase):
                 self.assertTrue(classify([path], event_name='pull_request').orm_required)
         self.assertTrue(classify(['scripts/ops/agent_run_context.py',
                                  'addons/smart_core/models/core.py'], event_name='pull_request').orm_required)
+
+    def test_formal_ci_names_do_not_match_the_orm_runtime_glob(self) -> None:
+        for path in (
+            "scripts/ci/gitee_formal_executor.py",
+            "scripts/ci/gitee_formal_queue.py",
+            "scripts/ci/gitee_formal_worker.py",
+        ):
+            with self.subTest(path=path):
+                result = classify([path], event_name="pull_request")
+                self.assertTrue(result.control_plane_changed)
+                self.assertFalse(result.backend_runtime_changed)
+                self.assertFalse(result.orm_required)
+                self.assertEqual(result.orm_scopes, ())
+        for path in (
+            "scripts/ci/orm_result_guard.sh",
+            "scripts/ci/frontend_fixture_orm_entry.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(classify([path], event_name="pull_request").orm_required)
 
     def test_orm_unknown_empty_release_and_missing_policy_fail_closed(self) -> None:
         for paths in ([], ['unclassified/runtime.bin'], ['../invalid.py']):

@@ -74,6 +74,56 @@ class Rule:
 
 
 RULES = (
+    Rule((
+        ".agent/",
+    ), (
+        "verify.agent.ledger.unit",
+    )),
+    Rule((
+        "config/ci/path_ownership_v1.json",
+        "config/ci/risk_tiering_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py",
+    ), (
+        "verify.ci.path_ownership.unit",
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/gitee_gate_plan.py",
+        "scripts/ci/gitee_formal_executor.py",
+        "scripts/verify/test_gitee_gate_plan.py",
+        "scripts/verify/test_gitee_formal_executor.py",
+    ), (
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
+        "scripts/ci/frontend_",
+        "scripts/ci/test_frontend_",
+    ), (
+        "verify.ci.path_ownership.unit",
+        "verify.frontend.dev.incremental.unit",
+    )),
+    Rule((
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+    ), (
+        "verify.ci.workflow.contract",
+        "verify.github_actions.security",
+    )),
+    Rule((
+        "make/ci.mk",
+    ), (
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
+        "make/codex.mk",
+    ), (
+        "verify.ci.path_ownership.unit",
+    )),
     # Lint/typecheck configuration is part of the executable validation
     # contract. Changing a source root or supported extension must rerun both
     # source-wide targets rather than fall through as an unclassified path.

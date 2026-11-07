@@ -37,14 +37,55 @@ class GatePlanTests(unittest.TestCase):
         self.assertEqual(m["professional_quality_gate"], "standard_backend")
         self.assertEqual(m["frontend_release_gate"], "skip")
 
+    def test_pure_frontend_tooling(self):
+        r = self.build(("scripts/verify/frontend_example_guard.py",))
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_frontend")
+        self.assertEqual(self.modes(r)["frontend_release_gate"], "standard")
+        self.assertFalse(r["backend_changed"])
+        self.assertFalse(r["backend_runtime_changed"])
+
+    def test_backend_quality_tooling_does_not_enter_runtime_lane(self):
+        r = self.build(("scripts/verify/backend_example_guard.py",))
+        self.assertEqual(r["lane"], "STANDARD")
+        self.assertTrue(r["backend_changed"])
+        self.assertFalse(r["backend_runtime_changed"])
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "governance")
+        self.assertEqual(self.modes(r)["frontend_release_gate"], "skip")
+
     def test_high_risk_governance(self):
         r = self.build(("scripts/ci/example.py",))
         self.assertEqual(r["lane"], "HIGH_RISK")
         self.assertEqual(self.modes(r)["professional_quality_gate"], "governance")
+        self.assertTrue(r["control_plane_changed"])
+        self.assertFalse(r["backend_changed"])
 
-    def test_high_risk_backend(self):
-        r = self.build(("scripts/ci/example.py", "scripts/verify/test_example.py"))
+    def test_frontend_quality_tooling_is_standard_frontend_not_backend(self):
+        r = self.build(("scripts/verify/frontend_example_guard.py",))
+        self.assertEqual(r["lane"], "STANDARD")
+        self.assertTrue(r["frontend_changed"])
+        self.assertFalse(r["backend_changed"])
+        self.assertFalse(r["control_plane_changed"])
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_frontend")
+
+    def test_high_risk_backend_runtime(self):
+        r = self.build(("scripts/ci/example.py", "addons/example/models/item.py"))
+        self.assertEqual(r["lane"], "HIGH_RISK")
+        self.assertTrue(r["backend_changed"])
+        self.assertTrue(r["backend_runtime_changed"])
         self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_backend")
+
+    def test_high_risk_control_plane_and_quality_tooling_stay_governance(self):
+        r = self.build(("scripts/ci/example.py", "scripts/verify/test_example.py"))
+        self.assertEqual(r["lane"], "HIGH_RISK")
+        self.assertTrue(r["backend_changed"])
+        self.assertFalse(r["backend_runtime_changed"])
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "governance")
+
+    def test_mixed_frontend_and_backend_runtime_keeps_both_lanes(self):
+        r = self.build(("frontend/apps/web/src/App.vue", "addons/example/models/item.py"))
+        self.assertEqual(self.modes(r)["frontend_release_gate"], "standard")
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_backend")
+        self.assertTrue(r["backend_runtime_changed"])
 
     def test_candidate_full(self):
         r = self.build(("frontend/pnpm-lock.yaml",), candidate=True)

@@ -14,8 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
+try:
+    from scripts.ci import ci_path_ownership
+except ImportError:  # Direct script execution adds scripts/ci to sys.path.
+    import ci_path_ownership
+
 
 ROOT = Path(__file__).resolve().parents[2]
+POLICY_ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / "config/ci/risk_tiering_v1.json"
 
 
@@ -26,6 +32,9 @@ class Classification:
     reasons: tuple[str, ...]
     frontend_changed: bool
     backend_changed: bool
+    control_plane_changed: bool
+    backend_runtime_changed: bool
+    ownership_categories: tuple[str, ...]
     frontend_full_required: bool
     orm_required: bool = True
 
@@ -41,10 +50,13 @@ class Classification:
     def professional_mode(self) -> str:
         if self.lane in {"HIGH_RISK", "RELEASE"}:
             return "full"
-        if self.lane == "STANDARD" and self.backend_changed:
+        if self.lane == "STANDARD" and self.backend_runtime_changed:
             return "standard_backend"
         if self.lane == "STANDARD":
-            return "standard_frontend"
+            if self.frontend_changed:
+                return "standard_frontend"
+            if self.backend_changed or self.control_plane_changed:
+                return "governance"
         return "fast"
 
     @property
@@ -55,7 +67,8 @@ class Classification:
         scopes = {'module_suite'}
         shared = ('addons/smart_core/**', 'Dockerfile*', 'docker-compose*',
                   'requirements*', 'config/requirements*', 'scripts/test/**',
-                  'scripts/ci/*orm*', 'make/dev_test.mk', 'Makefile')
+                  'scripts/ci/orm_*', 'scripts/ci/*_orm_*',
+                  'make/dev_test.mk', 'Makefile')
         payment = ('addons/smart_construction_core/**/*payment*',
                    'addons/smart_construction_core/**/*settlement*',
                    'addons/smart_construction_core/**/*component*profile*')
@@ -85,6 +98,11 @@ class Classification:
             "professional_mode": self.professional_mode,
             "frontend_changed": str(self.frontend_changed).lower(),
             "backend_changed": str(self.backend_changed).lower(),
+            "control_plane_changed": str(self.control_plane_changed).lower(),
+            "backend_runtime_changed": str(self.backend_runtime_changed).lower(),
+            "ownership_categories_json": json.dumps(
+                self.ownership_categories, separators=(",", ":")
+            ),
             "orm_required": str(self.orm_required).lower(),
             "orm_scopes": ",".join(self.orm_scopes),
             "managed_orm_required": str(self.managed_orm_required).lower(),
@@ -96,10 +114,20 @@ class Classification:
         }
 
 
+def validate_path_ownership_policy(data: dict) -> str:
+    registry = data.get("path_ownership_registry")
+    if (not isinstance(registry, str) or not registry
+            or Path(registry).is_absolute() or ".." in Path(registry).parts
+            or not (POLICY_ROOT / registry).is_file()):
+        raise ValueError("path ownership registry must be an existing repository-relative file")
+    return registry
+
+
 def load_policy(path: Path = POLICY_PATH) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("default_lane") != "HIGH_RISK":
         raise ValueError("CI risk policy must fail closed to HIGH_RISK")
+    validate_path_ownership_policy(data)
     return data
 
 
@@ -187,6 +215,7 @@ def classify(
     head: str = '',
 ) -> Classification:
     policy = policy or load_policy()
+    ownership_registry = validate_path_ownership_policy(policy)
     orm_paths = policy.get("orm_runtime_paths")
     context_paths = policy.get("orm_non_runtime_context_paths", [])
     if (not isinstance(orm_paths, list) or not orm_paths
@@ -195,45 +224,82 @@ def classify(
             or not all(isinstance(path, str) and path for path in context_paths)):
         raise ValueError("ORM dependency policy requires bounded string lists")
     changed = _normalize_paths(paths)
+    ownership = ci_path_ownership.classify_paths(
+        changed,
+        registry_path=POLICY_ROOT / ownership_registry,
+    )
     if event_name == "schedule":
         # A scheduled run has no PR base and no push `before` SHA, so the
         # change set is deliberately empty. It is still an owner-authorized
         # full audit of main, not an unclassified mutation: classify it as a
         # release-lane full audit instead of failing closed on the empty set.
-        return Classification("RELEASE", changed, ("schedule_full_audit",), True, True, True)
+        return Classification(
+            "RELEASE",
+            changed,
+            ("schedule_full_audit",),
+            True,
+            True,
+            True,
+            True,
+            tuple(sorted(set(ownership.assignments.values()))),
+            True,
+        )
     if event_name == "workflow_dispatch" or _matches(ref, policy["release_refs"]):
-        return Classification("RELEASE", changed, ("release_event",), True, True, True)
+        return Classification(
+            "RELEASE",
+            changed,
+            ("release_event",),
+            True,
+            True,
+            True,
+            True,
+            tuple(sorted(set(ownership.assignments.values()))),
+            True,
+        )
     if not changed:
-        return Classification("HIGH_RISK", changed, ("empty_change_set_fail_closed",), True, True, True)
+        return Classification(
+            "HIGH_RISK",
+            changed,
+            ("empty_change_set_fail_closed",),
+            True,
+            True,
+            True,
+            True,
+            (),
+            True,
+        )
 
-    frontend_owned = tuple(
-        path for path in changed
-        if _matches(path, policy.get("standard_frontend_owned_paths", ()))
-    )
+    frontend = ownership.frontend_changed
+    backend = ownership.backend_changed
+    control_plane = ownership.control_plane_changed
+    backend_runtime = ownership.backend_runtime_changed
+    ownership_categories = tuple(sorted(set(ownership.assignments.values())))
     high_risk_override = tuple(
         path for path in changed
         if _matches(path, policy.get("high_risk_override_paths", ()))
     )
     high = tuple(
         path for path in changed
-        if _matches(path, policy["high_risk_paths"]) and path not in high_risk_override
+        if _matches(path, policy["high_risk_paths"])
+        and path not in high_risk_override
     )
-    invalid = tuple(path for path in changed if path.startswith("__INVALID_PATH__/"))
-    frontend = tuple(path for path in changed if _matches(path, policy["standard_frontend_paths"]))
-    backend = tuple(
+    high = high or tuple(
         path for path in changed
-        if _matches(path, policy["standard_backend_paths"]) and path not in frontend_owned
+        if ownership.category_for(path) and ownership.category_for(path).risk == "high"
+        and path not in high_risk_override
     )
-    frontend_full = tuple(path for path in changed if _matches(path, policy["frontend_full_paths"]))
-    recipe_scoped = 'make/ci.mk' in frontend_full and git_backend_recipe_only(base, head)
+    invalid = ownership.invalid_paths
+    frontend_full = bool(ownership.frontend_full_required) or any(
+        _matches(path, policy["frontend_full_paths"]) for path in changed
+    )
+    recipe_scoped = 'make/ci.mk' in changed and git_backend_recipe_only(base, head)
     if recipe_scoped:
-        frontend_full = tuple(path for path in frontend_full if path != 'make/ci.mk')
-    fast = tuple(path for path in changed if _matches(path, policy["fast_paths"]))
-    known = set(high) | set(frontend) | set(backend) | set(fast)
-    unknown = tuple(path for path in changed if path not in known)
-    unknown_runtime = tuple(path for path in unknown
-                            if not _matches(path, policy.get("orm_non_runtime_context_paths", ())))
-    orm_required = bool(invalid or unknown_runtime or any(
+        frontend_full = any(
+            _matches(path, policy["frontend_full_paths"]) for path in changed
+            if path != "make/ci.mk"
+        )
+    unknown = ownership.unknown_paths
+    orm_required = bool(invalid or unknown or any(
         _matches(path, policy["orm_runtime_paths"]) for path in changed
     ))
 
@@ -251,9 +317,12 @@ def classify(
             "HIGH_RISK",
             changed,
             tuple(reasons),
-            bool(frontend),
-            bool(backend),
-            bool(frontend_full),
+            frontend,
+            backend,
+            control_plane,
+            backend_runtime,
+            ownership_categories,
+            frontend_full,
             orm_required,
         )
     if frontend or backend:
@@ -261,12 +330,26 @@ def classify(
             "STANDARD",
             changed,
             ("standard_runtime_change",),
-            bool(frontend),
-            bool(backend),
-            bool(frontend_full),
+            frontend,
+            backend,
+            control_plane,
+            backend_runtime,
+            ownership_categories,
+            frontend_full,
             orm_required,
         )
-    return Classification("FAST", changed, ("non_runtime_change",), False, False, False, False)
+    return Classification(
+        "FAST",
+        changed,
+        ("non_runtime_change",),
+        frontend,
+        backend,
+        control_plane,
+        backend_runtime,
+        ownership_categories,
+        frontend_full,
+        False,
+    )
 
 
 def changed_paths(base: str, head: str) -> tuple[str, ...]:

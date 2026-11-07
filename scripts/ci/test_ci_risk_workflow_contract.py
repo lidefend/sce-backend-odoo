@@ -149,6 +149,24 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertIn(gate, names)
             self.assertLess(names.index(pin_name), names.index(gate), f"{gate} must run after the pin")
 
+    def test_professional_gate_prepares_bubblewrap_for_real_sandbox_contract(self) -> None:
+        """The workflow contract executes the formal executor's real bwrap tests."""
+        workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
+        names = [step.get("name") for step in steps]
+        prep_name = "Prepare governed verification dependencies"
+        tool_name = "Run owning tool checks for changed control plane"
+        prep = steps[names.index(prep_name)]
+        self.assertNotIn("if", prep)
+        self.assertIn("sudo apt-get install -y ripgrep bubblewrap", prep["run"])
+        self.assertIn("command -v bwrap", prep["run"])
+        self.assertIn("bwrap --version", prep["run"])
+        self.assertIn("bwrap --unshare-all --die-with-parent --new-session", prep["run"])
+        self.assertIn("deploy/gitee-ci/bwrap-userns-restrict", prep["run"])
+        self.assertIn("apparmor_parser -r", prep["run"])
+        self.assertEqual(prep["run"].count("bwrap_smoke"), 3)
+        self.assertLess(names.index(prep_name), names.index(tool_name))
+
     def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
         text = self.text("public_guard.yml")
         self.assertIn("name: public_guard_classify", text)
@@ -168,6 +186,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         text = self.text("professional_quality_gate.yml")
         self.assertIn("frontend_changed: ${{ steps.risk.outputs.frontend_changed }}", text)
         self.assertIn("backend_changed: ${{ steps.risk.outputs.backend_changed }}", text)
+        self.assertIn("backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}", text)
+        self.assertIn("control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}", text)
         self.assertIn("candidate_requested:", text)
         self.assertIn("CANDIDATE_REQUESTED:", text)
         self.assertIn("PROFESSIONAL_MODE == 'governance'", text)
@@ -180,7 +200,20 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}",
             text,
         )
+        self.assertIn(
+            "BACKEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_runtime_changed }}",
+            text,
+        )
+        self.assertIn(
+            "CONTROL_PLANE_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.control_plane_changed }}",
+            text,
+        )
         self.assertIn("github.event_name == 'schedule' && 'full'", text)
+        professional_mode = next(
+            line for line in text.splitlines() if line.strip().startswith("PROFESSIONAL_MODE:")
+        )
+        self.assertIn("outputs.backend_runtime_changed == 'true'", professional_mode)
+        self.assertNotIn("outputs.backend_changed == 'true'", professional_mode)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
         self.assertIn("PROFESSIONAL_MODE == 'fast'", text)
@@ -242,6 +275,11 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", standard_frontend_section)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
+        full_section = text.split(
+            "- name: Run full professional quality gate (serialized artifact writers)", 1
+        )[1].split("- name: Run mainline integrity gate", 1)[0]
+        self.assertIn('[ "${BACKEND_RUNTIME_CHANGED}" = "false" ]', full_section)
+        self.assertNotIn('[ "${BACKEND_CHANGED}" = "false" ]', full_section)
         mainline_section = text.split("- name: Run mainline integrity gate", 1)[1].split(
             "- name: Run standard backend quality gate", 1
         )[0]
@@ -540,8 +578,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             summary = Path(tmp) / 'summary'
             env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary), 'RISK_LANE': 'HIGH_RISK',
-                   'FRONTEND_MODE': 'skip', 'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': 'true',
-                   'FRONTEND_CHANGED': 'false', 'MANAGED_ORM_REQUIRED': 'false',
+                   'FRONTEND_MODE': 'skip', 'PROFESSIONAL_MODE': 'full',
+                   'BACKEND_CHANGED': 'true', 'BACKEND_RUNTIME_CHANGED': 'true',
+                   'FRONTEND_CHANGED': 'false', 'CONTROL_PLANE_CHANGED': 'false',
+                   'MANAGED_ORM_REQUIRED': 'false',
                    'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
                    'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
             for event, expected in [('pull_request', 'standard_backend'), ('push', 'mainline'), ('schedule', 'full')]:
@@ -550,6 +590,35 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                     'REF': 'refs/heads/main' if event == 'push' else env['REF']}, capture_output=True, text=True)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn('| Effective professional lane | ' + expected + ' |', summary.read_text())
+
+    def test_merge_summary_routes_pure_control_plane_to_governance(self):
+        workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
+        step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
+                    if s.get('name') == 'Publish lane summary')
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / 'summary'
+            scenarios = (
+                ('pure_ci', 'true', 'false', 'false', 'governance'),
+                ('mixed_frontend_backend', 'true', 'true', 'true', 'standard_backend'),
+                ('frontend_only', 'false', 'false', 'true', 'standard_frontend'),
+                ('backend_quality_tool', 'true', 'false', 'false', 'governance'),
+            )
+            for name, backend, runtime, frontend, expected in scenarios:
+                with self.subTest(scenario=name):
+                    summary.write_text('')
+                    env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary),
+                           'RISK_LANE': 'HIGH_RISK', 'FRONTEND_MODE': 'skip',
+                           'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': backend,
+                           'BACKEND_RUNTIME_CHANGED': runtime, 'FRONTEND_CHANGED': frontend,
+                           'CONTROL_PLANE_CHANGED': 'true', 'MANAGED_ORM_REQUIRED': 'false',
+                           'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped',
+                           'FACT_RESULT': 'success', 'EVENT_NAME': 'pull_request',
+                           'REF': 'refs/pull/1/merge'}
+                    result = subprocess.run(['bash', '-c', step['run']], env=env,
+                                            capture_output=True, text=True)
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    self.assertIn('| Effective professional lane | ' + expected + ' |',
+                                  summary.read_text())
 
     def test_candidate_summary_distinguishes_skip_from_pass_and_rejects_failure(self):
         workflow = yaml.safe_load(self.text('release_candidate_gate.yml'))

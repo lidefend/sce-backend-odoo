@@ -769,8 +769,12 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # scope as a pass). Kept separate from verify.ci.scheduled_gates so the required
 # professional_quality_gate lane enforces it without pulling in the heavy
 # github-actions security sweep.
-.PHONY: verify.ci.workflow.contract
-verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
+.PHONY: verify.ci.path_ownership.unit verify.ci.workflow.contract
+verify.ci.path_ownership.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/ci_path_ownership.py scripts/ci/test_ci_path_ownership.py scripts/ci/ci_risk_classifier.py scripts/ci/backend_impact_plan.py
+	@PYTHONPATH=scripts/ci python3 -m unittest scripts.ci.test_ci_path_ownership
+
+verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit
 	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
 	@python3 scripts/ci/test_backend_test_receipt.py
 	@python3 scripts/ci/test_backend_impact_plan.py
@@ -778,6 +782,7 @@ verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
 	@python3 scripts/ci/test_backend_changed_test_coverage.py
 	@python3 scripts/ci/test_select_authoritative_workflow_run.py
 	@python3 scripts/verify/test_pr_publish_preflight.py
+	@PYTHONPATH=scripts/ci:scripts/verify python3 -m unittest scripts.ci.test_ci_path_ownership scripts.ci.test_ci_risk_workflow_contract scripts.ci.test_merge_policy_gate scripts.verify.test_gitee_gate_plan scripts.verify.test_gitee_formal_executor
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@python3 scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@echo "[verify.ci.workflow.contract] PASS"

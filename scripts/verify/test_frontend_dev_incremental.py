@@ -260,25 +260,59 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "make/runtime_ops.mk",
             "make/dev.mk",
-            "make/ci.mk",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.baseline.iteration.execution.policy"],
                 )
+        self.assertEqual(
+            select_targets(["make/ci.mk"]),
+            [
+                "verify.baseline.iteration.execution.policy",
+                "verify.ci.workflow.contract",
+            ],
+        )
 
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
         self.assertEqual(
             select_targets(["make/codex.mk"]),
             [
                 "verify.baseline.iteration.execution.policy",
+                "verify.ci.path_ownership.unit",
                 "verify.pr.push.unit",
             ],
         )
         self.assertEqual(
             select_targets(["scripts/verify/test_pr_publish_preflight.py"]),
             ["verify.pr.push.unit"],
+        )
+
+    def test_path_ownership_and_agent_files_route_to_their_own_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["config/ci/path_ownership_v1.json"]),
+            [
+                "verify.ci.path_ownership.unit",
+                "verify.ci.workflow.contract",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["config/ci/risk_tiering_v1.json"]),
+            [
+                "verify.ci.path_ownership.unit",
+                "verify.ci.workflow.contract",
+            ],
+        )
+        self.assertEqual(
+            select_targets([".agent/runs/FE-LOOP-02/run.json"]),
+            ["verify.agent.ledger.unit"],
+        )
+        self.assertEqual(
+            select_targets([".github/workflows/merge_policy_gate.yml"]),
+            [
+                "verify.ci.workflow.contract",
+                "verify.github_actions.security",
+            ],
         )
 
     def test_every_recommended_target_is_defined_by_a_makefile(self) -> None:

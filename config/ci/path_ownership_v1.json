@@ -1,0 +1,261 @@
+{
+  "schema_version": "ci-path-ownership/v1",
+  "categories": [
+    {
+      "id": "backend_runtime",
+      "patterns": [
+        "addons/**",
+        "demo_addons/**",
+        "customer_addons/**",
+        "addons_external/**",
+        "migrations/**",
+        "tests/**",
+        "scripts/test/**",
+        "make/dev_test.mk"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": true,
+      "control_plane": false,
+      "tool_checks": []
+    },
+    {
+      "id": "build_runtime",
+      "patterns": [
+        "Dockerfile*",
+        "**/Dockerfile*",
+        "docker-compose*",
+        "**/docker-compose*",
+        "requirements*",
+        "**/requirements*.txt",
+        "**/requirements*.lock",
+        "Makefile"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": true,
+      "control_plane": true,
+      "tool_checks": []
+    },
+    {
+      "id": "frontend_extension_make",
+      "patterns": [
+        "make/frontend_professional_extensions.mk"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "tool_checks": [
+        "verify.frontend.dev.incremental.unit"
+      ]
+    },
+    {
+      "id": "frontend_delivery_make",
+      "patterns": [
+        "make/frontend.mk"
+      ],
+      "risk": "high",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "frontend_full": true,
+      "tool_checks": [
+        "verify.frontend.dev.incremental.unit",
+        "verify.baseline.iteration.execution.policy"
+      ]
+    },
+    {
+      "id": "codex_control_plane",
+      "patterns": [
+        "make/codex.mk"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.baseline.iteration.execution.policy",
+        "verify.pr.push.unit"
+      ]
+    },
+    {
+      "id": "frontend_quality_tooling",
+      "patterns": [
+        "scripts/verify/frontend_*",
+        "scripts/verify/test_frontend_*"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "tool_checks": [
+        "verify.frontend.dev.incremental.unit"
+      ]
+    },
+    {
+      "id": "frontend_ci_tooling",
+      "patterns": [
+        "scripts/ci/frontend_*",
+        "scripts/ci/test_frontend_*"
+      ],
+      "risk": "high",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.dev.incremental.unit",
+        "verify.ci.workflow.contract"
+      ]
+    },
+    {
+      "id": "security_tooling_control_plane",
+      "patterns": [
+        "scripts/verify/*security*",
+        "scripts/verify/test_*security*",
+        "scripts/ci/*security*",
+        "scripts/ci/test_*security*"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.github_actions.security"
+      ]
+    },
+    {
+      "id": "agent_run_registration",
+      "patterns": [
+        ".agent/active-runs.json",
+        ".agent/runs/**"
+      ],
+      "risk": "fast",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "agent_run_registration": true,
+      "tool_checks": [
+        "verify.agent.ledger.unit"
+      ]
+    },
+    {
+      "id": "agent_workflow_metadata",
+      "patterns": [
+        ".agent/workflows/**"
+      ],
+      "risk": "fast",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.agent.ledger.unit"
+      ]
+    },
+    {
+      "id": "agent_governance",
+      "patterns": [
+        ".agent/**",
+        "AGENTS.md"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "agent_governance": true,
+      "tool_checks": [
+        "verify.agent.ledger.unit",
+        "verify.baseline.iteration.execution.policy"
+      ]
+    },
+    {
+      "id": "frontend_runtime",
+      "patterns": [
+        "frontend/**"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "tool_checks": []
+    },
+    {
+      "id": "backend_quality_tooling",
+      "patterns": [
+        "scripts/verify/**",
+        "scripts/e2e/**"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": false,
+      "control_plane": false,
+      "backend_tooling": true,
+      "tool_checks": []
+    },
+    {
+      "id": "ci_tooling",
+      "patterns": [
+        "scripts/ci/**",
+        "scripts/audit/**",
+        "config/ci/**"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.ci.workflow.contract"
+      ]
+    },
+    {
+      "id": "release_security_control_plane",
+      "patterns": [
+        ".github/workflows/**",
+        "scripts/release/**",
+        "scripts/ops/**",
+        "scripts/retired/**",
+        "deployment/**",
+        "release/**",
+        ".codex/**",
+        "make/**"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.ci.scheduled_gates",
+        "verify.github_actions.security"
+      ]
+    },
+    {
+      "id": "docs_bookkeeping",
+      "patterns": [
+        "*.md",
+        "docs/**",
+        "VERSION"
+      ],
+      "risk": "fast",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "tool_checks": []
+    }
+  ]
+}

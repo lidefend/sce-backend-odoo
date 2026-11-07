@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: CI-SCOPE-01-R1
+  title: 分类与执行车道闭合
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: CI path classification, risk routing and workflow execution lanes
+  module: governed CI path ownership and verification selection
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Gitee Gate Plan、GitHub professional/merge workflows、ORM runtime matching
+    和真实 sandbox 测试依赖都属于交付控制面。
+  why_not_elsewhere: >
+    不在前端、Renderer 或 Odoo 业务模块中增加特判；不以全量后端套件或 ORM
+    掩盖控制面分类错误，也不弱化未知路径 fail-closed。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CI-SCOPE-01-R1.yaml
+      - .agent/runs/CI-SCOPE-01-R1/run.json
+      - docs/ops/iterations/CI-SCOPE-01-R1.md
+      - .github/workflows/professional_quality_gate.yml
+      - .github/workflows/merge_policy_gate.yml
+      - config/ci/risk_tiering_v1.json
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/gitee_gate_plan.py
+      - scripts/verify/test_gitee_gate_plan.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/test_ci_path_ownership.py
+      - scripts/ci/test_backend_impact_plan.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/audit/test_coverage_registry/test_coverage_registry.json
+    runtime: none
+    product_behavior: none
+  objective: >
+    修正 CI 路径分类、后端业务车道选择和 ORM runtime 匹配，使纯前端工具链、
+    纯 CI 工具链、后端质量工具、后端业务运行时及前后端混合变更只执行其真实
+    需要的验证，同时保持未知路径失败关闭。
+  acceptance:
+    - Gitee Gate Plan 测试使用符合 ownership 的路径并断言正确车道
+    - GitHub 与 Gitee 工作流使用 backend_runtime_changed 选择后端业务验证
+    - ORM runtime glob 不再把 formal 等无关文件名识别为 ORM 输入
+    - professional quality Job 能准备并实际执行 bubblewrap sandbox
+    - 五种真实场景同时覆盖分类结果与工作流/门禁选择
+    - 纯 CI 工具链不选择后端业务模块或 ORM
+    - 未知路径继续触发 HIGH_RISK 和全量保守范围
+  exclusions:
+    - product_runtime_change
+    - renderer_change
+    - browser_acceptance
+    - candidate_build
+    - deployment
+  rollback: 回退本批 P4 分类、ORM 匹配、工作流接线和测试。

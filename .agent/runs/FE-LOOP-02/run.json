@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "b154eae313cf65428d16325b0dfc3faaa68d919c",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-LOOP-02.yaml",
+    ".agent/runs/FE-LOOP-02/run.json",
+    ".agent/decisions/ci-path-ownership.yaml",
+    "docs/ops/iterations/FE-LOOP-02.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "config/ci/path_ownership_v1.json",
+    "config/ci/risk_tiering_v1.json",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/gitee_gate_plan.py",
+    "scripts/verify/test_gitee_gate_plan.py",
+    "scripts/ci/gitee_formal_executor.py",
+    "scripts/verify/test_gitee_formal_executor.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    "make/ci.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "path_ownership_unit": {
+      "target": "verify.ci.path_ownership.unit",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/gitee_gate_plan.py",
+        "config/ci/risk_tiering_v1.json",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/verify/test_gitee_gate_plan.py",
+        "config/ci/path_ownership_v1.json",
+        "config/ci/risk_tiering_v1.json",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ci/ci_path_ownership.py",
+        "config/ci/path_ownership_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        ".agent/"
+      ],
+      "kind": "offline"
+    },
+    "run_context_unit": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "github_actions_security": {
+      "target": "verify.github_actions.security",
+      "inputs": [
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py",
+        ".github/workflows/"
+      ],
+      "kind": "offline"
+    },
+    "execution_policy_unit": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "publish_preflight_unit": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/git_safe_push.sh",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "results": {
+    "ownership_registry": "Added central frontend runtime, frontend quality/CI tooling, make ownership, Agent registration/governance, backend runtime/tooling and release/security control-plane categories.",
+    "control_plane": "Risk classification now emits control_plane_changed and backend_runtime_changed; GitHub and Gitee plans carry control_plane_changed.",
+    "backend_impact": "Non-runtime control-plane leaves backend modules empty and scope_status NOT_APPLICABLE; unknown paths still select the full module set.",
+    "scenarios": "Pure frontend, pure backend, mixed, pure CI tooling, release/security control plane and unknown fail-closed are covered by non-zero tests.",
+    "path_ownership_tests": 14,
+    "ci_suite_tests": 147,
+    "planner_tests": 68,
+    "ci_local_iteration": "PASS; 7 targets executed, notRunTargets=0",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261107T123351Z-933090-922652996/receipt.json",
+    "remote_gate_recovery": "PR #837 at e278ca363 failed professional_quality_checks because /usr/bin/bwrap was absent; merge_policy_gate failed only through its exact-head fact dependency. The P4 workflow now installs and probes bubblewrap before owning control-plane checks, with a contract test binding that order.",
+    "workflow_contract_tests": "PASS after dependency fix; 391 executed unittest cases across the target.",
+    "external_state": "PR #837 created after owner integration authorization; no merge, browser acceptance, candidate build or deployment."
+  },
+  "blockers": [],
+  "next_exact_step": "After the bubblewrap dependency fix, rerun local iteration, refreeze and publish the exact candidate, then merge only after all required checks pass on the new HEAD and current main.",
+  "id": "FE-LOOP-02",
+  "branch": "fix/fe-loop-02-ci-path-ownership-20261107",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-LOOP-02.yaml",
+  "record": "docs/ops/iterations/FE-LOOP-02.md"
+}

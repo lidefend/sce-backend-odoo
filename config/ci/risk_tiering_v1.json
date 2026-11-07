@@ -1,5 +1,6 @@
 {
   "schema_version": "ci-risk-tiering/v1",
+  "path_ownership_registry": "config/ci/path_ownership_v1.json",
   "lane_order": [
     "FAST",
     "STANDARD",
@@ -95,7 +96,8 @@
     "migrations/**",
     "tests/**",
     "scripts/test/**",
-    "scripts/ci/*orm*",
+    "scripts/ci/orm_*",
+    "scripts/ci/*_orm_*",
     "make/dev_test.mk",
     "Makefile",
     "Dockerfile*",

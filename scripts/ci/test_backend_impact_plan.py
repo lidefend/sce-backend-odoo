@@ -46,7 +46,7 @@ class ImpactSelectionTest(unittest.TestCase):
             with self.subTest(path=path):
                 plan = planner.select([path], self.graph, self.graph)
                 self.assertEqual([], plan['modules'])
-                self.assertEqual([target], plan['tool_checks'])
+                self.assertEqual(sorted(planner.control_plane_targets(path)), plan['tool_checks'])
                 self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
 
     def test_delivery_evidence_tools_and_tests_reach_their_remote_owners(self):
