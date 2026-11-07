@@ -52,8 +52,9 @@ goal:
     approval_runtime: PASS
     approval_browser: PASS
     fixture_orm: PASS
-    final_static_receipt: PENDING_CLEAN_HEAD
-    next_exact_step: 运行 ci.delivery.freeze.prepare，提交文档与运行登记，执行 clean HEAD 的 ci.local.iteration，记录回执后停止等待独立评审
+    final_static_receipt: PASS
+    final_static_receipt_path: .runtime/frontend-dev-validation/executions/20261107T235250Z-77152-568103427/receipt.json
+    next_exact_step: 停止，等待独立评审和发布授权
   exclusions:
     - business_value_presentation_change
     - contract_v2_schema_change

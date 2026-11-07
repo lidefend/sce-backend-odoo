@@ -140,6 +140,8 @@ FILESTORE_IDENTITY_CONFIRMED=true
 
 ## 待完成
 
-- 运行 `ci.delivery.freeze.prepare`，审阅并提交生成物。
-- 在 clean final HEAD 运行 `ci.local.iteration`，记录精确 receipt。
-- 确认工作树 clean 后停止，等待独立评审和发布授权。
+- `ci.delivery.freeze.prepare`：PASS。
+- clean `3aa7f0d69` 的 `ci.local.iteration`：PASS，7/7 必需目标真实执行，
+  `testsRun=true`、`blocked=0`、`not_run=0`、`unmapped=0`。Receipt：
+  `.runtime/frontend-dev-validation/executions/20261107T235250Z-77152-568103427/receipt.json`。
+- 本轮已停止；等待独立评审和发布授权。
