@@ -22,6 +22,11 @@
       "owner": "platform-team",
       "reason": "FE-CONTRACT-RUNTIME-02 收口批次有意接线的人工门面：在隔离验收载体（sc-fe-r2-p1-01 / sc_frontend_acceptance）上只读核对夹具契约，使冻结夹具事实在其产出处可复验。远端 CI 通过 verify.frontend.fixture 消费同一脚本；本地没有该载体时无法执行，因此没有其他执行引用。"
     },
+    "acceptance.runtime.baseline_restore": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-04-06F P4 受管 acceptance 基线恢复入口，仅故障恢复时人工调用。"
+    },
     "acceptance.runtime.infrastructure.restore": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -346,6 +351,11 @@
       "disposition": "demo_runbook",
       "owner": "construction-product",
       "reason": "Owner-authorized exact Demo project2 manager1->pm1 repair, guarded by paired recovery, duty UUID, row lock and no-replay checkpoint; never unattended CI."
+    },
+    "daily.demo.scenario.configure": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "BE00-BE01 owner-approved five-menu scenario exemption maintenance; exact demo UUID, source SHA and menu IDs, default readback. Operator-only, not automatic initialization or CI. Independent implementation review passed; remove after this database reconciliation is retired."
     },
     "daily.demo.walkthrough.contract_flow": {
       "disposition": "ops_runbook",
@@ -698,20 +708,25 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "local.clean.install": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/local_development_environment_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "local.clean.restart": {
+    "local.clean.dependency_fixture.ensure": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "本地 clean 安装诊断入口，仅人工调用。"
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
     },
-    "local.clean.upgrade": {
+    "local.clean.dependency_fixture.revoke": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "本地 clean 安装诊断入口，仅人工调用。"
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.revoke_deactivate": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+    },
+    "local.clean.dependency_fixture.verify": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
     },
     "local.clean.entry_identity.ensure": {
       "disposition": "local_diagnostic",
@@ -728,30 +743,20 @@
       "owner": "platform-team",
       "reason": "BNVA-02 P4 本地 clean 财务夹具入口，仅人工调用。"
     },
-    "local.clean.dependency_fixture.ensure": {
-      "disposition": "local_diagnostic",
+    "local.clean.install": {
+      "disposition": "ops_runbook",
       "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/local_development_environment_v1.md。登记待接线或退役，B3 按族处理。"
     },
-    "local.clean.dependency_fixture.verify": {
+    "local.clean.restart": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
+      "reason": "本地 clean 安装诊断入口，仅人工调用。"
     },
-    "local.clean.dependency_fixture.revoke": {
+    "local.clean.upgrade": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
-    },
-    "local.clean.dependency_fixture.revoke_deactivate": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
-    },
-    "acceptance.runtime.baseline_restore": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "BNVA-04-06F P4 受管 acceptance 基线恢复入口，仅故障恢复时人工调用。"
+      "reason": "本地 clean 安装诊断入口，仅人工调用。"
     },
     "local.clean.view_capability_ledger_gate": {
       "disposition": "history_probe_runbook",
@@ -2002,17 +2007,7 @@
       "owner": "platform-team",
       "reason": "PC-02 综合合同原生表单身份带四视口验收探针：只读复用受管 candidate 运行时和契约回执，按 CONTRACT_FORM_ENTRY 分别验收收入/支出合同。需要隔离候选环境，因此不由本地离线 lane 派发；登记为按需浏览器验收探针。"
     },
-    "verify.frontend.project_workspace_dom.browser": {
-      "disposition": "browser_acceptance_probe",
-      "owner": "platform-team",
-      "reason": "PC-01 项目工作空间 DOM 与四视口审计探针：只读复用受管 candidate/local 运行时与契约回执，解析 project.project 真实记录、Action、Menu，采集身份、状态、协作区几何与 390px 布局。需要隔离候选环境，登记为按需浏览器验收探针。"
-    },
     "verify.frontend.contract_prompt_action_presentation.browser": {
-      "disposition": "diagnostic_cli",
-      "owner": "platform-team",
-      "reason": "前端诊断/验收 CLI，未被任何门禁消费。"
-    },
-    "verify.frontend.contract_v2_occurrence_authority.unit": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "前端诊断/验收 CLI，未被任何门禁消费。"
@@ -2327,6 +2322,11 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.frontend.project_workspace_dom.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "PC-01 项目工作空间 DOM 与四视口审计探针：只读复用受管 candidate/local 运行时与契约回执，解析 project.project 真实记录、Action、Menu，采集身份、状态、协作区几何与 390px 布局。需要隔离候选环境，登记为按需浏览器验收探针。"
     },
     "verify.frontend.public_auth_bootstrap.unit": {
       "disposition": "history_probe_runbook",
@@ -3409,11 +3409,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
-    },
-    "daily.demo.scenario.configure": {
-      "disposition": "demo_runbook",
-      "owner": "construction-product",
-      "reason": "BE00-BE01 owner-approved five-menu scenario exemption maintenance; exact demo UUID, source SHA and menu IDs, default readback. Operator-only, not automatic initialization or CI. Independent implementation review passed; remove after this database reconciliation is retired."
     }
   },
   "scripts": {

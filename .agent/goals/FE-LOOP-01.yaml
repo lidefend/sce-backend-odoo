@@ -1,0 +1,69 @@
+schema_version: 1
+goal:
+  id: FE-LOOP-01
+  title: 前端增量质量反馈闭环
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: frontend incremental validation planning, execution and run registration
+  module: frontend quality feedback loop
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    变更分类、验证选择、执行回执和运行登记都属于交付工具链。它们必须依据真实变更
+    决定必要的 L1/L2 检查，不能进入前端产品运行时或以业务特判替代验证。
+  why_not_elsewhere: >
+    不在 P0-P3 产品代码中增加验证分支；不修改 Renderer、金额表达或业务契约；
+    不改用浏览器验收、候选构建或全量 Quick 来替代廉价的增量 L2。
+  blast_radius:
+    paths:
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/ops/agent_run_context.py
+      - scripts/verify/test_agent_run_context.py
+      - scripts/verify/baseline_iteration_execution_policy_guard.py
+      - scripts/verify/test_baseline_iteration_execution_policy_guard.py
+      - scripts/audit/verification_lane_dispositions.json
+      - make/ci.mk
+      - make/frontend.mk
+      - AGENTS.md
+      - .agent/README.md
+      - .agent/
+      - docs/ops/codex_workspace_execution_rules.md
+      - docs/ops/codex_delivery_collaboration_protocol_v1.md
+      - docs/ops/iterations/FE-LOOP-01.md
+      - docs/engineering_convergence/complexity_budget_report.md
+    runtime: none
+    product_behavior: none
+  objective: >
+    修改前生成完整的受影响 L2 计划，修改后由同一个受管内循环真实执行全部必需检查，
+    并把执行结果与当前 run 登记范围绑定；规划成功、检查未运行或零执行不得报告 PASS。
+  acceptance:
+    - TS/Vue 源文件变更始终包含 lint:src 与 typecheck.strict
+    - 专项规则只追加检查，不覆盖或遗漏基础检查
+    - 单个 Vue、单个 TS、前后端混合、Renderer 注册表及其测试、调度器自身均有规划测试
+    - 所有推荐目标真实存在，并由非零检查或等价静态断言承载
+    - 保留只读 plan 模式，并新增真实执行模式
+    - ci.local.iteration 执行计划中的全部必需 L2 目标，而非只生成建议
+    - 执行回执区分 passed、failed、blocked、not_run、interrupted，并记录每个目标的退出码与原始日志
+    - run.json 的检查登记不能小于当前变更推导出的必需目标集合
+    - FormSection 变更消费字段渲染行为锁和规范化注册，不保留失效的零引用分类
+    - 不触发候选构建、浏览器验收、发布或合并
+  exclusions:
+    - product_logic
+    - renderer_architecture_change
+    - amount_expression_change
+    - frozen_baseline_change
+    - browser_acceptance
+    - candidate_build
+    - push
+    - pr_creation
+    - merge
+    - deployment
+  follow_ups:
+    - id: FE-RENDERER-02
+      item: >
+        将 rendererVersion 与契约版本绑定，并在出现真实运行时消费方后建立 capabilities
+        声明与验证；当前空 requiredCapabilities 不得表述为能力治理已交付。
+    - id: FE-EXPR-02
+      item: 继续收敛金额、日期、状态、空值、关系、权限、校验、操作和行业组件的表达体系。
+  rollback: >
+    回退本批 P4 文件与 FE-LOOP-01 治理记录；不涉及数据库、运行时或产品数据恢复。

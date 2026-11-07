@@ -108,8 +108,12 @@ provenance, not a validity key, so a redeploy alone does not invalidate the set.
 `ci.local.iteration` requires the common entry. The frontend planner uses the registered
 batch baseline, including committed, staged, unstaged and untracked changes; PR diff
 selection retains its whole-branch semantics (`--plan-branch` explicitly). Missing run
-registration never triggers a whole-branch fallback during daily iteration. Reusable
-targets are listed separately, while unchanged failed targets are blocked for diagnosis. The controller attaches the same bounded
+registration never triggers a whole-branch fallback during daily iteration. The planner
+always adds lint and strict typecheck to TS/Vue source changes, adds rather than replaces
+focused checks, and fails closed when a required target is absent from `run.json`. The
+inner-loop execution entry runs every required target and records its individual status,
+exit code, duration and log hash; no-target and blocked outcomes cannot become PASS.
+Reusable targets are listed separately, while unchanged failed targets are blocked for diagnosis. The controller attaches the same bounded
 context on launch/resume without executing saved actions. An external executor must use
 these Make entries too; repository tools cannot control arbitrary commands outside them.
 Service installation is separate: source changes alone do not update a running controller.

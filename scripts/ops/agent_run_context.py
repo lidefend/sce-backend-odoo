@@ -278,6 +278,22 @@ def check_order(checks: dict) -> list[str]:
     return ordered
 
 
+def declared_check_targets(run: dict) -> set[str]:
+    """Return the executable targets declared by one resolved run.
+
+    Impact planning supplies the required target set for the current delta.
+    This helper owns the other half of the comparison so callers do not
+    reimplement run-ledger parsing or accidentally treat path scope as check
+    coverage.
+    """
+    return {check["target"] for check in run["checks"].values()}
+
+
+def registration_missing_targets(run: dict, required_targets: set[str] | list[str]) -> list[str]:
+    """Targets required by the current delta but absent from run registration."""
+    return sorted(set(required_targets) - declared_check_targets(run))
+
+
 def check_states(root: Path, run: dict) -> dict:
     states = {}
     for key in check_order(run['checks']):
@@ -462,6 +478,7 @@ def summary(root: Path) -> dict:
             'dirty': git(root, 'status', '--porcelain=v1', '--untracked-files=all'),
             'baseline_sha': run['baseline_sha'], 'run_status': run['status'], 'record': run['record'],
             'changed_paths': paths, 'outside_scope': outside, 'checks': checks,
+            'registered_check_targets': sorted(declared_check_targets(run)),
             'blockers': run.get('blockers', []), 'next_exact_step': run['next_exact_step'],
             'write_replay_authorized': False,
             'candidate_evidence': run.get('candidate_evidence', False)}

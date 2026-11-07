@@ -32,6 +32,8 @@ DOCUMENT_REQUIREMENTS = {
         "Do not retry an unchanged failure",
         "the full required matrix runs once at the frozen delivery head",
         "make ci.local.iteration",
+        "executes every required mapped target",
+        "A plan, a zero-target run or an unexecuted target never counts as a validation PASS",
         "make ci.local.quick` is reserved for a clean frozen delivery HEAD",
         "Diagnosis Before Delivery (Hard Lock)",
         "Close known delivery blockers before finalization",
@@ -68,6 +70,8 @@ DOCUMENT_REQUIREMENTS = {
         "日志不完整或测试数未知不能判定通过",
         "本地入口分车道",
         "make ci.local.iteration",
+        "逐项执行全部必需目标",
+        "计划成功、零目标或未执行不得记为验证 PASS",
         "make ci.local.quick` 仅在",
         "先诊断收敛，再进入交付（Hard Lock）",
         "已知交付阻断未关闭，不进入最终交付",
@@ -111,14 +115,7 @@ ITERATION_REQUIRED = (
     "guard.prod.forbid",
     "verify.baseline.iteration.execution.policy",
     "git diff --check",
-    "git status --porcelain=v1 --untracked-files=all",
-    "change_state=clean",
-    "change_state=dirty",
-    "scope=unclassified_by_design",
-    "coverage=L1_only",
-    "receipt=none",
-    "next=risk_selected_non_zero_L2_targets_required",
-    "frontend_dev_incremental.py --plan-worktree",
+    "frontend_dev_incremental.py --execute-worktree",
 )
 ITERATION_FORBIDDEN = (
     "ci.local.quick",
@@ -132,6 +129,7 @@ ITERATION_FORBIDDEN = (
     "verify.frontend.typecheck.strict",
     "acceptance",
     "browser",
+    "frontend_dev_incremental.py --plan-worktree",
 )
 
 QUICK_TARGET = "ci.local.quick.run"
@@ -155,6 +153,8 @@ TYPECHECK_TARGET = "verify.frontend.typecheck.strict"
 TYPECHECK_COMMAND = "pnpm_exec.sh -C frontend/apps/web typecheck:strict"
 FRONTEND_INCREMENTAL_TEST_TARGET = "verify.frontend.dev.incremental.unit"
 FRONTEND_INCREMENTAL_TEST_COMMAND = "python3 -m unittest scripts.verify.test_frontend_dev_incremental"
+FRONTEND_INCREMENTAL_PLAN_TARGET = "verify.frontend.dev.incremental.plan"
+FRONTEND_INCREMENTAL_EXECUTE_TARGET = "verify.frontend.dev.incremental.execute"
 FREEZE_PREPARE_TARGET = "ci.delivery.freeze.prepare"
 FREEZE_PREPARE_REQUIRED_ORDER = (
     "refresh.generated_evidence",
@@ -230,7 +230,7 @@ def validate(root: Path) -> list[str]:
                         f"make/ci.mk: {ITERATION_TARGET} missing lightweight contract {fragment!r}"
                     )
             lines = block.splitlines()
-            boundary = "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
+            boundary = "\t@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree"
             for command in EARLY_INTEGRATION_COMMANDS:
                 exact = "\t@" + command
                 if lines.count(exact) != 1 or boundary not in lines or lines.index(exact) >= lines.index(boundary):
@@ -300,6 +300,16 @@ def validate(root: Path) -> list[str]:
                     "make/frontend.mk: "
                     f"{FRONTEND_INCREMENTAL_TEST_TARGET} must invoke its unit suite exactly once"
                 )
+            for target, mode in (
+                (FRONTEND_INCREMENTAL_PLAN_TARGET, "--plan-worktree"),
+                (FRONTEND_INCREMENTAL_EXECUTE_TARGET, "--execute-worktree"),
+            ):
+                block = _target_block(frontend_text, target)
+                command = f"scripts/verify/frontend_dev_incremental.py {mode}"
+                if block.count(command) != 1:
+                    errors.append(
+                        f"make/frontend.mk: {target} must invoke {mode} exactly once"
+                    )
     return errors
 
 

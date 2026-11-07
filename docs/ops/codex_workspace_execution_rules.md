@@ -199,8 +199,11 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      `validation_tool_defect` 归因，以及本次改变的恢复事实。
    - **浏览器和发布验证后置。** 内循环浏览器只覆盖声明的受影响页面、角色、状态和视口；fixture、
      release snapshot、历史全矩阵及完整发布门禁只在冻结 delivery HEAD 上集中执行一次。
-   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`；该入口只输出映射到当前前端改动的
-     L2 建议而不执行，再由执行者按声明风险运行覆盖影响面的一项或多项非零 L2 定向入口；测试数量不得机械固定为一个。需要服务或页面事实时才补聚焦
+   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`；该入口解析当前 run，生成完整
+     L2 影响集合并逐项执行全部必需目标，记录每个目标的退出码与原始日志。只读预览使用
+     `make verify.frontend.dev.incremental.plan`，真实内循环使用
+     `make verify.frontend.dev.incremental.execute`。计划成功、零目标或未执行不得记为验证 PASS；
+     测试数量不得机械固定为一个。需要服务或页面事实时才补聚焦
      `local.dev.*`。该 L1 入口不执行全历史隐私/仓库扫描、
      前端全量 typecheck/build、浏览器或 acceptance，也不能生成交付收据。`make ci.local.quick` 仅在
      clean 的冻结 delivery HEAD 上运行一次，不得作为每次编辑或本地提交后的默认检查。

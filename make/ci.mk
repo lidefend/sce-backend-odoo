@@ -1007,13 +1007,8 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
-	@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree
+	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree
 	@python3 scripts/ci/trusted_scan_scope.py
-	@if test -z "$$(git status --porcelain=v1 --untracked-files=all)"; then \
-	  echo "[ci.local.iteration] PASS change_state=clean coverage=L1_only receipt=none"; \
-	else \
-	  echo "[ci.local.iteration] PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none next=risk_selected_non_zero_L2_targets_required"; \
-	fi
 
 # The frozen-head Quick entry. It shards the declared ci.local.quick.run target
 # list so an interrupted candidate keeps every shard part that already passed,

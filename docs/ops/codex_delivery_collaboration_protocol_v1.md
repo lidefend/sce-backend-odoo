@@ -86,7 +86,8 @@
 
 受管入口的语义：
 
-- `make ci.local.iteration` 只证明轻量 L1，不等于完整测试或合并资格。
+- `make ci.local.iteration` 执行登记 run 的 L1 与完整受影响 L2 集合；计划成功、零目标或未执行
+  不构成验证 PASS，也不等于完整测试、候选构建或合并资格。
 - `make local.test.prepare` 校验既有隔离测试身份；`make local.test.test` 通过明确模块/标签
   执行测试。它每次仅重建专属 `sc_test`，不是持久 `sc_dev_demo`，使用前遵循数据库政策。
 - `make verify.test.baseline` 执行 manifest 离线三序验证；完整 Quick 已接入它。

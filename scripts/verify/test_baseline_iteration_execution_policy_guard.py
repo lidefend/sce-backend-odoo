@@ -34,8 +34,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                 )
                 text += "\n\t@git diff --check"
                 text += "".join("\n\t@" + command for command in guard.EARLY_INTEGRATION_COMMANDS)
-                text += "\n\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
-                text += "\n\t@git status --porcelain=v1 --untracked-files=all"
+                text += "\n\t@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree"
                 text += "\n" + guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_DIRECT_REQUIRED)
                 text += "\n" + guard.FREEZE_PREPARE_TARGET + ":"
                 for step in guard.FREEZE_PREPARE_REQUIRED_ORDER:
@@ -49,7 +48,11 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             f"{guard.TYPECHECK_TARGET}:\n"
             f"\t@scripts/dev/{guard.TYPECHECK_COMMAND}\n"
             f"{guard.FRONTEND_INCREMENTAL_TEST_TARGET}:\n"
-            f"\t@{guard.FRONTEND_INCREMENTAL_TEST_COMMAND}\n",
+            f"\t@{guard.FRONTEND_INCREMENTAL_TEST_COMMAND}\n"
+            f"{guard.FRONTEND_INCREMENTAL_PLAN_TARGET}:\n"
+            "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree\n"
+            f"{guard.FRONTEND_INCREMENTAL_EXECUTE_TARGET}:\n"
+            "\t@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree\n",
             encoding="utf-8",
         )
 
@@ -73,7 +76,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                                    "duplicate": line + "\n" + line, "late": ""}[mutation]
                     text = text.replace(line, replacement, 1)
                     if mutation == "late":
-                        marker = "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
+                        marker = "\t@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree"
                         text = text.replace(marker, marker + "\n" + line, 1)
                     path.write_text(text)
                     self.assertTrue(any("early integration check" in error for error in guard.validate(root)))
@@ -153,52 +156,31 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                 guard.validate(root),
             )
 
-    def test_iteration_target_requires_dirty_scope_handoff(self) -> None:
+    def test_iteration_target_rejects_plan_only_execution(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
             path = root / "make/ci.mk"
             path.write_text(
                 path.read_text(encoding="utf-8").replace(
-                    "next=risk_selected_non_zero_L2_targets_required",
-                    "next=none",
+                    "frontend_dev_incremental.py --execute-worktree",
+                    "frontend_dev_incremental.py --plan-worktree",
                     1,
                 ),
                 encoding="utf-8",
             )
-            self.assertIn(
-                "make/ci.mk: ci.local.iteration missing lightweight contract "
-                "'next=risk_selected_non_zero_L2_targets_required'",
-                guard.validate(root),
-            )
+            errors = guard.validate(root)
+            self.assertTrue(any("missing lightweight contract" in error for error in errors))
+            self.assertTrue(any("forbidden broad gate" in error for error in errors))
 
-    def test_iteration_target_requires_untracked_path_detection(self) -> None:
+    def test_iteration_target_requires_frontend_l2_execution(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
             path = root / "make/ci.mk"
             path.write_text(
                 path.read_text(encoding="utf-8").replace(
-                    "git status --porcelain=v1 --untracked-files=all",
-                    "git status --porcelain=v1",
-                    1,
-                ),
-                encoding="utf-8",
-            )
-            self.assertIn(
-                "make/ci.mk: ci.local.iteration missing lightweight contract "
-                "'git status --porcelain=v1 --untracked-files=all'",
-                guard.validate(root),
-            )
-
-    def test_iteration_target_requires_frontend_l2_recommendation_plan(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self.fixture(root)
-            path = root / "make/ci.mk"
-            path.write_text(
-                path.read_text(encoding="utf-8").replace(
-                    "python3 scripts/verify/frontend_dev_incremental.py --plan-worktree",
+                    "python3 scripts/verify/frontend_dev_incremental.py --execute-worktree",
                     "echo no-l2-plan",
                     1,
                 ),
@@ -206,7 +188,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             )
             self.assertIn(
                 "make/ci.mk: ci.local.iteration missing lightweight contract "
-                "'frontend_dev_incremental.py --plan-worktree'",
+                "'frontend_dev_incremental.py --execute-worktree'",
                 guard.validate(root),
             )
 
@@ -283,6 +265,27 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             )
             self.assertIn(
                 "make/frontend.mk: verify.frontend.dev.incremental.unit must invoke its unit suite exactly once",
+                guard.validate(root),
+            )
+
+    def test_incremental_plan_and_execute_targets_are_distinct_and_registered(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/frontend.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    f"{guard.FRONTEND_INCREMENTAL_EXECUTE_TARGET}:\n"
+                    "\t@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree",
+                    f"{guard.FRONTEND_INCREMENTAL_EXECUTE_TARGET}:\n"
+                    "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                f"make/frontend.mk: {guard.FRONTEND_INCREMENTAL_EXECUTE_TARGET} "
+                "must invoke --execute-worktree exactly once",
                 guard.validate(root),
             )
 
