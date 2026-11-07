@@ -42,7 +42,7 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
         path = root / "frontend/apps/web/src/layouts/AppShell.vue"
-        path.write_text(path.read_text().replace("createScenarioSelectionSnapshot(entry, session.routeAuthority)", "unchecked(entry)"))
+        path.write_text(path.read_text().replace("createNavigationSelectionSnapshot(node.source, session.routeAuthority)", "unchecked(node)"))
         self.assertTrue(any("immutable authority snapshot" in error for error in validate(root)))
 
     def test_scenario_selection_cannot_bypass_context(self):

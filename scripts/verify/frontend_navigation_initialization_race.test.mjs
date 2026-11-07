@@ -2,7 +2,6 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createScenarioSelectionSnapshot } from '../../frontend/apps/web/src/app/scenarioSurface.ts';
 import { createNavigationSelectionSnapshot } from '../../frontend/apps/web/src/app/navigationSelectionCore.js';
 
 const authority = {
@@ -75,11 +74,12 @@ assert.equal(createNavigationSelectionSnapshot(node, null), null);
 
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
-assert.match(appShell, /v-else-if="scenarioNavigationBroken"/);
+assert.match(appShell, /v-else-if="canonicalNavigationBroken"/);
 assert.match(appShell, /<ProductSideNavigation\s+v-if="navigationReady && navigationNodes\.length"/, 'visible navigation must consume the canonical navigation model');
 assert.doesNotMatch(appShell, /<ProductScenarioNavigation\b/, 'visible navigation must not consume the scenario classification component');
+assert.match(appShell, /canonicalNavigationBroken = computed\(\(\) => navigationReady\.value && !session\.navigationModel\)/, 'canonical decode failure must drive the navigation error state');
+assert.doesNotMatch(appShell, /scenarioNavigationBroken|scenarioSurface/, 'scenario classification must not gate visible navigation');
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
-assert.match(appShell, /createScenarioSelectionSnapshot\(entry, session\.routeAuthority\)/);
 assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);
 assert.match(appShell, /createNavigationSelectionSnapshot\(node\.source, session\.routeAuthority\)/, 'canonical menu click must consume the immutable navigation snapshot');
 assert.doesNotMatch(appShell, /findRouteAuthority\(session\.routeAuthority/, 'menu click must not re-read mutable route authority');
@@ -99,38 +99,40 @@ for (const [state, expected] of [
   [{ isReady: true, initStatus: 'ready', routeAuthority: authority }, true],
 ]) assert.equal(ready(state), expected);
 
-const clickBody = appShell.match(/function handleScenarioSelect\(entry: ScenarioNavEntry\) \{([\s\S]*?)\n\}/);
+const clickBody = appShell.match(/function handleCanonicalSelect\(node: CanonicalNavigationNode\) \{([\s\S]*?)\n\}/);
 assert.ok(clickBody);
-const makeClick = new Function('navigationReady', 'session', 'router', 'createScenarioSelectionSnapshot',
-  'routeAuthorityContextAllowed', 'query', 'closeMobileSidebar', `return function(entry) {${clickBody[1]}};`);
-const scenarioAuthority = {
+const makeClick = new Function('navigationReady', 'session', 'router', 'createNavigationSelectionSnapshot',
+  'routeAuthorityContextAllowed', 'query', 'closeMobileSidebar', `return function(node) {${clickBody[1]}};`);
+const selectionAuthority = {
   ...authority,
   admin_actions: [{ ...authority.admin_actions[0], route: '/a/723?menu_id=438' }],
 };
-const entry = { menu_id: 438, action_id: 723,
-  menu_xmlid: 'smart_construction_core.menu_sc_runtime_user_management', route: '/a/723?menu_id=438' };
-const immutableScenario = createScenarioSelectionSnapshot(new Proxy(entry, {}), scenarioAuthority);
-assert.ok(immutableScenario);
-assert.ok(Object.isFrozen(immutableScenario));
-assert.ok(Object.isFrozen(immutableScenario.authority));
-for (const changed of [
-  { menu_id: 506 }, { action_id: 506 }, { menu_xmlid: 'wrong.menu' }, { route: '/a/506' },
-]) assert.equal(createScenarioSelectionSnapshot({ ...entry, ...changed }, scenarioAuthority), null);
-assert.equal(createScenarioSelectionSnapshot(entry, null), null);
+const canonicalNode = {
+  key: 'smart_construction_core.menu_sc_runtime_user_management',
+  menuId: 438,
+  actionId: 723,
+  state: 'enabled',
+  route: '/a/723?menu_id=438',
+  source: {
+    menu_id: 438,
+    label: '公司内部人员维护',
+    meta: { action_id: 723, entry_target: { type: 'compatibility', route: '/a/723?menu_id=438' } },
+  },
+};
 for (const [isReady, routeAuthority, contextAllowed, expected] of [
-  [false, scenarioAuthority, true, []], [true, null, true, []],
-  [true, scenarioAuthority, false, []], [true, scenarioAuthority, true, [entry.route]],
+  [false, selectionAuthority, true, []], [true, null, true, []],
+  [true, selectionAuthority, false, []], [true, selectionAuthority, true, ['/a/723?menu_id=438']],
 ]) {
   const pushed = [];
   let closed = 0;
   const query = { value: 'search' };
-  const selected = { ...entry };
+  const selected = { ...canonicalNode };
   const click = makeClick({ value: isReady }, { routeAuthority, recordContext: {} },
     { resolve: () => ({ query: {} }), push: (route) => { pushed.push(route); return Promise.resolve(); } },
-    createScenarioSelectionSnapshot,
+    createNavigationSelectionSnapshot,
     () => { selected.route = '/a/stale'; return contextAllowed; }, query, () => { closed += 1; });
   click(selected);
-  assert.deepEqual(pushed, expected, 'click must use the authorized immutable snapshot only');
+  assert.deepEqual(pushed, expected, 'canonical click must use the authorized immutable snapshot only');
   assert.equal(closed, expected.length);
   assert.equal(query.value, expected.length ? '' : 'search');
 }
