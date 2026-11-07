@@ -58,9 +58,30 @@
 该失败归类为 P4 候选浏览器载体缺陷；产品代码未修改，fixture 已由受管脚本恢复。
 
 已修复为：`API_PROXY_BASE_PATH=/t/demo` 只影响候选静态代理路径，默认空值保持原有行为；
-上游 `/t/demo/` session cookie 路径在候选根入口回写为 `/`。需在新精确提交上重新执行真实浏览器旅程。
+上游 `/t/demo/` session cookie 路径在候选根入口回写为 `/`。
+
+第二次运行已进入产品面并发现测试工具仍等待旧按钮名 `保存修改`，当前页面使用 `保存草稿`；
+同时 `waitForResponse` 在点击完成前可能先行拒绝。修复为接受两个既有标签，并以 `Promise.all`
+把点击和响应绑定为同一个失败边界。
+
+## L3 真实浏览器结果
+
+源码候选：`7c59da0f450b0a67b65978a01ff3d6fd5decea46`。
+
+- 受管环境：`sc-local-dev` / `sc_dev_demo`，后端与候选前端均绑定同一 40 位 HEAD。
+- `verify.local.dev.payment_request.settlement_component.journey`：PASS，记录 `1148`。
+- 引入阶段：0 行 -> 1 行，权威重载金额 `2400` 与引入总额 `2400` 一致，声明写入 1 次。
+- 删除阶段：1 行 -> 0 行，取消保留行、确认移除、撤销恢复和最终保存均通过；权威重载后金额仍为 `2400`，声明写入 1 次。
+- 两个阶段浏览器 console/page error 均为空；候选业务指纹变化仅来自声明的 introduce/write，最终 fixture reset 恢复基线。
+- 证据：
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-summary.json`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-after-authoritative-reload.png`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/remove-summary.json`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/remove-after-authoritative-reload.png`
+
+后续仅文档/运行登记变更不改变前端 bundle、契约、组件注册或浏览器输入；按影响分析复用这组页面证据。
 
 ## 未计入通过
 
 - 直接诊断 `make verify.frontend.industry_agnostic.guard` 仍报告 68 个既有全域行业知识 finding，不属于本批 P0 Renderer 边界的通过证据；更广泛的前端行业知识收敛仍留在后续 FE-RENDERER 批次。
-- 真实浏览器、当前 HEAD 的远端五项门禁和 PR 审查尚未完成。
+- 最终 PR HEAD 的远端五项门禁和 PR 审查尚未完成。
