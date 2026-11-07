@@ -11,6 +11,8 @@
     "scripts/verify/frontend_productization_fixture.py",
     "scripts/verify/local_acceptance_project_overview_browser.mjs",
     "scripts/verify/frontend_readiness_non_draft_resolver.py",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
     "docs/ops/iterations/acceptance-readiness-evidence-20261107-record.md",
     ".agent/"
   ],
