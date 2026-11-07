@@ -400,6 +400,7 @@ load_profile
         self.assertIn("pending_inline_feedback", browser)
         self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
         self.assertIn("J07 confirmation focus did not enter", browser)
+        self.assertIn("当前账号无权访问此内容，请返回已授权的工作区。", browser)
         self.assertNotIn('.financial-workspace[data-workspace-kind=', browser)
         runtime_ids = (
             ROOT / "scripts/verify/frontend_my_work_approval_runtime_ids.py"

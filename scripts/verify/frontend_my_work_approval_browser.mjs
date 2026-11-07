@@ -328,7 +328,7 @@ async function main() {
     const memberText = await page.locator('body').innerText();
     check(!/FE-JOURNEY-(?:PAYMENT|APPROVAL|REJECT)|¥|￥/.test(memberText), 'project member My Work leaked payment facts');
     await page.goto(`${BASE_URL}${route(TARGETS.approval)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.getByRole('heading', { name: '无权访问', exact: true }).waitFor({ timeout: 45000 });
+    await page.getByText('当前账号无权访问此内容，请返回已授权的工作区。', { exact: true }).waitFor({ timeout: 45000 });
     const denied = await page.locator('body').innerText();
     check(!denied.includes('FE-JOURNEY-APPROVAL-001') && !denied.includes('80.00'), 'denial leaked approval facts');
     report.isolation.project_member = 'PASS';
