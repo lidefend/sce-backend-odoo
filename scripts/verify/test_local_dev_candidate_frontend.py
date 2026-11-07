@@ -228,7 +228,12 @@ class CandidateFrontendContractTest(unittest.TestCase):
             MODULE_UNDER_TEST, "_wait_until_stopped"
         ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
             MODULE_UNDER_TEST.down(ROOT)
-        validate.assert_called_once_with(ROOT, running_head, MODULE_UNDER_TEST.PIDFILE)
+        validate.assert_called_once_with(
+            ROOT,
+            running_head,
+            MODULE_UNDER_TEST.PIDFILE,
+            require_proxy_base_path=False,
+        )
         killpg.assert_called_once_with(123, signal.SIGTERM)
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)
@@ -270,7 +275,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
             MODULE_UNDER_TEST, "_wait_until_stopped"
         ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
             MODULE_UNDER_TEST.down(current)
-        validate.assert_called_once_with(identity)
+        validate.assert_called_once_with(identity, require_proxy_base_path=False)
         killpg.assert_called_once_with(123, signal.SIGTERM)
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)
