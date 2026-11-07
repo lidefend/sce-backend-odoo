@@ -1,0 +1,23 @@
+schema_version: 1
+goal:
+  id: ACCEPTANCE-READINESS-EVIDENCE-20261107
+  status: active
+  title: 补齐验收库两条 readiness 浏览器证据
+  formal_product_layer: P2
+  layer_target: smart_construction_acceptance_fixture 夹具 + 前端概览浏览器探针
+  module: smart_construction_acceptance_fixture
+  standard_vs_user_specific: acceptance_fixture
+  objective: >
+    在隔离验收库 sc_frontend_acceptance 补齐两条此前 NOT_VERIFIED 的浏览器证据：
+    (1) 非草稿项目整段隐藏立项完成度与页头 readiness notice；
+    (2) 可读但无提交权的账号打开草稿，页头一条脱敏 forbidden、正文 0 条。
+    夹具最小变更：新增非草稿载体 fe_project_non_draft，给 fixture_role_project_a_member
+    加 group_sc_entry_p11（只读入口，不扩提交能力）。
+  why_here: >
+    证据必须在门禁实际使用的验收载体采集；两条都只改验收夹具数据与浏览器探针，不改产品语义。
+  why_not_elsewhere:
+    - 不触碰 sc_dev_demo 或日常库。
+    - 不把整页无权访问误判为页头 forbidden 成功。
+    - 不降低覆盖要求；无权限/无数据仍 fail-closed。
+  scope: [addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py, scripts/verify/frontend_productization_fixture.py, scripts/verify/local_acceptance_project_overview_browser.mjs, scripts/verify/frontend_readiness_non_draft_resolver.py]
+  exclusions: [产品模块业务语义, sc_dev_demo 与日常库, 生产部署与合并授权]

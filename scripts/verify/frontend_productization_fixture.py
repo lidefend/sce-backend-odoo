@@ -76,6 +76,13 @@ for name in project_by_name:
 project_a = project_by_name["FE Project A"]
 project_b = project_by_name["FE Project B"]
 project_c = project_by_name["FE Project C"]
+non_draft_project = env.ref(
+    "smart_construction_acceptance_fixture.fe_project_non_draft", raise_if_not_found=False
+)
+if not non_draft_project or non_draft_project._name != "project.project":
+    fail("non-draft completion-degree evidence carrier is missing")
+if non_draft_project.lifecycle_state != "in_progress":
+    fail("non-draft carrier lifecycle_state must be in_progress")
 company_a = company_by_name["FE Company A"]
 company_b = company_by_name["FE Company B"]
 if project_a.company_id != company_a or project_b.company_id != company_a or project_c.company_id != company_b:
@@ -94,12 +101,12 @@ config_admin_peer = by_login["fixture_role_config_admin_peer"]
 pm_projects = env["project.project"].sudo().search(
     ["|", ("user_id", "=", pm.id), ("manager_id", "=", pm.id)]
 )
-if set(pm_projects.ids) != {project_a.id, project_b.id}:
+if set(pm_projects.ids) != {project_a.id, project_b.id, non_draft_project.id}:
     fail("PM assigned project scope mismatch: %s" % pm_projects.mapped("name"))
 pm_followed_projects = env["project.project"].sudo().search(
     [("message_partner_ids", "in", [pm.partner_id.id])]
 )
-if set(pm_followed_projects.ids) != {project_a.id, project_b.id}:
+if set(pm_followed_projects.ids) != {project_a.id, project_b.id, non_draft_project.id}:
     fail("PM followed project scope mismatch: %s" % pm_followed_projects.mapped("name"))
 
 pm_env = env(user=pm, context={**env.context, "allowed_company_ids": [company_a.id]})
@@ -281,8 +288,9 @@ counts = {
 }
 expected_counts = {
     "companies": 2,
-    # FE Project A/B/C plus the declared lifecycle carrier project.
-    "projects": 4,
+    # FE Project A/B/C, the declared lifecycle carrier and the non-draft
+    # completion-degree evidence carrier.
+    "projects": 5,
     "contracts": 3,
     "settlements": 4,
     # FE-A-001/002/003, FE-B-001, FE-C-001 and the PFL-035 positive/draft pair.
