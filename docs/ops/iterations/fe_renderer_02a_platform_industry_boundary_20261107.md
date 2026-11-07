@@ -39,10 +39,10 @@
 
 ## L1/L2 结果
 
-`make ci.local.iteration` 实际执行 16 个必需 target，全部退出 0：
+`make ci.local.iteration` 在最终代码提交 `18beb9f30649142e74a2bad5f316f23b08012edf` 上实际执行 17 个必需 target，全部退出 0：
 
-- `ci.local.iteration`：PASS，`executedTargetCount=16`，`notRunTargets=[]`，`unmappedPathCount=0`。
-- Receipt：`.runtime/frontend-dev-validation/executions/20261107T142220Z-1493925-114571924/receipt.json`。
+- `ci.local.iteration`：PASS，`executedTargetCount=17`，`notRunTargets=[]`，`unmappedPathCount=0`。
+- Receipt：`.runtime/frontend-dev-validation/executions/20261107T144120Z-1605569-47976934/receipt.json`。
 - Semantic registry lint：PASS；generator `--check` 对 Python carrier、平台 carrier、行业 manifest 和 domain carrier 四项均一致。
 - Professional component registry：Node 行为断言和 154 个 Python 守卫/负例通过。
 - Professional detail collection：模型、真实 FormSection SSR、付款结算引入契约和 46 个 Python 守卫用例通过。
