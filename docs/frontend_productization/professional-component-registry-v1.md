@@ -7,6 +7,23 @@ Contract V2 `componentKey` may enter the production form renderer. Backend
 `layoutContract.componentRegistry` remains transport metadata; it does not
 declare frontend readiness.
 
+The registry has two explicitly separated sources:
+
+- `semantic_registry.generated.ts` is the platform carrier. It contains only
+  component identities whose semantic category is platform-owned.
+- `industry_renderer_manifest.generated.ts` is the industry extension manifest.
+  It contains only component identities declared with `category: industry`.
+
+Both are generated from `contracts/registry/{semantic,component}.yaml`.
+`FormSection` imports neither carrier nor any industry component. It consumes
+the unified resolver, and `extensions/industryRenderers.ts` registers the
+industry implementation set before application bootstrap and `app.mount`.
+
+The Python `semantic_registry_generated.py` carrier intentionally remains the
+complete declaration projection: it serves backend contract production and
+must still resolve an industry semantic to its declared componentKey. It is not
+the frontend platform runtime registry and is not imported by `FormSection`.
+
 Every registration declares:
 
 - component key and semantic type;
@@ -21,7 +38,7 @@ Every registration declares:
 decoded Contract V2 widget
 → normalized store
 → canonical Presenter
-→ professional registry resolver
+→ platform registration or registered industry extension
 → FormSection renderer
 → data-component-* semantic evidence
 ```
@@ -37,11 +54,21 @@ its specialized professional interaction is not yet authoritative.
 
 ## Renderer contract
 
-`renderer` and every `rendererByFieldType` value are members of one closed
-union, `PROFESSIONAL_COMPONENT_RENDERERS`. A renderer name that no control
-honours no longer compiles, so a registration can only point at a control the
-production renderer actually draws. `FormSectionFieldSchema.componentRenderer`
-is typed by the same union, so the consumer cannot widen it either.
+Platform `renderer` and every `rendererByFieldType` value are members of one
+closed union, `PROFESSIONAL_COMPONENT_RENDERERS`. A platform renderer name that
+no control honours does not compile, so a platform registration can only point
+at a control the production renderer actually draws.
+
+Industry renderer names come from the generated industry manifest and are
+registered dynamically with their Vue component implementation. The registration
+is validated as one batch before either runtime map is mutated. It rejects a
+missing identity, missing component, duplicate componentKey, duplicate semantic,
+duplicate renderer, empty field-type set, and a renderer reserved by the platform
+union. A failed batch leaves no half registration behind.
+
+`FormSectionFieldSchema.componentRenderer` is a string carrying either a
+platform renderer or a manifest-declared industry renderer. The runtime check,
+not the TypeScript union alone, is the authority for the industry branch.
 
 `FORM_SECTION_TYPE_DIRECTED_RENDERER` (`FormSectionField`) is the deliberate
 sentinel for "no professional control owns this field; the section's own
@@ -50,9 +77,11 @@ drifted renderer is no longer indistinguishable from the sentinel once it
 reaches the template. It is also the one union member that needs no branch of
 its own.
 
-`FormSection` fails closed on a renderer it does not know: the field renders a
-visible, non-editable alert carrying `data-field-fail-closed` instead of a
-silently editable input. The check runs before every other renderer branch,
+`FormSection` fails closed when a componentKey is unknown, when a registered
+industry renderer is missing, or when the field's field type, presentation mode,
+render profile or renderer identity does not match its registration. The field
+renders a visible, non-editable alert carrying `data-field-fail-closed` instead
+of a silently editable input. The check runs before every other renderer branch,
 because the branches that select a control from field type alone would
 otherwise absorb a violation the registry should have caught.
 
@@ -230,12 +259,32 @@ form.
 The base field type list is not restated here; the registry imports
 `PROFESSIONAL_BASE_FIELD_TYPES`.
 
+The same guard enforces carrier ownership: the platform carrier must equal the
+declared platform field components, the industry manifest must equal the
+declared industry field components, an identity may not appear in both, the
+industry entry must consume the manifest through the atomic registration API,
+industry registration must precede `bootstrapApp()` and `app.mount()`, and
+`FormSection` may not name or import an industry component.
+
 ## Boundaries
 
 - The registry does not grant data, model, record, action, or mutation rights.
 - It does not infer `task` or `workspace`; it consumes the Presenter identity.
-- It contains no model, action, menu, label, or industry-specific branches.
+- The platform registry contains no model, action, menu, label, or
+  industry-specific branches.
+- Industry implementation choice belongs to the extension registration entry.
+  The platform dispatcher knows only the registered componentKey and renderer
+  identity, never a model, menu, page or industry name.
 - It authorizes existing generic rendering capabilities; Phase 7 owns their
   professional component-family expansion.
 - A registration is not a dynamic component loader. Its renderer name is an
   auditable authorization target for the current production renderer.
+
+## Deliberately not delivered
+
+This boundary batch does not implement `rendererVersion`, a renderer-to-contract
+version range, non-empty runtime capabilities, capability provisioning, or
+industry module install/uninstall lifecycle. `contractVersion` is still the
+Contract V2 component binding supplied by the contract; it is not an
+implementation-version compatibility protocol. Capabilities remain an empty
+placeholder until an owning registry/provider and runtime consumer exist.

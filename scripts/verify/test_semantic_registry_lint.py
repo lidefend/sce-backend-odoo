@@ -48,6 +48,7 @@ class TempRegistryTree:
             lint.carrier.REGISTRY_REL,
             lint.carrier.CARRIER_REL,
             lint.carrier.FRONTEND_REL,
+            lint.carrier.INDUSTRY_FRONTEND_REL,
             lint.carrier.DOMAIN_SEMANTICS_REL,
         ):
             target = self.root / rel
@@ -57,6 +58,7 @@ class TempRegistryTree:
         self.component = self.root / lint.COMPONENT_REL
         self.frontend = self.root / lint.FRONTEND_REGISTRY_REL
         self.generated_frontend = self.root / lint.carrier.FRONTEND_REL
+        self.generated_industry = self.root / lint.carrier.INDUSTRY_FRONTEND_REL
         self.generated_domain = self.root / lint.carrier.DOMAIN_SEMANTICS_REL
         self.domain_contract = self.root / "contracts" / "domain" / "payment-request.yaml"
         self.enum_registry = self.root / lint.ENUM_REGISTRY_REL
@@ -90,6 +92,8 @@ class RealRegistryTest(unittest.TestCase):
         self.assertEqual([], errors)
         self.assertGreater(summary["semantics"], 0)
         self.assertGreater(summary["components"], 0)
+        self.assertGreater(summary["platform_component_keys"], 0)
+        self.assertGreater(summary["industry_component_keys"], 0)
         self.assertEqual(
             summary["semantics"],
             len(lint.load_yaml(REPO_ROOT / lint.SEMANTIC_REL)["semantics"]),
@@ -195,6 +199,50 @@ class NegativeCaseTest(unittest.TestCase):
             "",
         )
         self.assert_detected("component 'sc.value.money' has no frontend registration")
+
+    def test_industry_key_in_platform_carrier_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.generated_frontend,
+            "];\n",
+            "  {componentKey: 'sc.payment.settlement_detail_collection', "
+            "semanticType: 'payment_settlement_detail_collection', "
+            "supportedFieldTypes: ['one2many'], readiness: 'ready', "
+            "renderer: 'PaymentSettlementDetailCollectionControl'},\n];\n",
+        )
+        self.assert_detected("appears in both platform and industry manifests")
+
+    def test_missing_industry_manifest_is_detected(self) -> None:
+        self.tree.generated_industry.unlink()
+        self.assert_detected("industry manifest is missing")
+
+    def test_missing_industry_component_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.generated_industry,
+            "  {componentKey: 'sc.payment.settlement_detail_collection', "
+            "semanticType: 'payment_settlement_detail_collection', "
+            "supportedFieldTypes: ['one2many'], readiness: 'ready', "
+            "renderer: 'PaymentSettlementDetailCollectionControl'},\n",
+            "",
+        )
+        self.assert_detected("industry component 'sc.payment.settlement_detail_collection' is missing")
+
+    def test_platform_component_in_industry_manifest_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.generated_industry,
+            "];\n",
+            "  {componentKey: 'sc.value.money', semanticType: 'money', "
+            "supportedFieldTypes: ['monetary'], readiness: 'ready', "
+            "renderer: 'ProfessionalBusinessValueControl'},\n];\n",
+        )
+        self.assert_detected("component 'sc.value.money' is not declared as industry")
+
+    def test_industry_manifest_drift_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.generated_industry,
+            "readiness: 'ready'",
+            "readiness: 'fail_closed'",
+        )
+        self.assert_detected("industry_renderer_manifest.generated.ts: out of sync")
 
     def test_unclaimed_widget_spelling_is_detected(self) -> None:
         # enum_registry.json is the widget universe the schema permits: a

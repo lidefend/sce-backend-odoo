@@ -132,8 +132,16 @@ def contract_semantic_references(root: Path) -> list[tuple[str, str]]:
 
 
 def generated_registry_keys(root: Path) -> list[str]:
-    """Component keys declared by the generated frontend table."""
+    """Component keys declared by the generated platform frontend table."""
     path = root / carrier.FRONTEND_REL
+    if not path.is_file():
+        return []
+    return GENERATED_ROW_KEY_RE.findall(path.read_text(encoding="utf-8"))
+
+
+def generated_industry_keys(root: Path) -> list[str]:
+    """Component keys declared by the generated industry extension manifest."""
+    path = root / carrier.INDUSTRY_FRONTEND_REL
     if not path.is_file():
         return []
     return GENERATED_ROW_KEY_RE.findall(path.read_text(encoding="utf-8"))
@@ -290,20 +298,47 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         if semantic not in semantics:
             errors.append(f"{source}: references undeclared semantic '{semantic}'")
 
-    generated_keys = sorted(set(generated_registry_keys(root)))
+    platform_generated_keys = sorted(set(generated_registry_keys(root)))
+    industry_generated_keys = sorted(set(generated_industry_keys(root)))
+    generated_keys = sorted(set(platform_generated_keys) | set(industry_generated_keys))
     backend_keys = sorted(key for key, entry in components.items() if entry.get("kind", "field") == "field")
-    if not generated_keys:
+    if not platform_generated_keys:
         errors.append(
             f"{carrier.FRONTEND_REL.as_posix()}: no component row found; the cross-side "
             "vocabulary check cannot be satisfied"
         )
-    else:
-        for key in sorted(set(generated_keys) - set(backend_keys)):
-            errors.append(
-                f"{carrier.FRONTEND_REL.as_posix()}: component '{key}' is not declared in component.yaml"
-            )
-        for key in sorted(set(backend_keys) - set(generated_keys)):
-            errors.append(f"component.yaml: component '{key}' has no frontend registration")
+    if not (root / carrier.INDUSTRY_FRONTEND_REL).is_file():
+        errors.append(
+            f"{carrier.INDUSTRY_FRONTEND_REL.as_posix()}: industry manifest is missing; "
+            "industry component keys cannot be registered by the extension boundary"
+        )
+    for key in sorted(set(generated_keys) - set(backend_keys)):
+        errors.append(
+            f"frontend carriers: component '{key}' is not declared in component.yaml"
+        )
+    for key in sorted(set(backend_keys) - set(generated_keys)):
+        errors.append(f"component.yaml: component '{key}' has no frontend registration")
+    duplicate_carrier_keys = sorted(set(platform_generated_keys) & set(industry_generated_keys))
+    for key in duplicate_carrier_keys:
+        errors.append(f"frontend carriers: component '{key}' appears in both platform and industry manifests")
+    industry_expectations = {
+        key for key, entry in components.items()
+        if entry.get("kind", "field") == "field"
+        and str((semantics.get(str(entry.get("semantic") or "")) or {}).get("category") or "") == "industry"
+    }
+    platform_expectations = set(backend_keys) - industry_expectations
+    for key in sorted(industry_expectations - set(industry_generated_keys)):
+        errors.append(f"{carrier.INDUSTRY_FRONTEND_REL.as_posix()}: industry component '{key}' is missing")
+    for key in sorted(set(industry_generated_keys) - industry_expectations):
+        errors.append(
+            f"{carrier.INDUSTRY_FRONTEND_REL.as_posix()}: component '{key}' is not declared as industry"
+        )
+    for key in sorted(platform_expectations - set(platform_generated_keys)):
+        errors.append(f"{carrier.FRONTEND_REL.as_posix()}: platform component '{key}' is missing")
+    for key in sorted(set(platform_generated_keys) - platform_expectations):
+        errors.append(
+            f"{carrier.FRONTEND_REL.as_posix()}: component '{key}' is not declared as platform"
+        )
 
     # The backend direction of the same defect: a module that names a component
     # key literally is holding half the vocabulary in code, so a key the
@@ -349,6 +384,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
     for rel, render_expected in (
         (carrier.CARRIER_REL, carrier.render_repository_carrier),
         (carrier.FRONTEND_REL, carrier.render_frontend_repository),
+        (carrier.INDUSTRY_FRONTEND_REL, carrier.render_industry_repository),
         (carrier.DOMAIN_SEMANTICS_REL, carrier.render_domain_field_semantics),
     ):
         carrier_path = root / rel
@@ -378,6 +414,8 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         "semantics_with_derivation_rule": len(declared_rule_semantics),
         "semantics_declared_only": sorted(set(semantics) - declared_rule_semantics),
         "frontend_component_keys": len(generated_keys),
+        "platform_component_keys": len(platform_generated_keys),
+        "industry_component_keys": len(industry_generated_keys),
         "runtime_carrier": carrier.CARRIER_REL.as_posix(),
         "backend_component_key_literals": len(backend_literals),
     }

@@ -1,10 +1,12 @@
 import { createReadStream, statSync } from 'node:fs'
 import { createServer, request as httpRequest } from 'node:http'
 import { extname, join, normalize } from 'node:path'
+import { normalizeProxyBasePath, proxyResponseHeaders, upstreamRequestPath } from './static_proxy_target.mjs'
 
 const root = process.env.STATIC_ROOT
 const port = Number(process.env.STATIC_PORT || 5175)
 const proxy = new URL(process.env.API_PROXY_TARGET || 'http://127.0.0.1:18082')
+const proxyBasePath = normalizeProxyBasePath(process.env.API_PROXY_BASE_PATH || '')
 if (!root) throw new Error('STATIC_ROOT is required')
 
 // When this preview is the isolated acceptance entry, stamp the namespace the
@@ -41,8 +43,8 @@ createServer((req, res) => {
     || /^\/t\/[^/]+\/(api|web)(\/|$)/.test(requestPath)
   )
   if (isBackendRoute) {
-    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: req.url, headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
-      res.writeHead(up.statusCode || 502, up.headers)
+    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: upstreamRequestPath(req.url, proxyBasePath), headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
+      res.writeHead(up.statusCode || 502, proxyResponseHeaders(up.headers, proxyBasePath))
       up.pipe(res)
     })
     upstream.on('error', () => { res.writeHead(502, { 'content-type': 'application/json' }); res.end('{"error":"upstream unavailable"}') })

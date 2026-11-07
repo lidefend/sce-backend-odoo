@@ -2,6 +2,8 @@
 import re
 from pathlib import Path, PurePosixPath
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
 
 # The type-directed sentinel is the one renderer name the section honours
@@ -23,6 +25,11 @@ TYPE_DIRECTED_RENDERER = "FormSectionField"
 # rows and must not carry a second hand-written list, so the renderer authority is
 # read from the generated table and the registry is required to consume it.
 GENERATED_REGISTRY_REL = "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
+INDUSTRY_MANIFEST_REL = "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts"
+INDUSTRY_EXTENSION_REL = "frontend/apps/web/src/extensions/industryRenderers.ts"
+MAIN_REL = "frontend/apps/web/src/main.ts"
+SEMANTIC_DECLARATION_REL = "contracts/registry/semantic.yaml"
+COMPONENT_DECLARATION_REL = "contracts/registry/component.yaml"
 GENERATED_REGISTRY_SOURCE = "SEMANTIC_REGISTRY_ROWS"
 # Anchored on the row's closing brace: a row whose renderer is not a bare
 # literal (for example laundered through a cast) must fail to parse rather than
@@ -1626,6 +1633,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     failures: list[str] = []
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     generated_registry = read_text(GENERATED_REGISTRY_REL)
+    industry_manifest = read_text(INDUSTRY_MANIFEST_REL)
+    industry_extension = read_text(INDUSTRY_EXTENSION_REL)
+    main = read_text(MAIN_REL)
     presenter = read_text("frontend/apps/web/src/app/presentation/contractFormPresenter.ts")
     renderer = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     canonical_renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
@@ -1791,11 +1801,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
                 f"{len(rows)} are readable; a row that cannot be read would silently lose its "
                 "renderer check"
             )
-        for _component_key, renderer in rows:
-            if renderer not in renderer_names:
-                failures.append(f"the closed renderer union does not name the registered renderer {renderer}")
-            elif renderer != TYPE_DIRECTED_RENDERER and renderer not in dispatched:
-                failures.append(f"no renderer branch dispatches the registered renderer {renderer}")
+        for _component_key, registered_renderer in rows:
+            if registered_renderer not in renderer_names:
+                failures.append(f"the closed renderer union does not name the registered renderer {registered_renderer}")
+            elif registered_renderer != TYPE_DIRECTED_RENDERER and registered_renderer not in dispatched:
+                failures.append(f"no renderer branch dispatches the registered renderer {registered_renderer}")
         if GENERATED_REGISTRY_SOURCE not in registry_code:
             failures.append(
                 "registry does not build its registrations from the generated semantic registry"
@@ -1815,6 +1825,71 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
                     failures.append(f"the closed renderer union does not name the mapped renderer {name}")
         if "as unknown as" in registry_code:
             failures.append("registry launders a renderer through an unknown-typed cast")
+    for marker in (
+        "registerIndustryRendererExtensions",
+        "INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY",
+        "INDUSTRY_REGISTRATION_DUPLICATE_SEMANTIC",
+        "INDUSTRY_RENDERER_DUPLICATE",
+        "INDUSTRY_RENDERER_RESERVED_PLATFORM_RENDERER",
+        "resolveIndustryRendererForField",
+        "isIndustryComponentKey",
+        "isRegisteredComponentKey",
+    ):
+        if marker not in registry:
+            failures.append(f"registry missing industry boundary invariant {marker}")
+    semantic_declaration = yaml.safe_load(read_text(SEMANTIC_DECLARATION_REL)) or {}
+    component_declaration = yaml.safe_load(read_text(COMPONENT_DECLARATION_REL)) or {}
+    semantics = semantic_declaration.get("semantics") if isinstance(semantic_declaration, dict) else {}
+    components = component_declaration.get("components") if isinstance(component_declaration, dict) else {}
+    semantics = semantics if isinstance(semantics, dict) else {}
+    components = components if isinstance(components, dict) else {}
+    industry_component_keys = {
+        key for key, entry in components.items()
+        if isinstance(entry, dict) and entry.get("kind", "field") == "field"
+        and str((semantics.get(str(entry.get("semantic") or "")) or {}).get("category") or "") == "industry"
+    }
+    platform_component_keys = {
+        key for key, entry in components.items()
+        if isinstance(entry, dict) and entry.get("kind", "field") == "field"
+    } - industry_component_keys
+    platform_rows = generated_registry_rows(generated_registry)
+    industry_rows = generated_registry_rows(industry_manifest)
+    platform_row_keys = {component_key for component_key, _renderer in platform_rows}
+    industry_row_keys = {component_key for component_key, _renderer in industry_rows}
+    if platform_row_keys != platform_component_keys:
+        failures.append(
+            "platform semantic carrier does not contain exactly the declared platform component keys"
+        )
+    if industry_row_keys != industry_component_keys:
+        failures.append(
+            "industry renderer manifest does not contain exactly the declared industry component keys"
+        )
+    if platform_row_keys & industry_row_keys:
+        failures.append("platform and industry carriers contain overlapping component keys")
+    if "INDUSTRY_RENDERER_ROWS" not in industry_extension:
+        failures.append("industry extension entry does not consume the generated industry manifest")
+    if "registerIndustryRendererExtensions(" not in industry_extension:
+        failures.append("industry extension entry does not use the atomic registration API")
+    registration_call = main.find("registerIndustryRenderers();")
+    mount_call = main.find("app.mount(")
+    bootstrap_call = main.find("bootstrapApp();")
+    if registration_call < 0:
+        failures.append("main does not register industry renderers")
+    elif mount_call < 0 or registration_call > mount_call:
+        failures.append("industry renderers are not registered before app.mount")
+    elif bootstrap_call >= 0 and registration_call > bootstrap_call:
+        failures.append("industry renderers are not registered before application bootstrap")
+    for _component_key, industry_renderer in industry_rows:
+        if industry_renderer in renderer:
+            failures.append(
+                f"FormSection directly references an industry renderer: {industry_renderer}"
+            )
+    if "resolveIndustryRendererForField(" not in renderer:
+        failures.append("FormSection does not dispatch industry fields through the unified resolver")
+    if ':is="industryRendererFor(field)"' not in renderer:
+        failures.append("FormSection does not bind the industry resolver result to a render element")
+    if 'v-else-if="usesIndustryRenderer(field)"' not in renderer:
+        failures.append("FormSection does not gate the industry render element on a registered identity")
     if search_in_tag(
         re.escape(FAIL_CLOSED_MARKER), renderer_template_code, renderer_template_tags, renderer_template_spans
     ) is None:

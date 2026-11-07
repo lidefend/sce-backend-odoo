@@ -244,8 +244,9 @@
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalRelationFieldControl>
-              <PaymentSettlementDetailCollectionControl
-                v-else-if="usesPaymentSettlementDetailCollection(field) && relationAdapter"
+              <component
+                :is="industryRendererFor(field)"
+                v-else-if="usesIndustryRenderer(field)"
                 :field="field"
                 :adapter="relationAdapter"
                 @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })"
@@ -442,7 +443,6 @@ import ProfessionalBusinessValueControl from '../professional-fields/Professiona
 import ProfessionalDetailCollectionControl from '../professional-fields/ProfessionalDetailCollectionControl.vue';
 import ProfessionalMany2oneFieldControl from '../professional-fields/ProfessionalMany2oneFieldControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
-import PaymentSettlementDetailCollectionControl from '../professional-fields/PaymentSettlementDetailCollectionControl.vue';
 import { isProfessionalBaseFieldCandidate, resolveReadonlyEmptyText } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
 import {
@@ -451,7 +451,6 @@ import {
 } from '../professional-fields/professionalDetailCollectionModel';
 import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand, requireDeclaredLayoutColumns } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
-import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -475,7 +474,12 @@ import {
   ScTaskActionResolverKey,
   type ScTaskActionDescriptor,
 } from './taskActionResolver';
-import { PROFESSIONAL_COMPONENT_RENDERERS } from '../../app/presentation/professionalComponentRegistry';
+import {
+  isIndustryComponentKey,
+  isRegisteredComponentKey,
+  PROFESSIONAL_COMPONENT_RENDERERS,
+  resolveIndustryRendererForField,
+} from '../../app/presentation/professionalComponentRegistry';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -567,7 +571,7 @@ function detailFieldCapability(field: FormSectionFieldSchema) {
     type: field.type,
     dedicatedControl: Boolean(field.favoriteToggle)
       || declaresUnknownComponentRenderer(field)
-      || usesPaymentSettlementDetailCollection(field)
+      || usesIndustryRenderer(field)
       || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl', 'ProfessionalBusinessValueControl'].includes(field.componentRenderer)),
   };
 }
@@ -705,7 +709,10 @@ const knownComponentRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONA
 
 function declaresUnknownComponentRenderer(field: FormSectionFieldSchema) {
   const renderer = field.componentRenderer;
-  return Boolean(renderer) && !knownComponentRenderers.has(renderer);
+  const componentKey = field.componentKey || '';
+  if (isIndustryComponentKey(componentKey)) return !industryRendererFor(field);
+  if (componentKey && !isRegisteredComponentKey(componentKey)) return true;
+  return Boolean(renderer) && !knownComponentRenderers.has(renderer) && !industryRendererFor(field);
 }
 
 function failClosedRendererText(field: FormSectionFieldSchema) {
@@ -758,13 +765,23 @@ function usesProfessionalOne2many(field: FormSectionFieldSchema) {
     && isProfessionalDetailCollectionField(field);
 }
 
-function usesPaymentSettlementDetailCollection(field: FormSectionFieldSchema) {
-  return isPaymentSettlementDetailCollectionField(field);
+function industryRendererFor(field: FormSectionFieldSchema) {
+  return resolveIndustryRendererForField({
+    componentKey: field.componentKey,
+    componentRenderer: field.componentRenderer,
+    fieldType: field.type,
+    presentationMode: field.presentationMode,
+    renderProfile: field.renderProfile,
+  });
+}
+
+function usesIndustryRenderer(field: FormSectionFieldSchema) {
+  return isIndustryComponentKey(field.componentKey) && Boolean(industryRendererFor(field));
 }
 
 function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {
   if (!props.relationAdapter) return false;
-  return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);
+  return usesProfessionalOne2many(field) || usesIndustryRenderer(field);
 }
 
 function attachmentControlOwnsVisibleTitle(field: FormSectionFieldSchema) {
@@ -773,7 +790,7 @@ function attachmentControlOwnsVisibleTitle(field: FormSectionFieldSchema) {
 }
 
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
-  if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field) || isPaymentSettlementDetailCollectionField(field)) return false;
+  if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field) || isIndustryComponentKey(field.componentKey)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
 }
 

@@ -120,6 +120,11 @@ RULES = (
         "verify.ci.workflow.contract",
     )),
     Rule((
+        "make/contract.mk",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
         "make/codex.mk",
     ), (
         "verify.ci.path_ownership.unit",
@@ -149,6 +154,19 @@ RULES = (
         "scripts/verify/test_frontend_professional_component_registry_guard.py",
     ), (
         "verify.frontend.professional_component_registry.unit",
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+    ), (
+        "verify.frontend.professional_detail_collection.unit",
+    )),
+    Rule((
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "scripts/verify/test_node_component_registry.py",
+    ), (
         "verify.semantic.registry.lint",
     )),
     # FormSection consumes the canonical field presentation contract. The broad
@@ -196,6 +214,23 @@ RULES = (
           "scripts/verify/test_local_environment_readiness.py"), (
         "verify.local.env.readiness.unit",
         "audit.verification.lane_coverage.check",
+    )),
+    Rule((
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/release/release_static_server.mjs",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/test_local_dev_candidate_frontend.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "scripts/verify/static_proxy_target_test.mjs",
+    ), (
+        "verify.local.dev.static_proxy_target.unit",
+    )),
+    Rule((
+        "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
+        "scripts/verify/local_dev_payment_settlement_component_journey.sh",
+        "scripts/verify/test_local_development_lifecycle.py",
+    ), (
+        "verify.local.dev.payment_settlement_journey.unit",
     )),
     Rule((
         "/views/LoginView.vue",

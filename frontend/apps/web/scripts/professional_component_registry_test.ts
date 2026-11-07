@@ -1,11 +1,17 @@
 import { strict as assert } from 'node:assert';
 import {
+  componentKeyForSemantic,
   FORM_SECTION_TYPE_DIRECTED_RENDERER,
+  isIndustryComponentKey,
+  isRegisteredComponentKey,
   PROFESSIONAL_COMPONENT_RENDERERS,
   professionalComponentRegistrations,
+  registerIndustryRendererExtensions,
+  resolveIndustryRendererForField,
   resolveContractProfessionalComponent,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
+  resolveSemanticRegistration,
   type ProfessionalComponentRegistration,
   type ProfessionalComponentRenderer,
 } from '../src/app/presentation/professionalComponentRegistry';
@@ -50,9 +56,126 @@ assert.equal(resolveProfessionalComponent({
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.table', fieldType: 'one2many', presentationMode: 'workspace', renderProfile: 'edit',
 }).renderer, 'ProfessionalDetailCollectionControl');
+const paymentRenderer = 'PaymentSettlementDetailCollectionControl';
+const paymentRow = {
+  componentKey: 'sc.payment.settlement_detail_collection',
+  semanticType: 'payment_settlement_detail_collection',
+  supportedFieldTypes: ['one2many'],
+  readiness: 'ready',
+  renderer: paymentRenderer,
+} as const;
+const dummyIndustryComponent = {} as never;
+assert.throws(() => resolveProfessionalComponent({
+  componentKey: paymentRow.componentKey, fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
+}), /PROFESSIONAL_COMPONENT_UNREGISTERED/);
+assert.equal(isRegisteredComponentKey(paymentRow.componentKey), false);
+assert.equal(isIndustryComponentKey(paymentRow.componentKey), false);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+registerIndustryRendererExtensions([{ row: paymentRow, component: dummyIndustryComponent }]);
+assert.equal(isRegisteredComponentKey(paymentRow.componentKey), true);
+assert.equal(isIndustryComponentKey(paymentRow.componentKey), true);
+assert.equal(resolveSemanticRegistration(paymentRow.semanticType)?.componentKey, paymentRow.componentKey);
+assert.equal(componentKeyForSemantic(paymentRow.semanticType), paymentRow.componentKey);
 assert.equal(resolveProfessionalComponent({
-  componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
-}).renderer, 'PaymentSettlementDetailCollectionControl');
+  componentKey: paymentRow.componentKey, fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
+}).renderer, paymentRenderer);
+const industryContract = resolveContractProfessionalComponent({
+  componentKey: paymentRow.componentKey,
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+  clientType: 'web_pc',
+  contractRegistryEntry: { version: '1.0.0' },
+});
+assert.equal(industryContract.renderer, paymentRenderer);
+assert.equal(industryContract.contractVersion, '1.0.0');
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), dummyIndustryComponent);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: 'OtherRenderer',
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'many2one',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  presentationMode: 'unsupported' as never,
+  renderProfile: 'readonly',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'unsupported' as never,
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: 'sc.payment.other',
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+
+const stagedRow = {
+  componentKey: 'sc.fixture.atomic_first',
+  semanticType: 'fixture_atomic_first',
+  supportedFieldTypes: ['char'],
+  readiness: 'ready',
+  renderer: 'FixtureAtomicFirstRenderer',
+} as const;
+assert.throws(() => registerIndustryRendererExtensions([
+  { row: stagedRow, component: dummyIndustryComponent },
+  {
+    row: { ...stagedRow, componentKey: 'sc.fixture.atomic_second', semanticType: 'fixture_atomic_second', renderer: 'FixtureAtomicSecondRenderer' },
+    component: null as never,
+  },
+]), /INDUSTRY_RENDERER_COMPONENT_MISSING/);
+assert.equal(isRegisteredComponentKey(stagedRow.componentKey), false, 'a rejected batch must not leave a half registration');
+
+assert.throws(() => registerIndustryRendererExtensions([{ row: paymentRow, component: dummyIndustryComponent }]),
+  /INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY/);
+assert.throws(() => registerIndustryRendererExtensions([{
+  row: { ...paymentRow, componentKey: 'sc.fixture.duplicate_semantic', renderer: 'FixtureDuplicateSemanticRenderer' },
+  component: dummyIndustryComponent,
+}]), /INDUSTRY_REGISTRATION_DUPLICATE_SEMANTIC/);
+assert.throws(() => registerIndustryRendererExtensions([{
+  row: { ...paymentRow, componentKey: 'sc.fixture.duplicate_renderer', semanticType: 'fixture_duplicate_renderer' },
+  component: dummyIndustryComponent,
+}]), /INDUSTRY_RENDERER_DUPLICATE/);
+assert.throws(() => registerIndustryRendererExtensions([{
+  row: { ...paymentRow, componentKey: 'sc.fixture.reserved_renderer', semanticType: 'fixture_reserved_renderer', renderer: 'ProfessionalBaseFieldControl' },
+  component: dummyIndustryComponent,
+}]), /INDUSTRY_RENDERER_RESERVED_PLATFORM_RENDERER/);
+assert.throws(() => registerIndustryRendererExtensions([{
+  row: { ...paymentRow, componentKey: 'sc.fixture.no_field_types', semanticType: 'fixture_no_field_types', renderer: 'FixtureNoFieldTypesRenderer', supportedFieldTypes: [] },
+  component: dummyIndustryComponent,
+}]), /INDUSTRY_REGISTRATION_FIELD_TYPES_MISSING/);
+assert.throws(() => registerIndustryRendererExtensions([{
+  row: { ...paymentRow, componentKey: '', semanticType: 'fixture_missing_key', renderer: 'FixtureMissingKeyRenderer' },
+  component: dummyIndustryComponent,
+}]), /INDUSTRY_REGISTRATION_IDENTITY_MISSING/);
 const optionalDetails = optionalDetailCollectionConfig({
   key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
   componentConfig: {
@@ -211,7 +334,7 @@ for (const componentKey of [
   );
 }
 
-assert.equal(professionalComponentRegistrations.length, 26);
+assert.equal(professionalComponentRegistrations.length, 25);
 const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
 const everyFieldType = [
   'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',
@@ -253,4 +376,4 @@ assert.equal(
   'the default display registration keeps routing to the type-directed control',
 );
 sweepCases += 2;
-console.log(`[professional_component_registry_test] PASS cases=${43 + sweepCases}`);
+console.log(`[professional_component_registry_test] PASS cases>=${68 + sweepCases}`);

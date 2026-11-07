@@ -1,0 +1,87 @@
+# FE-RENDERER-02A：平台与行业 Renderer 边界收敛
+
+## 批次边界
+
+- Formal Product Layer：P0 平台内核产品。
+- Layer Target：前端契约呈现、FormSection 字段调度与行业 Renderer 扩展注册。
+- Module：Contract V2 presentation、semantic/component registry、industry renderer manifest。
+- Standard vs User-Specific：平台工程标准，不属于客户或单一行业业务规则。
+- Baseline：`1fc108f6c166124ae226bc982da90f281e65f8a4`。
+- 独立候选参考：PR #834 `ac7a858fd394563347baa805055cf546727a91f2`，只读，不修改、不 rebase、不 cherry-pick。
+
+## 目标
+
+移除正式主线中平台对付款结算行业组件的直接依赖。平台 carrier 只保留 platform 类别，
+行业 componentKey 由独立 manifest 注册，FormSection 只通过统一 Resolver 消费。
+
+## 明确排除
+
+不实现 `rendererVersion`、`contractVersion` 协议扩展或真实 capabilities；不新增行业 Renderer；
+不修改 Contract V2 Schema、金额/日期/状态表达或 `@sc/ui`；不修改 PR #834；不部署、不合并。
+
+## 结果索引
+
+- L1/L2：`make ci.local.iteration`，结果以当前 run 的逐 target 回执为准。
+- 注册表与生成器：`make verify.semantic.registry.lint`。
+- Renderer 行为：`make verify.frontend.professional_component_registry.unit`。
+- 详情集合回归：`make verify.frontend.professional_detail_collection.unit`。
+- Lint / strict typecheck：由 FE-LOOP-01 增量执行入口自动纳入。
+- L3/L4：在全部 L1/L2 通过后执行受管真实浏览器验收与独立 PR 门禁；结果另行回填。
+
+## 实现结论
+
+- 前端平台 carrier `semantic_registry.generated.ts` 只包含 platform 类别，现有 25 个平台字段组件。
+- 行业 Renderer 由独立 `industry_renderer_manifest.generated.ts` 承载，当前 1 个行业组件。
+- `FormSection` 已移除 `PaymentSettlementDetailCollectionControl` 的直接 import 和固定分支，改为统一 Resolver 的 `componentKey + fieldType + renderer identity` 解析。
+- 行业扩展通过 `registerIndustryRendererExtensions` 整批校验后原子提交；重复 key/semantic/renderer、缺失 component、空字段类型、平台保留 renderer 均拒绝。
+- `main.ts` 在 `bootstrapApp()` 和 `app.mount()` 之前调用 `registerIndustryRenderers()`。
+- `rendererVersion`、真实 capabilities 与安装/卸载生命周期仍未实现，未把空能力数组宣传为已交付能力。
+
+## L1/L2 结果
+
+`make ci.local.iteration` 在最终代码提交 `18beb9f30649142e74a2bad5f316f23b08012edf` 上实际执行 17 个必需 target，全部退出 0：
+
+- `ci.local.iteration`：PASS，`executedTargetCount=17`，`notRunTargets=[]`，`unmappedPathCount=0`。
+- Receipt：`.runtime/frontend-dev-validation/executions/20261107T144120Z-1605569-47976934/receipt.json`。
+- Semantic registry lint：PASS；generator `--check` 对 Python carrier、平台 carrier、行业 manifest 和 domain carrier 四项均一致。
+- Professional component registry：Node 行为断言和 154 个 Python 守卫/负例通过。
+- Professional detail collection：模型、真实 FormSection SSR、付款结算引入契约和 46 个 Python 守卫用例通过。
+- Canonical form presenter、Contract V2 occurrence authority、primitive adapter、page pattern、product pattern、style system、lint、strict typecheck、agent ledger/resume、增量规划器均通过。
+- Component driver inventory 已刷新；required=33、missing=0、raw=0。
+- 候选静态前端代理新增受管命名空间基路径与 session cookie 回写，`verify.local.dev.static_proxy_target.unit` 通过 13 个纯代理用例。
+- Lint 仅有 4 个既有 warning，无 error；strict typecheck 无诊断。
+
+## 真实浏览器诊断
+
+第一次付款结算浏览器旅程在登录后导航超时，未进入产品断言。只读诊断确认候选前端请求根 `/api`，
+而 `local.dev` 入口要求命名空间 `/t/demo/api`，nginx 返回 `400 NS_NAMESPACE_REQUIRED`。
+该失败归类为 P4 候选浏览器载体缺陷；产品代码未修改，fixture 已由受管脚本恢复。
+
+已修复为：`API_PROXY_BASE_PATH=/t/demo` 只影响候选静态代理路径，默认空值保持原有行为；
+上游 `/t/demo/` session cookie 路径在候选根入口回写为 `/`。
+
+第二次运行已进入产品面并发现测试工具仍等待旧按钮名 `保存修改`，当前页面使用 `保存草稿`；
+同时 `waitForResponse` 在点击完成前可能先行拒绝。修复为接受两个既有标签，并以 `Promise.all`
+把点击和响应绑定为同一个失败边界。
+
+## L3 真实浏览器结果
+
+源码候选：`7c59da0f450b0a67b65978a01ff3d6fd5decea46`。
+
+- 受管环境：`sc-local-dev` / `sc_dev_demo`，后端与候选前端均绑定同一 40 位 HEAD。
+- `verify.local.dev.payment_request.settlement_component.journey`：PASS，记录 `1148`。
+- 引入阶段：0 行 -> 1 行，权威重载金额 `2400` 与引入总额 `2400` 一致，声明写入 1 次。
+- 删除阶段：1 行 -> 0 行，取消保留行、确认移除、撤销恢复和最终保存均通过；权威重载后金额仍为 `2400`，声明写入 1 次。
+- 两个阶段浏览器 console/page error 均为空；候选业务指纹变化仅来自声明的 introduce/write，最终 fixture reset 恢复基线。
+- 证据：
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-summary.json`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/introduce-after-authoritative-reload.png`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/remove-summary.json`
+  - `artifacts/playwright/local-dev-payment-settlement-component-journey/remove-after-authoritative-reload.png`
+
+后续仅文档/运行登记变更不改变前端 bundle、契约、组件注册或浏览器输入；按影响分析复用这组页面证据。
+
+## 未计入通过
+
+- 直接诊断 `make verify.frontend.industry_agnostic.guard` 仍报告 68 个既有全域行业知识 finding，不属于本批 P0 Renderer 边界的通过证据；更广泛的前端行业知识收敛仍留在后续 FE-RENDERER 批次。
+- 最终 PR HEAD 的远端五项门禁和 PR 审查尚未完成。

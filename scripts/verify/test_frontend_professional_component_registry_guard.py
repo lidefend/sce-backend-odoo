@@ -2240,6 +2240,122 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                 source = self._with_ancestor_attribute(attribute)
                 self.assertEqual(validate(source), [])
 
+    def test_industry_key_in_platform_carrier_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("semantic_registry.generated.ts"):
+                return value.replace(
+                    "];\n",
+                    "  {componentKey: 'sc.payment.settlement_detail_collection', "
+                    "semanticType: 'payment_settlement_detail_collection', "
+                    "supportedFieldTypes: ['one2many'], readiness: 'ready', "
+                    "renderer: 'PaymentSettlementDetailCollectionControl'},\n];\n",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "platform semantic carrier does not contain exactly" in failure
+            for failure in validate(source)
+        ))
+
+    def test_platform_key_in_industry_manifest_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("industry_renderer_manifest.generated.ts"):
+                return value.replace(
+                    "];\n",
+                    "  {componentKey: 'sc.value.money', semanticType: 'money', "
+                    "supportedFieldTypes: ['monetary'], readiness: 'ready', "
+                    "renderer: 'ProfessionalBusinessValueControl'},\n];\n",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "industry renderer manifest does not contain exactly" in failure
+            for failure in validate(source)
+        ))
+
+    def test_form_section_direct_industry_reference_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace(
+                    "const slots = useSlots();",
+                    "import PaymentSettlementDetailCollectionControl from "
+                    "'../professional-fields/PaymentSettlementDetailCollectionControl.vue';\n"
+                    "const slots = useSlots();",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "FormSection directly references an industry renderer" in failure
+            for failure in validate(source)
+        ))
+
+    def test_industry_registration_after_mount_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("main.ts"):
+                return value.replace("registerIndustryRenderers();\n", "", 1) + (
+                    "\nregisterIndustryRenderers();\n"
+                )
+            return value
+
+        self.assertTrue(any(
+            "registered before app.mount" in failure
+            for failure in validate(source)
+        ))
+
+    def test_industry_render_element_without_registered_gate_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace(
+                    'v-else-if="usesIndustryRenderer(field)"',
+                    'v-else-if="true"',
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "gate the industry render element" in failure
+            for failure in validate(source)
+        ))
+
+    def test_industry_entry_without_atomic_registration_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("industryRenderers.ts"):
+                return value.replace(
+                    "registerIndustryRendererExtensions(",
+                    "registerIndustryRenderer(",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any(
+            "atomic registration API" in failure
+            for failure in validate(source)
+        ))
+
+    def test_registry_missing_industry_duplicate_guard_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalComponentRegistry.ts"):
+                return value.replace(
+                    "INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY",
+                    "INDUSTRY_REGISTRATION_COMPONENT_KEY",
+                )
+            return value
+
+        self.assertTrue(any(
+            "INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY" in failure
+            for failure in validate(source)
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()

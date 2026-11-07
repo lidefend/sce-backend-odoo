@@ -23,6 +23,7 @@ from local_dev_frontend_quick import LocalDevAuthorityError, _isolated_environme
 
 PORT = 5176
 API_PROXY = "http://127.0.0.1:18081"
+API_PROXY_BASE_PATH = "/t/demo"
 CONFIRMATION = "SERVE_FROZEN_LOCAL_DEV_CANDIDATE"
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -77,7 +78,13 @@ def _read_process_identity(pidfile: Path = PIDFILE) -> dict[str, object]:
     return {"pid": pid, "head": head, "root": root}
 
 
-def _validate_process(root: Path, head: str, pidfile: Path = PIDFILE) -> int:
+def _validate_process(
+    root: Path,
+    head: str,
+    pidfile: Path = PIDFILE,
+    *,
+    require_proxy_base_path: bool = True,
+) -> int:
     identity = _read_process_identity(pidfile)
     pid = int(identity["pid"])
     if Path(str(identity["root"])).resolve() != root.resolve() or identity["head"] != head:
@@ -100,12 +107,19 @@ def _validate_process(root: Path, head: str, pidfile: Path = PIDFILE) -> int:
         f"API_PROXY_TARGET={API_PROXY}".encode(),
         f"CANDIDATE_GIT_HEAD={head}".encode(),
     }
+    if require_proxy_base_path:
+        expected_environment.add(f"API_PROXY_BASE_PATH={API_PROXY_BASE_PATH}".encode())
     if not expected_environment.issubset(set(environment)):
         raise CandidateFrontendError("candidate process environment mismatch")
     return pid
 
 
-def _validate_orphaned_process(identity: dict[str, object], process_root: Path | None = None) -> int:
+def _validate_orphaned_process(
+    identity: dict[str, object],
+    process_root: Path | None = None,
+    *,
+    require_proxy_base_path: bool = True,
+) -> int:
     """Validate a candidate carrier whose recorded worktree was already removed."""
     pid = int(identity["pid"])
     head = str(identity["head"])
@@ -131,6 +145,8 @@ def _validate_orphaned_process(identity: dict[str, object], process_root: Path |
         f"API_PROXY_TARGET={API_PROXY}".encode(),
         f"CANDIDATE_GIT_HEAD={head}".encode(),
     }
+    if require_proxy_base_path:
+        expected_environment.add(f"API_PROXY_BASE_PATH={API_PROXY_BASE_PATH}".encode())
     if not expected_environment.issubset(environment):
         raise CandidateFrontendError("orphaned candidate process environment mismatch")
     return pid
@@ -198,7 +214,13 @@ def up(root: Path = ROOT) -> None:
                 return
             raise CandidateFrontendError("candidate pid exists but service is unhealthy; use governed down first")
     process_env = _isolated_environment()
-    process_env.update(STATIC_ROOT=str(dist), STATIC_PORT=str(PORT), API_PROXY_TARGET=API_PROXY, CANDIDATE_GIT_HEAD=head)
+    process_env.update(
+        STATIC_ROOT=str(dist),
+        STATIC_PORT=str(PORT),
+        API_PROXY_TARGET=API_PROXY,
+        API_PROXY_BASE_PATH=API_PROXY_BASE_PATH,
+        CANDIDATE_GIT_HEAD=head,
+    )
     process = subprocess.Popen(
         ["node", str(root / "scripts/release/release_static_server.mjs")], cwd=root,
         env=process_env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -229,9 +251,9 @@ def down(root: Path = ROOT) -> None:
         running_head = str(running_identity["head"])
         running_root = Path(str(running_identity["root"])).resolve()
         pid = (
-            _validate_process(root, running_head, pidfile)
+            _validate_process(root, running_head, pidfile, require_proxy_base_path=False)
             if running_root == root.resolve()
-            else _validate_orphaned_process(running_identity)
+            else _validate_orphaned_process(running_identity, require_proxy_base_path=False)
         )
     except ProcessLookupError:
         pidfile.unlink(missing_ok=True)

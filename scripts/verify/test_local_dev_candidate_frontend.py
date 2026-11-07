@@ -176,6 +176,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("resolve_authority_env(root)", source)
         self.assertIn('"FRONTEND_DIST_DIR=frontend/apps/web/dist-dev"', source)
         self.assertIn('API_PROXY = "http://127.0.0.1:18081"', source)
+        self.assertIn('API_PROXY_BASE_PATH = "/t/demo"', source)
         self.assertNotIn("docker compose", source)
 
     def test_pidfile_rejects_symlink_invalid_pid_and_foreign_owner(self):
@@ -227,7 +228,12 @@ class CandidateFrontendContractTest(unittest.TestCase):
             MODULE_UNDER_TEST, "_wait_until_stopped"
         ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
             MODULE_UNDER_TEST.down(ROOT)
-        validate.assert_called_once_with(ROOT, running_head, MODULE_UNDER_TEST.PIDFILE)
+        validate.assert_called_once_with(
+            ROOT,
+            running_head,
+            MODULE_UNDER_TEST.PIDFILE,
+            require_proxy_base_path=False,
+        )
         killpg.assert_called_once_with(123, signal.SIGTERM)
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)
@@ -246,6 +252,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
                 f"STATIC_ROOT={recorded_root / 'frontend/apps/web/dist-dev'}".encode(),
                 f"STATIC_PORT={MODULE_UNDER_TEST.PORT}".encode(),
                 f"API_PROXY_TARGET={MODULE_UNDER_TEST.API_PROXY}".encode(),
+                f"API_PROXY_BASE_PATH={MODULE_UNDER_TEST.API_PROXY_BASE_PATH}".encode(),
                 f"CANDIDATE_GIT_HEAD={head}".encode(),
             ]) + b"\0")
             identity = {"pid": 123, "head": head, "root": str(recorded_root)}
@@ -268,7 +275,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
             MODULE_UNDER_TEST, "_wait_until_stopped"
         ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
             MODULE_UNDER_TEST.down(current)
-        validate.assert_called_once_with(identity)
+        validate.assert_called_once_with(identity, require_proxy_base_path=False)
         killpg.assert_called_once_with(123, signal.SIGTERM)
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)

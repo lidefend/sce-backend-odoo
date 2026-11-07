@@ -77,6 +77,11 @@ verify.local.dev.layout_authority.unit: guard.prod.forbid
 verify.local.development_lifecycle.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner
 
+.PHONY: verify.local.dev.payment_settlement_journey.unit
+verify.local.dev.payment_settlement_journey.unit: guard.prod.forbid
+	@node --check scripts/verify/local_dev_payment_settlement_component_journey.mjs
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LocalDevelopmentLifecycleTest.test_payment_settlement_component_reset_keeps_canonical_env_authority
+
 local.dev.demo_credentials.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" TARGET_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/dev/local_dev_demo_credentials_prepare.sh
@@ -108,7 +113,11 @@ local.dev.frontend.watch: guard.prod.forbid local.dev.ready
 # Candidate browser carrier: serves only the current allowed topic worktree on
 # 127.0.0.1:5176 and proxies API requests to the existing local.dev service.
 # It never remounts the primary-worktree Nginx static volume.
-local.dev.candidate.frontend.up: guard.prod.forbid
+.PHONY: verify.local.dev.static_proxy_target.unit
+verify.local.dev.static_proxy_target.unit: guard.prod.forbid
+	@node scripts/verify/static_proxy_target_test.mjs
+
+local.dev.candidate.frontend.up: guard.prod.forbid verify.local.dev.static_proxy_target.unit
 	@python3 scripts/dev/local_dev_candidate_frontend.py up
 
 local.dev.candidate.frontend.down: guard.prod.forbid
