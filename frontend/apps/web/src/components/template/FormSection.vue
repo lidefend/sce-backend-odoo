@@ -451,7 +451,7 @@ import {
 } from '../professional-fields/professionalDetailCollectionModel';
 import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand, requireDeclaredLayoutColumns } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
-import { resolveIndustryRendererComponent } from '../../app/presentation/professionalComponentRegistry';
+import { resolveIndustryRendererForField } from '../../app/presentation/professionalComponentRegistry';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -707,7 +707,7 @@ function declaresUnknownComponentRenderer(field: FormSectionFieldSchema) {
   const renderer = field.componentRenderer;
   return Boolean(renderer)
     && !knownComponentRenderers.has(renderer)
-    && !resolveIndustryRendererComponent(renderer);
+    && !industryRendererFor(field);
 }
 
 function failClosedRendererText(field: FormSectionFieldSchema) {
@@ -761,7 +761,13 @@ function usesProfessionalOne2many(field: FormSectionFieldSchema) {
 }
 
 function industryRendererFor(field: FormSectionFieldSchema) {
-  return resolveIndustryRendererComponent(field.componentRenderer);
+  return resolveIndustryRendererForField({
+    componentKey: field.componentKey,
+    componentRenderer: field.componentRenderer,
+    fieldType: field.type,
+    presentationMode: field.presentationMode,
+    renderProfile: field.renderProfile,
+  });
 }
 
 function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {

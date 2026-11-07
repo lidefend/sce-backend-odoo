@@ -9,6 +9,7 @@ import {
   registerIndustryRenderer,
   registerIndustryRegistration,
   resolveIndustryRendererComponent,
+  resolveIndustryRendererForField,
   type ProfessionalComponentRegistration,
   type ProfessionalComponentRenderer,
 } from '../src/app/presentation/professionalComponentRegistry';
@@ -78,6 +79,43 @@ assert.throws(() => registerIndustryRegistration({
   readiness: 'ready',
   renderer: 'PaymentSettlementDetailCollectionControl',
 }), /INDUSTRY_REGISTRATION_DUPLICATE/);
+// The FormSection runtime resolves an industry field by its component key and
+// re-validates field type and renderer identity; a name-only or drifted match
+// must never render the industry component.
+assert.equal(resolveIndustryRendererForField({
+  componentKey: 'sc.payment.settlement_detail_collection',
+  componentRenderer: 'PaymentSettlementDetailCollectionControl',
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), dummyIndustryComponent);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: 'sc.payment.some_other',
+  componentRenderer: 'PaymentSettlementDetailCollectionControl',
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: 'sc.payment.settlement_detail_collection',
+  componentRenderer: 'PaymentSettlementDetailCollectionControl',
+  fieldType: 'many2one',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: 'sc.payment.settlement_detail_collection',
+  componentRenderer: 'OtherRenderer',
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
+assert.equal(resolveIndustryRendererForField({
+  componentRenderer: 'PaymentSettlementDetailCollectionControl',
+  fieldType: 'one2many',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), null);
 const optionalDetails = optionalDetailCollectionConfig({
   key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
   componentConfig: {

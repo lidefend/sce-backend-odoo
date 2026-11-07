@@ -175,6 +175,58 @@ export function isRegisteredComponentKey(componentKey: string): boolean {
   return professionalComponentRegistry.has(key) || industryRegistrations.has(key);
 }
 
+export type IndustryRendererResolutionInput = {
+  componentKey?: string;
+  componentRenderer?: string;
+  fieldType: string;
+  presentationMode?: CanonicalFormPresentationMode;
+  renderProfile?: CanonicalFormRenderMode;
+  capabilities?: readonly string[];
+};
+
+/**
+ * Resolve and validate an industry field to its registered Vue component.
+ *
+ * The registration is located by ``componentKey``, never by the renderer name
+ * alone, and every declared constraint is re-checked before a component is
+ * returned: field type, presentation mode, render profile and required
+ * capabilities. The field's ``componentRenderer`` must equal the registration's
+ * renderer, so a field whose component key or type drifted can no longer slip
+ * into an industry component through a name-only match. Any failure returns
+ * ``null`` and the caller renders the fail-closed surface instead of degrading
+ * to a type-directed or name-matched fallback.
+ */
+export function resolveIndustryRendererForField(
+  input: IndustryRendererResolutionInput,
+): Component | null {
+  const componentKey = String(input.componentKey || '').trim();
+  if (!componentKey) return null;
+  const registration = industryRegistrations.get(componentKey);
+  if (!registration || registration.readiness === 'fail_closed') return null;
+
+  const fieldType = String(input.fieldType || '').trim().toLowerCase();
+  if (!fieldType) return null;
+  if (!registration.supportedFieldTypes.includes('*') && !registration.supportedFieldTypes.includes(fieldType)) {
+    return null;
+  }
+  if (input.presentationMode !== undefined && !registration.supportedPresentationModes.includes(input.presentationMode)) {
+    return null;
+  }
+  if (input.renderProfile !== undefined && !registration.supportedRenderProfiles.includes(input.renderProfile)) {
+    return null;
+  }
+  const capabilities = new Set(input.capabilities || []);
+  if (registration.requiredCapabilities.some((capability) => !capabilities.has(capability))) {
+    return null;
+  }
+
+  const declaredRenderer = String(input.componentRenderer || '').trim();
+  if (!declaredRenderer || declaredRenderer !== registration.renderer) {
+    return null;
+  }
+  return industryRendererComponents.get(registration.renderer) || null;
+}
+
 export function registerIndustryRegistration(row: {
   componentKey: string;
   semanticType: string;

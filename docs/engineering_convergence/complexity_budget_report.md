@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5124`
+- Scanned files: `5125`
 - Files requiring split plan: `73`
 - Files above warning threshold: `149`
 
@@ -60,7 +60,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1835 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
-| 1760 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1766 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
@@ -292,7 +292,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1835 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
-| 1760 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1766 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |

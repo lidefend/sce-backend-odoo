@@ -1,6 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
-import type { ProfessionalComponentRenderer } from '../../app/presentation/professionalComponentRegistry';
 
 export type TemplateFieldType =
   | 'char'
