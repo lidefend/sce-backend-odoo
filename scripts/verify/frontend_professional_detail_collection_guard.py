@@ -161,7 +161,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("FormSection does not defer editable detail title ownership to the detail collection")
     if "if (!props.relationAdapter) return false;" not in section or "if (field.readonly || !props.relationAdapter)" in section:
         failures.append("readonly detail collections duplicate the collection-owned title as an external field label")
-    if "return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);" not in section:
+    if "return usesProfessionalOne2many(field) || usesIndustryRenderer(field);" not in section:
         failures.append("detail collection title ownership is not shared across formal detail renderers")
     if "<X2ManyRelationRenderer" not in section:
         failures.append("detail collection bypasses the governed x2many runtime")

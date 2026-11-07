@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02A
+  title: 平台与行业 Renderer 边界收敛
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: frontend contract presentation and renderer extension boundary
+  module: Contract V2 presentation, FormSection field dispatch and industry renderer registration
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    字段语义解释、平台注册表和统一 Renderer Resolver 是所有行业共同消费的平台机制；
+    行业组件只能通过扩展 manifest 注册，因此边界修复属于 P0，而不是付款业务或单一页面。
+  why_not_elsewhere: >
+    不在 FormSection 保留行业 import，不在行业组件内复制字段调度，不改 Contract V2 Schema，
+    也不把 rendererVersion、contractVersion 或 capabilities 伪装成本批已交付能力。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02A.yaml
+      - .agent/runs/FE-RENDERER-02A/run.json
+      - docs/ops/iterations/fe_renderer_02a_platform_industry_boundary_20261107.md
+      - docs/frontend_productization/professional-component-registry-v1.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - contracts/registry/component.yaml
+      - scripts/contract/generate_semantic_registry.py
+      - frontend/apps/web/src/app/presentation
+      - frontend/apps/web/src/components/template/FormSection.vue
+      - frontend/apps/web/src/components/template/formSection.types.ts
+      - frontend/apps/web/src/extensions
+      - frontend/apps/web/src/main.ts
+      - frontend/apps/web/scripts/professional_component_registry_test.ts
+      - scripts/verify/frontend_professional_component_registry_guard.py
+      - scripts/verify/test_frontend_professional_component_registry_guard.py
+      - scripts/verify/frontend_professional_detail_collection_guard.py
+      - scripts/verify/test_frontend_professional_detail_collection_guard.py
+      - scripts/verify/test_node_component_registry.py
+      - scripts/verify/semantic_registry_lint.py
+      - scripts/verify/test_semantic_registry_lint.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - make/contract.mk
+    runtime: payment settlement form surface only, through the registered local development lane
+    product_behavior: preserve the current payment settlement detail collection behavior while removing platform coupling
+  objective: >
+    让正式主线的前端平台 carrier 只包含平台 componentKey，将行业 componentKey 移入
+    独立 manifest，并由 FormSection 通过统一 Resolver 消费；注册发生在 app.mount 之前，
+    未注册、重复注册、字段类型或 renderer 身份不匹配均 fail-closed。
+  acceptance:
+    - 平台 generated semantic carrier 不包含 sc.payment.settlement_detail_collection
+    - 行业 generated manifest 只包含 industry category rows
+    - FormSection 不 import 或直接渲染任何行业组件
+    - 行业注册在 app.mount 之前完成，并以 componentKey、字段类型和 renderer identity 闭合
+    - 重复 componentKey、重复 semantic、未注册 renderer、未知 renderer 和身份不匹配均拒绝
+    - 语义注册表生成一致性、Registry 单测、Lint、类型检查通过
+    - 正式主线受管运行环境完成付款结算详情字段的真实浏览器验证并绑定实际 SHA
+  exclusions:
+    - rendererVersion
+    - contractVersion protocol extension
+    - capabilities runtime semantics
+    - second industry renderer
+    - contract_v2_schema_change
+    - money_date_status_expression_change
+    - shared_ui_refactor
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退本批独立提交；恢复平台 carrier、FormSection 直连行业组件的旧路径仅作技术回滚，
+    该回退重新暴露 P0 边界缺陷，不得作为长期方案。

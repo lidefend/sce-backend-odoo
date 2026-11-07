@@ -120,6 +120,11 @@ RULES = (
         "verify.ci.workflow.contract",
     )),
     Rule((
+        "make/contract.mk",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
         "make/codex.mk",
     ), (
         "verify.ci.path_ownership.unit",
@@ -149,6 +154,19 @@ RULES = (
         "scripts/verify/test_frontend_professional_component_registry_guard.py",
     ), (
         "verify.frontend.professional_component_registry.unit",
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+    ), (
+        "verify.frontend.professional_detail_collection.unit",
+    )),
+    Rule((
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "scripts/verify/test_node_component_registry.py",
+    ), (
         "verify.semantic.registry.lint",
     )),
     # FormSection consumes the canonical field presentation contract. The broad

@@ -31,12 +31,14 @@ class NodeRegistryTests(unittest.TestCase):
     def test_legacy_and_explicit_field_outputs_equal(self):
         original = self.render()
         original_frontend = generator.render_frontend_registry(self.component, version=self.version)
+        original_industry = generator.render_industry_manifest(self.component, version=self.version)
         for entry in self.component['components'].values():
             if entry.get('kind', 'field') == 'field':
                 entry['kind'] = 'field'
         self.assertEqual(original['SEMANTIC_COMPONENTS'], self.render()['SEMANTIC_COMPONENTS'])
         self.assertEqual(original['COMPONENT_REGISTRATIONS'], self.render()['COMPONENT_REGISTRATIONS'])
         self.assertEqual(original_frontend, generator.render_frontend_registry(self.component, version=self.version))
+        self.assertEqual(original_industry, generator.render_industry_manifest(self.component, version=self.version))
 
     def test_missing_field_types_rejected_by_both_generators(self):
         del self.component['components']['sc.input.text']['field_types']
@@ -45,12 +47,15 @@ class NodeRegistryTests(unittest.TestCase):
 
     def test_node_identity_carrier_does_not_generate_field_renderer(self):
         original_frontend = generator.render_frontend_registry(self.component, version=self.version)
+        original_industry = generator.render_industry_manifest(self.component, version=self.version)
         self.node()
         data = self.render()
         self.assertNotIn(self.key, data['SEMANTIC_COMPONENTS'].values())
         frontend = generator.render_frontend_registry(self.component, version=self.version)
+        industry = generator.render_industry_manifest(self.component, version=self.version)
         self.assertEqual(original_frontend.split('export const NODE_COMPONENT_REGISTRATIONS')[0],
                          frontend.split('export const NODE_COMPONENT_REGISTRATIONS')[0])
+        self.assertEqual(original_industry, industry)
         self.assertIn(f"{self.key!r}: {{kind: 'node', version: '1.2.3'}}", frontend)
         self.assertNotIn(self.key, frontend.split('export const NODE_COMPONENT_REGISTRATIONS')[0])
         with patch.object(resolver, 'COMPONENT_REGISTRATIONS', data['COMPONENT_REGISTRATIONS']):
@@ -108,6 +113,7 @@ class NodeRegistryTests(unittest.TestCase):
             self.assertEqual({key: {'version': '1.0'}}, resolver.component_registry([key]))
         self.assertEqual((ROOT / generator.CARRIER_REL).read_text(), generator.render_repository_carrier())
         self.assertEqual((ROOT / generator.FRONTEND_REL).read_text(), generator.render_frontend_repository())
+        self.assertEqual((ROOT / generator.INDUSTRY_FRONTEND_REL).read_text(), generator.render_industry_repository())
 
     def test_unknown_backend_key_raises(self):
         with self.assertRaisesRegex(ValueError, 'COMPONENT_UNREGISTERED'):
@@ -121,6 +127,7 @@ class NodeRegistryTests(unittest.TestCase):
                 stream.write('\n  sc.fixture.node: {kind: node, version: "1.2.3"}\n')
             (tree.root / generator.CARRIER_REL).write_text(generator.render_repository_carrier(tree.root))
             tree.generated_frontend.write_text(generator.render_frontend_repository(tree.root))
+            tree.generated_industry.write_text(generator.render_industry_repository(tree.root))
             errors, _ = tree.run()
             self.assertEqual([], errors)
         finally:

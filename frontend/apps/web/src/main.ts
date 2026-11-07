@@ -9,8 +9,10 @@ import './styles/product-patterns.css';
 import { bootTheme, bootThemeProfile } from './styles/theme';
 import { startThemeApplicationRuntime, stopThemeApplicationRuntime } from './styles/themeApplicationRuntime';
 import { installStaleAssetRecovery } from './app/staleAssetRecovery';
+import { registerIndustryRenderers } from './extensions/industryRenderers';
 
 installStaleAssetRecovery();
+registerIndustryRenderers();
 
 const app = createApp(App);
 const pinia = createPinia();

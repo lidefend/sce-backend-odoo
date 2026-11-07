@@ -40,6 +40,9 @@ CARRIER_REL = Path("addons/smart_core/core/contract_runtime/semantic_registry_ge
 FRONTEND_REL = Path(
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
 )
+INDUSTRY_FRONTEND_REL = Path(
+    "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts"
+)
 DOMAIN_CONTRACTS_REL = Path("contracts/domain")
 VIEW_STRUCTURE_REL = Path("contracts/generated/product_view_structure_contract.json")
 DOMAIN_SEMANTICS_REL = Path(
@@ -240,25 +243,52 @@ export const SEMANTIC_REGISTRY_VERSION = __VERSION__;
 export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
 """
 
+INDUSTRY_FRONTEND_HEADER = """// GENERATED INDUSTRY RENDERER MANIFEST - do not edit by hand.
+//
+// Declaration authority: __SOURCES__
+// Regenerate with: python3 scripts/contract/generate_semantic_registry.py
+//
+// Drift between this manifest and the declaration is a lint failure
+// (`make verify.semantic.registry.lint`). This carrier contains only
+// industry-category component identities. The platform carrier and FormSection
+// never import an industry component; the extension registration entry consumes
+// these rows and registers their components before the application mounts.
 
-def render_frontend_registry(component: dict, *, version: int) -> str:
-    """Project the component vocabulary into the frontend's generated table.
+import type { SemanticRegistryRow } from './semantic_registry.generated';
 
-    Only the *data* is projected.  Presentation-mode profiles, the
-    type-directed ``rendererByFieldType`` derivation and the readiness fallback
-    are behaviour and stay in ``professionalComponentRegistry.ts``.
+export const INDUSTRY_RENDERER_MANIFEST_VERSION = __VERSION__;
+
+export const INDUSTRY_RENDERER_ROWS: readonly SemanticRegistryRow[] = [
+"""
+
+
+def semantic_categories(root: Path = ROOT) -> dict[str, str]:
+    """``semantic -> category`` from the declaration that owns the meaning."""
+    semantics = load(root / SEMANTIC_REL).get("semantics") or {}
+    return {
+        str(semantic): str((entry or {}).get("category") or "").strip().lower()
+        for semantic, entry in semantics.items()
+        if isinstance(entry, dict)
+    }
+
+
+def component_rows(component: dict, categories: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    """Split field components into platform and industry carriers.
+
+    Node components are not field renderers and stay in the platform carrier's
+    node table. A component whose semantic has no declared category is rejected:
+    silently placing it on either side would create an unowned runtime identity.
     """
-    validate_component_registry(component)
     components = component.get("components") or {}
     defaults = component.get("defaults") if isinstance(component.get("defaults"), dict) else {}
     default_readiness = str(defaults.get("readiness") or "ready")
-    rows: list[str] = []
+    platform: list[dict] = []
+    industry: list[dict] = []
     for key, entry in components.items():
-        if entry.get("kind", "field") == "node":
+        if not isinstance(entry, dict) or entry.get("kind", "field") == "node":
             continue
-        entry = entry if isinstance(entry, dict) else {}
-        semantic = entry.get("semantic")
-        renderer = entry.get("renderer")
+        semantic = str(entry.get("semantic") or "").strip()
+        renderer = str(entry.get("renderer") or "").strip()
         if not semantic or not renderer:
             raise SystemExit(
                 f"[generate-semantic-registry] FAIL: component {key!r} lacks semantic/renderer"
@@ -268,24 +298,74 @@ def render_frontend_registry(component: dict, *, version: int) -> str:
             raise SystemExit(
                 f"[generate-semantic-registry] FAIL: component {key!r} declares no field_types"
             )
-        readiness = str(entry.get("readiness") or default_readiness)
-        types = ", ".join(repr(str(item)) for item in field_types)
-        rows.append(
+        category = categories.get(semantic)
+        if not category:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: component {key!r} names semantic "
+                f"{semantic!r} without a declared category"
+            )
+        row = {
+            "componentKey": key,
+            "semantic": semantic,
+            "fieldTypes": field_types,
+            "readiness": str(entry.get("readiness") or default_readiness),
+            "renderer": renderer,
+        }
+        (industry if category == "industry" else platform).append(row)
+    return platform, industry
+
+
+def render_frontend_rows(rows: list[dict]) -> str:
+    lines: list[str] = []
+    for row in rows:
+        types = ", ".join(repr(str(item)) for item in row["fieldTypes"])
+        lines.append(
             "  {"
-            f"componentKey: {key!r}, semanticType: {semantic!r}, "
-            f"supportedFieldTypes: [{types}], readiness: {readiness!r}, renderer: {renderer!r}"
+            f"componentKey: {row['componentKey']!r}, semanticType: {row['semantic']!r}, "
+            f"supportedFieldTypes: [{types}], readiness: {row['readiness']!r}, "
+            f"renderer: {row['renderer']!r}"
             "},"
         )
+    return "\n".join(lines)
+
+
+def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT) -> str:
+    """Project the component vocabulary into the frontend's generated table.
+
+    Only the *data* is projected.  Presentation-mode profiles, the
+    type-directed ``rendererByFieldType`` derivation and the readiness fallback
+    are behaviour and stay in ``professionalComponentRegistry.ts``.
+    """
+    validate_component_registry(component)
+    platform_rows, _industry_rows = component_rows(component, semantic_categories(root))
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
     return (
         FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
             "__VERSION__", str(version)
         )
-        + "\n".join(rows)
+        + render_frontend_rows(platform_rows)
         + "\n];\n"
         + "\nexport const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({\n"
-        + "\n".join(f"  {key!r}: {{kind: 'node', version: {entry['version']!r}}}," for key, entry in components.items() if entry.get('kind') == 'node')
+        + "\n".join(
+            f"  {key!r}: {{kind: 'node', version: {entry['version']!r}}},"
+            for key, entry in component.get("components", {}).items()
+            if entry.get("kind") == "node"
+        )
         + "\n});\n"
+    )
+
+
+def render_industry_manifest(component: dict, *, version: int, root: Path = ROOT) -> str:
+    """Project only industry-category field components for extension loading."""
+    validate_component_registry(component)
+    _platform_rows, industry_rows = component_rows(component, semantic_categories(root))
+    sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
+    return (
+        INDUSTRY_FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
+            "__VERSION__", str(version)
+        )
+        + render_frontend_rows(industry_rows)
+        + "\n];\n"
     )
 
 
@@ -294,6 +374,16 @@ def render_frontend_repository(root: Path = ROOT) -> str:
     return render_frontend_registry(
         load(root / COMPONENT_REL),
         version=registry_versions(root),
+        root=root,
+    )
+
+
+def render_industry_repository(root: Path = ROOT) -> str:
+    """Render the industry extension manifest for a given worktree."""
+    return render_industry_manifest(
+        load(root / COMPONENT_REL),
+        version=registry_versions(root),
+        root=root,
     )
 
 
@@ -470,6 +560,7 @@ def main() -> int:
     artifacts = (
         (CARRIER_REL, render_repository_carrier()),
         (FRONTEND_REL, render_frontend_repository()),
+        (INDUSTRY_FRONTEND_REL, render_industry_repository()),
         (DOMAIN_SEMANTICS_REL, render_domain_field_semantics()),
     )
     if args.check:

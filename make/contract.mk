@@ -53,7 +53,7 @@ verify.semantic.registry.lint:
 	@python3 scripts/verify/test_node_component_registry.py
 	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py scripts/verify/test_construction_semantic_declarations.py scripts/contract/generate_semantic_registry.py addons/smart_core/core/contract_runtime/semantic_resolver.py addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
 	@python3 scripts/verify/semantic_registry_lint.py
-	@PYTHONPATH=scripts/verify python3 scripts/verify/test_semantic_registry_lint.py
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_semantic_registry_lint scripts.verify.test_node_component_registry
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_construction_semantic_declarations.py
 	@python3 scripts/contract/generate_semantic_registry.py --check
 	@python3 addons/smart_core/tests/test_contract_runtime_semantic_resolver.py

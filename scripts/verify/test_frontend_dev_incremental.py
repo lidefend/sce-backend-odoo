@@ -519,6 +519,35 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_semantic_registry_tools_keep_their_generator_and_node_locks(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/semantic_registry_lint.py",
+                "scripts/verify/test_semantic_registry_lint.py",
+                "scripts/verify/test_node_component_registry.py",
+            ]),
+            [
+                "verify.semantic.registry.lint",
+            ],
+        )
+
+    def test_contract_make_fragment_keeps_the_generator_lock(self) -> None:
+        self.assertEqual(
+            select_targets(["make/contract.mk"]),
+            ["verify.semantic.registry.lint"],
+        )
+
+    def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/frontend_professional_detail_collection_guard.py",
+                "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+            ]),
+            [
+                "verify.frontend.professional_detail_collection.unit",
+            ],
+        )
+
     def test_incremental_executor_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(
             select_targets(["scripts/verify/frontend_dev_incremental.py"]),

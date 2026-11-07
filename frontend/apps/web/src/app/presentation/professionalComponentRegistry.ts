@@ -2,6 +2,7 @@ import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from './c
 import { PROFESSIONAL_BASE_FIELD_TYPES } from '../../components/professional-fields/professionalBaseFieldModel';
 import { SEMANTIC_REGISTRY_ROWS } from './semantic_registry.generated';
 import type { SemanticRegistryReadiness } from './semantic_registry.generated';
+import type { Component } from 'vue';
 
 /**
  * The readiness vocabulary is projected from the contract declaration; this
@@ -27,7 +28,6 @@ export const PROFESSIONAL_COMPONENT_RENDERERS = Object.freeze([
   'ProfessionalBusinessValueControl',
   'ProfessionalRelationFieldControl',
   'ProfessionalDetailCollectionControl',
-  'PaymentSettlementDetailCollectionControl',
 ] as const);
 
 export type ProfessionalComponentRenderer = typeof PROFESSIONAL_COMPONENT_RENDERERS[number];
@@ -48,9 +48,41 @@ export type ProfessionalComponentRegistration = {
   readiness: ProfessionalComponentReadiness;
 };
 
-export type ProfessionalComponentResolution = ProfessionalComponentRegistration & {
+export type IndustryComponentRegistration = {
+  componentKey: string;
+  semanticType: string;
+  supportedFieldTypes: readonly string[];
+  supportedPresentationModes: readonly CanonicalFormPresentationMode[];
+  supportedRenderProfiles: readonly CanonicalFormRenderMode[];
+  requiredCapabilities: readonly string[];
+  renderer: string;
+  fallback: string | null;
+  readiness: ProfessionalComponentReadiness;
+};
+
+export type ProfessionalComponentResolution = {
+  componentKey: string;
+  semanticType: string;
+  supportedFieldTypes: readonly string[];
+  supportedPresentationModes: readonly CanonicalFormPresentationMode[];
+  supportedRenderProfiles: readonly CanonicalFormRenderMode[];
+  requiredCapabilities: readonly string[];
+  renderer: string;
+  fallback: string | null;
+  readiness: ProfessionalComponentReadiness;
   fieldType: string;
   contractVersion: string;
+};
+
+export type IndustryRendererExtension = {
+  row: {
+    componentKey: string;
+    semanticType: string;
+    supportedFieldTypes: readonly string[];
+    readiness: SemanticRegistryReadiness;
+    renderer: string;
+  };
+  component: Component;
 };
 
 const FORM_MODES = ['task', 'workspace'] as const;
@@ -130,6 +162,131 @@ const professionalSemanticIndex: ReadonlyMap<string, ProfessionalComponentRegist
   return index;
 })();
 
+const industryRendererComponents = new Map<string, Component>();
+const industryRegistrations = new Map<string, IndustryComponentRegistration>();
+const industrySemanticIndex = new Map<string, IndustryComponentRegistration>();
+
+function normalizedIdentity(value: unknown): string {
+  return String(value || '').trim();
+}
+
+/**
+ * Register a complete industry extension set atomically.
+ *
+ * The extension manifest and its Vue component map are validated in full before
+ * either map is mutated. A late failure therefore cannot leave a renderer
+ * installed without its componentKey registration, or a registration pointing
+ * at a component that was never committed.
+ */
+export function registerIndustryRendererExtensions(
+  extensions: readonly IndustryRendererExtension[],
+): void {
+  if (!extensions.length) return;
+  const stagedRenderers = new Map<string, Component>();
+  const stagedRegistrations = new Map<string, IndustryComponentRegistration>();
+  const stagedSemantics = new Set<string>();
+  for (const extension of extensions) {
+    const row = extension.row;
+    const componentKey = normalizedIdentity(row.componentKey);
+    const semanticType = normalizedIdentity(row.semanticType);
+    const renderer = normalizedIdentity(row.renderer);
+    if (!componentKey || !semanticType || !renderer) {
+      throw new Error(`INDUSTRY_REGISTRATION_IDENTITY_MISSING:${componentKey}:${semanticType}:${renderer}`);
+    }
+    if (!extension.component) {
+      throw new Error(`INDUSTRY_RENDERER_COMPONENT_MISSING:${renderer}:${componentKey}`);
+    }
+    if (RENDERER_NAMES.has(renderer)) {
+      throw new Error(`INDUSTRY_RENDERER_RESERVED_PLATFORM_RENDERER:${renderer}`);
+    }
+    if (professionalComponentRegistry.has(componentKey)
+      || industryRegistrations.has(componentKey)
+      || stagedRegistrations.has(componentKey)) {
+      throw new Error(`INDUSTRY_REGISTRATION_DUPLICATE_COMPONENT_KEY:${componentKey}`);
+    }
+    if (professionalSemanticIndex.has(semanticType)
+      || industrySemanticIndex.has(semanticType)
+      || stagedSemantics.has(semanticType)) {
+      throw new Error(`INDUSTRY_REGISTRATION_DUPLICATE_SEMANTIC:${semanticType}`);
+    }
+    if (industryRendererComponents.has(renderer) || stagedRenderers.has(renderer)) {
+      throw new Error(`INDUSTRY_RENDERER_DUPLICATE:${renderer}`);
+    }
+    const supportedFieldTypes = row.supportedFieldTypes
+      .map((fieldType) => normalizedIdentity(fieldType).toLowerCase())
+      .filter(Boolean);
+    if (!supportedFieldTypes.length) {
+      throw new Error(`INDUSTRY_REGISTRATION_FIELD_TYPES_MISSING:${componentKey}`);
+    }
+    const registration: IndustryComponentRegistration = Object.freeze({
+      componentKey,
+      semanticType,
+      supportedFieldTypes: Object.freeze(supportedFieldTypes),
+      supportedPresentationModes: FORM_MODES,
+      supportedRenderProfiles: FORM_PROFILES,
+      requiredCapabilities: Object.freeze([]),
+      renderer,
+      fallback: row.readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
+      readiness: row.readiness,
+    });
+    stagedRenderers.set(renderer, extension.component);
+    stagedRegistrations.set(componentKey, registration);
+    stagedSemantics.add(semanticType);
+  }
+  for (const [renderer, component] of stagedRenderers) {
+    industryRendererComponents.set(renderer, component);
+  }
+  for (const [componentKey, registration] of stagedRegistrations) {
+    industryRegistrations.set(componentKey, registration);
+    industrySemanticIndex.set(registration.semanticType, registration);
+  }
+}
+
+/** Whether a componentKey belongs to the dynamically registered industry set. */
+export function isIndustryComponentKey(componentKey: string): boolean {
+  return industryRegistrations.has(normalizedIdentity(componentKey));
+}
+
+/** Unified known-component check across the platform and registered industry sets. */
+export function isRegisteredComponentKey(componentKey: string): boolean {
+  const key = normalizedIdentity(componentKey);
+  return Boolean(key) && (professionalComponentRegistry.has(key) || industryRegistrations.has(key));
+}
+
+export type IndustryRendererResolutionInput = {
+  componentKey?: string;
+  componentRenderer?: string;
+  fieldType: string;
+  presentationMode?: CanonicalFormPresentationMode;
+  renderProfile?: CanonicalFormRenderMode;
+  capabilities?: readonly string[];
+};
+
+/**
+ * Resolve an industry field only when every declared identity matches.
+ *
+ * The field's componentKey selects the registration; the renderer name is an
+ * identity check, not a lookup. Missing registration, field type, presentation
+ * mode, render profile or renderer identity returns null so FormSection shows
+ * its visible fail-closed surface rather than falling through to a default.
+ */
+export function resolveIndustryRendererForField(
+  input: IndustryRendererResolutionInput,
+): Component | null {
+  const registration = industryRegistrations.get(normalizedIdentity(input.componentKey));
+  if (!registration || registration.readiness === 'fail_closed') return null;
+  const fieldType = normalizedIdentity(input.fieldType).toLowerCase();
+  if (!fieldType || !registration.supportedFieldTypes.includes(fieldType)) return null;
+  if (input.presentationMode !== undefined
+    && !registration.supportedPresentationModes.includes(input.presentationMode)) return null;
+  if (input.renderProfile !== undefined
+    && !registration.supportedRenderProfiles.includes(input.renderProfile)) return null;
+  const capabilities = new Set(input.capabilities || []);
+  if (registration.requiredCapabilities.some((capability) => !capabilities.has(capability))) return null;
+  if (normalizedIdentity(input.componentRenderer) !== registration.renderer) return null;
+  return industryRendererComponents.get(registration.renderer) || null;
+}
+
 /**
  * Resolve a declared field semantic to its registration.
  *
@@ -139,9 +296,10 @@ const professionalSemanticIndex: ReadonlyMap<string, ProfessionalComponentRegist
  */
 export function resolveSemanticRegistration(
   semantic: string,
-): ProfessionalComponentRegistration | null {
+): ProfessionalComponentRegistration | IndustryComponentRegistration | null {
   const key = String(semantic || '').trim().toLowerCase();
-  return key ? professionalSemanticIndex.get(key) || null : null;
+  if (!key) return null;
+  return professionalSemanticIndex.get(key) || industrySemanticIndex.get(key) || null;
 }
 
 /** The component key a declared semantic renders through (``null`` when undeclared). */
@@ -190,6 +348,13 @@ export function resolveProfessionalComponentRegistration(
   input: ProfessionalComponentResolutionInput,
 ): ProfessionalComponentResolution {
   const entry = registry.get(input.componentKey);
+  return resolveRegistrationEntry(entry, input);
+}
+
+function resolveRegistrationEntry(
+  entry: ProfessionalComponentRegistration | IndustryComponentRegistration | undefined,
+  input: ProfessionalComponentResolutionInput,
+): ProfessionalComponentResolution {
   if (!entry || entry.readiness === 'fail_closed') throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
   const fieldType = input.fieldType.trim().toLowerCase();
   if (!fieldType) throw new Error(`PROFESSIONAL_COMPONENT_FIELD_TYPE_MISSING:${input.componentKey}`);
@@ -205,9 +370,19 @@ export function resolveProfessionalComponentRegistration(
   const capabilities = new Set(input.capabilities || []);
   const missing = entry.requiredCapabilities.filter((capability) => !capabilities.has(capability));
   if (missing.length) throw new Error(`PROFESSIONAL_COMPONENT_CAPABILITY_MISSING:${input.componentKey}:${missing.join(',')}`);
+  const renderer = (
+    'rendererByFieldType' in entry ? entry.rendererByFieldType[fieldType] : undefined
+  ) || entry.renderer;
   return Object.freeze({
-    ...entry,
-    renderer: entry.rendererByFieldType[fieldType] || entry.renderer,
+    componentKey: entry.componentKey,
+    semanticType: entry.semanticType,
+    supportedFieldTypes: entry.supportedFieldTypes,
+    supportedPresentationModes: entry.supportedPresentationModes,
+    supportedRenderProfiles: entry.supportedRenderProfiles,
+    requiredCapabilities: entry.requiredCapabilities,
+    renderer,
+    fallback: entry.fallback,
+    readiness: entry.readiness,
     fieldType,
     contractVersion: '',
   });
@@ -216,12 +391,16 @@ export function resolveProfessionalComponentRegistration(
 export function resolveProfessionalComponent(
   input: ProfessionalComponentResolutionInput,
 ): ProfessionalComponentResolution {
-  return resolveProfessionalComponentRegistration(professionalComponentRegistry, input);
+  const platform = professionalComponentRegistry.get(input.componentKey);
+  if (platform) return resolveRegistrationEntry(platform, input);
+  const industry = industryRegistrations.get(input.componentKey);
+  if (industry) return resolveRegistrationEntry(industry, input);
+  throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
 }
 
 export function resolveContractProfessionalComponent(
   input: ContractProfessionalComponentResolutionInput,
 ): ProfessionalComponentResolution {
-  const local = resolveProfessionalComponentRegistration(professionalComponentRegistry, input);
+  const local = resolveProfessionalComponent(input);
   return Object.freeze({ ...local, ...contractComponentBinding(input) });
 }
