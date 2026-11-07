@@ -23,6 +23,7 @@ from local_dev_frontend_quick import LocalDevAuthorityError, _isolated_environme
 
 PORT = 5176
 API_PROXY = "http://127.0.0.1:18081"
+API_PROXY_BASE_PATH = "/t/demo"
 CONFIRMATION = "SERVE_FROZEN_LOCAL_DEV_CANDIDATE"
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -98,6 +99,7 @@ def _validate_process(root: Path, head: str, pidfile: Path = PIDFILE) -> int:
         f"STATIC_ROOT={root / 'frontend/apps/web/dist-dev'}".encode(),
         f"STATIC_PORT={PORT}".encode(),
         f"API_PROXY_TARGET={API_PROXY}".encode(),
+        f"API_PROXY_BASE_PATH={API_PROXY_BASE_PATH}".encode(),
         f"CANDIDATE_GIT_HEAD={head}".encode(),
     }
     if not expected_environment.issubset(set(environment)):
@@ -129,6 +131,7 @@ def _validate_orphaned_process(identity: dict[str, object], process_root: Path |
         f"STATIC_ROOT={recorded_root / 'frontend/apps/web/dist-dev'}".encode(),
         f"STATIC_PORT={PORT}".encode(),
         f"API_PROXY_TARGET={API_PROXY}".encode(),
+        f"API_PROXY_BASE_PATH={API_PROXY_BASE_PATH}".encode(),
         f"CANDIDATE_GIT_HEAD={head}".encode(),
     }
     if not expected_environment.issubset(environment):
@@ -198,7 +201,13 @@ def up(root: Path = ROOT) -> None:
                 return
             raise CandidateFrontendError("candidate pid exists but service is unhealthy; use governed down first")
     process_env = _isolated_environment()
-    process_env.update(STATIC_ROOT=str(dist), STATIC_PORT=str(PORT), API_PROXY_TARGET=API_PROXY, CANDIDATE_GIT_HEAD=head)
+    process_env.update(
+        STATIC_ROOT=str(dist),
+        STATIC_PORT=str(PORT),
+        API_PROXY_TARGET=API_PROXY,
+        API_PROXY_BASE_PATH=API_PROXY_BASE_PATH,
+        CANDIDATE_GIT_HEAD=head,
+    )
     process = subprocess.Popen(
         ["node", str(root / "scripts/release/release_static_server.mjs")], cwd=root,
         env=process_env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

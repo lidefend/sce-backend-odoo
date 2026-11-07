@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5120`
+- Scanned files: `5122`
 - Files requiring split plan: `73`
 - Files above warning threshold: `151`
 
@@ -144,6 +144,7 @@ Generated from repository source files. This report is informational during the 
 | 1126 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 1097 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
@@ -152,7 +153,6 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
-| 1087 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
@@ -160,8 +160,8 @@ Generated from repository source files. This report is informational during the 
 | 1040 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1036 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
+| 1034 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1022 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |

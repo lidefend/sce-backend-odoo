@@ -39,18 +39,28 @@
 
 ## L1/L2 结果
 
-`make ci.local.iteration` 实际执行 14 个必需 target，全部退出 0：
+`make ci.local.iteration` 实际执行 16 个必需 target，全部退出 0：
 
-- `ci.local.iteration`：PASS，`executedTargetCount=14`，`notRunTargets=[]`，`unmappedPathCount=0`。
-- Receipt：`.runtime/frontend-dev-validation/executions/20261107T140333Z-1391760-859607509/receipt.json`。
+- `ci.local.iteration`：PASS，`executedTargetCount=16`，`notRunTargets=[]`，`unmappedPathCount=0`。
+- Receipt：`.runtime/frontend-dev-validation/executions/20261107T142220Z-1493925-114571924/receipt.json`。
 - Semantic registry lint：PASS；generator `--check` 对 Python carrier、平台 carrier、行业 manifest 和 domain carrier 四项均一致。
 - Professional component registry：Node 行为断言和 154 个 Python 守卫/负例通过。
 - Professional detail collection：模型、真实 FormSection SSR、付款结算引入契约和 46 个 Python 守卫用例通过。
 - Canonical form presenter、Contract V2 occurrence authority、primitive adapter、page pattern、product pattern、style system、lint、strict typecheck、agent ledger/resume、增量规划器均通过。
 - Component driver inventory 已刷新；required=33、missing=0、raw=0。
+- 候选静态前端代理新增受管命名空间基路径与 session cookie 回写，`verify.local.dev.static_proxy_target.unit` 通过 13 个纯代理用例。
 - Lint 仅有 4 个既有 warning，无 error；strict typecheck 无诊断。
+
+## 真实浏览器诊断
+
+第一次付款结算浏览器旅程在登录后导航超时，未进入产品断言。只读诊断确认候选前端请求根 `/api`，
+而 `local.dev` 入口要求命名空间 `/t/demo/api`，nginx 返回 `400 NS_NAMESPACE_REQUIRED`。
+该失败归类为 P4 候选浏览器载体缺陷；产品代码未修改，fixture 已由受管脚本恢复。
+
+已修复为：`API_PROXY_BASE_PATH=/t/demo` 只影响候选静态代理路径，默认空值保持原有行为；
+上游 `/t/demo/` session cookie 路径在候选根入口回写为 `/`。需在新精确提交上重新执行真实浏览器旅程。
 
 ## 未计入通过
 
 - 直接诊断 `make verify.frontend.industry_agnostic.guard` 仍报告 68 个既有全域行业知识 finding，不属于本批 P0 Renderer 边界的通过证据；更广泛的前端行业知识收敛仍留在后续 FE-RENDERER 批次。
-- 真实浏览器、当前 HEAD 的远端五项门禁和 PR 审查尚未执行。
+- 真实浏览器、当前 HEAD 的远端五项门禁和 PR 审查尚未完成。

@@ -216,6 +216,16 @@ RULES = (
         "audit.verification.lane_coverage.check",
     )),
     Rule((
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/release/release_static_server.mjs",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/test_local_dev_candidate_frontend.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "scripts/verify/static_proxy_target_test.mjs",
+    ), (
+        "verify.local.dev.static_proxy_target.unit",
+    )),
+    Rule((
         "/views/LoginView.vue",
         "/views/AccountActivationView.vue",
         "/views/PasswordRecoveryView.vue",

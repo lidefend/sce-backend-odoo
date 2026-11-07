@@ -10,6 +10,8 @@
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
     "contracts/registry/component.yaml",
     "scripts/contract/generate_semantic_registry.py",
     "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts",
@@ -30,7 +32,14 @@
     "scripts/verify/test_semantic_registry_lint.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "make/contract.mk"
+    "make/contract.mk",
+    "make/dev.mk",
+    "scripts/release/static_proxy_target.mjs",
+    "scripts/release/release_static_server.mjs",
+    "scripts/dev/local_dev_candidate_frontend.py",
+    "scripts/verify/static_proxy_target_test.mjs",
+    "scripts/verify/test_local_dev_candidate_frontend.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py"
   ],
   "environment": {
     "kind": "offline",
@@ -199,12 +208,37 @@
       ],
       "kind": "offline"
     },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/dev.mk",
+        "make/ci.mk",
+        "make/codex.mk",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
     "dev_incremental": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "candidate_static_proxy": {
+      "target": "verify.local.dev.static_proxy_target.unit",
+      "inputs": [
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/release/release_static_server.mjs",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/static_proxy_target_test.mjs",
+        "scripts/verify/test_local_dev_candidate_frontend.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "make/dev.mk"
       ],
       "kind": "offline"
     }

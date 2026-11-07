@@ -537,6 +537,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.semantic.registry.lint"],
         )
 
+    def test_candidate_static_proxy_paths_keep_their_proxy_unit(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "scripts/release/static_proxy_target.mjs",
+                "scripts/release/release_static_server.mjs",
+                "scripts/dev/local_dev_candidate_frontend.py",
+                "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+                "scripts/verify/static_proxy_target_test.mjs",
+            ]),
+            ["verify.local.dev.static_proxy_target.unit"],
+        )
+
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(
             select_targets([

@@ -176,6 +176,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("resolve_authority_env(root)", source)
         self.assertIn('"FRONTEND_DIST_DIR=frontend/apps/web/dist-dev"', source)
         self.assertIn('API_PROXY = "http://127.0.0.1:18081"', source)
+        self.assertIn('API_PROXY_BASE_PATH = "/t/demo"', source)
         self.assertNotIn("docker compose", source)
 
     def test_pidfile_rejects_symlink_invalid_pid_and_foreign_owner(self):
@@ -246,6 +247,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
                 f"STATIC_ROOT={recorded_root / 'frontend/apps/web/dist-dev'}".encode(),
                 f"STATIC_PORT={MODULE_UNDER_TEST.PORT}".encode(),
                 f"API_PROXY_TARGET={MODULE_UNDER_TEST.API_PROXY}".encode(),
+                f"API_PROXY_BASE_PATH={MODULE_UNDER_TEST.API_PROXY_BASE_PATH}".encode(),
                 f"CANDIDATE_GIT_HEAD={head}".encode(),
             ]) + b"\0")
             identity = {"pid": 123, "head": head, "root": str(recorded_root)}

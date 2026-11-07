@@ -108,7 +108,11 @@ local.dev.frontend.watch: guard.prod.forbid local.dev.ready
 # Candidate browser carrier: serves only the current allowed topic worktree on
 # 127.0.0.1:5176 and proxies API requests to the existing local.dev service.
 # It never remounts the primary-worktree Nginx static volume.
-local.dev.candidate.frontend.up: guard.prod.forbid
+.PHONY: verify.local.dev.static_proxy_target.unit
+verify.local.dev.static_proxy_target.unit: guard.prod.forbid
+	@node scripts/verify/static_proxy_target_test.mjs
+
+local.dev.candidate.frontend.up: guard.prod.forbid verify.local.dev.static_proxy_target.unit
 	@python3 scripts/dev/local_dev_candidate_frontend.py up
 
 local.dev.candidate.frontend.down: guard.prod.forbid

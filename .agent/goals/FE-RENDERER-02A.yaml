@@ -3,7 +3,7 @@ goal:
   id: FE-RENDERER-02A
   title: 平台与行业 Renderer 边界收敛
   status: active
-  formal_product_layer: P0 platform kernel product
+  formal_product_layer: P0 platform kernel product with bounded P4 browser-lane repair
   layer_target: frontend contract presentation and renderer extension boundary
   module: Contract V2 presentation, FormSection field dispatch and industry renderer registration
   standard_vs_user_specific: platform_engineering_standard
@@ -12,7 +12,8 @@ goal:
     行业组件只能通过扩展 manifest 注册，因此边界修复属于 P0，而不是付款业务或单一页面。
   why_not_elsewhere: >
     不在 FormSection 保留行业 import，不在行业组件内复制字段调度，不改 Contract V2 Schema，
-    也不把 rendererVersion、contractVersion 或 capabilities 伪装成本批已交付能力。
+    也不把 rendererVersion、contractVersion 或 capabilities 伪装成本批已交付能力。P4 只修复
+    既有候选浏览器载体的命名空间代理缺口，不改变产品运行语义。
   blast_radius:
     paths:
       - .agent/active-runs.json
@@ -23,6 +24,8 @@ goal:
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
       - contracts/registry/component.yaml
       - scripts/contract/generate_semantic_registry.py
       - frontend/apps/web/src/app/presentation
@@ -41,6 +44,13 @@ goal:
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - make/contract.mk
+      - make/dev.mk
+      - scripts/release/static_proxy_target.mjs
+      - scripts/release/release_static_server.mjs
+      - scripts/dev/local_dev_candidate_frontend.py
+      - scripts/verify/static_proxy_target_test.mjs
+      - scripts/verify/test_local_dev_candidate_frontend.py
+      - scripts/verify/test_frontend_acceptance_runtime_profile.py
     runtime: payment settlement form surface only, through the registered local development lane
     product_behavior: preserve the current payment settlement detail collection behavior while removing platform coupling
   objective: >
