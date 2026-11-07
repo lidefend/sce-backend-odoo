@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "c76b008b7dd8aa2ca4e0c62650ef0cc58f7f794d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-SCOPE-01-R1.yaml",
+    ".agent/runs/CI-SCOPE-01-R1/run.json",
+    "docs/ops/iterations/CI-SCOPE-01-R1.md",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    "config/ci/risk_tiering_v1.json",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/gitee_gate_plan.py",
+    "scripts/verify/test_gitee_gate_plan.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and GitHub-hosted CI; no business database or service writes"
+  },
+  "checks": {
+    "path_ownership_unit": {
+      "target": "verify.ci.path_ownership.unit",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "config/ci/risk_tiering_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_ci_path_ownership.py"
+      ],
+      "kind": "offline"
+    },
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        "config/ci/risk_tiering_v1.json",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/gitee_gate_plan.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/verify/test_gitee_gate_plan.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        ".agent/"
+      ],
+      "kind": "offline"
+    },
+    "github_actions_security": {
+      "target": "verify.github_actions.security",
+      "inputs": [
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py",
+        ".github/workflows/"
+      ],
+      "kind": "offline"
+    }
+  },
+  "results": {
+    "classification": "Five scenarios pass: frontend tooling -> standard_frontend; CI tooling -> control-plane governance with no modules/ORM; backend quality tooling -> governance; backend runtime -> standard_backend; mixed frontend/runtime -> standard frontend + standard_backend.",
+    "orm_glob": "scripts/ci/orm_* and scripts/ci/*_orm_* remain ORM inputs; gitee_formal_{executor,queue,worker}.py no longer match and consequently require no ORM.",
+    "workflow_routing": "GitHub professional/merge workflows and Gitee Gate Plan now use backend_runtime_changed for the backend business lane. Broad backend_changed remains diagnostic and tooling ownership, not an ORM trigger.",
+    "bubblewrap": "The professional quality job installs bubblewrap, executes a real unshare-all sandbox probe, and applies the governed AppArmor profile before retry when user namespaces are restricted.",
+    "path_ownership_tests": 16,
+    "workflow_contract_tests": 402,
+    "ci_local_iteration": "PASS; 4 required targets executed, notRunTargets=0, testsRun=true",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261107T124428Z-1008532-491336538/receipt.json",
+    "current_batch_scope": "13 changed paths; backend_runtime_changed=false, backend modules not applicable, ORM not required, effective ordinary-PR professional lane governance."
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh generated evidence, commit the CI-SCOPE-01-R1 fix, publish the exact new HEAD, and rerun all remote gates before merge.",
+  "id": "CI-SCOPE-01-R1",
+  "branch": "fix/fe-loop-02-ci-path-ownership-20261107",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-SCOPE-01-R1.yaml",
+  "record": "docs/ops/iterations/CI-SCOPE-01-R1.md"
+}

@@ -144,6 +144,34 @@ class FiveCiScenarioTest(unittest.TestCase):
         self.assertEqual(backend["tool_checks"], [])
         self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
 
+    def test_pure_frontend_quality_tooling_stays_frontend_standard(self):
+        path = "scripts/verify/frontend_contract_basis_guard.py"
+        risk = self.classify(path)
+        backend = self.plan(path)
+        self.assertEqual(risk.lane, "STANDARD")
+        self.assertTrue(risk.frontend_changed)
+        self.assertFalse(risk.backend_changed)
+        self.assertFalse(risk.backend_runtime_changed)
+        self.assertFalse(risk.control_plane_changed)
+        self.assertEqual(risk.professional_mode, "standard_frontend")
+        self.assertEqual(backend["modules"], [])
+        self.assertIn("verify.frontend.dev.incremental.unit", backend["tool_checks"])
+        self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
+
+    def test_backend_quality_tooling_is_governance_without_runtime(self):
+        path = "scripts/verify/backend_contract_guard.py"
+        risk = self.classify(path)
+        backend = self.plan(path)
+        self.assertEqual(risk.lane, "STANDARD")
+        self.assertFalse(risk.frontend_changed)
+        self.assertTrue(risk.backend_changed)
+        self.assertFalse(risk.backend_runtime_changed)
+        self.assertFalse(risk.control_plane_changed)
+        self.assertEqual(risk.professional_mode, "governance")
+        self.assertFalse(risk.orm_required)
+        self.assertEqual(backend["modules"], [])
+        self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
+
     def test_pure_backend_runs_only_selected_module_closure(self):
         path = "addons/bundle/models/record.py"
         risk = self.classify(path)

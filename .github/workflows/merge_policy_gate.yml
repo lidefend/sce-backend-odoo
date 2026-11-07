@@ -27,6 +27,7 @@ jobs:
       head: ${{ steps.identity.outputs.head }}
       frontend_mode: ${{ steps.risk.outputs.frontend_mode }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       managed_orm_required: ${{ steps.risk.outputs.managed_orm_required }}
@@ -159,6 +160,7 @@ jobs:
           RISK_LANE: ${{ needs.classify.outputs.lane }}
           FRONTEND_MODE: ${{ needs.classify.outputs.frontend_mode }}
           BACKEND_CHANGED: ${{ needs.classify.outputs.backend_changed }}
+          BACKEND_RUNTIME_CHANGED: ${{ needs.classify.outputs.backend_runtime_changed }}
           FRONTEND_CHANGED: ${{ needs.classify.outputs.frontend_changed }}
           CONTROL_PLANE_CHANGED: ${{ needs.classify.outputs.control_plane_changed }}
           MANAGED_ORM_REQUIRED: ${{ needs.classify.outputs.managed_orm_required }}
@@ -178,7 +180,7 @@ jobs:
               effective_frontend="standard"
             fi
             if [ "${effective_professional}" = "full" ]; then
-              if [ "${BACKEND_CHANGED}" = true ]; then
+              if [ "${BACKEND_RUNTIME_CHANGED}" = true ]; then
                 effective_professional="standard_backend"
               elif [ "${FRONTEND_CHANGED}" = true ]; then
                 effective_professional="standard_frontend"
@@ -204,6 +206,7 @@ jobs:
             echo "| Field | Value |"
             echo "| --- | --- |"
             echo "| Risk lane | ${RISK_LANE} |"
+            echo "| Backend runtime change | ${BACKEND_RUNTIME_CHANGED} |"
             echo "| Control-plane change | ${CONTROL_PLANE_CHANGED} |"
             echo "| Candidate requested | ${CANDIDATE_REQUESTED} |"
             echo "| Effective aggregate lane | ${selected_lane} |"

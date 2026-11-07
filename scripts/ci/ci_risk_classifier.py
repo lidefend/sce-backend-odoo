@@ -50,10 +50,13 @@ class Classification:
     def professional_mode(self) -> str:
         if self.lane in {"HIGH_RISK", "RELEASE"}:
             return "full"
-        if self.lane == "STANDARD" and self.backend_changed:
+        if self.lane == "STANDARD" and self.backend_runtime_changed:
             return "standard_backend"
         if self.lane == "STANDARD":
-            return "standard_frontend"
+            if self.frontend_changed:
+                return "standard_frontend"
+            if self.backend_changed or self.control_plane_changed:
+                return "governance"
         return "fast"
 
     @property
@@ -64,7 +67,8 @@ class Classification:
         scopes = {'module_suite'}
         shared = ('addons/smart_core/**', 'Dockerfile*', 'docker-compose*',
                   'requirements*', 'config/requirements*', 'scripts/test/**',
-                  'scripts/ci/*orm*', 'make/dev_test.mk', 'Makefile')
+                  'scripts/ci/orm_*', 'scripts/ci/*_orm_*',
+                  'make/dev_test.mk', 'Makefile')
         payment = ('addons/smart_construction_core/**/*payment*',
                    'addons/smart_construction_core/**/*settlement*',
                    'addons/smart_construction_core/**/*component*profile*')

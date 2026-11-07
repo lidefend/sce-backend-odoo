@@ -33,6 +33,7 @@ jobs:
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       orm_required: ${{ steps.risk.outputs.orm_required }}
       orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
@@ -196,9 +197,10 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
       CANDIDATE_REQUESTED: ${{ needs.professional_authorization.outputs.candidate_requested }}
-      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
+      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_runtime_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
+      BACKEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_runtime_changed }}
       CONTROL_PLANE_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.control_plane_changed }}
       ORM_SCOPES: ${{ needs.professional_authorization.outputs.orm_scopes }}
       PAYMENT_ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.payment_orm_required != 'false' }}
@@ -265,6 +267,22 @@ jobs:
           rg --version
           command -v bwrap
           bwrap --version
+          bwrap_smoke() {
+            bwrap --unshare-all --die-with-parent --new-session \
+              --ro-bind /usr /usr \
+              --symlink usr/bin /bin \
+              --symlink usr/lib /lib \
+              --symlink usr/lib64 /lib64 \
+              --proc /proc --dev /dev --tmpfs /tmp \
+              /usr/bin/true
+          }
+          if ! bwrap_smoke; then
+            sudo apt-get install -y apparmor
+            sudo install -m 0644 deploy/gitee-ci/bwrap-userns-restrict \
+              /etc/apparmor.d/bwrap-userns-restrict
+            sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+            bwrap_smoke
+          fi
 
       - name: Run complete registered offline baseline for schedule
         id: scheduled_baseline
@@ -342,7 +360,7 @@ jobs:
           # Determine which shards to run based on change type
           # If only docs/config changed (no frontend/backend code), skip test shard
           RUN_TESTS=1
-          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_RUNTIME_CHANGED}" = "false" ]; then
             echo "Change detected: docs/config only - skipping test shard"
             RUN_TESTS=0
           fi

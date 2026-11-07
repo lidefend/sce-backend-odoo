@@ -116,7 +116,9 @@ class CIRiskClassifierTests(unittest.TestCase):
         )
         self.assertEqual(result.lane, "STANDARD")
         self.assertTrue(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
         self.assertFalse(result.frontend_changed)
+        self.assertEqual(result.professional_mode, "governance")
 
     def test_frontend_guard_name_cannot_override_identity_high_risk_rule(self) -> None:
         result = classify(
@@ -163,6 +165,25 @@ class CIRiskClassifierTests(unittest.TestCase):
                 self.assertTrue(classify([path], event_name='pull_request').orm_required)
         self.assertTrue(classify(['scripts/ops/agent_run_context.py',
                                  'addons/smart_core/models/core.py'], event_name='pull_request').orm_required)
+
+    def test_formal_ci_names_do_not_match_the_orm_runtime_glob(self) -> None:
+        for path in (
+            "scripts/ci/gitee_formal_executor.py",
+            "scripts/ci/gitee_formal_queue.py",
+            "scripts/ci/gitee_formal_worker.py",
+        ):
+            with self.subTest(path=path):
+                result = classify([path], event_name="pull_request")
+                self.assertTrue(result.control_plane_changed)
+                self.assertFalse(result.backend_runtime_changed)
+                self.assertFalse(result.orm_required)
+                self.assertEqual(result.orm_scopes, ())
+        for path in (
+            "scripts/ci/orm_result_guard.sh",
+            "scripts/ci/frontend_fixture_orm_entry.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(classify([path], event_name="pull_request").orm_required)
 
     def test_orm_unknown_empty_release_and_missing_policy_fail_closed(self) -> None:
         for paths in ([], ['unclassified/runtime.bin'], ['../invalid.py']):

@@ -52,7 +52,7 @@ def select_modes(result, candidate):
         if frontend == "full":
             frontend = "standard"
         if professional == "full":
-            professional = ("standard_backend" if result.backend_changed else
+            professional = ("standard_backend" if result.backend_runtime_changed else
                             "standard_frontend" if result.frontend_changed else "governance")
     return {
         "public_guard": "skip_fast" if result.lane == "FAST" else "required",
@@ -100,6 +100,7 @@ def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=R
         "candidate_requested": candidate, "lane": result.lane,
         "frontend_changed": result.frontend_changed, "backend_changed": result.backend_changed,
         "control_plane_changed": result.control_plane_changed,
+        "backend_runtime_changed": result.backend_runtime_changed,
         "paths": sorted(set(paths)),
         "source_hashes": {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in INPUTS},
         "checks": [{"name": name, "mode": modes[name], "workflow": SOURCES[i],
