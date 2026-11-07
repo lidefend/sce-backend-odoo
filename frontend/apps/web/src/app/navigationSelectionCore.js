@@ -1,8 +1,15 @@
 import { resolveMenuActionCore } from './resolvers/menuResolverCore.js';
 
 function positiveInteger(value) {
-  const parsed = Number(value || 0);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
+  // Contract identities (menu_id / action_id) are positive integers.  The
+  // click snapshot must not coerce a boolean, a decimal, a non-safe integer,
+  // a numeric string, or arbitrary text into a menu identity.
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value > 0
+    && value <= Number.MAX_SAFE_INTEGER
+    ? value
+    : 0;
 }
 
 function cloneJson(value) {
@@ -61,16 +68,21 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
   const actionId = positiveInteger(target?.action_id || target?.meta?.action_id);
   if (!menuId) return null;
 
-  // One identity rule for every entry, identical to findRouteAuthority:
-  // the server-owned (menu_id, action_id) pair.  A scene entry simply has no
-  // business action (action_id 0); where it navigates is decided by the
-  // server-owned entry_target, never by a second frontend rule.
-  const authority = authorityEntries(routeAuthority).find((entry) => (
-    actionId > 0
-      ? positiveInteger(entry?.action_id) === actionId
-      : positiveInteger(entry?.menu_id) === menuId
+  // One identity rule for every entry: the server-owned (menu_id, action_id)
+  // pair must match exactly.  A scene entry has no business action (action_id
+  // 0); where it navigates is decided by the server-owned entry_target, never
+  // by a second frontend rule.  Matching action_id alone would let two menus
+  // that share an action pick whichever authority record appears first.
+  const matched = authorityEntries(routeAuthority).filter((entry) => (
+    positiveInteger(entry?.menu_id) === menuId
+    && positiveInteger(entry?.action_id) === actionId
   ));
-  if (!authority) return null;
+  if (matched.length === 0) return null;
+  // A duplicated (menu_id, action_id) pair is only acceptable when every
+  // record agrees on the full authority content; conflicting duplicates are
+  // ambiguous and must fail closed instead of silently taking the first row.
+  const authority = matched[0];
+  if (matched.some((entry) => JSON.stringify(entry) !== JSON.stringify(authority))) return null;
 
   const targetEntry = target?.entry_target || target?.meta?.entry_target;
   const authorityEntry = authority?.entry_target;

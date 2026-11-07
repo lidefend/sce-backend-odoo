@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "NAV-01-SIDEBAR-CANONICAL",
+  "branch": "codex/nav-01-sidebar-canonical",
+  "baseline_sha": "e2336d9f5e198ffb667087d6bd55bec957edf030",
+  "status": "active",
+  "goal": ".agent/goals/NAV-01-SIDEBAR-CANONICAL.yaml",
+  "record": "docs/ops/iterations/fe-mainline-experience-20261106/nav-01-source-diagnosis.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/fe-mainline-experience-20261106/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "frontend/apps/web/src/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and registered unit targets"
+  },
+  "checks": {
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-shell/",
+        "scripts/verify/frontend_navigation_shell_guard.py"
+      ]
+    },
+    "navigation_initialization_race": {
+      "target": "verify.frontend.navigation_initialization_race.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs"
+      ]
+    },
+    "list_surface_structure": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/app/canonicalNavigation.ts",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "readback": { "artifact": ".runtime/final-acceptance/list-surface-structure.json" }
+    }
+  },
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "通用前端运行时（AppShell 侧边栏导航）",
+    "module": "frontend",
+    "standard_vs_user_specific": "platform mechanism presentation",
+    "why_here": "可见菜单表达真实 menu 层级与授权，官方 TDesign 菜单组件统一交互与视觉",
+    "why_not_elsewhere": "不修改后端契约/授权/发布状态；不让 scenarioSurface 参与授权；不重写 TDesign 菜单",
+    "blast_radius": "AppShell 侧边栏渲染链；各中心页面通过共享导航共同受益"
+  },
+  "validation_results": [
+    { "command": "make verify.frontend.typecheck.strict", "status": "passed" },
+    { "command": "make verify.frontend.navigation_shell.unit", "status": "passed", "tests": 21 },
+    { "command": "make verify.frontend.navigation_initialization_race.unit", "status": "passed" },
+    { "command": "browser canonical nav probe", "status": "passed", "scope": "ProductSideNavigation + MenuTree + TDesign menu consumed; 30 canonical nodes; search 30->4; leaf route /a/590?menu_id=382; expand ok; 390px no overflow" }
+  ],
+  "reconciliation": {
+    "role": "fixture_role_pm",
+    "canonical_leaf_count": 19,
+    "scenario_entry_count": 19,
+    "scenario_only": [],
+    "canonical_only": [],
+    "conclusion": "19/19 全部一致，无入口丢失"
+  },
+  "blockers": [],
+  "next_exact_step": "run governed pr.push and create independent Draft PR"
+}

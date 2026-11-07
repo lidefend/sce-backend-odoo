@@ -51,11 +51,11 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"{component} lacks exact semantic identity")
         if BUSINESS_IDENTITY.search(text):
             errors.append(f"{component} contains business-specific identity")
-        if f"<{component}" not in shell and component != "ProductSideNavigation":
+        if f"<{component}" not in shell and component != "ProductScenarioNavigation":
             errors.append(f"AppShell does not consume {component}")
 
-    if "<ProductScenarioNavigation" not in shell or ':model="scenarioNavigation"' not in shell or "<ProductSideNavigation" in shell:
-        errors.append("AppShell must render only ProductScenarioNavigation from the server scenario model")
+    if "<ProductSideNavigation" not in shell or ":nodes=\"menuSearchNodes\"" not in shell or "<ProductScenarioNavigation" in shell:
+        errors.append("AppShell must render the canonical navigation model through the official TDesign menu wrapper")
     context_indicator = read(root, "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue")
     context_projection = shell.split("<WorkspaceContextIndicator", 1)[-1].split("/>", 1)[0]
     if ':show-record="showRecordContext"' not in context_projection or "v-if=" in context_projection:
@@ -135,11 +135,11 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:
         errors.append("AppShell must consume the normalized session navigation model")
-    if "createScenarioSelectionSnapshot(entry, session.routeAuthority)" not in shell:
+    if "createNavigationSelectionSnapshot(node.source, session.routeAuthority)" not in shell:
         errors.append("canonical menu selection must retain the immutable authority snapshot chain")
 
-    if "routeAuthorityContextAllowed(selection.authority, target.query, scope)" not in shell or "router.push(selection.route)" not in shell:
-        errors.append("scenario selection must consume the checked authority snapshot")
+    if "routeAuthorityContextAllowed(selection.authority, target.query, scope)" not in shell or "router.push(route)" not in shell:
+        errors.append("canonical menu selection must consume the checked authority snapshot")
 
     for forbidden in ("useSessionStore", "evaluateCapabilityPolicy", "capabilityTooltip", "console.info"):
         if forbidden in tree + menu_node:

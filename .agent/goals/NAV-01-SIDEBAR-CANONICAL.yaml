@@ -1,0 +1,31 @@
+schema_version: 1
+goal:
+  id: NAV-01-SIDEBAR-CANONICAL
+  status: active
+  title: 独立前端侧边栏导航体系收敛（第一阶段）
+  formal_product_layer: P0
+  layer_target: 通用前端运行时（AppShell 侧边栏导航）
+  module: frontend
+  standard_vs_user_specific: platform mechanism presentation
+  objective: >-
+    将 AppShell 可见导航从场景分类组件 ProductScenarioNavigation 切回
+    规范化菜单模型 navigationModel，并真正接入官方 TDesign 菜单渲染链
+    （MenuTree → CanonicalNavigationMenuNode）。scenarioSurface 保留为底层
+    业务分类，不再作为可见导航数据权威。
+  why_here: >-
+    可见菜单应表达真实 menu→submenu→item 层级与授权，属于通用前端运行时；
+    官方 TDesign 菜单组件负责统一交互与视觉。
+  why_not_elsewhere:
+    - 不修改后端导航契约、角色授权、菜单发布状态和公司启用状态。
+    - 不让 scenarioSurface 参与最终授权裁决。
+    - 不重新实现 TDesign 菜单组件。
+  scope:
+    - frontend/apps/web/src/layouts/AppShell.vue
+    - frontend/apps/web/src/app/canonicalNavigation.ts
+    - frontend/apps/web/src/components/product-shell/
+    - frontend/apps/web/src/components/MenuTree.vue
+    - scripts/verify/
+  exclusions:
+    - 后端导航契约与授权
+    - scenarioSurface 与 ProductScenarioNavigation（本阶段保留）
+    - 第二/第三阶段清理

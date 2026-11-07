@@ -161,23 +161,25 @@
           <strong>{{ initStatus === 'error' ? '导航加载失败' : '正在加载导航...' }}</strong>
           <span>{{ initStatus === 'error' ? '请重试初始化，业务入口仍保持关闭。' : '业务入口将在权限与导航完成校验后开放。' }}</span>
         </div>
-        <div v-else-if="scenarioNavigationBroken" class="navigation-loading" role="status">
-          <strong>场景导航配置不可用</strong>
-          <span>请在配置中心维护业务场景后重试，业务入口保持关闭。</span>
+        <div v-else-if="canonicalNavigationBroken" class="navigation-loading" role="status">
+          <strong>导航配置不可用</strong>
+          <span>业务菜单未能完成校验，业务入口保持关闭。</span>
+        </div>
+        <div v-else-if="canonicalNavigationEmpty" class="navigation-loading" role="status">
+          <strong>暂无可用业务入口</strong>
+          <span>当前账号或公司未获得可用的业务菜单，请联系管理员维护授权后刷新。</span>
         </div>
         <div class="menu">
-          <ProductScenarioNavigation
-            v-if="navigationReady && scenarioNavigation"
-            :model="scenarioNavigation"
+          <ProductSideNavigation
+            v-if="navigationReady && navigationNodes.length"
+            :nodes="menuSearchNodes"
             :active-menu-id="activeMenuId"
             :collapsed="sidebarCompact"
             :search="query"
-            :expanded-centers="session.scenarioExpandedCenters"
-            :expanded-scenarios="session.scenarioExpandedScenarios"
-            @select="handleScenarioSelect"
-            @toggle-center="session.toggleScenarioCenter"
-            @toggle-scenario="session.toggleScenarioExpanded"
-            @ensure-expanded="handleScenarioEnsureExpanded"
+            :expanded-keys="session.menuExpandedKeys"
+            @select="handleCanonicalSelect"
+            @toggle="session.toggleMenuExpanded"
+            @ensure-expanded="session.ensureMenuExpanded"
             @update:search="query = $event"
           />
         </div>
@@ -389,8 +391,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
-import ProductScenarioNavigation from '../components/product-shell/ProductScenarioNavigation.vue';
-import { createScenarioSelectionSnapshot, type ScenarioNavEntry, type ScenarioNavigationModel } from '../app/scenarioSurface';
+import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
+import { filterCanonicalNavigationByText } from '../app/canonicalNavigation';
+import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
 import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcrumb.vue';
@@ -434,7 +437,7 @@ import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { isAuthorizedSceneNavigation, isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
-import type { BusinessScopeOperationOption, NavNode, RecordContextOption } from '@sc/schema';
+import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
   TRACE_BUFFER_MAX_ENTRIES,
@@ -517,7 +520,7 @@ let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
 const navigationNodes = computed(() => session.navigationModel?.nodes || []);
-const scenarioNavigation = computed<ScenarioNavigationModel | null>(() => session.scenarioSurface);
+const menuSearchNodes = computed(() => filterCanonicalNavigationByText(navigationNodes.value, query.value));
 const roleSurface = computed(() => session.roleSurface);
 const shellLogoText = computed(() => config.appBrand.shellLogoText || 'SC');
 const rootNode = computed(() => (menuTree.value.length === 1 ? menuTree.value[0] : null));
@@ -645,7 +648,12 @@ const navigationReady = computed(() => (
   && session.initStatus === 'ready'
   && Boolean(session.routeAuthority)
 ));
-const scenarioNavigationBroken = computed(() => navigationReady.value && scenarioNavigation.value === null);
+const canonicalNavigationBroken = computed(() => navigationReady.value && !session.navigationModel);
+const canonicalNavigationEmpty = computed(() => (
+  navigationReady.value
+  && Boolean(session.navigationModel)
+  && navigationNodes.value.length === 0
+));
 const initError = computed(() => session.initError);
 const initTraceId = computed(() => session.initTraceId);
 const showSceneErrors = computed(() => import.meta.env.DEV && sceneRegistryErrors.length > 0);
@@ -1469,11 +1477,13 @@ function focusMainContent() {
   void nextTick(() => mainContentRef.value?.focus());
 }
 
-function handleScenarioSelect(entry: ScenarioNavEntry) {
+function handleCanonicalSelect(node: CanonicalNavigationNode) {
   if (!navigationReady.value) return;
-  const selection = createScenarioSelectionSnapshot(entry, session.routeAuthority);
+  if (node.state !== 'enabled' || !node.route) return;
+  const route = node.route;
+  const selection = createNavigationSelectionSnapshot(node.source, session.routeAuthority);
   if (!selection) return;
-  const target = router.resolve(selection.route);
+  const target = router.resolve(route);
   const scope = {
     companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
     selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
@@ -1481,11 +1491,7 @@ function handleScenarioSelect(entry: ScenarioNavEntry) {
   if (!routeAuthorityContextAllowed(selection.authority, target.query, scope)) return;
   query.value = '';
   closeMobileSidebar();
-  router.push(selection.route).catch(() => {});
-}
-
-function handleScenarioEnsureExpanded(centerKey: string, scenarioKey: string) {
-  session.ensureScenarioExpanded(centerKey, scenarioKey);
+  router.push(route).catch(() => {});
 }
 
 function returnToBusinessSurface() {
