@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import time
 import sys
@@ -21,7 +22,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.ops.agent_run_context import RunError, resolve_run, delta_paths, check_states
+from scripts.ops.agent_run_context import (
+    RunError,
+    check_states,
+    declared_check_targets,
+    delta_paths,
+    resolve_run,
+)
 
 WATCH_ROOTS = (
     "frontend/apps/web/src",
@@ -30,6 +37,29 @@ WATCH_ROOTS = (
     "scripts/verify/frontend_",
 )
 STATE_PATH = ROOT / ".runtime/frontend-dev-validation/status.json"
+FRONTEND_SOURCE_ROOTS = (
+    "frontend/apps/web/src/",
+    "frontend/packages/ui/src/",
+)
+FRONTEND_SOURCE_SUFFIXES = (".ts", ".tsx", ".vue")
+BASE_FRONTEND_TARGETS = (
+    "verify.frontend.lint.src",
+    "verify.frontend.typecheck.strict",
+)
+NODE_TOOL_REQUIREMENTS = {
+    "verify.frontend.lint.src": "eslint",
+    "verify.frontend.typecheck.strict": "vue-tsc",
+    "verify.frontend.professional_component_registry.unit": "esbuild",
+    "verify.frontend.canonical_form_presenter.unit": "esbuild",
+    "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
+    "verify.frontend.primitive_adapter.unit": "esbuild",
+    "verify.frontend.navigation_shell.unit": "esbuild",
+    "verify.frontend.scene_entry_contract.unit": "esbuild",
+    "verify.frontend.product_page_pattern.unit": "esbuild",
+    "verify.frontend.action_view_surface_gate_runtime.unit": "esbuild",
+    "verify.frontend.action_view_page_size_runtime.unit": "esbuild",
+    "verify.frontend.auth_surface.guard": "node",
+}
 
 
 @dataclass(frozen=True)
@@ -39,6 +69,36 @@ class Rule:
 
 
 RULES = (
+    # Renderer registration is one executable contract spanning the generated
+    # carrier, registry, extension entry point and their focused locks. A
+    # registry change must never fall through to a generic typecheck only.
+    Rule((
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts",
+        "frontend/apps/web/src/extensions/industryRenderers.ts",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/frontend_professional_component_registry_guard.py",
+        "scripts/verify/test_frontend_professional_component_registry_guard.py",
+    ), (
+        "verify.frontend.professional_component_registry.unit",
+        "verify.semantic.registry.lint",
+    )),
+    # FormSection consumes the canonical field presentation contract. The broad
+    # template rule contributes primitive/page-pattern suites; these explicit
+    # rules add the field-to-section mapper and contract-v2 occurrence behaviour
+    # locks. FE-PRODUCT-01's expression target joins this set after that target
+    # becomes part of the shared baseline.
+    Rule((
+        "/components/template/FormSection.vue",
+        "/components/template/formSection.mapper.ts",
+        "/components/template/formSection.types.ts",
+    ), (
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.contract_v2_occurrence_authority.unit",
+    )),
     # Backend collection tooling has its own offline behaviour locks. Keep it
     # in the existing local planner; this recommendation never authorizes ORM
     # reuse or changes required remote CI. Workflow security must be selected
@@ -133,9 +193,18 @@ RULES = (
     Rule((
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
         "make/frontend.mk",
     ), (
         "verify.frontend.dev.incremental.unit",
+        "verify.agent.resume.unit",
+    )),
+    Rule((
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+    ), (
+        "verify.baseline.iteration.execution.policy",
     )),
     # The baseline-backed iteration policy guard is the authority for the
     # governed make lanes: it asserts that each lane still declares the targets
@@ -388,6 +457,7 @@ FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "f
 # documentation-only change, which the recorded reuse decision
 # (.agent/decisions/evidence-reuse-identity.yaml) states does not invalidate a unit.
 NON_SOURCE_PATH_PREFIXES = (".agent/", "docs/")
+NON_SOURCE_PATHS = ("AGENTS.md",)
 
 
 def select_targets(paths: list[str]) -> list[str]:
@@ -404,6 +474,13 @@ def select_targets(paths: list[str]) -> list[str]:
             ("frontend/apps/web/", "frontend/packages/ui/")
         ):
             path_targets.add(FALLBACK_TARGET)
+        if (
+            normalized.startswith(FRONTEND_SOURCE_ROOTS)
+            and normalized.endswith(FRONTEND_SOURCE_SUFFIXES)
+        ):
+            # A focused rule supplements the source-wide baseline; it never
+            # replaces lint or strict typechecking.
+            path_targets.update(BASE_FRONTEND_TARGETS)
         selected.update(path_targets)
     targets = sorted(selected)
     if any(part in target for target in targets for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS):
@@ -465,24 +542,41 @@ def iteration_plan(root: Path = ROOT) -> int:
     if run["status"] in ("completed", "superseded"):
         raise RunError("selected run is closed; register/select the next task")
     checks = check_states(root, run)
-    return print_plan(delta_paths(root, run["baseline_sha"]), source=relative, checks=checks)
+    return print_plan(
+        delta_paths(root, run["baseline_sha"]),
+        source=relative,
+        checks=checks,
+        registered_targets=declared_check_targets(run),
+    )
 
 
-def print_plan(paths: list[str], *, source: str = "explicit_paths", checks: dict | None = None) -> int:
-    targets = set(select_targets(paths))
+def print_plan(
+    paths: list[str],
+    *,
+    source: str = "explicit_paths",
+    checks: dict | None = None,
+    registered_targets: set[str] | None = None,
+) -> int:
+    required_targets = set(select_targets(paths))
     grouped: dict[str, list[str]] = {}
     for check in (checks or {}).values():
         grouped.setdefault(check["target"], []).append(check["status"])
     reusable = {target for target, states in grouped.items() if all(state == "reusable" for state in states)}
     blocked = {target for target, states in grouped.items() if any(state in ("failed", "blocked") for state in states)}
-    targets.update(grouped)
+    targets = required_targets | set(grouped)
     targets.difference_update(reusable | blocked)
     unmapped_paths = [
         path
         for path in paths
         if not select_targets([path])
         and not path.replace("\\", "/").startswith(NON_SOURCE_PATH_PREFIXES)
+        and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
+    registration_missing = (
+        sorted(required_targets - registered_targets)
+        if registered_targets is not None
+        else []
+    )
     payload = {
         "schemaVersion": 1,
         "scopeSource": source,
@@ -490,20 +584,35 @@ def print_plan(paths: list[str], *, source: str = "explicit_paths", checks: dict
         "mode": "development_incremental_plan",
         "status": "recommendation_only",
         "changedPathCount": len(paths),
+        "requiredTargets": sorted(required_targets),
         "targets": sorted(targets),
         "reusedTargets": sorted(reusable),
         "blockedTargets": sorted(blocked),
+        "registrationMissingTargets": registration_missing,
         "unmappedPathCount": len(unmapped_paths),
         "unmappedPaths": unmapped_paths,
+        "executionReady": bool(required_targets)
+        and not registration_missing
+        and not unmapped_paths
+        and not (required_targets & blocked),
         "candidateEvidence": False,
         "testsRun": False,
-        "manualNonZeroL2Required": bool(unmapped_paths),
+        "manualNonZeroL2Required": bool(unmapped_paths or registration_missing),
     }
     print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
     return 0
 
 
-def write_state(*, status: str, paths: list[str], targets: list[str], returncode: int | None) -> None:
+def write_state(
+    *,
+    status: str,
+    paths: list[str],
+    targets: list[str],
+    returncode: int | None,
+    receipt: str | None = None,
+    reason: str = "",
+    target_results: list[dict] | None = None,
+) -> None:
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schemaVersion": 1,
@@ -512,25 +621,302 @@ def write_state(*, status: str, paths: list[str], targets: list[str], returncode
         "changedPaths": paths,
         "targets": targets,
         "returncode": returncode,
+        "reason": reason,
+        "receipt": receipt,
+        "targetReceipts": target_results or [],
+        "testsRun": bool(target_results),
+        "checksExecuted": len(target_results or []),
+        "verificationPassed": status == "passed",
         "candidateEvidence": False,
         "heavyValidationIncluded": False,
     }
     STATE_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def run_targets(paths: list[str]) -> int:
+def _json_path(path: Path, root: Path) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+def _execution_directory(root: Path, requested: Path | None) -> Path:
+    if requested is not None:
+        directory = requested
+    else:
+        stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        directory = root / ".runtime/frontend-dev-validation/executions" / (
+            f"{stamp}-{os.getpid()}-{time.time_ns() % 1_000_000_000}"
+        )
+    directory.mkdir(parents=True, exist_ok=False)
+    return directory
+
+
+def _write_receipt(directory: Path, payload: dict) -> Path:
+    path = directory / "receipt.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def environment_blockers(root: Path, targets: list[str]) -> list[str]:
+    """Known toolchain prerequisites, checked before any target starts.
+
+    A missing dependency is an environment blocker, not a product failure. The
+    rule is intentionally limited to registered Node tools used by this planner;
+    unknown command failures remain visible as target failures instead of being
+    guessed into a pass or blocked state.
+    """
+    required = {
+        tool
+        for target in targets
+        for tool in [NODE_TOOL_REQUIREMENTS.get(target)]
+        if tool
+    }
+    binary_root = root / "frontend/apps/web/node_modules/.bin"
+    missing = [
+        f"frontend/apps/web/node_modules/.bin/{tool}"
+        for tool in sorted(required)
+        if not (binary_root / tool).is_file()
+        or not os.access(binary_root / tool, os.X_OK)
+    ]
+    return missing
+
+
+def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
+    command = ["make", "--no-print-directory", target]
+    started = time.time()
+    try:
+        result = subprocess.run(
+            command,
+            cwd=root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        duration = time.time() - started
+        log_path.write_text(
+            f"COMMAND: {' '.join(command)}\nSTATUS: blocked\nREASON: {exc}\n",
+            encoding="utf-8",
+        )
+        return {
+            "target": target,
+            "command": command,
+            "status": "blocked",
+            "returncode": None,
+            "durationSeconds": round(duration, 3),
+            "reason": str(exc),
+            "log": str(log_path),
+            "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+        }
+    except KeyboardInterrupt:
+        duration = time.time() - started
+        log_path.write_text(
+            f"COMMAND: {' '.join(command)}\nSTATUS: interrupted\n",
+            encoding="utf-8",
+        )
+        return {
+            "target": target,
+            "command": command,
+            "status": "interrupted",
+            "returncode": 130,
+            "durationSeconds": round(duration, 3),
+            "log": str(log_path),
+            "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+        }
+    duration = time.time() - started
+    output = result.stdout or ""
+    log_path.write_text(output, encoding="utf-8")
+    if result.returncode == 0:
+        status = "passed"
+    else:
+        status = "failed"
+    print(output, end="" if output.endswith("\n") else "\n", flush=True)
+    return {
+        "target": target,
+        "command": command,
+        "status": status,
+        "returncode": result.returncode,
+        "durationSeconds": round(duration, 3),
+        "log": str(log_path),
+        "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+    }
+
+
+def execute_targets(
+    paths: list[str],
+    *,
+    root: Path = ROOT,
+    registered_targets: set[str] | None = None,
+    blocked_targets: set[str] | None = None,
+    receipt_dir: Path | None = None,
+) -> int:
     targets = select_targets(paths)
+    receipt_directory = _execution_directory(root, receipt_dir)
+    unmapped_paths = [
+        path
+        for path in paths
+        if not select_targets([path])
+        and not path.replace("\\", "/").startswith(NON_SOURCE_PATH_PREFIXES)
+        and path.replace("\\", "/") not in NON_SOURCE_PATHS
+    ]
+    registration_missing = (
+        sorted(set(targets) - registered_targets)
+        if registered_targets is not None
+        else []
+    )
+    blocked = sorted(set(targets) & (blocked_targets or set()))
+    environment_missing = environment_blockers(root, targets)
+    payload = {
+        "schemaVersion": 1,
+        "mode": "development_incremental_execution",
+        "status": "not_run",
+        "changedPaths": paths,
+        "requiredTargets": targets,
+        "targetOrder": targets,
+        "targetResults": [],
+        "notRunTargets": [],
+        "registrationMissingTargets": registration_missing,
+        "blockedTargets": blocked,
+        "environmentMissing": environment_missing,
+        "unmappedPathCount": len(unmapped_paths),
+        "unmappedPaths": unmapped_paths,
+        "candidateEvidence": False,
+        "heavyValidationIncluded": False,
+        "testsRun": False,
+        "verificationPassed": False,
+        "reason": "",
+    }
+    if environment_missing:
+        payload.update(
+            status="blocked",
+            reason="required frontend toolchain dependencies are missing",
+            notRunTargets=targets,
+        )
+    elif unmapped_paths:
+        payload.update(
+            status="blocked",
+            reason="unmapped changed paths require an explicit registered target",
+            notRunTargets=targets,
+        )
+    elif registration_missing:
+        payload.update(
+            status="blocked",
+            reason="run.json does not register every required target",
+            notRunTargets=targets,
+        )
+    elif blocked:
+        payload.update(
+            status="blocked",
+            reason="an unchanged recorded failure must be diagnosed before retry",
+            notRunTargets=targets,
+        )
     if not targets:
-        write_state(status="no_relevant_change", paths=paths, targets=[], returncode=0)
-        print("[frontend.dev.incremental] no relevant frontend validation")
+        payload.update(status="not_run", reason="no relevant L2 checks")
+        receipt = _write_receipt(receipt_directory, payload)
+        write_state(
+            status="not_run",
+            paths=paths,
+            targets=[],
+            returncode=0,
+            receipt=_json_path(receipt, root),
+            reason=payload["reason"],
+        )
+        print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
         return 0
-    print(f"[frontend.dev.incremental] paths={len(paths)} targets={','.join(targets)}", flush=True)
+    if payload["status"] == "blocked":
+        receipt = _write_receipt(receipt_directory, payload)
+        write_state(
+            status="blocked",
+            paths=paths,
+            targets=targets,
+            returncode=2,
+            receipt=_json_path(receipt, root),
+            reason=payload["reason"],
+            target_results=payload["targetResults"],
+        )
+        print(
+            "[frontend.dev.incremental] BLOCKED "
+            f"reason={payload['reason']} receipt={_json_path(receipt, root)}"
+        )
+        return 2
+
+    print(
+        f"[frontend.dev.incremental] EXECUTE paths={len(paths)} "
+        f"targets={','.join(targets)}",
+        flush=True,
+    )
     write_state(status="running", paths=paths, targets=targets, returncode=None)
-    result = subprocess.run(["make", "--no-print-directory", *targets], cwd=ROOT, check=False)
-    status = "passed" if result.returncode == 0 else "failed"
-    write_state(status=status, paths=paths, targets=targets, returncode=result.returncode)
-    print(f"[frontend.dev.incremental] {status.upper()} returncode={result.returncode}")
-    return result.returncode
+    for target in targets:
+        log_path = receipt_directory / f"{target}.log"
+        result = _run_make_target(target, root, log_path)
+        result["log"] = _json_path(log_path, root)
+        payload["targetResults"].append(result)
+        if result["status"] == "interrupted":
+            payload.update(status="interrupted", reason="operator interrupted the target")
+            break
+        if result["status"] == "blocked":
+            payload.update(status="blocked", reason=result.get("reason", "target could not start"))
+            break
+        if result["status"] == "failed":
+            payload.update(status="failed", reason=f"{target} exited nonzero")
+            break
+    if payload["status"] == "not_run":
+        payload.update(status="passed", reason="all required targets exited zero")
+    executed = {result["target"] for result in payload["targetResults"]}
+    payload["notRunTargets"] = [target for target in targets if target not in executed]
+    payload["testsRun"] = bool(payload["targetResults"])
+    payload["verificationPassed"] = payload["status"] == "passed"
+    payload["executedTargetCount"] = len(payload["targetResults"])
+    receipt = _write_receipt(receipt_directory, payload)
+    returncode = {
+        "passed": 0,
+        "failed": 1,
+        "blocked": 2,
+        "interrupted": 130,
+    }[payload["status"]]
+    write_state(
+        status=payload["status"],
+        paths=paths,
+        targets=targets,
+        returncode=returncode,
+        receipt=_json_path(receipt, root),
+        reason=payload["reason"],
+        target_results=payload["targetResults"],
+    )
+    print(
+        f"[frontend.dev.incremental] {payload['status'].upper()} "
+        f"executed={payload['executedTargetCount']} "
+        f"reason={payload['reason']} receipt={_json_path(receipt, root)}"
+    )
+    return returncode
+
+
+def execute_worktree(root: Path = ROOT) -> int:
+    selected = resolve_run(root)
+    if selected is None:
+        raise RunError("no registered run; select/register one goal before iteration")
+    _, run = selected
+    if run["status"] in ("completed", "superseded"):
+        raise RunError("selected run is closed; register/select the next task")
+    paths = delta_paths(root, run["baseline_sha"])
+    required = set(select_targets(paths))
+    checks = check_states(root, run)
+    blocked = {
+        target
+        for target in required
+        if any(
+            check["target"] == target and check["status"] in ("failed", "blocked")
+            for check in checks.values()
+        )
+    }
+    return execute_targets(
+        paths,
+        root=root,
+        registered_targets=declared_check_targets(run),
+        blocked_targets=blocked,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -542,6 +928,11 @@ def parse_args() -> argparse.Namespace:
         help="recommend affected frontend L2 targets without running them",
     )
     parser.add_argument("--plan-branch", action="store_true", help="explicit whole-branch comparison for review; not daily continuation")
+    parser.add_argument(
+        "--execute-worktree",
+        action="store_true",
+        help="execute every required affected L2 target for the registered run",
+    )
     parser.add_argument("--path", action="append", default=[], help="validate an explicit repository-relative path")
     parser.add_argument("--interval", type=float, default=0.75)
     parser.add_argument("--debounce", type=float, default=0.8)
@@ -562,7 +953,7 @@ def watch(interval: float, debounce: float) -> int:
             time.sleep(debounce)
             settled = content_snapshot()
             paths = changed_paths(previous, settled)
-            run_targets(paths)
+            execute_targets(paths)
             previous = settled
     except KeyboardInterrupt:
         write_state(status="stopped", paths=[], targets=[], returncode=0)
@@ -572,8 +963,10 @@ def watch(interval: float, debounce: float) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum((args.watch, args.plan_worktree, args.plan_branch)) > 1:
-        raise SystemExit("--watch, --plan-worktree and --plan-branch are mutually exclusive")
+    if sum((args.watch, args.plan_worktree, args.plan_branch, args.execute_worktree)) > 1:
+        raise SystemExit(
+            "--watch, --plan-worktree, --plan-branch and --execute-worktree are mutually exclusive"
+        )
     if args.plan_branch:
         if args.path:
             raise SystemExit("--plan-branch does not accept --path")
@@ -587,9 +980,18 @@ def main() -> int:
             return iteration_plan()
         except RunError as exc:
             raise SystemExit(f"run reconciliation required: {exc}") from exc
+    if args.execute_worktree:
+        if args.path:
+            raise SystemExit("--execute-worktree does not accept --path")
+        try:
+            return execute_worktree()
+        except RunError as exc:
+            raise SystemExit(f"run reconciliation required: {exc}") from exc
     if not args.path:
-        raise SystemExit("at least one --path is required outside --watch mode")
-    return run_targets(args.path)
+        raise SystemExit(
+            "at least one --path is required outside --watch, --plan-* and --execute-worktree modes"
+        )
+    return execute_targets(args.path)
 
 
 if __name__ == "__main__":

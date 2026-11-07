@@ -8,10 +8,13 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from scripts.verify.frontend_dev_incremental import (
+    BASE_FRONTEND_TARGETS,
     FALLBACK_TARGET,
     RULES,
+    execute_targets,
     iteration_plan,
     print_plan,
     select_targets,
@@ -63,7 +66,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_backend_mapping_does_not_mask_unknown_frontend_input(self) -> None:
         paths = ["scripts/ci/backend_test_receipt.py",
                  "frontend/apps/web/src/newFeature.ts"]
-        expected = sorted(["verify.ci.workflow.contract", FALLBACK_TARGET])
+        expected = sorted({
+            "verify.ci.workflow.contract",
+            FALLBACK_TARGET,
+            *BASE_FRONTEND_TARGETS,
+        })
         self.assertEqual(select_targets(paths), expected)
         self.assertEqual(select_targets(list(reversed(paths))), expected)
 
@@ -86,7 +93,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.auth_credential.guard",
                 "verify.frontend.auth_surface.guard",
+                "verify.frontend.lint.src",
                 "verify.frontend.page_pattern_reference_parity.unit",
+                "verify.frontend.typecheck.strict",
             ],
         )
 
@@ -100,7 +109,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 [
                     "verify.frontend.auth_credential.guard",
                     "verify.frontend.auth_surface.guard",
+                    "verify.frontend.lint.src",
                     "verify.frontend.page_pattern_reference_parity.unit",
+                    "verify.frontend.typecheck.strict",
                 ],
             )
 
@@ -126,8 +137,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             self.assertEqual(
                 select_targets([path]),
                 [
+                    "verify.frontend.lint.src",
                     "verify.frontend.navigation_shell.unit",
                     "verify.frontend.scene_entry_contract.unit",
+                    "verify.frontend.typecheck.strict",
                 ],
             )
 
@@ -231,7 +244,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.frontend.dev.incremental.unit"],
+                    [
+                        "verify.agent.resume.unit",
+                        "verify.frontend.dev.incremental.unit",
+                    ],
                 )
 
     def test_governed_make_lane_change_routes_to_the_iteration_policy_guard(self) -> None:
@@ -259,9 +275,32 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         text = "\n".join(path.read_text(encoding="utf-8") for path in makefiles)
         targets = sorted({target for rule in RULES for target in rule.targets} | {FALLBACK_TARGET})
         self.assertTrue(targets)
+
+        def has_executable_path(target: str, seen: set[str]) -> bool:
+            if target in seen:
+                return False
+            seen.add(target)
+            match = re.search(
+                rf"(?m)^{re.escape(target)}\s*:([^\n]*)\n((?:\t[^\n]*\n)*)",
+                text,
+            )
+            if match is None:
+                return False
+            if match.group(2).strip():
+                return True
+            dependencies = [
+                dependency
+                for dependency in match.group(1).split()
+                if dependency not in {"guard.prod.forbid"}
+            ]
+            return any(has_executable_path(dependency, seen) for dependency in dependencies)
+
         for target in targets:
             with self.subTest(target=target):
-                self.assertRegex(text, rf"(?m)^{re.escape(target)}:")
+                self.assertTrue(
+                    has_executable_path(target, set()),
+                    f"{target} has no executable recipe or executable dependency",
+                )
 
     def test_run_bookkeeping_alone_is_not_an_unmapped_product_path(self) -> None:
         # Reconciling `.agent/` state carries no frontend source input: reporting
@@ -344,7 +383,81 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_unmapped_frontend_change_fails_safe_to_typecheck(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/new-area/NewSurface.vue"]),
-            [FALLBACK_TARGET],
+            list(BASE_FRONTEND_TARGETS),
+        )
+
+    def test_single_vue_change_always_selects_lint_and_strict_typecheck(self) -> None:
+        targets = select_targets([
+            "frontend/apps/web/src/components/template/FormSection.vue",
+        ])
+        for target in BASE_FRONTEND_TARGETS:
+            self.assertIn(target, targets)
+        self.assertIn("verify.frontend.canonical_form_presenter.unit", targets)
+        self.assertIn("verify.frontend.contract_v2_occurrence_authority.unit", targets)
+
+    def test_single_ts_change_always_selects_lint_and_strict_typecheck(self) -> None:
+        targets = select_targets(["frontend/apps/web/src/utils/money.ts"])
+        self.assertEqual(targets, list(BASE_FRONTEND_TARGETS))
+
+    def test_mixed_frontend_and_backend_keeps_base_and_both_specialties(self) -> None:
+        targets = select_targets([
+            "frontend/apps/web/src/views/LoginView.vue",
+            "scripts/ci/backend_test_receipt.py",
+        ])
+        self.assertEqual(
+            targets,
+            [
+                "verify.ci.workflow.contract",
+                "verify.frontend.auth_credential.guard",
+                "verify.frontend.auth_surface.guard",
+                "verify.frontend.lint.src",
+                "verify.frontend.page_pattern_reference_parity.unit",
+                "verify.frontend.typecheck.strict",
+            ],
+        )
+
+    def test_renderer_registry_and_test_share_the_registration_locks(self) -> None:
+        registry = "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
+        test = "frontend/apps/web/scripts/professional_component_registry_test.ts"
+        self.assertEqual(
+            select_targets([registry, test]),
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.professional_component_registry.unit",
+                "verify.frontend.typecheck.strict",
+                "verify.semantic.registry.lint",
+            ],
+        )
+
+    def test_renderer_extension_entry_gets_base_plus_registry_lock(self) -> None:
+        targets = select_targets([
+            "frontend/apps/web/src/extensions/industryRenderers.ts",
+        ])
+        self.assertEqual(
+            targets,
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.professional_component_registry.unit",
+                "verify.frontend.typecheck.strict",
+                "verify.semantic.registry.lint",
+            ],
+        )
+
+    def test_incremental_executor_guard_change_runs_its_own_unit(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_dev_incremental.py"]),
+            [
+                "verify.agent.resume.unit",
+                "verify.frontend.dev.incremental.unit",
+            ],
+        )
+
+    def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/baseline_iteration_execution_policy_guard.py",
+            ]),
+            ["verify.baseline.iteration.execution.policy"],
         )
 
     def test_non_frontend_change_does_not_trigger_frontend_validation(self) -> None:
@@ -432,6 +545,204 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn('"unmappedPathCount": 1', text)
         self.assertIn('"unmappedPaths": ["addons/smart_core/models/example.py"]', text)
         self.assertIn("verify.frontend.primitive_adapter.unit", text)
+
+    def test_plan_reports_missing_run_registration_without_claiming_tests_ran(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan(
+                    ["frontend/apps/web/src/utils/money.ts"],
+                    registered_targets={"verify.frontend.typecheck.strict"},
+                ),
+                0,
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertEqual(payload["registrationMissingTargets"], ["verify.frontend.lint.src"])
+        self.assertFalse(payload["executionReady"])
+        self.assertFalse(payload["testsRun"])
+        self.assertTrue(payload["manualNonZeroL2Required"])
+
+    def test_expression_only_registration_cannot_cover_a_product_batch(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan(
+                    [
+                        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+                        "frontend/apps/web/src/components/template/FormSection.vue",
+                        "frontend/apps/web/src/utils/money.ts",
+                    ],
+                    registered_targets={"verify.frontend.expression.unit"},
+                ),
+                0,
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertFalse(payload["executionReady"])
+        self.assertIn("verify.frontend.lint.src", payload["registrationMissingTargets"])
+        self.assertIn("verify.frontend.typecheck.strict", payload["registrationMissingTargets"])
+        self.assertIn(
+            "verify.frontend.professional_component_registry.unit",
+            payload["registrationMissingTargets"],
+        )
+        self.assertFalse(payload["testsRun"])
+
+
+class IncrementalExecutionTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.root.joinpath("frontend/apps/web/src").mkdir(parents=True)
+        self.root.joinpath("frontend/apps/web/src/NewSurface.vue").write_text(
+            "<template />\n",
+            encoding="utf-8",
+        )
+        binaries = self.root / "frontend/apps/web/node_modules/.bin"
+        binaries.mkdir(parents=True)
+        for tool in ("eslint", "vue-tsc", "esbuild", "node"):
+            binary = binaries / tool
+            binary.write_text("#!/bin/sh\n", encoding="utf-8")
+            binary.chmod(0o755)
+        self.root.joinpath("Makefile").write_text(
+            "verify.frontend.lint.src:\n"
+            "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.typecheck.strict:\n"
+            "\t@printf 'typecheck executed\\n'\n",
+            encoding="utf-8",
+        )
+        self.state_patch = mock.patch(
+            "scripts.verify.frontend_dev_incremental.write_state"
+        )
+        self.state_patch.start()
+        self.addCleanup(self.state_patch.stop)
+
+    def execute(self, *, registered=None, blocked=None, paths=None) -> tuple[int, dict]:
+        receipt_dir = self.root / f"receipt-{len(list(self.root.glob('receipt-*')))}"
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = execute_targets(
+                paths or ["frontend/apps/web/src/NewSurface.vue"],
+                root=self.root,
+                registered_targets=registered,
+                blocked_targets=blocked,
+                receipt_dir=receipt_dir,
+            )
+        return code, json.loads((receipt_dir / "receipt.json").read_text())
+
+    def test_execution_runs_each_required_target_and_records_logs(self) -> None:
+        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        self.assertEqual(code, 0)
+        self.assertEqual(receipt["status"], "passed")
+        self.assertTrue(receipt["testsRun"])
+        self.assertTrue(receipt["verificationPassed"])
+        self.assertEqual(
+            [row["target"] for row in receipt["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        for row in receipt["targetResults"]:
+            self.assertEqual(row["returncode"], 0)
+            self.assertEqual(len(row["logSha256"]), 64)
+            self.assertTrue((self.root / row["log"]).is_file())
+
+    def test_missing_run_registration_blocks_before_any_target_runs(self) -> None:
+        code, receipt = self.execute(registered={"verify.frontend.lint.src"})
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(
+            receipt["registrationMissingTargets"],
+            ["verify.frontend.typecheck.strict"],
+        )
+        self.assertEqual(receipt["targetResults"], [])
+        self.assertEqual(receipt["notRunTargets"], list(BASE_FRONTEND_TARGETS))
+        self.assertFalse(receipt["testsRun"])
+
+    def test_unchanged_recorded_failure_blocks_instead_of_blind_retry(self) -> None:
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            blocked={"verify.frontend.typecheck.strict"},
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(receipt["blockedTargets"], ["verify.frontend.typecheck.strict"])
+        self.assertEqual(receipt["targetResults"], [])
+
+    def test_missing_frontend_toolchain_blocks_before_target_execution(self) -> None:
+        self.root.joinpath("frontend/apps/web/node_modules/.bin/eslint").unlink()
+        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(
+            receipt["environmentMissing"],
+            ["frontend/apps/web/node_modules/.bin/eslint"],
+        )
+        self.assertEqual(receipt["targetResults"], [])
+        self.assertEqual(receipt["notRunTargets"], list(BASE_FRONTEND_TARGETS))
+
+    def test_no_relevant_l2_is_not_run_not_pass(self) -> None:
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            paths=["docs/record.md"],
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(receipt["status"], "not_run")
+        self.assertFalse(receipt["testsRun"])
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_target_failure_is_failed_and_preserves_nonzero_exit(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            "verify.frontend.lint.src:\n"
+            "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.typecheck.strict:\n"
+            "\t@exit 7\n",
+            encoding="utf-8",
+        )
+        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        self.assertEqual(code, 1)
+        self.assertEqual(receipt["status"], "failed")
+        self.assertNotEqual(receipt["targetResults"][-1]["returncode"], 0)
+        self.assertEqual(receipt["notRunTargets"], [])
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_interruption_is_distinct_from_failure_and_not_pass(self) -> None:
+        interrupted = {
+            "target": "verify.frontend.lint.src",
+            "command": ["make", "--no-print-directory", "verify.frontend.lint.src"],
+            "status": "interrupted",
+            "returncode": 130,
+            "durationSeconds": 0.1,
+            "log": "receipt/interrupted.log",
+            "logSha256": "a" * 64,
+        }
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            return_value=interrupted,
+        ):
+            code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        self.assertEqual(code, 130)
+        self.assertEqual(receipt["status"], "interrupted")
+        self.assertEqual(receipt["executedTargetCount"], 1)
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_target_start_failure_is_blocked_not_failed(self) -> None:
+        blocked = {
+            "target": "verify.frontend.lint.src",
+            "command": ["make", "--no-print-directory", "verify.frontend.lint.src"],
+            "status": "blocked",
+            "returncode": None,
+            "durationSeconds": 0.1,
+            "reason": "make could not start",
+            "log": "receipt/blocked.log",
+            "logSha256": "b" * 64,
+        }
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            return_value=blocked,
+        ):
+            code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(receipt["notRunTargets"], ["verify.frontend.typecheck.strict"])
+        self.assertFalse(receipt["verificationPassed"])
 
 
 class RunScopedPlannerTest(unittest.TestCase):

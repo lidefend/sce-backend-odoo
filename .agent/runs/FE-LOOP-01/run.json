@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "3e5b9f144cf6b3e7c29a695b2e8db3eed09a01ec",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/README.md",
+    ".agent/goals/FE-LOOP-01.yaml",
+    ".agent/runs/FE-LOOP-01/run.json",
+    "docs/ops/iterations/FE-LOOP-01.md",
+    "AGENTS.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify/test_agent_run_context.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "make/ci.mk",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "run_context_unit": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "execution_policy_unit": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "renderer_registry_unit": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/professional_component_registry_test.ts",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "scripts/verify/frontend_professional_component_registry_guard.py",
+        "scripts/verify/test_frontend_professional_component_registry_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "audit": "Confirmed missing lint baseline on TS/Vue, missing Renderer routes, plan-only ci.local.iteration and no run-registration-to-impact comparison.",
+    "planning": "TS/Vue source changes always append lint:src and typecheck.strict; focused targets union; Renderer, FormSection and planner guards route to focused non-zero targets.",
+    "execution": "Plan and execute Make entries added. ci.local.iteration now executes the complete required set and records per-target status, exit code, duration, log and log SHA-256.",
+    "registration": "Execution is blocked before any target when run.json omits a target required by the current delta. agent_run_context exposes declared targets and a reusable missing-target comparison.",
+    "environment_recovery": "First single-TS attempt failed because the new worktree lacked frontend dependencies. The original failed log was preserved; missing tool binaries now preflight as BLOCKED; make fe.install.cached restored dependencies and the same scenario passed.",
+    "scenarios": {
+      "single_ts": "PASS 2 targets: lint + typecheck.strict",
+      "single_vue": "PASS 8 targets including canonical form and contract-v2 occurrence behavior",
+      "renderer_registry": "PASS 4 targets; registry test 137 cases and guard 147 tests",
+      "mixed_frontend_backend": "PASS 3 targets; workflow contract also passed",
+      "executor_guards": "PASS run-context 56, policy 19, planner 56 and lane-coverage 73 tests"
+    },
+    "ci_local_iteration": "PASS; executed 4 required targets, notRunTargets=0, receipt .runtime/frontend-dev-validation/executions/20261107T104648Z-354772-869245355/receipt.json",
+    "renderer_boundary": "rendererVersion/capabilities remain deferred to FE-RENDERER-02 and are not claimed as delivered.",
+    "external_state": "No push, PR, merge, deployment, browser acceptance or candidate build."
+  },
+  "next_exact_step": "Wait for explicit owner authorization before pushing the clean local FE-LOOP-01 candidate or creating a PR.",
+  "id": "FE-LOOP-01",
+  "branch": "codex/fe-loop-01-quality-closure",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-LOOP-01.yaml",
+  "record": "docs/ops/iterations/FE-LOOP-01.md"
+}

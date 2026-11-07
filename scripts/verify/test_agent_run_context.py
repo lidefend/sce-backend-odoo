@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from scripts.ops.agent_run_context import (RunError, begin, record, resolve_run, summary,
                                            resume_prompt, delta_paths, dependency_state,
+                                           declared_check_targets, registration_missing_targets,
                                            DELIVERY_STAGES, DELIVERY_GATE_FIELDS)
 
 
@@ -68,6 +69,20 @@ class RunContextTest(unittest.TestCase):
     def test_unknown_make_target_is_rejected(self):
         self.run['checks']['unit']['target'] = 'verify.does.not.exist'; self.save()
         with self.assertRaises(RunError): resolve_run(self.root)
+
+    def test_registered_targets_are_derived_from_checks(self):
+        self.assertEqual(declared_check_targets(self.run), {'verify.test'})
+        self.assertEqual(
+            registration_missing_targets(
+                self.run,
+                {'verify.test', 'verify.frontend.lint.src'},
+            ),
+            ['verify.frontend.lint.src'],
+        )
+        self.assertEqual(
+            summary(self.root)['registered_check_targets'],
+            ['verify.test'],
+        )
 
     def test_reuse_summary_reports_unreusable_checks(self):
         self.assertEqual(summary(self.root)['check_reuse_summary'], {'not_run': 1})
