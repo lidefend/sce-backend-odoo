@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-READINESS-EVIDENCE-20261107",
+  "branch": "fix/acceptance-fixture-readiness-evidence",
+  "baseline_sha": "fdd039b428535fb2a7806787b042a6513b0f58be",
+  "status": "active",
+  "goal": ".agent/goals/ACCEPTANCE-READINESS-EVIDENCE-20261107.yaml",
+  "record": "docs/ops/iterations/acceptance-readiness-evidence-20261107-record.md",
+  "scope": [
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "scripts/verify/frontend_productization_fixture.py",
+    "scripts/verify/local_acceptance_project_overview_browser.mjs",
+    "scripts/verify/frontend_readiness_non_draft_resolver.py",
+    "docs/ops/iterations/acceptance-readiness-evidence-20261107-record.md",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "isolated acceptance carrier sc_frontend_acceptance + governed fixture reprovision + browser probe"
+  },
+  "checks": {
+    "fixture_tool_py_compile": {
+      "target": "verify.frontend.fixture",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/verify/frontend_productization_fixture.py"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "提交夹具与探针改动；受管重灌验收夹具；切载体；跑探针四条；回读权限未扩大；恢复载体",
+  "layer": {
+    "formal_product_layer": "P2",
+    "layer_target": "验收夹具 + 概览浏览器探针",
+    "module": "smart_construction_acceptance_fixture",
+    "standard_vs_user_specific": "acceptance fixture",
+    "why_here": "证据在验收库采集，夹具数据是稳定可复现的验收基线",
+    "why_not_elsewhere": "不改产品视图/服务逻辑，不扩日常库，不造产品权限",
+    "blast_radius": "sc_frontend_acceptance 夹具数据（新增 1 项目、1 用户组）与概览浏览器探针"
+  }
+}

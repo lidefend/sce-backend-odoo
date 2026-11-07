@@ -95,6 +95,16 @@ LIFECYCLE_FIXTURE_DEPENDENT_MODELS = (
     "project.task",
 )
 
+# Read-only carrier for the "non-draft completion degree is hidden" browser
+# evidence.  It is created directly in a started state (create bypasses the
+# lifecycle transition validation, which only guards ``write``) and is kept
+# separate from FE Project A/B/C so a governed rerun never disturbs rows other
+# acceptance lanes read.
+NON_DRAFT_FIXTURE_XMLID = "fe_project_non_draft"
+NON_DRAFT_FIXTURE_NAME = "FE Project NonDraft"
+NON_DRAFT_FIXTURE_CODE = "FE-ND"
+NON_DRAFT_FIXTURE_STATE = {"lifecycle_state": "in_progress", "sc_approval_state": "approved"}
+
 
 # Dedicated carrier for the 日常合同 (sc.general.contract) browser acceptance.
 #
@@ -444,6 +454,31 @@ def _project(env, suffix, company, manager, partner):
         "project.project",
         "fe_project_%s" % suffix.lower(),
         [("name", "=", name), ("company_id", "=", company.id)],
+        values,
+    )
+
+
+def _non_draft_project(env, company, manager, partner):
+    values = {
+        "name": NON_DRAFT_FIXTURE_NAME,
+        "code": NON_DRAFT_FIXTURE_CODE,
+        "company_id": company.id,
+        "partner_id": partner.id,
+        "user_id": manager.id,
+        "manager_id": manager.id,
+        "privacy_visibility": "followers",
+        "funding_enabled": True,
+        "active": True,
+        "lifecycle_state": NON_DRAFT_FIXTURE_STATE["lifecycle_state"],
+        "sc_approval_state": NON_DRAFT_FIXTURE_STATE["sc_approval_state"],
+    }
+    if "project_code" in env["project.project"]._fields:
+        values["project_code"] = NON_DRAFT_FIXTURE_CODE
+    return _upsert(
+        env,
+        "project.project",
+        NON_DRAFT_FIXTURE_XMLID,
+        [("name", "=", NON_DRAFT_FIXTURE_NAME), ("company_id", "=", company.id)],
         values,
     )
 
@@ -1420,6 +1455,12 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [
             "smart_construction_core.group_sc_cap_project_read",
             "smart_construction_core.group_sc_cap_business_initiator",
+            # Read-only entry visibility for the project overview (menu 382)
+            # so this member can open the form while still lacking any submit
+            # capability. Submit access only depends on
+            # group_sc_cap_project_user/manager/super_admin, never on an entry
+            # group, so this grants no escalation.
+            "smart_construction_core.group_sc_entry_p11",
         ],
     )
     pm = _user(
@@ -1530,6 +1571,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
     project_a = _project(env, "A", company_a, pm, partner_a)
     project_b = _project(env, "B", company_a, pm, partner_b)
     project_c = _project(env, "C", company_b, finance, partner_c)
+    non_draft_project = _non_draft_project(env, company_a, pm, partner_a)
     lifecycle_carrier, lifecycle_carrier_reset = _lifecycle_carrier(
         env, company_a, config_admin, partner_a
     )
@@ -1550,6 +1592,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
     project_a.message_subscribe(partner_ids=[project_member.partner_id.id, pm.partner_id.id])
     project_b.message_subscribe(partner_ids=[pm.partner_id.id])
     project_a.message_subscribe(partner_ids=[finance_user.partner_id.id])
+    non_draft_project.message_subscribe(partner_ids=[pm.partner_id.id])
 
     _funding_baseline(env, "A", project_a)
     _funding_baseline(env, "B", project_b)

@@ -91,6 +91,7 @@
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
     "fix/ci-backend-coverage-skip-detection": ".agent/runs/CI-HISTORY-EVIDENCE-01/run.json",
-    "fix/scheduled-ci-mechanism-impact-rg": ".agent/runs/CI-SCHEDULED-MECHANISM-IMPACT-20261107/run.json"
+    "fix/scheduled-ci-mechanism-impact-rg": ".agent/runs/CI-SCHEDULED-MECHANISM-IMPACT-20261107/run.json",
+    "fix/acceptance-fixture-readiness-evidence": ".agent/runs/ACCEPTANCE-READINESS-EVIDENCE-20261107/run.json"
   }
 }
