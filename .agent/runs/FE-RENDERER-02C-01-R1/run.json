@@ -136,20 +136,25 @@
   "results": {
     "kanban_root_cause": "PASS: menu_sc_project_kanban is released and ACL-readable, but fixture lacked its project.management scenario binding; PM and project member also lacked the formal entry_p01 menu group",
     "kanban_fix": "PASS: fixture-owned scenario binding, stale prototype cleanup and formal entry group assignment implemented",
-    "kanban_browser": "PASS: config_admin 4 records, PM 4 records, project_a_member 1 record; navigation, paging, search, detail and workflow passed for all three; negative authority leaked_entries=[]",
+    "kanban_browser": "PASS: final source 6b377d73d config_admin 4 records, PM 4 records, project_a_member 1 record; released navigation, paging, search, detail and workflow passed for all three; negative authority leaked_entries=[]",
     "approval_root_cause": "PASS: pending fixture request had state=submit but no review_ids, and the acceptance company had no active payment approval policy",
     "approval_fix": "PASS: fixture-owned finance-manager policy, finance reviewer role and real current-step review assignment implemented",
-    "managed_browser_entry": "PASS: local profile now routes My Work runtime/browser through the managed 5180 operation entry with preview and runtime identity binding",
-    "fixture_orm": "PASS: acceptance.frontend.fixture_orm 45 tests, 0 failed",
-    "l2": "PASS: 7 required targets executed; receipt=.runtime/frontend-dev-validation/executions/20261107T222438Z-3802550-74163293/receipt.json",
+    "managed_browser_entry": "PASS: local profile routes My Work runtime/browser through the managed 5180 operation entry with preview and runtime identity binding",
+    "fixture_orm": "PASS: acceptance.frontend.fixture_orm 45 tests, 0 failed; log=.runtime/acceptance/fixture_orm_20261107T224955Z.log",
+    "l2": "PASS on source 6b377d73d: standard_preview.unit 129 tests, dev.incremental.unit 79 tests, fixture.unit 40 tests; final clean-HEAD ci.local.iteration receipt pending",
     "coverage_disposition": "PASS: verify.verification.lane.coverage and stale target-unregister path passed",
-    "approval_runtime": "NOT_RUN: pending acceptance backend rebuild at the new clean candidate",
-    "approval_browser": "NOT_RUN: pending acceptance backend rebuild and exact candidate evidence"
+    "approval_runtime": "PASS: source 6b377d73d; active single finance-manager policy, pending review assigned to fixture_role_finance_reviewer, can_review=true, unauthorized role matrix verified",
+    "approval_browser": "PASS: source 6b377d73d; approval summary identity/money, reviewer action, visible worklist update, finance approved state, project-member denial and responsive views passed with zero console/page/HTTP errors; report=.runtime/final-acceptance/my-work-approval/report.json",
+    "approval_browser_provenance": "PASS: backend=6b377d73d, database=sc_frontend_acceptance, preview_base=77447ff3, preview_entry_sha256=87014c4412941649ec46b5c14fae4aa6a4202198cf5e3b37b4591687b1e16136, project_id=1",
+    "kanban_evidence": "PASS: artifacts/frontend-business-entry-matrix/final-6b377d73d/{config-admin,pm,project-member}; records=4/4/1; completeness=complete",
+    "fixture_attachment_scope": "PASS: FE-JOURNEY-PAYMENT-001 attachment company_id aligned to payment company A; browser attachment metadata 403 removed",
+    "inline_feedback_risk": "P2_NOT_OBSERVED: approval ended with visible worklist count/card and finance-side approved state, but the component's inline success text did not persist after refresh; follow-up product presentation work required",
+    "candidate_form_create_risk": "P1_OUT_OF_SCOPE_NOT_FIXED: settlement '新建付款申请' navigated to /f/payment.request/new with render_profile=edit and returned 409 NATIVE_ACTION_GUIDANCE_INVALID/action_guidance.record_identity; R1 browser was narrowed to the required existing approval fixture and did not hide or count this product defect as PASS"
   },
-  "next_exact_step": "Commit the fixture and managed browser wiring, rebuild the acceptance backend at the new clean candidate, then run Kanban, My Work runtime and My Work browser evidence.",
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit final docs/run registration, execute ci.local.iteration on the clean final HEAD, record the exact receipt, then stop for independent review.",
   "id": "FE-RENDERER-02C-01-R1",
   "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-RENDERER-02C-01-R1.yaml",
   "record": "docs/ops/iterations/fe_renderer_02c_01_r1_fixture_closure_20261108.md"
 }

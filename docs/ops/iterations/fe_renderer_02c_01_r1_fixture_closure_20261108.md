@@ -47,9 +47,15 @@ FILESTORE_IDENTITY_CONFIRMED=true
 
 ## 执行状态
 
-- 当前阶段：fixture 与受管入口修复完成，等待新候选后端重建后的最终 L4。
+- 当前阶段：L4 主体证据完成，等待 clean final HEAD 的最终静态回执与独立评审。
 - 产品代码修改：不允许。
-- 最新候选：`6cb2bdeade3aa9ffc9dea40a3a09aafef73f039c`。
+- 证据源候选：`6b377d73d7a5980fb13cf09cfa113c5333f8d62a`。
+- 渲染证据：5180 preview base `77447ff3`，entry
+  `/assets/index-BXdpOGlL.js`，SHA-256
+  `87014c4412941649ec46b5c14fae4aa6a4202198cf5e3b37b4591687b1e16136`。
+- 后端证据：18082 `SC_SOURCE_REVISION=6b377d73d`，数据库
+  `sc_frontend_acceptance`，artifact digest
+  `d58d6d9258ef63c0f3a5332940e8d78e92c8762660a40f427e19e5d6a7d016f5`。
 
 ## Kanban 分层定位
 
@@ -101,15 +107,39 @@ FILESTORE_IDENTITY_CONFIRMED=true
 - `verify.verification.lane.coverage`：PASS；`standard_preview.unit` 因新接线成为有效目标，
   已通过受管 `--unregister-target` 移除其 stale dead-surface disposition。
 - Kanban 三种角色真实浏览器结果：
-  - config admin：`ok=true`，4 records，分页、搜索、详情和 workflow actions PASS。
-  - PM：`ok=true`，4 records，分页、搜索、详情和 workflow actions PASS。
-  - project member：`ok=true`，1 record，分页、搜索、详情和 workflow actions PASS。
+  - config admin：`ok=true`、`completeness=complete`，4 records，分页、搜索、详情和 workflow actions PASS。
+  - PM：`ok=true`、`completeness=complete`，4 records，分页、搜索、详情和 workflow actions PASS。
+  - project member：`ok=true`、`completeness=complete`，1 record，分页、搜索、详情和 workflow actions PASS。
   - 三种角色的 negative authority 均为 `checked_entries=1`、`leaked_entries=[]`。
-  - 证据目录：`artifacts/frontend-business-entry-matrix/{1794088804235,1794089153535,1794089486725}`。
+  - 证据目录：`artifacts/frontend-business-entry-matrix/final-6b377d73d/{config-admin,pm,project-member}`。
+- `make verify.frontend.my_work_approval.runtime`：PASS；active single
+  `fe_acceptance_payment_request_approval` policy，pending review 分配给
+  `fixture_role_finance_reviewer`，`can_review=true`，未授权角色矩阵符合预期。
+- `make verify.frontend.my_work_approval.browser`：PASS；审批摘要记录身份与金额、
+  审批人可办、工作项移除及待办数量 8→7、财务侧状态 `approved`、项目成员拒绝和
+  三档响应式均通过；console/page/unexpected HTTP errors 为 0。
+  报告：`.runtime/final-acceptance/my-work-approval/report.json`。
+- `make acceptance.frontend.fixture_orm`：PASS，45 tests，0 failed；日志
+  `.runtime/acceptance/fixture_orm_20261107T224955Z.log`。
+- 附件元数据 403 已定位并修复：fixture attachment 原先落在默认 `My Company`，
+  与付款申请的 `FE Company A` 不一致；fixture 现显式写入付款单公司并回读校验。
+
+## 后续风险登记
+
+- P1，未在本轮修复：
+  - 从结算单点击“新建付款申请”后，`/f/payment.request/new` 请求仍携带
+    `render_profile=edit`，得到 409
+    `NATIVE_ACTION_GUIDANCE_INVALID / action_guidance.record_identity`。
+  - 该问题属于产品表单 create profile 消费缺陷，不属于 R1 已有审批 fixture 验收；
+    本轮没有通过放宽契约、吞掉 409 或把该路径计为 PASS 来掩盖它。
+- P2，未在本轮修复：
+  - 审批成功后工作项、待办数量和财务侧 `approved` 状态均正确更新，但组件声明的
+    内联成功提示在刷新后未保留；本轮结果反馈证据使用可观察的权威列表状态更新，
+    不宣称 inline feedback 已通过。
+- 冻结项继续保持不变：用户时区/日期格式等待契约声明，BOQ 金额等待币种与精度契约。
 
 ## 待完成
 
-- 提交当前 fixture/tooling 修改并在新 clean HEAD 重建 18082 后端。
-- 运行 `verify.frontend.my_work_approval.runtime`。
-- 运行 `verify.frontend.my_work_approval.browser`，绑定新 HEAD、5180 bundle 与运行态 revision。
-- 更新最终证据与 run，clean 后停止，等待评审和发布授权。
+- 运行 `ci.delivery.freeze.prepare`，审阅并提交生成物。
+- 在 clean final HEAD 运行 `ci.local.iteration`，记录精确 receipt。
+- 确认工作树 clean 后停止，等待独立评审和发布授权。
