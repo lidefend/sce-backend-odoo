@@ -1,0 +1,40 @@
+decision:
+  id: P4-CI-PATH-OWNERSHIP-001
+  status: active
+  topic: ci_path_ownership
+  scope: P4 CI risk, backend impact planning and delivery publication
+  authority: config/ci/path_ownership_v1.json
+  decision:
+    frontend_runtime:
+      owner: frontend_runtime
+      verification: frontend release lane
+    frontend_quality_tooling:
+      owner: frontend_quality_tooling
+      verification: frontend incremental quality loop
+      backend_business_change: false
+    frontend_makefiles:
+      make/frontend.mk: frontend_delivery_make
+      make/frontend_professional_extensions.mk: frontend_extension_make
+    codex_control_plane:
+      owner: codex_control_plane
+      backend_business_change: false
+      verification: iteration policy and publish preflight
+    agent:
+      run_registration: agent_run_registration
+      governance_authority: agent_governance
+      backend_business_change: false
+    control_plane:
+      output: control_plane_changed
+      backend_business_change: false
+      unknown_paths: fail_closed
+    backend:
+      runtime: backend_runtime
+      quality_tooling: backend_quality_tooling
+  invariants:
+    - control_plane_changes_never_imply_backend_runtime
+    - frontend_quality_tooling_never_implies_backend_business
+    - unknown_paths_cannot_be_treated_as_skip
+    - no_runtime_impact_does_not_create_full_module_suite_from_missing_history
+  reason:
+    - path_ownership_was_repeated_in_policy_planner_and_workflow_conditions
+    - broad_scripts_verify_and_make_classification_confused_tooling_with_runtime

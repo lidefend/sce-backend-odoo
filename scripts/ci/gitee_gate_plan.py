@@ -19,6 +19,7 @@ REPOSITORY = "leegege/sce-product-odoo"
 CHECKS = ("public_guard", "merge_policy_gate", "professional_quality_gate", "frontend_release_gate")
 SOURCES = tuple(".github/workflows/" + name + ".yml" for name in CHECKS)
 INPUTS = SOURCES + ("config/ci/risk_tiering_v1.json", "scripts/ci/ci_risk_classifier.py",
+                    "config/ci/path_ownership_v1.json", "scripts/ci/ci_path_ownership.py",
                     "scripts/ci/gitee_gate_plan.py", "scripts/ci/gitee_pr_identity.py",
                     "scripts/ci/gitee_ci_checks.py", "scripts/ci/gitee_formal_executor.py", "scripts/ci/gitee_formal_queue.py", "scripts/ci/gitee_formal_worker.py", "scripts/ops/gitee_frontend_cache.py",
                     "scripts/ci/gitee_ci_acceptance.py", "scripts/ci/gitee_frontend_reuse.py", "scripts/ops/gitee_frontend_reuse.py")
@@ -98,6 +99,7 @@ def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=R
         "head_sha": head, "base_sha": base, "pr_number": pr_number,
         "candidate_requested": candidate, "lane": result.lane,
         "frontend_changed": result.frontend_changed, "backend_changed": result.backend_changed,
+        "control_plane_changed": result.control_plane_changed,
         "paths": sorted(set(paths)),
         "source_hashes": {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in INPUTS},
         "checks": [{"name": name, "mode": modes[name], "workflow": SOURCES[i],

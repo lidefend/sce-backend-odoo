@@ -19,6 +19,7 @@ from scripts.ci.gitee_gate_plan import CHECKS, digest, plan as build_plan, chang
 PUBLIC_TESTS = (
     "scripts/verify/test_repository_clean_history_guard.py",
     "scripts/verify/test_github_actions_security_guard.py",
+    "scripts/ci/test_ci_path_ownership.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_merge_policy_gate.py",
@@ -27,8 +28,12 @@ PUBLIC_TESTS = (
     "scripts/ci/test_frontend_professional_extension_guard.py",
     "scripts/verify/test_frontend_release_evidence_bundle.py",
 )
-PUBLIC_COMPILE = ('scripts/verify/repository_clean_history_guard.py', 'scripts/verify/test_repository_clean_history_guard.py', 'scripts/verify/github_actions_security_guard.py', 'scripts/verify/test_github_actions_security_guard.py', 'scripts/ci/ci_risk_classifier.py', 'scripts/ci/test_ci_risk_classifier.py', 'scripts/ci/test_ci_risk_workflow_contract.py', 'scripts/ci/test_merge_policy_gate.py', 'scripts/ci/test_release_candidate_gate.py', 'scripts/ci/select_authoritative_workflow_run.py', 'scripts/ci/test_select_authoritative_workflow_run.py', 'scripts/ci/frontend_professional_extension_guard.py', 'scripts/ci/test_frontend_professional_extension_guard.py', 'scripts/release/frontend_release_evidence.py', 'scripts/release/generate_frontend_release_evidence_bundle.py', 'scripts/verify/frontend_release_evidence_bundle.py', 'scripts/verify/test_frontend_release_evidence_bundle.py')
-FAST_TESTS = PUBLIC_TESTS[:4] + ("scripts/ci/test_select_authoritative_workflow_run.py",)
+PUBLIC_COMPILE = ('scripts/verify/repository_clean_history_guard.py', 'scripts/verify/test_repository_clean_history_guard.py', 'scripts/verify/github_actions_security_guard.py', 'scripts/verify/test_github_actions_security_guard.py', 'scripts/ci/ci_path_ownership.py', 'scripts/ci/test_ci_path_ownership.py', 'scripts/ci/ci_risk_classifier.py', 'scripts/ci/test_ci_risk_classifier.py', 'scripts/ci/test_ci_risk_workflow_contract.py', 'scripts/ci/test_merge_policy_gate.py', 'scripts/ci/test_release_candidate_gate.py', 'scripts/ci/select_authoritative_workflow_run.py', 'scripts/ci/test_select_authoritative_workflow_run.py', 'scripts/ci/frontend_professional_extension_guard.py', 'scripts/ci/test_frontend_professional_extension_guard.py', 'scripts/release/frontend_release_evidence.py', 'scripts/release/generate_frontend_release_evidence_bundle.py', 'scripts/verify/frontend_release_evidence_bundle.py', 'scripts/verify/test_frontend_release_evidence_bundle.py')
+FAST_TESTS = ("scripts/verify/test_repository_clean_history_guard.py",
+              "scripts/verify/test_github_actions_security_guard.py",
+              "scripts/ci/test_ci_path_ownership.py",
+              "scripts/ci/test_ci_risk_classifier.py",
+              "scripts/ci/test_select_authoritative_workflow_run.py")
 NODE_PATH = '/opt/gitee-ci/node-v22.17.0/bin/node'
 NODE_SHA256 = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'
 # Trusted, fixed tuning for the small shared CI host. Go's limit is a soft GC

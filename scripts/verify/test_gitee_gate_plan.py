@@ -41,6 +41,16 @@ class GatePlanTests(unittest.TestCase):
         r = self.build(("scripts/ci/example.py",))
         self.assertEqual(r["lane"], "HIGH_RISK")
         self.assertEqual(self.modes(r)["professional_quality_gate"], "governance")
+        self.assertTrue(r["control_plane_changed"])
+        self.assertFalse(r["backend_changed"])
+
+    def test_frontend_quality_tooling_is_standard_frontend_not_backend(self):
+        r = self.build(("scripts/verify/frontend_example_guard.py",))
+        self.assertEqual(r["lane"], "STANDARD")
+        self.assertTrue(r["frontend_changed"])
+        self.assertFalse(r["backend_changed"])
+        self.assertFalse(r["control_plane_changed"])
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_frontend")
 
     def test_high_risk_backend(self):
         r = self.build(("scripts/ci/example.py", "scripts/verify/test_example.py"))

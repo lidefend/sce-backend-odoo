@@ -59,6 +59,16 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(self.lane(".agent/context.yaml"), "HIGH_RISK")
         self.assertEqual(self.lane(".agent/decisions/runtime-authority.yaml"), "HIGH_RISK")
 
+    def test_missing_or_unsafe_path_ownership_registry_is_rejected(self) -> None:
+        from ci_risk_classifier import load_policy
+        for bad in ("", "../ownership.json", "/tmp/ownership.json",
+                    "config/ci/missing-ownership.json", 1):
+            with self.subTest(value=bad):
+                policy = load_policy()
+                policy["path_ownership_registry"] = bad
+                with self.assertRaises(ValueError):
+                    classify(["docs/readme.md"], event_name="pull_request", policy=policy)
+
     def test_version_only_change_is_fast_but_not_unclassified(self) -> None:
         result = classify(["VERSION"], event_name="pull_request")
         self.assertEqual(result.lane, "FAST")

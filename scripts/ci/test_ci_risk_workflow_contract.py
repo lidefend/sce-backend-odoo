@@ -168,6 +168,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         text = self.text("professional_quality_gate.yml")
         self.assertIn("frontend_changed: ${{ steps.risk.outputs.frontend_changed }}", text)
         self.assertIn("backend_changed: ${{ steps.risk.outputs.backend_changed }}", text)
+        self.assertIn("control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}", text)
         self.assertIn("candidate_requested:", text)
         self.assertIn("CANDIDATE_REQUESTED:", text)
         self.assertIn("PROFESSIONAL_MODE == 'governance'", text)
@@ -178,6 +179,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         self.assertIn(
             "BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}",
+            text,
+        )
+        self.assertIn(
+            "CONTROL_PLANE_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.control_plane_changed }}",
             text,
         )
         self.assertIn("github.event_name == 'schedule' && 'full'", text)
@@ -541,7 +546,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             summary = Path(tmp) / 'summary'
             env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary), 'RISK_LANE': 'HIGH_RISK',
                    'FRONTEND_MODE': 'skip', 'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': 'true',
-                   'FRONTEND_CHANGED': 'false', 'MANAGED_ORM_REQUIRED': 'false',
+                   'FRONTEND_CHANGED': 'false', 'CONTROL_PLANE_CHANGED': 'false',
+                   'MANAGED_ORM_REQUIRED': 'false',
                    'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
                    'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
             for event, expected in [('pull_request', 'standard_backend'), ('push', 'mainline'), ('schedule', 'full')]:

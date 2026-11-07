@@ -33,6 +33,7 @@ jobs:
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       orm_required: ${{ steps.risk.outputs.orm_required }}
       orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
       payment_orm_required: ${{ steps.risk.outputs.payment_orm_required }}
@@ -198,6 +199,7 @@ jobs:
       PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
+      CONTROL_PLANE_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.control_plane_changed }}
       ORM_SCOPES: ${{ needs.professional_authorization.outputs.orm_scopes }}
       PAYMENT_ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.payment_orm_required != 'false' }}
       ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}

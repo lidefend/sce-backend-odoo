@@ -1,0 +1,64 @@
+schema_version: 1
+goal:
+  id: FE-LOOP-02
+  title: CI 路径归属与验证影响闭环
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: frontend quality tooling, agent governance, control-plane and backend runtime ownership classification
+  module: CI path ownership and impact selection
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    路径分类、CI 风险预算、后端影响选择和验证入口责任均属于交付工具链。
+  why_not_elsewhere: >
+    不在前端运行时或 Odoo 业务模块中增加路径特判；不以执行全量模块套件掩盖分类缺失，
+    也不把未知路径静默降级为跳过。
+  blast_radius:
+    paths:
+      - config/ci/path_ownership_v1.json
+      - config/ci/risk_tiering_v1.json
+      - scripts/ci/ci_path_ownership.py
+      - scripts/ci/test_ci_path_ownership.py
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/backend_impact_plan.py
+      - scripts/ci/test_backend_impact_plan.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/test_merge_policy_gate.py
+      - scripts/ci/gitee_gate_plan.py
+      - scripts/verify/test_gitee_gate_plan.py
+      - scripts/ci/gitee_formal_executor.py
+      - scripts/verify/test_gitee_formal_executor.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - .github/workflows/professional_quality_gate.yml
+      - .github/workflows/merge_policy_gate.yml
+      - make/ci.mk
+      - .agent/decisions/ci-path-ownership.yaml
+      - .agent/
+      - docs/ops/iterations/FE-LOOP-02.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/audit/test_coverage_registry/test_coverage_registry.json
+    runtime: none
+    product_behavior: none
+  objective: >
+    建立唯一路径归属事实源，使纯前端、纯后端、前后端混合、纯 CI 工具链和发布/安全控制面
+    只触发各自需要的验证，并保持未知路径 fail-closed。
+  acceptance:
+    - 前端运行时与前端质量工具链使用不同 ownership category
+    - make/frontend.mk 与 make/codex.mk 具有不同验证责任
+    - .agent run registration 与 governance authority 分开分类
+    - 风险分类输出 control_plane_changed，且控制面不被标记为后端业务运行时
+    - GitHub 与 Gitee 正式门禁计划都携带 control_plane_changed
+    - 没有后端运行时影响时 backend_impact_plan 返回空模块，不依赖历史复用证据
+    - 五种 CI 场景有非零分类矩阵测试
+    - 未知路径仍触发 HIGH_RISK/full fail-closed
+  exclusions:
+    - product_runtime_change
+    - renderer_architecture_change
+    - browser_acceptance
+    - candidate_build
+    - deployment
+    - merge
+  rollback: 回退本批 P4 分类注册表、选择器、工作流输出和治理记录。

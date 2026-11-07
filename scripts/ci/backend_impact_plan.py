@@ -16,21 +16,29 @@ import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 
+try:
+    from scripts.ci import ci_path_ownership
+except ImportError:  # Direct script execution adds scripts/ci to sys.path.
+    import ci_path_ownership
+
 ROOT = Path(__file__).resolve().parents[2]
 ROOTS = ('addons', 'demo_addons')
 STDLIB = frozenset(sys.stdlib_module_names)
 GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           'config/odoo*', 'scripts/test/**', 'scripts/ci/orm_result_guard.sh',
-          '.github/workflows/backend_test_suite.yml',
-          '.github/workflows/professional_quality_gate.yml', 'make/ci.mk',
           'make/dev_test.mk', 'Makefile')
-NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', 'make/frontend.mk', '*.md',
-               'scripts/verify/**', 'scripts/ci/**', 'scripts/ops/**')
 
 # Existing CI control-plane inputs are not Odoo runtime inputs. Changes still
 # require their owning tool gate, and concrete test-file consumers take priority.
 # Do not exempt scripts/**: runner and unknown paths retain conservative scope.
 CONTROL_PLANE = {
+    'make/ci.mk': 'verify.ci.workflow.contract',
+    'make/codex.mk': 'verify.baseline.iteration.execution.policy',
+    '.github/workflows/backend_test_suite.yml': 'verify.ci.workflow.contract',
+    '.github/workflows/professional_quality_gate.yml': 'verify.ci.workflow.contract',
+    '.github/workflows/frontend_release_gate.yml': 'verify.ci.scheduled_gates',
+    '.github/workflows/merge_policy_gate.yml': 'verify.ci.scheduled_gates',
+    '.github/workflows/public_guard.yml': 'verify.github_actions.security',
     'scripts/ci/frontend_fixture_orm_entry.sh': 'verify.ci.scheduled_gates',
     'scripts/ci/backend_impact_plan.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_changed_test_coverage.py': 'verify.ci.workflow.contract',
@@ -54,6 +62,25 @@ CONTROL_PLANE = {
     'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
     'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
 }
+CONTROL_PLANE_EXTRA = {
+    'make/ci.mk': ('verify.baseline.iteration.execution.policy',),
+    'make/codex.mk': ('verify.pr.push.unit',),
+    '.github/workflows/professional_quality_gate.yml': (
+        'verify.github_actions.security',
+    ),
+    '.github/workflows/frontend_release_gate.yml': (
+        'verify.github_actions.security',
+    ),
+    '.github/workflows/merge_policy_gate.yml': (
+        'verify.ci.workflow.contract',
+    ),
+}
+
+
+def control_plane_targets(path: str) -> set[str]:
+    targets = {CONTROL_PLANE[path]} if path in CONTROL_PLANE else set()
+    targets.update(CONTROL_PLANE_EXTRA.get(path, ()))
+    return targets
 
 
 def classify_import_top(top: str, local_modules: set[str]) -> str:
@@ -351,6 +378,7 @@ def snapshot(revision: str) -> dict:
 
 
 def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -> dict:
+    ownership = ci_path_ownership.classify_paths(paths)
     runnable = {k for k, v in after.items() if v['tests'] and v.get('installable', True)}
     graph = {}
     for tree in (before, after):
@@ -375,10 +403,15 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
             else:
                 reasons.append('unknown_module:' + path)
         elif path in CONTROL_PLANE:
-            tool_checks.add(CONTROL_PLANE[path])
+            tool_checks.update(control_plane_targets(path))
         elif any(fnmatch.fnmatchcase(path, pattern) for pattern in GLOBAL):
             reasons.append('shared_runtime:' + path)
-        elif not any(fnmatch.fnmatchcase(path, pattern) for pattern in NON_RUNTIME):
+        elif ownership.category_for(path) is not None:
+            category = ownership.category_for(path)
+            tool_checks.update(category.tool_checks)
+            if category.backend_runtime:
+                reasons.append('shared_runtime:' + path)
+        else:
             reasons.append('unknown_impact:' + path)
     affected = set(seeds)
     while True:
