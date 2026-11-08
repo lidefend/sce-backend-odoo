@@ -5,9 +5,10 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Candidate baseline HEAD: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
+- Current product candidate HEAD: `ce9170b4be846c855e9c2a7f536c836542cb82f8`
+- Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
-- Worktree had pre-existing uncommitted text-control and primitive-shape changes, now assigned to executor A's P0 scope.
+- Worktree was clean at the L4 acceptance checkpoint.
 
 ## Scope
 
@@ -19,12 +20,16 @@ professional controls, and does not introduce a new renderer runtime.
 ## Workstreams
 
 - A: Textarea/Input runtime event truthfulness and exact-count Chromium regression.
-- B: read-only reconciliation of 25 `componentKey` identities, renderer families,
+- B: reconciliation of 25 `componentKey` identities, renderer families,
   implementations and product consumers.
-- C: read-only verification of 33 product-required official TDesign component
-  takeovers and three real business-page acceptance surfaces.
+- C: verification of 33 product-required official TDesign component takeovers
+  and three real business-page acceptance surfaces.
 - Total control: public mapping, registry wiring, integration, evidence and final
   V1 delivery decision.
+
+The delegated executor channel failed to resume after creation and accepted no
+work. All scoped work was therefore executed sequentially by total control; no
+PASS was inherited from an inactive executor.
 
 ## Baseline Facts
 
@@ -191,22 +196,42 @@ family and shared adapter contracts.
 
 ### P3 real business-page acceptance
 
-No page result is promoted to PASS while its environment prerequisite is missing.
+All three pages ran against the managed isolated Acceptance profile:
 
-| sample | attempted governed path | result | classification |
-|---|---|---|---|
-| Payment Request | `verify.local.dev.payment_request.floorplan.readonly` | blocked before browser: `demo_role_finance` route authority has no unique projection for payment menu 559/action 880 | environment/data fixture blocker |
-| Contract Form / Payment Request | `verify.local.dev.readiness.browser` | browser reached live local.dev but selected demo record route rendered AccessDenied; business readback remained unchanged | environment/fixture actor-route blocker |
-| Contract Form isolated | `verify.frontend.contract_form_presentation.browser` | blocked by missing `SC_ACCEPTANCE_FIXTURE_PASSWORD`; stale preview also rejected current build inputs | environment blocker |
-| Scene Collection | browser acceptance | not run; the same isolated acceptance credentials are required, and no governed local-dev driver currently supplies them | environment blocker |
+- project `sc-fe-r2-p1-01`;
+- database `sc_frontend_acceptance`;
+- backend port `18082`;
+- standard preview `5180`;
+- backend and preview both bound to the product candidate.
 
-`local.dev.runtime.contract_request.probe` also stopped before browser dispatch at
-`no published menu carrier for the observed action`, confirming the runtime
-fixture/navigation projection is the blocking layer rather than a component
-render assertion.
+The fixture password was supplied through the existing Make secret variable and
+was not written to the report, run record or logs.
 
-The shared business fingerprint was unchanged after the readiness attempt. No
-database repair, fixture reset, password transfer or direct route bypass was used.
+| sample | governed evidence | result |
+|---|---|---|
+| Contract Form | `verify.frontend.contract_form_presentation.browser` | PASS: `sc.general.contract/2`, action 758/menu 664, 1440/1024/768/390, 0 overflow, 0 console/page/http errors |
+| Payment Request | `verify.frontend.business_entry.payment_request.browser` | PASS: `FE-DELIVERY-HARDENING-001`, two declared settlement rows, inline edit 200→150 persisted, restored to row count 0 / amount 20.00, 0 problems |
+| Scene Collection | `verify.frontend.list_surface_structure.browser` | PASS: full list matrix, 18 normal/batch/empty × viewport states, 0 failures |
+| Scene Collection table identity | `verify.frontend.business_entry.matrix.browser` | PASS: project ledger menu 382/action 590, four rows, row search/detail contract, declared and observed create=false, edit=true, negative authority retained |
+
+Machine evidence:
+
+- `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
+  and four viewport PNGs;
+- `.runtime/final-acceptance/payment-request/ce9170b4b/report.json` and
+  `after-save.png`;
+- `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots;
+- `.runtime/final-acceptance/scene-collection-table/ce9170b4b/summary.json`.
+
+Two reproducible product defects were found and fixed during L4:
+
+1. collection create was rendered from `list.create` even when the runtime
+   effective record capability declared `create=false`;
+2. the controlled list search listened only to `input`, so a driver that emitted
+   `update:modelValue` rolled typed text back to empty and prevented empty-state
+   search.
+
+Neither fix changes ACL, Contract V2 or business data authority.
 
 ### P4 architecture and duplication audit
 
@@ -231,9 +256,9 @@ database repair, fixture reset, password transfer or direct route bypass was use
 
 ### Current acceptance state
 
-`verification_pending`, not completed. Batch component delivery is locally
-well-proven; the three real-page gate cannot be closed until the governed runtime
-provides a business-capable route and the isolated acceptance fixture credential.
+L4 product acceptance is PASS on the product candidate. Overall V1 remains
+`verification_pending` until independent review, exact-head publication and fresh
+remote checks complete.
 
 The final affected incremental iteration passed all eight required targets with
 non-zero execution:

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "7d3ed98979c17125b3dc987c26fcf6df3f1be701",
+  "baseline_sha": "ce9170b4be846c855e9c2a7f536c836542cb82f8",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-RENDERER-V1-CLOSEOUT.yaml",
@@ -17,7 +17,9 @@
     "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue",
     "frontend/apps/web/src/components/design-system/scene-adapter/collectionContracts.ts",
     "frontend/apps/web/src/components/design-system/scene-adapter/index.ts",
+    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "frontend/packages/ui/src/primitive-port",
@@ -26,7 +28,9 @@
     "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
     "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
     "contracts/registry/semantic.yaml",
-    "contracts/registry/component.yaml"
+    "contracts/registry/component.yaml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
   ],
   "environment": {
     "kind": "offline",
@@ -186,14 +190,9 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "environment: local.dev demo_role_finance route authority has no unique payment menu/action projection; governed Payment Request browser cannot start",
-    "environment: local.dev readiness browser reached the live app but the selected demo actor/route rendered AccessDenied; business readback remained unchanged",
-    "environment: isolated acceptance Contract Form requires SC_ACCEPTANCE_FIXTURE_PASSWORD, which is not available in this session; dev credentials were not reused",
-    "not_run: Scene Collection browser acceptance depends on the same isolated acceptance credential/profile"
-  ],
+  "blockers": [],
   "results": {
-    "candidate_code_commit": "PASS: 524fc520716373fe0b22cd227babfb7a6bc1787e contains the P0 event fix, primitive binding conformance and V1 run registration",
+    "candidate_code_commit": "PASS: 524fc5207 contains primitive/event conformance, 410e79a18 fixes declared collection create authority, and ce9170b4b fixes controlled list search consumption",
     "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 31 exact assertions, 0 console errors; one Textarea edit commits exactly one update/input/change, blur does not repeat change, disabled/readonly attempts emit no model update, IME update observed",
     "p0_scene_adapter_unit": "PASS: 5 primitive-port guard tests, 5 runtime/SSR assertions, 6 scene-adapter guard tests, real-SFC type witness and 3641-input bundle boundary",
     "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
@@ -206,15 +205,17 @@
     "ci_local_iteration": "PASS: 8/8 affected targets exited zero with non-zero real collections; receipt=.runtime/frontend-dev-validation/executions/20261108T112556Z-168174-134847774/receipt.json",
     "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
     "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters present with no bypass; exhaustive per-component browser behavior is not claimed",
-    "p3_payment_request": "BLOCKED_ENVIRONMENT: route authority has no unique projection for demo_role_finance before browser startup",
-    "p3_contract_form_local": "BLOCKED_ENVIRONMENT: readiness browser reached live local.dev but selected fixture route rendered AccessDenied; business readback unchanged",
-    "p3_contract_form_isolated": "BLOCKED_ENVIRONMENT: SC_ACCEPTANCE_FIXTURE_PASSWORD missing and preview build identity stale",
-    "p3_scene_collection": "NOT_RUN: isolated acceptance credential/profile unavailable",
-    "p3_mutations": "NONE: no fixture reset, database repair, password transfer or route bypass was used",
+    "l4_identity": "PASS: managed isolated acceptance sc_frontend_acceptance, backend and preview both bound to ce9170b4b; password supplied through the existing governed injection and never recorded",
+    "l4_01_contract_form": "PASS: sc.general.contract/2, action 758/menu 664, 4 viewports, 0 overflow, 0 console/page/http errors; summary=.runtime/final-acceptance/contract-form-presentation/contract/summary.json",
+    "l4_02_payment_request": "PASS: fixture FE-DELIVERY-HARDENING-001, two imported detail rows, edit 200->150 persisted, restored row_count=0/amount=20.00, 0 problems; report=.runtime/final-acceptance/payment-request/ce9170b4b/report.json",
+    "l4_03_scene_collection": "PASS: full list-surface matrix rows=18 failures=0 covering normal/batch/empty and responsive states; project table matrix entry 590 also passed with declared/observed create=false and negative 403 retained as expected authority",
+    "p3_product_fix": "PASS: ActionView now requires declared effectiveRecordCapabilities.create before rendering list/kanban create; toolbar consumes update:modelValue for controlled search so empty-state search works",
+    "p3_mutations": "BOUNDED: isolated acceptance fixture reset and declared detail-row edit/restore only; no local.dev route repair, production data, ACL change or cross-domain credential reuse",
     "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
-    "final_v1_report": "PENDING: report records proven component delivery and unresolved real-page gate; V1 cannot be declared complete until three governed page samples pass"
+    "l4_product_review": "PASS: Contract Form, Payment Request and Scene Collection now have governed browser evidence on ce9170b4b; two real product defects found by L4 were fixed without ACL or contract changes",
+    "final_v1_report": "READY_FOR_INDEPENDENT_REVIEW: component delivery and all three L4 page samples pass; publication, fresh remote checks and final merge authorization remain pending"
   },
-  "next_exact_step": "Provide a business-capable local.dev navigation/fixture identity or the isolated acceptance fixture credential, then run Contract Form, Payment Request and Scene Collection through their governed browser entries.",
+  "next_exact_step": "Complete independent review of ce9170b4b and the full two-commit delta, then publish the exact clean SHA and obtain fresh required checks before any merge decision.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",
