@@ -408,7 +408,7 @@
         "TDesignDatePicker"
       ],
       "officialComponent": "date-picker",
-      "productionConsumerCount": 3,
+      "productionConsumerCount": 4,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1005,7 +1005,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 45,
+      "productionConsumerCount": 46,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1415,7 +1415,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "794f99a6c280cf65597519fa57b455ddf011123f95f5c85b201d37e9ce4fa2b5",
+  "inputDigest": "cf441f2d43b488afe21d147277cf1a2de3aa3dc12aa9929429aac497337bd966",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
