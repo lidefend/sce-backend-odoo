@@ -36,10 +36,11 @@ export type FormActionExecutionPlan =
 export async function collectActionParams(
   action: ContractAction,
   onMissingReason: () => void,
+  requestReason?: (title: string) => Promise<string | null>,
 ): Promise<Record<string, unknown> | null> {
   const required = new Set((action.requiredParams || []).map((item) => item.toLowerCase()));
   if (!action.requiresReason && !required.has('reason')) return {};
-  const reason = window.prompt(`${action.label || '操作'}原因`)?.trim() || '';
+  const reason = String(await requestReason?.(`${action.label || '操作'}原因`) ?? '').trim();
   if (reason) return { reason };
   onMissingReason();
   return null;

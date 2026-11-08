@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5145`
+- Scanned files: `5146`
 - Files requiring split plan: `73`
 - Files above warning threshold: `151`
 
@@ -43,9 +43,9 @@ Generated from repository source files. This report is informational during the 
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2190 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2124 | YAML workflow | `scripts/verify/registry.yaml` |
+| 2122 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2115 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
@@ -277,9 +277,9 @@ Generated from repository source files. This report is informational during the 
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2190 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2124 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 2122 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2115 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |

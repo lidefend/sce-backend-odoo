@@ -180,6 +180,33 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
         self.assertIn("window.confirm", surfaces[0]["rawBehaviorTags"])
         self.assertTrue(any("unassessedRawBehaviorSurfaces=1" in failure for failure in failures), failures)
 
+    def test_native_prompt_api_in_typescript_is_a_raw_behavior_surface(self) -> None:
+        # Negative case: source suffixes are part of the inventory input set,
+        # so an API call in a TypeScript helper must be scanned too.
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-ts-prompt-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            helper = source_root / "services" / "NativePrompt.ts"
+            helper.parent.mkdir(parents=True)
+            helper.write_text(
+                "export function run(){ return window.prompt('reason'); }\n",
+                encoding="utf-8",
+            )
+            with patch.object(MODULE, "WEB", source_root):
+                report = MODULE.build_inventory()
+                failures = MODULE.completion_rule_failures(report)
+        surfaces = report["rawBehaviorSurfaces"]
+        self.assertEqual(len(surfaces), 1, surfaces)
+        self.assertTrue(surfaces[0]["source"].endswith("/services/NativePrompt.ts"))
+        self.assertIn("window.prompt", surfaces[0]["rawBehaviorTags"])
+        self.assertTrue(any("unassessedRawBehaviorSurfaces=1" in failure for failure in failures), failures)
+
+    def test_driver_family_aliases_include_radio_group_and_layout_parts(self) -> None:
+        report = MODULE.build_inventory()
+        rows = {row["officialComponent"]: row for row in report["components"]}
+        self.assertIn("ScRadioGroup", rows["radio"]["adapterKeys"])
+        self.assertIn("ScRadio", rows["radio"]["adapterKeys"])
+        self.assertTrue({"ScLayout", "ScAside", "ScHeader", "ScContent", "ScFooter"}.issubset(rows["layout"]["adapterKeys"]))
+
     def test_design_system_adapter_layer_may_own_native_elements(self) -> None:
         # Positive control: the design-system layer exists to realise a
         # primitive, so a native element there is the takeover, not a gap.

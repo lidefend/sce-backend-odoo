@@ -263,7 +263,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 462,
+      "productionConsumerCount": 464,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -474,7 +474,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 15,
+      "productionConsumerCount": 16,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -588,7 +588,7 @@
         "TDesignFormItem"
       ],
       "officialComponent": "form",
-      "productionConsumerCount": 27,
+      "productionConsumerCount": 28,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -718,9 +718,37 @@
     },
     {
       "adapterKeys": [
+        "ScAside",
+        "ScContent",
+        "ScFooter",
+        "ScHeader",
         "ScLayout"
       ],
       "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScAside"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScAside.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScContent"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScContent.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScFooter"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScFooter.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScHeader"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScHeader.vue"
+        },
         {
           "semanticAdapters": [
             "ScLayout"
@@ -733,7 +761,7 @@
         "TDesignLayout"
       ],
       "officialComponent": "layout",
-      "productionConsumerCount": 2,
+      "productionConsumerCount": 7,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -967,7 +995,8 @@
     },
     {
       "adapterKeys": [
-        "ScRadio"
+        "ScRadio",
+        "ScRadioGroup"
       ],
       "adapterSources": [
         {
@@ -975,6 +1004,12 @@
             "ScRadio"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScRadio.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScRadioGroup"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScRadioGroup.vue"
         }
       ],
       "bridgeBehaviorBypasses": [],
@@ -983,7 +1018,7 @@
         "TDesignRadioGroup"
       ],
       "officialComponent": "radio",
-      "productionConsumerCount": 4,
+      "productionConsumerCount": 6,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1297,7 +1332,7 @@
         "TDesignTextarea"
       ],
       "officialComponent": "textarea",
-      "productionConsumerCount": 8,
+      "productionConsumerCount": 9,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1463,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "eab19d4ac34bd190f0a02d85e46270006314a50861925dc59e96190c2316207d",
+  "inputDigest": "60316e91942b099d97c886b9051344b147dd1dcd73b6f7bac03e7232b21c4b03",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",

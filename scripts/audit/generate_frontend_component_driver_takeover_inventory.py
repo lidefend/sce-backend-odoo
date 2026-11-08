@@ -82,10 +82,15 @@ DIRECT_IMPORT = re.compile(r"from\s+['\"]tdesign-vue-next(?:/[^'\"]*)?['\"]")
 SC_TAG = re.compile(r"<((?:Sc|Product)[A-Z][A-Za-z0-9]+)\b")
 DRIVER_FAMILY = {
     "CollapsePanel": "Collapse",
+    "Content": "Layout",
     "DescriptionsItem": "Descriptions",
+    "Footer": "Layout",
     "FormItem": "Form",
+    "Header": "Layout",
     "ListItem": "List",
     "MenuItem": "Menu",
+    "Aside": "Layout",
+    "RadioGroup": "Radio",
     "StepItem": "Steps",
     "Submenu": "Menu",
     "TimelineItem": "Timeline",
@@ -159,24 +164,23 @@ def build_inventory() -> dict[str, object]:
                 driver = DRIVER_FAMILY.get(driver, driver)
                 semantic_adapters = semantic_adapters_for(path, source)
                 adapter_rows.setdefault(driver, []).append({"source": source, "semanticAdapters": sorted(semantic_adapters)})
-            # Only the design-system adapter layer may own a native behavioural
-            # element, because realising a primitive is exactly its job.  Every
-            # other production surface -- including P3 low-code administration
-            # and the navigation-tree components -- owes the official
-            # composition.  Excluding them published raw=0 while three native
-            # surfaces still rendered on screen.
-            if "/components/design-system/" not in source:
-                tags = sorted(set(match.group(1).lower() for match in RAW_BEHAVIOR.finditer(text)))
-                api_text = re.sub(r"\b(?:async\s+)?function\s+(?:confirm|alert|prompt)\s*\(", "", text)
-                tags.extend(name for name, pattern in RAW_BEHAVIOR_APIS.items() if pattern.search(api_text))
-                tags = sorted(set(tags))
-                if tags:
-                    raw_surfaces.append({
-                        "source": source,
-                        "productLayer": "P3" if is_p3(source) else "P0-P2/P4",
-                        "rawBehaviorTags": tags,
-                        "assessment": "unassessed",
-                    })
+        # Only the design-system adapter layer may own a native behavioural
+        # element, because realising a primitive is exactly its job. Every other
+        # production surface -- including TypeScript helpers, P3 low-code
+        # administration and navigation components -- owes the official
+        # composition.
+        if "/components/design-system/" not in source:
+            tags = sorted(set(match.group(1).lower() for match in RAW_BEHAVIOR.finditer(text)))
+            api_text = re.sub(r"\b(?:async\s+)?function\s+(?:confirm|alert|prompt)\s*\(", "", text)
+            tags.extend(name for name, pattern in RAW_BEHAVIOR_APIS.items() if pattern.search(api_text))
+            tags = sorted(set(tags))
+            if tags:
+                raw_surfaces.append({
+                    "source": source,
+                    "productLayer": "P3" if is_p3(source) else "P0-P2/P4",
+                    "rawBehaviorTags": tags,
+                    "assessment": "unassessed",
+                })
         for adapter in set(SC_TAG.findall(text)):
             if f"/{adapter}.vue" not in source:
                 consumer_counts[adapter] = consumer_counts.get(adapter, 0) + len(re.findall(fr"<{re.escape(adapter)}\b", text))

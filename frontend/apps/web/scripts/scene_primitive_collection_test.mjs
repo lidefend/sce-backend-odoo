@@ -9,18 +9,25 @@ const icon = `${root}/frontend/apps/web/src/components/design-system/scene-adapt
 const table = `${root}/frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue`;
 const out = await build({
   stdin:{contents:`
-import {createApp,h} from 'vue';
+import {createApp,h,nextTick,ref} from 'vue';
 import Icon from ${JSON.stringify(icon)};
 import Table from ${JSON.stringify(table)};
 window.rows=[];
-createApp({setup(){return()=>h('div',[
+window.iconErrors=[];
+window.nextViewTick=nextTick;
+const reactiveDecorative=ref(true);
+window.makeIconNonDecorative=()=>{reactiveDecorative.value=false;};
+const app=createApp({setup(){return()=>h('div',[
  h(Icon,{id:'semantic',name:'check',label:'完成',decorative:false}),
  h(Icon,{id:'decorative',name:'file'}),
+ h(Icon,{id:'reactive-icon',name:'file',decorative:reactiveDecorative.value}),
  h(Table,{id:'passive-table',rows:[{id:'p1',title:'P'}],columns:[{key:'title',label:'只读标题'}],rowKey:'id',accessibleLabel:'只读列表',interactiveRows:false,
   onRowActivate:(row,event)=>window.rows.push({id:row.id,source:event.source,trusted:event.nativeEvent?.isTrusted??null})}),
  h(Table,{id:'table',rows:[{id:'r1',title:'A'},{id:'r2',title:'B'}],columns:[{key:'title',label:'标题'}],rowKey:'id',accessibleLabel:'列表',interactiveRows:true,emptyText:'暂无数据',
   onRowActivate:(row,event)=>window.rows.push({id:row.id,source:event.source,trusted:event.nativeEvent?.isTrusted??null})})
-])}}).mount('#app');
+])}});
+app.config.errorHandler=(error)=>{window.iconErrors.push(error instanceof Error?error.message:String(error));};
+app.mount('#app');
 `,resolveDir:`${root}/frontend/apps/web`,loader:'js'},
   bundle:true,write:false,platform:'browser',format:'iife',
   define:{'process.env.NODE_ENV':'"production"','__VUE_OPTIONS_API__':'true','__VUE_PROD_DEVTOOLS__':'false','__VUE_PROD_HYDRATION_MISMATCH_DETAILS__':'false'},
@@ -38,6 +45,8 @@ try{
  assert.equal(await page.locator('#semantic').getAttribute('aria-hidden'),null);
  assert.equal(await page.locator('#decorative').getAttribute('aria-hidden'),'true');
  assert.equal(await page.locator('#decorative').getAttribute('aria-label'),null);
+ assert.equal(await page.locator('#reactive-icon').getAttribute('aria-hidden'),'true');
+ assert.equal(await page.locator('#reactive-icon').getAttribute('aria-label'),null);
  assert.ok(await page.locator('#table').count());
  assert.ok(await page.getByText('标题').count());
  await page.getByText('A',{exact:true}).click();
@@ -46,6 +55,13 @@ try{
  await page.getByText('P',{exact:true}).click();
  const rows=await page.evaluate(()=>window.rows);
  assert.deepEqual(rows,[{id:'r1',source:'pointer',trusted:true},{id:'r2',source:'keyboard',trusted:true}]);
+ await page.evaluate(async()=>{window.makeIconNonDecorative();await window.nextViewTick();});
+ const iconErrors=await page.evaluate(()=>window.iconErrors);
+ assert.ok(iconErrors.some(message=>message.includes('SCENE_PRIMITIVE_CONTRACT_ERROR')),JSON.stringify(iconErrors));
+ const reactiveIconCount=await page.locator('#reactive-icon').count();
+ if(reactiveIconCount>0){
+   assert.equal(await page.locator('#reactive-icon').getAttribute('aria-hidden'),'true');
+ }
  assert.deepEqual(errors,[]);
- console.log(JSON.stringify({browser:browser.version(),checks:10,consoleErrors:0,tableKeyboard:'PASS',passiveTable:'NO_ACTIVATION',emptyText:'PROJECTED'}));
+ console.log(JSON.stringify({browser:browser.version(),checks:14,consoleErrors:0,reactiveIconGuard:'FAIL_CLOSED',tableKeyboard:'PASS',passiveTable:'NO_ACTIVATION',emptyText:'PROJECTED'}));
 }finally{await browser.close()}

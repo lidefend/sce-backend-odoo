@@ -19,11 +19,14 @@ const props = withDefaults(defineProps<IconPortProps>(), {
   decorative: undefined,
 });
 defineSlots<NoPortSlots>();
-if (props.decorative === false && !String(props.label ?? '').trim()) {
-  throw new Error('SCENE_PRIMITIVE_CONTRACT_ERROR: Icon label is required when decorative=false');
-}
 const iconSize = computed(() => props.size ?? 20);
-const isDecorative = computed(() => props.decorative !== false && !props.label);
+const isDecorative = computed(() => {
+  const hasLabel = Boolean(String(props.label ?? '').trim());
+  if (props.decorative === false && !hasLabel) {
+    throw new Error('SCENE_PRIMITIVE_CONTRACT_ERROR: Icon label is required when decorative=false');
+  }
+  return props.decorative !== false && !hasLabel;
+});
 const resolvedLabel = computed(() => isDecorative.value || !props.label ? undefined : props.label);
 const scName = computed(() => props.name === 'file' ? 'file-text' : props.name);
 </script>

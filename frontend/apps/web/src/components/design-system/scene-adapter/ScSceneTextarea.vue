@@ -76,26 +76,50 @@ function eventValue(event: Event): string {
 function blockEdit(): boolean {
   return props.disabled || props.readonly || props.loading;
 }
+function consumeUserEcho(queue: string[], value: string): boolean {
+  const index = queue.indexOf(value);
+  if (index >= 0) {
+    // The parent may coalesce several edits and echo only the latest value.
+    // That echo acknowledges every earlier value in this ordered queue.
+    queue.splice(0, index + 1);
+    return true;
+  }
+  let joined = '';
+  for (let prefixEnd = 0; prefixEnd < queue.length; prefixEnd += 1) {
+    joined += queue[prefixEnd];
+    if (joined === value) {
+      queue.splice(0, prefixEnd + 1);
+      return true;
+    }
+  }
+  return false;
+}
+function currentUserAuthority(): string {
+  return pendingUserEchoes[pendingUserEchoes.length - 1] ?? controlledValue;
+}
+function removeTrackedUserEcho(queue: string[], value: string) {
+  const index = queue.indexOf(value);
+  if (index >= 0) queue.splice(index, 1);
+}
 watch(
   () => String(props.modelValue ?? ''),
   (value) => {
-    if (pendingUserEchoes[0] === value) {
-      pendingUserEchoes.shift();
+    if (consumeUserEcho(pendingUserEchoes, value)) {
       controlledValue = value;
+      return;
+    }
+    if (consumeUserEcho(supersededUserEchoes, value)) {
+      const authority = currentUserAuthority();
+      if (value !== authority) {
+        // A delayed parent echo must not overwrite a newer external value or
+        // a newer edit the user has started after that external update.
+        emit('update:modelValue', authority);
+      }
       return;
     }
     if (pendingUserEchoes.length) {
       supersededUserEchoes.push(...pendingUserEchoes);
       pendingUserEchoes.splice(0);
-    }
-    if (supersededUserEchoes[0] === value) {
-      supersededUserEchoes.shift();
-      if (value !== controlledValue) {
-        // A delayed parent echo must not overwrite a newer external value.
-        pendingUserEchoes.push(controlledValue);
-        emit('update:modelValue', controlledValue);
-      }
-      return;
     }
     controlledValue = value;
     lastEditValue = value;
@@ -121,7 +145,10 @@ function onNativeInput(event: Event) {
   if (value === lastEditValue) return;
   lastEditSource = sourceFor(event);
   lastEditValue = value;
-  supersededUserEchoes.splice(0);
+  // Preserve older delayed echoes, but let a new edit reclaim the same value
+  // as current user intent rather than treating its echo as stale history.
+  removeTrackedUserEcho(supersededUserEchoes, value);
+  removeTrackedUserEcho(pendingUserEchoes, value);
   pendingUserEchoes.push(value);
   emit('update:modelValue', value);
   emit('input', value, { source: lastEditSource, nativeEvent: event });

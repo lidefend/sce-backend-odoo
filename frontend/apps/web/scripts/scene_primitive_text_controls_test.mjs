@@ -305,8 +305,122 @@ try {
   assert.equal(events.filter((event) => event.kind === 'area-change').length, 0);
   assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-newer-server'));
 
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferInputEcho = true;
+    window.setInputValue('');
+  });
+  await page.locator('#text-input').focus();
+  await page.locator('#text-input').pressSequentially('ab');
+  await page.evaluate(async () => {
+    window.setInputValue('input-coalesced-server');
+    await window.nextViewTick();
+    window.deferInputEcho = false;
+    window.flushInputEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-coalesced-server');
+  await page.evaluate(() => window.focusArea({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.deepEqual(
+    events.filter((event) => event.kind === 'deferred-update').map((event) => event.value),
+    ['a', 'b'],
+    JSON.stringify(events),
+  );
+  assert.equal(await page.locator('#text-input').inputValue(), 'input-coalesced-server');
+  assert.equal(events.filter((event) => event.kind === 'change').length, 0, JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'blur' && event.value === 'input-coalesced-server'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferAreaEcho = true;
+    window.setAreaValue('');
+  });
+  await page.locator('#text-area').focus();
+  await page.locator('#text-area').pressSequentially('ab');
+  await page.evaluate(async () => {
+    window.setAreaValue('area-coalesced-server');
+    await window.nextViewTick();
+    window.deferAreaEcho = false;
+    window.flushAreaEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-coalesced-server');
+  await page.evaluate(() => window.focusInput({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.deepEqual(
+    events.filter((event) => event.kind === 'area-deferred-update').map((event) => event.value),
+    ['a', 'ab'],
+    JSON.stringify(events),
+  );
+  assert.equal(await page.locator('#text-area').inputValue(), 'area-coalesced-server');
+  assert.equal(events.filter((event) => event.kind === 'area-change').length, 0, JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-coalesced-server'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferInputEcho = true;
+    window.setInputValue('');
+  });
+  await page.locator('#text-input').focus();
+  await page.locator('#text-input').pressSequentially('xy');
+  await page.evaluate(async () => {
+    window.setInputValue('input-resumed-server');
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-resumed-server');
+  await page.locator('#text-input').fill('input-resumed-live');
+  await page.evaluate(async () => {
+    window.setInputValue('xy');
+    await window.nextViewTick();
+    window.deferInputEcho = false;
+    window.flushInputEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-resumed-live');
+  await page.evaluate(() => window.focusArea({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(await page.locator('#text-input').inputValue(), 'input-resumed-live');
+  assert.equal(
+    events.filter((event) => event.kind === 'change' && event.value === 'input-resumed-live').length,
+    1,
+    JSON.stringify(events),
+  );
+  assert.ok(events.some((event) => event.kind === 'blur' && event.value === 'input-resumed-live'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferAreaEcho = true;
+    window.setAreaValue('');
+  });
+  await page.locator('#text-area').focus();
+  await page.locator('#text-area').pressSequentially('xy');
+  await page.evaluate(async () => {
+    window.setAreaValue('area-resumed-server');
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-resumed-server');
+  await page.locator('#text-area').fill('area-resumed-live');
+  await page.evaluate(async () => {
+    window.setAreaValue('xy');
+    await window.nextViewTick();
+    window.deferAreaEcho = false;
+    window.flushAreaEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-resumed-live');
+  await page.evaluate(() => window.focusInput({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(await page.locator('#text-area').inputValue(), 'area-resumed-live');
+  assert.equal(
+    events.filter((event) => event.kind === 'area-change' && event.value === 'area-resumed-live').length,
+    1,
+    JSON.stringify(events),
+  );
+  assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-resumed-live'));
+
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 45, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 59, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

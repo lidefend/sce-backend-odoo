@@ -11,7 +11,7 @@ import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '.
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
-import { buildFormActionExecutionPlan } from '../src/pages/contractForm/actionExecutionPlan';
+import { buildFormActionExecutionPlan, collectActionParams } from '../src/pages/contractForm/actionExecutionPlan';
 import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import {
   evaluateNativeModifierValue,
@@ -30,6 +30,25 @@ const action = (overrides: Record<string, unknown>) => ({
   presentationTier: 'secondary',
   ...overrides,
 }) as never;
+
+const reasonPromptTitles: string[] = [];
+assert.deepEqual(await collectActionParams(
+  action({ label: '提交合同', requiresReason: true, requiredParams: [] }),
+  () => assert.fail('a submitted reason must not be reported missing'),
+  async (title) => {
+    reasonPromptTitles.push(title);
+    return '  合同条款已确认  ';
+  },
+), { reason: '合同条款已确认' });
+assert.deepEqual(reasonPromptTitles, ['提交合同原因']);
+
+let missingReasonCount = 0;
+assert.equal(await collectActionParams(
+  action({ label: '驳回', requiresReason: true, requiredParams: [] }),
+  () => { missingReasonCount += 1; },
+  async () => '   ',
+), null);
+assert.equal(missingReasonCount, 1);
 
 for (const [method, expected] of [
   [' action_submit ', true], ['action_submit_progress', true], ['action_confirm', true],
