@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02A
+  title: 薄层 Primitive Adapter 架构裁定与 ADR
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Frontend renderer Scene composition and Sc primitive authority boundary
+  module: Sc Design System, @sc/ui Scene composition, Primitive Port and product adapter boundary
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    基础控件权威、Scene 组合责任、厂商桥接位置和运行时适配注入属于所有产品和页面共享的
+    P0 前端平台机制，必须形成可审查的架构契约后再实施迁移。
+  why_not_elsewhere: >
+    不在业务页面或行业 Renderer 中决定基础控件供应商，不把 TDesign 属性泄漏为 Scene
+    接口，不合并 Sc 与 @sc/ui，不重写 Contract V2、业务表达或后端权限机制。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-02A.yaml
+      - .agent/runs/FE-RENDERER-02C-02A/run.json
+      - docs/architecture/frontend_thin_primitive_adapter_adr_v1.md
+      - docs/architecture/frontend_thin_primitive_adapter_adr_v1.en.md
+    product_behavior: no_runtime_change
+    authority: architecture_decision_and_read_only_audit_only
+  objective: >
+    基于正式主线完成 FE-RENDERER-02C-02A 只读审计，固化 Sc 为唯一基础组件权威、
+    @sc/ui 为 Scene 页面组合层、Primitive Port 为依赖倒置接口的 ADR，并给出 Port v1、
+    迁移依赖图、验收矩阵、守卫映射和回滚边界。
+  acceptance:
+    - 全量盘点 @sc/ui 组件和实际消费者，区分场景组合与基础控件
+    - 统计 @sc/ui 对 TDesign 的运行时依赖以及 Sc 对 @sc/ui/primitives 的反向依赖
+    - 盘点 Token、density、theme 和 driver preference 的真实消费
+    - 输出强类型 Primitive Port v1、迁移依赖图、回滚边界和验收矩阵
+    - 映射拟议守卫到现有守卫机制，并明确仍需新增的断言
+    - 记录主题文档与当前 SceneUiProvider 实际挂载事实不一致
+    - 本批只修改 ADR 与 .agent 运行元数据，不修改产品代码或旧主题文档
+  results:
+    audit: PASS
+    adr: PASS
+    docs_links: PASS
+    docs_temp_guard: PASS
+    agent_ledger: PASS
+    agent_resume: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交 ADR 候选，完成独立精确 diff 复核后发布文档 PR
+  exclusions:
+    - component_migration
+    - product_code_change
+    - tdesign_bridge_move
+    - package_boundary_change
+    - runtime_driver_retirement
+    - token_refactor
+    - contract_v2_change
+    - business_semantics_change
+    - backend_change
+    - stale_theme_document_edit
+    - browser_or_orm_acceptance
+    - deployment
+    - merge
+  rollback: >
+    删除本 ADR、goal、run 和 active-runs 映射即可回退本批；不涉及产品运行态、
+    schema、数据或依赖变化。
