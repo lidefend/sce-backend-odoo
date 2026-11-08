@@ -113,6 +113,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             "VITE_API_PROXY_TARGET",
             "VITE_ODOO_DB_LOCKED=1",
             "release_static_server.mjs",
+            "vite/bin/vite.js",
             "STATIC_ROOT=",
             "STATIC_PORT=",
             "API_PROXY_TARGET=",

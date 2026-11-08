@@ -241,7 +241,7 @@ remove_recoverable_frontend_listener() {
     return 1
     ;;
   esac
-  [[ "$process_cmd" == *"scripts/release/release_static_server.mjs"* || "$process_cmd" == *"node_modules/vite/bin/vite.js"* ]] || {
+  [[ "$process_cmd" == *"scripts/release/release_static_server.mjs"* || "$process_cmd" == *"vite/bin/vite.js"* ]] || {
     echo "[$owner] DENY untracked listener command is not a governed frontend carrier port=$FRONTEND_ACCEPTANCE_PORT" >&2
     return 1
   }
