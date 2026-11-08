@@ -1092,6 +1092,7 @@ import {
 import {
   collectContractV2ButtonStatusById,
   resolveContractV2ActionRules,
+  resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2SurfacePolicies,
 } from '../app/contracts/v2';
@@ -1556,6 +1557,11 @@ const canEditRecord = computed(() => resolveWriteRight(actionContract.value) && 
 
 const canCreateRecord = computed(() => {
   if (status.value === 'loading') return false;
+  // The collection surface publishes the effective create authority on
+  // globalStatus. The resolved list.create target alone is not sufficient:
+  // it is authorized only when the effective capability also allows creation.
+  const effective = resolveContractV2EffectiveFormCapabilities(actionContract.value);
+  if (effective?.create !== true) return false;
   const entry = resolveCollectionCreateEntry(actionContract.value);
   if (!entry.authorized) return false;
   const targetType = String(entry.target.type || '').trim();
