@@ -5,13 +5,15 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current third-review product commit: `62f7b57a26d4648646936f529f46d3880cfbef12`
+- Current candidate/evidence head: `98a9f76c29688f1aa6a85b6add205fbbf7752cd3`
+- Fourth-review product fixes: `476cb6278` and `8c0876c2f`
+- Previously reviewed head: `ba5d4b53f7e19748669cce34c9f144fedb4aa5ba`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
 - L4 evidence/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
-- Worktree was clean at the L4 acceptance checkpoint.
+- Worktree was clean at the `98a9f76c2` L4 checkpoint.
 
 ## Scope
 
@@ -41,8 +43,11 @@ PASS was inherited from an inactive executor.
 - `FormSectionField` is the generic type-directed sentinel.
 - Four independent professional controls exist: BaseField, BusinessValue,
   RelationField and DetailCollection.
-- Current driver inventory reports 33 required adapters present, with zero missing,
-  bridge-only, raw behavioral or direct vendor-import bypasses.
+- Current driver inventory reports 33 required `apps/web` adapters present, with
+  zero missing, bridge-only, raw behavioral or direct vendor-import bypasses.
+- `frontend/packages/ui/src` is outside that scan boundary: its legacy Scene
+  primitives and TDesign driver imports are explicitly recorded and are not
+  presented as repository-wide zeroes.
 - PR #845 four required checks succeeded on `7d3ed9897`; that evidence does not
   apply after later edits.
 
@@ -99,6 +104,19 @@ Chromium `147.0.7727.15` real-SFC evidence:
   before blur, neither Input nor Textarea emits a stale draft `change`; blur
   reports the displayed controlled value.
 
+The fourth review then found that TDesign date-picker calendar callbacks carry
+no native `e`. `ScDateField` now always normalizes the value transition and
+emits a synthetic untrusted `change` event when the vendor supplied only its
+semantic callback context. A synchronous last-committed-value authority also
+prevents the two internal TDesign clear callbacks from producing duplicate
+update/change pairs. Chromium selects `2026-11-15` and clears the field with
+exactly one update and one change for each transition.
+
+The same browser proof found that `ScFormField` declared help/error content but
+TDesign did not render the slots because the corresponding props were not
+explicitly set. Help and tips now use TDesign's official function-valued props;
+the visible text and generated IDs match the control's `aria-describedby`.
+
 ### First-review follow-up
 
 The first independent review identified two boundaries that were not yet pinned:
@@ -154,6 +172,12 @@ The takeover inventory now reports two real bridge-consumer bypasses rather than
 hiding them: `NativeFormTreeRenderer` for alert input and
 `ProfessionalManyToManySelect` for select input.
 
+The fourth-review browser harness now mounts the real `ContractReasonDialog`
+through `collectActionParams`. It asserts the exact backend-declared copy,
+cancel emits no operation request, and submit emits exactly one trimmed reason
+payload. The same run verifies visible FormField help/error content and its ARIA
+association.
+
 The development-incremental route was corrected so ActionView create-boundary
 inputs select their executable contract target, and scene text changes select
 the real browser behavior target. The routing itself is covered by 87 non-zero
@@ -207,7 +231,12 @@ controls merely to make every key map one-to-one.
 
 The authoritative generated inventory is
 `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`.
-Current result:
+The published scope is exactly `frontend/apps/web/src` production sources,
+excluding the design-system adapter layer. `frontend/packages/ui/src` contains
+active legacy Scene primitives and TDesign driver imports; it remains outside the
+FE-RENDERER-V1 takeover count and is explicitly listed in `scopeExclusions`.
+
+Current `apps/web` result:
 
 - official components inventoried: 71;
 - product-required components: 33;
@@ -273,7 +302,7 @@ All three pages ran against the managed isolated Acceptance profile:
 - database `sc_frontend_acceptance`;
 - backend port `18082`;
 - standard preview `5180`;
-- backend and preview both bound to the product candidate.
+- backend and preview both observed served revision `98a9f76c2`.
 
 The fixture password was supplied through the existing Make secret variable and
 was not written to the report, run record or logs.
@@ -290,21 +319,20 @@ Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
   and four viewport PNGs, SHA256
-  `2fc8e85a1c7e08d83599b956033ea5dfd580441ee17106d63a6fee7a0603bdd7`;
-- `artifacts/frontend-business-entry-payment-request/1794163112712/report.json`
+  `6baa9895a802a80a3e8fc7a638442d99f49a622abd4239a4199a62c203f877cd`;
+- `.runtime/final-acceptance/payment-request/98a9f76c2/report.json`
   and `after-save.png`, report SHA256
-  `77dccff17a0ea6b61d3c11d6dfc9b62b12ddc8d8e8ba192c7886cfa8108e9a47`;
+  `3fdf2f6289f53f5ab01f3fc093b768c7993c0de5c1c91abd810389bb5a095bd4`;
 - `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots,
   SHA256
-  `8aceae4ebefd78ddff260c502208b6f1c5bb33e20a1d5a678febd32a98fae65f`;
-- `.runtime/acceptance/local/79e0e704af2fbdbd6046a1b960da857083181fc6/relation-roundtrip/20261108T190042089Z-2694590-719e2a56/summary.json`,
+  `5ab685f91b9d984b0db836d6bb75ff3e69ed4e3741c6fdab7bd5a5cbbf946947`;
+- `.runtime/acceptance/local/98a9f76c29688f1aa6a85b6add205fbbf7752cd3/relation-roundtrip/20261108T203832097Z-3349383-07c20af8/summary.json`,
   SHA256
-  `869f3b4d857fffaeccb5e8c7e3ef6b849b11d7f9c0920705613c7335a2990dd4`;
-- `.runtime/final-acceptance/scene-collection-table/79e0e704a/summary.json`,
-  SHA256
-  `70acfc3c0fafb0124f2f89afef0bfc193cb8388981157dc5326757b5a00bbc36`;
+  `0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e`;
 - `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `cec1f0df14f0a3f00f8143e3f1eea60b0508862557dd99e21fb969fd53cce80b`.
+  `24ba2de1a41701d36c346f43a9a1b1b62a31bed48371d4c696242a380da5e522`.
+  It is recorded at the merge stage: list surface and relation roundtrip are
+  current; deployment-only `path_namespace_identity` is explicitly deferred.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -345,19 +373,28 @@ Neither fix changes ACL, Contract V2 or business data authority.
   empty values. This corrected the false claim that empty owner/cost/document
   relations lacked public controls; the rerun opened the three actually populated
   relations.
+- The managed local preview now binds Vite's dev/HMR client port to its actual
+  service port, and stale-listener recovery recognizes the real
+  `vite/bin/vite.js` command shape. These are P4 environment fixes; no business
+  route or local.dev projection was changed.
+- Suite input fingerprints are revision-stable. Historical evidence no longer
+  changes hash merely because the inspected revision is not the current
+  checkout, so metadata-only or unrelated product commits cannot falsely
+  invalidate acceptance evidence.
 
 ### Current acceptance state
 
-L4 passed for product commit `62f7b57a2`. Contract Form and Payment Request bind
-metadata child `c97e68a1b`; list, relation and project-ledger bind P4 child
-`79e0e704a`; the acceptance manifest is carried to final evidence-tool head
-`eee20af2d`. Those commits contain the same product frontend tree; later commits
-change only verification tooling and evidence. No page evidence was inherited
-from `866afcb11` or older candidates.
+L4 passed at served revision `98a9f76c2`. Contract Form, Payment Request,
+Scene Collection and relation roundtrip all bind that exact SHA. The merge-stage
+acceptance manifest also binds `98a9f76c2`; the deployment-only
+`path_namespace_identity` suite is deferred explicitly rather than represented
+as passed. No page evidence was inherited from `866afcb11` or older candidates.
 
-The complete affected incremental iteration passed all 20 required targets with
+The complete affected incremental iteration passed all 23 required targets with
 non-zero execution:
 
+- Acceptance evolution binding;
+- Acceptance runtime tooling;
 - Agent ledger;
 - Agent resume;
 - ActionView create authority;
@@ -377,14 +414,16 @@ non-zero execution:
 - Product page pattern;
 - Scene Primitive Adapter;
 - real Scene Primitive behavior;
+- Standard preview tooling;
+- static proxy target;
 - style-system guard;
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T192412Z-2849708-793531216/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T204757Z-3430065-196777858/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
-transformed in 25.20 seconds. The existing large-chunk advisory remains.
+transformed in 26.05 seconds. The existing large-chunk advisory remains.
 
 Overall V1 remains `verification_pending` only for publication, fresh independent
 review and exact-head remote CI.

@@ -13,6 +13,8 @@
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "frontend/apps/web/src/components/design-system/ScInput.vue",
     "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+    "frontend/apps/web/src/components/design-system/ScDateField.vue",
+    "frontend/apps/web/src/components/design-system/ScFormField.vue",
     "frontend/apps/web/src/components/design-system/scene-adapter",
     "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue",
     "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue",
@@ -41,6 +43,7 @@
     "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
     "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
     "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+    "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
     "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
     "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
     "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
@@ -50,15 +53,25 @@
     "scripts/verify/business_entry_matrix_browser.mjs",
     "scripts/verify/record_relation_roundtrip_acceptance.js",
     "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+    "scripts/verify/frontend_primitive_adapter_guard.py",
+    "scripts/verify/test_frontend_primitive_adapter_guard.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
     "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
     "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/dev/frontend_acceptance_up.sh",
     "make/frontend.mk",
     "contracts/registry/semantic.yaml",
     "contracts/registry/component.yaml",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
     "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "offline",
@@ -126,6 +139,7 @@
       "target": "verify.frontend.contract_header_action.unit",
       "inputs": [
         "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
         "frontend/apps/web/src/pages/contractForm/actionContract.ts",
         "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
         "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
@@ -180,6 +194,7 @@
       "inputs": [
         "frontend/packages/ui/src/primitive-port",
         "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
         "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
         "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
         "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
@@ -197,12 +212,56 @@
       "target": "verify.frontend.scene_primitive_contract.behavior",
       "inputs": [
         "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
         "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
         "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
         "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
         "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
         "scripts/verify/playwright_runtime.mjs",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_runtime_tooling": {
+      "target": "verify.acceptance.runtime.baseline_rebuild.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "make/dev.mk",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview_tooling": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "static_proxy_target_tooling": {
+      "target": "verify.local.dev.static_proxy_target.unit",
+      "inputs": [
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/verify/static_proxy_target_test.mjs",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/test_local_dev_candidate_frontend.py"
       ],
       "kind": "offline"
     },
@@ -363,27 +422,31 @@
     }
   },
   "blockers": [
-    "Fresh independent review and exact-head remote CI not_run for the final closeout head"
+    "Final metadata-only closeout, fresh independent review and exact-head remote CI are not yet complete"
   ],
   "results": {
-    "candidate_code_commit": "PASS: 62f7b57a2 closes the third-review contract-copy, out-of-order echo, focus provenance and IME-evidence boundaries; final L4 passed across its P4 children",
+    "candidate_code_commit": "PASS: 476cb6278 and 8c0876c2f close the fourth-review DateField drop/duplicate-change and FormField help/error projection findings while preserving the prior contract-copy, event ordering, focus, IME and ActionView boundaries",
     "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 67 exact assertions, 0 console errors; coalesced and out-of-order echoes cannot restore stale drafts after external updates; CDP IME composition and Tab focus provenance are observed",
-    "p0_scene_adapter_unit": "PASS: primitive-port, real-SFC type, adapter bundle, 27 button assertions, 14 collection assertions, 13 selection assertions and 67 text assertions",
+    "p0_scene_adapter_unit": "PASS: primitive-port, real-SFC type, adapter bundle, 27 button assertions, 14 collection assertions, 20 selection/date assertions and 67 text assertions",
+    "p0_date_field_browser": "PASS: managed Chromium 147.0.7727.15, 20 assertions; selecting 2026-11-15 emits exactly one update and one change, clearing to empty emits exactly one update and one change, 0 console errors",
+    "p0_form_feedback_browser": "PASS: help and error text are visible and their generated IDs match the control aria-describedby projection",
+    "p0_reason_dialog_browser": "PASS: backend-declared title/label/help/action copy is visible, cancel emits no operation request, submit emits exactly one trimmed reason payload, 21 assertions and 0 console errors",
     "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
     "p0_lint_typecheck": "PASS: 0 lint errors, four existing warnings; UI and web strict vue-tsc exited zero",
     "semantic_registry": "PASS: 15 semantic tests, generated semantic/industry/domain carriers match declaration; frontend_keys=26 includes two node identities",
     "professional_component_registry": "PASS: 162 tests and cases>=184; 25 field component keys and five renderer-family names remain the only runtime vocabulary",
-    "component_driver_takeover": "PASS: 17 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0 direct_imports=0 bridge_consumers=2; raw behavior scanning covers TypeScript/JavaScript, and RadioGroup/Layout subcomponents are attributed to their real drivers",
+    "component_driver_takeover": "PASS: 18 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0 direct_imports=0 bridge_consumers=2 inside the declared apps/web/src scope; @sc/ui legacy Scene surfaces are explicitly outside the count",
     "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
     "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
-    "ci_local_iteration": "PASS: 20/20 affected targets exited zero with non-zero real collections on eee20af2d; receipt=.runtime/frontend-dev-validation/executions/20261108T192412Z-2849708-793531216/receipt.json",
-    "frontend_build": "PASS: 5,375 modules transformed in 25.20s for the f88e49d59 product content, with the existing large-chunk advisory",
+    "acceptance_runtime_tooling": "PASS: managed Vite listener recovery recognizes the actual vite/bin/vite.js command and HMR client port follows the managed service port; stale cross-worktree listener was stopped through exact PID/process-group recovery after the governed cleanup entry reproduced the selector defect",
+    "ci_local_iteration": "PASS: 23/23 affected targets exited zero with non-zero real collections on daed0529a; receipt=.runtime/frontend-dev-validation/executions/20261108T204757Z-3430065-196777858/receipt.json",
+    "frontend_build": "PASS: 5,375 modules transformed in 26.05s for the 8c0876c2f product content, with the existing large-chunk advisory",
     "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
-    "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters have wrappers and consumers; missing=0 bridge_only=0 adapter_unconsumed=0 raw=0 direct_imports=0; two explicit bridge consumer bypasses remain recorded for alert and select",
-    "l4_identity": "PASS: backend/preview were rebound to product commit 62f7b57a2; Contract Form/Payment evidence binds metadata child c97e68a1b, list/relation/project evidence binds P4 child 79e0e704a, and the acceptance manifest is carried to eee20af2d",
-    "l4_01_contract_form": "PASS: sc.general.contract/2 action 758/menu 664, fixture_role_config_admin, 1440/1024/768/390, 0 overflow and 0 console/page/http errors",
-    "l4_02_payment_request": "PASS: FE-DELIVERY-HARDENING-001, two declared settlement rows, inline edit 200->150 persisted, restored to 0 rows/20.00, 0 problems; backend-declared payment reject reason_input is visible in the live contract",
-    "l4_03_scene_collection": "PASS: 18/18 list states, 30/30 record checks, 316/316 gated checks, 5/5 negative fixtures, 0 runtime errors; project ledger direct create=false, delegated action 795=true, edit=true, authority negative covered",
+    "p2_takeover": "PASS_STRUCTURAL: 33/33 required apps/web adapters have wrappers and consumers; missing=0 bridge_only=0 adapter_unconsumed=0 raw=0 direct_imports=0; two explicit bridge consumer bypasses remain recorded for alert and select; no repository-wide zero claim is made for @sc/ui",
+    "l4_identity": "PASS: backend and standard preview were rebound to 98a9f76c2; Contract Form, Payment Request, list surface and relation evidence all observed served SHA 98a9f76c2; the merge-stage acceptance manifest binds the same head",
+    "l4_01_contract_form": "PASS: sc.general.contract/2 action 758/menu 664, fixture_role_config_admin, 1440/1024/768/390, 0 overflow and 0 console/page/http errors; summary sha256=6baa9895a802a80a3e8fc7a638442d99f49a622abd4239a4199a62c203f877cd",
+    "l4_02_payment_request": "PASS: FE-DELIVERY-HARDENING-001, two declared settlement rows, inline edit 200->150 persisted, restored to 0 rows/20.00, 0 problems; report sha256=3fdf2f6289f53f5ab01f3fc093b768c7993c0de5c1c91abd810389bb5a095bd4",
+    "l4_03_scene_collection": "PASS: 18/18 list states, 30/30 record checks, 316/316 gated checks, 5/5 negative fixtures, 0 runtime errors; report sha256=5ab685f91b9d984b0db836d6bb75ff3e69ed4e3741c6fdab7bd5a5cbbf946947",
     "p3_product_fix": "PASS_LOCAL: delegated action authority remains contract-bound; 11 authority cases pass; ordered echo tombstones reject late older echoes; focus provenance covers pointer/keyboard/programmatic; icon contracts fail closed; reason copy is backend-declared and missing declarations fail closed",
     "p3_mutations": "BOUNDED: isolated acceptance fixture reset and declared detail-row edit/restore only; no local.dev route repair, production data, ACL change or cross-domain credential reuse",
     "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
@@ -392,11 +455,14 @@
     "independent_review_1": "REQUEST_CHANGES on 9cea1b661; findings addressed by c6c7d6340; review=.runtime/pr845-independent-review.md sha256=c2d5769dd45c5c0db133908d025ded562e64c90e36b36f4acb1f2ba3800c2b34",
     "independent_review_2": "REQUEST_CHANGES on 12ea32ecd; the five evidenced findings are addressed by f88e49d59; review=.runtime/pr845-independent-review-12ea.md sha256=fb4d050fa81238f638e53f35517ed77493063f8fb7983cf48a5593a3aa30afe7; a fresh exact-head review remains pending",
     "independent_review_3": "REQUEST_CHANGES on 577fbd176; all three S1 and three S2 findings are addressed by product commit 62f7b57a2 and P4 follow-up 79e0e704a; review=.runtime/pr845-independent-review-577.md sha256=04f0c73fcd48d3dd1c317f5a137cbab17a8020de004c1ac59a93be1d53dfb44d; a fresh exact-head review remains pending",
+    "independent_review_4": "REQUEST_CHANGES on ba5d4b53f; DateField calendar/clear transitions, FormField help/error rendering, inventory scope, acceptance runner/HMR behavior and revision-stable suite fingerprints are now addressed; review=.runtime/pr845-independent-review-ba5.md sha256=b695afa1a347bf06860bfee76d6c22bdbdd280236375d252ba27c4c025981d4e; a fresh exact-head review remains pending",
     "backend_reason_contract_test": "PASS: local.test.test executed 1 non-zero ORM case for payment request action reason presentation; receipt=.runtime/test-baseline/1794162435843820831/receipt.json",
-    "l4_product_review": "PASS on 62f7b57a2/79e0e704a: Contract Form, Payment Request, Scene Collection, relation roundtrip and project-ledger delegated-create boundary all passed",
-    "final_v1_report": "VERIFICATION_PENDING: final L4, exact manifest carry-forward and 20-target affected iteration pass; publication, fresh independent review and exact-head CI remain pending"
+    "relation_roundtrip": "PASS on 98a9f76c2: 13 declared entries, 7 contract comparisons, 3 opened records, 0 blocking differences, 0 denied/console errors; summary sha256=0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e",
+    "acceptance_manifest": "PASS_MERGE_STAGE: head=98a9f76c2, required=list_surface_structure+relation_roundtrip, path_namespace_identity explicitly deferred to deployment stage, manifest sha256=24ba2de1a41701d36c346f43a9a1b1b62a31bed48371d4c696242a380da5e522",
+    "l4_product_review": "PASS on 98a9f76c2: Contract Form, Payment Request, Scene Collection and relation roundtrip all passed at the same served SHA",
+    "final_v1_report": "VERIFICATION_PENDING: product fixes, exact-head L4 and 23-target affected iteration are complete; metadata-only closeout, fresh independent review, publication and exact-head remote CI remain pending"
   },
-  "next_exact_step": "Commit this final L4/evidence metadata, publish the clean candidate through the governed PR flow, and request a fresh independent review bound to the pushed exact head; do not merge or deploy.",
+  "next_exact_step": "Commit the metadata-only closeout, carry the merge-stage evidence manifest to the final candidate, publish it through the governed PR flow, obtain a fresh independent review, and verify all required checks on the exact pushed head.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",
