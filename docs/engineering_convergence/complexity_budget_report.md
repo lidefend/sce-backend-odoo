@@ -122,8 +122,8 @@ Generated from repository source files. This report is informational during the 
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1248 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1224 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
-| 1219 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |

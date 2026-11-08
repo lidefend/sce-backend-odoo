@@ -80,12 +80,14 @@ PR #834 的 Renderer、金额表达、Semantic Registry、前端 Guard、测试�
 - `make verify.verification.lane_coverage`：PASS，73 tests，冻结验证面未扩大。
 - `make verify.test.coverage.registry`：PASS，211 tag groups；新增 ORM tag 已登记为 on-demand。
 - `make verify.baseline.iteration.execution.policy`：PASS，19 tests。
+- `make verify.form_structure_authority_unification.unit`：PASS，253 tests。
 - `make verify.agent.ledger.unit`：PASS，18 tests。
 - `make verify.agent.resume.unit`：PASS，56 tests。
+- `make ci.local.iteration`：PASS，11/11 required targets 非零执行。
 
 ### L3 真实 ORM
 
-- `make local.test.test MODULE=smart_core TEST_TAGS=principal_group_request_scope_orm`：
+- `make verify.smart_core.principal_group_request_scope.orm`：
   PASS，3 tests。证明真实 Odoo cursor 可被 `WeakKeyDictionary` 持有，同 cursor
   稳定、新 cursor 独立计算。
 - `make verify.smart_core.relation_entry_publication.orm`：PASS，12 tests。
@@ -130,13 +132,14 @@ PR #834 的 Renderer、金额表达、Semantic Registry、前端 Guard、测试�
 - 目标动作必须精确匹配关系字段的 `res_model`，并继续排除非记录打开型 action。
 - 发布 authority 的缓存键包含公司；未知或不匹配公司身份不会复用另一公司的发布面。
 
-## 既有失败排除
+## 既有基线漂移修正
 
 `make verify.form_structure_authority_unification.unit` 运行 253 tests、1 failure：
 测试仍期望合同首组标题 `身份与基本资料`，当前主线 XML 已提交为 `合同身份`。
 该失败已在主 `main` worktree 原样复现，并已由
 `docs/architecture/backend-owned-page-composition/159-stage3c-03c-02b-compatibility-regression.md`
-登记为既有排除项。相关 XML 与测试不在本候选范围，本批不修改，以免扩大历史产品化范围。
+登记为既有基线偏差。由于该目标由 `page_assembler.py` 的增量映射强制选择，本候选只把
+陈旧测试期望同步到主线已提交的产品 XML，不修改 XML 或业务语义。
 
 ## 缓存版本
 

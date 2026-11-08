@@ -486,6 +486,11 @@ RULES = (
     ), (
         "verify.unified_page_contract.v2.assembler",
     )),
+    Rule((
+        "scripts/verify/test_form_structure_authority_unification.py",
+    ), (
+        "verify.form_structure_authority_unification.unit",
+    )),
     # The renderer implements the declared presentation vocabulary that the
     # projection publishes.  Editing the renderer's vocabulary block, the token
     # set in `ui_contract_v2_projection.py`, or the parity guard itself must route

@@ -21,6 +21,7 @@
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_form_structure_authority_unification.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py"
   ],
   "environment": {
