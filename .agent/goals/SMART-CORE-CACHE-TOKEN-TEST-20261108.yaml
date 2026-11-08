@@ -1,0 +1,34 @@
+schema_version: 1
+goal:
+  id: SMART-CORE-CACHE-TOKEN-TEST-20261108
+  title: Smart Core 分类投影 Token 失效回归测试
+  status: verification_pending
+  formal_product_layer: P4 verification and evidence
+  layer_target: smart_core contract projection source-token regression test
+  module: smart_core tests
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The defect is a false-positive regression test. The cache implementation already
+    owns the behavior; only the proof must be made discriminating.
+  why_not_elsewhere: >
+    No frontend, industry, runtime configuration or production cache behavior change is
+    required.
+  blast_radius:
+    paths:
+      - addons/smart_core/tests/test_load_contract_response_cache.py
+  objective: >
+    Replace the non-discriminating business-category projection test with explicit
+    non-empty before/after token assertions for each projected field.
+  acceptance:
+    - form_policy_json change invalidates a non-empty source token
+    - required_fields_json change invalidates a non-empty source token
+    - default_values_json change invalidates a non-empty source token
+    - name change remains independently covered
+    - non-projection metadata keeps a stable non-empty token
+  exclusions:
+    - production cache implementation changes
+    - frontend changes
+    - runtime configuration changes
+    - deployment
+  rollback: >
+    Revert this test-only candidate through a protected PR.
