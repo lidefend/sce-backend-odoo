@@ -58,10 +58,11 @@
     "agent_resume": "PASS: 56 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02A/agent_resume.log",
     "ci_iteration": "PASS: docs-only delta mapped to verify.agent.ledger.unit, executed non-zero and exited zero; log=.runtime/agent-runs/FE-RENDERER-02C-02A/ci_local_iteration.log",
     "product_l2_l4": "NOT_RUN: documentation and .agent metadata only; no product source, build, runtime, browser, ORM, schema, or data change",
-    "independent_review": "PENDING: first review direction accepted and revisions implemented; a new exact-head architecture re-review remains required",
-    "remote_gates": "NOT_RUN: pending publication of the exact candidate"
+    "independent_review": "PASS: final independent architecture review approved exact HEAD 6e7958a1989a298e0c8db7e1870883e41a341175; no R3 requested and ADR content frozen",
+    "remote_gates": "PASS: exact HEAD 6e7958a1989a298e0c8db7e1870883e41a341175 passed public_guard, release_candidate_gate, frontend_release_gate, professional_quality_gate and merge_policy_gate",
+    "merge_status": "PENDING: governance record update requires a new exact-head check cycle before protected PR merge"
   },
-  "next_exact_step": "Commit the R2 ADR revision, update PR #843, then obtain final independent re-review and inspect all required checks on the exact new head.",
+  "next_exact_step": "Commit the governance record update, refresh PR #843 checks on the new exact head, then merge through the protected PR flow.",
   "id": "FE-RENDERER-02C-02A",
   "branch": "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108",
   "status": "verification_pending",

@@ -34,6 +34,7 @@ goal:
     - 映射拟议守卫到现有守卫机制，并明确仍需新增的断言
     - 记录主题文档与当前 SceneUiProvider 实际挂载事实不一致
     - 本批只修改 ADR 与 .agent 运行元数据，不修改产品代码或旧主题文档
+    - 最终独立复审和当前精确 HEAD 的五项必需远端门禁通过后，允许受保护 PR 合并
   results:
     audit: PASS
     adr: PASS
@@ -45,7 +46,10 @@ goal:
     agent_ledger: PASS
     agent_resume: PASS
     ci_iteration: PASS
-    next_exact_step: 提交 Vue 3.5.27 类型契约修订 R2，更新 PR #843，并取得最终独立复审与 exact-HEAD 远端门禁
+    independent_review: PASS
+    remote_gates: PASS
+    merge_status: PENDING
+    next_exact_step: 提交治理记录更新，重新取得新 exact-HEAD 门禁后合并 PR #843
   exclusions:
     - component_migration
     - product_code_change
@@ -59,7 +63,6 @@ goal:
     - stale_theme_document_edit
     - browser_or_orm_acceptance
     - deployment
-    - merge
   rollback: >
     删除本 ADR、goal、run 和 active-runs 映射即可回退本批；不涉及产品运行态、
     schema、数据或依赖变化。
