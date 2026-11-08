@@ -8,6 +8,7 @@
 - Current third-review product commit: `62f7b57a26d4648646936f529f46d3880cfbef12`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
+- Current L4/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -283,23 +284,27 @@ was not written to the report, run record or logs.
 | Payment Request | `verify.frontend.business_entry.payment_request.browser` | PASS: `FE-DELIVERY-HARDENING-001`, two declared settlement rows, inline edit 200→150 persisted, restored to row count 0 / amount 20.00, 0 problems |
 | Scene Collection | `verify.frontend.list_surface_structure.browser` | PASS: full list matrix, 18 normal/batch/empty × viewport states, 0 failures |
 | Scene Collection table identity | `verify.frontend.business_entry.matrix.browser` | PASS: project ledger menu 382/action 590, four rows, row search/detail contract, direct create=false, authorized delegated `项目立项` action 795, rendered create affordance=true, edit=true, expected negative 403 retained |
+| Relation roundtrip | `verify.frontend.relation_roundtrip.browser` | PASS: 13 declared entries, 7 contract comparisons, 3 records opened, 0 blocking differences, 0 denied/console errors |
 
 Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
   and four viewport PNGs, SHA256
-  `802dce545ec1f5417f4074bab88c9d4b5d2cc15dea3b9773aec969654511a0a6`;
-- `artifacts/frontend-business-entry-payment-request/1794158165902/report.json`
+  `2fc8e85a1c7e08d83599b956033ea5dfd580441ee17106d63a6fee7a0603bdd7`;
+- `artifacts/frontend-business-entry-payment-request/1794163112712/report.json`
   and `after-save.png`, report SHA256
-  `3cc3c0e8780c3319c4f32bc88d23c7db9804aa901f511585a0fd5350465d5e18`;
+  `77dccff17a0ea6b61d3c11d6dfc9b62b12ddc8d8e8ba192c7886cfa8108e9a47`;
 - `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots,
   SHA256
-  `75f3f3f8df6c5314cf8430f595da1efe57c389aaceb42399c1a0a34c4acf8117`;
-- `.runtime/final-acceptance/scene-collection-table/866afcb11/summary.json`,
+  `8aceae4ebefd78ddff260c502208b6f1c5bb33e20a1d5a678febd32a98fae65f`;
+- `.runtime/acceptance/local/79e0e704af2fbdbd6046a1b960da857083181fc6/relation-roundtrip/20261108T190042089Z-2694590-719e2a56/summary.json`,
   SHA256
-  `22528ae103a5fc622a2cc712d62bf4db3b663c47cdbb2e2b80169dcdd3946c90`;
+  `869f3b4d857fffaeccb5e8c7e3ef6b849b11d7f9c0920705613c7335a2990dd4`;
+- `.runtime/final-acceptance/scene-collection-table/79e0e704a/summary.json`,
+  SHA256
+  `70acfc3c0fafb0124f2f89afef0bfc193cb8388981157dc5326757b5a00bbc36`;
 - `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `1d8da7c989daf15da9d9b77816c1bf27f4aa0d9be8282f2b8858b957b4526515`.
+  `175250dd2fd6c54429d86ef8fadd9bfdf8d11a848698d43e7c4d71ab9be39c32`.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -336,16 +341,21 @@ Neither fix changes ACL, Contract V2 or business data authority.
   treated the rendered delegated-create affordance as a direct capability
   mismatch; the corrected probe binds the complete action/menu identity without
   changing product authority.
+- The relation acceptance probe now recognizes `--`, `—` and `–` placeholders as
+  empty values. This corrected the false claim that empty owner/cost/document
+  relations lacked public controls; the rerun opened the three actually populated
+  relations.
 
 ### Current acceptance state
 
-The previous review candidate `866afcb11` passed L4, but the third independent
-review found contract-copy, out-of-order echo, focus-provenance and evidence
-boundary defects. Product commit `62f7b57a2` fixes those findings and now
-requires its own managed Acceptance rerun. The earlier page evidence is retained
-only as historical evidence and is not inherited by the new product tree.
+L4 passed for product commit `62f7b57a2`. Contract Form and Payment Request bind
+metadata child `c97e68a1b`; list, relation, project-ledger and the acceptance
+evidence manifest bind P4 child `79e0e704a`. Those commits contain the same
+product frontend tree; the later commits change only contract declarations,
+verification tooling and evidence. No page evidence was inherited from
+`866afcb11` or older candidates.
 
-The complete affected incremental iteration passed all 18 required targets with
+The complete affected incremental iteration passed all 20 required targets with
 non-zero execution:
 
 - Agent ledger;
@@ -357,6 +367,8 @@ non-zero execution:
 - Canonical form presenter;
 - Component driver takeover inventory;
 - Contract-basis unit and enforce;
+- Contract header action projection;
+- Delivery-hardening probe toolchain;
 - Development-incremental routing unit;
 - frontend lint;
 - page-pattern reference parity;
@@ -369,13 +381,13 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T174449Z-2277077-703451500/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T191625Z-2791083-791273/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
 transformed in 25.20 seconds. The existing large-chunk advisory remains.
 
-Overall V1 remains `verification_pending` for the final L4 rerun, affected
-iteration, publication, fresh independent review and exact-head remote CI.
+Overall V1 remains `verification_pending` only for publication, fresh independent
+review and exact-head remote CI.
 
 ## Exclusions
 
@@ -384,7 +396,6 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Commit the third-review remediation metadata, rebind the managed Acceptance
-backend and preview to `62f7b57a2`, rerun the three pages plus project-ledger
-boundary, run the complete affected iteration, publish, and request a fresh
-review bound to the exact pushed head. Do not merge or deploy.
+Commit the final L4/evidence metadata, publish the clean candidate through the
+governed PR flow, and request a fresh independent review bound to the exact
+pushed head. Do not merge or deploy.

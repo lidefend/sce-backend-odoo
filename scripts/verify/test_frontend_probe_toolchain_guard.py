@@ -99,6 +99,14 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         self.assertIn('CONTRACT_READONLY_MISMATCH', source)
         self.assertIn('CONTRACT_VISIBILITY_MISMATCH', source)
 
+    def test_relation_probe_treats_dash_placeholders_as_empty(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        self.assertIn(
+            "const emptyValue = (value) => value === '' || /^[-–—]+$/.test(value);",
+            source,
+        )
+        self.assertIn('has_value: !emptyValue(valueText)', source)
+
     def test_relation_title_restore_waits_for_settled_title_and_stays_strict(self):
         source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
         surface = source[source.index('async function waitForRecordSurface'):source.index('async function recordSnapshot')]

@@ -49,6 +49,7 @@ goal:
       - scripts/verify/business_entry_matrix_browser.mjs
       - scripts/verify/record_relation_roundtrip_acceptance.js
       - scripts/verify/frontend_scene_primitive_adapter_guard.py
+      - scripts/verify/test_frontend_probe_toolchain_guard.py
       - scripts/verify/test_frontend_action_view_page_actions_guard.py
       - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
       - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
@@ -93,7 +94,6 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Commit the third-review remediation metadata, rebind the managed Acceptance backend and
-    preview to 62f7b57a2, rerun the three pages plus project-ledger boundary, run the complete
-    affected iteration, publish, and obtain a fresh review bound to the exact pushed head.
-    Do not merge or deploy.
+    Commit the final L4/evidence metadata, publish the clean candidate, and obtain a fresh
+    independent review bound to the exact pushed head. Then verify current-head required CI
+    and prepare the final merge recommendation without merging or deploying.

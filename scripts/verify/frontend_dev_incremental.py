@@ -481,6 +481,23 @@ RULES = (
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",
     )),
+    # The payment action contract's reason presentation is consumed by the
+    # contract action projector; keep the producer and its consumer test in one
+    # executable routing unit instead of leaving a backend-only path unmapped.
+    Rule((
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    ), (
+        "verify.frontend.contract_header_action.unit",
+    )),
+    # The relation acceptance runner owns the placeholder classification used
+    # by its public-control assertion; changing it requires the real journey.
+    Rule((
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    ), (
+        "verify.frontend.delivery_hardening.guard",
+    )),
     # The v2 contract handler chain (handler + projection + structure authority)
     # is consumed by the backend form-contract unit suites.  Without this rule the
     # chain falls through as an unmapped path, so editing the contract builder
