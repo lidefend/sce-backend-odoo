@@ -36,6 +36,7 @@ ALLOWED_IMPORTS = {
     './textControlContracts',
     './collectionContracts',
     './selectionContracts',
+    './scenePrimitiveAdapter',
 }
 FORBIDDEN_SOURCE = (
     re.compile(r"\bas\s+Primitive(?:Component|Binding)\b"),

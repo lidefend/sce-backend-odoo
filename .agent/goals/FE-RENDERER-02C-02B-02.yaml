@@ -53,6 +53,7 @@ goal:
       - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue
       - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue
       - frontend/apps/web/src/components/design-system/scene-adapter/selectionContracts.ts
+      - frontend/apps/web/src/components/design-system/scene-adapter/scenePrimitiveAdapter.ts
       - frontend/apps/web/src/components/design-system/scene-adapter/buttonContract.ts
       - frontend/apps/web/src/components/design-system/scene-adapter/index.ts
       - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts

@@ -16,6 +16,7 @@
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"
+    :name="name"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
@@ -44,6 +45,7 @@ const vNativeControlProjection = nativeControlProjection;
 
 const props = withDefaults(defineProps<{
   id?: string;
+  name?: string;
   modelValue?: string;
   rows?: number;
   maxRows?: number;
@@ -59,6 +61,7 @@ const props = withDefaults(defineProps<{
   appearance?: 'default' | 'form-field';
 }>(), {
   id: undefined,
+  name: undefined,
   modelValue: '',
   rows: 3,
   maxRows: undefined,
@@ -86,6 +89,7 @@ const nativeProjection = computed(() => ({
   selector: 'textarea' as const,
   attributes: {
     id: props.id,
+    name: props.name,
     required: props.required,
     'aria-busy': props.loading || undefined,
     'aria-describedby': props.describedBy,

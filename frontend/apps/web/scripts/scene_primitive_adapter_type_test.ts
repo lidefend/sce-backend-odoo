@@ -3,9 +3,11 @@ import type {
   ButtonPortProps,
   ButtonPortSlots,
   PrimitiveBinding,
+  ScenePrimitiveAdapter,
 } from '@sc/ui/primitive-port';
 import {
   ScSceneButton,
+  scenePrimitiveAdapter,
   scSceneButtonBinding,
   scSceneButtonContract,
 } from '../src/components/design-system/scene-adapter';
@@ -19,6 +21,8 @@ const realButtonBinding: PrimitiveBinding<
 void realButtonBinding;
 void ScSceneButton;
 void scSceneButtonContract;
+const completeAdapter: ScenePrimitiveAdapter = scenePrimitiveAdapter;
+void completeAdapter;
 
 const wrongIdentity = {
   component: ScSceneButton,

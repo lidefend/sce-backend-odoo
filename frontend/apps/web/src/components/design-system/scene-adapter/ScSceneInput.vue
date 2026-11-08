@@ -59,26 +59,44 @@ defineSlots<NoPortSlots>();
 
 const inputRef = ref<{ $el?: unknown } | null>(null);
 let lastSource: PrimitiveEventSource = 'programmatic';
+let lastInputEvent: Event | undefined;
+let focusStartValue = '';
+let lastValue = '';
 
 function sourceFor(event: Event): PrimitiveEventSource {
   return event.isTrusted ? lastSource : 'programmatic';
 }
 function onUpdate(value: string) {
+  lastValue = String(value);
   emit('update:modelValue', String(value));
 }
 function onInput(value: string, event: Event) {
+  lastValue = String(value);
+  lastInputEvent = event;
   emit('input', String(value), { source: sourceFor(event), nativeEvent: event });
 }
 function onChange(value: string, event: Event) {
-  emit('update:modelValue', String(value));
-  emit('input', String(value), { source: sourceFor(event), nativeEvent: event });
+  if (event.type === 'input') {
+    if (event !== lastInputEvent) {
+      emit('update:modelValue', String(value));
+      lastValue = String(value);
+      emit('input', String(value), { source: sourceFor(event), nativeEvent: event });
+    }
+    return;
+  }
   emit('change', String(value), { source: sourceFor(event), nativeEvent: event });
 }
 function onFocus(value: string | number, event: FocusEvent) {
+  focusStartValue = String(value);
+  lastValue = String(value);
   emit('focus', String(value), { source: sourceFor(event), nativeEvent: event });
+  lastSource = 'programmatic';
 }
 function onBlur(value: string | number, event: FocusEvent) {
   emit('blur', String(value), { source: sourceFor(event), nativeEvent: event });
+  if (lastValue !== focusStartValue) {
+    emit('change', lastValue, { source: sourceFor(event), nativeEvent: event });
+  }
 }
 function onKeydown(event: KeyboardEvent) {
   lastSource = 'keyboard';
@@ -86,6 +104,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 function onKeyup(event: KeyboardEvent) {
   emit('keyup', { source: 'keyboard', nativeEvent: event });
+  lastSource = 'programmatic';
 }
 function onCompositionStart(event: CompositionEvent) {
   lastSource = 'keyboard';
