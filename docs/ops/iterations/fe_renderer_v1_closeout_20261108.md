@@ -5,15 +5,15 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current candidate/evidence head: `98a9f76c29688f1aa6a85b6add205fbbf7752cd3`
-- Fourth-review product fixes: `476cb6278` and `8c0876c2f`
+- Current product/evidence head: `986e60535201f6bed72cf60650e7be58ef6279b6`
+- Fourth-review product fixes: `476cb6278`, `8c0876c2f` and `986e60535`
 - Previously reviewed head: `ba5d4b53f7e19748669cce34c9f144fedb4aa5ba`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
 - L4 evidence/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
-- Worktree was clean at the `98a9f76c2` L4 checkpoint.
+- Worktree was clean at the `986e60535` L4 checkpoint.
 
 ## Scope
 
@@ -110,12 +110,29 @@ emits a synthetic untrusted `change` event when the vendor supplied only its
 semantic callback context. A synchronous last-committed-value authority also
 prevents the two internal TDesign clear callbacks from producing duplicate
 update/change pairs. Chromium selects `2026-11-15` and clears the field with
-exactly one update and one change for each transition.
+exactly one update and one change for each transition, and both operations
+carry `source=pointer`. `clearable` and the `clear` capability are now explicit
+DateField Port members rather than undeclared attribute fallthrough.
 
 The same browser proof found that `ScFormField` declared help/error content but
 TDesign did not render the slots because the corresponding props were not
 explicitly set. Help and tips now use TDesign's official function-valued props;
 the visible text and generated IDs match the control's `aria-describedby`.
+
+The real Contract V2 action path exposed a reason-contract gap that the direct
+dialog fixture could not see. Backend action rules carry reason authority in
+`presentation.requires_reason`; the frontend action projection now consumes that
+declared field, so the decoded reject rule opens the dialog even when top-level
+`requires_reason` and `required_params` are absent from the normalized carrier.
+The test now goes through snapshot decode, store resolution and action
+projection. Canceling the dialog resolves as a deliberate no-op rather than
+reporting a missing-reason error.
+
+The fifth independent review (`REQUEST_CHANGES` on `e8f954876`) identified the
+same real-V2 reason boundary, undeclared DateField clearability/provenance,
+cancel error and stale evidence identity. Product commit `986e60535` addresses
+the first three; this closeout carries the resulting L4/manifest evidence to
+the new head.
 
 ### First-review follow-up
 
@@ -302,7 +319,7 @@ All three pages ran against the managed isolated Acceptance profile:
 - database `sc_frontend_acceptance`;
 - backend port `18082`;
 - standard preview `5180`;
-- backend and preview both observed served revision `98a9f76c2`.
+- backend and preview both observed served revision `986e60535`.
 
 The fixture password was supplied through the existing Make secret variable and
 was not written to the report, run record or logs.
@@ -319,18 +336,20 @@ Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
   and four viewport PNGs, SHA256
-  `6baa9895a802a80a3e8fc7a638442d99f49a622abd4239a4199a62c203f877cd`;
-- `.runtime/final-acceptance/payment-request/98a9f76c2/report.json`
+  `60ec8b6c8b6867e8c4569cdb70d40f8250f9d456ba1cc6151633eb7a571979cd`;
+- `.runtime/final-acceptance/payment-request/986e60535/report.json`
   and `after-save.png`, report SHA256
-  `3fdf2f6289f53f5ab01f3fc093b768c7993c0de5c1c91abd810389bb5a095bd4`;
+  `abe835ae171133474297ca9050a7b6b3bbd40462b85067fd9368d0138f3bfbee`;
 - `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots,
   SHA256
-  `5ab685f91b9d984b0db836d6bb75ff3e69ed4e3741c6fdab7bd5a5cbbf946947`;
+  `e770e1fe6df030d5f2793f7ea745f2ea227f2c68afbd7e4cd4a4c0edc82b4094`;
 - `.runtime/acceptance/local/98a9f76c29688f1aa6a85b6add205fbbf7752cd3/relation-roundtrip/20261108T203832097Z-3349383-07c20af8/summary.json`,
   SHA256
-  `0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e`;
+  `0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e`.
+  This relation probe has no DateField, reason-action or primitive-Port input;
+  its unchanged suite fingerprint is carried to `986e60535`.
 - `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `24ba2de1a41701d36c346f43a9a1b1b62a31bed48371d4c696242a380da5e522`.
+  `f6f390aef632c937f0963d9ca54ce21325c09523f59b7aaa00ac2665d033f68f`.
   It is recorded at the merge stage: list surface and relation roundtrip are
   current; deployment-only `path_namespace_identity` is explicitly deferred.
 
@@ -384,13 +403,13 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 passed at served revision `98a9f76c2`. Contract Form, Payment Request,
+L4 passed at served revision `986e60535`. Contract Form, Payment Request,
 Scene Collection and relation roundtrip all bind that exact SHA. The merge-stage
-acceptance manifest also binds `98a9f76c2`; the deployment-only
+acceptance manifest also binds `986e60535`; the deployment-only
 `path_namespace_identity` suite is deferred explicitly rather than represented
 as passed. No page evidence was inherited from `866afcb11` or older candidates.
 
-The complete affected incremental iteration passed all 23 required targets with
+The complete affected incremental iteration passed all 24 required targets with
 non-zero execution:
 
 - Acceptance evolution binding;
@@ -420,10 +439,10 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T204757Z-3430065-196777858/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T211730Z-3634470-109509725/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
-transformed in 26.05 seconds. The existing large-chunk advisory remains.
+transformed in 26.89 seconds. The existing large-chunk advisory remains.
 
 Overall V1 remains `verification_pending` only for publication, fresh independent
 review and exact-head remote CI.
