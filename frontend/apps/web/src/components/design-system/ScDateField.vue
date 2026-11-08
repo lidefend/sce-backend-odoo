@@ -85,11 +85,12 @@ const emit = defineEmits<{
   keydown: [event: KeyboardEvent];
   keyup: [event: KeyboardEvent];
 }>();
-function onTDesignChange(value: unknown) {
+function onTDesignChange(value: unknown, context?: { trigger?: string }) {
   const next = String(value ?? '');
   if (next === lastValue) return;
   lastValue = next;
   emit('update:modelValue', next);
+  if (context?.trigger === 'clear') return;
   if (lastInteractionEvent && next !== lastChangeValue) {
     lastChangeValue = next;
     emit('change', next, lastInteractionEvent);
@@ -98,8 +99,8 @@ function onTDesignChange(value: unknown) {
 }
 function onClear(context: { e?: MouseEvent }) {
   if (!(context.e instanceof MouseEvent)) return;
+  if (String(props.modelValue ?? '') === '') return;
   const next = '';
-  if (next === lastValue && next === lastChangeValue) return;
   lastValue = next;
   lastChangeValue = next;
   lastInteractionEvent = undefined;

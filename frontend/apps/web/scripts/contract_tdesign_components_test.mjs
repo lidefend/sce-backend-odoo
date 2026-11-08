@@ -270,6 +270,13 @@ try {
 
   check(await page.locator('#date-input').getAttribute('name') === 'start_date', 'date name projects');
   check(await page.locator('#date-input').getAttribute('aria-label') === '开始日期', 'date accessible name projects');
+
+  await page.locator('#date-input').hover();
+  await page.locator('span.t-input__clear').last().click();
+  events = await page.evaluate(() => window.componentLog);
+  check(events.some((event) => event.kind === 'date-update' && event.value === ''), 'initial non-empty date clears without prior focus');
+  check(events.filter((event) => event.kind === 'date-change' && event.value === '').length === 1, 'initial direct clear emits one real change');
+
   await page.locator('#date-input').focus();
   await page.locator('#date-input').click();
   const datePanel = page.locator('.t-date-picker__panel').last();
@@ -280,7 +287,7 @@ try {
   events = await page.evaluate(() => window.componentLog);
   check(events.some((event) => event.kind === 'date-update' && event.value === '2026-11-09'), 'date updates controlled value through real input/change');
   check(events.some((event) => event.kind === 'date-change' && event.value === '2026-11-09' && event.trusted === true), 'date change is forwarded from the real native change event');
-  check(events.filter((event) => event.kind === 'date-change').length === 1, 'date change occurs once');
+  check(events.filter((event) => event.kind === 'date-change').length === 2, 'initial clear and date selection each emit one change');
   check(events.some((event) => event.kind === 'date-focus'), 'date focus is forwarded');
   check(events.some((event) => event.kind === 'date-blur'), 'date blur is forwarded');
   check(events.some((event) => event.kind === 'date-keydown'), 'date keydown is forwarded');
@@ -289,7 +296,7 @@ try {
   await page.locator('span.t-input__clear').last().click();
   events = await page.evaluate(() => window.componentLog);
   check(events.some((event) => event.kind === 'date-update' && event.value === ''), 'unfocused date clear updates controlled value');
-  check(events.filter((event) => event.kind === 'date-change' && event.value === '').length === 1, 'unfocused date clear emits one real change');
+  check(events.filter((event) => event.kind === 'date-change' && event.value === '').length === 2, 'initial and post-selection unfocused clear each emit one real change');
 
   await page.locator('#date-input').click();
   const secondPanel = page.locator('.t-date-picker__panel').last();
@@ -298,7 +305,7 @@ try {
   await page.locator('#date-input').hover();
   await page.locator('span.t-input__clear').last().click();
   events = await page.evaluate(() => window.componentLog);
-  check(events.filter((event) => event.kind === 'date-change').length === 4, 'focused and unfocused selection/clear each emit exactly one date change');
+  check(events.filter((event) => event.kind === 'date-change').length === 5, 'initial, selected and focused/unfocused clear paths each emit exactly one date change');
 
   check(await page.locator('#number-input').getAttribute('aria-label') === '数量', 'number accessible name projects');
   check(await page.locator('#number-input').getAttribute('aria-invalid') === 'true', 'number invalid ARIA projects');
