@@ -67,6 +67,7 @@
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
     "fix/fe-ux-entry-continuity-01": ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json",
+    "fix/fe-ux-02a-duration-20261109": ".agent/runs/FE-UX-02A-DURATION-20261109/run.json",
     "fix/fepc-10-message-author-body": ".agent/runs/FEPC-10/run.json",
     "fix/fepc-11-relation-empty-titles": ".agent/runs/FEPC-11/run.json",
     "fix/fepc-12-follower-density": ".agent/runs/FEPC-12/run.json",

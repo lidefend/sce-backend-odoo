@@ -51,11 +51,3 @@ export function normalizeBusinessValueChoiceOptions(
 export function formatPercentage(value: unknown): string {
   return formatBusinessPercentage(value, FIELD_VALUE_EMPTY_TEXT);
 }
-
-export function formatDuration(value: unknown): string {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return FIELD_VALUE_EMPTY_TEXT;
-  const hours = Math.trunc(numeric);
-  const minutes = Math.round((numeric - hours) * 60);
-  return minutes ? `${hours} 小时 ${minutes} 分钟` : `${hours} 小时`;
-}

@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import {
   PROFESSIONAL_BUSINESS_VALUE_KEYS,
   businessValueKind,
-  formatDuration,
   formatPercentage,
   isProfessionalBusinessValueField,
   normalizeBusinessValueChoiceOptions,
 } from '../src/components/professional-fields/professionalBusinessValueModel';
-import { statusBadgeSemantic } from '../src/app/presentation/businessValuePresentation';
+import {
+  formatBusinessDuration,
+  statusBadgeSemantic,
+} from '../src/app/presentation/businessValuePresentation';
 
 const fieldTypes = new Map([
   ['sc.value.money', 'monetary'],
@@ -33,7 +35,11 @@ assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.value.money', 
 assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.input.number', type: 'monetary' } as never), false);
 assert.throws(() => businessValueKind({ componentKey: 'sc.value.money', type: 'char' } as never), /PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED/);
 assert.equal(formatPercentage(12.5), '12.5%');
-assert.equal(formatDuration(1.5), '1 小时 30 分钟');
+assert.equal(formatBusinessDuration(1.5), '1 小时 30 分钟');
+assert.equal(formatBusinessDuration(null), '--');
+assert.equal(formatBusinessDuration(false), '--');
+assert.equal(formatBusinessDuration(0), '0 小时');
+assert.equal(formatBusinessDuration(1.999), '2 小时');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.deepEqual(

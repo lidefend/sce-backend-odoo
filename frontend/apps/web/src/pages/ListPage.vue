@@ -384,6 +384,7 @@ type ColumnOption = {
   valueField?: string;
   aggregationField?: string;
   dataType?: string;
+  componentKey?: string;
   currencyField?: string;
   digits?: [number, number];
   aggregate?: string;
@@ -1917,7 +1918,15 @@ function columnValue(row: Record<string, unknown>, field: string) { return row[c
 
 function columnSemanticInput(field: string) {
   const option = columnOption(field);
-  return { field, label: columnLabel(field), type: option?.type, cellRole: option?.cellRole };
+  return {
+    field,
+    label: columnLabel(field),
+    type: option?.type,
+    dataType: option?.dataType,
+    componentKey: option?.componentKey,
+    widget: option?.widget,
+    cellRole: option?.cellRole,
+  };
 }
 
 function isColumnSortable(field: string) {

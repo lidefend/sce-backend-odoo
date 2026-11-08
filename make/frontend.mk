@@ -348,6 +348,7 @@ verify.frontend.professional_base_field.unit: guard.prod.forbid
 verify.frontend.professional_business_value.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_business_value_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-business-value-model-test.mjs >/dev/null
 	@node /tmp/professional-business-value-model-test.mjs
+	@node frontend/apps/web/scripts/duration_business_value_browser_test.mjs
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py
 	@python3 -m unittest scripts/verify/test_frontend_professional_business_value_guard.py
 	@python3 scripts/verify/frontend_professional_business_value_guard.py

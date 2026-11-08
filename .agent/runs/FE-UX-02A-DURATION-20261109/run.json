@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "43281cb156810238e726dc805ca2d22fe2b08e80",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-UX-02A-DURATION-20261109.yaml",
+    ".agent/runs/FE-UX-02A-DURATION-20261109/run.json",
+    "docs/ops/iterations/fe_ux_02a_duration_20261109.md",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+    "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies, managed Chromium and governed Make entries; no database or service mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/registry.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_business_value": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+        "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+        "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_component_registry": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts",
+        "scripts/verify/frontend_professional_component_registry_guard.py",
+        "scripts/verify/test_frontend_professional_component_registry_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/packages/design-tokens"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Independent review is pending",
+    "list_surface_structure runtime evidence is not yet rebound to the exact candidate; the existing suite source is not an ancestor of this branch"
+  ],
+  "next_exact_step": "Obtain independent review of the clean FE-UX-02-A candidate and keep list-surface runtime evidence explicitly pending.",
+  "id": "FE-UX-02A-DURATION-20261109",
+  "branch": "fix/fe-ux-02a-duration-20261109",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-UX-02A-DURATION-20261109.yaml",
+  "record": "docs/ops/iterations/fe_ux_02a_duration_20261109.md"
+}

@@ -1,0 +1,73 @@
+schema_version: 1
+goal:
+  id: FE-UX-02A-DURATION-20261109
+  title: FE-UX-02-A Duration 统一业务表达
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Shared business value presentation for Contract V2 float_time duration
+  module: businessValuePresentation, ProfessionalBusinessValueControl, ListPage and Kanban presentation
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Duration meaning is selected by the Contract V2 float_time widget and must render
+    identically in form, list and Kanban consumers. The shared business value presentation
+    module is the existing platform authority for cross-page business facts.
+  why_not_elsewhere: >
+    This is not an industry model rule, customer preference, low-code configuration or
+    page-local formatting concern. Contract V2, backend data, ACL and business semantics
+    remain unchanged; the frontend consumes the existing Odoo float_time semantics.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-UX-02A-DURATION-20261109.yaml
+      - .agent/runs/FE-UX-02A-DURATION-20261109/run.json
+      - docs/ops/iterations/fe_ux_02a_duration_20261109.md
+      - frontend/apps/web/src/app/presentation/businessValuePresentation.ts
+      - frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts
+      - frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue
+      - frontend/apps/web/src/pages/ListPage.vue
+      - frontend/apps/web/src/pages/listPage/listCellPresentation.ts
+      - frontend/apps/web/scripts/business_semantics_consistency_test.ts
+      - frontend/apps/web/scripts/professional_business_value_model_test.ts
+      - frontend/apps/web/scripts/duration_business_value_browser_test.mjs
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/e2e_journey_matrix.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - make/frontend.mk
+    product_behavior: >
+      sc.value.duration renders one shared meaning in Form, List and Kanban: absent values
+      remain empty, zero remains a real zero duration, finite values round according to
+      Odoo float_time, minute 60 carries into the next hour, and invalid values fail closed
+      to the declared empty text.
+  objective: >
+    Replace the local duration formatter with one shared businessValuePresentation rule,
+    consume it from the professional control and collection consumers, and prove the
+    result with unit and real-Chromium coverage without expanding the component system.
+  acceptance:
+    - null, undefined and false render the declared empty text rather than zero duration
+    - zero renders as a legal zero duration
+    - 1 renders as one hour
+    - 1.5 renders as one hour thirty minutes
+    - 1.999 rounds and carries to two hours without producing sixty minutes
+    - negative finite values retain the Odoo float_time sign semantics
+    - invalid numeric values render the declared empty text
+    - Form, List and Kanban use the shared duration presentation
+    - no second duration formatter remains in product source
+    - targeted non-zero unit, Chromium, lint, strict typecheck and production build checks pass
+  exclusions:
+    - Contract V2 schema or backend business data changes
+    - new duration precision or timezone declarations
+    - FE-UX-02-B disabled-reason work
+    - FE-UX-02-C acceptance evidence work
+    - FE-UX-02-D timezone research
+    - new components, renderer runtime or registry
+    - deployment or merge
+  rollback: >
+    Revert this topic commit. The change is limited to shared frontend presentation,
+    affected consumers and tests; no data migration or external runtime mutation exists.
+  next_exact_step: >
+    Obtain an independent review of the clean FE-UX-02-A candidate. Keep list-surface
+    runtime evidence explicitly pending until its exact managed environment identity is
+    available; do not expand into FE-UX-02-B.

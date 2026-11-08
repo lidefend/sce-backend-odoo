@@ -1,5 +1,6 @@
 import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
 import { resolveStatusTone } from '../../app/presentation/collectionStatusPresentation.ts';
+import { presentDeclaredBusinessValue } from '../../app/presentation/businessValuePresentation.ts';
 import {
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
@@ -13,6 +14,9 @@ export type ColumnSemanticInput = {
   field: string;
   label: string;
   type?: string;
+  dataType?: string;
+  componentKey?: string;
+  widget?: string;
   cellRole?: string;
 };
 
@@ -74,6 +78,22 @@ export function presentListCell(input: CellPresentationInput) {
     numeric = false,
   } = input;
   const displayRaw = resolveLocalizedDisplayValue(raw, { emptyText });
+  if (column.componentKey === 'sc.value.duration') {
+    const presentation = presentDeclaredBusinessValue({
+      field: {
+        name: column.field,
+        type: column.type,
+        dataType: column.dataType,
+        componentKey: column.componentKey,
+        widget: column.widget,
+        cellRole: column.cellRole,
+      },
+      value: displayRaw,
+      emptyText,
+      temporalProfile: 'compact',
+    });
+    return { text: presentation.text, tone: presentation.tone };
+  }
   const temporalText = formatListTemporalValue(displayRaw, column);
   const fieldType = normalized(column.type).toLowerCase();
   const rawText = typeof displayRaw === 'string' ? displayRaw : '';

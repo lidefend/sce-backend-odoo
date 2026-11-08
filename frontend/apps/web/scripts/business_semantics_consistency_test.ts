@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  formatBusinessDuration,
   formatBusinessPercentage,
   formatMonetaryDisplayValue,
   presentDeclaredBusinessValue,
@@ -77,6 +78,57 @@ const declaredPercentage = presentDeclaredBusinessValue({
 assert.equal(declaredPercentage.kind, 'percentage');
 assert.equal(declaredPercentage.text, '12.5%');
 assert.equal(formatBusinessPercentage(12.5), declaredPercentage.text);
+
+const durationCases: Array<[unknown, string]> = [
+  [null, FIELD_VALUE_EMPTY_TEXT],
+  [undefined, FIELD_VALUE_EMPTY_TEXT],
+  [false, FIELD_VALUE_EMPTY_TEXT],
+  ['', FIELD_VALUE_EMPTY_TEXT],
+  [0, '0 小时'],
+  [1, '1 小时'],
+  [1.5, '1 小时 30 分钟'],
+  [1.999, '2 小时'],
+  [0.58, '35 分钟'],
+  [59 / 60, '59 分钟'],
+  [59.6 / 60, '1 小时'],
+  [-0.5, '-30 分钟'],
+  [-1.5, '-1 小时 30 分钟'],
+  ['not-a-duration', FIELD_VALUE_EMPTY_TEXT],
+  [Number.NaN, FIELD_VALUE_EMPTY_TEXT],
+  [Number.POSITIVE_INFINITY, FIELD_VALUE_EMPTY_TEXT],
+];
+const durationField = {
+  name: 'opaque_hours',
+  type: 'float',
+  widget: 'float_time',
+  componentKey: 'sc.value.duration',
+};
+for (const [value, expected] of durationCases) {
+  assert.equal(formatBusinessDuration(value), expected);
+  assert.equal(presentDeclaredBusinessValue({ field: durationField, value }).kind === 'empty'
+    ? FIELD_VALUE_EMPTY_TEXT
+    : presentDeclaredBusinessValue({ field: durationField, value }).text, expected);
+  assert.equal(presentListCell({
+    raw: value,
+    column: {
+      field: 'opaque_hours',
+      label: 'Hours',
+      type: 'float',
+      widget: 'float_time',
+      componentKey: 'sc.value.duration',
+    },
+  }).text, expected);
+  assert.equal(presentCollectionKanbanCell({
+    field: 'opaque_hours',
+    value,
+    columnOptions: [{
+      name: 'opaque_hours',
+      type: 'float',
+      widget: 'float_time',
+      componentKey: 'sc.value.duration',
+    }],
+  }).text, expected);
+}
 
 const statusSelection = [
   { value: 'draft', label: '草稿' },
@@ -313,4 +365,4 @@ assert.equal(formatProductMyWorkFact({
   display_role: 'text',
 }), FIELD_VALUE_EMPTY_TEXT);
 
-console.log('[business_semantics_consistency_test] PASS money=6 status=20 temporal=4 empty=3');
+console.log('[business_semantics_consistency_test] PASS money=6 status=20 temporal=4 empty=3 duration=16 consumers=3');

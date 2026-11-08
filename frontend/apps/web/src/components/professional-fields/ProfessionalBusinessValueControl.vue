@@ -58,15 +58,14 @@ import {
   formatMonetaryDisplayValue,
   formatMonetaryInputValue,
   monetaryInputStep,
+  statusBadgeSemantic,
 } from '../../app/presentation/businessValuePresentation';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   businessValueKind,
-  formatDuration,
   formatPercentage,
   normalizeBusinessValueChoiceOptions,
 } from './professionalBusinessValueModel';
-import { statusBadgeSemantic } from '../../app/presentation/businessValuePresentation';
 import { resolveReadonlyEmptyText } from './professionalBaseFieldModel';
 
 const props = defineProps<{
@@ -84,6 +83,7 @@ const inputModelValue = computed(() => {
   if (kind.value === 'sc.value.money') {
     return formatMonetaryInputValue(props.field.inputValue, props.field.digits, props.field.currencyLabel);
   }
+  if (props.field.inputValue === false || props.field.inputValue === null || props.field.inputValue === undefined) return '';
   return typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '';
 });
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
@@ -107,13 +107,13 @@ const moneyDisplay = computed(() => formatMonetaryDisplayValue(
 const displayText = computed(() => {
   const value = props.field.value;
   if (kind.value === 'sc.value.percentage') return formatPercentage(value);
-  if (kind.value === 'sc.value.duration') return formatDuration(value);
-  if (kind.value === 'sc.display.status') {
+  if (kind.value === 'sc.value.duration' || kind.value === 'sc.display.status') {
     return presentDeclaredBusinessValue({
       field: {
         name: props.field.name,
         type: props.field.type,
         componentKey: props.field.componentKey,
+        widget: props.field.widget,
         selection: props.field.selectionOptions,
       },
       value: props.field.inputValue ?? value,
