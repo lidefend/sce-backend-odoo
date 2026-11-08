@@ -21,6 +21,8 @@ goal:
       - .agent/active-runs.json
       - .agent/goals/FE-RENDERER-02C-02B-02.yaml
       - .agent/runs/FE-RENDERER-02C-02B-02/run.json
+      - .agent/goals/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json
       - docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/test_inventory.csv
@@ -28,15 +30,22 @@ goal:
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - frontend/packages/ui/package.json
       - frontend/packages/ui/src/primitive-port/types.ts
+      - frontend/packages/ui/src/primitive-port/events.ts
       - frontend/packages/ui/src/primitive-port/provider/context.ts
       - frontend/packages/ui/src/primitive-port/provider/ScenePrimitiveProvider.vue
       - frontend/packages/ui/src/primitive-port/provider/index.ts
       - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue
+      - frontend/apps/web/src/components/design-system/ScInput.vue
+      - frontend/apps/web/src/components/design-system/ScTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/textControlContracts.ts
       - frontend/apps/web/src/components/design-system/scene-adapter/buttonContract.ts
       - frontend/apps/web/src/components/design-system/scene-adapter/index.ts
       - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
       - frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
       - frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs
+      - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
       - frontend/apps/web/tsconfig.scene-primitive-adapter.json
       - scripts/verify/frontend_scene_primitive_adapter_guard.py
       - scripts/verify/test_frontend_scene_primitive_adapter_guard.py

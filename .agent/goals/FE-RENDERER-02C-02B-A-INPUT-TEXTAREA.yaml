@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02B-A-INPUT-TEXTAREA
+  title: Input and Textarea Primitive Conformance
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Sc text controls and Web Primitive Adapter
+  module: ScInput, ScTextarea, ScSceneInput, ScSceneTextarea
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Text value, IME, focus and keyboard behavior are shared platform primitive contracts.
+  why_not_elsewhere: >
+    No product page, business semantic, Contract V2, Provider, Port or backend change.
+  blast_radius:
+    paths:
+      - frontend/apps/web/src/components/design-system/ScInput.vue
+      - frontend/apps/web/src/components/design-system/ScTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/textControlContracts.ts
+      - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+  objective: >
+    Establish real Input/Textarea wrappers and browser-verifiable controlled string, IME,
+    focus, keyboard, disabled/readonly and ARIA behavior without fabricating native events.
+  results:
+    input_adapter: PASS
+    textarea_core_adapter: PASS
+    textarea_ime_port_gap: RESOLVED_BY_TOTAL_CONTROL
+    types: PASS
+    focused_browser: PASS
+    lint: PASS
+    legacy_primitive_adapter: PASS
+  next_exact_step: >
+    Run the integrated Port/Textarea conformance and append the A slice to PR #845.
+  exclusions:
+    - product_consumer_migration
+    - primitive_port_change
+    - provider_change
+    - registry_change
+    - backend_change
+    - database_change
+    - deployment
+    - merge
+  rollback: >
+    Revert the four component files and focused test; no product route imports this slice.

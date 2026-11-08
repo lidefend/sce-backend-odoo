@@ -51,6 +51,8 @@ export type DateFieldPortEmits<Value> = {
 export type TextareaPortEmits = ControlEvents & {
   'update:modelValue': [value: string];
   input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
 };
 
 export type TablePortEmits<Row> = {

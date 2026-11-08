@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "0ea7343697d0258c09a22f4ce41e6c238798f068",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json",
+    "frontend/apps/web/src/components/design-system/ScInput.vue",
+    "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/textControlContracts.ts",
+    "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs"
+    ,"docs/engineering_convergence/complexity_budget_report.md"
+    ,"docs/engineering_convergence/test_inventory.csv"
+    ,"docs/engineering_convergence/test_inventory_summary.md"
+    ,"docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing cached frontend dependencies and managed Chromium"
+  },
+  "checks": {
+    "text_controls": {
+      "target": "node frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+        "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue",
+        "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "implementation": "PASS: added real ScSceneInput/ScSceneTextarea wrappers and textControlContracts",
+    "base_event_truthfulness": "PASS: removed fabricated Event/FocusEvent/KeyboardEvent fallbacks from Input/Textarea TDesign callbacks",
+    "input_conformance": "PASS: string controlled value, input/change, IME, focus/blur, keyboard, disabled/readonly/loading and ARIA exercised",
+    "textarea_core_conformance": "PASS: string controlled value, input/change, focus/blur, keyboard and rows/maxRows exercised",
+    "textarea_ime_port_gap": "RESOLVED_BY_TOTAL_CONTROL: TextareaPortEmits now declares compositionstart/compositionend and the wrapper exposes the real native events",
+    "types": "PASS: vue-tsc scene adapter config",
+    "focused_browser": "PASS: Chromium 147.0.7727.15, 22 checks, 0 console errors",
+    "lint": "PASS: 0 errors",
+    "legacy_primitive_adapter": "PASS: 46 components, 11 event cases, 41 tests"
+  },
+  "next_exact_step": "Run integrated Port/Textarea conformance and append the A slice to PR #845.",
+  "id": "FE-RENDERER-02C-02B-A-INPUT-TEXTAREA",
+  "branch": "fix/fe-renderer-02c-02b-a-input-textarea-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA.yaml",
+  "record": ".agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json"
+}

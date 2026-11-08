@@ -133,7 +133,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 681,
+      "productionConsumerCount": 682,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -651,7 +651,7 @@
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 61,
+      "productionConsumerCount": 62,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1256,7 +1256,7 @@
         "TDesignTextarea"
       ],
       "officialComponent": "textarea",
-      "productionConsumerCount": 7,
+      "productionConsumerCount": 8,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1415,7 +1415,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "d474dd83226a96e5476cbcca8db609279a1d5082511556ee3ab13b8b46e14427",
+  "inputDigest": "64c83fb5238dd51c4d7d4a4da60165ff2dd829d219732f10c21a8898c0ae5bab",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",

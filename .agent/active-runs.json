@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/fe-renderer-02c-02b-a-input-textarea-20261108": ".agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json",
     "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108": ".agent/runs/FE-RENDERER-02C-02B-02/run.json",
     "fix/fe-renderer-02c-02b-01-primitive-port-20261108": ".agent/runs/FE-RENDERER-02C-02B-01/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",

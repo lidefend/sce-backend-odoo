@@ -19,8 +19,13 @@ ALLOWED_IMPORTS = {
     'vue',
     '@sc/ui/primitive-port',
     '../ScButton.vue',
+    '../ScInput.vue',
+    '../ScTextarea.vue',
     './ScSceneButton.vue',
+    './ScSceneInput.vue',
+    './ScSceneTextarea.vue',
     './buttonContract',
+    './textControlContracts',
 }
 FORBIDDEN_SOURCE = (
     re.compile(r"\bas\s+Primitive(?:Component|Binding)\b"),
