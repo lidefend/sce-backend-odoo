@@ -154,6 +154,14 @@ entries:
   gate: 'make:verify.local.dev.system_permission.approval_scope.orm :: approval_scope_authority local.dev.test'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: approval_step_upgrade
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
 - group: auth_signup
   kind: odoo_tag
   status: unwired
@@ -944,6 +952,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: principal_group_request_scope_orm
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.smart_core.principal_group_request_scope.orm :: principal_group_request_scope_orm'
+  reason: Reachable through the governed disposable local.test/sc_test profile; no recurring workflow
+    selects this group yet.
 - group: product_job
   kind: odoo_tag
   status: unwired

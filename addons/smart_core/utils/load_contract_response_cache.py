@@ -382,6 +382,7 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
         "ui.menu.config.policy",
         "sc.approval.policy",
         "sc.scene",
+        "sc.business.category",
     )
     try:
         versions = [[
@@ -456,6 +457,29 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
                         int(row.sequence or 0),
                         str(row.label or ""),
                         sorted(int(group_id) for group_id in row.role_group_ids.ids),
+                    ]
+                    for row in records
+                ]])
+                continue
+            if model_code == "sc.business.category" and {
+                "code", "name", "target_model", "active", "form_policy_json",
+                "required_fields_json", "default_values_json",
+            } <= set(model._fields):
+                # Business-category projection inputs. Bind only the fields the
+                # source projection consumes. ``name`` is included because
+                # PageAssembler publishes it as business_form_policy.category_name;
+                # the other non-projection fields do not churn the source token.
+                records = model.sudo().with_context(active_test=False).search([], order="id")
+                versions.append([model_code, [
+                    [
+                        row.id,
+                        str(row.code or ""),
+                        str(row.name or ""),
+                        str(row.target_model or ""),
+                        bool(row.active),
+                        str(row.form_policy_json or ""),
+                        str(row.required_fields_json or ""),
+                        str(row.default_values_json or ""),
                     ]
                     for row in records
                 ]])

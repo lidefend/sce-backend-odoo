@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 210,
+    "odoo_tags": 211,
     "gated": 5,
-    "on_demand": 56,
+    "on_demand": 57,
     "unwired": 149,
-    "odoo_tag_declarations": 433,
+    "odoo_tag_declarations": 434,
     "gated_declarations": 100,
-    "uncovered_declarations": 333,
+    "uncovered_declarations": 334,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -680,7 +680,8 @@
         "addons/smart_construction_core/tests/test_approval_step_upgrade.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "auth_signup",
@@ -1808,6 +1809,20 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "principal_group_request_scope_orm",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.smart_core.principal_group_request_scope.orm :: principal_group_request_scope_orm"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "product_job",

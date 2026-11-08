@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "cf2afc2a127036ee6e75b0d355ada157c1455c0d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SMART-CORE-REQUEST-CACHE-PERF-20261108.yaml",
+    ".agent/runs/SMART-CORE-REQUEST-CACHE-PERF-20261108/run.json",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
+    "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py",
+    "addons/smart_core/utils/load_contract_response_cache.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/smart_core_request_cache_performance_20261108.md",
+    "make/dev.mk",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_form_structure_authority_unification.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing host Make tests; the separate real ORM command is documented in the batch record"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "make/ci.mk",
+        "make/dev.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "formal_list": {
+      "target": "verify.business_config.formal_list.unit",
+      "inputs": [
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/utils/load_contract_response_cache.py",
+        "make/runtime_ops.mk",
+        "scripts/verify/test_formal_list_configuration_baseline.py"
+      ],
+      "kind": "offline"
+    },
+    "entry_publication": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_route_authority_single_consumer.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "entry_equivalence": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "inputs": [
+        "addons/smart_core/",
+        "make/dev.mk",
+        "scripts/verify/contract_v2_entry_equivalence_guard.py",
+        "scripts/verify/test_contract_v2_entry_equivalence_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "form_structure_authority": {
+      "target": "verify.form_structure_authority_unification.unit",
+      "inputs": [
+        "addons/smart_core/",
+        "make/frontend.mk",
+        "scripts/verify/test_form_structure_authority_unification.py"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "relation_entry_guard": {
+      "target": "verify.frontend.relation_entry.contract_guard",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "frontend/apps/web/src/pages/contractForm",
+        "make/frontend.mk",
+        "scripts/verify/relation_entry_contract_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "addons/smart_core/tests/",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_v2_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/",
+        "docs/architecture/unified_page_contract_v2/",
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "make/",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_dispositions.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, review generated evidence, commit the clean candidate, publish the independent PR and wait for exact-head remote gates.",
+  "id": "SMART-CORE-REQUEST-CACHE-PERF-20261108",
+  "branch": "fix/smart-core-request-cache-performance",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SMART-CORE-REQUEST-CACHE-PERF-20261108.yaml",
+  "record": "docs/ops/iterations/smart_core_request_cache_performance_20261108.md"
+}

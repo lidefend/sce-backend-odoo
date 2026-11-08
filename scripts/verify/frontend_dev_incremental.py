@@ -458,6 +458,39 @@ RULES = (
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
     )),
+    # Request-scoped route authority and contract projection identity are both
+    # backend consumers of the assembled page contract. Keep each path on its
+    # existing non-zero L2 owner so the inner loop cannot silently skip a cache
+    # identity or principal-signature change.
+    Rule((
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
+        "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py",
+    ), (
+        "verify.product.entry_publication.unit",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/utils/load_contract_response_cache.py",
+    ), (
+        "verify.business_config.formal_list.unit",
+    )),
+    Rule((
+        "scripts/verify/test_coverage_registry.yaml",
+    ), (
+        "verify.test.coverage.registry",
+    )),
+    Rule((
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.assembler",
+    )),
+    Rule((
+        "scripts/verify/test_form_structure_authority_unification.py",
+    ), (
+        "verify.form_structure_authority_unification.unit",
+    )),
     # The renderer implements the declared presentation vocabulary that the
     # projection publishes.  Editing the renderer's vocabulary block, the token
     # set in `ui_contract_v2_projection.py`, or the parity guard itself must route

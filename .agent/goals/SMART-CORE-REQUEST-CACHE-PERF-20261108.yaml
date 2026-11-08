@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: SMART-CORE-REQUEST-CACHE-PERF-20261108
+  title: Smart Core 请求作用域缓存与关系入口性能收口
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: smart_core request-scoped identity cache, projection source invalidation and relation menu candidate narrowing
+  module: smart_core
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    用户组签名缓存、契约投影源身份和关系入口菜单候选都属于平台契约消费与授权前提，
+    必须在 smart_core 内保持单一实现。
+  why_not_elsewhere: >
+    不进入前端 Renderer、金额表达或行业模块；这些能力已由当前主线更完整实现。
+    不从页面或组件推断权限、缓存身份或关系入口。
+  blast_radius:
+    paths:
+      - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
+      - addons/smart_core/delivery/runtime_route_authority.py
+      - addons/smart_core/handlers/ui_contract_v2.py
+      - addons/smart_core/tests/__init__.py
+      - addons/smart_core/tests/test_load_contract_response_cache.py
+      - addons/smart_core/tests/test_principal_group_signature_request_scope.py
+      - addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py
+      - addons/smart_core/utils/load_contract_response_cache.py
+    product_behavior: >
+      同一 cursor 内用户组 XMLID 只解析一次且不跨 cursor/user/group 漂移；
+      sc.business.category 的投影字段变化使缓存失效，非投影元数据不产生无效抖动；
+      关系入口候选缩小后仍只发布可见、同公司作用域、同 res_model 且已发布的菜单/动作对。
+  objective: >
+    将 PR #834 中仍有效的 Smart Core 后端性能治理独立提取到当前 main，
+    不恢复已被后续主线取代的前端实现。
+  acceptance:
+    - cursor/request memo 不跨 cursor、用户或用户组变化泄漏
+    - sc.business.category 投影字段矩阵完整且最小，name 变化必须失效
+    - 关系菜单候选缩小保持可见父链、ACL、公司作用域、目标模型和发布约束
+    - 主机单测和真实 Odoo ORM 测试非零通过
+    - 关系入口、契约缓存及相关静态守卫通过
+    - 当前 exact HEAD 的全部远端必需门禁通过后才可合并
+  exclusions:
+    - frontend renderer implementation
+    - money presentation implementation
+    - semantic registry projection
+    - frontend expression guard
+    - old PR #834 frontend documents
+    - deployment
+  rollback: >
+    Revert the independent P0 candidate through a protected PR. No database,
+    deployment or persistent runtime configuration is changed by this batch.

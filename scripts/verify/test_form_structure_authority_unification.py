@@ -189,7 +189,7 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
             groups = form.find("sheet").findall("group")
             primary = [g for g in groups if g.get("data-sc-navigation-role") != "subordinate"]
             self.assertEqual([g.get("string") for g in primary],
-                             ["身份与基本资料", "合同范围", "合同明细与金额", "说明与附件", "履约信息", "来源与系统追溯"])
+                             ["合同身份", "合同范围", "合同明细与金额", "说明与附件", "履约信息", "来源与系统追溯"])
             detail = next(g for g in groups if g.get("data-sc-anchor") == direction + "-contract-detail-amount")
             self.assertEqual(detail.get("col"), "1")
             self.assertIsNotNone(detail.find("field[@name='line_ids']/tree[@editable='bottom']"))
