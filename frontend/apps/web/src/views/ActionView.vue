@@ -1107,7 +1107,11 @@ import {
   resolveActionViewAdvancedHint,
   resolveActionViewAdvancedTitle,
 } from '../app/contracts/actionViewAdvancedContract';
-import { resolveCollectionWriteAuthority } from '../app/runtime/actionViewInteractionRuntime';
+import {
+  resolveCollectionCreateAuthority,
+  resolveCollectionCreateEntry,
+  resolveCollectionWriteAuthority,
+} from '../app/runtime/actionViewInteractionRuntime';
 import { useActionPageModel } from '../app/assemblers/action/useActionPageModel';
 import {
   isActionViewLoadLeaseCurrent,
@@ -1518,31 +1522,6 @@ function routeContextOperationAllowed(operation: string): boolean {
   return contextOperationAllowed(routeQueryMap.value.context_raw, operation);
 }
 
-interface CollectionCreateEntryResolution {
-  authorized: boolean;
-  target: Record<string, unknown>;
-}
-
-/**
- * The list toolbar 新建 decision is a single contract action, not a boolean
- * capability.  The backend publishes the resolved creation target plus the
- * current user's authorization as one `list.create` action rule; the frontend
- * reads that same rule for both visibility and the click destination.  A
- * missing or unauthorized rule fails closed and hides the button.
- */
-function resolveCollectionCreateEntry(contract: ActionViewRuntimeContract | null): CollectionCreateEntryResolution {
-  const rules = resolveContractV2ActionRules(contract);
-  const rule = rules.find((row) => row.actionKey === 'list.create' || row.actionId === 'action.list.create');
-  if (!rule) return { authorized: false, target: {} };
-  const target = rule.target && typeof rule.target === 'object' && !Array.isArray(rule.target)
-    ? rule.target as Record<string, unknown>
-    : {};
-  const authorized = rule.allowed === true
-    && rule.authorizationAllowed === true
-    && rule.entitlementEvaluated === true;
-  return { authorized, target };
-}
-
 function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
   const globalStatus = resolveContractV2GlobalStatus(contract);
   // The action contract is loaded without a record while rendering a
@@ -1557,21 +1536,11 @@ const canEditRecord = computed(() => resolveWriteRight(actionContract.value) && 
 
 const canCreateRecord = computed(() => {
   if (status.value === 'loading') return false;
-  // The collection surface publishes the effective create authority on
-  // globalStatus. The resolved list.create target alone is not sufficient:
-  // it is authorized only when the effective capability also allows creation.
-  const effective = resolveContractV2EffectiveFormCapabilities(actionContract.value);
-  if (effective?.create !== true) return false;
-  const entry = resolveCollectionCreateEntry(actionContract.value);
-  if (!entry.authorized) return false;
-  const targetType = String(entry.target.type || '').trim();
-  if (targetType === 'action') {
-    return toPositiveInt(entry.target.action_id) !== null
-      && toPositiveInt(entry.target.menu_id) !== null;
-  }
-  if (targetType !== 'record_create') return false;
-  const targetModel = String(entry.target.model || '').trim();
-  return Boolean(targetModel && actionId.value);
+  return resolveCollectionCreateAuthority({
+    effectiveCreate: resolveContractV2EffectiveFormCapabilities(actionContract.value)?.create,
+    entry: resolveCollectionCreateEntry(actionContract.value),
+    actionId: actionId.value,
+  });
 });
 const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');

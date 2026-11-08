@@ -313,11 +313,13 @@ RULES = (
     Rule((
         "frontend/apps/web/src/components/design-system/scene-adapter/",
         "frontend/apps/web/scripts/scene_primitive_adapter_",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
         "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
         "scripts/verify/frontend_scene_primitive_adapter_guard.py",
         "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
     ), (
         "verify.frontend.scene_primitive_adapter.unit",
+        "verify.frontend.scene_primitive_contract.behavior",
     )),
     Rule((
         "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
@@ -344,9 +346,14 @@ RULES = (
     # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
     Rule((
         "/views/ActionView.vue",
+        "/app/runtime/actionViewInteractionRuntime.ts",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
         "/app/runtime/actionViewSurfaceGateRuntime.ts",
         "/app/runtime/actionViewListPageSizeRuntime.ts",
     ), (
+        "verify.frontend.action_view_page_actions.unit",
         "verify.frontend.action_view_surface_gate_runtime.unit",
         "verify.frontend.action_view_page_size_runtime.unit",
         "verify.frontend.contract_basis.unit",

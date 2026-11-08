@@ -22,9 +22,9 @@ Generated from repository source files. This report is informational during the 
 | 4574 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3737 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3712 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -121,14 +121,14 @@ Generated from repository source files. This report is informational during the 
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
-| 1256 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1263 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1230 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
-| 1204 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -256,9 +256,9 @@ Generated from repository source files. This report is informational during the 
 | 4574 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3737 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3712 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |

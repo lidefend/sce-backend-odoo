@@ -121,6 +121,7 @@ verify.frontend.scene_primitive_adapter.unit: guard.prod.forbid verify.frontend.
 
 verify.frontend.scene_primitive_contract.behavior: guard.prod.forbid verify.frontend.scene_primitive_adapter.unit
 	@node frontend/apps/web/scripts/scene_primitive_adapter_test.mjs --behavior
+	@node frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
 
 verify.frontend.scene_primitive_contract.all: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.behavior
 
@@ -665,6 +666,8 @@ verify.frontend.form_header_action_primitives.unit: guard.prod.forbid
 verify.frontend.action_view_page_actions.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_action_view_page_actions_guard.py
 	@python3 scripts/verify/frontend_action_view_page_actions_guard.py
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_collection_create_authority_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/action-view-collection-create-authority-test.mjs >/dev/null
+	@node /tmp/action-view-collection-create-authority-test.mjs
 
 verify.frontend.relational_action_primitives.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_relational_action_primitives_guard.py

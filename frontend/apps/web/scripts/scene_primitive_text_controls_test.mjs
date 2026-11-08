@@ -27,6 +27,8 @@ const Host = {
   setup() {
     const inputValue = ref('');
     const areaValue = ref('');
+    window.setInputValue = value => { inputValue.value = value; };
+    window.setAreaValue = value => { areaValue.value = value; };
     return () => h('div', [
       h(ScSceneInput, {
         id: 'text-input', modelValue: inputValue.value, name: 'title', inputMode: 'text',
@@ -211,8 +213,31 @@ try {
   assert.ok(events.some((event) => event.kind === 'area-compositionstart'));
   assert.ok(events.some((event) => event.kind === 'area-compositionend'));
   assert.equal(await page.locator('#text-area').evaluate((element) => element.tagName), 'TEXTAREA');
+
+  await page.evaluate(() => { window.textLog = []; });
+  await page.locator('#text-input').focus();
+  await page.locator('#text-input').fill('input-draft');
+  await page.evaluate(() => window.setInputValue('input-server'));
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-server');
+  assert.equal(await page.locator('#text-input').inputValue(), 'input-server');
+  await page.locator('#text-area').focus();
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'change').length, 0);
+  assert.ok(events.some((event) => event.kind === 'blur' && event.value === 'input-server'));
+
+  await page.evaluate(() => { window.textLog = []; });
+  await page.locator('#text-area').focus();
+  await page.locator('#text-area').fill('area-draft');
+  await page.evaluate(() => window.setAreaValue('area-server'));
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-server');
+  assert.equal(await page.locator('#text-area').inputValue(), 'area-server');
+  await page.locator('#text-input').focus();
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'area-change').length, 0);
+  assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-server'));
+
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 31, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 37, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type {
   NoPortSlots,
   PrimitiveEventSource,
@@ -50,8 +50,10 @@ defineSlots<NoPortSlots>();
 const textareaRef = ref<{ $el?: unknown } | null>(null);
 let lastSource: PrimitiveEventSource = 'programmatic';
 let lastEditSource: PrimitiveEventSource = 'programmatic';
-let lastValue = '';
-let committedValue = '';
+let controlledValue = String(props.modelValue ?? '');
+let lastEditValue = controlledValue;
+let committedValue = controlledValue;
+let pendingUserEcho: string | undefined;
 let nativeTextarea: HTMLTextAreaElement | null = null;
 let lastNativeInputEvent: Event | undefined;
 
@@ -73,6 +75,20 @@ function eventValue(event: Event): string {
 function blockEdit(): boolean {
   return props.disabled || props.readonly || props.loading;
 }
+watch(
+  () => String(props.modelValue ?? ''),
+  (value) => {
+    controlledValue = value;
+    if (pendingUserEcho === value) {
+      pendingUserEcho = undefined;
+      return;
+    }
+    pendingUserEcho = undefined;
+    lastEditValue = value;
+    committedValue = value;
+  },
+  { flush: 'sync' },
+);
 function onNativePointerdown() {
   lastSource = 'pointer';
 }
@@ -88,33 +104,36 @@ function onNativeInput(event: Event) {
   if (event === lastNativeInputEvent) return;
   lastNativeInputEvent = event;
   const value = eventValue(event);
-  if (value === lastValue) return;
+  if (value === lastEditValue) return;
   lastEditSource = sourceFor(event);
-  lastValue = value;
+  lastEditValue = value;
+  pendingUserEcho = value;
   emit('update:modelValue', value);
   emit('input', value, { source: lastEditSource, nativeEvent: event });
 }
 function commitValue(event: Event) {
-  const value = lastValue || eventValue(event);
+  const displayedValue = eventValue(event);
+  const value = displayedValue === controlledValue ? displayedValue : lastEditValue;
   if (value === committedValue) return;
   committedValue = value;
   emit('change', value, { source: lastEditSource, nativeEvent: event });
 }
 function onNativeChange(event: Event) {
   if (blockEdit()) return;
-  lastValue = eventValue(event);
+  lastEditValue = eventValue(event);
   commitValue(event);
 }
 function onNativeFocus(event: FocusEvent) {
   const value = eventValue(event);
   lastSource = 'programmatic';
   lastEditSource = 'programmatic';
-  lastValue = value;
+  controlledValue = value;
+  lastEditValue = value;
   committedValue = value;
   emit('focus', value, { source: 'programmatic', nativeEvent: event });
 }
 function onNativeBlur(event: FocusEvent) {
-  emit('blur', lastValue, { source: sourceFor(event), nativeEvent: event });
+  emit('blur', lastEditValue, { source: sourceFor(event), nativeEvent: event });
   commitValue(event);
 }
 function onNativeCompositionStart(event: CompositionEvent) {
