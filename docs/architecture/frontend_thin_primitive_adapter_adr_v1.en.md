@@ -454,23 +454,35 @@ Scene uses semantic icon names. `decorative=true` hides the icon from assistive 
 ### 5.10 Adapter Injection
 
 ```ts
-export interface ScenePrimitiveAdapter {
-  Button: ButtonPortComponent;
-  Input: InputPortComponent;
-  Select: SelectPortComponent;
-  DateField: DateFieldPortComponent;
-  Textarea: TextareaPortComponent;
-  Table: TablePortComponent;
-  Icon: IconPortComponent;
+export interface PrimitivePortDefinition<Props, Emits, Slots> {
+  props: Props;
+  emits: Emits;
+  slots: Slots;
+  exposed: PrimitiveHandle;
 }
 
-export interface ScenePrimitiveContext {
+export interface PrimitiveBinding<Props, Emits, Slots> {
+  component: Component;
+  readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
+}
+
+export interface ScenePrimitiveAdapter {
+  Button: PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots>;
+  Input: PrimitiveBinding<InputPortProps, InputPortEmits, InputPortSlots>;
+  Select: PrimitiveBinding<SelectPortProps, SelectPortEmits, Record<never, never>>;
+  DateField: PrimitiveBinding<DateFieldPortProps, DateFieldPortEmits, Record<never, never>>;
+  Textarea: PrimitiveBinding<TextareaPortProps, TextareaPortEmits, Record<never, never>>;
+  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, TablePortSlots<TablePortRow>>;
+  Icon: PrimitiveBinding<IconPortProps, Record<never, never>, Record<never, never>>;
+}
+
+export interface SceneCompositionContext {
   primitives: ScenePrimitiveAdapter;
   density: SceneDensity;
 }
 ```
 
-The component types must use Vue `DefineComponent`, props/emit type assertions, or equivalent typed machinery. A component dictionary without prop and event contracts is not compliant.
+Each `PrimitiveBinding.component` must use Vue `DefineComponent`, `ComponentProps` / `ComponentEmits` / `SlotsType` assertions, or equivalent typed machinery in 02C-02B to prove conformance with `contract`. The `contract` is also the runtime declaration consumed by component contract tests; it cannot exist only in documentation.
 
 ### 5.11 Target Provider
 
@@ -478,6 +490,7 @@ The component types must use Vue `DefineComponent`, props/emit type assertions, 
 interface SceneUiProviderProps {
   primitives: ScenePrimitiveAdapter;
   density?: SceneDensity;
+  compositionContext?: SceneCompositionContext;
 }
 ```
 

@@ -478,23 +478,35 @@ export interface IconPortProps {
 ### 5.10 Adapter 注入
 
 ```ts
-export interface ScenePrimitiveAdapter {
-  Button: ButtonPortComponent;
-  Input: InputPortComponent;
-  Select: SelectPortComponent;
-  DateField: DateFieldPortComponent;
-  Textarea: TextareaPortComponent;
-  Table: TablePortComponent;
-  Icon: IconPortComponent;
+export interface PrimitivePortDefinition<Props, Emits, Slots> {
+  props: Props;
+  emits: Emits;
+  slots: Slots;
+  exposed: PrimitiveHandle;
 }
 
-export interface ScenePrimitiveContext {
+export interface PrimitiveBinding<Props, Emits, Slots> {
+  component: Component;
+  readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
+}
+
+export interface ScenePrimitiveAdapter {
+  Button: PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots>;
+  Input: PrimitiveBinding<InputPortProps, InputPortEmits, InputPortSlots>;
+  Select: PrimitiveBinding<SelectPortProps, SelectPortEmits, Record<never, never>>;
+  DateField: PrimitiveBinding<DateFieldPortProps, DateFieldPortEmits, Record<never, never>>;
+  Textarea: PrimitiveBinding<TextareaPortProps, TextareaPortEmits, Record<never, never>>;
+  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, TablePortSlots<TablePortRow>>;
+  Icon: PrimitiveBinding<IconPortProps, Record<never, never>, Record<never, never>>;
+}
+
+export interface SceneCompositionContext {
   primitives: ScenePrimitiveAdapter;
   density: SceneDensity;
 }
 ```
 
-`ButtonPortComponent` 等类型必须在 02C-02B 使用 Vue `DefineComponent`、Props/Emits 类型断言或等价机制实现，禁止退化为无类型组件字典。
+`PrimitiveBinding.component` 的实际包装必须在 02C-02B 使用 Vue `DefineComponent`、`ComponentProps` / `ComponentEmits` / `SlotsType` 类型断言或等价机制证明其符合 `contract`，禁止退化为无类型组件字典。`contract` 同时作为组件契约测试的运行时声明，不得只存在于文档。
 
 ### 5.11 Provider 目标
 
@@ -502,6 +514,7 @@ export interface ScenePrimitiveContext {
 interface SceneUiProviderProps {
   primitives: ScenePrimitiveAdapter;
   density?: SceneDensity;
+  compositionContext?: SceneCompositionContext;
 }
 ```
 
