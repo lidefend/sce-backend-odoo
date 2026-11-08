@@ -17,6 +17,7 @@
     :aria-invalid="invalid || undefined"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
+    @clear="onClear"
     @change="onTDesignChange"
   />
 </template>
@@ -94,6 +95,16 @@ function onTDesignChange(value: unknown) {
     emit('change', next, lastInteractionEvent);
     lastInteractionEvent = undefined;
   }
+}
+function onClear(context: { e?: MouseEvent }) {
+  if (!(context.e instanceof MouseEvent)) return;
+  const next = '';
+  if (next === lastValue && next === lastChangeValue) return;
+  lastValue = next;
+  lastChangeValue = next;
+  lastInteractionEvent = undefined;
+  emit('update:modelValue', next);
+  emit('change', next, context.e);
 }
 function onNativeInput(event: Event) {
   const target = event.currentTarget;

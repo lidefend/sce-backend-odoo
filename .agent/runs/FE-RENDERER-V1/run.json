@@ -135,6 +135,11 @@
         "scripts/verify/local_dev_payment_settlement_component_journey.sh",
         "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
         "scripts/verify/local_dev_payment_settlement_component_ids.py",
+        "scripts/ops/odoo_shell_exec.sh",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/dev/local_dev_frontend_quick.py",
+        "scripts/dev/local_environment_health.sh",
+        "make/dev.mk",
         "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue"
       ],
@@ -148,7 +153,7 @@
   "results": {
     "v1_00_component_mapping_audit": "PASS: 27 semantics, 28 components, 26 field components, 25 platform keys, 63 Sc components",
     "v1_01_contract_component_binding": "PASS: 11 base component identities, 23 key/type variants, 7 implementations, unknown/mismatch fail closed",
-    "v1_02_tdesign_component_interaction": "PASS: direct Sc/TDesign browser Conformance, 72 checks, 0 console errors; Textarea and DateField exact input/change semantics covered",
+    "v1_02_tdesign_component_interaction": "PASS: direct Sc/TDesign browser Conformance, 75 checks, 0 console errors; Textarea exact input/change and focused/unfocused DateField clear semantics covered",
     "v1_03_existing_page_hosts_preserved": "PASS: FormSection/PageRenderer/ActionSurface/Professional/@sc/ui hosts retained",
     "v1_04_business_value_and_action_authority": "PASS_UNCHANGED: business presentation, permissions and action authority not changed",
     "v1_05_contract_form": "PASS: real payment form DOM has 16 bindings and 0 binding errors",
@@ -160,7 +165,7 @@
     "ci_local_iteration": "PASS: 8 required targets exited zero",
     "strict_typecheck": "PASS",
     "lint": "PASS: 0 errors with pre-existing out-of-scope warnings",
-    "independent_review": "REQUEST_CHANGES_FIXED_PENDING_REREVIEW: ScDateField change, ScTextarea input/change, new-model proof and runtime evidence classification addressed"
+    "independent_review": "REQUEST_CHANGES_FIXED_PENDING_REREVIEW: ScDateField selection/clear change, ScTextarea input/change, new-model proof, runtime dependencies and scope wording addressed"
   },
   "next_exact_step": "Commit the review fixes, push the updated candidate, and request a second exact-head independent review. Do not merge or enable SceneCollectionSurface.",
   "id": "FE-RENDERER-V1",

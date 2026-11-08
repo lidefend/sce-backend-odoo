@@ -39,7 +39,9 @@ goal:
     existing semantic/component registries and page hosts, adding one authoritative
     componentKey-to-Sc binding map where it removes duplicated FormSection branches,
     and proving the unified authority through Contract Form, Payment Request and
-    Scene Collection journeys.
+    the currently enabled ActionView collection. Product enablement of
+    SceneCollectionSurface is explicitly deferred to a separate feature-gated
+    acceptance batch.
   acceptance:
     - Produce a complete componentKey inventory and current implementation map from the latest main basis
     - Reconcile PR #845 as an asset source without treating it as merged architecture
@@ -63,7 +65,7 @@ goal:
     v1_05_collection_list_and_readonly: PASS
     v1_05_direct_scene_collection_surface: DEFERRED_BY_EXPLICIT_SCOPE
     v1_05_contract_only_new_model_fixture: PASS
-    review_fix_date_change_event: PASS
+    review_fix_date_change_and_clear_events: PASS
     review_fix_textarea_input_change_semantics: PASS
     frontend_build: PASS_5374_MODULES
     ci_local_iteration: PASS_8_TARGETS

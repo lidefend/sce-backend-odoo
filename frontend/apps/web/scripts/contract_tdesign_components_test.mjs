@@ -127,6 +127,7 @@ const Host = {
         id: 'date-input',
         modelValue: date.value,
         name: 'start_date',
+        clearable: true,
         required: true,
         describedBy: 'date-help',
         ariaLabel: '开始日期',
@@ -283,6 +284,21 @@ try {
   check(events.some((event) => event.kind === 'date-focus'), 'date focus is forwarded');
   check(events.some((event) => event.kind === 'date-blur'), 'date blur is forwarded');
   check(events.some((event) => event.kind === 'date-keydown'), 'date keydown is forwarded');
+
+  await page.locator('#date-input').hover();
+  await page.locator('span.t-input__clear').last().click();
+  events = await page.evaluate(() => window.componentLog);
+  check(events.some((event) => event.kind === 'date-update' && event.value === ''), 'unfocused date clear updates controlled value');
+  check(events.filter((event) => event.kind === 'date-change' && event.value === '').length === 1, 'unfocused date clear emits one real change');
+
+  await page.locator('#date-input').click();
+  const secondPanel = page.locator('.t-date-picker__panel').last();
+  await secondPanel.waitFor({ state: 'visible' });
+  await secondPanel.locator('td.t-date-picker__cell').filter({ hasText: /^10$/ }).first().click();
+  await page.locator('#date-input').hover();
+  await page.locator('span.t-input__clear').last().click();
+  events = await page.evaluate(() => window.componentLog);
+  check(events.filter((event) => event.kind === 'date-change').length === 4, 'focused and unfocused selection/clear each emit exactly one date change');
 
   check(await page.locator('#number-input').getAttribute('aria-label') === '数量', 'number accessible name projects');
   check(await page.locator('#number-input').getAttribute('aria-invalid') === 'true', 'number invalid ARIA projects');
