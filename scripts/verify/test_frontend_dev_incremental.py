@@ -247,6 +247,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.contract_basis.unit", targets)
                 self.assertIn("verify.frontend.contract_basis.enforce", targets)
 
+    def test_guard_registry_inputs_route_to_the_registry_audit(self) -> None:
+        for path in (
+            "scripts/verify/registry.yaml",
+            "scripts/verify/guard_registry_audit.py",
+            "scripts/verify/test_guard_registry_audit.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.guard.registry"])
+
     def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:
         # The v2 contract handler chain is asserted by backend unit suites.  It
         # must not fall through as "unmapped": on 2026-10-10 the chain was edited

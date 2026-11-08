@@ -330,6 +330,16 @@ RULES = (
         "verify.frontend.contract_basis.unit",
         "verify.frontend.contract_basis.enforce",
     )),
+    # Guard registry rows and their audit implementation are one executable
+    # contract. A disposition-only fix must run the full registry audit instead
+    # of falling through as an unmapped verification-tool path.
+    Rule((
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+    ), (
+        "verify.guard.registry",
+    )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
     # 让最小复用变成 make 直接报错，又退回人工全量。

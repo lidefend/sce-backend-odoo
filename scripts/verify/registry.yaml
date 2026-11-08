@@ -527,7 +527,6 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: frontend_page_identity_runtime_metadata.py
   status: active
@@ -541,10 +540,22 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: frontend_readiness_non_draft_resolver.py
+  status: orphan
+  owner: platform-team
+  date: '2026-11-07'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: frontend_relation_navigation_diagnostic.py
   status: active
   owner: platform-team
   date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: frontend_role_release_projection.py
+  status: active
+  owner: platform-team
+  date: '2026-11-06'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: generate_field_arch_p0_02_evidence.py
@@ -1429,7 +1440,8 @@ entries:
   owner: platform-team
   date: '2026-11-06'
   reason: Real native fact and projection regressions run via verify.construction.policy_maps.unit,
-    required by the contract architecture suite in local Quick and remote professional backend.
+    required by the contract architecture suite in local Quick and remote professional
+    backend.
 - script: test_construction_create_default_hooks.py
   status: active
   owner: platform-team
