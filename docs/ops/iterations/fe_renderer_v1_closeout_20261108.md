@@ -78,7 +78,7 @@ edit. No debounce, timer window or value-equality timer is used.
 
 Chromium `147.0.7727.15` real-SFC evidence:
 
-- 31 exact assertions, 0 console errors;
+- 37 exact assertions, 0 console errors;
 - three typed Input characters produce exactly three `update` and three `input`
   events;
 - one Input edit commit produces exactly one `change`;
@@ -89,6 +89,37 @@ Chromium `147.0.7727.15` real-SFC evidence:
   observed; Input/Textarea `compositionstart`/`compositionend` are forwarded;
 - name, inputmode, ARIA, required, error and Textarea element identity remain
   intact.
+- if a user draft is replaced by an external controlled `modelValue` update
+  before blur, neither Input nor Textarea emits a stale draft `change`; blur
+  reports the displayed controlled value.
+
+### First-review follow-up
+
+The first independent review identified two boundaries that were not yet pinned:
+
+- Input/Textarea did not distinguish a user-driven model echo from a genuinely
+  external controlled-value reset;
+- collection create capability had product behavior but no executable
+  missing/false/true regression boundary.
+
+The scene adapters now clear pending user provenance and reset the edit and
+committed baselines on every genuinely external value update. On commit, they
+use the displayed DOM value only when it is the current controlled value;
+otherwise they use the latest user edit, preventing an external server value
+from being replaced by a stale draft.
+
+ActionView now delegates create visibility to
+`resolveCollectionCreateAuthority`. The helper requires the declared effective
+`create=true` capability and one complete authorized `list.create` destination.
+Its executable cases cover missing, false and true effective capability; absent
+or unauthorized action rules; incomplete action targets; and invalid current
+action identity. These cases are wired into the existing
+`verify.frontend.action_view_page_actions.unit` target.
+
+The development-incremental route was corrected so ActionView create-boundary
+inputs select their executable contract target, and scene text changes select
+the real browser behavior target. The routing itself is covered by 87 non-zero
+unit tests; this is P4 verification plumbing, not product behavior.
 
 ### P1 componentKey reconciliation
 
@@ -256,24 +287,42 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 product acceptance is PASS on the product candidate. Overall V1 remains
-`verification_pending` until independent review, exact-head publication and fresh
-remote checks complete.
+L4 product acceptance passed on historical product candidate `ce9170b4b`.
+The first-review follow-up changes Input/Textarea state handling and the
+ActionView create decision, so this evidence is not inherited by the follow-up
+candidate. Overall V1 remains `verification_pending` until affected-page
+revalidation, exact-head publication and fresh remote checks complete.
 
-The final affected incremental iteration passed all eight required targets with
+The final affected incremental iteration passed all 14 required targets with
 non-zero execution:
 
 - Agent ledger;
+- Agent resume;
+- ActionView create authority;
+- ActionView page-size runtime;
+- ActionView surface gate;
+- Contract-basis unit and enforce;
+- Development-incremental routing unit;
 - frontend lint;
 - page-pattern reference parity;
 - Primitive Adapter;
 - Primitive Port;
 - Scene Primitive Adapter;
 - real Scene Primitive behavior;
+- style-system guard;
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T112556Z-168174-134847774/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T133423Z-996104-62656813/receipt.json`.
+
+The frontend production build also passed: 5,373 modules transformed in 25.72
+seconds. The existing large-chunk advisory remains.
+
+Affected L4 revalidation is currently `not_run`: the current process did not
+contain the managed `SC_ACCEPTANCE_FIXTURE_PASSWORD` injection. No password was
+printed, guessed or written. This is an environment prerequisite, not a product
+failure, and it prevents carrying the historical three-page pass into this
+candidate.
 
 ## Exclusions
 
@@ -282,5 +331,6 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Assign and execute P0, B and C; integrate only after their results bind to the
-current candidate identity.
+Run the governed incremental gate on the review follow-up, revalidate the
+affected business-page boundaries on its exact code, then publish the same PR
+HEAD and obtain fresh required checks.

@@ -20,13 +20,19 @@
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
     "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts",
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "frontend/packages/ui/src/primitive-port",
     "frontend/packages/ui/src/primitive-port/types.ts",
     "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+    "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
     "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
     "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+    "make/frontend.mk",
     "contracts/registry/semantic.yaml",
     "contracts/registry/component.yaml",
     "docs/engineering_convergence/complexity_budget_report.md",
@@ -43,6 +49,16 @@
         ".agent/",
         "scripts/verify/agent_ledger_consistency_guard.py",
         "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
         "make/codex.mk"
       ],
       "kind": "offline"
@@ -127,7 +143,69 @@
       "inputs": [
         "frontend/apps/web/src/components/design-system/scene-adapter",
         "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
         "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_create_authority": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_page_size": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_surface_gate": {
+      "target": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewSurfaceGateRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis_unit": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/frontend_style_system_guard.py",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -190,10 +268,12 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
+  "blockers": [
+    "L4 first-review revalidation not_run: SC_ACCEPTANCE_FIXTURE_PASSWORD is not injected in the current process; prior ce9170b4b page evidence is not inherited by this candidate"
+  ],
   "results": {
     "candidate_code_commit": "PASS: 524fc5207 contains primitive/event conformance, 410e79a18 fixes declared collection create authority, and ce9170b4b fixes controlled list search consumption",
-    "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 31 exact assertions, 0 console errors; one Textarea edit commits exactly one update/input/change, blur does not repeat change, disabled/readonly attempts emit no model update, IME update observed",
+    "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 37 exact assertions, 0 console errors; exact event counts remain intact and an external controlled modelValue update followed by blur emits no stale draft change",
     "p0_scene_adapter_unit": "PASS: 5 primitive-port guard tests, 5 runtime/SSR assertions, 6 scene-adapter guard tests, real-SFC type witness and 3641-input bundle boundary",
     "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
     "p0_lint_typecheck": "PASS: 0 lint errors, four existing warnings; UI and web strict vue-tsc exited zero",
@@ -202,20 +282,21 @@
     "component_driver_takeover": "PASS: 13 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0",
     "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
     "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
-    "ci_local_iteration": "PASS: 8/8 affected targets exited zero with non-zero real collections; receipt=.runtime/frontend-dev-validation/executions/20261108T112556Z-168174-134847774/receipt.json",
+    "ci_local_iteration": "PASS: 14/14 affected targets exited zero with non-zero real collections; receipt=.runtime/frontend-dev-validation/executions/20261108T133423Z-996104-62656813/receipt.json",
+    "frontend_build": "PASS: vite production build completed; 5373 modules transformed in 25.72s, with the existing large-chunk advisory",
     "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
     "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters present with no bypass; exhaustive per-component browser behavior is not claimed",
-    "l4_identity": "PASS: managed isolated acceptance sc_frontend_acceptance, backend and preview both bound to ce9170b4b; password supplied through the existing governed injection and never recorded",
-    "l4_01_contract_form": "PASS: sc.general.contract/2, action 758/menu 664, 4 viewports, 0 overflow, 0 console/page/http errors; summary=.runtime/final-acceptance/contract-form-presentation/contract/summary.json",
-    "l4_02_payment_request": "PASS: fixture FE-DELIVERY-HARDENING-001, two imported detail rows, edit 200->150 persisted, restored row_count=0/amount=20.00, 0 problems; report=.runtime/final-acceptance/payment-request/ce9170b4b/report.json",
-    "l4_03_scene_collection": "PASS: full list-surface matrix rows=18 failures=0 covering normal/batch/empty and responsive states; project table matrix entry 590 also passed with declared/observed create=false and negative 403 retained as expected authority",
-    "p3_product_fix": "PASS: ActionView now requires declared effectiveRecordCapabilities.create before rendering list/kanban create; toolbar consumes update:modelValue for controlled search so empty-state search works",
+    "l4_identity": "HISTORICAL_ONLY: managed isolated acceptance sc_frontend_acceptance, backend and preview were bound to ce9170b4b; that identity is superseded by this follow-up",
+    "l4_01_contract_form": "HISTORICAL_ONLY: sc.general.contract/2, action 758/menu 664, 4 viewports, 0 overflow, 0 console/page/http errors on ce9170b4b; revalidation pending because the fixture password was not injected",
+    "l4_02_payment_request": "HISTORICAL_ONLY: fixture FE-DELIVERY-HARDENING-001 edit/restore passed on ce9170b4b; revalidation pending because the fixture password was not injected",
+    "l4_03_scene_collection": "HISTORICAL_ONLY: 18-state list matrix and project table create=false negative authority passed on ce9170b4b; revalidation pending because the fixture password was not injected",
+    "p3_product_fix": "PASS: ActionView create authority is now a shared contract-consumption helper with nine cases covering missing/false/true capability, unauthorized or incomplete targets and invalid action identity; toolbar consumes update:modelValue for controlled search",
     "p3_mutations": "BOUNDED: isolated acceptance fixture reset and declared detail-row edit/restore only; no local.dev route repair, production data, ACL change or cross-domain credential reuse",
     "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
-    "l4_product_review": "PASS: Contract Form, Payment Request and Scene Collection now have governed browser evidence on ce9170b4b; two real product defects found by L4 were fixed without ACL or contract changes",
-    "final_v1_report": "READY_FOR_INDEPENDENT_REVIEW: component delivery and all three L4 page samples pass; publication, fresh remote checks and final merge authorization remain pending"
+    "l4_product_review": "PENDING: Contract Form, Payment Request and Scene Collection have governed browser evidence only on ce9170b4b; the current review follow-up changes product behavior and must not inherit it",
+    "final_v1_report": "VERIFICATION_PENDING: review findings and product fixes are locally validated; affected L4 revalidation, exact-head publication, fresh remote checks and final merge authorization remain pending"
   },
-  "next_exact_step": "Complete independent review of the clean final HEAD whose product-code identity is ce9170b4b, then publish that exact HEAD and obtain fresh required checks before any merge decision.",
+  "next_exact_step": "Commit and publish the clean review-follow-up HEAD, obtain fresh required checks, then inject the managed acceptance secret and revalidate the three affected business-page boundaries on that exact code before any merge decision.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",

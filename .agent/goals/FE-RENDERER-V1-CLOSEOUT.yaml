@@ -28,12 +28,19 @@ goal:
       - frontend/apps/web/src/components/design-system/ScTextarea.vue
       - frontend/apps/web/src/components/design-system/scene-adapter
       - frontend/apps/web/src/components/template/FormSection.vue
+      - frontend/apps/web/src/views/ActionView.vue
+      - frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts
       - frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts
       - frontend/apps/web/src/app/presentation/semantic_registry.generated.ts
       - frontend/packages/ui/src/primitive-port
       - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+      - frontend/apps/web/scripts/action_view_collection_create_authority_test.ts
       - frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
       - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/test_frontend_action_view_page_actions_guard.py
+      - make/frontend.mk
       - contracts/registry/semantic.yaml
       - contracts/registry/component.yaml
     product_behavior: >
