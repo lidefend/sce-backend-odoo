@@ -168,6 +168,10 @@ function attachCapture(page, state) {
       const params = (payload && payload.params) || {};
       const mainData = (data && data.dataContract && data.dataContract.mainData) || {};
       const globalStatus = (data && data.statusContract && data.statusContract.globalStatus) || {};
+      const actionRules = (data && data.actionContract && data.actionContract.actionRuleList) || [];
+      const createRule = actionRules.find((rule) => (
+        rule.actionKey === 'list.create' || rule.actionId === 'action.list.create'
+      )) || null;
       state.contracts.push({
         url: response.url(),
         op: String(params.op || ''),
@@ -181,6 +185,12 @@ function attachCapture(page, state) {
         mainDataKeys: Object.keys(mainData),
         globalStatus,
         effectiveRecordCapabilities: (globalStatus && globalStatus.effectiveRecordCapabilities) || null,
+        createRule: createRule ? {
+          allowed: createRule.allowed === true,
+          authorizationAllowed: createRule.authorizationAllowed === true,
+          entitlementEvaluated: createRule.entitlementEvaluated === true,
+          target: createRule.target && typeof createRule.target === 'object' ? createRule.target : {},
+        } : null,
         workflow: (data && data.workflowContract) || null,
         layoutContract: (data && data.layoutContract) || {},
       });
@@ -548,8 +558,29 @@ function declaredCollectionCapabilities(state, actionId) {
     const effective = row.effectiveRecordCapabilities || {};
     const modelRights = (row.globalStatus && row.globalStatus.modelRights) || {};
     if (Object.keys(effective).length || Object.keys(modelRights).length) {
+      const directCreate = effective.create === true;
+      const createRule = row.createRule || null;
+      const target = createRule && createRule.target && typeof createRule.target === 'object'
+        ? createRule.target : {};
+      const targetType = String(target.type || '').trim();
+      const authorized = Boolean(
+        createRule
+        && createRule.allowed
+        && createRule.authorizationAllowed
+        && createRule.entitlementEvaluated
+      );
+      const delegatedAction = authorized
+        && targetType === 'action'
+        && Number.isInteger(Number(target.action_id)) && Number(target.action_id) > 0
+        && Number.isInteger(Number(target.menu_id)) && Number(target.menu_id) > 0;
+      const directRecordCreate = authorized && targetType === 'record_create' && directCreate;
       return {
-        create: effective.create === true,
+        create: delegatedAction || directRecordCreate,
+        direct_create: directCreate,
+        delegated_create: delegatedAction,
+        create_target_type: targetType,
+        create_action_id: delegatedAction ? Number(target.action_id) : null,
+        create_menu_id: delegatedAction ? Number(target.menu_id) : null,
         write: modelRights.write === true,
         contract_url: row.url,
       };

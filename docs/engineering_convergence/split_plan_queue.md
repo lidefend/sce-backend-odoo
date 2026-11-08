@@ -24,8 +24,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 4564 | DevOps owner | `scripts/verify/test_payment_approval_state_machine.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3753 | DevOps owner | `scripts/ops/daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3737 | Construction backend owner | `addons/smart_construction_core/models/core/payment_request.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
-| P1 | 3737 | Frontend owner | `frontend/apps/web/src/views/ActionView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P1 | 3719 | Construction backend owner | `addons/smart_construction_core/tests/test_p0_state_closure.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P1 | 3712 | Frontend owner | `frontend/apps/web/src/views/ActionView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P1 | 3641 | Platform owner | `addons/smart_core/handlers/form_field_configuration.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 3441 | Platform owner | `addons/smart_core/tests/test_form_field_configuration_params.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 3392 | Construction backend owner | `addons/smart_construction_core/models/core/material_acceptance.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
@@ -52,9 +52,9 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 2342 | DevOps owner | `scripts/verify/backend_business_fact_model_audit.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2205 | Construction backend owner | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2190 | Frontend owner | `frontend/apps/web/src/pages/ListPage.vue` | Assessed Wave3 Round12 (no further split value; component/helper extraction done, max logic block 51 lines). Keep under P2 growth guard. |
+| P2 | 2127 | Frontend owner | `frontend/apps/web/src/pages/ContractFormPage.vue` | Assessed Wave3 Round2 (no further split value; 5587→1857 integration shell). Keep under P2 growth guard. |
 | P2 | 2124 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2121 | DevOps owner | `scripts/verify/local_dev_project_profile_write_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 2115 | Frontend owner | `frontend/apps/web/src/pages/ContractFormPage.vue` | Assessed Wave3 Round2 (no further split value; 5587→1857 integration shell). Keep under P2 growth guard. |
 | P2 | 2098 | DevOps owner | `scripts/verify/frontend_professional_component_registry_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2095 | Construction backend owner | `addons/smart_construction_core/models/core/subcontract_management.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 2066 | Architecture owner | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` | Define owner-specific decomposition plan before adding unrelated behavior. |

@@ -33,10 +33,15 @@ export type InputPortEmits = ControlEvents & {
   compositionend: [event: PrimitiveEvent<CompositionEvent>];
 };
 
-export type SelectPortEmits = ControlEvents & {
+export type SelectPortEmits = {
   'update:modelValue': [value: string];
+  change: [value: string, event: PrimitiveEvent];
   search: [query: string, event: PrimitiveEvent<InputEvent>];
   popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
+  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
 };
 
 export type DateFieldPortEmits<Value> = {
@@ -51,6 +56,8 @@ export type DateFieldPortEmits<Value> = {
 export type TextareaPortEmits = ControlEvents & {
   'update:modelValue': [value: string];
   input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
 };
 
 export type TablePortEmits<Row> = {

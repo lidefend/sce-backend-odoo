@@ -35,13 +35,22 @@ export type FormActionExecutionPlan =
 
 export async function collectActionParams(
   action: ContractAction,
-  onMissingReason: () => void,
+  onFailure: (reason: 'missing_reason' | 'missing_contract') => void,
+  requestReason?: (presentation: NonNullable<ContractAction['reasonPresentation']>) => Promise<string | null>,
 ): Promise<Record<string, unknown> | null> {
   const required = new Set((action.requiredParams || []).map((item) => item.toLowerCase()));
   if (!action.requiresReason && !required.has('reason')) return {};
-  const reason = window.prompt(`${action.label || '操作'}原因`)?.trim() || '';
+  const presentation = action.reasonPresentation;
+  if (!requestReason || !presentation || !presentation.title || !presentation.label || !presentation.help
+    || !presentation.submitLabel || !presentation.cancelLabel) {
+    onFailure('missing_contract');
+    return null;
+  }
+  const requestedReason = await requestReason(presentation);
+  if (requestedReason === null) return null;
+  const reason = String(requestedReason).trim();
   if (reason) return { reason };
-  onMissingReason();
+  onFailure('missing_reason');
   return null;
 }
 

@@ -6,12 +6,13 @@ import { buildContractFormActions, isUnifiedSubmitAction, isUnifiedSubmitMethod,
 import { dispatchSceneBlockAction } from '../src/pages/contractForm/sceneBlockAction';
 import { findRouteAuthority, type RouteAuthorityContract, type RouteAuthorityEntry } from '../src/app/routeAuthority';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
+import { createContractV2Store, resolveContractV2ActionRules } from '../src/app/contracts/v2/store';
 import { resolvePrimaryCreateFooterAction } from '../src/pages/contractForm/actionContract';
 import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '../src/pages/contractForm/contractHeaderActionPresentation';
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
-import { buildFormActionExecutionPlan } from '../src/pages/contractForm/actionExecutionPlan';
+import { buildFormActionExecutionPlan, collectActionParams } from '../src/pages/contractForm/actionExecutionPlan';
 import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import {
   evaluateNativeModifierValue,
@@ -30,6 +31,67 @@ const action = (overrides: Record<string, unknown>) => ({
   presentationTier: 'secondary',
   ...overrides,
 }) as never;
+
+const reasonPromptTitles: string[] = [];
+assert.deepEqual(await collectActionParams(
+  action({
+    label: '提交合同',
+    requiresReason: true,
+    requiredParams: [],
+    reasonPresentation: {
+      title: '提交合同原因',
+      label: '提交原因',
+      help: '请说明提交原因。',
+      submitLabel: '确认提交',
+      cancelLabel: '取消',
+    },
+  }),
+  () => assert.fail('a submitted reason must not be reported missing'),
+  async (presentation) => {
+    reasonPromptTitles.push(presentation.title);
+    return '  合同条款已确认  ';
+  },
+), { reason: '合同条款已确认' });
+assert.deepEqual(reasonPromptTitles, ['提交合同原因']);
+
+let missingReasonCount = 0;
+assert.equal(await collectActionParams(
+  action({ label: '驳回', requiresReason: true, requiredParams: [] }),
+  () => { missingReasonCount += 1; },
+  async () => '   ',
+), null);
+assert.equal(missingReasonCount, 1);
+
+let missingReasonContractCount = 0;
+assert.equal(await collectActionParams(
+  action({ label: '驳回', requiresReason: true, requiredParams: [] }),
+  (failure) => {
+    if (failure === 'missing_contract') missingReasonContractCount += 1;
+  },
+  async () => {
+    assert.fail('a missing reason declaration must not open the reason dialog');
+  },
+), null);
+assert.equal(missingReasonContractCount, 1);
+
+let cancelledReasonCount = 0;
+assert.equal(await collectActionParams(
+  action({
+    label: '驳回',
+    requiresReason: true,
+    requiredParams: ['reason'],
+    reasonPresentation: {
+      title: '驳回付款申请',
+      label: '拒绝原因',
+      help: '请说明拒绝原因。',
+      submitLabel: '确认驳回',
+      cancelLabel: '取消',
+    },
+  }),
+  () => { cancelledReasonCount += 1; },
+  async () => null,
+), null);
+assert.equal(cancelledReasonCount, 0);
 
 for (const [method, expected] of [
   [' action_submit ', true], ['action_submit_progress', true], ['action_confirm', true],
@@ -267,6 +329,49 @@ assert.deepEqual(built.map((item) => item.key), [
   'root-body', 'row-action', 'normalized-root', 'root-header-url',
   'root-page-submit', 'second-primary', 'root-widget',
 ]);
+const reasonRequiredRule = rule('reject_tier', 'page.header', 'page', {
+  label: '驳回付款申请',
+  targetIds: [],
+  dispatchMode: 'server',
+  refreshMode: 'partial',
+  button: { name: 'reject_tier', type: 'object' },
+  presentation: {
+    tier: 'secondary',
+    requires_reason: true,
+    reason_input: {
+      title: '驳回付款申请',
+      label: '拒绝原因',
+      help: '请说明拒绝原因，提交后会正式审批记录。',
+      submit_label: '确认驳回',
+      cancel_label: '取消',
+    },
+  },
+  allowed: true,
+  enabled: true,
+});
+const reasonRequiredStore = createContractV2Store(
+  decodeSnapshotWithActions([reasonRequiredRule]),
+);
+const reasonRequiredActions = buildContractFormActions({
+  contract: null,
+  model: 'payment.request',
+  recordId: 85,
+  renderProfile: 'edit',
+  sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(reasonRequiredRule),
+  workflowActionRows: [],
+  v2ActionRuleList: resolveContractV2ActionRules(reasonRequiredStore) as Array<Record<string, unknown>>,
+  policyContext: {} as never,
+});
+const reasonRequiredAction = reasonRequiredActions.find((item) => item.key === 'reject_tier');
+assert.equal(reasonRequiredAction?.requiresReason, true);
+assert.deepEqual(reasonRequiredAction?.reasonPresentation, {
+  title: '驳回付款申请',
+  label: '拒绝原因',
+  help: '请说明拒绝原因，提交后会正式审批记录。',
+  submitLabel: '确认驳回',
+  cancelLabel: '取消',
+});
 assert.equal(built.find((item) => item.key === 'root-body')?.level, 'body');
 assert.equal(
   built.find((item) => item.key === 'root-body')?.backendIdentity,

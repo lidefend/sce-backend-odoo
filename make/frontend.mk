@@ -3,8 +3,8 @@
 # ======================================================
 include make/frontend_professional_extensions.mk
 
-.PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.ui.typecheck.strict verify.frontend.lint.src verify.frontend.ui.lint verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
-.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser verify.frontend.primitive_adapter.unit
+.PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.ui.typecheck.strict verify.frontend.lint.src verify.frontend.ui.lint verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.contract_reason_dialog.browser verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
+.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser verify.frontend.primitive_adapter.unit verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.behavior verify.frontend.scene_primitive_contract.all
 
 fe.install:
 	@scripts/dev/pnpm_exec.sh -C frontend install
@@ -110,6 +110,22 @@ verify.frontend.primitive_port.unit: guard.prod.forbid verify.frontend.ui.typech
 	@node /tmp/primitive-port-runtime-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/packages/ui/src/primitive-port/index.ts --bundle --platform=node --format=esm --metafile=/tmp/primitive-port.meta.json --outfile=/tmp/primitive-port.mjs >/dev/null
 	@python3 scripts/verify/frontend_primitive_port_guard.py --metafile /tmp/primitive-port.meta.json
+
+verify.frontend.scene_primitive_adapter.unit: guard.prod.forbid verify.frontend.primitive_port.unit
+	@python3 -m unittest scripts.verify.test_frontend_scene_primitive_adapter_guard
+	@python3 scripts/verify/frontend_scene_primitive_adapter_guard.py
+	@frontend/apps/web/node_modules/.bin/vue-tsc --noEmit -p frontend/apps/web/tsconfig.scene-primitive-adapter.json
+	@node frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
+	@node frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs
+	@python3 scripts/verify/frontend_scene_primitive_adapter_guard.py --metafile .runtime/scene-primitive-adapter.meta.json
+
+verify.frontend.scene_primitive_contract.behavior: guard.prod.forbid verify.frontend.scene_primitive_adapter.unit
+	@node frontend/apps/web/scripts/scene_primitive_adapter_test.mjs --behavior
+	@node frontend/apps/web/scripts/scene_primitive_collection_test.mjs
+	@node frontend/apps/web/scripts/scene_primitive_selection_test.mjs
+	@node frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+
+verify.frontend.scene_primitive_contract.all: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.behavior
 
 # Concurrent-read coalescing identity. The request key must cover every
 # result-affecting parameter, so a new keyword, page or ordering is a real
@@ -652,6 +668,8 @@ verify.frontend.form_header_action_primitives.unit: guard.prod.forbid
 verify.frontend.action_view_page_actions.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_action_view_page_actions_guard.py
 	@python3 scripts/verify/frontend_action_view_page_actions_guard.py
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_collection_create_authority_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/action-view-collection-create-authority-test.mjs >/dev/null
+	@node /tmp/action-view-collection-create-authority-test.mjs
 
 verify.frontend.relational_action_primitives.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_relational_action_primitives_guard.py
@@ -1078,7 +1096,10 @@ verify.grouped.governance.bundle: guard.prod.forbid verify.frontend.grouped_rows
 verify.contract.operation_gateway.guard: guard.prod.forbid
 	@python3 scripts/verify/operation_gateway_contract_guard.py
 
-verify.frontend.contract_header_action.unit: guard.prod.forbid
+verify.frontend.contract_reason_dialog.browser: guard.prod.forbid
+	@node frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs
+
+verify.frontend.contract_header_action.unit: guard.prod.forbid verify.frontend.contract_reason_dialog.browser
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
@@ -1588,3 +1609,6 @@ verify.nav01.native_authority.unit: guard.prod.forbid
 	@python3 scripts/verify/scenario_surface_projection_guard.py
 	@python3 scripts/verify/scenario_center_projection_guard.py
 	@python3 -m unittest scripts.ops.test_scene_internal_action_authority
+
+verify.frontend.quick.gate: verify.frontend.scene_primitive_adapter.unit
+verify.frontend.release.unit: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.all

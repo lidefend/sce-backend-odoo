@@ -436,6 +436,30 @@ class TestGlobAndPlan(unittest.TestCase):
             with self.subTest(after=after):
                 self.assertFalse(guard.manifest_version_only(before, after))
 
+    def test_package_export_addition_only_is_exact_and_conservative(self):
+        before = json.dumps({
+            "name": "@sc/ui",
+            "dependencies": {"vue": "^3.5.6"},
+            "exports": {".": "./src/index.ts"},
+        })
+        after = json.dumps({
+            "name": "@sc/ui",
+            "dependencies": {"vue": "^3.5.6"},
+            "exports": {
+                ".": "./src/index.ts",
+                "./primitive-port/provider": "./src/primitive-port/provider/index.ts",
+            },
+        })
+        self.assertTrue(guard.package_export_addition_only(before, after))
+        for invalid in (
+            after.replace('"^3.5.6"', '"^3.5.7"'),
+            after.replace('"./src/index.ts"', '"./src/index-new.ts"'),
+            json.dumps({"name": "@sc/ui", "exports": {".": "./src/index.ts"}}),
+            "[]",
+        ):
+            with self.subTest(after=invalid):
+                self.assertFalse(guard.package_export_addition_only(before, invalid))
+
     def test_manifest_conditional_plan_falls_back_on_runtime_or_missing_input(self):
         path = "addons/smart_construction_core/__manifest__.py"
         before = "{'version': '1', 'depends': ['base']}"
@@ -1216,6 +1240,34 @@ class TestCarryForwardPolicy(unittest.TestCase):
             guard.suite_input_sha256(self.registry, "frontend_contract", base),
             guard.suite_input_sha256(self.registry, "frontend_contract", head),
         )
+
+    def test_missing_declared_selector_fails_for_current_and_historical_revisions(self):
+        registry = {
+            "suites": {
+                "runtime_probe": {
+                    "description": "runtime probe",
+                    "entrypoints": ["make verify.runtime.probe"],
+                    "evidence": None,
+                    "stages": ["merge"],
+                    "inputs": [],
+                    "make_inputs": [{
+                        "path": "Makefile",
+                        "targets": ["verify.runtime.probe"],
+                        "variables": [],
+                    }],
+                },
+            },
+            "rules": [],
+        }
+        self._write("Makefile", "verify.runtime.other:\n\t@true\n")
+        base = self._commit("missing selector baseline")
+        self._write("Makefile", "verify.runtime.still_other:\n\t@true\n")
+        head = self._commit("missing selector head")
+        for revision in (base, head):
+            with self.subTest(revision=revision), self.assertRaisesRegex(
+                guard.BindingError, "make target is missing"
+            ):
+                guard.suite_input_sha256(registry, "runtime_probe", revision)
 
     def test_offline_scene_tests_and_planner_bookkeeping_preserve_browser_inputs(self):
         registry = json.loads(json.dumps(self.registry))

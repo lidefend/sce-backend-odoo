@@ -207,6 +207,8 @@ export function buildContractFormActions(params: {
       .filter((item): item is 'create' | 'edit' | 'readonly' => ['create', 'edit', 'readonly'].includes(item));
     const requiredParams = normalizeRequiredParams(row.required_params);
     const presentation = parseMaybeJsonRecord(row.presentation);
+    const reasonInput = parseMaybeJsonRecord(presentation.reason_input || presentation.reasonInput);
+    const presentationRequiresReason = presentation.requires_reason === true || presentation.requiresReason === true;
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
     const presentationSemantic = String(presentation.semantic || '').trim();
     if (row.visible === false || row.invisible === true) continue;
@@ -288,7 +290,14 @@ export function buildContractFormActions(params: {
       clientMode: String(targetRaw.mode || targetRaw.client_mode || row.clientMode || row.client_mode || '').trim(),
       visibleProfiles,
       requiredParams,
-      requiresReason: row.requires_reason === true || requiredParams.includes('reason'),
+      requiresReason: row.requires_reason === true || requiredParams.includes('reason') || presentationRequiresReason,
+      reasonPresentation: {
+        title: String(reasonInput.title || '').trim(),
+        label: String(reasonInput.label || '').trim(),
+        help: String(reasonInput.help || '').trim(),
+        submitLabel: String(reasonInput.submit_label || reasonInput.submitLabel || '').trim(),
+        cancelLabel: String(reasonInput.cancel_label || reasonInput.cancelLabel || '').trim(),
+      },
       presentationTier,
       destructive: presentation.semantic === 'destructive',
       requiresConfirmation: presentation.requires_confirmation === true,

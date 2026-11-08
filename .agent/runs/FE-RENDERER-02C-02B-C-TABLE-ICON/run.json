@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "5b50f51c6b522482fc1b561396a1ede335ea06df",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02B-C-TABLE-ICON.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-C-TABLE-ICON/run.json",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue",
+    "frontend/apps/web/src/components/design-system/ScTable.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/collectionContracts.ts"
+    ,"frontend/apps/web/scripts/scene_primitive_collection_test.mjs"
+    ,"docs/engineering_convergence/complexity_budget_report.md"
+    ,"docs/engineering_convergence/test_inventory.csv"
+    ,"docs/engineering_convergence/test_inventory_summary.md"
+    ,"docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {"kind": "offline", "authority": "cached frontend dependencies"},
+  "checks": {},
+  "blockers": [],
+  "results": {
+    "implementation": "PASS: Table/Icon wrappers and contracts added; Port file icon maps to Sc file-text",
+    "strict_typecheck": "PASS",
+    "lint": "PASS: 0 errors",
+    "browser_conformance": "PASS: 9 Chromium checks for Icon ARIA, Table row identity, pointer rowActivate, keyboard Enter activation and emptyText projection"
+  },
+  "next_exact_step": "Add focused Table/Icon conformance before integration.",
+  "id": "FE-RENDERER-02C-02B-C-TABLE-ICON",
+  "branch": "fix/fe-renderer-02c-02b-c-table-icon-r2-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02B-C-TABLE-ICON.yaml",
+  "record": ".agent/runs/FE-RENDERER-02C-02B-C-TABLE-ICON/run.json"
+}

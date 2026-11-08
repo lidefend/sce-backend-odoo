@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "5b50f51c6b522482fc1b561396a1ede335ea06df",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02B-B-SELECTION-DATE.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-B-SELECTION-DATE/run.json",
+    "frontend/apps/web/src/components/design-system/ScSelect.vue",
+    "frontend/apps/web/src/components/design-system/ScDateField.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/selectionContracts.ts"
+    ,"frontend/apps/web/scripts/scene_primitive_selection_test.mjs"
+  ],
+  "environment": {"kind": "offline", "authority": "cached frontend dependencies"},
+  "checks": {},
+  "blockers": [],
+  "results": {
+    "implementation": "PASS: wrappers and contracts added; real Sc events used where available",
+    "strict_typecheck": "PASS: scene primitive adapter vue-tsc config",
+    "lint": "PASS: 0 errors",
+    "legacy_primitive_adapter": "PASS: 41 tests, 46 components, 11 event cases",
+    "browser_focus_aria": "PASS: 8 Chromium checks, name/required/ARIA and ref focus reached",
+    "select_popup_search_browser": "PASS: input search, popup state and selected value b observed in Chromium",
+    "date_popup_browser": "NOT_APPLICABLE: DateFieldPort declares no popup event; no fabricated Port event is added"
+  },
+  "next_exact_step": "Commit and integrate the B slice.",
+  "id": "FE-RENDERER-02C-02B-B-SELECTION-DATE",
+  "branch": "fix/fe-renderer-02c-02b-b-selection-date-r2-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02B-B-SELECTION-DATE.yaml",
+  "record": ".agent/runs/FE-RENDERER-02C-02B-B-SELECTION-DATE/run.json"
+}

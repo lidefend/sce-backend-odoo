@@ -57,7 +57,9 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.professional_component_registry.unit": "esbuild",
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
+    "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
+    "verify.frontend.scene_primitive_adapter.unit": "esbuild",
     "verify.frontend.navigation_shell.unit": "esbuild",
     "verify.frontend.scene_entry_contract.unit": "esbuild",
     "verify.frontend.product_page_pattern.unit": "esbuild",
@@ -88,6 +90,13 @@ RULES = (
         ".agent/",
     ), (
         "verify.agent.ledger.unit",
+    )),
+    Rule((
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    ), (
+        "verify.acceptance.evolution.binding",
     )),
     Rule((
         "config/ci/path_ownership_v1.json",
@@ -165,6 +174,13 @@ RULES = (
     ), (
         "verify.frontend.professional_component_registry.unit",
         "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    ), (
+        "verify.frontend.component_driver_takeover.unit",
     )),
     Rule((
         "scripts/verify/frontend_professional_detail_collection_guard.py",
@@ -300,6 +316,29 @@ RULES = (
         "scripts/verify/test_frontend_primitive_port_guard.py",
     ), (
         "verify.frontend.primitive_port.unit",
+        "verify.frontend.scene_primitive_adapter.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/components/design-system/scene-adapter/",
+        "frontend/apps/web/scripts/scene_primitive_adapter_",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+        "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+        "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+    ), (
+        "verify.frontend.scene_primitive_adapter.unit",
+        "verify.frontend.scene_primitive_contract.behavior",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+    ), (
+        "verify.frontend.scene_primitive_contract.behavior",
+    )),
+    Rule((
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+    ), (
+        "verify.frontend.primitive_adapter.unit",
     )),
     Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",
@@ -321,9 +360,14 @@ RULES = (
     # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
     Rule((
         "/views/ActionView.vue",
+        "/app/runtime/actionViewInteractionRuntime.ts",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
         "/app/runtime/actionViewSurfaceGateRuntime.ts",
         "/app/runtime/actionViewListPageSizeRuntime.ts",
     ), (
+        "verify.frontend.action_view_page_actions.unit",
         "verify.frontend.action_view_surface_gate_runtime.unit",
         "verify.frontend.action_view_page_size_runtime.unit",
         "verify.frontend.contract_basis.unit",
@@ -390,6 +434,7 @@ RULES = (
     Rule((
         "make/runtime_ops.mk",
         "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
         "scripts/verify/frontend_my_work_approval_runtime.py",
@@ -443,6 +488,23 @@ RULES = (
         "scripts/verify/business_entry_matrix_scope_seed.py",
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",
+    )),
+    # The payment action contract's reason presentation is consumed by the
+    # contract action projector; keep the producer and its consumer test in one
+    # executable routing unit instead of leaving a backend-only path unmapped.
+    Rule((
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    ), (
+        "verify.frontend.contract_header_action.unit",
+    )),
+    # The relation acceptance runner owns the placeholder classification used
+    # by its public-control assertion; changing it requires the real journey.
+    Rule((
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    ), (
+        "verify.frontend.delivery_hardening.guard",
     )),
     # The v2 contract handler chain (handler + projection + structure authority)
     # is consumed by the backend form-contract unit suites.  Without this rule the

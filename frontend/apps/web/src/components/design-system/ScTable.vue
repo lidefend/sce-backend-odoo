@@ -22,6 +22,7 @@
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
     :select-on-row-click="selectOnRowClick"
+    :empty="emptyText"
     :aria-label="label"
     :data-row-count="data.length"
     :data-appearance="appearance"
@@ -114,6 +115,7 @@ const props = withDefaults(defineProps<{
   selectedRowKeys?: Array<string | number>;
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
+  emptyText?: string;
   label: string;
   appearance?: 'default' | 'surface' | 'flush' | 'collection' | 'worksheet' | 'relation-detail';
 }>(), {
@@ -132,6 +134,7 @@ const props = withDefaults(defineProps<{
   disableDataPage: true,
   selectedRowKeys: () => [],
   footData: () => [],
+  emptyText: undefined,
   appearance: 'default',
 });
 function projectRowAttributes(attributes: Record<string, unknown> | undefined): Record<string, unknown> {

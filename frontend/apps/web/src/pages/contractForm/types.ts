@@ -46,6 +46,13 @@ export type ContractAction = {
   visibleProfiles: Array<'create' | 'edit' | 'readonly'>;
   requiredParams: string[];
   requiresReason: boolean;
+  reasonPresentation?: {
+    title: string;
+    label: string;
+    help: string;
+    submitLabel: string;
+    cancelLabel: string;
+  };
   presentationTier?: 'primary' | 'secondary' | 'overflow' | string;
   destructive?: boolean;
   requiresConfirmation?: boolean;

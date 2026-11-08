@@ -1,0 +1,475 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "ce9170b4be846c855e9c2a7f536c836542cb82f8",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-V1-CLOSEOUT.yaml",
+    ".agent/runs/FE-RENDERER-V1-CLOSEOUT/run.json",
+    ".agent/goals/FE-RENDERER-02C-02B-02.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-02/run.json",
+    "docs/ops/iterations/fe_renderer_v1_closeout_20261108.md",
+    "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+    "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/components/design-system/ScInput.vue",
+    "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+    "frontend/apps/web/src/components/design-system/ScDateField.vue",
+    "frontend/apps/web/src/components/design-system/ScFormField.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/primitiveFocusSource.ts",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/selectionContracts.ts",
+    "frontend/apps/web/src/components/design-system/scene-adapter/collectionContracts.ts",
+    "frontend/apps/web/src/components/design-system/scene-adapter/index.ts",
+    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts",
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+    "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
+    "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/packages/ui/src/primitive-port",
+    "frontend/packages/ui/src/primitive-port/types.ts",
+    "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+    "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
+    "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+    "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+    "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+    "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+    "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+    "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+    "scripts/verify/frontend_primitive_adapter_guard.py",
+    "scripts/verify/test_frontend_primitive_adapter_guard.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+    "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/dev/frontend_acceptance_up.sh",
+    "make/frontend.mk",
+    "contracts/registry/semantic.yaml",
+    "contracts/registry/component.yaml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local cached frontend dependencies, managed Chromium and governed Make entries; no database mutation or deployment"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "semantic_registry_lint": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry",
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_component_registry": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts",
+        "scripts/verify/frontend_professional_component_registry_guard.py",
+        "scripts/verify/test_frontend_professional_component_registry_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src/pages/contractForm/actionContract.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter_regression": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "frontend/packages/ui/src/primitives.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_port": {
+      "target": "verify.frontend.primitive_port.unit",
+      "inputs": [
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+        "frontend/apps/web/scripts/primitive_port_type_test.ts",
+        "frontend/apps/web/tsconfig.primitive-port.json",
+        "scripts/verify/frontend_primitive_port_guard.py",
+        "scripts/verify/test_frontend_primitive_port_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_primitive_adapter": {
+      "target": "verify.frontend.scene_primitive_adapter.unit",
+      "inputs": [
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+        "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+        "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_primitive_contract_behavior": {
+      "target": "verify.frontend.scene_primitive_contract.behavior",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_runtime_tooling": {
+      "target": "verify.acceptance.runtime.baseline_rebuild.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "make/dev.mk",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview_tooling": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "static_proxy_target_tooling": {
+      "target": "verify.local.dev.static_proxy_target.unit",
+      "inputs": [
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/verify/static_proxy_target_test.mjs",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/test_local_dev_candidate_frontend.py"
+      ],
+      "kind": "offline"
+    },
+    "action_view_create_authority": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_page_size": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_surface_gate": {
+      "target": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/runtime/actionViewSurfaceGateRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis_unit": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_matrix": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/ops/evidence_scope.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/packages/ui/src/primitive-port",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Fresh independent review, publication and exact-head remote CI are not yet complete"
+  ],
+  "results": {
+    "candidate_code_commit": "PASS: 476cb6278, 8c0876c2f, 986e60535 and 0ef405468 close the fourth/owner review DateField, FormField, real V2 reason, cancel, date-clear Port and snapshot-echo findings while preserving event ordering, focus, IME and ActionView boundaries",
+    "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 87 exact assertions, 0 console errors; snapshot-aware echoes reject a -> ab followed by external aab and late ab, history queues are bounded to 256, CDP IME composition and Tab focus provenance are observed",
+    "p0_scene_adapter_unit": "PASS: primitive-port, real-SFC type, adapter bundle, 27 button assertions, 14 collection assertions, 20 selection/date assertions and 87 text assertions",
+    "p0_date_field_browser": "PASS: managed Chromium 147.0.7727.15, 20 assertions; selecting 2026-11-15 and clearing to empty each emit exactly one update and one change with source=pointer; clearable and clear are explicit DateField Port members; 0 console errors",
+    "p0_form_feedback_browser": "PASS: help and error text are visible and their generated IDs match the control aria-describedby projection",
+    "p0_reason_dialog_browser": "PASS: decoded Contract V2 presentation.requires_reason opens the dialog, backend-declared title/label/help/action copy is visible, cancel is a no-op without an error, submit emits exactly one trimmed reason payload, 21 assertions and 0 console errors",
+    "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
+    "p0_lint_typecheck": "PASS: 0 lint errors, four existing warnings; UI and web strict vue-tsc exited zero",
+    "semantic_registry": "PASS: 15 semantic tests, generated semantic/industry/domain carriers match declaration; frontend_keys=26 includes two node identities",
+    "professional_component_registry": "PASS: 162 tests and cases>=184; 25 field component keys and five renderer-family names remain the only runtime vocabulary",
+    "component_driver_takeover": "PASS: 18 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0 direct_imports=0 bridge_consumers=2 inside the declared apps/web/src scope; @sc/ui legacy Scene surfaces are explicitly outside the count",
+    "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
+    "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
+    "acceptance_runtime_tooling": "PASS: managed Vite listener recovery recognizes the actual vite/bin/vite.js command and HMR client port follows the managed service port; stale cross-worktree listener was stopped through exact PID/process-group recovery after the governed cleanup entry reproduced the selector defect",
+    "ci_local_iteration": "PASS: 24/24 affected targets exited zero with non-zero real collections on 0ef405468; receipt=.runtime/frontend-dev-validation/executions/20261108T220455Z-3940103-933294859/receipt.json",
+    "frontend_build": "PASS: 5,375 modules transformed in 23.77s for the 0ef405468 product content, with the existing large-chunk advisory",
+    "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
+    "p2_takeover": "PASS_STRUCTURAL: 33/33 required apps/web adapters have wrappers and consumers; missing=0 bridge_only=0 adapter_unconsumed=0 raw=0 direct_imports=0; two explicit bridge consumer bypasses remain recorded for alert and select; no repository-wide zero claim is made for @sc/ui",
+    "l4_identity": "PASS: Contract Form, Payment Request and list surface executed at 0ef405468; relation roundtrip executed at 98a9f76c and is carried because its declared inputs are unchanged; the merge-stage manifest records those suite-specific bound heads and the final metadata head separately",
+    "l4_01_contract_form": "PASS: sc.general.contract/2 action 758/menu 664, fixture_role_config_admin, 1440/1024/768/390, 0 overflow and 0 console/page/http errors; summary sha256=f24b9a57709ab6073eb24a56f43d7a6bf2637d287fa39a7a16d0f390b15fbb4d",
+    "l4_02_payment_request": "PASS: FE-DELIVERY-HARDENING-001, two declared settlement rows, inline edit 200->150 persisted, restored to 0 rows/20.00, 0 problems; report sha256=818a86cd05eb22caec9315f420703a43a58d49c417534a27c252b7f108436d29",
+    "l4_03_scene_collection": "PASS: 18/18 list states, 30/30 record checks, 316/316 gated checks, 5/5 negative fixtures, 0 runtime errors; report sha256=ff84acf265f8ebb4d1c5780f96e5bcddf4ff5e69d4e09b31782b02caed54e064",
+    "p3_product_fix": "PASS_LOCAL: delegated action authority remains contract-bound; 11 authority cases pass; ordered echo tombstones reject late older echoes; focus provenance covers pointer/keyboard/programmatic; icon contracts fail closed; reason copy is backend-declared and missing declarations fail closed",
+    "p3_mutations": "BOUNDED: isolated acceptance fixture reset and declared detail-row edit/restore only; no local.dev route repair, production data, ACL change or cross-domain credential reuse",
+    "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
+    "p4_collection_authority_probe": "FIXED: the project-ledger L4 probe treated delegated list.create actions as direct record creation; it now distinguishes direct create, delegated action identity and the rendered create affordance without changing product authority",
+    "p4_relation_probe": "FIXED: dash placeholders (--/—/–) are empty relation values; rerun passed 13 declared entries, 7 contract comparisons, 3 opened records and 0 blocking differences",
+    "independent_review_1": "REQUEST_CHANGES on 9cea1b661; findings addressed by c6c7d6340; review=.runtime/pr845-independent-review.md sha256=c2d5769dd45c5c0db133908d025ded562e64c90e36b36f4acb1f2ba3800c2b34",
+    "independent_review_2": "REQUEST_CHANGES on 12ea32ecd; the five evidenced findings are addressed by f88e49d59; review=.runtime/pr845-independent-review-12ea.md sha256=fb4d050fa81238f638e53f35517ed77493063f8fb7983cf48a5593a3aa30afe7; a fresh exact-head review remains pending",
+    "independent_review_3": "REQUEST_CHANGES on 577fbd176; all three S1 and three S2 findings are addressed by product commit 62f7b57a2 and P4 follow-up 79e0e704a; review=.runtime/pr845-independent-review-577.md sha256=04f0c73fcd48d3dd1c317f5a137cbab17a8020de004c1ac59a93be1d53dfb44d; a fresh exact-head review remains pending",
+    "independent_review_4": "REQUEST_CHANGES on ba5d4b53f; DateField calendar/clear transitions, FormField help/error rendering, inventory scope, acceptance runner/HMR behavior and revision-stable suite fingerprints are now addressed; review=.runtime/pr845-independent-review-ba5.md sha256=b695afa1a347bf06860bfee76d6c22bdbdd280236375d252ba27c4c025981d4e; a fresh exact-head review remains pending",
+    "independent_review_5": "REQUEST_CHANGES on e8f954876; real Contract V2 reason authority, DateField clear Port/provenance, cancel semantics and stale evidence identity were addressed by 986e60535; review=.runtime/pr845-independent-review-e8f.md sha256=c6fe92ce06b447e6351e78eb56423f571bd4d742aa64a9be783481e6f6b08ffc; a fresh exact-head review remains pending",
+    "owner_review_6": "REQUEST_CHANGES on 6c9120f2c; complete-snapshot echo concatenation and unbounded history were addressed by 0ef405468 with a -> ab -> external aab -> late ab browser regressions for Input and Textarea; independent review 6 confirmed no remaining product-code defect",
+    "independent_review_6": "REQUEST_CHANGES on 8a39c614e: no S0/S1 product defect; the only S2 was an overbroad relation-evidence identity statement, corrected by the following metadata-only commit; review=.runtime/pr845-independent-review-8a39.md sha256=2de163d20b97da3597600af4698188ba404ed56446896a855bcf01492bc0c67c",
+    "backend_reason_contract_test": "PASS: local.test.test executed 1 non-zero ORM case for payment request action reason presentation; receipt=.runtime/test-baseline/1794162435843820831/receipt.json",
+    "relation_roundtrip": "PASS carried from 98a9f76c2 to 986e60535 because DateField, reason-action and primitive-Port changes do not affect the relation probe; 13 declared entries, 7 contract comparisons, 3 opened records, 0 blocking differences, 0 denied/console errors; summary sha256=0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e",
+    "acceptance_manifest": "PASS_MERGE_STAGE: list_surface_structure and relation_roundtrip are carried from their exact product-evidence heads to the final metadata tip; path_namespace_identity is explicitly deferred to deployment stage",
+    "l4_product_review": "PASS: Contract Form, Payment Request and Scene Collection executed at 0ef405468; relation roundtrip is validly carried from 98a9f76c with unchanged suite inputs",
+    "final_v1_report": "VERIFICATION_PENDING: product fixes, exact-head L4, 24-target affected iteration and metadata-only closeout are complete; fresh independent review, publication and exact-head remote CI remain pending"
+  },
+  "next_exact_step": "Publish the clean branch tip through the governed PR flow, obtain a fresh independent review bound to that exact pushed head, and verify all required checks on the same head.",
+  "id": "FE-RENDERER-V1-CLOSEOUT",
+  "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-V1-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/fe_renderer_v1_closeout_20261108.md"
+}

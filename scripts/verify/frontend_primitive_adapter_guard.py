@@ -488,11 +488,11 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in (
         "<TDesignFormItem",
         ':for="controlId"',
-        ':id="helpId"',
-        ':id="errorId"',
-        '#help',
-        '#tips',
-        'role="alert"',
+        ':help="helpContent"',
+        ':tips="errorContent"',
+        'id: helpId.value',
+        'id: errorId.value',
+        "role: 'alert'",
         "props.help ? helpId.value",
         "props.error ? errorId.value",
     ):

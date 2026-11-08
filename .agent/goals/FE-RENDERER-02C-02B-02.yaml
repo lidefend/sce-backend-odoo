@@ -1,0 +1,169 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02B-02
+  title: Sc Adapter、Scene Provider 与 Button-first 契约切片
+  status: superseded
+  formal_product_layer: P0 platform kernel product
+  layer_target: Scene Primitive Port injection, Web Sc Adapter binding and conformance boundary
+  module: Sc Design System, "@sc/ui/primitive-port", Scene Provider runtime and frontend verification
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Scene 与基础组件之间的依赖倒置、Adapter 绑定、Provider 注入和一致性证明属于所有页面
+    共享的前端平台机制。第一阶段必须先核对真实 Sc API、Provider 生命周期、测试能力和
+    依赖守卫，再由总控冻结接口，不能直接接线或迁移业务消费者。
+  why_not_elsewhere: >
+    不在业务页面、行业 Renderer 或旧 Kit Runtime 中定义新的组件权威；不改变 Primitive
+    Port 的 Props/Emits/Slots 或 runtime 语义，只为真实 SFC 的实例 bindings 放宽组件
+    类型兼容；不改变 Contract V2、业务表达、后端权限或用户偏好，也不重新引入第二套
+    基础控件实现。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-02B-02.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-02/run.json
+      - .agent/goals/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json
+      - .agent/goals/FE-RENDERER-02C-02B-C-TABLE-ICON.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-C-TABLE-ICON/run.json
+      - .agent/goals/FE-RENDERER-02C-02B-B-SELECTION-DATE.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-B-SELECTION-DATE/run.json
+      - docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/packages/ui/package.json
+      - frontend/packages/ui/src/primitive-port/types.ts
+      - frontend/packages/ui/src/primitive-port/events.ts
+      - frontend/packages/ui/src/primitive-port/provider/context.ts
+      - frontend/packages/ui/src/primitive-port/provider/ScenePrimitiveProvider.vue
+      - frontend/packages/ui/src/primitive-port/provider/index.ts
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue
+      - frontend/apps/web/src/components/design-system/ScInput.vue
+      - frontend/apps/web/src/components/design-system/ScTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/textControlContracts.ts
+      - frontend/apps/web/src/components/design-system/ScTable.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/collectionContracts.ts
+      - frontend/apps/web/src/components/design-system/ScSelect.vue
+      - frontend/apps/web/src/components/design-system/ScDateField.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/selectionContracts.ts
+      - frontend/apps/web/src/components/design-system/scene-adapter/scenePrimitiveAdapter.ts
+      - frontend/apps/web/src/components/design-system/scene-adapter/buttonContract.ts
+      - frontend/apps/web/src/components/design-system/scene-adapter/index.ts
+      - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
+      - frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs
+      - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_collection_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_selection_test.mjs
+      - frontend/apps/web/tsconfig.scene-primitive-adapter.json
+      - scripts/verify/frontend_scene_primitive_adapter_guard.py
+      - scripts/verify/test_frontend_scene_primitive_adapter_guard.py
+      - scripts/verify/acceptance_evolution_binding_guard.py
+      - scripts/verify/test_acceptance_evolution_binding_guard.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - config/acceptance/evolution_binding.v1.json
+      - make/ci.mk
+      - make/frontend.mk
+    product_behavior: internal_platform_adapter_slice_without_consumer_wiring
+    authority: P0_provider_and_button_conformance_only
+  objective: >
+    在单一主线基线上完成 A/B/C/D 四条只读审计，并由总控冻结“七项 Provider 闭包 +
+    Button-first 独立 Conformance”的顺序；实现 fixture-only 的同步零 Driver Scene Primitive
+    Provider、真实 ScButton 薄包装及其类型、运行期、bundle 和浏览器契约证明。不接入产品页面，
+    不把六项尚未补齐的 Sc Primitive 宣称为 Conformant。
+  acceptance:
+    - 七个 Sc Primitive 的真实 Props、Emits、Slots、Expose 与能力缺口有源码证据
+    - Provider context、props、生命周期、旧 Kit 共存和 fail-closed 失败面形成候选设计
+    - Conformance 覆盖编译期正反向、运行期、真实组件行为与虚假通过风险
+    - 依赖方向、bundle、应用导入和增量路由形成分阶段守卫设计
+    - 明确七 Primitive 全量 Provider 校验与 Button-first 试点之间的接口冲突
+    - 第一阶段不修改产品源码、Primitive Port、Sc 组件、Provider、Scene 消费者、Kit 或 Token
+      （历史阶段约束；后续当前切片仅按第 8 节放宽实例 bindings 类型）
+    - 文档和 Agent 台账验证真实执行，之后等待总控接口冻结评审
+    - 总控冻结七项 Provider 闭包与 Button-first 独立推进顺序，不降低 runtime validator
+    - Provider 同步校验七项 Adapter、Adapter 变化后重新校验并在失败时隐藏 slot
+    - Provider 外调用 context 明确失败，旧 SceneUiProvider 不修改
+    - 真实 ScButton wrapper 通过 Props/Emits/Slots 编译期 witness 和浏览器行为契约
+    - Button pointer/Enter/Space/programmatic 仅激活一次，disabled/loading 为零激活
+    - Button focus/blur、loading ARIA/文案和 accessibleLabel 有真实 DOM 证据
+    - scene-adapter、bundle、增量路由和 guard registry 的静态边界通过
+    - 不修改产品页面、旧 Kit、Contract V2、后端、数据库或用户偏好
+  results:
+    phase1_audit: PASS
+    sc_api_inventory: PASS
+    provider_design: PASS
+    conformance_design: PASS
+    architecture_guard_design: PASS
+    executor_a: PASS
+    executor_b: PASS
+    executor_c: RECONSTRUCTED_BY_TOTAL_CONTROL
+    docs_links: PASS
+    docs_temp_guard: PASS
+    agent_ledger: PASS
+    agent_resume: PASS
+    ci_iteration: PASS
+    product_code_change: CHANGED_P0_INTERNAL_ONLY
+    independent_review_findings: ADDRESSED
+    interface_consistency_review: PASS
+    interface_freeze: PASS
+    primitive_component_type_revision: PASS
+    provider_implementation: PASS
+    provider_runtime: PASS
+    provider_adapter_replacement: PASS
+    button_adapter: PASS
+    button_compile_time_witness: PASS
+    button_behavior: PASS
+    provider_real_button_chain: PASS
+    provider_full_registry_chain: PASS
+    select_type_safety: PASS
+    table_row_identity: PASS
+    datefield_projection: PASS
+    adapter_bundle_boundary: PASS
+    adapter_guard: PASS
+    lint: PASS
+    strict_typecheck: PASS
+    dev_incremental: PASS
+    guard_registry: PASS
+    product_wiring: NOT_CHANGED
+    remaining_six_primitive_conformance: PENDING
+    full_scene_primitive_adapter: PENDING
+    remote_gates: NOT_RUN
+    interface_freeze_rationale: >
+      保留 ScenePrimitiveAdapter 七项必需闭包；Provider 只由完整七项 fixture 验证，
+      Button 以独立真实 wrapper 推进。六项未补齐前不创建可注入产品的“全量真实 adapter”。
+  next_exact_step: >
+      本 Button-first 切片已由 FE-RENDERER-V1-CLOSEOUT 承接；后续统一组件交付与
+      真实业务页面验收在该 run 中继续，不再向本历史 run 追加结果。
+  exclusions:
+    - primitive_port_semantic_change
+    - existing_sc_component_behavior_change
+    - legacy_scene_provider_change
+    - product_page_wiring
+    - scene_consumer_migration
+    - form_section_change
+    - scene_field_control_change
+    - scene_button_change
+    - scene_relation_table_change
+    - kit_runtime_retirement
+    - tdesign_bridge_move
+    - token_refactor
+    - user_preference_change
+    - contract_v2_change
+    - business_semantics_change
+    - backend_change
+    - database_change
+    - browser_acceptance
+    - deployment
+    - merge
+  rollback: >
+    删除本 goal、run、active-runs 映射、迭代记录和新增 Provider/Button/守卫/测试文件，并还原
+    PrimitiveComponent 的实例 binding 兼容泛型与 package subpath/Make/planner 接线；不改变
+    既有 Sc 组件行为、产品页面、运行态、数据或用户可见行为。

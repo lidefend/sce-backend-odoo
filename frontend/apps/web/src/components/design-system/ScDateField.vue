@@ -1,5 +1,6 @@
 <template>
   <TDesignDatePicker
+    ref="dateRef"
     v-native-control-projection="nativeProjection"
     data-semantic-component="ScDateField" data-semantic-primitive="ScDateField"
     data-semantic-driver="tdesign-date-picker"
@@ -7,22 +8,33 @@
     data-focus-ring-owner="component"
     :data-appearance="appearance"
     :value="modelValue"
-    :disabled="disabled"
+    :name="name"
+    :data-size="size"
+    :disabled="disabled || loading"
     :readonly="readonly"
     :clearable="clearable"
     :enable-time-picker="withTime"
     :aria-invalid="invalid || undefined"
+    :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
-    @change="emit('update:modelValue', String($event ?? ''))"
+    @change="onChange"
+    @focus="onFocus"
+    @blur="onBlur"
+    @keydown="onKeydown"
+    @keyup="onKeyup"
   />
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { TDesignDatePicker } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
+import type { ScPrimitiveSize } from './primitiveAdapter';
 
-const props = withDefaults(defineProps<{ id?:string; modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; clearable?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; ariaLabel?:string; appearance?:'default'|'form-field' }>(), {
+const props = withDefaults(defineProps<{ id?:string; name?:string; modelValue:string; withTime?:boolean; size?:ScPrimitiveSize; loading?:boolean; readonly?:boolean; disabled?:boolean; clearable?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; ariaLabel?:string; appearance?:'default'|'form-field' }>(), {
   id: undefined,
+  name: undefined,
+  size: 'medium',
+  loading: false,
   withTime: false,
   readonly: false,
   disabled: false,
@@ -38,6 +50,7 @@ const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
     id: props.id,
+    name: props.name,
     required: props.required,
     'aria-required': props.required ? 'true' : undefined,
     'aria-invalid': props.invalid ? 'true' : undefined,
@@ -45,7 +58,52 @@ const nativeProjection = computed(() => ({
     'aria-label': props.ariaLabel,
   },
 }));
-const emit=defineEmits<{ 'update:modelValue':[value:string] }>();
+const dateRef = ref<{ $el?: unknown; focus?: (options?: Parameters<HTMLElement['focus']>[0]) => void } | null>(null);
+let committedValue = String(props.modelValue ?? '');
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+  change: [value: string, event: Event];
+  focus: [value: string, event: FocusEvent];
+  blur: [value: string, event: FocusEvent];
+  keydown: [event: KeyboardEvent];
+  keyup: [event: KeyboardEvent];
+}>();
+watch(() => props.modelValue, (value) => {
+  committedValue = String(value ?? '');
+}, { flush: 'sync' });
+function nativeEvent(context: unknown): Event | undefined {
+  const event = (context as { e?: unknown } | undefined)?.e;
+  return event instanceof Event ? event : undefined;
+}
+function onChange(value: unknown, context?: unknown) {
+  const next = String(value ?? '');
+  if (next === committedValue) return;
+  committedValue = next;
+  const event = nativeEvent(context);
+  emit('update:modelValue', next);
+  // TDesign's picker emits a semantic context for calendar selections, not a
+  // native DOM event. Preserve the value change and use a normalized,
+  // untrusted change event so adapters can classify it as programmatic rather
+  // than dropping the field update entirely.
+  emit('change', next, event ?? new Event('change'));
+}
+function onFocus(value: unknown, context?: unknown) {
+  const event = nativeEvent(context);
+  if (event instanceof FocusEvent) emit('focus', String(value ?? ''), event);
+}
+function onBlur(value: unknown, context?: unknown) {
+  const event = nativeEvent(context);
+  if (event instanceof FocusEvent) emit('blur', String(value ?? ''), event);
+}
+function onKeydown(_value: unknown, context?: unknown) {
+  const event = nativeEvent(context);
+  if (event instanceof KeyboardEvent) emit('keydown', event);
+}
+function onKeyup(_value: unknown, context?: unknown) {
+  const event = nativeEvent(context);
+  if (event instanceof KeyboardEvent) emit('keyup', event);
+}
+defineExpose({ focus: (options?: Parameters<HTMLElement['focus']>[0]) => dateRef.value?.focus?.(options) });
 </script>
 
 <style scoped>

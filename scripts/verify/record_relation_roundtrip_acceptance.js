@@ -282,6 +282,7 @@ async function waitForRelationControls(page, timeoutMs = 60000) {
 async function visibleFieldStates(page) {
   return page.evaluate(() => {
     const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const emptyValue = (value) => value === '' || /^[-–—]+$/.test(value);
     const isVisible = (node) => {
       if (!node) return false;
       const rect = node.getBoundingClientRect();
@@ -315,7 +316,7 @@ async function visibleFieldStates(page) {
         label: clean(labelNode?.textContent),
         label_hidden: !labelNode,
         value_text: valueText,
-        has_value: !['', '-'].includes(valueText),
+        has_value: !emptyValue(valueText),
         control_kind: control ? 'readonly_relation' : editable ? 'editable_many2one' : 'readonly_value',
         has_control: Boolean(selected && isVisible(selected)),
         readonly: Boolean(control)

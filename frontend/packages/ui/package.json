@@ -10,6 +10,7 @@
     "./form": "./src/form.ts",
     "./icons": "./src/icons.ts",
     "./primitive-port": "./src/primitive-port/index.ts",
+    "./primitive-port/provider": "./src/primitive-port/provider/index.ts",
     "./primitives": "./src/primitives.ts"
   },
   "dependencies": {

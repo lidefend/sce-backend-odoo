@@ -50,7 +50,7 @@ if [[ "$MODE" == "production" ]]; then
     SC_ENTRY_SHARED_SECRET="$SC_ENTRY_SHARED_SECRET" SC_ENTRY_ROUTE_VERSION="$SC_ENTRY_ROUTE_VERSION" \
     node "$ROOT_DIR/scripts/release/release_static_server.mjs" >"$LOGFILE" 2>&1 &
 else
-  setsid bash -c 'cd "$1"; export VITE_API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" VITE_ODOO_DB="$3" VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance; exec scripts/dev/pnpm_exec.sh -C frontend/apps/web dev --host 127.0.0.1 --port "$2" --strictPort' _ "$ROOT_DIR" "$PORT" "$DATABASE" >"$LOGFILE" 2>&1 &
+  setsid bash -c 'cd "$1"; export VITE_API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" VITE_DEV_PORT="$2" VITE_HMR_CLIENT_PORT="$2" VITE_ODOO_DB="$3" VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance; exec scripts/dev/pnpm_exec.sh -C frontend/apps/web dev --host 127.0.0.1 --port "$2" --strictPort' _ "$ROOT_DIR" "$PORT" "$DATABASE" >"$LOGFILE" 2>&1 &
 fi
 echo $! >"$PIDFILE"
 for _ in $(seq 1 30); do

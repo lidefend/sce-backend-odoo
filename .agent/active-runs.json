@@ -1,6 +1,10 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/fe-renderer-02c-02b-b-selection-date-r2-20261108": ".agent/runs/FE-RENDERER-02C-02B-B-SELECTION-DATE/run.json",
+    "fix/fe-renderer-02c-02b-c-table-icon-r2-20261108": ".agent/runs/FE-RENDERER-02C-02B-C-TABLE-ICON/run.json",
+    "fix/fe-renderer-02c-02b-a-input-textarea-20261108": ".agent/runs/FE-RENDERER-02C-02B-A-INPUT-TEXTAREA/run.json",
+    "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108": ".agent/runs/FE-RENDERER-V1-CLOSEOUT/run.json",
     "fix/fe-renderer-02c-02b-01-primitive-port-20261108": ".agent/runs/FE-RENDERER-02C-02B-01/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",
     "fix/smart-core-cache-token-test-20261108": ".agent/runs/SMART-CORE-CACHE-TOKEN-TEST-20261108/run.json",

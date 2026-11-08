@@ -66,7 +66,17 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "allowed_states": {"submit", "approve"},
             "required_params": ["reason"],
             "delivery_priority": 30,
-            "presentation": {"tier": "secondary", "semantic": "destructive"},
+            "presentation": {
+                "tier": "secondary",
+                "semantic": "destructive",
+                "reason_input": {
+                    "title": "驳回付款申请",
+                    "label": "拒绝原因",
+                    "help": "请说明拒绝原因，提交后会写入正式审批记录。",
+                    "submit_label": "确认驳回",
+                    "cancel_label": "取消",
+                },
+            },
         },
         {
             "key": "done",

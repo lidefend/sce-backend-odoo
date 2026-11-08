@@ -1,0 +1,111 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-V1-CLOSEOUT
+  title: FE-RENDERER-V1 契约驱动的统一 TDesign 组件交付收口
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 component identity to Sc/TDesign uniform component delivery
+  module: Semantic Registry, Professional Component Registry, Sc Design System, TDesign bridge, scene adapters and delivery evidence
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Contract V2 component identity, Sc primitive authority, official TDesign takeover,
+    event truthfulness and registry consumption are shared platform mechanisms. The
+    delivery closes the existing component stack instead of adding a second renderer
+    runtime or expanding professional component count.
+  why_not_elsewhere: >
+    Business pages must not own component identity, field names must not become
+    implementation classifiers, and industry or customer semantics must not be added
+    to this platform closeout. Page Assembly, ActionView, HomeView and legacy/canonical
+    consolidation remain independent later batches.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-V1-CLOSEOUT.yaml
+      - .agent/runs/FE-RENDERER-V1-CLOSEOUT/run.json
+      - docs/ops/iterations/fe_renderer_v1_closeout_20261108.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/components/design-system/ScInput.vue
+      - frontend/apps/web/src/components/design-system/ScTextarea.vue
+      - frontend/apps/web/src/components/design-system/ScDateField.vue
+      - frontend/apps/web/src/components/design-system/ScFormField.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter
+      - addons/smart_construction_core/handlers/payment_request_available_actions.py
+      - addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py
+      - frontend/apps/web/src/pages/ContractFormPage.vue
+      - frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue
+      - frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts
+      - frontend/apps/web/src/components/template/FormSection.vue
+      - frontend/apps/web/src/views/ActionView.vue
+      - frontend/apps/web/src/app/runtime/actionViewInteractionRuntime.ts
+      - frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts
+      - frontend/apps/web/src/app/presentation/semantic_registry.generated.ts
+      - frontend/packages/ui/src/primitive-port
+      - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_collection_test.mjs
+      - frontend/apps/web/scripts/contract_header_action_presentation_test.ts
+      - frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs
+      - frontend/apps/web/scripts/action_view_collection_create_authority_test.ts
+      - frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/business_entry_matrix_browser.mjs
+      - scripts/verify/record_relation_roundtrip_acceptance.js
+      - scripts/verify/frontend_scene_primitive_adapter_guard.py
+      - scripts/verify/test_frontend_probe_toolchain_guard.py
+      - scripts/verify/acceptance_evolution_binding_guard.py
+      - scripts/verify/test_acceptance_evolution_binding_guard.py
+      - scripts/verify/test_frontend_acceptance_runtime_profile.py
+      - scripts/verify/test_frontend_action_view_page_actions_guard.py
+      - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
+      - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
+      - make/frontend.mk
+      - scripts/dev/frontend_acceptance_runtime.sh
+      - scripts/dev/frontend_acceptance_up.sh
+      - contracts/registry/semantic.yaml
+      - contracts/registry/component.yaml
+    product_behavior: >
+      Standard Contract V2 fields resolve to one declared workspace component identity,
+      Sc renders through the existing official TDesign bridge, and real events and states
+      remain truthful and duplicate-free. Specialized scene composition remains a valid
+      host but must use the same Sc primitive authority for basic controls.
+  objective: >
+    Finish the first deliverable version of the existing contract-driven uniform component
+    stack: repair known runtime event defects, reconcile 25 componentKey identities and
+    their actual implementations/consumers, verify 33 required official component takeovers,
+    validate three real business surfaces, and produce an evidence-bound V1 closeout without
+    expanding architecture or component count.
+  acceptance:
+    - Textarea produces exactly one change for one committed edit without debounce or time-window masking
+    - Input and Textarea pass exact-count Chromium assertions for input, change, blur, model updates and IME
+    - Date and datetime declarations emit one update and one change for selection and clear transitions
+    - FormField help and error content render visibly and match the control described-by projection
+    - All 25 Contract V2 componentKey identities reconcile to one declared renderer and actual implementation/consumer
+    - FormSectionField remains the generic type-directed sentinel and the four independent professional controls remain explicit
+    - All 33 product-required official components remain adapter-present with no direct vendor bypass or raw behavioral surface
+    - Contract Form, Payment Request and Scene Collection pass their declared Contract V2 and real-browser acceptance scopes
+    - Contract gaps remain fail-closed and server authorization remains final
+    - V1 report states that contract-driven uniform delivery is proven for the standard business-page mainline, not all frontend surfaces
+    - Final evidence and remote checks bind the exact candidate head
+    - Verification tooling makes suite fingerprints revision-stable and never claims @sc/ui coverage outside the apps/web scan boundary
+  exclusions:
+    - new_generic_renderer_runtime
+    - contract_v2_rewrite
+    - second_component_library
+    - forced_professional_componentization
+    - forced_form_section_for_all_pages
+    - page_assembly_refactor
+    - action_view_rewrite
+    - home_view_rewrite
+    - professional_component_count_expansion
+    - deployment
+    - merge_without_independent_review
+  rollback: >
+    Revert the closeout commits as one topic. No database mutation, deployment or external
+    configuration is part of this batch; the existing component registries remain the
+    rollback boundary.
+  next_exact_step: >
+    Complete the affected local iteration and metadata-only evidence closeout for the exact
+    candidate, publish it, obtain a fresh independent review bound to the pushed head, and
+    verify current-head required CI. Prepare the final merge recommendation without merging
+    or deploying.

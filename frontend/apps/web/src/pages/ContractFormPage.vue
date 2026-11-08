@@ -294,6 +294,7 @@
       @close="cancelRelationCreateDialog"
       @created="completeRelationCreateDialog"
     />
+    <ContractReasonDialog ref="actionReasonDialogRef" />
     <IntentConfirmationDialog ref="intentConfirmationRef" />
     <AttachmentViewer ref="attachmentViewerRef" />
   </LayoutShell>
@@ -309,6 +310,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import ProductFormErrorSummary from '../components/product-record/ProductFormErrorSummary.vue';
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
+import ContractReasonDialog from './contractForm/ContractReasonDialog.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import LayoutShell from '../components/template/LayoutShell.vue';
 import ProductFormLoadingSkeleton from '../components/product-record/ProductFormLoadingSkeleton.vue';
@@ -768,6 +770,7 @@ const {
   contract, contractMeta,
 } = useContractFormPageState();
 const intentConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
+const actionReasonDialogRef = ref<InstanceType<typeof ContractReasonDialog> | null>(null);
 const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
 type PageStatusEvent = Extract<FormRuntimeStateEvent, { kind: 'status' }>;
 const applyPageStatusEvent = (event: PageStatusEvent) => applyFormRuntimeStatusEvent({ status, errorMessage }, event);
@@ -1243,7 +1246,16 @@ const {
   applyClientMode: (mode, toggle) => applyClientMode(mode, toggle),
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
-  collectActionParams: (action) => collectActionParamsFromPlan(action, () => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: '请填写操作原因' })),
+  collectActionParams: (action) => collectActionParamsFromPlan(
+    action,
+    (failure) => applyPageStatusEvent({
+      kind: 'status',
+      transaction: 'runAction',
+      status: 'error',
+      errorMessage: failure === 'missing_contract' ? 'OPERATION_REASON_CONTRACT_MISSING' : '请填写操作原因',
+    }),
+    (presentation) => actionReasonDialogRef.value?.request(presentation) ?? Promise.resolve(null),
+  ),
   confirmActionSafety: (action) => confirmActionSafety(action),
   currentQuery: () => route.query,
   ensureSavedBeforeRecordAction: () => ensureSavedBeforeRecordAction(),

@@ -4,6 +4,16 @@
     "lockedVersion": "1.20.5",
     "publicEntrypoint": "tdesign-vue-next/es/<component>"
   },
+  "bridgeBehaviorBypasses": [
+    {
+      "officialComponent": "alert",
+      "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+    },
+    {
+      "officialComponent": "select",
+      "source": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue"
+    }
+  ],
   "capabilityAssessments": [
     {
       "currentCoverage": "ScDatePicker and ScDateField are public-prop adapters with contract value normalization only.",
@@ -88,6 +98,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "affix",
       "productionConsumerCount": 0,
@@ -97,13 +108,8 @@
     },
     {
       "adapterKeys": [
-        "ScButton",
         "ScErrorState",
-        "ScIcon",
-        "ScIconButton",
-        "ScInlineState",
-        "ScInput",
-        "ScTabs"
+        "ScInlineState"
       ],
       "adapterSources": [
         {
@@ -119,21 +125,18 @@
           "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue"
         },
         {
-          "semanticAdapters": [
-            "ScButton",
-            "ScIcon",
-            "ScIconButton",
-            "ScInput",
-            "ScTabs"
-          ],
+          "semanticAdapters": [],
           "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
         }
+      ],
+      "bridgeBehaviorBypasses": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
       ],
       "bridgeExports": [
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 680,
+      "productionConsumerCount": 80,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -141,6 +144,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "anchor",
       "productionConsumerCount": 0,
@@ -160,6 +164,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignAutoComplete"
       ],
@@ -172,6 +177,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "avatar",
       "productionConsumerCount": 0,
@@ -182,6 +188,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "back-top",
       "productionConsumerCount": 0,
@@ -201,6 +208,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScBadge.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignBadge"
       ],
@@ -218,6 +226,9 @@
           "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [
+        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+      ],
       "bridgeExports": [
         "TDesignBreadcrumb",
         "TDesignBreadcrumbItem"
@@ -231,14 +242,12 @@
     {
       "adapterKeys": [
         "ScButton",
-        "ScIconButton",
-        "ScTooltip"
+        "ScIconButton"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScButton",
-            "ScTooltip"
+            "ScButton"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScButton.vue"
         },
@@ -249,11 +258,12 @@
           "source": "frontend/apps/web/src/components/design-system/ScIconButton.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 462,
+      "productionConsumerCount": 464,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -261,6 +271,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "calendar",
       "productionConsumerCount": 0,
@@ -287,6 +298,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScPanel.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignCard"
       ],
@@ -299,6 +311,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "cascader",
       "productionConsumerCount": 0,
@@ -318,6 +331,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScCheckbox.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignCheckbox"
       ],
@@ -329,7 +343,6 @@
     },
     {
       "adapterKeys": [
-        "ScButton",
         "ScCollapse",
         "ScDisclosure"
       ],
@@ -342,25 +355,24 @@
         },
         {
           "semanticAdapters": [
-            "ScButton",
             "ScDisclosure"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
         },
         {
           "semanticAdapters": [
-            "ScButton",
             "ScDisclosure"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignCollapse",
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 454,
+      "productionConsumerCount": 10,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -368,6 +380,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "color-picker",
       "productionConsumerCount": 0,
@@ -378,6 +391,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "comment",
       "productionConsumerCount": 0,
@@ -404,11 +418,12 @@
           "source": "frontend/apps/web/src/components/design-system/ScDatePicker.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignDatePicker"
       ],
       "officialComponent": "date-picker",
-      "productionConsumerCount": 3,
+      "productionConsumerCount": 4,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -431,6 +446,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScDescriptions.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignDescriptions",
         "TDesignDescriptionsItem"
@@ -443,25 +459,22 @@
     },
     {
       "adapterKeys": [
-        "ScDialog",
-        "ScIcon",
-        "ScIconButton"
+        "ScDialog"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScDialog",
-            "ScIcon",
-            "ScIconButton"
+            "ScDialog"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDialog.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 108,
+      "productionConsumerCount": 16,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -469,6 +482,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "divider",
       "productionConsumerCount": 0,
@@ -478,25 +492,22 @@
     },
     {
       "adapterKeys": [
-        "ScDrawer",
-        "ScIcon",
-        "ScIconButton"
+        "ScDrawer"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScDrawer",
-            "ScIcon",
-            "ScIconButton"
+            "ScDrawer"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDrawer.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 96,
+      "productionConsumerCount": 3,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -513,6 +524,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScDropdown.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignDropdown"
       ],
@@ -534,6 +546,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignEmpty"
       ],
@@ -547,15 +560,12 @@
       "adapterKeys": [
         "ScForm",
         "ScFormField",
-        "ScFormItem",
-        "ScFormItemProps",
-        "ScFormProps"
+        "ScFormItem"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScForm",
-            "ScFormProps"
+            "ScForm"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScForm.vue"
         },
@@ -567,18 +577,18 @@
         },
         {
           "semanticAdapters": [
-            "ScFormItem",
-            "ScFormItemProps"
+            "ScFormItem"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignForm",
         "TDesignFormItem"
       ],
       "officialComponent": "form",
-      "productionConsumerCount": 29,
+      "productionConsumerCount": 28,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -586,6 +596,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "grid",
       "productionConsumerCount": 0,
@@ -596,6 +607,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "guide",
       "productionConsumerCount": 0,
@@ -606,6 +618,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "icon",
       "productionConsumerCount": 0,
@@ -616,6 +629,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "image",
       "productionConsumerCount": 0,
@@ -626,6 +640,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "image-viewer",
       "productionConsumerCount": 0,
@@ -645,13 +660,14 @@
           "source": "frontend/apps/web/src/components/design-system/ScInput.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignInput",
         "TDesignInputAdornment",
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 61,
+      "productionConsumerCount": 62,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -668,6 +684,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScInputGroup.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignInputAdornment"
       ],
@@ -689,6 +706,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScNumberInput.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignInputNumber"
       ],
@@ -700,9 +718,37 @@
     },
     {
       "adapterKeys": [
+        "ScAside",
+        "ScContent",
+        "ScFooter",
+        "ScHeader",
         "ScLayout"
       ],
       "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScAside"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScAside.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScContent"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScContent.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScFooter"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScFooter.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScHeader"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScHeader.vue"
+        },
         {
           "semanticAdapters": [
             "ScLayout"
@@ -710,11 +756,12 @@
           "source": "frontend/apps/web/src/components/design-system/ScLayout.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignLayout"
       ],
       "officialComponent": "layout",
-      "productionConsumerCount": 2,
+      "productionConsumerCount": 7,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -722,6 +769,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "link",
       "productionConsumerCount": 0,
@@ -747,6 +795,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScList.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignList",
         "TDesignListItem"
@@ -776,6 +825,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScLoading.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignLoading"
       ],
@@ -787,8 +837,7 @@
     },
     {
       "adapterKeys": [
-        "MenuTree",
-        "ScIcon"
+        "MenuTree"
       ],
       "adapterSources": [
         {
@@ -799,23 +848,24 @@
         },
         {
           "semanticAdapters": [
-            "ScIcon"
+            "MenuTree"
           ],
           "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
         },
         {
           "semanticAdapters": [
-            "ScIcon"
+            "MenuTree"
           ],
           "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignMenu",
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 77,
+      "productionConsumerCount": 1,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -823,6 +873,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "message",
       "productionConsumerCount": 0,
@@ -833,6 +884,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignNotificationPlugin"
       ],
@@ -854,6 +906,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScPagination.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignPagination"
       ],
@@ -875,6 +928,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScPopconfirm.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignPopconfirm"
       ],
@@ -896,6 +950,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScPopover.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignPopup"
       ],
@@ -917,6 +972,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScProgress.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignProgress"
       ],
@@ -929,6 +985,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "qrcode",
       "productionConsumerCount": 0,
@@ -938,7 +995,8 @@
     },
     {
       "adapterKeys": [
-        "ScRadio"
+        "ScRadio",
+        "ScRadioGroup"
       ],
       "adapterSources": [
         {
@@ -946,14 +1004,21 @@
             "ScRadio"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScRadio.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScRadioGroup"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScRadioGroup.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignRadio",
         "TDesignRadioGroup"
       ],
       "officialComponent": "radio",
-      "productionConsumerCount": 4,
+      "productionConsumerCount": 6,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -961,6 +1026,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "range-input",
       "productionConsumerCount": 0,
@@ -971,6 +1037,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "rate",
       "productionConsumerCount": 0,
@@ -1001,11 +1068,14 @@
           "source": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [
+        "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue"
+      ],
       "bridgeExports": [
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 45,
+      "productionConsumerCount": 46,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1013,6 +1083,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "select-input",
       "productionConsumerCount": 0,
@@ -1032,6 +1103,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScSkeleton.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignSkeleton"
       ],
@@ -1044,6 +1116,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "slider",
       "productionConsumerCount": 0,
@@ -1063,6 +1136,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScActionBar.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignSpace"
       ],
@@ -1075,6 +1149,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "statistic",
       "productionConsumerCount": 0,
@@ -1100,6 +1175,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScSteps.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignSteps"
       ],
@@ -1112,6 +1188,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "sticky-tool",
       "productionConsumerCount": 0,
@@ -1122,6 +1199,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "swiper",
       "productionConsumerCount": 0,
@@ -1141,6 +1219,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScSwitch.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignSwitch"
       ],
@@ -1152,36 +1231,31 @@
     },
     {
       "adapterKeys": [
-        "ScIcon",
-        "ScIconButton",
         "ScTable"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScIcon",
-            "ScIconButton",
             "ScTable"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScTable.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTable",
         "TDesignTableRowAttributes",
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 116,
+      "productionConsumerCount": 24,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
     },
     {
       "adapterKeys": [
-        "ScButton",
-        "ScIcon",
-        "ScIconButton",
+        "ActivityPageTabs",
         "ScTabs"
       ],
       "adapterSources": [
@@ -1193,18 +1267,17 @@
         },
         {
           "semanticAdapters": [
-            "ScButton",
-            "ScIcon",
-            "ScIconButton"
+            "ActivityPageTabs"
           ],
           "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 539,
+      "productionConsumerCount": 3,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1221,6 +1294,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTag"
       ],
@@ -1233,6 +1307,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "tag-input",
       "productionConsumerCount": 0,
@@ -1252,11 +1327,12 @@
           "source": "frontend/apps/web/src/components/design-system/ScTextarea.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTextarea"
       ],
       "officialComponent": "textarea",
-      "productionConsumerCount": 7,
+      "productionConsumerCount": 9,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1273,6 +1349,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScTimePicker.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTimePicker"
       ],
@@ -1300,6 +1377,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScTimeline.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTimeline",
         "TDesignTimelineItem"
@@ -1322,6 +1400,7 @@
           "source": "frontend/apps/web/src/components/design-system/ScTooltip.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTooltip"
       ],
@@ -1334,6 +1413,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "transfer",
       "productionConsumerCount": 0,
@@ -1344,6 +1424,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignTree"
       ],
@@ -1356,6 +1437,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "tree-select",
       "productionConsumerCount": 0,
@@ -1366,6 +1448,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "typography",
       "productionConsumerCount": 0,
@@ -1375,14 +1458,12 @@
     },
     {
       "adapterKeys": [
-        "ScButton",
         "ScFileField",
         "ScUpload"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScButton",
             "ScFileField"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScFileField.vue"
@@ -1394,11 +1475,12 @@
           "source": "frontend/apps/web/src/components/design-system/ScUpload.vue"
         }
       ],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 447,
+      "productionConsumerCount": 3,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1406,6 +1488,7 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
+      "bridgeBehaviorBypasses": [],
       "bridgeExports": [],
       "officialComponent": "watermark",
       "productionConsumerCount": 0,
@@ -1415,14 +1498,21 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "cf5431ad2f0dee69d341b183e0e82f4533a33f3caa65d8e80bc1e9596ce938e4",
+  "inputDigest": "ac7aeaadcba5c691c5c3744b41da881ec0b554328ecd9e510ecd2ed65ee97cdd",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
-  "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
+  "scope": "frontend/apps/web/src production sources except the design-system adapter layer",
+  "scopeExclusions": [
+    {
+      "path": "frontend/packages/ui/src",
+      "reason": "The legacy @sc/ui Scene primitives and TDesign driver imports remain outside the FE-RENDERER-V1 apps/web takeover count."
+    }
+  ],
   "summary": {
     "adapter_present": 33,
     "adapter_unconsumed": 0,
     "auditedCapabilityCount": 5,
+    "bridgeBehaviorBypasses": 2,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,

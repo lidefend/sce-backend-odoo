@@ -37,6 +37,11 @@ class ActionViewPageActionsGuardTest(unittest.TestCase):
             any(f"expected {EXPECTED_SC_BUTTON_PROJECTIONS}" in error for error in validate(altered))
         )
 
+    def test_create_decision_uses_shared_contract_authority(self):
+        self.assertIn("resolveCollectionCreateAuthority", self.source)
+        self.assertIn("resolveCollectionCreateEntry", self.source)
+        self.assertNotIn("effective?.create !== true", self.source)
+
 
 if __name__ == "__main__":
     unittest.main()

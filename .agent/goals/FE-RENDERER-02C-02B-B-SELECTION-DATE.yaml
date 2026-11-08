@@ -1,0 +1,31 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02B-B-SELECTION-DATE
+  title: Select and DateField Primitive Conformance
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Sc selection and date controls through Primitive Port
+  module: ScSelect, ScDateField, ScSceneSelect, ScSceneDateField
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: Controlled selection/date values and native event/focus behavior are shared primitive mechanisms.
+  why_not_elsewhere: No business semantics, product page, backend or Contract V2 change.
+  blast_radius:
+    paths:
+      - frontend/apps/web/src/components/design-system/ScSelect.vue
+      - frontend/apps/web/src/components/design-system/ScDateField.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/selectionContracts.ts
+      - frontend/apps/web/scripts/scene_primitive_selection_test.mjs
+  objective: Implement truthful Select/DateField wrappers and identify remaining native popup/search/date gaps.
+  results:
+    implementation: PASS
+    strict_typecheck: PASS
+    lint: PASS
+    legacy_primitive_adapter: PASS
+    browser_focus_aria: PASS
+    select_popup_search_browser: PASS
+    date_popup_browser: NOT_APPLICABLE_PORT_HAS_NO_POPUP_EVENT
+  next_exact_step: Commit and integrate the B slice.
+  exclusions: [product_consumer_migration, provider_change, backend_change, database_change, deployment, merge]
+  rollback: Revert the five component files; no product page imports them.

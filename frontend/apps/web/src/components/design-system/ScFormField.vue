@@ -7,19 +7,15 @@
     :for="controlId"
     :name="fieldKey"
     :status="invalid || error ? 'error' : undefined"
+    :help="helpContent"
+    :tips="errorContent"
   >
     <slot :control-id="controlId" :described-by="describedBy" />
-    <template v-if="help" #help>
-      <span :id="helpId">{{ help }}</span>
-    </template>
-    <template v-if="error" #tips>
-      <span :id="errorId" role="alert">{{ error }}</span>
-    </template>
   </TDesignFormItem>
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { computed, h, useId } from 'vue';
 import { TDesignFormItem } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 
@@ -41,4 +37,10 @@ const describedBy = computed(() => [
   props.help ? helpId.value : '',
   props.error ? errorId.value : '',
 ].filter(Boolean).join(' ') || undefined);
+const helpContent = computed(() => (
+  props.help ? () => h('span', { id: helpId.value }, props.help) : undefined
+));
+const errorContent = computed(() => (
+  props.error ? () => h('span', { id: errorId.value, role: 'alert' }, props.error) : undefined
+));
 </script>

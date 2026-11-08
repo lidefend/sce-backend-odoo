@@ -96,7 +96,7 @@
             :placeholder="searchPlaceholder"
             @compositionstart="$emit('search-composition-start')"
             @compositionend="$emit('search-composition-end', $event)"
-            @input="$emit('search-input', $event)"
+            @update:model-value="$emit('search-input', $event)"
             @keydown.enter.prevent="$emit('search-submit')"
             @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
           />
