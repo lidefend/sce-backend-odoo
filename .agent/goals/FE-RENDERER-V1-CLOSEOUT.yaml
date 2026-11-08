@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RENDERER-V1-CLOSEOUT
   title: FE-RENDERER-V1 契约驱动的统一 TDesign 组件交付收口
-  status: active
+  status: verification_pending
   formal_product_layer: P0 platform kernel product
   layer_target: Contract V2 component identity to Sc/TDesign uniform component delivery
   module: Semantic Registry, Professional Component Registry, Sc Design System, TDesign bridge, scene adapters and delivery evidence
@@ -74,6 +74,7 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Assign P0 Textarea/Input event repair to A, the read-only 25 componentKey reconciliation
-    to B, and the read-only 33-adapter takeover audit to C; then integrate only their
-    evidence-backed results.
+    Resolve the governed runtime identity blocker by providing either a business-capable
+    local.dev route/fixture identity or the isolated acceptance fixture credential. Then
+    run Contract Form, Payment Request and Scene Collection through their governed browser
+    entries before declaring FE-RENDERER-V1 complete.

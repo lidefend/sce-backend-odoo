@@ -33,6 +33,16 @@
     "authority": "existing local cached frontend dependencies, managed Chromium and governed Make entries; no database mutation or deployment"
   },
   "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
     "semantic_registry_lint": {
       "target": "verify.semantic.registry.lint",
       "inputs": [
@@ -81,6 +91,20 @@
       ],
       "kind": "offline"
     },
+    "primitive_port": {
+      "target": "verify.frontend.primitive_port.unit",
+      "inputs": [
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+        "frontend/apps/web/scripts/primitive_port_type_test.ts",
+        "frontend/apps/web/tsconfig.primitive-port.json",
+        "scripts/verify/frontend_primitive_port_guard.py",
+        "scripts/verify/test_frontend_primitive_port_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
     "scene_primitive_adapter": {
       "target": "verify.frontend.scene_primitive_adapter.unit",
       "inputs": [
@@ -110,6 +134,16 @@
         "docs/architecture/frontend_contract_basis_ledger.json",
         "scripts/verify/frontend_contract_basis_guard.py",
         "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/packages/ui/src/primitive-port",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -152,11 +186,38 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Complete P0 Textarea/Input exact event repair in A, then collect read-only B/C mapping and takeover audits.",
+  "blockers": [
+    "environment: local.dev demo_role_finance route authority has no unique payment menu/action projection; governed Payment Request browser cannot start",
+    "environment: local.dev readiness browser reached the live app but the selected demo actor/route rendered AccessDenied; business readback remained unchanged",
+    "environment: isolated acceptance Contract Form requires SC_ACCEPTANCE_FIXTURE_PASSWORD, which is not available in this session; dev credentials were not reused",
+    "not_run: Scene Collection browser acceptance depends on the same isolated acceptance credential/profile"
+  ],
+  "results": {
+    "candidate_code_commit": "PASS: 524fc520716373fe0b22cd227babfb7a6bc1787e contains the P0 event fix, primitive binding conformance and V1 run registration",
+    "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 31 exact assertions, 0 console errors; one Textarea edit commits exactly one update/input/change, blur does not repeat change, disabled/readonly attempts emit no model update, IME update observed",
+    "p0_scene_adapter_unit": "PASS: 5 primitive-port guard tests, 5 runtime/SSR assertions, 6 scene-adapter guard tests, real-SFC type witness and 3641-input bundle boundary",
+    "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
+    "p0_lint_typecheck": "PASS: 0 lint errors, four existing warnings; UI and web strict vue-tsc exited zero",
+    "semantic_registry": "PASS: 15 semantic tests, generated semantic/industry/domain carriers match declaration; frontend_keys=26 includes two node identities",
+    "professional_component_registry": "PASS: 162 tests and cases>=184; 25 field component keys and five renderer-family names remain the only runtime vocabulary",
+    "component_driver_takeover": "PASS: 13 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0",
+    "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
+    "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
+    "ci_local_iteration": "PASS: 8/8 affected targets exited zero with non-zero real collections; receipt=.runtime/frontend-dev-validation/executions/20261108T112556Z-168174-134847774/receipt.json",
+    "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
+    "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters present with no bypass; exhaustive per-component browser behavior is not claimed",
+    "p3_payment_request": "BLOCKED_ENVIRONMENT: route authority has no unique projection for demo_role_finance before browser startup",
+    "p3_contract_form_local": "BLOCKED_ENVIRONMENT: readiness browser reached live local.dev but selected fixture route rendered AccessDenied; business readback unchanged",
+    "p3_contract_form_isolated": "BLOCKED_ENVIRONMENT: SC_ACCEPTANCE_FIXTURE_PASSWORD missing and preview build identity stale",
+    "p3_scene_collection": "NOT_RUN: isolated acceptance credential/profile unavailable",
+    "p3_mutations": "NONE: no fixture reset, database repair, password transfer or route bypass was used",
+    "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
+    "final_v1_report": "PENDING: report records proven component delivery and unresolved real-page gate; V1 cannot be declared complete until three governed page samples pass"
+  },
+  "next_exact_step": "Provide a business-capable local.dev navigation/fixture identity or the isolated acceptance fixture credential, then run Contract Form, Payment Request and Scene Collection through their governed browser entries.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-RENDERER-V1-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/fe_renderer_v1_closeout_20261108.md"
 }
