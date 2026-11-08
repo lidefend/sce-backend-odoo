@@ -454,6 +454,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
             "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/dev/frontend_acceptance_up.sh",
             "scripts/verify/frontend_menu_navigation_diagnostic.py",
             "scripts/verify/frontend_my_work_approval_browser.mjs",
             "scripts/verify/frontend_my_work_approval_runtime.py",
@@ -470,6 +471,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.daily_dev.acceptance_fixture.unit"],
+                )
+
+    def test_primitive_adapter_guard_changes_route_to_their_owned_contract(self) -> None:
+        for path in (
+            "scripts/verify/frontend_primitive_adapter_guard.py",
+            "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.primitive_adapter.unit"],
                 )
 
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:

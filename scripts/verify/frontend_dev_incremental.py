@@ -334,6 +334,12 @@ RULES = (
     ), (
         "verify.frontend.scene_primitive_contract.behavior",
     )),
+    Rule((
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+    ), (
+        "verify.frontend.primitive_adapter.unit",
+    )),
     Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
@@ -428,6 +434,7 @@ RULES = (
     Rule((
         "make/runtime_ops.mk",
         "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_up.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
         "scripts/verify/frontend_my_work_approval_runtime.py",
