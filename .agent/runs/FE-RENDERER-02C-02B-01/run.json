@@ -18,6 +18,9 @@
     "scripts/verify/test_frontend_primitive_port_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
     "make/frontend.mk"
   ],
   "environment": {
