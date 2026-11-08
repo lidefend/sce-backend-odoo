@@ -5,16 +5,16 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current product/evidence head: `986e60535201f6bed72cf60650e7be58ef6279b6`
+- Current product/evidence head: `0ef405468dc28a1aab0f4dc48dc9b6e90dd721fa`
 - Later metadata-only commits do not change the product tree or re-bind L4.
-- Fourth-review product fixes: `476cb6278`, `8c0876c2f` and `986e60535`
+- Fourth-review product fixes: `476cb6278`, `8c0876c2f`, `986e60535` and `0ef405468`
 - Previously reviewed head: `ba5d4b53f7e19748669cce34c9f144fedb4aa5ba`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
 - L4 evidence/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
-- Worktree was clean at the `986e60535` L4 checkpoint.
+- Worktree was clean at the `0ef405468` L4 checkpoint.
 
 ## Scope
 
@@ -87,7 +87,7 @@ edit. No debounce, timer window or value-equality timer is used.
 
 Chromium `147.0.7727.15` real-SFC evidence:
 
-- 67 exact assertions, 0 console errors;
+- 87 exact assertions, 0 console errors;
 - three typed Input characters produce exactly three `update` and three `input`
   events;
 - one Input edit commit produces exactly one `change`;
@@ -104,6 +104,16 @@ Chromium `147.0.7727.15` real-SFC evidence:
 - if a user draft is replaced by an external controlled `modelValue` update
   before blur, neither Input nor Textarea emits a stale draft `change`; blur
   reports the displayed controlled value.
+
+The latest owner review found that coalesced echoes were matched by concatenating
+complete input snapshots. That could mistake a legitimate external value `aab`
+for the snapshot sequence `a` + `ab`. The concatenation path is removed: delayed
+echoes now match only complete, ordered snapshot values. Input and Textarea
+Chromium regressions cover `a -> ab -> external aab -> blur`, including a late
+echo, with zero stale changes. All three echo-history queues are bounded to 256
+entries so a long-lived control cannot accumulate unbounded history. The browser
+suite now has 87 exact assertions and rejects reintroduction of snapshot
+concatenation.
 
 The fourth review then found that TDesign date-picker calendar callbacks carry
 no native `e`. `ScDateField` now always normalizes the value transition and
@@ -320,7 +330,7 @@ All three pages ran against the managed isolated Acceptance profile:
 - database `sc_frontend_acceptance`;
 - backend port `18082`;
 - standard preview `5180`;
-- backend and preview both observed served revision `986e60535`.
+- backend and preview both observed served revision `0ef405468`.
 
 The fixture password was supplied through the existing Make secret variable and
 was not written to the report, run record or logs.
@@ -337,18 +347,18 @@ Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
   and four viewport PNGs, SHA256
-  `60ec8b6c8b6867e8c4569cdb70d40f8250f9d456ba1cc6151633eb7a571979cd`;
-- `.runtime/final-acceptance/payment-request/986e60535/report.json`
+  `f24b9a57709ab6073eb24a56f43d7a6bf2637d287fa39a7a16d0f390b15fbb4d`;
+- `.runtime/final-acceptance/payment-request/0ef405468/report.json`
   and `after-save.png`, report SHA256
-  `abe835ae171133474297ca9050a7b6b3bbd40462b85067fd9368d0138f3bfbee`;
+  `818a86cd05eb22caec9315f420703a43a58d49c417534a27c252b7f108436d29`;
 - `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots,
   SHA256
-  `e770e1fe6df030d5f2793f7ea745f2ea227f2c68afbd7e4cd4a4c0edc82b4094`;
+  `ff84acf265f8ebb4d1c5780f96e5bcddf4ff5e69d4e09b31782b02caed54e064`;
 - `.runtime/acceptance/local/98a9f76c29688f1aa6a85b6add205fbbf7752cd3/relation-roundtrip/20261108T203832097Z-3349383-07c20af8/summary.json`,
   SHA256
   `0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e`.
   This relation probe has no DateField, reason-action or primitive-Port input;
-  its unchanged suite fingerprint is carried to `986e60535`.
+  its unchanged suite fingerprint is carried to `0ef405468`.
 - `.runtime/acceptance-evolution/evidence.v1.json` is recorded at merge stage:
   list surface and relation roundtrip retain their validated evidence heads and
   are carried to the final metadata tip; deployment-only
@@ -405,9 +415,9 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 passed at served revision `986e60535`. Contract Form, Payment Request,
+L4 passed at served revision `0ef405468`. Contract Form, Payment Request,
 Scene Collection and relation roundtrip all bind that exact SHA. The merge-stage
-acceptance manifest also binds `986e60535`; the deployment-only
+acceptance manifest also binds `0ef405468`; the deployment-only
 `path_namespace_identity` suite is deferred explicitly rather than represented
 as passed. No page evidence was inherited from `866afcb11` or older candidates.
 
@@ -441,14 +451,14 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T211730Z-3634470-109509725/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T220455Z-3940103-933294859/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
-transformed in 26.89 seconds. The existing large-chunk advisory remains.
+transformed in 23.77 seconds. The existing large-chunk advisory remains.
 
 Overall V1 remains `verification_pending` only for publication, fresh independent
 review and exact-head remote CI. The metadata-only closeout is complete; the
-manifest intentionally stays bound to product/evidence head `986e60535`.
+manifest intentionally stays bound to product/evidence head `0ef405468`.
 
 ## Exclusions
 
