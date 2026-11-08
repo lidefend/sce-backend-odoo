@@ -1,6 +1,6 @@
 # FE-RENDERER-V1: Contract-Driven Unified TDesign Component Delivery
 
-- Status: V1-01/V1-02 implemented and focused tests pass; real product pages and final build pending
+- Status: V1-01/V1-02 implemented; Contract Form, Payment Request and collection list accepted; awaiting independent review
 - Baseline: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Branch: `feature/fe-renderer-v1-contract-tdesign-20261108`
 - Formal Product Layer: P0 platform kernel product
@@ -277,5 +277,28 @@ V1 implementation evidence:
   `StatusPanel.vue` warning remains.
 - `verify.frontend.typecheck.strict`: PASS.
 
-This proves the V1 base binding and TDesign interaction slice. It does not yet
-prove the three real product journeys or the final build; V1-05 remains pending.
+This proves the V1 base binding and TDesign interaction slice. Real product
+evidence and the final build are recorded below.
+
+Real candidate evidence:
+
+- Candidate SHA: `5566824ca045ff3c38e6aa5f20de9b006c5d70fc`;
+- `verify.frontend.build`: PASS, 5,374 modules;
+- `local.dev.candidate.frontend`: PASS against the same
+  `sc-local-dev / sc_dev_demo` runtime;
+- Payment Request settlement component journey: PASS; introduce detail,
+  authoritative amount, cancel preservation, confirmed removal and fixture
+  restore all passed;
+- candidate visual smoke: PASS; payment edit form, payment list and readonly
+  detail passed at desktop/mobile with 0 mutations and 0 console errors;
+- real payment form DOM: 16 Contract bindings, 0 binding errors, with actual
+  `ScDateField`, `ScInput`, `ScTextarea`, business-value, relation and detail
+  components;
+- payment collection list: real table loaded at desktop/mobile with no
+  horizontal overflow.
+
+One boundary remains explicit: current product configuration does not enable an
+independent `SceneCollectionSurface` feature participant. This acceptance
+covers the real payment `ActionView` collection, not a claim that
+`SceneReadonlyCollectionRenderer` is enabled in production. The independent
+Scene Collection path remains feature-gated until a real consumer enables it.

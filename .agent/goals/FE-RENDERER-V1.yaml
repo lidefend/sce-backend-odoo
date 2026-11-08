@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RENDERER-V1
   title: Contract-Driven Unified TDesign Component Delivery
-  status: active
+  status: verification_pending
   formal_product_layer: P0 platform kernel product
   layer_target: Frontend Contract V2 component identity, binding and unified Sc/TDesign implementation
   module: Semantic Registry, Component Registry, Canonical Form Render Model, Professional Component Registry, FormSection, Sc Design System, TDesign Bridge, Page/Action/Professional hosts
@@ -51,6 +51,25 @@ goal:
     - Require no product-source change to add a standard ordinary business model and Contract fixture
     - Record component counts, duplicated branches, registry paths and complexity change against the baseline
     - Run affected non-zero tests, strict typecheck, lint, guard checks, incremental iteration and required integration gates
+  results:
+    v1_00_component_mapping_audit: PASS
+    v1_01_contract_component_binding: PASS
+    v1_02_tdesign_component_interaction: PASS
+    v1_03_existing_page_hosts_preserved: PASS
+    v1_04_business_value_and_action_authority: PASS_UNCHANGED
+    v1_05_contract_form: PASS
+    v1_05_payment_request_settlement_journey: PASS
+    v1_05_collection_list_and_readonly: PASS
+    v1_05_direct_scene_collection_surface: NOT_ENABLED_EXISTING_FEATURE_GATE
+    frontend_build: PASS_5374_MODULES
+    ci_local_iteration: PASS_8_TARGETS
+    strict_typecheck: PASS
+    lint: PASS_WITH_PREEXISTING_OUT_OF_SCOPE_WARNING
+    independent_review: NOT_STARTED
+    next_exact_step: >
+      Commit the run evidence update, freeze the current candidate for independent
+      review, and do not extend the V1 scope until that review accepts the binding
+      boundary and the Scene Collection feature-gate exclusion.
   exclusions:
     - multi_renderer_runtime
     - dynamic_plugin_marketplace

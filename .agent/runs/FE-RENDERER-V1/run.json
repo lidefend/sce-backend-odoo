@@ -7,6 +7,10 @@
     ".agent/runs/FE-RENDERER-V1/run.json",
     "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.md",
     "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.en.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
     "frontend/apps/web/scripts/contract_component_bindings_test.ts",
@@ -124,11 +128,29 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Implement and verify the V1 base-field component binding map, then integrate only source-verified TDesign capability repairs.",
+  "blockers": [
+    "Direct SceneCollectionSurface remains disabled by the existing product feature gate; V1 proves the real ActionView collection path instead and does not claim the Scene renderer is enabled."
+  ],
+  "results": {
+    "v1_00_component_mapping_audit": "PASS: 27 semantics, 28 components, 26 field components, 25 platform keys, 63 Sc components",
+    "v1_01_contract_component_binding": "PASS: 11 base component identities, 23 key/type variants, 7 implementations, unknown/mismatch fail closed",
+    "v1_02_tdesign_component_interaction": "PASS: direct Sc/TDesign browser Conformance, 67 checks, 0 console errors",
+    "v1_03_existing_page_hosts_preserved": "PASS: FormSection/PageRenderer/ActionSurface/Professional/@sc/ui hosts retained",
+    "v1_04_business_value_and_action_authority": "PASS_UNCHANGED: business presentation, permissions and action authority not changed",
+    "v1_05_contract_form": "PASS: real payment form DOM has 16 bindings and 0 binding errors",
+    "v1_05_payment_request_settlement_journey": "PASS: introduce/remove/reset with authoritative amount relationship",
+    "v1_05_collection_list_and_readonly": "PASS: payment list and readonly detail at desktop/mobile, 0 console errors, 0 mutations",
+    "v1_05_direct_scene_collection_surface": "NOT_ENABLED: existing feature gate has no enabled product participant",
+    "frontend_build": "PASS: 5374 modules",
+    "ci_local_iteration": "PASS: 8 required targets exited zero",
+    "strict_typecheck": "PASS",
+    "lint": "PASS: 0 errors with pre-existing out-of-scope warnings",
+    "independent_review": "NOT_STARTED"
+  },
+  "next_exact_step": "Commit the run evidence update, freeze the current candidate for independent review, and do not expand V1 until the binding boundary and Scene Collection feature-gate exclusion are accepted.",
   "id": "FE-RENDERER-V1",
   "branch": "feature/fe-renderer-v1-contract-tdesign-20261108",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-RENDERER-V1.yaml",
   "record": "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.md"
 }

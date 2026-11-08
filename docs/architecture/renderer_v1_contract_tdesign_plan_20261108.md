@@ -1,6 +1,6 @@
 # FE-RENDERER-V1：基于业务契约的统一 TDesign 组件交付
 
-- 状态：V1-01/V1-02 已实现并完成专项验证；真实业务页面与最终构建待执行
+- 状态：V1-01/V1-02 已实现；Contract Form、Payment Request 与集合列表已验收；等待独立评审
 - 基线：`f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - 分支：`feature/fe-renderer-v1-contract-tdesign-20261108`
 - Formal Product Layer：P0 platform kernel product
@@ -264,5 +264,20 @@ V1 实现专项：
   `StatusPanel.vue` warning。
 - `verify.frontend.typecheck.strict`：PASS。
 
-上述证明 V1 基础组件映射和 TDesign 交互专项已成立，不等于三张真实产品页面
-和最终构建已完成。V1-05 仍是待验收项。
+真实候选验收：
+
+- 候选 SHA：`5566824ca045ff3c38e6aa5f20de9b006c5d70fc`；
+- `verify.frontend.build`：PASS，5,374 modules；
+- `local.dev.candidate.frontend`：PASS，同一 `sc-local-dev / sc_dev_demo` 运行时；
+- Payment Request settlement component journey：PASS；引入明细、金额同步、取消保留、
+  确认删除和 fixture restore 均通过；
+- 候选 visual smoke：PASS；付款申请编辑表单、付款申请列表和只读详情在
+  desktop/mobile 均通过，0 mutation、0 console error；
+- 真实付款申请表单 DOM：16 个 Contract binding、0 binding error；实际出现
+  `ScDateField`、`ScInput`、`ScTextarea`、业务值、关系和明细组件；
+- 付款申请列表：desktop/mobile 加载真实表格，无横向溢出。
+
+V1 仍有一个明确边界：当前产品配置没有启用独立的 `SceneCollectionSurface`
+feature participant，因此本次验证的是真实付款申请 ActionView 集合页，而不是
+伪称 `SceneReadonlyCollectionRenderer` 已在产品中启用。独立 Scene Collection
+继续保留既有 feature-gated 机制，待真实消费者启用后再纳入 V1 验收。
