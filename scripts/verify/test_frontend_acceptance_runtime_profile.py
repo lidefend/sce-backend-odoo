@@ -292,6 +292,8 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         )
         self.assertIn("config/acceptance/isolated_entry_identity.v1.env", frontend_up)
         self.assertIn('SC_ENTRY_SHARED_SECRET="$SC_ENTRY_SHARED_SECRET"', frontend_up)
+        self.assertIn('VITE_DEV_PORT="$2"', frontend_up)
+        self.assertIn('VITE_HMR_CLIENT_PORT="$2"', frontend_up)
 
         vite = (ROOT / "frontend/apps/web/vite.config.ts").read_text(encoding="utf-8")
         self.assertIn("process.env.SC_ENTRY_NAMESPACE", vite)
