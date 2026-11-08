@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "22e3b34af2198436e414deed13c25f8ec01780c2",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-01-R2C.yaml",
+    ".agent/runs/FE-RENDERER-02C-01-R2C/run.json",
+    "docs/ops/iterations/fe_renderer_02c_01_r2c_empty_status_20261108.md",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "scripts/verify/frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_business_semantics_guard.py",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make verification tools; no database or service access"
+  },
+  "checks": {
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint_source": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "review_finding": "P1 boundary: empty values returned before status type and selection projection validation",
+    "implementation": "PASS: status type and selection projection are resolved before the empty-value return",
+    "empty_status_tests": "PASS: missing type and missing selection reject null; valid selection null returns the platform empty value",
+    "static_guard": "PASS: business semantics and 12 guard tests reject moving declaration validation after the empty return",
+    "freeze_prepare": "PASS: generated evidence current; component-driver inventory input digest updated for the shared presentation source",
+    "business_semantics": "PASS: money=6 status=20 temporal=4 empty=3",
+    "boq_import_preview": "PASS: readonly projection 22 checks and BOQ request 27 checks passed",
+    "lint": "PASS: 0 errors; existing warnings only",
+    "typecheck": "PASS",
+    "ci_iteration": "PASS: 5/5 required targets, testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261108T012139Z-532938-605217410/receipt.json"
+  },
+  "next_exact_step": "Run ci.delivery.freeze.prepare, review generated evidence, commit and publish R2C to PR #840, then wait for all current-head remote gates.",
+  "id": "FE-RENDERER-02C-01-R2C",
+  "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-01-R2C.yaml",
+  "record": "docs/ops/iterations/fe_renderer_02c_01_r2c_empty_status_20261108.md"
+}

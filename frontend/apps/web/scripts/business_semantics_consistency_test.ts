@@ -212,6 +212,35 @@ assert.throws(() => presentDeclaredBusinessValue({
   },
   value: 'pending_review',
 }), { name: 'ContractGapError' }, 'sc.display.status must declare selection or char field type');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'empty_status_without_type',
+  },
+  value: null,
+  status: true,
+}), { name: 'ContractGapError' }, 'empty status values cannot hide a missing field type');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'empty_selection_status_without_projection',
+    type: 'selection',
+    componentKey: 'sc.display.status',
+  },
+  value: null,
+}), { name: 'ContractGapError' }, 'empty status values cannot hide missing selection metadata');
+assert.deepEqual(presentDeclaredBusinessValue({
+  field: {
+    name: 'empty_valid_selection_status',
+    type: 'selection',
+    componentKey: 'sc.display.status',
+    selection: statusSelection,
+  },
+  value: null,
+}), {
+  kind: 'empty',
+  text: FIELD_VALUE_EMPTY_TEXT,
+  tone: 'neutral',
+  badgeSemantic: 'default',
+}, 'a valid status declaration still renders the platform empty value');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.equal(presentCollectionKanbanCell({
@@ -284,4 +313,4 @@ assert.equal(formatProductMyWorkFact({
   display_role: 'text',
 }), FIELD_VALUE_EMPTY_TEXT);
 
-console.log('[business_semantics_consistency_test] PASS money=6 status=17 temporal=4 empty=3');
+console.log('[business_semantics_consistency_test] PASS money=6 status=20 temporal=4 empty=3');

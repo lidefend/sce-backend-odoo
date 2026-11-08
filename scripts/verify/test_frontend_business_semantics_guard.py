@@ -74,6 +74,20 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("status type identity" in failure for failure in failures))
 
+    def test_empty_status_value_cannot_bypass_contract_validation(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "const statusContract = kind === 'status'\n"
+                "    ? resolveDeclaredStatusContract(input.field)\n"
+                "    : null;",
+                "const statusContract = null;",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("precede empty-value return" in failure for failure in failures))
+
     def test_numeric_zero_empty_fails(self):
         failures = guard.validate(lambda path: source(
             path,

@@ -48,18 +48,21 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         authority,
     ):
         failures.append("selection-backed status does not fail closed when selection metadata is missing")
-    if not re.search(
-        r"if \(kind === 'status'\)\s*\{\s*"
-        r"const key = selectionValue\(input\.value\);\s*"
-        r"const statusType = declaredBusinessFieldType\(input\.field\);",
-        authority,
-    ):
-        failures.append("status presentation does not resolve its declared field type")
+    if "function resolveDeclaredStatusContract(" not in authority:
+        failures.append("status presentation does not resolve its declared field contract")
     if not re.search(
         r"if \(statusType !== 'selection' && statusType !== 'char'\)",
         authority,
     ):
         failures.append("status type identity must be explicitly selection or char")
+    if not re.search(
+        r"const statusContract = kind === 'status'\s*"
+        r"\? resolveDeclaredStatusContract\(input\.field\)\s*"
+        r": null;\s*"
+        r"if \(isEmptyFieldValue\(input\.value\)\)",
+        authority,
+    ):
+        failures.append("status declaration validation must precede empty-value return")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 

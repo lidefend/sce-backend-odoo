@@ -159,6 +159,29 @@ function selectionValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function resolveDeclaredStatusContract(field: DeclaredBusinessField): {
+  statusType: 'selection' | 'char';
+  selection: Array<{ value: string; label: string }>;
+} {
+  const statusType = declaredBusinessFieldType(field);
+  if (statusType !== 'selection' && statusType !== 'char') {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.status.type`,
+      requiredDeclarationLayer: 'P0:smart_core:field_type',
+    }, `状态字段 ${field.name || field.componentKey || '(unknown)'} 缺少 selection 或 char 类型声明`);
+  }
+  const selection = normalizedSelection(field);
+  if (statusType === 'selection' && !selection.length) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.selection`,
+      requiredDeclarationLayer: 'P0:smart_core:field_selection_projection',
+    }, `状态字段 ${field.name || field.componentKey || '(unknown)'} 缺少有效选择项投影`);
+  }
+  return { statusType, selection };
+}
+
 function declaredBusinessFieldType(field: DeclaredBusinessField): ReturnType<typeof normalizeFieldType> {
   const nativeType = normalizeFieldType(field);
   if (nativeType !== 'unknown') return nativeType;
@@ -192,6 +215,9 @@ export function presentDeclaredBusinessValue(input: {
 }): DeclaredBusinessValuePresentation {
   const emptyText = input.emptyText ?? FIELD_VALUE_EMPTY_TEXT;
   const kind = declaredBusinessValueKind(input.field, input.status);
+  const statusContract = kind === 'status'
+    ? resolveDeclaredStatusContract(input.field)
+    : null;
   if (isEmptyFieldValue(input.value)) {
     return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
   }
@@ -220,22 +246,7 @@ export function presentDeclaredBusinessValue(input: {
   }
   if (kind === 'status') {
     const key = selectionValue(input.value);
-    const statusType = declaredBusinessFieldType(input.field);
-    if (statusType !== 'selection' && statusType !== 'char') {
-      throw contractGapError({
-        kind: 'contract_defect',
-        missing: `field.${input.field.name || '(unknown)'}.status.type`,
-        requiredDeclarationLayer: 'P0:smart_core:field_type',
-      }, `状态字段 ${input.field.name || input.field.componentKey || '(unknown)'} 缺少 selection 或 char 类型声明`);
-    }
-    const selection = normalizedSelection(input.field);
-    if (statusType === 'selection' && !selection.length) {
-      throw contractGapError({
-        kind: 'contract_defect',
-        missing: `field.${input.field.name || '(unknown)'}.selection`,
-        requiredDeclarationLayer: 'P0:smart_core:field_selection_projection',
-      }, `状态字段 ${input.field.name || input.field.componentKey || '(unknown)'} 缺少有效选择项投影`);
-    }
+    const selection = statusContract?.selection ?? [];
     const presentation = resolveCollectionStatusPresentation({
       value: input.value,
       ...(selection.length ? { selection } : {}),
