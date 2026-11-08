@@ -76,6 +76,31 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["frontend/apps/web/src/app/presentation/boqImportPreview.ts"]),
         )
 
+    def test_navigation_and_release_evidence_tools_select_their_units(self) -> None:
+        for path in (
+            "config/frontend/authoritative_navigation.json",
+            "scripts/verify/frontend_navigation_audit.mjs",
+            "scripts/verify/frontend_navigation_audit.test.mjs",
+            "scripts/verify/frontend_release_navigation_policy_guard.py",
+            "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+            "scripts/verify/frontend_release_audit.py",
+            "scripts/verify/test_frontend_release_audit.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.navigation_policy.unit"],
+                )
+        for path in (
+            "scripts/release/frontend_release_evidence.py",
+            "scripts/verify/test_frontend_release_evidence_bundle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.evidence_bundle.unit"],
+                )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

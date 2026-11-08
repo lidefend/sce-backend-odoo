@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-PAGE-IDENTITY-01
+  title: 定时 CI 页面身份导航声明同步
+  status: verification_pending
+  formal_product_layer: P4 ops delivery tool
+  layer_target: scheduled frontend page-identity audit declaration and release evidence count
+  module: authoritative navigation browser surface and frontend release evidence
+  standard_vs_user_specific: acceptance_and_release_verification_standard
+  why_here: >
+    定时 CI 使用现有验收 fixture 的真实可见导航。PR #794 切换为 capability discovery
+    后，浏览器审计声明和 release evidence 汇总口径需要同步；该规则只属于 P4 CI 验证工具。
+  why_not_elsewhere: >
+    不放宽运行态权限、不修改后端菜单持组、不改变产品导航、不改变页面身份断言。
+    浏览器审计仍要求声明身份与运行时身份精确相等。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/SCHEDULED-CI-PAGE-IDENTITY-01.yaml
+      - .agent/runs/SCHEDULED-CI-PAGE-IDENTITY-01/run.json
+      - docs/ops/iterations/scheduled_ci_page_identity_20261108.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - config/frontend/authoritative_navigation.json
+      - scripts/release/frontend_release_evidence.py
+      - scripts/verify/test_frontend_release_evidence_bundle.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - make/frontend.mk
+    runtime: scheduled frontend release audit on main@5d184f483 and isolated sc_frontend_acceptance
+  objective: >
+    让 scheduled full lane 的 browser audit 声明与当前真实可见角色导航一致，
+    并让 release evidence 使用同一个 browser audit 计数面，同时保持精确、fail-closed 比较。
+  acceptance:
+    - 四个角色 browser_leaf_keys 与 scheduled navigation-report 的真实可见集合一致
+    - full leaf_keys 包含全部 browser audit 身份
+    - navigation audit 继续拒绝 missing、unexpected、duplicate 和 invalid 身份
+    - release evidence 汇总与 browser_expected_count 使用同一口径
+    - navigation policy guard、release unit、Lint/Typecheck 和 ci.local.iteration 通过
+  results:
+    declaration_sync: PASS
+    browser_surface: 63
+    navigation_policy: PASS
+    release_evidence: PASS
+    planner_coverage: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交并推送到 PR #840，再派发 exact-head candidate full lane 验证 scheduled 车道修复
+  exclusions:
+    - acl_or_record_rule_change
+    - production_menu_change
+    - role_surface_policy_change
+    - page_identity_assertion_relaxation
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退导航声明同步与 release evidence browser-count 口径；不修改后端角色策略、
+    验收 fixture 或任何生产导航授权。

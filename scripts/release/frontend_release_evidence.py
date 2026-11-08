@@ -61,11 +61,18 @@ def authoritative_navigation_total() -> int:
     roles = policy.get("roles") or {}
     total = 0
     for role, row in roles.items():
-        leaf_keys = (row or {}).get("leaf_keys") or []
-        count = int((row or {}).get("expected_count") or 0)
+        row = row or {}
+        leaf_keys = row.get("leaf_keys") or []
+        count = int(row.get("expected_count") or 0)
+        browser_leaf_keys = row.get("browser_leaf_keys") or leaf_keys
+        browser_count = int(row.get("browser_expected_count") or 0)
         if count <= 0 or count != len(leaf_keys):
             fail(f"AUTHORITATIVE_NAVIGATION_POLICY_INVALID:{role}")
-        total += count
+        if browser_count <= 0 or browser_count != len(browser_leaf_keys):
+            fail(f"AUTHORITATIVE_BROWSER_NAVIGATION_POLICY_INVALID:{role}")
+        if not set(browser_leaf_keys).issubset(set(leaf_keys)):
+            fail(f"AUTHORITATIVE_BROWSER_NAVIGATION_NOT_POLICY_SUBSET:{role}")
+        total += browser_count
     if total <= 0:
         fail("AUTHORITATIVE_NAVIGATION_POLICY_EMPTY")
     return total

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "88558bce9df0009749546f457b3a8a4a844cfb35",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-PAGE-IDENTITY-01.yaml",
+    ".agent/runs/SCHEDULED-CI-PAGE-IDENTITY-01/run.json",
+    "docs/ops/iterations/scheduled_ci_page_identity_20261108.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "config/frontend/authoritative_navigation.json",
+    "scripts/release/frontend_release_evidence.py",
+    "scripts/verify/test_frontend_release_evidence_bundle.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "GitHub scheduled run evidence 42419449670 plus existing local release verification tools"
+  },
+  "checks": {
+    "navigation_policy": {
+      "target": "verify.frontend.navigation_policy.unit",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.test.mjs",
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "evidence_bundle": {
+      "target": "verify.frontend.evidence_bundle.unit",
+      "inputs": [
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+        "config/frontend/authoritative_navigation.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_unit": {
+      "target": "verify.frontend.release.unit",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.test.mjs",
+        "scripts/verify/test_frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "root_cause": "baseline_evidence_defect: PR #794 enabled discover_installed_capabilities, expanding scheduled role-visible navigation to 63 identities while authoritative_navigation retained the old 33 browser audit surface",
+    "consumer_defect": "release evidence summed full leaf_keys while navigation report used browser_leaf_keys",
+    "declaration_sync": "PASS: finance 28, owner 13, pm 19, project member 3; total browser audit surface 63; full release keys retained and extended by union",
+    "navigation_policy": "PASS: role surface guard 16 tests; release navigation policy 18 tests; navigation audit 31 tests; exact missing/unexpected/duplicate/invalid checks remain",
+    "release_evidence": "PASS: 12 tests; authoritative navigation total now uses browser_leaf_keys and resolves to 63",
+    "planner_coverage": "PASS: 80 tests; authoritative_navigation and frontend release evidence paths route to non-candidate navigation/evidence unit targets",
+    "ci_iteration": "PASS: 5/5 required targets, testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261108T003125Z-265768-222379487/receipt.json"
+  },
+  "next_exact_step": "Commit and push the CI declaration fix to PR #840, then dispatch the exact-head candidate full lane.",
+  "id": "SCHEDULED-CI-PAGE-IDENTITY-01",
+  "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-PAGE-IDENTITY-01.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_page_identity_20261108.md"
+}

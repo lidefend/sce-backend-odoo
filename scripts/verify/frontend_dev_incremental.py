@@ -613,6 +613,23 @@ RULES = (
     ), (
         "verify.verification.lane_coverage",
     )),
+    Rule((
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.test.mjs",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+    ), (
+        "verify.frontend.navigation_policy.unit",
+    )),
+    Rule((
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+    ), (
+        "verify.frontend.evidence_bundle.unit",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
