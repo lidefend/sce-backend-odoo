@@ -121,6 +121,7 @@ goal:
     button_adapter: PASS
     button_compile_time_witness: PASS
     button_behavior: PASS
+    provider_real_button_chain: PASS
     adapter_bundle_boundary: PASS
     adapter_guard: PASS
     lint: PASS

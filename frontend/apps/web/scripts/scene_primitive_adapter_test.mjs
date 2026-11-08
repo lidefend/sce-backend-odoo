@@ -12,11 +12,13 @@ const root = process.cwd();
 const behaviorMode = process.argv.includes('--behavior');
 const runtimeFile = path.join(root, '.runtime/scene-primitive-adapter-test.mjs');
 const buttonFile = `${root}/frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue`;
+const adapterFile = `${root}/frontend/apps/web/src/components/design-system/scene-adapter/scenePrimitiveAdapter.ts`;
 
 const harness = behaviorMode ? `
 import { createApp, h, nextTick, ref } from 'vue';
-import { ScenePrimitiveProvider } from '@sc/ui/primitive-port/provider';
+import { ScenePrimitiveProvider, useScenePrimitiveContext } from '@sc/ui/primitive-port/provider';
 import ScSceneButton from ${JSON.stringify(buttonFile)};
+import { scenePrimitiveAdapter } from ${JSON.stringify(adapterFile)};
 
 const component = () => null;
 const contract = (primitive, capabilities) => ({ primitive, portVersion: 1, capabilities });
@@ -33,6 +35,10 @@ const invalidPrimitives = {
   ...primitives,
   Input: { ...primitives.Input, contract: contract('Input', ['value', 'change', 'focus', 'blur', 'keyboard']) },
 };
+const realButtonPrimitives = {
+  ...primitives,
+  Button: scenePrimitiveAdapter.Button,
+};
 
 window.scenePrimitiveLog = [];
 const record = (kind, event) => window.scenePrimitiveLog.push({
@@ -41,6 +47,17 @@ const record = (kind, event) => window.scenePrimitiveLog.push({
   eventType: event.nativeEvent?.type || null,
   trusted: event.nativeEvent?.isTrusted ?? null,
 });
+const ProviderButtonConsumer = {
+  setup() {
+    const context = useScenePrimitiveContext();
+    return () => h(context.primitives.Button.component, {
+      id: 'pointer-button',
+      onActivate: event => record('activate', event),
+      onFocus: event => record('focus', event),
+      onBlur: event => record('blur', event),
+    }, () => 'Pointer');
+  },
+};
 
 const Host = {
   setup() {
@@ -54,15 +71,10 @@ const Host = {
       pointerButton.value.focus(options);
       await nextTick();
     };
-    return () => h(ScenePrimitiveProvider, { primitives, density: 'cozy' }, {
+    return () => h(ScenePrimitiveProvider, { primitives: realButtonPrimitives, density: 'cozy' }, {
       default: () => h('div', [
-        h(ScSceneButton, {
-          id: 'pointer-button',
-          ref: pointerButton,
-          onActivate: event => record('activate', event),
-          onFocus: event => record('focus', event),
-          onBlur: event => record('blur', event),
-        }, () => 'Pointer'),
+        h(ProviderButtonConsumer),
+        h(ScSceneButton, { ref: pointerButton, style: 'display:none' }),
         h(ScSceneButton, {
           id: 'enter-button',
           onActivate: event => record('activate', event),
@@ -92,7 +104,7 @@ const Host = {
           onActivate: event => record('activate', event),
         }, () => ''),
         h(ScenePrimitiveProvider, {
-          primitives: primitivesBroken.value ? invalidPrimitives : primitives,
+          primitives: primitivesBroken.value ? invalidPrimitives : realButtonPrimitives,
         }, {
           default: () => h('div', { id: 'dynamic-consumer' }, 'Dynamic'),
         }),

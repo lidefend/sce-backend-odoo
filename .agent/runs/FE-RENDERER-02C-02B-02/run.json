@@ -278,6 +278,7 @@
     "button_adapter": "PASS: real ScSceneButton wraps ScButton; it preserves native events, maps pointer/keyboard/programmatic activation, guards disabled/loading, projects accessibleLabel and exposes focus()",
     "button_compile_time_witness": "PASS: vue-tsc strict compiled the actual SFC against PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots, Button>; wrong identity fails with @ts-expect-error",
     "button_behavior": "PASS: Chromium 147.0.7727.15 ran 20 dynamic checks with 0 console errors and 0 network requests; pointer/Enter/Space each activate once, programmatic is classified separately, disabled/loading activate zero times, component-ref focus({preventScroll}) reaches the native focus target, focus/blur and ARIA are real DOM outcomes",
+    "provider_real_button_chain": "PASS: scenePrimitiveAdapter.Button is injected through ScenePrimitiveProvider, read from context by a consumer, mounted as ScSceneButton, and activates from the browser",
     "scene_primitive_adapter_unit": "PASS: 6 guard tests, 5 runtime/SSR assertions, real-SFC strict typecheck, and bundle guard; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/scene_primitive_adapter_unit.log",
     "scene_primitive_contract_behavior": "PASS: 20 browser assertions; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/scene_primitive_contract_behavior.log",
     "adapter_guard": "PASS: scene-adapter imports are restricted to ScButton, Vue and @sc/ui/primitive-port; vendor/path/vendor-cast escapes fail; bundle excludes UI Scene components and product pages",
