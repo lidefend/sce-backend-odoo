@@ -196,7 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
-| 858 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
+| 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |

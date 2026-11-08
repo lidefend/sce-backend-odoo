@@ -47,6 +47,7 @@ goal:
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/business_entry_matrix_browser.mjs
+      - scripts/verify/record_relation_roundtrip_acceptance.js
       - scripts/verify/frontend_scene_primitive_adapter_guard.py
       - scripts/verify/test_frontend_action_view_page_actions_guard.py
       - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
