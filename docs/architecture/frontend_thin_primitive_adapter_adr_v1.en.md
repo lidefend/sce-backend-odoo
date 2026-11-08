@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A: Thin Primitive Adapter Architecture Decision
 
-- Status: owner direction accepted; pending independent architecture review. This ADR does not authorize product-code migration.
+- Status: owner direction accepted; revised after the first independent architecture review and pending re-review/freeze. This ADR does not authorize product-code migration.
 - Audit baseline: `c8be18bc26cb262a30764a53b9d0765f646427aa`
 - Date: 2026-11-08
 - Formal Product Layer: P0 platform kernel product
@@ -16,11 +16,14 @@ Keep the Sc Design System and `@sc/ui` as separate systems, but redefine their a
 1. The Sc Design System is the only base-control authority.
 2. `@sc/ui` owns Scene page regions, layout, and composition. It does not implement a second base-control system.
 3. `@sc/ui` defines vendor-neutral Primitive Ports required by Scene composition.
+   The protocol is exposed through the `@sc/ui/primitive-port` subpath without creating a new workspace package.
 4. The Web product runtime supplies Sc-backed adapters that map those Ports to `ScButton`, `ScInput`, `ScSelect`, `ScDateField`, `ScTextarea`, `ScTable`, and platform icons.
 5. TDesign and Browser Native are internal Sc implementation choices. They are not a second component authority selected by Scene or users.
 6. The TDesign Bridge belongs to the Web implementation boundary of the Sc Design System. Do not create an `@sc/tdesign` package in this program.
 7. `frontend/packages/design-tokens` is the only design-token source. `@sc/ui` keeps only the `compact` and `cozy` Scene-density semantics and no second color, radius, or control-height facts.
 8. Professional Scene composition such as `SceneObjectPage`, `SceneCollectionSurface`, and `SceneHierarchySurface` remains in `@sc/ui`; it is not moved into Sc or discarded.
+
+Port v1 is limited to current real consumers: Table has no selection protocol, Icon covers only the five icons actually used today, and future capabilities require an explicit v1.x extension.
 
 This ADR records the decision, target protocol, migration graph, guards, and acceptance boundaries. It changes no product code, removes no driver, and changes no runtime behavior.
 
@@ -147,6 +150,18 @@ Current duplicate facts remain:
 
 The target keeps light/dark mode and theme profiles, but profiles override semantic tokens. Scene density becomes a mapping to component tokens, not a second set of dimensions inside `@sc/ui`.
 
+Scene density maps per component rather than collapsing to one cross-component pixel value:
+
+| Scene semantic | Sc authority token / rule |
+| --- | --- |
+| `compact` | `--sc-component-button-height-md`, `--sc-component-input-form-height`, `--sc-component-input-height-md`, `--sc-component-table-row-height-compact` |
+| `cozy` | `--sc-component-button-height-lg`, `--sc-component-input-height-lg`, `--sc-component-table-row-height` |
+| Mobile touch | `--sc-component-button-touch-target` takes precedence over ordinary density |
+| Focus | `--sc-semantic-focus-ring` plus component-level focus width / offset |
+| Radius | `--sc-component-button-radius`, `--sc-component-input-radius`, `--sc-component-table-radius` |
+
+`@sc/design-tokens` declares these names, units, and references. `@sc/ui` emits only density semantics and stores no `36px` / `44px` or color fallback. Theme Profile also has one authoritative input. If `profile.css` remains a runtime carrier, it must be generated from or directly consume that authority rather than storing a second copy and enforcing equality in tests.
+
 ### 3.6 Documentation and Guard Facts
 
 `docs/frontend_productization/runtime-theme-profile-switching.md` states that apps/web never mounts `SceneUiProvider`. That statement is stale because two entries currently mount it. The remaining true fact is that no apps/web caller supplies `tokenProfile`.
@@ -221,6 +236,21 @@ frontend/apps/web/src/components/design-system/
 
 Temporary legacy exports are allowed only during migration. New Scene code must not add vendor dependencies.
 
+### 4.4 Public Subpaths in `@sc/ui`
+
+No new workspace package is created, but the package API boundaries must be explicit:
+
+```text
+@sc/ui                   Scene composition aggregate
+@sc/ui/primitive-port    Port types, Provider context and protocol validation
+@sc/ui/form              Scene form composition
+@sc/ui/collection        Scene collection composition
+```
+
+`@sc/ui/primitive-port` exports only Port types, Provider Context, Adapter validation, and protocol constants. It must not load Scene page components or vendor implementations. The Web Adapter depends on this subpath and the Web-internal Sc Design System; importing the Port must not load the whole Scene entry point.
+
+The existing `@sc/ui/form` and `@sc/ui/collection` remain narrow Scene entry points. Adding the new subpath belongs to 02C-02B; this ADR does not create it.
+
 ## 5. Primitive Port v1
 
 ### 5.1 Contract Rules
@@ -230,9 +260,11 @@ Ports are stable interfaces between Scene and the platform. They are neither ali
 Mandatory rules:
 
 - The caller owns controlled values; an Adapter keeps no shadow business state.
+- v1 defines only capabilities required by current governed consumers. Table selection, unused icons, and speculative generic UI capabilities do not enter the protocol early.
 - Readonly and disabled controls emit no value changes.
 - Loading does not fabricate a successful value; a loading button does not invoke business actions.
-- Events carry the real native event whenever the platform exposes it. IME and keyboard callers must not lose event identity.
+- Events use one source wrapper. A real native event is carried whenever the platform exposes it; absence is explicit and never replaced with a fabricated `new Event()`.
+- Keyboard activation has exactly one owner. Enter/Space must not trigger the native click and a second wrapper handler.
 - Error state exposes a perceptible state plus `aria-invalid` / `aria-describedby`.
 - Text and icon-only buttons must have an accessible name.
 - Controls expose `focus()`; focusable controls emit `focus` and `blur`.
@@ -251,6 +283,13 @@ export interface PrimitiveHandle {
   focus(options?: FocusOptions): void;
 }
 
+export type PrimitiveEventSource = 'pointer' | 'keyboard' | 'programmatic';
+
+export interface PrimitiveEvent<T extends Event = Event> {
+  source: PrimitiveEventSource;
+  nativeEvent?: T;
+}
+
 export interface PrimitiveCommonProps {
   id?: string;
   name?: string;
@@ -265,11 +304,11 @@ export interface PrimitiveCommonProps {
 }
 
 export interface ControlEvents {
-  change: [value: string, event: Event];
-  focus: [value: string, event: FocusEvent];
-  blur: [value: string, event: FocusEvent];
-  keydown: [event: KeyboardEvent];
-  keyup: [event: KeyboardEvent];
+  change: [value: string, event: PrimitiveEvent];
+  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
 }
 ```
 
@@ -286,9 +325,9 @@ export interface ButtonPortProps {
 }
 
 export interface ButtonPortEmits {
-  activate: [event: MouseEvent | KeyboardEvent];
-  focus: [event: FocusEvent];
-  blur: [event: FocusEvent];
+  activate: [event: PrimitiveEvent<MouseEvent>];
+  focus: [event: PrimitiveEvent<FocusEvent>];
+  blur: [event: PrimitiveEvent<FocusEvent>];
 }
 
 export interface ButtonPortSlots {
@@ -299,6 +338,8 @@ export interface ButtonPortSlots {
 Requirements:
 
 - Enter and Space activate; disabled or loading does not activate.
+- A native button click produced by the keyboard remains a `MouseEvent`; mark its source as `keyboard`. Do not mislabel the event type as `KeyboardEvent`.
+- Programmatic activation may omit `nativeEvent`; a real click must be preserved. SceneButton and ScButton must not add duplicate activation handlers for the same key.
 - Icon-only or textless buttons require `accessibleLabel`.
 - Loading exposes a busy state and readable loading text.
 - Product action regions use `ScButton` directly. `SceneButton` remains only as a thin Scene composition wrapper.
@@ -307,31 +348,22 @@ Requirements:
 
 ```ts
 export interface InputPortProps extends PrimitiveCommonProps {
-  value: string;
-  type?: 'text' | 'search' | 'number' | 'email' | 'tel' | 'url' | 'password';
+  modelValue: string;
+  type?: 'text' | 'search' | 'number';
   inputMode?: 'text' | 'decimal' | 'numeric';
   placeholder?: string;
-  autocomplete?: string;
-  min?: string | number;
-  max?: string | number;
-  step?: string | number;
-  maxLength?: number;
 }
 
 export interface InputPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  input: [value: string, event: Event];
-  compositionstart: [event: CompositionEvent];
-  compositionend: [event: CompositionEvent];
+  input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
 }
 
-export interface InputPortSlots {
-  prefix?(): unknown;
-  suffix?(): unknown;
-}
 ```
 
-Requirements include real IME events, no value changes while readonly/disabled/loading, and no currency or precision in InputPort.
+Requirements include real IME events, no value changes while readonly/disabled/loading, and no currency or precision in InputPort. v1 defines no prefix/suffix slots; help, source, and read-only facts are composed by Scene through labels, help, and ARIA associations rather than business decoration inside the base control. `min`, `max`, `step`, autocomplete, and length constraints join only as v1.x optional capabilities when a real Scene consumer exists; v1 does not copy the complete ScInput prop surface.
 
 ### 5.5 SelectPort
 
@@ -343,7 +375,7 @@ export interface SelectPortOption {
 }
 
 export interface SelectPortProps extends PrimitiveCommonProps {
-  value: string;
+  modelValue: string;
   options: readonly SelectPortOption[];
   placeholder?: string;
   filterable?: boolean;
@@ -352,8 +384,8 @@ export interface SelectPortProps extends PrimitiveCommonProps {
 
 export interface SelectPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  search: [query: string];
-  popupVisibleChange: [event: { visible: boolean; trigger: string }];
+  search: [query: string, event: PrimitiveEvent<InputEvent>];
+  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
 }
 ```
 
@@ -363,24 +395,33 @@ Requirements include accessible naming, expanded state, error/description associ
 
 ```ts
 export interface DateFieldPortProps extends PrimitiveCommonProps {
-  value: string;
-  format: 'YYYY-MM-DD' | 'YYYY-MM-DD HH:mm:ss';
+  modelValue: CanonicalDateValue;
   placeholder?: string;
-  clearable?: boolean;
 }
 
-export interface DateFieldPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
+export type CanonicalDateValue =
+  | { precision: 'date'; value: string }
+  | { precision: 'datetime'; value: string };
+
+export interface DateFieldPortEmits {
+  'update:modelValue': [value: CanonicalDateValue];
+  change: [value: CanonicalDateValue, event: PrimitiveEvent];
+  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
 }
 ```
 
-`format` defines the value protocol, not display copy. The current `ScDateField` lacks change/focus/blur events and must be corrected before it satisfies this Port.
+`value` must already be a canonical date or datetime. Contract V2 and ScDateField declare the exact string representation. The Port must not infer a user timezone or format display text. The current SceneFieldKind produces only `precision='date'` in v1; `datetime` is represented by the protocol but its control capability is enabled only when a real consumer appears.
+
+The current `ScDateField` lacks change/focus/blur events and must be corrected before it satisfies this Port.
 
 ### 5.7 TextareaPort
 
 ```ts
 export interface TextareaPortProps extends PrimitiveCommonProps {
-  value: string;
+  modelValue: string;
   placeholder?: string;
   rows?: number;
   maxRows?: number;
@@ -388,7 +429,7 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
 
 export interface TextareaPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  input: [value: string, event: Event];
+  input: [value: string, event: PrimitiveEvent];
 }
 ```
 
@@ -415,31 +456,28 @@ export interface TablePortProps<Row extends TablePortRow> {
   loading?: boolean;
   emptyText?: string;
   interactiveRows?: boolean;
-  selectionMode?: 'none' | 'single' | 'multiple';
-  selectedRowKeys?: readonly (string | number)[];
   accessibleLabel: string;
 }
 
 export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate: [row: Row, event: Event];
-  selectionChange: [keys: Array<string | number>, event: Event];
+  rowActivate: [row: Row, event: PrimitiveEvent<MouseEvent>];
 }
 
-export interface TablePortSlots<Row extends TablePortRow> {
-  topContent?(): unknown;
-  empty?(): unknown;
-  cell?(props: { row: Row; column: TablePortColumn }): unknown;
-}
 ```
 
-Row activation and selection remain distinct. Interactive rows need keyboard activation and accessible names. The horizontal scroll region must not swallow focus. Empty text comes from the platform.
+v1 covers the current governed readonly collection and row navigation only. It does not define `selectionMode`, `selectedRowKeys`, or `selectionChange`. A real selectable-collection consumer can add selection through an explicit v1.x optional extension; TDesign support alone is not a reason to predefine it.
+
+Interactive rows need keyboard activation and accessible names. The horizontal scroll region must not swallow focus. Empty text comes from the platform. v1 defines no custom table cell or top-content slots; Scene headers and relation composition stay in Scene, and slots are added only when a real consumer requires them.
 
 ### 5.9 IconPort
 
 ```ts
 export type SceneIconName =
-  | 'check' | 'close' | 'chevron-down' | 'chevron-right'
-  | 'file' | 'folder' | 'refresh' | 'search' | 'user';
+  | 'check'
+  | 'close'
+  | 'chevron-down'
+  | 'chevron-right'
+  | 'file';
 
 export interface IconPortProps {
   name: SceneIconName;
@@ -450,6 +488,18 @@ export interface IconPortProps {
 ```
 
 Scene uses semantic icon names. `decorative=true` hides the icon from assistive technology; non-decorative icons require a label. The Web Icon Adapter maps names to `ScIcon`.
+
+Actual Scene inventory:
+
+| Current vendor symbol | Semantic icon | Current use |
+| --- | --- | --- |
+| `TDesignCheckIcon` | `check` | `SceneReviewPanel` |
+| `TDesignCloseIcon` | `close` | `SceneObjectPage`, `SceneReviewPanel`, `SceneWorkspaceHeader` |
+| `TDesignChevronDownIcon` | `chevron-down` | `SceneHierarchySurface` |
+| `TDesignChevronRightIcon` | `chevron-right` | `SceneHierarchySurface` |
+| `TDesignFileIcon` | `file` | `SceneHierarchySurface` |
+
+The 49 vendor exports in `@sc/ui/icons` are not the migration scope for this Port. Migrate only these five real icons; any other icon follows its own consumer-driven review.
 
 ### 5.10 Adapter Injection
 
@@ -468,11 +518,11 @@ export interface PrimitiveBinding<Props, Emits, Slots> {
 
 export interface ScenePrimitiveAdapter {
   Button: PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots>;
-  Input: PrimitiveBinding<InputPortProps, InputPortEmits, InputPortSlots>;
+  Input: PrimitiveBinding<InputPortProps, InputPortEmits, Record<never, never>>;
   Select: PrimitiveBinding<SelectPortProps, SelectPortEmits, Record<never, never>>;
   DateField: PrimitiveBinding<DateFieldPortProps, DateFieldPortEmits, Record<never, never>>;
   Textarea: PrimitiveBinding<TextareaPortProps, TextareaPortEmits, Record<never, never>>;
-  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, TablePortSlots<TablePortRow>>;
+  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, Record<never, never>>;
   Icon: PrimitiveBinding<IconPortProps, Record<never, never>, Record<never, never>>;
 }
 
@@ -484,7 +534,30 @@ export interface SceneCompositionContext {
 
 Each `PrimitiveBinding.component` must use Vue `DefineComponent`, `ComponentProps` / `ComponentEmits` / `SlotsType` assertions, or equivalent typed machinery in 02C-02B to prove conformance with `contract`. The `contract` is also the runtime declaration consumed by component contract tests; it cannot exist only in documentation.
 
-### 5.11 Target Provider
+### 5.11 Adapter Failure Strategy
+
+The Provider validates required bindings and Port capabilities at injection. Failure is fail-closed:
+
+```ts
+export type ScenePrimitiveName = keyof ScenePrimitiveAdapter;
+
+export interface ScenePrimitiveContractErrorDetail {
+  code: 'SCENE_PRIMITIVE_CONTRACT_ERROR';
+  primitive: ScenePrimitiveName;
+  capability: string;
+  detail: string;
+}
+```
+
+Rules:
+
+- A missing or nonconforming required v1 Primitive, or incomplete Provider configuration, renders an explicit Adapter Contract Error and records the Primitive and capability.
+- A non-required capability may degrade only when the Port explicitly declares it optional. The degradation is visible and diagnosable.
+- Never fall back to `sc-native`, a Scene-local HTML control, or another base-control implementation.
+- The Provider loads no asynchronous vendor driver and must not preserve the old “automatic recovery after driver load failure” behavior.
+- `@sc/ui/primitive-port` exports one validation function. Tests cover missing bindings, wrong Props/Emits, missing capabilities, and diagnostic identity.
+
+### 5.12 Target Provider
 
 ```ts
 interface SceneUiProviderProps {
@@ -496,6 +569,33 @@ interface SceneUiProviderProps {
 
 The Provider injects the Primitive Adapter, density, and Scene composition context. It no longer chooses a vendor Kit, loads a vendor Driver, switches to a second control implementation, or owns colors, radii, heights, or business copy.
 
+### 5.13 Editable Values Versus Read-only Presentation
+
+A unified business-presentation authority does not mean every field receives formatted text. Keep two chains:
+
+```text
+Editable field
+Contract V2
+  -> canonical editable value
+  -> SceneField editable modelValue
+  -> Primitive Port
+  -> ScInput / ScSelect / ScDateField / ScTextarea
+
+Read-only business fact
+Contract V2
+  -> businessValuePresentation
+  -> already-interpreted display text
+  -> SceneObjectPage / SceneCollectionSurface
+```
+
+Rules:
+
+- Editable monetary values use canonical numeric or input values without `CNY`, grouping separators, or display precision.
+- Editable dates use canonical date/datetime values and never receive locale-formatted display strings.
+- Read-only money, status, dates, and empty values consume `businessValuePresentation.ts`.
+- The current `SceneField` structure, which carries both editable and displayed values, must be split or explicitly classified in 02C-02-C2. `SceneFieldControl` must not guess which kind it received.
+- Table cells are read-only presentation facts; row activation does not change that boundary.
+
 ## 6. Component and Dependency Migration
 
 ```text
@@ -504,13 +604,16 @@ The Provider injects the Primitive Adapter, density, and Scene composition conte
       v
 02C-02B  Primitive Port v1 + Sc Adapter + Conformance Tests
       |
-      +----> 02C-02C-1  Product direct actions: SceneButton -> ScButton
+      v
+02C-02C-1  Button sample
       |
-      +----> 02C-02C-2  SceneFieldControl -> ScInput/Select/Date/Textarea
+      v
+02C-02C-2  Form-field sample
       |
-      +----> 02C-02C-3  SceneRelationTable -> ScTable
-                              |
-                              v
+      v
+02C-02C-3  Table and Icon sample
+      |
+      v
 02C-02D  Driver / Kit / Preference / Vendor / Token / Guard retirement
 ```
 
@@ -520,18 +623,35 @@ Deliver:
 
 - Port types, Provider injection, and Adapter contract tests in `@sc/ui`.
 - A thin Web `createScScenePrimitiveAdapter()`.
+- The `@sc/ui/primitive-port` subpath, unified PrimitiveEvent, Adapter validation, and fail-closed error surface.
 - A gap list and minimal corrections for ScDateField, ScSelect, and other conformance gaps.
 - A feature flag for the new path; no broad consumer migration.
 
-### 02C-02C
+### 02C-02C-1
 
-Three production samples:
+Migrate Button only:
 
-1. `SceneButton -> ScButton`, including direct-action cleanup in `CanonicalActionBar` and `ContractFormDriverHost`.
-2. `SceneFieldControl -> ScInput / ScSelect / ScDateField / ScTextarea`, retaining the SceneField DTO.
-3. `SceneRelationTable -> ScTable`, retaining Scene table composition and row-navigation semantics.
+- Product actions use `ScButton` directly, including cleanup in `CanonicalActionBar` and `ContractFormDriverHost`.
+- `SceneButton` uses ButtonPort to adapt `ScButton`.
+- Unify click / activate / loading / keyboard and prove Enter/Space activates exactly once.
 
-Each sample must be independently switchable, verifiable, and reversible.
+### 02C-02C-2
+
+Migrate form fields only:
+
+- `SceneFieldControl -> ScInput / ScSelect / ScDateField / ScTextarea`, retaining the SceneField DTO.
+- Separate canonical editable values from read-only display facts.
+- Prove the same Contract V2 field through ordinary FormSection and SceneFieldControl has equal values, events, errors, focus, keyboard behavior, and assistive descriptions.
+
+### 02C-02C-3
+
+Migrate Table and Icon last:
+
+- `SceneRelationTable -> ScTable`, retaining Scene table layout and row navigation.
+- Migrate only the five actually used icons to the Semantic Icon Adapter.
+- Add no Table selection protocol and do not migrate all 49 vendor icons.
+
+The samples execute in C1 -> C2 -> C3 order. Each is independently switchable, verifiable, and reversible. Button, form, table, and icon migration must not be combined into one simultaneous batch.
 
 ### 02C-02D
 
@@ -539,7 +659,7 @@ Each sample must be independently switchable, verifiable, and reversible.
 2. Migrate all Scene controls and remove the TDesign Scene Driver.
 3. Move the TDesign and Icon Bridges into the Web Sc Design System.
 4. Remove `primitives`, `icons`, and vendor runtime dependencies from `@sc/ui`.
-5. Map Scene density to component tokens.
+5. Map Scene density per component to design-token component values, with mobile touch sizing taking precedence.
 6. Remove the Kit Registry, Native Driver, and user Kit selection.
 7. Update stale theme documentation and make guards enforce the target direction.
 
@@ -569,13 +689,16 @@ Guard changes belong to their implementation stages, not this ADR batch.
 | Capability | Assertion |
 | --- | --- |
 | Value change | `update:modelValue` / `change` match the real DOM/TDesign event |
+| Event source | `pointer` / `keyboard` / `programmatic` are accurate; a real `nativeEvent` is never lost and never fabricated |
 | readonly / disabled | No value or business activation; visual and assistive states are explicit |
 | Error state | `status=error`, `aria-invalid=true`, and error text linked through `aria-describedby` |
 | Focus / Blur | Adapter exposes `focus()` and preserves event order in both directions |
 | Keyboard | Button Enter/Space; Select open/select/Escape; Date entry/popup; Table row activation |
-| Slots/help | Button content; input prefix/suffix; table top/cell/empty are preserved |
+| Slots/help | Button default slot; Input help/source are composed by Scene and linked by label/ARIA; table empty state uses `emptyText` |
 | IME | `compositionstart` / `compositionend` preserve real events and committed text |
 | Accessibility | Names, roles, states, scroll-region behavior, and icon hiding match |
+| Adapter failure | Missing required Primitive or capability shows a precise error and records identity with no silent fallback |
+| Value semantics | Editable fields receive only canonical values; read-only facts receive only platform-interpreted display values |
 
 ### 8.2 Same Field Through Two Paths
 
@@ -608,11 +731,28 @@ This is not a screenshot-only comparison. It checks DOM events, ARIA, focus orde
 
 This ADR batch requires only documentation and `.agent` metadata checks. Product L2-L4 are not applicable.
 
+### 8.4 Formal Architecture Hard Gates
+
+| Acceptance area | Passing standard |
+| --- | --- |
+| Dependency direction | Sc does not depend on `@sc/ui` |
+| Vendor isolation | `@sc/ui` does not depend on TDesign |
+| Component authority | Scene base controls consume Sc through Ports |
+| Business semantics | Scene formats neither editable values nor read-only business values |
+| Tokens | No second color, radius, focus, or sizing authority |
+| Events | No fabricated events, lost real events, or duplicate activation |
+| Failure | Missing required Adapter capability never silently falls back |
+| Page parity | The same field behaves identically through both paths |
+| Compatibility | Contract V2 and existing business actions remain unchanged |
+| Engineering reduction | Old Drivers, preferences, and vendor dependencies can retire incrementally |
+
+These standards become Port Conformance, static guard, page-parity, and final integration gates. Screenshots or one green check cannot replace them.
+
 ## 9. Rollback and Compatibility
 
 1. This ADR rolls back by deleting the documents and agent metadata; runtime is unaffected.
 2. Until consumers migrate, 02C-02B Ports and Adapters have no behavioral effect.
-3. Each 02C-02C sample is enabled independently under `scene_primitive_adapter_v1`; a failed sample rolls back without changing Contract V2 or data.
+3. Each 02C-02-C1/C2/C3 sample is enabled independently under `scene_primitive_adapter_v1`; a failed sample rolls back without changing Contract V2 or data.
 4. Keep the old Kit Driver until 02C-02D completes. After deletion, rollback restores a reviewed prior version and does not reintroduce user Kit selection.
 5. Stop new `scene_ui_driver` writes and drain old values. Do not delete unaudited data.
 6. Temporary TDesign compatibility exports are allowed during migration, but new code uses the Web-internal Bridge.
@@ -635,11 +775,15 @@ This ADR batch requires only documentation and `.agent` metadata checks. Product
 
 1. `ScDateField` does not yet expose enough events for DateFieldPort.
 2. `ScSelect` lacks a complete focus/blur/native change contract. An Adapter must not fabricate events.
-3. `ScTextarea` and `ScTable` currently rely mainly on TDesign; Native fallback cannot be assumed from documentation.
-4. `SceneButton` has both `activate` and passthrough `click` consumption. Activation semantics must converge before migration.
-5. Forty-nine icon exports and 61 vendor exports currently coexist with Scene composition. Dependency removal must be staged to avoid breaking the build.
-6. Existing guards and theme documentation preserve stale facts and must change with their owning migration stage.
-7. This batch is a static read-only audit. It does not prove browser interaction, visual, keyboard, or screen-reader equivalence.
+3. `ScInput` and `ScTextarea` currently construct `new Event()` when event context is absent. The implementation must remove fabricated events and define explicit missing-event semantics before Port conformance.
+4. `ScTextarea` and `ScTable` currently rely mainly on TDesign; Native fallback cannot be assumed from documentation.
+5. `SceneButton` has both `activate` and passthrough `click` consumption. Activation semantics must converge and duplicate key handling must be removed before migration.
+6. `SceneField` currently combines editable and display values. Migration must split them or explicitly classify the two kinds.
+7. `@sc/ui/primitive-port` does not exist yet. Until 02C-02B creates it, the Web Adapter must not import the whole Scene aggregate to obtain protocol types.
+8. Table v1 intentionally excludes selection. A future need must trigger a real-consumer v1.x extension review.
+9. Forty-nine icon exports and 61 vendor exports currently coexist with Scene composition. Dependency removal must be staged; IconPort migrates only the five actual consumers.
+10. Existing guards and theme documentation preserve stale facts and must change with their owning migration stage.
+11. This batch is a static read-only audit. It does not prove browser interaction, visual, keyboard, or screen-reader equivalence.
 
 ## 12. Conclusion and Next Step
 
@@ -652,4 +796,4 @@ The optimization is not merely an abstraction named `PrimitiveAdapter`. It remov
 
 The target is a bounded simplification: Sc remains the base-control authority, `@sc/ui` remains Scene composition, Primitive Ports invert the dependency, the Web supplies Sc Adapters, and TDesign/Native remain internal Sc implementation choices.
 
-After independent review, start `FE-RENDERER-02C-02B` with Primitive Port v1 and the Sc Adapter. Do not migrate product components before this ADR is reviewed.
+Submit this revision for independent architecture review. After the ADR is frozen, start `FE-RENDERER-02C-02B` with Primitive Port v1, Adapter injection, and fail-closed contracts. Then migrate real consumers in C1 -> C2 -> C3 order.

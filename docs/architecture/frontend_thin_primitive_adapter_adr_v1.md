@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A：薄层 Primitive Adapter 架构裁定
 
-- 文档状态：所有者方向已裁定，等待独立架构评审；本 ADR 不授权产品代码迁移
+- 文档状态：所有者方向已裁定；已纳入首轮独立架构评审意见的协议修订版，等待复审冻结；本 ADR 不授权产品代码迁移
 - 审计基线：`c8be18bc26cb262a30764a53b9d0765f646427aa`
 - 日期：2026-11-08
 - Formal Product Layer：P0 platform kernel product
@@ -16,11 +16,14 @@
 1. Sc Design System 是唯一基础组件权威。
 2. `@sc/ui` 只承担 Scene 页面区域、布局和组合，不实现第二套基础控件。
 3. `@sc/ui` 定义由 Scene 需要、但不含 TDesign 属性的 Primitive Port。
+   协议通过 `@sc/ui/primitive-port` 子路径公开，不引入新的 workspace package。
 4. Web 产品运行时提供 Sc-backed adapter，将 Port 映射到 `ScButton`、`ScInput`、`ScSelect`、`ScDateField`、`ScTextarea`、`ScTable` 和平台图标。
 5. TDesign 与 Browser Native 是 Sc 内部可选择的实现细节，不是 Scene 或用户可选择的第二组件权威。
 6. TDesign Bridge 归属 Web 的 Sc Design System 实现边界；不新建 `@sc/tdesign` package。
 7. 设计 Token 的唯一来源是 `frontend/packages/design-tokens`；`@sc/ui` 只保留 `compact` / `cozy` 场景密度语义，不维护第二套颜色、圆角或控件高度事实。
 8. `SceneObjectPage`、`SceneCollectionSurface`、`SceneHierarchySurface` 等专业场景组合能力保留，不迁入 Sc，也不被合并掉。
+
+Port v1 严格按当前真实消费者收敛：Table 不包含选择协议，Icon 只覆盖当前实际使用的五个图标，未来能力通过显式 v1.x 扩展增加。
 
 本 ADR 只记录架构事实、目标协议、迁移图、守卫和验收边界。它不修改产品代码，不删除旧驱动，不改变运行态，也不宣称迁移完成。
 
@@ -147,6 +150,18 @@ B: SceneFieldControl / SceneButton / SceneRelationTable
 
 目标不是删除明暗 Theme 或 Theme Profile，而是让 profile 只覆盖 semantic Token，让 Scene density 成为映射到 component Token 的语义，不再在 `@sc/ui` 保存第二套设计数值。
 
+Scene density 必须按组件映射，不还原成一个跨组件统一 px 值：
+
+| 场景语义 | Sc 权威 Token / 规则 |
+| --- | --- |
+| `compact` | `--sc-component-button-height-md`、`--sc-component-input-form-height`、`--sc-component-input-height-md`、`--sc-component-table-row-height-compact` |
+| `cozy` | `--sc-component-button-height-lg`、`--sc-component-input-height-lg`、`--sc-component-table-row-height` |
+| 移动端触控 | `--sc-component-button-touch-target` 优先于普通 density |
+| Focus | `--sc-semantic-focus-ring` 加组件级 focus width / offset |
+| Radius | `--sc-component-button-radius`、`--sc-component-input-radius`、`--sc-component-table-radius` |
+
+这些 Token 的名称、单位和引用关系由 `@sc/design-tokens` 声明。`@sc/ui` 只输出 density 语义，不保存 `36px` / `44px` 或颜色 fallback。Theme Profile 也只能有一份权威输入；`profile.css` 如继续作为运行时载体，必须由该权威生成或直接消费它，不能再次手写相同值再用相等性测试维持同步。
+
 ### 3.6 文档与守卫事实
 
 `docs/frontend_productization/runtime-theme-profile-switching.md` 称 apps/web 从不挂载 `SceneUiProvider`。该陈述已过时：当前有两个受管使用入口。准确的剩余事实是“没有 apps/web 调用方传入 `tokenProfile`”，不是“Provider 未挂载”。
@@ -221,6 +236,21 @@ frontend/apps/web/src/components/design-system/
 
 迁移期允许旧导出暂时存在，但任何新 Scene 代码不得增加厂商依赖。
 
+### 4.4 `@sc/ui` 公开子路径
+
+不新建 workspace package，但必须明确 package 内部 API 边界：
+
+```text
+@sc/ui                   Scene composition aggregate
+@sc/ui/primitive-port    Port types, Provider context and protocol validation
+@sc/ui/form              Scene form composition
+@sc/ui/collection        Scene collection composition
+```
+
+`@sc/ui/primitive-port` 只能导出 Port 类型、Provider Context、Adapter 校验和协议常量，不得加载 Scene 页面组件或厂商实现。Web Adapter 只依赖该子路径和 Web 内部 Sc Design System，不因引入协议而加载整个 Scene 入口。
+
+现有 `@sc/ui/form` 和 `@sc/ui/collection` 继续作为窄场景出口。新增子路径属于 02C-02B 的实现范围，本 ADR 不创建它。
+
 ## 5. Primitive Port v1
 
 ### 5.1 协议目标
@@ -230,9 +260,11 @@ Port 是 Scene 与平台之间的稳定接口，不是 TDesign Props 的别名�
 Port v1 的强制规则：
 
 - 受控值由调用方持有；Adapter 不得维护影子业务状态。
+- v1 只定义当前真实受管消费者需要的能力；Table 选择、未使用图标和未来通用 UI 能力不提前进入协议。
 - `readonly` 和 `disabled` 控制不得发出值改变事件。
 - `loading` 不得伪造成功值；按钮不得触发业务动作。
-- 所有事件在平台能提供时必须携带真实原生事件，IME 与键盘调用方不能丢失事件身份。
+- 所有事件使用统一的来源封装；平台能提供真实原生事件时必须携带，缺失时明确为空，绝不构造假的 `new Event()`。
+- 键盘激活必须只有一个所有者，禁止 Enter/Space 同时触发控件原生 click 和包装层第二处理器。
 - 错误态必须同时提供可感知状态和 `aria-invalid` / `aria-describedby` 关联。
 - 必有或图标型按钮必须有可访问名称。
 - 控件必须暴露 `focus()`；可获得焦点的控件必须发出 `focus` / `blur`。
@@ -251,6 +283,13 @@ export interface PrimitiveHandle {
   focus(options?: FocusOptions): void;
 }
 
+export type PrimitiveEventSource = 'pointer' | 'keyboard' | 'programmatic';
+
+export interface PrimitiveEvent<T extends Event = Event> {
+  source: PrimitiveEventSource;
+  nativeEvent?: T;
+}
+
 export interface PrimitiveCommonProps {
   id?: string;
   name?: string;
@@ -265,11 +304,11 @@ export interface PrimitiveCommonProps {
 }
 
 export interface ControlEvents {
-  change: [value: string, event: Event];
-  focus: [value: string, event: FocusEvent];
-  blur: [value: string, event: FocusEvent];
-  keydown: [event: KeyboardEvent];
-  keyup: [event: KeyboardEvent];
+  change: [value: string, event: PrimitiveEvent];
+  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
 }
 ```
 
@@ -286,9 +325,9 @@ export interface ButtonPortProps {
 }
 
 export interface ButtonPortEmits {
-  activate: [event: MouseEvent | KeyboardEvent];
-  focus: [event: FocusEvent];
-  blur: [event: FocusEvent];
+  activate: [event: PrimitiveEvent<MouseEvent>];
+  focus: [event: PrimitiveEvent<FocusEvent>];
+  blur: [event: PrimitiveEvent<FocusEvent>];
 }
 
 export interface ButtonPortSlots {
@@ -299,6 +338,8 @@ export interface ButtonPortSlots {
 要求：
 
 - Enter/Space 激活；禁用或 loading 时不激活。
+- 浏览器以键盘触发的原生 button click 仍是 `MouseEvent`，用 `source='keyboard'` 标记来源；不得把类型伪装成 `KeyboardEvent`。
+- 程序化激活允许 `nativeEvent=undefined`；有真实 click 时必须保留。SceneButton 和 ScButton 不得为同一按键增加重复激活处理器。
 - 图标型或省略文本时必须提供 `accessibleLabel`。
 - `loading` 必须暴露忙碌状态和可读的加载文案。
 - Product Runtime 的操作区直接使用 `ScButton`；Scene 的 `SceneButton` 只作为组合层薄包装。
@@ -307,28 +348,19 @@ export interface ButtonPortSlots {
 
 ```ts
 export interface InputPortProps extends PrimitiveCommonProps {
-  value: string;
-  type?: 'text' | 'search' | 'number' | 'email' | 'tel' | 'url' | 'password';
+  modelValue: string;
+  type?: 'text' | 'search' | 'number';
   inputMode?: 'text' | 'decimal' | 'numeric';
   placeholder?: string;
-  autocomplete?: string;
-  min?: string | number;
-  max?: string | number;
-  step?: string | number;
-  maxLength?: number;
 }
 
 export interface InputPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  input: [value: string, event: Event];
-  compositionstart: [event: CompositionEvent];
-  compositionend: [event: CompositionEvent];
+  input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
 }
 
-export interface InputPortSlots {
-  prefix?(): unknown;
-  suffix?(): unknown;
-}
 ```
 
 要求：
@@ -336,6 +368,8 @@ export interface InputPortSlots {
 - IME `compositionend` 必须保留真实事件，Scene 不得重新推导组合文本。
 - readonly/disabled/loading 不得发出值改变。
 - 金额的币种和精度不在 InputPort 内表达。
+- v1 不定义 prefix/suffix 插槽；辅助说明、来源和只读事实由 Scene composition 通过 label、help 和 ARIA 关联组合，基础控件不承载业务装饰。
+- `min`、`max`、`step`、自动完成和长度约束只有在真实 Scene 消费者出现时以 v1.x 可选能力加入，不预先复制 ScInput 的完整 Props。
 
 ### 5.5 SelectPort
 
@@ -347,7 +381,7 @@ export interface SelectPortOption {
 }
 
 export interface SelectPortProps extends PrimitiveCommonProps {
-  value: string;
+  modelValue: string;
   options: readonly SelectPortOption[];
   placeholder?: string;
   filterable?: boolean;
@@ -356,8 +390,8 @@ export interface SelectPortProps extends PrimitiveCommonProps {
 
 export interface SelectPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  search: [query: string];
-  popupVisibleChange: [event: { visible: boolean; trigger: string }];
+  search: [query: string, event: PrimitiveEvent<InputEvent>];
+  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
 }
 ```
 
@@ -371,20 +405,29 @@ export interface SelectPortEmits extends ControlEvents {
 
 ```ts
 export interface DateFieldPortProps extends PrimitiveCommonProps {
-  value: string;
-  format: 'YYYY-MM-DD' | 'YYYY-MM-DD HH:mm:ss';
+  modelValue: CanonicalDateValue;
   placeholder?: string;
-  clearable?: boolean;
 }
 
-export interface DateFieldPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
+export type CanonicalDateValue =
+  | { precision: 'date'; value: string }
+  | { precision: 'datetime'; value: string };
+
+export interface DateFieldPortEmits {
+  'update:modelValue': [value: CanonicalDateValue];
+  change: [value: CanonicalDateValue, event: PrimitiveEvent];
+  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
 }
 ```
 
 要求：
 
-- `format` 是值协议，不是展示文案；展示文本由平台业务表达层提供。
+- `value` 必须是已规范化的日期或日期时间值；具体字符串格式由 Contract V2 规范和 ScDateField 共同声明，Port 不做时区推断或展示格式化。
+- v1 当前真实 SceneFieldKind 只产生 `precision='date'`。`datetime` 类型先由协议明确表示，只有真实消费者出现后才启用对应控件能力。
+- 展示文本由平台业务表达层提供，不能塞入日期编辑值。
 - 必须验证焦点、清空、键盘输入和弹层关闭。
 - 当前 `ScDateField` 只有 `update:modelValue`，缺少 change/focus/blur；02C-02B 必须先解决该 Conformance Gap。
 
@@ -392,7 +435,7 @@ export interface DateFieldPortEmits extends ControlEvents {
 
 ```ts
 export interface TextareaPortProps extends PrimitiveCommonProps {
-  value: string;
+  modelValue: string;
   placeholder?: string;
   rows?: number;
   maxRows?: number;
@@ -400,7 +443,7 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
 
 export interface TextareaPortEmits extends ControlEvents {
   'update:modelValue': [value: string];
-  input: [value: string, event: Event];
+  input: [value: string, event: PrimitiveEvent];
 }
 ```
 
@@ -430,36 +473,33 @@ export interface TablePortProps<Row extends TablePortRow> {
   loading?: boolean;
   emptyText?: string;
   interactiveRows?: boolean;
-  selectionMode?: 'none' | 'single' | 'multiple';
-  selectedRowKeys?: readonly (string | number)[];
   accessibleLabel: string;
 }
 
 export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate: [row: Row, event: Event];
-  selectionChange: [keys: Array<string | number>, event: Event];
+  rowActivate: [row: Row, event: PrimitiveEvent<MouseEvent>];
 }
 
-export interface TablePortSlots<Row extends TablePortRow> {
-  topContent?(): unknown;
-  empty?(): unknown;
-  cell?(props: { row: Row; column: TablePortColumn }): unknown;
-}
 ```
 
 要求：
 
-- 行激活与选择是不同动作。
+- v1 只覆盖当前受管只读集合和行导航，不定义 `selectionMode`、`selectedRowKeys` 或 `selectionChange`。
+- 如果未来出现真实的可选择集合消费者，以明确的 v1.x 可选扩展增加选择协议；不能因为 TDesign 支持就提前复制。
 - 可交互行必须支持键盘激活并保持可访问名称。
 - 水平滚动区域不能吞掉 Focus。
 - 表格空态由平台已经解释的 `emptyText` 提供，Scene 不自行写 `无`。
+- v1 不定义 Table 自定义单元格/顶栏插槽；Scene 的表头和关系组合保留在 Scene composition，只有真实消费者需要时才扩展。
 
 ### 5.9 IconPort
 
 ```ts
 export type SceneIconName =
-  | 'check' | 'close' | 'chevron-down' | 'chevron-right'
-  | 'file' | 'folder' | 'refresh' | 'search' | 'user';
+  | 'check'
+  | 'close'
+  | 'chevron-down'
+  | 'chevron-right'
+  | 'file';
 
 export interface IconPortProps {
   name: SceneIconName;
@@ -474,6 +514,18 @@ export interface IconPortProps {
 - Scene 只使用语义图标名，不导入 TDesign Icon 组件。
 - `decorative=true` 时从辅助技术隐藏；非装饰图标必须有 `label`。
 - Web Icon Adapter 将语义名映射到 `ScIcon`。
+
+实际 Scene 消费清单：
+
+| 当前厂商符号 | Semantic Icon | 当前使用位置 |
+| --- | --- | --- |
+| `TDesignCheckIcon` | `check` | `SceneReviewPanel` |
+| `TDesignCloseIcon` | `close` | `SceneObjectPage`、`SceneReviewPanel`、`SceneWorkspaceHeader` |
+| `TDesignChevronDownIcon` | `chevron-down` | `SceneHierarchySurface` |
+| `TDesignChevronRightIcon` | `chevron-right` | `SceneHierarchySurface` |
+| `TDesignFileIcon` | `file` | `SceneHierarchySurface` |
+
+`@sc/ui/icons` 的 49 个厂商导出不是本 Port 的迁移范围。只迁移上述五个真实图标；其他图标由各自消费者在真实需求出现时单独评审。
 
 ### 5.10 Adapter 注入
 
@@ -492,11 +544,11 @@ export interface PrimitiveBinding<Props, Emits, Slots> {
 
 export interface ScenePrimitiveAdapter {
   Button: PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots>;
-  Input: PrimitiveBinding<InputPortProps, InputPortEmits, InputPortSlots>;
+  Input: PrimitiveBinding<InputPortProps, InputPortEmits, Record<never, never>>;
   Select: PrimitiveBinding<SelectPortProps, SelectPortEmits, Record<never, never>>;
   DateField: PrimitiveBinding<DateFieldPortProps, DateFieldPortEmits, Record<never, never>>;
   Textarea: PrimitiveBinding<TextareaPortProps, TextareaPortEmits, Record<never, never>>;
-  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, TablePortSlots<TablePortRow>>;
+  Table: PrimitiveBinding<TablePortProps<TablePortRow>, TablePortEmits<TablePortRow>, Record<never, never>>;
   Icon: PrimitiveBinding<IconPortProps, Record<never, never>, Record<never, never>>;
 }
 
@@ -508,7 +560,30 @@ export interface SceneCompositionContext {
 
 `PrimitiveBinding.component` 的实际包装必须在 02C-02B 使用 Vue `DefineComponent`、`ComponentProps` / `ComponentEmits` / `SlotsType` 类型断言或等价机制证明其符合 `contract`，禁止退化为无类型组件字典。`contract` 同时作为组件契约测试的运行时声明，不得只存在于文档。
 
-### 5.11 Provider 目标
+### 5.11 Adapter 失败策略
+
+Provider 在注入时校验必需的 Adapter 绑定和 Port 能力。失败必须 fail closed：
+
+```ts
+export type ScenePrimitiveName = keyof ScenePrimitiveAdapter;
+
+export interface ScenePrimitiveContractErrorDetail {
+  code: 'SCENE_PRIMITIVE_CONTRACT_ERROR';
+  primitive: ScenePrimitiveName;
+  capability: string;
+  detail: string;
+}
+```
+
+规则：
+
+- v1 七个必需 Primitive 缺失、类型不合约或 Provider 配置不完整时，显示明确 Adapter Contract Error，并记录 Primitive 和能力名。
+- 非必需能力只有在 Port 明确声明为可选时才能降级；降级结果必须可见、可诊断。
+- 不允许回退到 `sc-native`、Scene 自带 HTML 控件或另一套基础组件实现。
+- Provider 不再异步加载厂商 Driver，因此也不应保留“驱动加载失败后自动恢复”的旧语义。
+- `@sc/ui/primitive-port` 暴露统一校验函数；测试必须覆盖缺失、错误 Props/Emits、错误 capability 和诊断身份。
+
+### 5.12 Provider 目标
 
 ```ts
 interface SceneUiProviderProps {
@@ -531,6 +606,33 @@ Provider 不再负责：
 - 在 Driver 失败时切换另一套基础控件。
 - 维护颜色、圆角、控件高度或业务文案。
 
+### 5.13 可编辑值与只读展示值
+
+Port 统一业务表达不等于让所有字段都接收格式化文本。必须保持两条链：
+
+```text
+可编辑字段
+Contract V2
+  -> canonical editable value
+  -> SceneField editable modelValue
+  -> Primitive Port
+  -> ScInput / ScSelect / ScDateField / ScTextarea
+
+只读业务事实
+Contract V2
+  -> businessValuePresentation
+  -> already-interpreted display text
+  -> SceneObjectPage / SceneCollectionSurface
+```
+
+硬性规则：
+
+- 可编辑金额使用规范数值或规范输入值，不带 `CNY`、千分位或展示精度。
+- 可编辑日期使用已规范化日期/日期时间值，不接收用户语言格式化后的展示字符串。
+- 只读金额、状态、日期和空值必须消费 `businessValuePresentation.ts` 的解释结果。
+- `SceneField` 当前同时承载编辑值和展示值的结构必须在 02C-02-C2 中拆分或明确字段语义；不得由 `SceneFieldControl` 猜测。
+- Table 单元格是只读展示事实；行激活不改变该边界。
+
 ## 6. 组件和依赖迁移计划
 
 ### 6.1 阶段依赖图
@@ -541,13 +643,16 @@ Provider 不再负责：
       v
 02C-02B  Primitive Port v1 + Sc Adapter + Conformance Tests
       |
-      +----> 02C-02C-1  Product direct actions: SceneButton -> ScButton
+      v
+02C-02C-1  Button 样板
       |
-      +----> 02C-02C-2  SceneFieldControl -> ScInput/Select/Date/Textarea
+      v
+02C-02C-2  表单字段样板
       |
-      +----> 02C-02C-3  SceneRelationTable -> ScTable
-                              |
-                              v
+      v
+02C-02C-3  Table 和 Icon 样板
+      |
+      v
 02C-02D  Driver / Kit / Preference / Vendor / Token / Guard 收口
 ```
 
@@ -557,6 +662,7 @@ Provider 不再负责：
 
 - `@sc/ui` Port 类型、Provider 注入和 Adapter 契约测试。
 - Web `createScScenePrimitiveAdapter()` 薄包装。
+- `@sc/ui/primitive-port` 子路径、统一 PrimitiveEvent、Adapter 校验和 fail-closed 错误面。
 - ScDateField、ScSelect 等缺失事件与可访问性能力的缺口清单和最小补齐。
 - 新旧路径 Feature Flag；不迁移全部消费者。
 
@@ -566,17 +672,33 @@ Provider 不再负责：
 - Adapter 通过类型检查和组件契约测试。
 - `@sc/ui` 不新增 apps/web 或具体 Sc Vue import。
 
-### 6.3 02C-02C
+### 6.3 02C-02C-1
 
-三个真实样板：
+只迁移 Button：
 
-1. SceneButton → ScButton；同时清理 `CanonicalActionBar` 和 `ContractFormDriverHost` 的操作区旁路。
-2. SceneFieldControl → ScInput / ScSelect / ScDateField / ScTextarea，保留 SceneField DTO。
-3. SceneRelationTable → ScTable，保留 Scene 表格组合和行导航语义。
+- Product Action 直接改用 `ScButton`，清理 `CanonicalActionBar` 和 `ContractFormDriverHost` 的操作区旁路。
+- `SceneButton` 经 ButtonPort 适配 `ScButton`。
+- 统一 click / activate / loading / keyboard，验证 Enter/Space 只激活一次。
 
-每个样板必须独立开关、独立验证、可独立回滚。通过“同一字段普通 FormSection 直用 Sc”和“SceneFieldControl 经 Port 使用 Sc”的比较矩阵。
+### 6.4 02C-02C-2
 
-### 6.4 02C-02D
+只迁移输入字段：
+
+- `SceneFieldControl → ScInput / ScSelect / ScDateField / ScTextarea`，保留 SceneField DTO。
+- 明确拆分可编辑规范值和只读展示事实。
+- 重点证明同一份 Contract V2 字段经普通 FormSection 与 SceneFieldControl 时，值、事件、错误、焦点、键盘和辅助说明一致。
+
+### 6.5 02C-02C-3
+
+最后迁移 Table 和 Icon：
+
+- `SceneRelationTable → ScTable`，保留 Scene 表格布局和行导航语义。
+- 只迁移实际使用的五个图标到 Semantic Icon Adapter。
+- 不引入 Table 选择协议，不机械迁移 49 个厂商图标。
+
+三个样板必须按 C1 → C2 → C3 顺序实施；每个样板独立开关、独立验证、可独立回滚。不要求同批同时迁移 Button、表单、Table 和 Icon。
+
+### 6.6 02C-02D
 
 顺序：
 
@@ -584,7 +706,7 @@ Provider 不再负责：
 2. 迁移所有 Scene 控件和 TDesign Scene Driver。
 3. 将 TDesign Bridge 和图标桥移入 Web Sc Design System。
 4. 从 `@sc/ui` 移除 `primitives`、`icons` 和厂商 Driver 运行时依赖。
-5. 将 Scene density 映射到 design-token component Token。
+5. 将 Scene density 按组件映射到 design-token component Token，并确保移动端触控尺寸优先。
 6. 删除旧 Kit Registry、Native Driver 和用户 Kit 选择机制。
 7. 更新过时的主题文档，并把守卫改为目标方向。
 
@@ -616,13 +738,16 @@ Provider 不再负责：
 | 能力 | 断言 |
 | --- | --- |
 | 值变化 | `update:modelValue` / `change` 值与真实 DOM/TDesign 事件一致 |
+| 事件来源 | `pointer` / `keyboard` / `programmatic` 标记准确；真实 `nativeEvent` 存在时不丢失，不存在时不伪造 |
 | readonly / disabled | 不发出值变化或业务激活；视觉和辅助状态明确 |
 | 错误态 | `status=error`、`aria-invalid=true`、错误说明通过 `aria-describedby` 关联 |
 | Focus / Blur | Adapter 暴露 `focus()`；两个方向的事件顺序与目标一致 |
 | 键盘 | Button Enter/Space；Select 打开/选择/Escape；Date 输入/弹层；Table 行激活 |
-| 插槽/辅助说明 | Button 内容；Input prefix/suffix；Table top/cell/empty 不丢失 |
+| 插槽/辅助说明 | Button 默认插槽；Input helper/source 由 Scene 组合并通过 label/ARIA 关联；Table 空态来自 `emptyText` |
 | IME | `compositionstart` / `compositionend` 保留真实事件和提交文本 |
 | 可访问性 | 控件名称、role、状态、表格区域与图标隐藏规则一致 |
+| Adapter 失败 | 必需 Primitive 或能力缺失时显示明确错误并记录身份，不发生静默回退 |
+| 值语义 | 可编辑字段只接收规范值，只读事实只接收平台已解释展示值 |
 
 ### 8.2 同一业务字段双路径验收
 
@@ -655,11 +780,28 @@ Provider 不再负责：
 
 本 ADR 批次仅需要文档和 `.agent` 元数据层检查；产品 L2-L4 不适用。
 
+### 8.4 正式架构硬门禁
+
+| 验收内容 | 通过标准 |
+| --- | --- |
+| 依赖方向 | Sc 不依赖 `@sc/ui` |
+| 厂商隔离 | `@sc/ui` 不依赖 TDesign |
+| 组件唯一性 | Scene 基础控件通过 Port 消费 Sc |
+| 业务语义 | Scene 不自行格式化可编辑值或只读业务值 |
+| Token | 不存在第二套颜色、圆角、焦点或尺寸事实 |
+| 事件 | 不伪造原生事件，不丢失真实事件，不重复激活 |
+| 失败处理 | Adapter 必需能力缺失时不静默回退 |
+| 页面一致性 | 同一字段两条路径行为一致 |
+| 兼容性 | Contract V2 和已有业务动作不改变 |
+| 工程减负 | 旧 Driver、Preference 和厂商依赖能够逐步退出 |
+
+上述标准进入 Port Conformance、静态守卫、页面一致性测试和最终集成门禁，不以截图或单个绿色检查替代。
+
 ## 9. 回滚与兼容边界
 
 1. 本 ADR 可通过删除文档和运行元数据回滚，不影响运行态。
 2. 02C-02B 的 Port 和 Adapter 在未迁移消费者前无行为影响；回滚删除新注入行即可。
-3. 02C-02C 每个样板必须在 `scene_primitive_adapter_v1` 下独立启用；失败时回退该样板，不改变 Contract V2 或数据。
+3. 02C-02-C1/C2/C3 每个样板必须在 `scene_primitive_adapter_v1` 下独立启用；失败时回退该样板，不改变 Contract V2 或数据。
 4. 旧 Kit Driver 在 02C-02D 删除前保留；删除后若需回滚，应恢复前一个已评审版本，不重建旧的用户选择功能。
 5. `scene_ui_driver` 只停止新写入并逐步消费存量；不做未审计的数据删除。
 6. TDesign Bridge 迁移期间可以保留只读兼容导出，但新代码必须使用 Web 内部 Bridge。
@@ -682,11 +824,15 @@ Provider 不再负责：
 
 1. `ScDateField` 当前事件面不足，不能直接满足 DateFieldPort。
 2. `ScSelect` 当前没有完整的 focus/blur/change 原生事件契约，Adapter 不能默默伪造事件。
-3. `ScTextarea` 和 `ScTable` 当前主要走 TDesign Bridge，Port 的 Native 回退能力不能仅靠文档假定。
-4. `SceneButton` 同时存在 `activate` 事件和 `$attrs` 透传 `click` 的消费方式，迁移必须先收敛激活语义。
-5. `@sc/ui` 的 49 个图标和 61 个厂商导出与 Scene 组合共处一包，依赖移除必须分阶段，避免一次性破坏构建。
-6. 现有守卫和主题文档锁定了旧架构事实，必须在对应迁移阶段同步更新。
-7. 本轮是静态只读审计，不证明浏览器交互、视觉、键盘或屏幕阅读器行为已经等价；这些必须在 02C-02B/02C-02C 实测。
+3. `ScInput` 和 `ScTextarea` 目前在缺少事件上下文时会构造 `new Event()`；Port 实施前必须移除这种伪造并明确真实事件缺失语义。
+4. `ScTextarea` 和 `ScTable` 当前主要走 TDesign Bridge，Port 的 Native 回退能力不能仅靠文档假定。
+5. `SceneButton` 同时存在 `activate` 事件和 `$attrs` 透传 `click` 的消费方式，迁移必须先收敛激活语义并消除重复按键处理。
+6. `SceneField` 当前把可编辑值和展示值放在同一 DTO 中，迁移必须先拆分或有声明地区分二者。
+7. `@sc/ui/primitive-port` 尚不存在；在 02C-02B 新建前，Web Adapter 不能依赖全量 Scene 总出口来获取协议。
+8. Table v1 明确不包含选择能力；如果未来需要，必须由真实消费者触发 v1.x 扩展评审。
+9. `@sc/ui` 的 49 个图标和 61 个厂商导出与 Scene 组合共处一包，依赖移除必须分阶段；IconPort 只迁移当前实际使用的五个。
+10. 现有守卫和主题文档锁定了旧架构事实，必须在对应迁移阶段同步更新。
+11. 本轮是静态只读审计，不证明浏览器交互、视觉、键盘或屏幕阅读器行为已经等价；这些必须在 02C-02B 和 02C-02-C1/C2/C3 实测。
 
 ## 12. 结论与下一步
 
@@ -699,4 +845,4 @@ Provider 不再负责：
 
 最终架构保持“Sc 基础组件权威 + `@sc/ui` Scene 组合 + Primitive Port 依赖倒置 + Web Sc Adapter + TDesign/Native 作为 Sc 内部实现”的有限减负方案。
 
-下一步是在独立评审通过后启动 `FE-RENDERER-02C-02B`，先定义并验证 Primitive Port v1 和 Sc Adapter；未通过本 ADR 评审前，不迁移产品组件。
+下一步是将本次修订重新提交独立架构评审；ADR 冻结后才启动 `FE-RENDERER-02C-02B`，先定义并验证 Primitive Port v1、Adapter 注入和 fail-closed 契约，再按 C1 → C2 → C3 逐个迁移真实消费者。

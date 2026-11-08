@@ -37,12 +37,13 @@ goal:
   results:
     audit: PASS
     adr: PASS
+    review_revision: PASS
     docs_links: PASS
     docs_temp_guard: PASS
     agent_ledger: PASS
     agent_resume: PASS
     ci_iteration: PASS
-    next_exact_step: 提交 ADR 候选，完成独立精确 diff 复核后发布文档 PR
+    next_exact_step: 提交协议修订版，更新 PR #843，并取得新一轮独立评审与当前 HEAD 远端门禁
   exclusions:
     - component_migration
     - product_code_change
