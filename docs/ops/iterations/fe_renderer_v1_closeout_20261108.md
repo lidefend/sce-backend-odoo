@@ -5,7 +5,7 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current product candidate HEAD: `ce9170b4be846c855e9c2a7f536c836542cb82f8`
+- Current review-fix product commit: `c6c7d63404778557bd3f14c009711a14a49dbd1b`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -102,19 +102,30 @@ The first independent review identified two boundaries that were not yet pinned:
 - collection create capability had product behavior but no executable
   missing/false/true regression boundary.
 
-The scene adapters now clear pending user provenance and reset the edit and
-committed baselines on every genuinely external value update. On commit, they
-use the displayed DOM value only when it is the current controlled value;
-otherwise they use the latest user edit, preventing an external server value
-from being replaced by a stale draft.
+The scene adapters now track ordered pending user echoes and superseded echoes.
+A delayed parent echo cannot replace a newer external server value. On commit,
+they use the displayed DOM value only when it is the current controlled value;
+otherwise they use the latest user edit.
 
 ActionView now delegates create visibility to
-`resolveCollectionCreateAuthority`. The helper requires the declared effective
-`create=true` capability and one complete authorized `list.create` destination.
-Its executable cases cover missing, false and true effective capability; absent
-or unauthorized action rules; incomplete action targets; and invalid current
-action identity. These cases are wired into the existing
-`verify.frontend.action_view_page_actions.unit` target.
+`resolveCollectionCreateAuthority`. Direct `record_create` targets require the
+declared effective `create=true` capability. Delegated `action` targets consume
+the producer-authorized `list.create` rule and complete action/menu identity
+without incorrectly requiring direct create. Eleven executable cases cover
+missing, false and true direct capability; authorized delegated actions; absent
+or unauthorized rules; incomplete targets; and invalid identity.
+
+The second independent review also found and the candidate now closes:
+
+- delayed parent echo versus newer external server state;
+- pointer/programmatic focus provenance;
+- passive Table rows emitting row activation;
+- an unnamed non-decorative Icon;
+- unrelated same-file Sc tags inflating TDesign adapter attribution.
+
+The takeover inventory now reports two real bridge-consumer bypasses rather than
+hiding them: `NativeFormTreeRenderer` for alert input and
+`ProfessionalManyToManySelect` for select input.
 
 The development-incremental route was corrected so ActionView create-boundary
 inputs select their executable contract target, and scene text changes select
@@ -180,50 +191,52 @@ Current result:
 - unassessed required takeover: 0;
 - raw behavioral surface: 0;
 - direct vendor-import bypass: 0;
+- bridge-consumer bypasses: 2, explicitly recorded;
 - non-required components: 38, not defects and not forcible takeover targets.
 
 The 33 required drivers are:
 
 | official driver | adapter key(s) | production consumer count | status |
 |---|---|---:|---|
-| alert | ScButton, ScErrorState, ScIcon, ScIconButton, ScInlineState, ScInput, ScTabs | 683 | adapter present |
+| alert | ScErrorState, ScInlineState | 80 | adapter present; bridge consumer bypass: `NativeFormTreeRenderer` |
 | badge | ScBadge | 1 | adapter present |
-| button | ScButton, ScIconButton, ScTooltip | 463 | adapter present |
+| button | ScButton, ScIconButton | 462 | adapter present |
 | card | ScCard, ScPanel | 87 | adapter present |
 | checkbox | ScCheckbox | 14 | adapter present |
-| collapse | ScButton, ScCollapse, ScDisclosure | 455 | adapter present |
+| collapse | ScCollapse, ScDisclosure | 10 | adapter present |
 | date-picker | ScDateField, ScDatePicker | 4 | adapter present |
 | descriptions | ScDescriptions | 5 | adapter present |
-| dialog | ScDialog, ScIcon, ScIconButton | 109 | adapter present |
-| drawer | ScDrawer, ScIcon, ScIconButton | 97 | adapter present |
+| dialog | ScDialog | 15 | adapter present |
+| drawer | ScDrawer | 3 | adapter present |
 | dropdown | ScDropdown | 5 | adapter present |
 | empty | ScEmptyState | 34 | adapter present |
-| form | ScForm, ScFormField, ScFormItem | 29 | adapter present |
+| form | ScForm, ScFormField, ScFormItem | 27 | adapter present |
 | input | ScInput | 62 | adapter present |
 | input-adornment | ScInputGroup | 1 | adapter present |
 | input-number | ScNumberInput | 1 | adapter present |
 | layout | ScLayout | 2 | adapter present |
 | list | ScList | 8 | adapter present |
 | loading | ScInlineState, ScLoading | 77 | adapter present |
-| menu | MenuTree, ScIcon | 78 | adapter present |
+| menu | MenuTree | 1 | adapter present |
 | pagination | ScPagination | 1 | adapter present |
 | progress | ScProgress | 1 | adapter present |
 | radio | ScRadio | 4 | adapter present |
-| select | ScRelationField, ScSelect | 46 | adapter present |
+| select | ScRelationField, ScSelect | 46 | adapter present; bridge consumer bypass: `ProfessionalManyToManySelect` |
 | skeleton | ScSkeleton | 1 | adapter present |
 | space | ScActionBar | 4 | adapter present |
-| table | ScIcon, ScIconButton, ScTable | 118 | adapter present |
-| tabs | ScButton, ScIcon, ScIconButton, ScTabs | 541 | adapter present |
+| table | ScTable | 24 | adapter present |
+| tabs | ActivityPageTabs, ScTabs | 3 | adapter present |
 | tag | ScStatusBadge | 16 | adapter present |
 | textarea | ScTextarea | 8 | adapter present |
 | timeline | ScTimeline | 1 | adapter present |
 | tooltip | ScTooltip | 1 | adapter present |
-| upload | ScButton, ScFileField, ScUpload | 448 | adapter present |
+| upload | ScFileField, ScUpload | 3 | adapter present |
 
-This proves structural takeover and consumer presence. It does not assert that
-every prop/event/slot combination of every one of the 33 components has a dedicated
-browser test; V1 uses risk-selected behavioral proof for the changed primitive
-family and shared adapter contracts.
+This proves structural adapter and consumer presence. It does not assert that
+every production consumer already routes through Sc, nor that every
+prop/event/slot combination of every driver has a dedicated browser test. The
+two remaining bridge-consumer bypasses are explicit boundaries, not hidden
+coverage.
 
 ### P3 real business-page acceptance
 
@@ -287,13 +300,13 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 product acceptance passed on historical product candidate `ce9170b4b`.
-The first-review follow-up changes Input/Textarea state handling and the
-ActionView create decision, so this evidence is not inherited by the follow-up
-candidate. Overall V1 remains `verification_pending` until affected-page
-revalidation, exact-head publication and fresh remote checks complete.
+L4 product acceptance passed on historical candidate `9cea1b661`. The current
+review-fix product commit is `c6c7d6340`; earlier page evidence is not inherited
+because delegated create and controlled text behavior changed again. Overall V1
+remains `verification_pending` until affected-page revalidation, exact-head
+publication and fresh remote checks complete.
 
-The final affected incremental iteration passed all 14 required targets with
+The final affected incremental iteration passed all 15 required targets with
 non-zero execution:
 
 - Agent ledger;
@@ -301,6 +314,7 @@ non-zero execution:
 - ActionView create authority;
 - ActionView page-size runtime;
 - ActionView surface gate;
+- Component driver takeover inventory;
 - Contract-basis unit and enforce;
 - Development-incremental routing unit;
 - frontend lint;
@@ -313,16 +327,12 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T133423Z-996104-62656813/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T163758Z-1876355-761588609/receipt.json`.
 
-The frontend production build also passed: 5,373 modules transformed in 25.72
+The frontend production build also passed: 5,373 modules transformed in 26.19
 seconds. The existing large-chunk advisory remains.
 
-Affected L4 revalidation is currently `not_run`: the current process did not
-contain the managed `SC_ACCEPTANCE_FIXTURE_PASSWORD` injection. No password was
-printed, guessed or written. This is an environment prerequisite, not a product
-failure, and it prevents carrying the historical three-page pass into this
-candidate.
+Affected L4 revalidation is currently `not_run` for `c6c7d6340`.
 
 ## Exclusions
 
@@ -331,6 +341,5 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Run the governed incremental gate on the review follow-up, revalidate the
-affected business-page boundaries on its exact code, then publish the same PR
-HEAD and obtain fresh required checks.
+Run managed L4 against product commit `c6c7d6340`, publish the clean metadata
+candidate, obtain a new independent review and fresh exact-head checks.

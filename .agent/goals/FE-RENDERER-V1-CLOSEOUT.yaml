@@ -34,12 +34,15 @@ goal:
       - frontend/apps/web/src/app/presentation/semantic_registry.generated.ts
       - frontend/packages/ui/src/primitive-port
       - frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
+      - frontend/apps/web/scripts/scene_primitive_collection_test.mjs
       - frontend/apps/web/scripts/action_view_collection_create_authority_test.ts
       - frontend/apps/web/scripts/scene_primitive_adapter_test.mjs
       - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/test_frontend_action_view_page_actions_guard.py
+      - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
+      - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
       - make/frontend.mk
       - contracts/registry/semantic.yaml
       - contracts/registry/component.yaml
@@ -81,6 +84,7 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Complete independent review of the clean final HEAD whose product-code identity is
-    ce9170b4b, then publish that exact HEAD and obtain fresh required remote checks before
-    any merge decision. Do not inherit checks from the old PR head.
+    Validate the review-fix candidate whose product-code identity is c6c7d6340 on the
+    managed Acceptance profile, publish the clean metadata candidate, obtain a new
+    independent review and fresh required remote checks. Do not inherit page or CI
+    evidence from 9cea1b661 or any older head.
