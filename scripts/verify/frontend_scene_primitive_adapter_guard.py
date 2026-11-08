@@ -21,11 +21,16 @@ ALLOWED_IMPORTS = {
     '../ScButton.vue',
     '../ScInput.vue',
     '../ScTextarea.vue',
+    '../ScTable.vue',
+    '../ScIcon.vue',
     './ScSceneButton.vue',
     './ScSceneInput.vue',
     './ScSceneTextarea.vue',
+    './ScSceneTable.vue',
+    './ScSceneIcon.vue',
     './buttonContract',
     './textControlContracts',
+    './collectionContracts',
 }
 FORBIDDEN_SOURCE = (
     re.compile(r"\bas\s+Primitive(?:Component|Binding)\b"),

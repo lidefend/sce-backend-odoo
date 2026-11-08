@@ -1,0 +1,34 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02B-C-TABLE-ICON
+  title: Table and Icon Primitive Conformance
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Sc collection and semantic icon adapters
+  module: ScTable, ScIcon, ScSceneTable, ScSceneIcon
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: Row identity and semantic icon accessibility are shared primitive mechanisms.
+  why_not_elsewhere: No business page, Contract V2, backend or selection-protocol expansion.
+  blast_radius:
+    paths:
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue
+      - frontend/apps/web/src/components/design-system/ScTable.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue
+      - frontend/apps/web/src/components/design-system/scene-adapter/collectionContracts.ts
+      - frontend/apps/web/scripts/scene_primitive_collection_test.mjs
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+  objective: Add real Table/Icon wrappers and identify unsupported keyboard/empty-state capabilities.
+  results:
+    implementation: PASS
+    strict_typecheck: PASS
+    lint: PASS
+    table_keyboard_activation: PASS
+    table_empty_text: PASS
+    icon_semantic_browser: PASS
+    table_row_click_browser: PASS
+  next_exact_step: Add focused Table/Icon conformance and close Sc capability gaps.
+  exclusions: [product_consumer_migration, provider_change, backend_change, database_change, deployment, merge]
+  rollback: Revert the three adapter files; no product page imports them.
