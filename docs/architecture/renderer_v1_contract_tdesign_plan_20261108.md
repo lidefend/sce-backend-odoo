@@ -267,10 +267,10 @@ V1 实现专项：
 
 独立评审修复后的专项证据：
 
-- TDesign/Sc browser Conformance 增至 77 checks；Textarea 每个真实 input
+- TDesign/Sc browser Conformance 增至 79 checks；Textarea 每个真实 input
   触发 input、blur 只触发一次 change；DatePicker 通过真实日历 `mousedown`
   更新值并只触发一次 change；聚焦和未聚焦清空都消费真实 `onClear` MouseEvent
-  且各只触发一次 change；初始非空、未聚焦、首次直接 clear 也覆盖。
+  且各只触发一次 update/change；初始非空、未聚焦、首次直接 clear 也覆盖。
 - `contract_only_business_fixture_test`：PASS；虚构新模型
   `x.ordinary_business` 由 7 个 Contract 字段直接投影到 ScInput、ScTextarea、
   ScSelect、ScNumberInput、ScDateField、ScCheckbox，前端产品源码特判为 0。

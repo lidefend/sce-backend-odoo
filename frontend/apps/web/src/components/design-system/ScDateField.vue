@@ -77,6 +77,7 @@ let lastChangeValue = '';
 let focused = false;
 let lastInteractionEvent: Event | undefined;
 let nativeEventDocument: Document | null = null;
+let clearUpdateEmitted = false;
 const emit = defineEmits<{
   'update:modelValue': [value: string];
   change: [value: string, event: Event];
@@ -90,7 +91,11 @@ function onTDesignChange(value: unknown, context?: { trigger?: string }) {
   if (next === lastValue) return;
   lastValue = next;
   emit('update:modelValue', next);
-  if (context?.trigger === 'clear') return;
+  if (context?.trigger === 'clear') {
+    clearUpdateEmitted = true;
+    return;
+  }
+  clearUpdateEmitted = false;
   if (lastInteractionEvent && next !== lastChangeValue) {
     lastChangeValue = next;
     emit('change', next, lastInteractionEvent);
@@ -99,12 +104,13 @@ function onTDesignChange(value: unknown, context?: { trigger?: string }) {
 }
 function onClear(context: { e?: MouseEvent }) {
   if (!(context.e instanceof MouseEvent)) return;
-  if (String(props.modelValue ?? '') === '') return;
+  if (String(props.modelValue ?? '') === '' && lastValue === '' && !clearUpdateEmitted) return;
   const next = '';
   lastValue = next;
   lastChangeValue = next;
   lastInteractionEvent = undefined;
-  emit('update:modelValue', next);
+  if (!clearUpdateEmitted) emit('update:modelValue', next);
+  clearUpdateEmitted = false;
   emit('change', next, context.e);
 }
 function onNativeInput(event: Event) {

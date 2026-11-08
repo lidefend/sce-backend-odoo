@@ -297,6 +297,7 @@ try {
   events = await page.evaluate(() => window.componentLog);
   check(events.some((event) => event.kind === 'date-update' && event.value === ''), 'unfocused date clear updates controlled value');
   check(events.filter((event) => event.kind === 'date-change' && event.value === '').length === 2, 'initial and post-selection unfocused clear each emit one real change');
+  check(events.filter((event) => event.kind === 'date-update' && event.value === '').length === 2, 'initial and post-selection clear each emit one empty update');
 
   await page.locator('#date-input').click();
   const secondPanel = page.locator('.t-date-picker__panel').last();
@@ -306,6 +307,7 @@ try {
   await page.locator('span.t-input__clear').last().click();
   events = await page.evaluate(() => window.componentLog);
   check(events.filter((event) => event.kind === 'date-change').length === 5, 'initial, selected and focused/unfocused clear paths each emit exactly one date change');
+  check(events.filter((event) => event.kind === 'date-update').length === 5, 'selection and clear paths each emit exactly one date update');
 
   check(await page.locator('#number-input').getAttribute('aria-label') === '数量', 'number accessible name projects');
   check(await page.locator('#number-input').getAttribute('aria-invalid') === 'true', 'number invalid ARIA projects');

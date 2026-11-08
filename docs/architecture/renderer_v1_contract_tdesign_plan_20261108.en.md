@@ -281,10 +281,11 @@ V1 implementation evidence:
 
 Independent-review fix evidence:
 
-- TDesign/Sc browser Conformance now runs 77 checks. Textarea forwards every real
+- TDesign/Sc browser Conformance now runs 79 checks. Textarea forwards every real
   DOM input and emits exactly one change on blur. DatePicker updates through a
   real calendar `mousedown` and emits exactly one change. Focused and unfocused
-  clear both consume TDesign's real `onClear` MouseEvent and each emit one change;
+  clear both consume TDesign's real `onClear` MouseEvent and each emit one
+  update/change;
   initial non-empty, unfocused, first-clear is covered separately.
 - `contract_only_business_fixture_test`: PASS. The new synthetic model
   `x.ordinary_business` is projected through seven Contract fields directly to
