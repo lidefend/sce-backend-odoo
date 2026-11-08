@@ -415,9 +415,11 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 passed at served revision `0ef405468`. Contract Form, Payment Request,
-Scene Collection and relation roundtrip all bind that exact SHA. The merge-stage
-acceptance manifest also binds `0ef405468`; the deployment-only
+L4 passed at served revision `0ef405468` for Contract Form, Payment Request and
+Scene Collection. Relation roundtrip executed at `98a9f76c` and is carried only
+because its declared suite inputs are unchanged. The merge-stage
+acceptance manifest records the suite-specific bound heads and is carried to the
+final metadata tip; the deployment-only
 `path_namespace_identity` suite is deferred explicitly rather than represented
 as passed. No page evidence was inherited from `866afcb11` or older candidates.
 
