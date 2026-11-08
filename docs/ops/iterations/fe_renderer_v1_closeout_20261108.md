@@ -5,7 +5,8 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current review-fix product commit: `c6c7d63404778557bd3f14c009711a14a49dbd1b`
+- Current second-review product commit: `f88e49d5901119489eda5aa8ffd001042f346412`
+- Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -78,7 +79,7 @@ edit. No debounce, timer window or value-equality timer is used.
 
 Chromium `147.0.7727.15` real-SFC evidence:
 
-- 37 exact assertions, 0 console errors;
+- 59 exact assertions, 0 console errors;
 - three typed Input characters produce exactly three `update` and three `input`
   events;
 - one Input edit commit produces exactly one `change`;
@@ -115,13 +116,31 @@ without incorrectly requiring direct create. Eleven executable cases cover
 missing, false and true direct capability; authorized delegated actions; absent
 or unauthorized rules; incomplete targets; and invalid identity.
 
-The second independent review also found and the candidate now closes:
+The local review and first independent-review follow-up also closed:
 
 - delayed parent echo versus newer external server state;
 - pointer/programmatic focus provenance;
 - passive Table rows emitting row activation;
 - an unnamed non-decorative Icon;
 - unrelated same-file Sc tags inflating TDesign adapter attribution.
+
+The second independent review then found the remaining coalesced-delay boundary
+and a TypeScript blind spot in the generated takeover inventory. Product commit
+`f88e49d59` now:
+
+- treats all outstanding user echoes as an ordered queue, accepts a coalesced
+  latest echo, and keeps stale history across a resumed edit after an external
+  server update;
+- preserves the user's newest edit when an older coalesced echo arrives late;
+- validates the non-decorative Icon label reactively, so a post-mount prop change
+  also fails closed;
+- scans `.ts` and `.js` source for raw behavioural APIs, with a negative test for
+  `window.prompt`;
+- maps `TDesignRadioGroup` to the radio driver and Layout `Aside/Header/Content/
+  Footer` subcomponents to the Layout driver;
+- replaces the Contract Form action-reason `window.prompt` path with the
+  contract-local `ContractReasonDialog`, built from ScDialog, ScFormField,
+  ScTextarea and ScButton.
 
 The takeover inventory now reports two real bridge-consumer bypasses rather than
 hiding them: `NativeFormTreeRenderer` for alert input and
@@ -214,20 +233,20 @@ The 33 required drivers are:
 | input | ScInput | 62 | adapter present |
 | input-adornment | ScInputGroup | 1 | adapter present |
 | input-number | ScNumberInput | 1 | adapter present |
-| layout | ScLayout | 2 | adapter present |
+| layout | ScAside, ScContent, ScFooter, ScHeader, ScLayout | 7 | adapter present |
 | list | ScList | 8 | adapter present |
 | loading | ScInlineState, ScLoading | 77 | adapter present |
 | menu | MenuTree | 1 | adapter present |
 | pagination | ScPagination | 1 | adapter present |
 | progress | ScProgress | 1 | adapter present |
-| radio | ScRadio | 4 | adapter present |
+| radio | ScRadio, ScRadioGroup | 6 | adapter present |
 | select | ScRelationField, ScSelect | 46 | adapter present; bridge consumer bypass: `ProfessionalManyToManySelect` |
 | skeleton | ScSkeleton | 1 | adapter present |
 | space | ScActionBar | 4 | adapter present |
 | table | ScTable | 24 | adapter present |
 | tabs | ActivityPageTabs, ScTabs | 3 | adapter present |
 | tag | ScStatusBadge | 16 | adapter present |
-| textarea | ScTextarea | 8 | adapter present |
+| textarea | ScTextarea | 9 | adapter present |
 | timeline | ScTimeline | 1 | adapter present |
 | tooltip | ScTooltip | 1 | adapter present |
 | upload | ScFileField, ScUpload | 3 | adapter present |
@@ -262,10 +281,10 @@ Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
   and four viewport PNGs;
-- `.runtime/final-acceptance/payment-request/ce9170b4b/report.json` and
+- `.runtime/final-acceptance/payment-request/9cea1b661/report.json` and
   `after-save.png`;
 - `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots;
-- `.runtime/final-acceptance/scene-collection-table/ce9170b4b/summary.json`.
+- `.runtime/final-acceptance/scene-collection-table/9cea1b661/summary.json`.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -301,12 +320,17 @@ Neither fix changes ACL, Contract V2 or business data authority.
 ### Current acceptance state
 
 L4 product acceptance passed on historical candidate `9cea1b661`. The current
-review-fix product commit is `c6c7d6340`; earlier page evidence is not inherited
+second-review product commit is `f88e49d59`; earlier page evidence is not inherited
 because delegated create and controlled text behavior changed again. Overall V1
 remains `verification_pending` until affected-page revalidation, exact-head
 publication and fresh remote checks complete.
 
-The final affected incremental iteration passed all 15 required targets with
+The first clean planning attempt for `f88e49d59` correctly stopped before running
+the affected target set because the Contract Form reason-dialog files were not
+yet registered in the run scope. That planning result is not a test PASS. The
+scope is now reconciled and the complete affected iteration is the next step.
+
+The final affected incremental iteration must execute all required targets with
 non-zero execution:
 
 - Agent ledger;
@@ -326,13 +350,12 @@ non-zero execution:
 - style-system guard;
 - strict UI/web typecheck.
 
-Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T163758Z-1876355-761588609/receipt.json`.
+The frontend production build already passed on content identical to
+`f88e49d59`: 5,375 modules transformed in 25.20 seconds. The existing
+large-chunk advisory remains. A clean exact-commit iteration receipt is still
+required before publication.
 
-The frontend production build also passed: 5,373 modules transformed in 26.19
-seconds. The existing large-chunk advisory remains.
-
-Affected L4 revalidation is currently `not_run` for `c6c7d6340`.
+Affected L4 revalidation is currently `not_run` for `f88e49d59`.
 
 ## Exclusions
 
@@ -341,5 +364,6 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Run managed L4 against product commit `c6c7d6340`, publish the clean metadata
-candidate, obtain a new independent review and fresh exact-head checks.
+Run the complete affected local iteration on `f88e49d59`, then revalidate the
+three business pages on that exact product identity before publishing metadata
+and requesting a fresh independent review.
