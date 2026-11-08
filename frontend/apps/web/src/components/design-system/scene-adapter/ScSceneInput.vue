@@ -15,21 +15,11 @@
     :placeholder="placeholder"
     :described-by="describedBy"
     :aria-label="ariaLabel"
-    @pointerdown="lastSource = 'pointer'"
-    @keydown="onKeydown"
-    @keyup="onKeyup"
-    @update:model-value="onUpdate"
-    @input="onInput"
-    @change="onChange"
-    @focus="onFocus"
-    @blur="onBlur"
-    @compositionstart="onCompositionStart"
-    @compositionend="onCompositionEnd"
   />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type {
   InputPortEmits,
   InputPortProps,
@@ -39,7 +29,7 @@ import type {
 } from '@sc/ui/primitive-port';
 import ScInput from '../ScInput.vue';
 
-withDefaults(defineProps<InputPortProps>(), {
+const props = withDefaults(defineProps<InputPortProps>(), {
   type: 'text',
   inputMode: undefined,
   placeholder: undefined,
@@ -59,68 +49,123 @@ defineSlots<NoPortSlots>();
 
 const inputRef = ref<{ $el?: unknown } | null>(null);
 let lastSource: PrimitiveEventSource = 'programmatic';
-let lastInputEvent: Event | undefined;
-let focusStartValue = '';
+let lastEditSource: PrimitiveEventSource = 'programmatic';
 let lastValue = '';
+let committedValue = '';
+let nativeInput: HTMLInputElement | null = null;
+let lastNativeInputEvent: Event | undefined;
+
+function resolveNativeInput(): HTMLInputElement | null {
+  const root = inputRef.value?.$el;
+  const container = root instanceof Node ? (root instanceof Element ? root : root.parentElement) : null;
+  return container instanceof HTMLInputElement
+    ? container
+    : container?.querySelector<HTMLInputElement>('input') ?? null;
+}
 
 function sourceFor(event: Event): PrimitiveEventSource {
   return event.isTrusted ? lastSource : 'programmatic';
 }
-function onUpdate(value: string) {
-  lastValue = String(value);
-  emit('update:modelValue', String(value));
+function eventValue(event: Event): string {
+  return event.target instanceof HTMLInputElement
+    ? event.target.value
+    : nativeInput?.value ?? String(props.modelValue ?? '');
 }
-function onInput(value: string, event: Event) {
-  lastValue = String(value);
-  lastInputEvent = event;
-  emit('input', String(value), { source: sourceFor(event), nativeEvent: event });
+function blockEdit(): boolean {
+  return props.disabled || props.readonly || props.loading;
 }
-function onChange(value: string, event: Event) {
-  if (event.type === 'input') {
-    if (event !== lastInputEvent) {
-      emit('update:modelValue', String(value));
-      lastValue = String(value);
-      emit('input', String(value), { source: sourceFor(event), nativeEvent: event });
-    }
-    return;
-  }
-  emit('change', String(value), { source: sourceFor(event), nativeEvent: event });
+function onNativePointerdown() {
+  lastSource = 'pointer';
 }
-function onFocus(value: string | number, event: FocusEvent) {
-  focusStartValue = String(value);
-  lastValue = String(value);
-  emit('focus', String(value), { source: sourceFor(event), nativeEvent: event });
-  lastSource = 'programmatic';
-}
-function onBlur(value: string | number, event: FocusEvent) {
-  emit('blur', String(value), { source: sourceFor(event), nativeEvent: event });
-  if (lastValue !== focusStartValue) {
-    emit('change', lastValue, { source: sourceFor(event), nativeEvent: event });
-  }
-}
-function onKeydown(event: KeyboardEvent) {
+function onNativeKeydown(event: KeyboardEvent) {
   lastSource = 'keyboard';
   emit('keydown', { source: 'keyboard', nativeEvent: event });
 }
-function onKeyup(event: KeyboardEvent) {
+function onNativeKeyup(event: KeyboardEvent) {
   emit('keyup', { source: 'keyboard', nativeEvent: event });
-  lastSource = 'programmatic';
 }
-function onCompositionStart(event: CompositionEvent) {
+function onNativeInput(event: Event) {
+  if (blockEdit()) return;
+  if (event === lastNativeInputEvent) return;
+  lastNativeInputEvent = event;
+  const value = eventValue(event);
+  if (value === lastValue) return;
+  lastEditSource = sourceFor(event);
+  lastValue = value;
+  emit('update:modelValue', value);
+  emit('input', value, { source: lastEditSource, nativeEvent: event });
+}
+function commitValue(event: Event) {
+  const value = lastValue || eventValue(event);
+  if (value === committedValue) return;
+  committedValue = value;
+  emit('change', value, { source: lastEditSource, nativeEvent: event });
+}
+function onNativeChange(event: Event) {
+  if (blockEdit()) return;
+  lastValue = eventValue(event);
+  commitValue(event);
+}
+function onNativeFocus(event: FocusEvent) {
+  const value = eventValue(event);
+  lastSource = 'programmatic';
+  lastEditSource = 'programmatic';
+  lastValue = value;
+  committedValue = value;
+  emit('focus', value, { source: 'programmatic', nativeEvent: event });
+}
+function onNativeBlur(event: FocusEvent) {
+  emit('blur', lastValue, { source: sourceFor(event), nativeEvent: event });
+  commitValue(event);
+}
+function onNativeCompositionStart(event: CompositionEvent) {
   lastSource = 'keyboard';
   emit('compositionstart', { source: 'keyboard', nativeEvent: event });
 }
-function onCompositionEnd(event: CompositionEvent) {
+function onNativeCompositionUpdate(event: CompositionEvent) {
+  lastSource = 'keyboard';
+  void event;
+}
+function onNativeCompositionEnd(event: CompositionEvent) {
+  lastSource = 'keyboard';
   emit('compositionend', { source: 'keyboard', nativeEvent: event });
 }
+function unbindNativeInput() {
+  if (!nativeInput) return;
+  nativeInput.removeEventListener('pointerdown', onNativePointerdown);
+  nativeInput.removeEventListener('keydown', onNativeKeydown);
+  nativeInput.removeEventListener('keyup', onNativeKeyup);
+  nativeInput.removeEventListener('input', onNativeInput, true);
+  nativeInput.removeEventListener('change', onNativeChange);
+  nativeInput.removeEventListener('focus', onNativeFocus);
+  nativeInput.removeEventListener('blur', onNativeBlur);
+  nativeInput.removeEventListener('compositionstart', onNativeCompositionStart);
+  nativeInput.removeEventListener('compositionupdate', onNativeCompositionUpdate);
+  nativeInput.removeEventListener('compositionend', onNativeCompositionEnd);
+  nativeInput = null;
+  lastNativeInputEvent = undefined;
+}
+function bindNativeInput() {
+  const target = resolveNativeInput();
+  if (target === nativeInput) return;
+  unbindNativeInput();
+  nativeInput = target;
+  nativeInput?.addEventListener('pointerdown', onNativePointerdown);
+  nativeInput?.addEventListener('keydown', onNativeKeydown);
+  nativeInput?.addEventListener('keyup', onNativeKeyup);
+  nativeInput?.addEventListener('input', onNativeInput, true);
+  nativeInput?.addEventListener('change', onNativeChange);
+  nativeInput?.addEventListener('focus', onNativeFocus);
+  nativeInput?.addEventListener('blur', onNativeBlur);
+  nativeInput?.addEventListener('compositionstart', onNativeCompositionStart);
+  nativeInput?.addEventListener('compositionupdate', onNativeCompositionUpdate);
+  nativeInput?.addEventListener('compositionend', onNativeCompositionEnd);
+}
+onMounted(bindNativeInput);
+onBeforeUnmount(unbindNativeInput);
 
 function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
-  const root = inputRef.value?.$el;
-  const container = root instanceof Node ? (root instanceof Element ? root : root.parentElement) : null;
-  const target = container instanceof HTMLInputElement
-    ? container
-    : container?.querySelector<HTMLInputElement>('input');
-  target?.focus(options);
+  resolveNativeInput()?.focus(options);
 }
 
 defineExpose({ focus });

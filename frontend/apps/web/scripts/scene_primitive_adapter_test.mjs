@@ -256,8 +256,6 @@ if (behaviorMode) {
     await page.setContent('<div id="app"></div>');
     await page.addScriptTag({ content: code });
     await page.locator('#pointer-button').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#all-primitives').count(), 1);
-
     let checks = 0;
     const equal = (actual, expected, message) => {
       checks += 1;
@@ -273,6 +271,15 @@ if (behaviorMode) {
     };
     const reset = () => page.evaluate(() => { window.scenePrimitiveLog = []; });
     const log = () => page.evaluate(() => window.scenePrimitiveLog);
+
+    assert.equal(await page.locator('#all-primitives').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScButton"]').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScInput"]').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScSelect"]').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScDateField"]').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScTextarea"]').count(), 1);
+    equal(await page.locator('#all-primitives [data-semantic-primitive="ScTable"]').count(), 1);
+    equal(await page.locator('#all-primitives .sc-icon').count(), 1);
 
     await reset();
     await page.locator('#pointer-button').click();

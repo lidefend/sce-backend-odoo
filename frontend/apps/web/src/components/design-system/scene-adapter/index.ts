@@ -6,7 +6,7 @@ export { default as ScSceneInput } from './ScSceneInput.vue';
 export { default as ScSceneSelect } from './ScSceneSelect.vue';
 export { default as ScSceneTable } from './ScSceneTable.vue';
 export { default as ScSceneTextarea } from './ScSceneTextarea.vue';
-export { scSceneIconBinding, scSceneTableBinding } from './collectionContracts';
+export { createScSceneTableBinding, scSceneIconBinding, scSceneTableBinding } from './collectionContracts';
 export { scSceneDateFieldBinding, scSceneSelectBinding } from './selectionContracts';
 export { scSceneInputBinding, scSceneTextareaBinding } from './textControlContracts';
 export { scenePrimitiveAdapter } from './scenePrimitiveAdapter';

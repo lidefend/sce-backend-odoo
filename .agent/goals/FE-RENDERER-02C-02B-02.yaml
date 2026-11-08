@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RENDERER-02C-02B-02
   title: Sc Adapter、Scene Provider 与 Button-first 契约切片
-  status: verification_pending
+  status: superseded
   formal_product_layer: P0 platform kernel product
   layer_target: Scene Primitive Port injection, Web Sc Adapter binding and conformance boundary
   module: Sc Design System, "@sc/ui/primitive-port", Scene Provider runtime and frontend verification
@@ -139,10 +139,9 @@ goal:
     interface_freeze_rationale: >
       保留 ScenePrimitiveAdapter 七项必需闭包；Provider 只由完整七项 fixture 验证，
       Button 以独立真实 wrapper 推进。六项未补齐前不创建可注入产品的“全量真实 adapter”。
-    next_exact_step: >
-      提交并发布本 Button-first 切片作为持续集成基线；随后 A 并行处理 Input/Textarea，
-      B 处理 Select/DateField，C 处理 Table/Icon，D 建设统一 Conformance/Guard/增量矩阵，
-      总控保留 Port、Provider、Registry 和最终集成。
+  next_exact_step: >
+      本 Button-first 切片已由 FE-RENDERER-V1-CLOSEOUT 承接；后续统一组件交付与
+      真实业务页面验收在该 run 中继续，不再向本历史 run 追加结果。
   exclusions:
     - primitive_port_semantic_change
     - existing_sc_component_behavior_change

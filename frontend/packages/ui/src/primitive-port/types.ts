@@ -2,6 +2,7 @@ import type {
   ComponentOptionsMixin,
   DefineComponent,
   PublicProps,
+  VNode,
 } from 'vue';
 import type {
   ButtonPortEmits,
@@ -190,7 +191,7 @@ export type PrimitiveComponent<
   Props,
   EmptyVueOptions,
   RuntimeSlots<Slots>
->;
+> | ((props: Props) => VNode | null);
 
 export interface PrimitiveBinding<
   Props,

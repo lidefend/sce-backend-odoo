@@ -4,9 +4,13 @@ import type {
   ButtonPortSlots,
   PrimitiveBinding,
   ScenePrimitiveAdapter,
+  TablePortEmits,
+  TablePortProps,
+  TablePortRow,
 } from '@sc/ui/primitive-port';
 import {
   ScSceneButton,
+  createScSceneTableBinding,
   scenePrimitiveAdapter,
   scSceneButtonBinding,
   scSceneButtonContract,
@@ -23,6 +27,17 @@ void ScSceneButton;
 void scSceneButtonContract;
 const completeAdapter: ScenePrimitiveAdapter = scenePrimitiveAdapter;
 void completeAdapter;
+
+interface ProjectRow extends TablePortRow {
+  title: string;
+}
+const typedTableBinding: PrimitiveBinding<
+  TablePortProps<ProjectRow>,
+  TablePortEmits<ProjectRow>,
+  Record<never, never>,
+  'Table'
+> = createScSceneTableBinding<ProjectRow>();
+void typedTableBinding;
 
 const wrongIdentity = {
   component: ScSceneButton,

@@ -111,6 +111,17 @@ try {
   await page.setContent('<div id="app"></div>');
   await page.addScriptTag({ content: output.outputFiles[0].text });
   await page.locator('#text-input').waitFor({ state: 'visible' });
+  await page.evaluate(() => {
+    for (const [id, prefix] of [['text-input', 'input'], ['text-area', 'area']]) {
+      document.querySelector(`#${id}`).addEventListener('compositionupdate', (event) => {
+        window.textLog.push({
+          kind: `${prefix}-native-compositionupdate`,
+          value: event.target.value,
+          trusted: event.isTrusted,
+        });
+      });
+    }
+  });
 
   assert.equal(await page.locator('#text-input').getAttribute('name'), 'title');
   assert.equal(await page.locator('#text-input').getAttribute('inputmode'), 'text');
@@ -121,15 +132,35 @@ try {
   assert.equal(await page.locator('#disabled-input').isDisabled(), true);
   assert.equal(await page.locator('#readonly-input').getAttribute('readonly'), '');
 
+  let events;
+  await page.evaluate(() => {
+    window.textLog = [];
+    for (const id of ['disabled-input', 'readonly-input']) {
+      const input = document.querySelector(`#${id}`);
+      input.value = 'attempted-change';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'disabled-update').length, 0);
+  assert.equal(events.filter((event) => event.kind === 'readonly-update').length, 0);
+
   await page.locator('#text-input').focus();
   await page.locator('#text-input').pressSequentially('abc');
-  let events = await page.evaluate(() => window.textLog);
-  assert.ok(events.some((event) => event.kind === 'update' && event.value === 'abc'));
+  events = await page.evaluate(() => window.textLog);
+  assert.ok(
+    events.some((event) => event.kind === 'update' && event.value === 'abc'),
+    JSON.stringify(events),
+  );
   assert.ok(events.some((event) => event.kind === 'input' && event.value === 'abc' && event.source === 'keyboard'));
   assert.ok(events.some((event) => event.kind === 'keydown'));
   assert.ok(events.some((event) => event.kind === 'keyup'));
   await page.locator('#text-area').focus();
   events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'update').length, 3);
+  assert.equal(events.filter((event) => event.kind === 'input').length, 3);
+  assert.equal(events.filter((event) => event.kind === 'change' && event.value === 'abc').length, 1);
   assert.ok(events.some((event) => event.kind === 'change' && event.value === 'abc'));
   assert.ok(events.some((event) => event.kind === 'blur'));
   assert.ok(events.some((event) => event.kind === 'focus'));
@@ -137,20 +168,43 @@ try {
   await page.evaluate(() => {
     const input = document.querySelector('#text-input');
     input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    input.dispatchEvent(new CompositionEvent('compositionupdate', { bubbles: true, data: '你' }));
     input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '你' }));
   });
   events = await page.evaluate(() => window.textLog);
   assert.ok(events.some((event) => event.kind === 'compositionstart'));
+  assert.ok(events.some((event) => event.kind === 'input-native-compositionupdate'));
   assert.ok(events.some((event) => event.kind === 'compositionend'));
 
+  await page.evaluate(() => { window.textLog = []; });
   await page.locator('#text-area').fill('第一行\n第二行');
   await page.evaluate(() => {
     const area = document.querySelector('#text-area');
     area.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    area.dispatchEvent(new CompositionEvent('compositionupdate', { bubbles: true, data: '完成' }));
     area.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '完成' }));
   });
   await page.locator('#text-input').focus();
   events = await page.evaluate(() => window.textLog);
+  assert.equal(
+    events.filter((event) => event.kind === 'area-update' && event.value.includes('第二行')).length,
+    1,
+    JSON.stringify(events),
+  );
+  assert.equal(
+    events.filter((event) => event.kind === 'area-input').length,
+    1,
+    JSON.stringify(events),
+  );
+  assert.equal(
+    events.filter((event) => event.kind === 'area-change').length,
+    1,
+    JSON.stringify(events),
+  );
+  assert.equal(events.filter((event) => event.kind === 'area-native-compositionupdate').length, 1);
+  const areaUpdateIndex = events.findIndex((event) => event.kind === 'area-update' && event.value.includes('第二行'));
+  const areaChangeIndex = events.findIndex((event) => event.kind === 'area-change');
+  assert.ok(areaUpdateIndex >= 0 && areaChangeIndex > areaUpdateIndex, JSON.stringify(events));
   assert.ok(events.some((event) => event.kind === 'area-update' && event.value.includes('第二行')));
   assert.ok(events.some((event) => event.kind === 'area-input'));
   assert.ok(events.some((event) => event.kind === 'area-change'));
@@ -158,7 +212,7 @@ try {
   assert.ok(events.some((event) => event.kind === 'area-compositionend'));
   assert.equal(await page.locator('#text-area').evaluate((element) => element.tagName), 'TEXTAREA');
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 22, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 31, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

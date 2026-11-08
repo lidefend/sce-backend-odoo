@@ -310,10 +310,10 @@
     "remote_gates": "NOT_RUN: no candidate publication or remote integration was requested",
     "remote_gate_review": "PENDING: remote PR checks and independent PR review begin after exact-head publication"
   },
-  "next_exact_step": "Publish the appended Input/Textarea slice to PR #845, then continue B/C/D waves.",
+  "next_exact_step": "Superseded by FE-RENDERER-V1-CLOSEOUT; continue the uniform component delivery and business-page acceptance there.",
   "id": "FE-RENDERER-02C-02B-02",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
-  "status": "verification_pending",
+  "status": "superseded",
   "goal": ".agent/goals/FE-RENDERER-02C-02B-02.yaml",
   "record": "docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md"
 }

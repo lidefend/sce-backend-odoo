@@ -11,7 +11,7 @@
   />
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="Row extends TablePortRow">
 import { computed } from 'vue';
 import type {
   NoPortSlots,
@@ -22,17 +22,19 @@ import type {
 } from '@sc/ui/primitive-port';
 import ScTable from '../ScTable.vue';
 
-const props = defineProps<TablePortProps<TablePortRow>>();
-const emit = defineEmits<TablePortEmits<TablePortRow>>();
+const props = defineProps<TablePortProps<Row>>();
+const emit = defineEmits<TablePortEmits<Row>>();
 defineSlots<NoPortSlots>();
-const tableRows = computed(() => props.rows.map((row) => ({ ...row })));
+const tableRows = computed<Record<string, unknown>[]>(() => props.rows.map(
+  (row) => Object.fromEntries(Object.entries(row)),
+));
 const tableColumns = computed(() => props.columns.map((column) => ({
   ...column,
   colKey: column.key,
   title: column.label,
 })));
 
-function resolveOriginalRow(candidate: unknown): TablePortRow | undefined {
+function resolveOriginalRow(candidate: unknown): Row | undefined {
   if (!candidate || typeof candidate !== 'object') return undefined;
   const key = props.rowKey ?? 'id';
   const identity = Reflect.get(candidate, key);
