@@ -398,6 +398,66 @@ try {
     window.setInputValue('');
   });
   await page.locator('#text-input').focus();
+  await page.locator('#text-input').fill('a');
+  await page.locator('#text-input').fill('ab');
+  await page.evaluate(async () => {
+    window.setInputValue('aab');
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'aab');
+  assert.deepEqual(
+    (await page.evaluate(() => window.textLog)).filter((event) => event.kind === 'deferred-update').map((event) => event.value),
+    ['a', 'ab'],
+  );
+  await page.evaluate(() => window.focusArea({ preventScroll: true }));
+  await page.evaluate(async () => {
+    window.deferInputEcho = false;
+    window.flushInputEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'aab');
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(await page.locator('#text-input').inputValue(), 'aab');
+  assert.equal(events.filter((event) => event.kind === 'change' && event.value === 'aab').length, 0, JSON.stringify(events));
+  assert.equal(events.filter((event) => event.kind === 'change' && event.value === 'ab').length, 0, JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'blur' && event.value === 'aab'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferAreaEcho = true;
+    window.setAreaValue('');
+  });
+  await page.locator('#text-area').focus();
+  await page.locator('#text-area').fill('a');
+  await page.locator('#text-area').fill('ab');
+  await page.evaluate(async () => {
+    window.setAreaValue('aab');
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'aab');
+  assert.deepEqual(
+    (await page.evaluate(() => window.textLog)).filter((event) => event.kind === 'area-deferred-update').map((event) => event.value),
+    ['a', 'ab'],
+  );
+  await page.evaluate(() => window.focusInput({ preventScroll: true }));
+  await page.evaluate(async () => {
+    window.deferAreaEcho = false;
+    window.flushAreaEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'aab');
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(await page.locator('#text-area').inputValue(), 'aab');
+  assert.equal(events.filter((event) => event.kind === 'area-change' && event.value === 'aab').length, 0, JSON.stringify(events));
+  assert.equal(events.filter((event) => event.kind === 'area-change' && event.value === 'ab').length, 0, JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'aab'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferInputEcho = true;
+    window.setInputValue('');
+  });
+  await page.locator('#text-input').focus();
   await page.locator('#text-input').pressSequentially('ab');
   await page.evaluate(async () => {
     window.deferInputEcho = false;
@@ -440,8 +500,6 @@ try {
   await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-resumed-server');
   await page.locator('#text-input').fill('input-resumed-live');
   await page.evaluate(async () => {
-    window.setInputValue('xy');
-    await window.nextViewTick();
     window.deferInputEcho = false;
     window.flushInputEcho();
     await window.nextViewTick();
@@ -471,8 +529,6 @@ try {
   await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-resumed-server');
   await page.locator('#text-area').fill('area-resumed-live');
   await page.evaluate(async () => {
-    window.setAreaValue('xy');
-    await window.nextViewTick();
     window.deferAreaEcho = false;
     window.flushAreaEcho();
     await window.nextViewTick();
@@ -488,8 +544,16 @@ try {
   );
   assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-resumed-live'));
 
+  for (const sourcePath of [inputFile, textareaFile]) {
+    const source = fs.readFileSync(sourcePath, 'utf8');
+    assert.match(source, /MAX_TRACKED_ECHO_VALUES = 256/);
+    assert.match(source, /trimEchoQueue\(pendingUserEchoes\)/);
+    assert.match(source, /trimEchoQueue\(staleUserEchoes\)/);
+    assert.doesNotMatch(source, /joined \+=/);
+  }
+
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 67, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 87, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

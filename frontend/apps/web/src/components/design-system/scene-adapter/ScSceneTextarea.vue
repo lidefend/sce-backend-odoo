@@ -58,6 +58,10 @@ let committedValue = controlledValue;
 const pendingUserEchoes: string[] = [];
 const supersededUserEchoes: string[] = [];
 const staleUserEchoes: string[] = [];
+// Echo values are full control snapshots, so the history exists only to
+// recognize delayed acknowledgements. Bound every queue to keep a long-lived
+// control finite without turning event ordering into a time window.
+const MAX_TRACKED_ECHO_VALUES = 256;
 let nativeTextarea: HTMLTextAreaElement | null = null;
 let lastNativeInputEvent: Event | undefined;
 
@@ -79,10 +83,16 @@ function eventValue(event: Event): string {
 function blockEdit(): boolean {
   return props.disabled || props.readonly || props.loading;
 }
+function trimEchoQueue(queue: string[]) {
+  if (queue.length > MAX_TRACKED_ECHO_VALUES) {
+    queue.splice(0, queue.length - MAX_TRACKED_ECHO_VALUES);
+  }
+}
 function rememberStaleUserEchoes(values: string[]) {
   for (const value of values) {
     if (value && !staleUserEchoes.includes(value)) staleUserEchoes.push(value);
   }
+  trimEchoQueue(staleUserEchoes);
 }
 function consumeUserEcho(queue: string[], value: string): boolean {
   const index = queue.indexOf(value);
@@ -92,15 +102,6 @@ function consumeUserEcho(queue: string[], value: string): boolean {
     const removed = queue.splice(0, index + 1);
     rememberStaleUserEchoes(removed.slice(0, -1));
     return true;
-  }
-  let joined = '';
-  for (let prefixEnd = 0; prefixEnd < queue.length; prefixEnd += 1) {
-    joined += queue[prefixEnd];
-    if (joined === value) {
-      const removed = queue.splice(0, prefixEnd + 1);
-      rememberStaleUserEchoes(removed);
-      return true;
-    }
   }
   return false;
 }
@@ -140,6 +141,7 @@ watch(
     }
     if (pendingUserEchoes.length) {
       supersededUserEchoes.push(...pendingUserEchoes);
+      trimEchoQueue(supersededUserEchoes);
       pendingUserEchoes.splice(0);
     }
     controlledValue = value;
@@ -174,6 +176,7 @@ function onNativeInput(event: Event) {
   removeTrackedUserEcho(pendingUserEchoes, value);
   removeTrackedUserEcho(staleUserEchoes, value);
   pendingUserEchoes.push(value);
+  trimEchoQueue(pendingUserEchoes);
   emit('update:modelValue', value);
   emit('input', value, { source: lastEditSource, nativeEvent: event });
 }
