@@ -1,5 +1,6 @@
 import {
   PRIMITIVE_REQUIRED_CAPABILITIES,
+  PRIMITIVE_SUPPORTED_CAPABILITIES,
   SCENE_PRIMITIVE_NAMES,
   type ScenePrimitiveName,
 } from './types';
@@ -25,8 +26,8 @@ export type PrimitiveAdapterValidationResult =
   | { ok: true }
   | { ok: false; error: ScenePrimitiveContractError };
 
-const VALID_CAPABILITIES = new Set<string>(
-  Object.values(PRIMITIVE_REQUIRED_CAPABILITIES).flat(),
+const KNOWN_CAPABILITIES = new Set<string>(
+  Object.values(PRIMITIVE_SUPPORTED_CAPABILITIES).flat(),
 );
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -84,16 +85,32 @@ export function validatePrimitiveAdapterRuntimeShape(
     }
 
     const capabilities = contract.capabilities;
-    if (!Array.isArray(capabilities) || capabilities.some((item) => typeof item !== 'string')) {
+    if (!Array.isArray(capabilities)) {
       return fail(primitive, 'capabilities', 'capabilities must be a string array');
     }
-    const declared = new Set(capabilities);
-    if (declared.size !== capabilities.length) {
+    const declaredCapabilities: string[] = [];
+    for (const capability of capabilities) {
+      if (typeof capability !== 'string') {
+        return fail(primitive, 'capabilities', 'capabilities must be a string array');
+      }
+      declaredCapabilities.push(capability);
+    }
+    const declared = new Set(declaredCapabilities);
+    if (declared.size !== declaredCapabilities.length) {
       return fail(primitive, 'capabilities', 'capabilities must not contain duplicates');
     }
-    const invalid = capabilities.find((item) => !VALID_CAPABILITIES.has(item));
-    if (invalid) {
-      return fail(primitive, 'capabilities', `unsupported capability ${invalid}`);
+    const allowed = new Set<string>(PRIMITIVE_SUPPORTED_CAPABILITIES[primitive]);
+    for (const capability of declaredCapabilities) {
+      if (!KNOWN_CAPABILITIES.has(capability)) {
+        return fail(primitive, capability, `unknown capability ${capability}`);
+      }
+      if (!allowed.has(capability)) {
+        return fail(
+          primitive,
+          capability,
+          `capability ${capability} is not supported by ${primitive}`,
+        );
+      }
     }
     for (const required of PRIMITIVE_REQUIRED_CAPABILITIES[primitive]) {
       if (!declared.has(required)) {

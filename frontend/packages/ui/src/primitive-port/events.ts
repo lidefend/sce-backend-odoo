@@ -39,7 +39,7 @@ export type SelectPortEmits = ControlEvents & {
   popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
 };
 
-export type DateFieldPortEmits<Value = unknown> = {
+export type DateFieldPortEmits<Value> = {
   'update:modelValue': [value: Value];
   change: [value: Value, event: PrimitiveEvent];
   focus: [value: Value, event: PrimitiveEvent<FocusEvent>];

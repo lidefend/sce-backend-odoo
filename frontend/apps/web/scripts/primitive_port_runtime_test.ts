@@ -29,12 +29,15 @@ function validAdapter(): Record<string, RuntimeBindingFixture> {
   return Object.fromEntries(SCENE_PRIMITIVE_NAMES.map((primitive) => [primitive, binding(primitive)]));
 }
 
-const minimalValidBoundaries = [
+const negativeBoundaries = [
   'missing binding',
   'wrong identity',
   'missing capability',
   'duplicate capability',
-  'unsupported capability',
+  'unknown capability',
+  'Button/search',
+  'Icon/loading',
+  'Table/ime',
   'wrong port version',
 ] as const;
 
@@ -87,8 +90,43 @@ const unsupportedResult = validatePrimitiveAdapterRuntimeShape(unsupportedCapabi
 assert.equal(unsupportedResult.ok, false);
 if (!unsupportedResult.ok) {
   assert.equal(unsupportedResult.error.detail.primitive, 'DateField');
-  assert.equal(unsupportedResult.error.detail.capability, 'capabilities');
+  assert.equal(unsupportedResult.error.detail.capability, 'selection');
 }
+
+const buttonSearch = validAdapter();
+buttonSearch.Button.contract.capabilities = [...PRIMITIVE_REQUIRED_CAPABILITIES.Button, 'search'];
+const buttonSearchResult = validatePrimitiveAdapterRuntimeShape(buttonSearch);
+assert.equal(buttonSearchResult.ok, false);
+if (!buttonSearchResult.ok) {
+  assert.equal(buttonSearchResult.error.detail.primitive, 'Button');
+  assert.equal(buttonSearchResult.error.detail.capability, 'search');
+}
+
+const iconLoading = validAdapter();
+iconLoading.Icon.contract.capabilities = [...PRIMITIVE_REQUIRED_CAPABILITIES.Icon, 'loading'];
+const iconLoadingResult = validatePrimitiveAdapterRuntimeShape(iconLoading);
+assert.equal(iconLoadingResult.ok, false);
+if (!iconLoadingResult.ok) {
+  assert.equal(iconLoadingResult.error.detail.primitive, 'Icon');
+  assert.equal(iconLoadingResult.error.detail.capability, 'loading');
+}
+
+const tableIme = validAdapter();
+tableIme.Table.contract.capabilities = [...PRIMITIVE_REQUIRED_CAPABILITIES.Table, 'ime'];
+const tableImeResult = validatePrimitiveAdapterRuntimeShape(tableIme);
+assert.equal(tableImeResult.ok, false);
+if (!tableImeResult.ok) {
+  assert.equal(tableImeResult.error.detail.primitive, 'Table');
+  assert.equal(tableImeResult.error.detail.capability, 'ime');
+}
+
+const selectWithPopup = validAdapter();
+selectWithPopup.Select.contract.capabilities = [...PRIMITIVE_REQUIRED_CAPABILITIES.Select];
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(selectWithPopup), { ok: true });
+
+const buttonWithLoading = validAdapter();
+buttonWithLoading.Button.contract.capabilities = [...PRIMITIVE_REQUIRED_CAPABILITIES.Button];
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(buttonWithLoading), { ok: true });
 
 const wrongVersion = validAdapter();
 wrongVersion.Table.contract.portVersion = 2;
@@ -104,5 +142,5 @@ assert.equal(
   false,
   'non-object adapter must fail closed',
 );
-assert.equal(minimalValidBoundaries.length, 6);
-console.log(`[primitive_port_runtime_test] PASS primitives=${SCENE_PRIMITIVE_NAMES.length} boundaries=${minimalValidBoundaries.length}`);
+assert.equal(negativeBoundaries.length, 9);
+console.log(`[primitive_port_runtime_test] PASS primitives=${SCENE_PRIMITIVE_NAMES.length} boundaries=${negativeBoundaries.length}`);
