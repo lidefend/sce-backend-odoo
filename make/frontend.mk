@@ -325,6 +325,8 @@ verify.semantic_runtime_resolution: guard.prod.forbid
 verify.frontend.professional_base_field.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_component_bindings_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-component-bindings-test.mjs >/dev/null
 	@node /tmp/contract-component-bindings-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_only_business_fixture_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-only-business-fixture-test.mjs >/dev/null
+	@node /tmp/contract-only-business-fixture-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_base_field_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-base-field-model-test.mjs >/dev/null
 	@node /tmp/professional-base-field-model-test.mjs
 	@node frontend/apps/web/scripts/contract_tdesign_components_test.mjs

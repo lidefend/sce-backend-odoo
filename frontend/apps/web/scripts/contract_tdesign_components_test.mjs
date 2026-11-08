@@ -98,6 +98,7 @@ const Host = {
         describedBy: 'summary-help',
         ariaLabel: '摘要',
         'onUpdate:modelValue': value => { area.value = value; record('area-update', value); },
+        onInput: (value, event) => record('area-input', value, event),
         onChange: (value, event) => record('area-change', value, event),
         onFocus: (value, event) => record('area-focus', value, event),
         onBlur: (value, event) => record('area-blur', value, event),
@@ -229,7 +230,7 @@ try {
   await page.locator('#text-input').focus();
   await page.locator('#text-input').pressSequentially('abc');
   await page.locator('#area-input').focus();
-  await page.locator('#area-input').fill('第一行\\n第二行');
+  await page.locator('#area-input').pressSequentially('第一行第二行');
   await page.locator('#area-input').press('ArrowRight');
   await page.locator('#choice-input').focus();
   let events = await page.evaluate(() => window.componentLog);
@@ -247,7 +248,9 @@ try {
   check(await page.locator('#area-input').getAttribute('name') === 'summary', 'textarea name projects');
   check(await page.locator('#area-input').evaluate((element) => element.tagName) === 'TEXTAREA', 'textarea renders a native textarea');
   check(events.some((event) => event.kind === 'area-update' && event.value.includes('第二行')), 'textarea updates controlled value');
+  check(events.some((event) => event.kind === 'area-input' && event.eventType === 'input' && event.trusted === true), 'textarea input is forwarded from the real input event');
   check(events.some((event) => event.kind === 'area-change' && event.value.includes('第二行')), 'textarea change is forwarded once the area loses focus');
+  check(events.filter((event) => event.kind === 'area-change').length === 1, 'textarea change occurs once on blur');
   check(events.some((event) => event.kind === 'area-focus'), 'textarea focus is forwarded');
   check(events.some((event) => event.kind === 'area-blur'), 'textarea blur is forwarded');
   check(events.some((event) => event.kind === 'area-keydown'), 'textarea keydown is forwarded');
@@ -267,8 +270,16 @@ try {
   check(await page.locator('#date-input').getAttribute('name') === 'start_date', 'date name projects');
   check(await page.locator('#date-input').getAttribute('aria-label') === '开始日期', 'date accessible name projects');
   await page.locator('#date-input').focus();
+  await page.locator('#date-input').click();
+  const datePanel = page.locator('.t-date-picker__panel').last();
+  await datePanel.waitFor({ state: 'visible' });
+  const dateCell = datePanel.locator('td.t-date-picker__cell').filter({ hasText: /^9$/ }).first();
+  await dateCell.click();
   await page.locator('#date-input').press('Tab');
   events = await page.evaluate(() => window.componentLog);
+  check(events.some((event) => event.kind === 'date-update' && event.value === '2026-11-09'), 'date updates controlled value through real input/change');
+  check(events.some((event) => event.kind === 'date-change' && event.value === '2026-11-09' && event.trusted === true), 'date change is forwarded from the real native change event');
+  check(events.filter((event) => event.kind === 'date-change').length === 1, 'date change occurs once');
   check(events.some((event) => event.kind === 'date-focus'), 'date focus is forwarded');
   check(events.some((event) => event.kind === 'date-blur'), 'date blur is forwarded');
   check(events.some((event) => event.kind === 'date-keydown'), 'date keydown is forwarded');

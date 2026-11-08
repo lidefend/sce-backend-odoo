@@ -203,7 +203,9 @@ Three surfaces:
 
 1. Contract Form: base fields, date, selection, boolean and error state.
 2. Payment Request: master-detail, money, actions, readonly/disabled.
-3. Scene Collection: collection table, row navigation and readonly facts.
+3. The currently enabled ActionView collection: collection table, row navigation
+   and readonly facts. Product enablement of `SceneCollectionSurface` is outside
+   this batch and is recorded as a feature-gated deferral.
 
 Reusable test entries:
 
@@ -277,6 +279,16 @@ V1 implementation evidence:
   `StatusPanel.vue` warning remains.
 - `verify.frontend.typecheck.strict`: PASS.
 
+Independent-review fix evidence:
+
+- TDesign/Sc browser Conformance now runs 72 checks. Textarea forwards every real
+  DOM input and emits exactly one change on blur. DatePicker updates through a
+  real calendar `mousedown` and emits exactly one change.
+- `contract_only_business_fixture_test`: PASS. The new synthetic model
+  `x.ordinary_business` is projected through seven Contract fields directly to
+  ScInput, ScTextarea, ScSelect, ScNumberInput, ScDateField and ScCheckbox with
+  zero frontend product-source branch.
+
 This proves the V1 base binding and TDesign interaction slice. Real product
 evidence and the final build are recorded below.
 
@@ -301,4 +313,5 @@ One boundary remains explicit: current product configuration does not enable an
 independent `SceneCollectionSurface` feature participant. This acceptance
 covers the real payment `ActionView` collection, not a claim that
 `SceneReadonlyCollectionRenderer` is enabled in production. The independent
-Scene Collection path remains feature-gated until a real consumer enables it.
+Scene Collection path is formally excluded from this batch's enablement scope and
+remains feature-gated for a separately accepted consumer batch.

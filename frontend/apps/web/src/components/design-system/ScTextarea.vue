@@ -41,7 +41,13 @@ import {
 
 const textareaRef = ref<{ $el?: unknown } | null>(null);
 let nativeTextarea: HTMLTextAreaElement | null = null;
+let nativeEventDocument: Document | null = null;
 const vNativeControlProjection = nativeControlProjection;
+let focusStartValue = '';
+let lastValue = '';
+let lastChangeValue = '';
+let lastInputEvent: Event | undefined;
+let lastInputValue = '';
 
 const props = withDefaults(defineProps<{
   id?: string;
@@ -104,22 +110,49 @@ function eventFrom(context: unknown): Event | undefined {
 function onTDesignInput(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
   if (next === null) return;
+  lastValue = next;
   emit('update:modelValue', next);
   const event = eventFrom(context);
-  if (event) emit('input', next, event);
+  if (event && lastInputValue !== next) {
+    lastInputValue = next;
+    lastInputEvent = event;
+    emit('input', next, event);
+  }
 }
 function onTDesignChange(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
   const event = eventFrom(context);
-  if (next !== null && event) emit('change', next, event);
+  if (next === null || !event) return;
+  lastValue = next;
+  if (event.type === 'input') {
+    if (event !== lastInputEvent && lastInputValue !== next) {
+      lastInputValue = next;
+      lastInputEvent = event;
+      emit('input', next, event);
+    }
+    return;
+  }
+  lastChangeValue = next;
+  emit('change', next, event);
 }
 function onTDesignFocus(value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  if (event instanceof FocusEvent) emit('focus', String(value ?? ''), event);
+  if (event instanceof FocusEvent) {
+    focusStartValue = String(value ?? '');
+    lastValue = focusStartValue;
+    lastChangeValue = focusStartValue;
+    emit('focus', String(value ?? ''), event);
+  }
 }
 function onTDesignBlur(value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  if (event instanceof FocusEvent) emit('blur', String(value ?? ''), event);
+  if (event instanceof FocusEvent) {
+    emit('blur', String(value ?? ''), event);
+    if (lastValue !== focusStartValue && lastValue !== lastChangeValue) {
+      lastChangeValue = lastValue;
+      emit('change', lastValue, event);
+    }
+  }
 }
 function resolveNativeTextarea(): HTMLTextAreaElement | null {
   const byId = props.id && typeof document !== 'undefined' ? document.getElementById(props.id) : null;
@@ -142,6 +175,24 @@ function onNativeCompositionStart(event: CompositionEvent) {
 function onNativeCompositionEnd(event: CompositionEvent) {
   emit('compositionend', event);
 }
+function onNativeInput(event: Event) {
+  const target = event.target;
+  if (!(target instanceof HTMLTextAreaElement)) return;
+  if (props.id ? target.id !== props.id : target !== nativeTextarea) return;
+  nativeTextarea = target;
+  lastValue = target.value;
+  lastInputValue = target.value;
+  emit('input', target.value, event);
+}
+function onNativeChange(event: Event) {
+  const target = event.target;
+  if (!(target instanceof HTMLTextAreaElement)) return;
+  if (props.id ? target.id !== props.id : target !== nativeTextarea) return;
+  nativeTextarea = target;
+  lastValue = target.value;
+  lastChangeValue = target.value;
+  emit('change', target.value, event);
+}
 function unbindNativeTextarea() {
   if (!nativeTextarea) return;
   nativeTextarea.removeEventListener('keydown', onNativeKeydown);
@@ -149,6 +200,18 @@ function unbindNativeTextarea() {
   nativeTextarea.removeEventListener('compositionstart', onNativeCompositionStart);
   nativeTextarea.removeEventListener('compositionend', onNativeCompositionEnd);
   nativeTextarea = null;
+}
+function bindNativeDocumentEvents() {
+  if (nativeEventDocument || typeof document === 'undefined') return;
+  nativeEventDocument = document;
+  nativeEventDocument.addEventListener('input', onNativeInput, true);
+  nativeEventDocument.addEventListener('change', onNativeChange, true);
+}
+function unbindNativeDocumentEvents() {
+  if (!nativeEventDocument) return;
+  nativeEventDocument.removeEventListener('input', onNativeInput, true);
+  nativeEventDocument.removeEventListener('change', onNativeChange, true);
+  nativeEventDocument = null;
 }
 function bindNativeTextarea() {
   const target = resolveNativeTextarea();
@@ -160,9 +223,19 @@ function bindNativeTextarea() {
   nativeTextarea?.addEventListener('compositionstart', onNativeCompositionStart);
   nativeTextarea?.addEventListener('compositionend', onNativeCompositionEnd);
 }
-onMounted(() => nextTick(bindNativeTextarea));
-onUpdated(bindNativeTextarea);
-onBeforeUnmount(unbindNativeTextarea);
+bindNativeDocumentEvents();
+onMounted(() => nextTick(() => {
+  bindNativeDocumentEvents();
+  bindNativeTextarea();
+}));
+onUpdated(() => {
+  bindNativeDocumentEvents();
+  bindNativeTextarea();
+});
+onBeforeUnmount(() => {
+  unbindNativeTextarea();
+  unbindNativeDocumentEvents();
+});
 
 defineExpose({
   focus: (options?: Parameters<HTMLElement['focus']>[0]) => {

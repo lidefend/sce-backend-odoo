@@ -198,7 +198,8 @@ Sc/TDesign 不格式化业务金额、状态或空值，不决定动作是否授
 
 1. Contract Form：基础字段、日期、选择、布尔值和错误态。
 2. Payment Request：主从关系、金额、动作、readonly/disabled。
-3. Scene Collection：集合表格、行导航和只读事实。
+3. 当前已启用的 ActionView collection：集合表格、行导航和只读事实。
+   `SceneCollectionSurface` 的产品启用不在本批范围，单独登记为 feature-gated 延期。
 
 现有可复用测试入口：
 
@@ -264,6 +265,15 @@ V1 实现专项：
   `StatusPanel.vue` warning。
 - `verify.frontend.typecheck.strict`：PASS。
 
+独立评审修复后的专项证据：
+
+- TDesign/Sc browser Conformance 增至 72 checks；Textarea 每个真实 input
+  触发 input、blur 只触发一次 change；DatePicker 通过真实日历 `mousedown`
+  更新值并只触发一次 change。
+- `contract_only_business_fixture_test`：PASS；虚构新模型
+  `x.ordinary_business` 由 7 个 Contract 字段直接投影到 ScInput、ScTextarea、
+  ScSelect、ScNumberInput、ScDateField、ScCheckbox，前端产品源码特判为 0。
+
 真实候选验收：
 
 - 候选 SHA：`5566824ca045ff3c38e6aa5f20de9b006c5d70fc`；
@@ -280,4 +290,5 @@ V1 实现专项：
 V1 仍有一个明确边界：当前产品配置没有启用独立的 `SceneCollectionSurface`
 feature participant，因此本次验证的是真实付款申请 ActionView 集合页，而不是
 伪称 `SceneReadonlyCollectionRenderer` 已在产品中启用。独立 Scene Collection
-继续保留既有 feature-gated 机制，待真实消费者启用后再纳入 V1 验收。
+已从本批启用范围中正式移出，继续保留既有 feature-gated 机制，待真实消费者
+启用后另立验收批次。

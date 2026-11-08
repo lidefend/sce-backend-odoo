@@ -14,6 +14,7 @@
     "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
     "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+    "frontend/apps/web/scripts/contract_only_business_fixture_test.ts",
     "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
     "frontend/apps/web/src/components/design-system/ScInput.vue",
     "frontend/apps/web/src/components/design-system/ScTextarea.vue",
@@ -28,8 +29,8 @@
     "scripts/verify/test_frontend_professional_base_field_guard.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "latest main source audit plus local Make tools; no database or service writes"
+    "kind": "runtime",
+    "authority": "latest main source audit plus the governed sc-local-dev profile (project sc-local-dev, database sc_dev_demo, port 18081, candidate frontend port 5176); fixture writes were limited to the registered Payment Request fixture and restored"
   },
   "checks": {
     "docs_temp_guard": {
@@ -63,6 +64,7 @@
         "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
         "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+        "frontend/apps/web/scripts/contract_only_business_fixture_test.ts",
         "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
         "frontend/apps/web/src/components/design-system/ScTextarea.vue",
@@ -126,28 +128,41 @@
         "frontend/packages/ui/tsconfig.json"
       ],
       "kind": "offline"
+    },
+    "runtime_product_acceptance": {
+      "target": "verify.local.dev.payment_request.settlement_component.journey",
+      "inputs": [
+        "scripts/verify/local_dev_payment_settlement_component_journey.sh",
+        "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
+        "scripts/verify/local_dev_payment_settlement_component_ids.py",
+        "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/fe-renderer-v1-runtime-readback.json"
+      }
     }
   },
-  "blockers": [
-    "Direct SceneCollectionSurface remains disabled by the existing product feature gate; V1 proves the real ActionView collection path instead and does not claim the Scene renderer is enabled."
-  ],
+  "blockers": [],
   "results": {
     "v1_00_component_mapping_audit": "PASS: 27 semantics, 28 components, 26 field components, 25 platform keys, 63 Sc components",
     "v1_01_contract_component_binding": "PASS: 11 base component identities, 23 key/type variants, 7 implementations, unknown/mismatch fail closed",
-    "v1_02_tdesign_component_interaction": "PASS: direct Sc/TDesign browser Conformance, 67 checks, 0 console errors",
+    "v1_02_tdesign_component_interaction": "PASS: direct Sc/TDesign browser Conformance, 72 checks, 0 console errors; Textarea and DateField exact input/change semantics covered",
     "v1_03_existing_page_hosts_preserved": "PASS: FormSection/PageRenderer/ActionSurface/Professional/@sc/ui hosts retained",
     "v1_04_business_value_and_action_authority": "PASS_UNCHANGED: business presentation, permissions and action authority not changed",
     "v1_05_contract_form": "PASS: real payment form DOM has 16 bindings and 0 binding errors",
     "v1_05_payment_request_settlement_journey": "PASS: introduce/remove/reset with authoritative amount relationship",
     "v1_05_collection_list_and_readonly": "PASS: payment list and readonly detail at desktop/mobile, 0 console errors, 0 mutations",
-    "v1_05_direct_scene_collection_surface": "NOT_ENABLED: existing feature gate has no enabled product participant",
+    "v1_05_direct_scene_collection_surface": "DEFERRED_BY_EXPLICIT_SCOPE: existing feature gate has no enabled product participant",
+    "v1_05_contract_only_new_model_fixture": "PASS: x.ordinary_business projected seven Contract fields through the binding map with zero model-specific frontend product branch",
     "frontend_build": "PASS: 5374 modules",
     "ci_local_iteration": "PASS: 8 required targets exited zero",
     "strict_typecheck": "PASS",
     "lint": "PASS: 0 errors with pre-existing out-of-scope warnings",
-    "independent_review": "NOT_STARTED"
+    "independent_review": "REQUEST_CHANGES_FIXED_PENDING_REREVIEW: ScDateField change, ScTextarea input/change, new-model proof and runtime evidence classification addressed"
   },
-  "next_exact_step": "Commit the run evidence update, freeze the current candidate for independent review, and do not expand V1 until the binding boundary and Scene Collection feature-gate exclusion are accepted.",
+  "next_exact_step": "Commit the review fixes, push the updated candidate, and request a second exact-head independent review. Do not merge or enable SceneCollectionSurface.",
   "id": "FE-RENDERER-V1",
   "branch": "feature/fe-renderer-v1-contract-tdesign-20261108",
   "status": "verification_pending",

@@ -176,6 +176,7 @@ RULES = (
         "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
         "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+        "frontend/apps/web/scripts/contract_only_business_fixture_test.ts",
         "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
         "frontend/apps/web/src/components/design-system/ScTextarea.vue",

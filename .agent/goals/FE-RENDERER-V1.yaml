@@ -47,7 +47,8 @@ goal:
     - Keep Contract V2 structure, permissions, business values and action authority unchanged
     - Reuse existing Sc and TDesign wrappers and standardize only real capability gaps
     - Make unknown, incompatible or capability-mismatched component bindings fail closed
-    - Prove Contract Form, Payment Request and Scene Collection use the same component authority
+    - Prove Contract Form, Payment Request and the currently enabled collection surface use the same component authority
+    - Record direct SceneCollectionSurface enablement as a deferred feature-gated boundary rather than substituting ActionView as equivalent evidence
     - Require no product-source change to add a standard ordinary business model and Contract fixture
     - Record component counts, duplicated branches, registry paths and complexity change against the baseline
     - Run affected non-zero tests, strict typecheck, lint, guard checks, incremental iteration and required integration gates
@@ -60,16 +61,18 @@ goal:
     v1_05_contract_form: PASS
     v1_05_payment_request_settlement_journey: PASS
     v1_05_collection_list_and_readonly: PASS
-    v1_05_direct_scene_collection_surface: NOT_ENABLED_EXISTING_FEATURE_GATE
+    v1_05_direct_scene_collection_surface: DEFERRED_BY_EXPLICIT_SCOPE
+    v1_05_contract_only_new_model_fixture: PASS
+    review_fix_date_change_event: PASS
+    review_fix_textarea_input_change_semantics: PASS
     frontend_build: PASS_5374_MODULES
     ci_local_iteration: PASS_8_TARGETS
     strict_typecheck: PASS
     lint: PASS_WITH_PREEXISTING_OUT_OF_SCOPE_WARNING
-    independent_review: NOT_STARTED
+    independent_review: REQUEST_CHANGES_FIXED_PENDING_REREVIEW
     next_exact_step: >
-      Commit the run evidence update, freeze the current candidate for independent
-      review, and do not extend the V1 scope until that review accepts the binding
-      boundary and the Scene Collection feature-gate exclusion.
+      Commit the review fixes, push the updated candidate, and request a second
+      exact-head independent review. Do not merge or enable SceneCollectionSurface.
   exclusions:
     - multi_renderer_runtime
     - dynamic_plugin_marketplace
@@ -79,6 +82,7 @@ goal:
     - permission_mechanism_change
     - business_value_presentation_change
     - full_page_rewrite
+    - scene_collection_product_enablement
     - irreversible_legacy_removal
     - deployment
     - merge_without_independent_review
