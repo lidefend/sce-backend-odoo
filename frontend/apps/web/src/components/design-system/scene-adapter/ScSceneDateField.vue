@@ -11,6 +11,7 @@
     :readonly="readonly"
     :required="required"
     :loading="loading"
+    :clearable="clearable"
     :placeholder="placeholder"
     :described-by="describedBy"
     :aria-label="ariaLabel"
@@ -45,6 +46,7 @@ const props = withDefaults(defineProps<DateFieldPortProps>(), {
   readonly: false,
   required: false,
   loading: false,
+  clearable: false,
   describedBy: undefined,
   ariaLabel: undefined,
   name: undefined,
@@ -70,7 +72,7 @@ function onUpdate(value: string) {
 function onChange(value: string, event: Event) {
   const nativeEvent = event instanceof Event ? event : undefined;
   emit('change', canonical(value), {
-    source: nativeEvent ? source(nativeEvent) : lastSource,
+    source: nativeEvent?.isTrusted ? source(nativeEvent) : lastSource,
     nativeEvent,
   });
 }

@@ -16,5 +16,5 @@ export const scSceneSelectBinding: PrimitiveBinding<SelectPortProps, SelectPortE
 };
 export const scSceneDateFieldBinding: PrimitiveBinding<DateFieldPortProps, DateFieldPortEmits<CanonicalDateValue>, NoPortSlots, 'DateField'> = {
   component: ScSceneDateField,
-  contract: { primitive: 'DateField', portVersion: 1, capabilities: ['value', 'change', 'focus', 'blur', 'keyboard'] },
+  contract: { primitive: 'DateField', portVersion: 1, capabilities: ['value', 'change', 'clear', 'focus', 'blur', 'keyboard'] },
 };

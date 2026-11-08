@@ -208,6 +208,7 @@ export function buildContractFormActions(params: {
     const requiredParams = normalizeRequiredParams(row.required_params);
     const presentation = parseMaybeJsonRecord(row.presentation);
     const reasonInput = parseMaybeJsonRecord(presentation.reason_input || presentation.reasonInput);
+    const presentationRequiresReason = presentation.requires_reason === true || presentation.requiresReason === true;
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
     const presentationSemantic = String(presentation.semantic || '').trim();
     if (row.visible === false || row.invisible === true) continue;
@@ -289,7 +290,7 @@ export function buildContractFormActions(params: {
       clientMode: String(targetRaw.mode || targetRaw.client_mode || row.clientMode || row.client_mode || '').trim(),
       visibleProfiles,
       requiredParams,
-      requiresReason: row.requires_reason === true || requiredParams.includes('reason'),
+      requiresReason: row.requires_reason === true || requiredParams.includes('reason') || presentationRequiresReason,
       reasonPresentation: {
         title: String(reasonInput.title || '').trim(),
         label: String(reasonInput.label || '').trim(),

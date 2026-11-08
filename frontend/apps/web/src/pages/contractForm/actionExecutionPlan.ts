@@ -46,7 +46,9 @@ export async function collectActionParams(
     onFailure('missing_contract');
     return null;
   }
-  const reason = String(await requestReason(presentation) ?? '').trim();
+  const requestedReason = await requestReason(presentation);
+  if (requestedReason === null) return null;
+  const reason = String(requestedReason).trim();
   if (reason) return { reason };
   onFailure('missing_reason');
   return null;

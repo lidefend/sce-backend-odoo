@@ -28,7 +28,7 @@ const Host = { setup() {
     h(DateField, { ref: dateRef, id: 'date', name: 'start_date', modelValue: dateValue.value,
       required: true, clearable: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
       'onUpdate:modelValue': v => { dateValue.value = v; window.log.push('date-update:'+v.value); },
-      onChange: (v,e) => window.log.push('date-change:'+v.value) }),
+      onChange: (v,e) => window.log.push('date-change:'+v.value+':'+e.source) }),
     h(DateField, { id: 'datetime', modelValue: {precision:'datetime',value:'2026-11-08 10:30:00'} }),
   ]);
 }};
@@ -83,8 +83,8 @@ try {
     `date-update:`,
   ], JSON.stringify(events));
   assert.deepEqual(events.filter(e=>e.startsWith('date-change:')), [
-    `date-change:2026-11-15`,
-    `date-change:`,
+    `date-change:2026-11-15:pointer`,
+    `date-change::pointer`,
   ], JSON.stringify(events));
   assert.deepEqual(errors, []);
  console.log(JSON.stringify({browser:browser.version(),checks:20,consoleErrors:0,selectPopupSearch:'PASS',dateSelectAndClear:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));

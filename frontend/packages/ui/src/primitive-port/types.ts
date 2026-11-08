@@ -42,6 +42,7 @@ export type PrimitiveCapability =
   | 'ime'
   | 'search'
   | 'popup'
+  | 'clear'
   | 'loading'
   | 'row-activate'
   | 'semantic-icon';
@@ -50,7 +51,7 @@ export const PRIMITIVE_REQUIRED_CAPABILITIES = {
   Button: ['activate', 'focus', 'blur', 'keyboard', 'loading'],
   Input: ['value', 'change', 'focus', 'blur', 'keyboard', 'ime'],
   Select: ['value', 'change', 'search', 'popup', 'focus', 'blur', 'keyboard'],
-  DateField: ['value', 'change', 'focus', 'blur', 'keyboard'],
+  DateField: ['value', 'change', 'clear', 'focus', 'blur', 'keyboard'],
   Textarea: ['value', 'change', 'focus', 'blur', 'keyboard', 'ime'],
   Table: ['row-activate', 'focus', 'keyboard'],
   Icon: ['semantic-icon'],
@@ -60,7 +61,7 @@ export const PRIMITIVE_SUPPORTED_CAPABILITIES = {
   Button: ['activate', 'focus', 'blur', 'keyboard', 'loading'],
   Input: ['value', 'change', 'focus', 'blur', 'keyboard', 'ime'],
   Select: ['value', 'change', 'search', 'popup', 'focus', 'blur', 'keyboard'],
-  DateField: ['value', 'change', 'focus', 'blur', 'keyboard'],
+  DateField: ['value', 'change', 'clear', 'focus', 'blur', 'keyboard'],
   Textarea: ['value', 'change', 'focus', 'blur', 'keyboard', 'ime'],
   Table: ['row-activate', 'focus', 'keyboard'],
   Icon: ['semantic-icon'],
@@ -120,6 +121,7 @@ export type CanonicalDateValue =
 export interface DateFieldPortProps extends PrimitiveCommonProps {
   modelValue: CanonicalDateValue;
   placeholder?: string;
+  clearable?: boolean;
 }
 
 export interface TextareaPortProps extends PrimitiveCommonProps {

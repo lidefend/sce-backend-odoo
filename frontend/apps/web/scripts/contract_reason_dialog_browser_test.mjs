@@ -137,7 +137,7 @@ try {
   const cancelled = await page.evaluate(() => window.pendingReject);
   assert.equal(cancelled, null);
   assert.deepEqual(await page.evaluate(() => window.operationRequests), []);
-  assert.deepEqual(await page.evaluate(() => window.failures), ['missing_reason']);
+  assert.deepEqual(await page.evaluate(() => window.failures), []);
   await dialog.waitFor({ state: 'hidden' });
 
   await page.evaluate(() => {
@@ -151,7 +151,7 @@ try {
   const submitted = await page.evaluate(() => window.pendingReject);
   assert.deepEqual(submitted, { reason: '付款依据不完整' });
   assert.deepEqual(await page.evaluate(() => window.operationRequests), [{ reason: '付款依据不完整' }]);
-  assert.deepEqual(await page.evaluate(() => window.failures), ['missing_reason']);
+  assert.deepEqual(await page.evaluate(() => window.failures), []);
   assert.deepEqual(errors, []);
 
   console.log(JSON.stringify({

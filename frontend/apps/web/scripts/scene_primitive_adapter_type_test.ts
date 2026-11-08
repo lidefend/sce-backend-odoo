@@ -2,6 +2,7 @@ import type {
   ButtonPortEmits,
   ButtonPortProps,
   ButtonPortSlots,
+  DateFieldPortProps,
   PrimitiveBinding,
   ScenePrimitiveAdapter,
   TablePortEmits,
@@ -38,6 +39,11 @@ const typedTableBinding: PrimitiveBinding<
   'Table'
 > = createScSceneTableBinding<ProjectRow>();
 void typedTableBinding;
+const clearableDateProps: DateFieldPortProps = {
+  modelValue: { precision: 'date', value: '2026-11-15' },
+  clearable: true,
+};
+void clearableDateProps;
 
 const wrongIdentity = {
   component: ScSceneButton,
