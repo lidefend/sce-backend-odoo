@@ -304,7 +304,7 @@ Machine evidence:
   SHA256
   `70acfc3c0fafb0124f2f89afef0bfc193cb8388981157dc5326757b5a00bbc36`;
 - `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `7324618d0399432e3bb21fe095f11e6428f832c6c530242a0a6daec75115a882`.
+  `cec1f0df14f0a3f00f8143e3f1eea60b0508862557dd99e21fb969fd53cce80b`.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -351,7 +351,7 @@ Neither fix changes ACL, Contract V2 or business data authority.
 L4 passed for product commit `62f7b57a2`. Contract Form and Payment Request bind
 metadata child `c97e68a1b`; list, relation and project-ledger bind P4 child
 `79e0e704a`; the acceptance manifest is carried to final evidence-tool head
-`080f0c03b`. Those commits contain the same product frontend tree; later commits
+`eee20af2d`. Those commits contain the same product frontend tree; later commits
 change only verification tooling and evidence. No page evidence was inherited
 from `866afcb11` or older candidates.
 
@@ -381,7 +381,7 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T192053Z-2823257-517785323/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T192412Z-2849708-793531216/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
 transformed in 25.20 seconds. The existing large-chunk advisory remains.
