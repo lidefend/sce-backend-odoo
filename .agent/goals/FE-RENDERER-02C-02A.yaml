@@ -39,12 +39,13 @@ goal:
     adr: PASS
     review_revision: PASS
     review_revision_r1: PASS
+    review_revision_r2: PASS
     docs_links: PASS
     docs_temp_guard: PASS
     agent_ledger: PASS
     agent_resume: PASS
     ci_iteration: PASS
-    next_exact_step: 提交最终协议修订 R1，更新 PR #843，并取得最终独立复审与 exact-HEAD 远端门禁
+    next_exact_step: 提交 Vue 3.5.27 类型契约修订 R2，更新 PR #843，并取得最终独立复审与 exact-HEAD 远端门禁
   exclusions:
     - component_migration
     - product_code_change

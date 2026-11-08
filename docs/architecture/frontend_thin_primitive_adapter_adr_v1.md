@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A：薄层 Primitive Adapter 架构裁定
 
-- 文档状态：所有者方向已裁定；已纳入两轮独立架构评审意见的最终协议修订版，等待最终 exact-HEAD 复审冻结；本 ADR 不授权产品代码迁移
+- 文档状态：所有者方向已裁定；已纳入第三轮评审的 Vue 3.5.27 类型契约修订版（R2），等待最终 exact-HEAD 复审冻结；本 ADR 不授权产品代码迁移
 - 审计基线：`c8be18bc26cb262a30764a53b9d0765f646427aa`
 - 日期：2026-11-08
 - Formal Product Layer：P0 platform kernel product
@@ -264,6 +264,7 @@ Port v1 的强制规则：
 - `readonly` 和 `disabled` 控制不得发出值改变事件。
 - `loading` 不得伪造成功值；按钮不得触发业务动作。
 - 所有事件使用统一的来源封装；平台能提供真实原生事件时必须携带，缺失时明确为空，绝不构造假的 `new Event()`。
+- `PrimitiveEvent.source` 必须由 Adapter 依据实际事件链判定，不能只根据 `nativeEvent` 的运行时类型推断；键盘触发的原生 button click 仍可能是 `MouseEvent`。
 - 键盘激活必须只有一个所有者，禁止 Enter/Space 同时触发控件原生 click 和包装层第二处理器。
 - 错误态必须同时提供可感知状态和 `aria-invalid` / `aria-describedby` 关联。
 - 必有或图标型按钮必须有可访问名称。
@@ -275,6 +276,17 @@ Port v1 的强制规则：
 以下为 schema 级 TypeScript 协议；实际实现由 02C-02B 在 `@sc/ui` 中落地，并以类型测试约束 Adapter。
 
 ```ts
+import type {
+  ComponentOptionsMixin,
+  ComputedOptions,
+  DefineComponent,
+  MethodOptions,
+  PublicProps,
+  ShortEmitsToObject,
+  SlotsType,
+  VNode,
+} from 'vue';
+
 export type ScenePrimitiveSize = 'small' | 'medium' | 'large';
 export type SceneControlStatus = 'default' | 'error';
 export type SceneDensity = 'compact' | 'cozy';
@@ -303,13 +315,13 @@ export interface PrimitiveCommonProps {
   ariaLabel?: string;
 }
 
-export interface ControlEvents {
-  change(value: string, event: PrimitiveEvent): void;
-  focus(value: string, event: PrimitiveEvent<FocusEvent>): void;
-  blur(value: string, event: PrimitiveEvent<FocusEvent>): void;
-  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
-  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
-}
+export type ControlEvents = {
+  change: [value: string, event: PrimitiveEvent];
+  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+};
 ```
 
 ### 5.3 ButtonPort
@@ -324,15 +336,15 @@ export interface ButtonPortProps {
   accessibleLabel?: string;
 }
 
-export interface ButtonPortEmits {
-  activate(event: PrimitiveEvent): void;
-  focus(event: PrimitiveEvent<FocusEvent>): void;
-  blur(event: PrimitiveEvent<FocusEvent>): void;
-}
+export type ButtonPortEmits = {
+  activate: [event: PrimitiveEvent];
+  focus: [event: PrimitiveEvent<FocusEvent>];
+  blur: [event: PrimitiveEvent<FocusEvent>];
+};
 
-export interface ButtonPortSlots {
-  default(): unknown;
-}
+export type ButtonPortSlots = {
+  default: () => VNode[];
+};
 ```
 
 要求：
@@ -354,12 +366,12 @@ export interface InputPortProps extends PrimitiveCommonProps {
   placeholder?: string;
 }
 
-export interface InputPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  input(value: string, event: PrimitiveEvent): void;
-  compositionstart(event: PrimitiveEvent<CompositionEvent>): void;
-  compositionend(event: PrimitiveEvent<CompositionEvent>): void;
-}
+export type InputPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
+};
 
 ```
 
@@ -388,11 +400,11 @@ export interface SelectPortProps extends PrimitiveCommonProps {
   emptyText?: string;
 }
 
-export interface SelectPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  search(query: string, event: PrimitiveEvent<InputEvent>): void;
-  popupVisibleChange(state: { visible: boolean; trigger: string }, event: PrimitiveEvent): void;
-}
+export type SelectPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  search: [query: string, event: PrimitiveEvent<InputEvent>];
+  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
+};
 ```
 
 要求：
@@ -413,14 +425,14 @@ export type CanonicalDateValue =
   | { precision: 'date'; value: string }
   | { precision: 'datetime'; value: string };
 
-export interface DateFieldPortEmits {
-  'update:modelValue'(value: CanonicalDateValue): void;
-  change(value: CanonicalDateValue, event: PrimitiveEvent): void;
-  focus(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
-  blur(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
-  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
-  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
-}
+export type DateFieldPortEmits = {
+  'update:modelValue': [value: CanonicalDateValue];
+  change: [value: CanonicalDateValue, event: PrimitiveEvent];
+  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+};
 ```
 
 要求：
@@ -441,10 +453,10 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
   maxRows?: number;
 }
 
-export interface TextareaPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  input(value: string, event: PrimitiveEvent): void;
-}
+export type TextareaPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  input: [value: string, event: PrimitiveEvent];
+};
 ```
 
 要求：
@@ -476,9 +488,9 @@ export interface TablePortProps<Row extends TablePortRow> {
   accessibleLabel: string;
 }
 
-export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate(row: Row, event: PrimitiveEvent): void;
-}
+export type TablePortEmits<Row extends TablePortRow> = {
+  rowActivate: [row: Row, event: PrimitiveEvent];
+};
 
 ```
 
@@ -531,34 +543,45 @@ export interface IconPortProps {
 ### 5.10 Adapter 注入
 
 ```ts
-export interface PrimitivePortDefinition<Props, Emits, Slots> {
+export interface PrimitivePortDefinition<
+  Props,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
+> {
   props: Props;
   emits: Emits;
   slots: Slots;
   exposed: PrimitiveHandle;
 }
 
+type RuntimeEmits<PortEmits extends Record<string, any[]>> = ShortEmitsToObject<PortEmits>;
+type RuntimeSlots<PortSlots extends Record<string, any>> = SlotsType<PortSlots>;
+
 export type PrimitiveComponent<
   Props,
-  Emits,
-  Slots,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
 > = DefineComponent<
   Props,
   {},
   {},
-  {},
-  {},
-  {},
-  {},
-  Emits,
+  ComputedOptions,
+  MethodOptions,
+  ComponentOptionsMixin,
+  ComponentOptionsMixin,
+  RuntimeEmits<Emits>,
   string,
-  {},
+  PublicProps,
   Props,
   {},
-  Slots
+  RuntimeSlots<Slots>
 >;
 
-export interface PrimitiveBinding<Props, Emits, Slots> {
+export interface PrimitiveBinding<
+  Props,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
+> {
   component: PrimitiveComponent<Props, Emits, Slots>;
   readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
 }
@@ -578,6 +601,14 @@ export interface SceneCompositionContext {
   density: SceneDensity;
 }
 ```
+
+以上 Vue 类型映射以仓库锁定的 Vue `3.5.27`、TypeScript `5.9.3` 和 `vue-tsc 2.2.12` 为准：
+
+- Port 的 Emits 与 Slots 必须使用类型别名，而不是开放式 `interface`；事件元组映射需要满足 `Record<string, any[]>` 约束。
+- `ShortEmitsToObject<PortEmits>` 把 Port 的事件元组转换成 Vue Runtime Emits 函数表。
+- `SlotsType<PortSlots>` 把 Port Slots 声明转换成 Vue Runtime Slots 类型。
+- `DefineComponent` 的泛型位置直接对齐 Vue 3.5.27 签名，并使用官方导出的 `ComputedOptions`、`MethodOptions`、`ComponentOptionsMixin` 和 `PublicProps`，不再用空对象猜测约束。
+- 此类型别名本身只证明签名可组合；真实 Sc Adapter 的 Props/Emits/Slots 正反向编译测试仍必须在 02C-02B 使用仓库实际工具链执行。
 
 `PrimitiveComponent` 使用参数化的 Vue `DefineComponent` 约束，不能退化为任意 `Component` 或无类型组件字典。`PrimitiveBinding.contract` 是稳定的 Port 声明，但单独的手写声明不构成组件符合 Port 的类型证明。
 
@@ -695,6 +726,7 @@ Contract V2
 - `@sc/ui` Port 类型、Provider 注入和 Adapter 契约测试。
 - Web `createScScenePrimitiveAdapter()` 薄包装。
 - `@sc/ui/primitive-port` 子路径、统一 PrimitiveEvent、Adapter 校验和 fail-closed 错误面。
+- 使用仓库 Vue 3.5.27 / TypeScript / vue-tsc 工具链建立合法 Adapter、错误 Props、错误 Emits、错误 Slots 的正反向编译测试。
 - ScDateField、ScSelect 等缺失事件与可访问性能力的缺口清单和最小补齐。
 - 新旧路径 Feature Flag；不迁移全部消费者。
 
@@ -770,7 +802,7 @@ Contract V2
 | 能力 | 断言 |
 | --- | --- |
 | 值变化 | `update:modelValue` / `change` 值与真实 DOM/TDesign 事件一致 |
-| 事件来源 | `pointer` / `keyboard` / `programmatic` 标记准确；真实 `nativeEvent` 存在时不丢失，不存在时不伪造 |
+| 事件来源 | `pointer` / `keyboard` / `programmatic` 由真实事件链判定而非事件类型猜测；真实 `nativeEvent` 存在时不丢失，不存在时不伪造；Enter/Space 只激活一次 |
 | readonly / disabled | 不发出值变化或业务激活；视觉和辅助状态明确 |
 | 错误态 | `status=error`、`aria-invalid=true`、错误说明通过 `aria-describedby` 关联 |
 | Focus / Blur | Adapter 暴露 `focus()`；两个方向的事件顺序与目标一致 |
@@ -828,6 +860,22 @@ Contract V2
 | 工程减负 | 旧 Driver、Preference 和厂商依赖能够逐步退出 |
 
 上述标准进入 Port Conformance、静态守卫、页面一致性测试和最终集成门禁，不以截图或单个绿色检查替代。
+
+### 8.5 02C-02B 编译期契约测试
+
+必须使用仓库锁定的 Vue `3.5.27`、TypeScript 和 `vue-tsc` 建立独立类型测试：
+
+| 类型测试 | 预期 |
+| --- | --- |
+| 合法 ScButton Adapter | 编译通过 |
+| Props 缺少必需属性 | 编译失败 |
+| Emits 参数类型错误 | 编译失败 |
+| Slots 不符合协议 | 编译失败 |
+| 使用 `as` 绕过兼容检查 | 禁止且类型测试失败 |
+
+类型测试必须同时包含正向样例和 `@ts-expect-error` / 等价反向断言。只有文档中的类型别名通过签名核对，不能替代 02C-02B 对真实 Sc Adapter 的编译验证。
+
+R2 文档批次的签名核对记录：使用仓库实际 Vue `3.5.27`、TypeScript `5.9.3` 和 `vue-tsc 2.2.12`，以 `--strict --noEmit` 分别通过 `tsc` 与 `vue-tsc` 编译临时类型探针。探针覆盖 `ShortEmitsToObject`、`SlotsType` 与 `DefineComponent` 的组合。该结果只证明文档类型签名可组合，不证明任何真实 Sc 组件满足 Port；后者仍是 02C-02B 的编译门禁。
 
 ## 9. 回滚与兼容边界
 

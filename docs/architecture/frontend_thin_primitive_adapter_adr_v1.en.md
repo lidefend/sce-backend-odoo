@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A: Thin Primitive Adapter Architecture Decision
 
-- Status: owner direction accepted; final protocol revision after two independent architecture reviews, pending final exact-head re-review/freeze. This ADR does not authorize product-code migration.
+- Status: owner direction accepted; R2 protocol revision after the third review, aligned to Vue 3.5.27 types, pending final exact-head re-review/freeze. This ADR does not authorize product-code migration.
 - Audit baseline: `c8be18bc26cb262a30764a53b9d0765f646427aa`
 - Date: 2026-11-08
 - Formal Product Layer: P0 platform kernel product
@@ -264,6 +264,7 @@ Mandatory rules:
 - Readonly and disabled controls emit no value changes.
 - Loading does not fabricate a successful value; a loading button does not invoke business actions.
 - Events use one source wrapper. A real native event is carried whenever the platform exposes it; absence is explicit and never replaced with a fabricated `new Event()`.
+- `PrimitiveEvent.source` is determined by the Adapter from the actual event chain, not inferred solely from the runtime `nativeEvent` type; a keyboard-triggered native button click can still be a `MouseEvent`.
 - Keyboard activation has exactly one owner. Enter/Space must not trigger the native click and a second wrapper handler.
 - Error state exposes a perceptible state plus `aria-invalid` / `aria-describedby`.
 - Text and icon-only buttons must have an accessible name.
@@ -275,6 +276,17 @@ Mandatory rules:
 The following is the schema-level TypeScript protocol. 02C-02B implements it and enforces Adapter conformance through type and component tests.
 
 ```ts
+import type {
+  ComponentOptionsMixin,
+  ComputedOptions,
+  DefineComponent,
+  MethodOptions,
+  PublicProps,
+  ShortEmitsToObject,
+  SlotsType,
+  VNode,
+} from 'vue';
+
 export type ScenePrimitiveSize = 'small' | 'medium' | 'large';
 export type SceneControlStatus = 'default' | 'error';
 export type SceneDensity = 'compact' | 'cozy';
@@ -303,13 +315,13 @@ export interface PrimitiveCommonProps {
   ariaLabel?: string;
 }
 
-export interface ControlEvents {
-  change(value: string, event: PrimitiveEvent): void;
-  focus(value: string, event: PrimitiveEvent<FocusEvent>): void;
-  blur(value: string, event: PrimitiveEvent<FocusEvent>): void;
-  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
-  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
-}
+export type ControlEvents = {
+  change: [value: string, event: PrimitiveEvent];
+  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+};
 ```
 
 ### 5.3 ButtonPort
@@ -324,15 +336,15 @@ export interface ButtonPortProps {
   accessibleLabel?: string;
 }
 
-export interface ButtonPortEmits {
-  activate(event: PrimitiveEvent): void;
-  focus(event: PrimitiveEvent<FocusEvent>): void;
-  blur(event: PrimitiveEvent<FocusEvent>): void;
-}
+export type ButtonPortEmits = {
+  activate: [event: PrimitiveEvent];
+  focus: [event: PrimitiveEvent<FocusEvent>];
+  blur: [event: PrimitiveEvent<FocusEvent>];
+};
 
-export interface ButtonPortSlots {
-  default(): unknown;
-}
+export type ButtonPortSlots = {
+  default: () => VNode[];
+};
 ```
 
 Requirements:
@@ -354,12 +366,12 @@ export interface InputPortProps extends PrimitiveCommonProps {
   placeholder?: string;
 }
 
-export interface InputPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  input(value: string, event: PrimitiveEvent): void;
-  compositionstart(event: PrimitiveEvent<CompositionEvent>): void;
-  compositionend(event: PrimitiveEvent<CompositionEvent>): void;
-}
+export type InputPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  input: [value: string, event: PrimitiveEvent];
+  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
+  compositionend: [event: PrimitiveEvent<CompositionEvent>];
+};
 
 ```
 
@@ -382,11 +394,11 @@ export interface SelectPortProps extends PrimitiveCommonProps {
   emptyText?: string;
 }
 
-export interface SelectPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  search(query: string, event: PrimitiveEvent<InputEvent>): void;
-  popupVisibleChange(state: { visible: boolean; trigger: string }, event: PrimitiveEvent): void;
-}
+export type SelectPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  search: [query: string, event: PrimitiveEvent<InputEvent>];
+  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
+};
 ```
 
 Requirements include accessible naming, expanded state, error/description associations, and keyboard open/select/search/Escape/focus behavior. The current ScSelect focus/blur/change gaps must be implemented or explicitly wrapped before conformance.
@@ -403,14 +415,14 @@ export type CanonicalDateValue =
   | { precision: 'date'; value: string }
   | { precision: 'datetime'; value: string };
 
-export interface DateFieldPortEmits {
-  'update:modelValue'(value: CanonicalDateValue): void;
-  change(value: CanonicalDateValue, event: PrimitiveEvent): void;
-  focus(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
-  blur(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
-  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
-  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
-}
+export type DateFieldPortEmits = {
+  'update:modelValue': [value: CanonicalDateValue];
+  change: [value: CanonicalDateValue, event: PrimitiveEvent];
+  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
+  keydown: [event: PrimitiveEvent<KeyboardEvent>];
+  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+};
 ```
 
 `value` must already be a canonical date or datetime. Contract V2 and ScDateField declare the exact string representation. The Port must not infer a user timezone or format display text. The current SceneFieldKind produces only `precision='date'` in v1; `datetime` is represented by the protocol but its control capability is enabled only when a real consumer appears.
@@ -427,10 +439,10 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
   maxRows?: number;
 }
 
-export interface TextareaPortEmits extends ControlEvents {
-  'update:modelValue'(value: string): void;
-  input(value: string, event: PrimitiveEvent): void;
-}
+export type TextareaPortEmits = ControlEvents & {
+  'update:modelValue': [value: string];
+  input: [value: string, event: PrimitiveEvent];
+};
 ```
 
 ScTextarea may use TDesign or Native internally, but the Port exposes no vendor props.
@@ -459,9 +471,9 @@ export interface TablePortProps<Row extends TablePortRow> {
   accessibleLabel: string;
 }
 
-export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate(row: Row, event: PrimitiveEvent): void;
-}
+export type TablePortEmits<Row extends TablePortRow> = {
+  rowActivate: [row: Row, event: PrimitiveEvent];
+};
 
 ```
 
@@ -504,34 +516,45 @@ The 49 vendor exports in `@sc/ui/icons` are not the migration scope for this Por
 ### 5.10 Adapter Injection
 
 ```ts
-export interface PrimitivePortDefinition<Props, Emits, Slots> {
+export interface PrimitivePortDefinition<
+  Props,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
+> {
   props: Props;
   emits: Emits;
   slots: Slots;
   exposed: PrimitiveHandle;
 }
 
+type RuntimeEmits<PortEmits extends Record<string, any[]>> = ShortEmitsToObject<PortEmits>;
+type RuntimeSlots<PortSlots extends Record<string, any>> = SlotsType<PortSlots>;
+
 export type PrimitiveComponent<
   Props,
-  Emits,
-  Slots,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
 > = DefineComponent<
   Props,
   {},
   {},
-  {},
-  {},
-  {},
-  {},
-  Emits,
+  ComputedOptions,
+  MethodOptions,
+  ComponentOptionsMixin,
+  ComponentOptionsMixin,
+  RuntimeEmits<Emits>,
   string,
-  {},
+  PublicProps,
   Props,
   {},
-  Slots
+  RuntimeSlots<Slots>
 >;
 
-export interface PrimitiveBinding<Props, Emits, Slots> {
+export interface PrimitiveBinding<
+  Props,
+  Emits extends Record<string, any[]>,
+  Slots extends Record<string, any>,
+> {
   component: PrimitiveComponent<Props, Emits, Slots>;
   readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
 }
@@ -551,6 +574,14 @@ export interface SceneCompositionContext {
   density: SceneDensity;
 }
 ```
+
+This Vue mapping follows the repository-pinned Vue `3.5.27`, TypeScript `5.9.3`, and `vue-tsc 2.2.12`:
+
+- Port Emits and Slots use type aliases rather than open `interface` declarations; tuple event maps must satisfy `Record<string, any[]>`.
+- `ShortEmitsToObject<PortEmits>` converts Port event tuples into the Vue Runtime Emits function map.
+- `SlotsType<PortSlots>` converts the Port slot declaration into the Vue Runtime Slots type.
+- `DefineComponent` generic positions match the Vue 3.5.27 signature and use its exported `ComputedOptions`, `MethodOptions`, `ComponentOptionsMixin`, and `PublicProps` instead of guessed empty-object constraints.
+- The alias proves composability of the signature only. Positive and negative Props/Emits/Slots compilation tests for a real Sc Adapter remain mandatory in 02C-02B using the repository toolchain.
 
 `PrimitiveComponent` uses a parameterized Vue `DefineComponent` constraint and must not degrade to an arbitrary `Component` or an untyped component dictionary. `PrimitiveBinding.contract` is the stable Port declaration, but a handwritten declaration alone is not proof that the component implements it.
 
@@ -655,6 +686,7 @@ Deliver:
 - Port types, Provider injection, and Adapter contract tests in `@sc/ui`.
 - A thin Web `createScScenePrimitiveAdapter()`.
 - The `@sc/ui/primitive-port` subpath, unified PrimitiveEvent, Adapter validation, and fail-closed error surface.
+- Positive and negative compilation tests using the repository Vue 3.5.27 / TypeScript / vue-tsc toolchain for a valid Adapter plus incompatible Props, Emits, and Slots.
 - A gap list and minimal corrections for ScDateField, ScSelect, and other conformance gaps.
 - A feature flag for the new path; no broad consumer migration.
 
@@ -720,7 +752,7 @@ Guard changes belong to their implementation stages, not this ADR batch.
 | Capability | Assertion |
 | --- | --- |
 | Value change | `update:modelValue` / `change` match the real DOM/TDesign event |
-| Event source | `pointer` / `keyboard` / `programmatic` are accurate; a real `nativeEvent` is never lost and never fabricated |
+| Event source | `pointer` / `keyboard` / `programmatic` come from the real event chain rather than event-type inference; a real `nativeEvent` is never lost and never fabricated; Enter/Space activates exactly once |
 | readonly / disabled | No value or business activation; visual and assistive states are explicit |
 | Error state | `status=error`, `aria-invalid=true`, and error text linked through `aria-describedby` |
 | Focus / Blur | Adapter exposes `focus()` and preserves event order in both directions |
@@ -778,6 +810,22 @@ This ADR batch requires only documentation and `.agent` metadata checks. Product
 | Engineering reduction | Old Drivers, preferences, and vendor dependencies can retire incrementally |
 
 These standards become Port Conformance, static guard, page-parity, and final integration gates. Screenshots or one green check cannot replace them.
+
+### 8.5 02C-02B Compile-time Contract Tests
+
+Use the repository-pinned Vue `3.5.27`, TypeScript, and `vue-tsc` toolchain for independent type tests:
+
+| Type test | Expected |
+| --- | --- |
+| Valid ScButton Adapter | Compiles |
+| Props missing a required property | Compilation fails |
+| Wrong Emits argument type | Compilation fails |
+| Slots incompatible with the protocol | Compilation fails |
+| `as` used to bypass compatibility | Forbidden and rejected by the type test |
+
+The suite includes positive cases and `@ts-expect-error` or equivalent negative assertions. A signature check for the documentation alias does not replace compilation of a real Sc Adapter in 02C-02B.
+
+R2 documentation-batch signature record: using the repository's Vue `3.5.27`, TypeScript `5.9.3`, and `vue-tsc 2.2.12`, a temporary type probe compiled under `--strict --noEmit` with both `tsc` and `vue-tsc`. It exercised the combination of `ShortEmitsToObject`, `SlotsType`, and `DefineComponent`. This proves only that the documented signature composes; it does not prove that any real Sc component satisfies the Port. That remains the 02C-02B compilation gate.
 
 ## 9. Rollback and Compatibility
 
