@@ -349,10 +349,11 @@ Machine evidence:
   `0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e`.
   This relation probe has no DateField, reason-action or primitive-Port input;
   its unchanged suite fingerprint is carried to `986e60535`.
-- `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `f6f390aef632c937f0963d9ca54ce21325c09523f59b7aaa00ac2665d033f68f`.
-  It is recorded at the merge stage: list surface and relation roundtrip are
-  current; deployment-only `path_namespace_identity` is explicitly deferred.
+- `.runtime/acceptance-evolution/evidence.v1.json` is recorded at merge stage:
+  list surface and relation roundtrip retain their validated evidence heads and
+  are carried to the final metadata tip; deployment-only
+  `path_namespace_identity` is explicitly deferred. The final runtime hash is
+  reported from the current file after the metadata commit.
 
 Two reproducible product defects were found and fixed during L4:
 
