@@ -42,6 +42,7 @@ function resolveOriginalRow(candidate: unknown): Row | undefined {
   return props.rows.find((row) => Reflect.get(row, key) === identity);
 }
 function onRowClick(context: unknown) {
+  if (!props.interactiveRows) return;
   if (!context || typeof context !== 'object' || !('row' in context)) return;
   const row = resolveOriginalRow(context.row);
   if (!row) return;

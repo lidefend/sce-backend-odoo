@@ -43,6 +43,44 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
         report = MODULE.build_inventory()
         self.assertEqual(report["directLibraryImportBypasses"], [])
 
+    def test_adapter_attribution_does_not_use_unrelated_sc_tags(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-attribution-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            design = source_root / "components" / "design-system"
+            design.mkdir(parents=True)
+            (design / "ScButton.vue").write_text(
+                "<template><TDesignButton /><ScInput /></template>\n",
+                encoding="utf-8",
+            )
+            consumer = source_root / "components" / "RawButton.vue"
+            consumer.write_text(
+                "<template><ScButton /><TDesignButton /><ScInput /></template>\n",
+                encoding="utf-8",
+            )
+            with patch.object(MODULE, "WEB", source_root):
+                report = MODULE.build_inventory()
+        button = next(row for row in report["components"] if row["officialComponent"] == "button")
+        raw_source = button["adapterSources"]
+        raw_row = next(row for row in raw_source if row["source"].endswith("RawButton.vue"))
+        self.assertEqual(raw_row["semanticAdapters"], [])
+        self.assertEqual(button["adapterKeys"], ["ScButton"])
+        self.assertIn(
+            {"officialComponent": "button", "source": raw_row["source"]},
+            report["bridgeBehaviorBypasses"],
+        )
+
+    def test_current_bridge_consumers_are_reported_instead_of_hidden(self) -> None:
+        report = MODULE.build_inventory()
+        pairs = {(row["officialComponent"], row["source"]) for row in report["bridgeBehaviorBypasses"]}
+        self.assertIn((
+            "alert",
+            "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        ), pairs)
+        self.assertIn((
+            "select",
+            "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+        ), pairs)
+
     def test_completion_rule_cannot_hide_unassessed_raw_behavior(self) -> None:
         report = MODULE.build_inventory()
         self.assertEqual(report["rawBehaviorSurfaces"], [])

@@ -1,7 +1,7 @@
 <template>
   <ScIcon
     :name="scName"
-    :size="size"
+    :size="iconSize"
     :aria-label="resolvedLabel"
     :aria-hidden="isDecorative ? 'true' : undefined"
     :role="isDecorative ? undefined : 'img'"
@@ -19,7 +19,11 @@ const props = withDefaults(defineProps<IconPortProps>(), {
   decorative: undefined,
 });
 defineSlots<NoPortSlots>();
-const isDecorative = computed(() => props.decorative ?? !props.label);
+if (props.decorative === false && !String(props.label ?? '').trim()) {
+  throw new Error('SCENE_PRIMITIVE_CONTRACT_ERROR: Icon label is required when decorative=false');
+}
+const iconSize = computed(() => props.size ?? 20);
+const isDecorative = computed(() => props.decorative !== false && !props.label);
 const resolvedLabel = computed(() => isDecorative.value || !props.label ? undefined : props.label);
 const scName = computed(() => props.name === 'file' ? 'file-text' : props.name);
 </script>

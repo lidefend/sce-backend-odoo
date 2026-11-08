@@ -51,13 +51,14 @@ export function resolveCollectionCreateAuthority(options: {
   entry: CollectionCreateEntryResolution;
   actionId: unknown;
 }): boolean {
-  if (options.effectiveCreate !== true || !options.entry.authorized) return false;
+  if (!options.entry.authorized) return false;
   const targetType = String(options.entry.target.type || '').trim();
   if (targetType === 'action') {
     return toPositiveInt(options.entry.target.action_id) !== null
       && toPositiveInt(options.entry.target.menu_id) !== null;
   }
   if (targetType !== 'record_create') return false;
+  if (options.effectiveCreate !== true) return false;
   const targetModel = String(options.entry.target.model || '').trim();
   return Boolean(targetModel && toPositiveInt(options.actionId) !== null);
 }

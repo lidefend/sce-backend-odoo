@@ -175,6 +175,13 @@ RULES = (
         "verify.semantic.registry.lint",
     )),
     Rule((
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    ), (
+        "verify.frontend.component_driver_takeover.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_professional_detail_collection_guard.py",
         "scripts/verify/test_frontend_professional_detail_collection_guard.py",
     ), (

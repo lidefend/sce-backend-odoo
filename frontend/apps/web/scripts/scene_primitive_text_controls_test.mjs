@@ -14,7 +14,7 @@ const textareaFile = `${root}/frontend/apps/web/src/components/design-system/sce
 const output = await build({
   stdin: {
     contents: `
-import { createApp, h, ref } from 'vue';
+import { createApp, h, nextTick, ref } from 'vue';
 import ScSceneInput from ${JSON.stringify(inputFile)};
 import ScSceneTextarea from ${JSON.stringify(textareaFile)};
 
@@ -27,13 +27,32 @@ const Host = {
   setup() {
     const inputValue = ref('');
     const areaValue = ref('');
+    const inputRef = ref(null);
+    const areaRef = ref(null);
+    let deferredInputEcho = '';
+    let deferredAreaEcho = '';
     window.setInputValue = value => { inputValue.value = value; };
     window.setAreaValue = value => { areaValue.value = value; };
+    window.nextViewTick = () => nextTick();
+    window.deferInputEcho = false;
+    window.deferAreaEcho = false;
+    window.flushInputEcho = () => { inputValue.value = deferredInputEcho; deferredInputEcho = ''; };
+    window.flushAreaEcho = () => { areaValue.value = deferredAreaEcho; deferredAreaEcho = ''; };
+    window.focusInput = async options => { inputRef.value.focus(options); await nextTick(); };
+    window.focusArea = async options => { areaRef.value.focus(options); await nextTick(); };
     return () => h('div', [
       h(ScSceneInput, {
-        id: 'text-input', modelValue: inputValue.value, name: 'title', inputMode: 'text',
+        id: 'text-input', ref: inputRef, modelValue: inputValue.value, name: 'title', inputMode: 'text',
         required: true, describedBy: 'input-help', ariaLabel: '标题',
-        'onUpdate:modelValue': value => { inputValue.value = value; record('update', value); },
+        'onUpdate:modelValue': value => {
+          if (window.deferInputEcho) {
+            deferredInputEcho = value;
+            record('deferred-update', value);
+            return;
+          }
+          inputValue.value = value;
+          record('update', value);
+        },
         onInput: (value, event) => record('input', value, event),
         onChange: (value, event) => record('change', value, event),
         onFocus: (value, event) => record('focus', value, event),
@@ -55,8 +74,16 @@ const Host = {
         id: 'error-input', modelValue: '', status: 'error', describedBy: 'error-help',
       }),
       h(ScSceneTextarea, {
-        id: 'text-area', modelValue: areaValue.value, rows: 2, maxRows: 5,
-        'onUpdate:modelValue': value => { areaValue.value = value; record('area-update', value); },
+        id: 'text-area', ref: areaRef, modelValue: areaValue.value, rows: 2, maxRows: 5,
+        'onUpdate:modelValue': value => {
+          if (window.deferAreaEcho) {
+            deferredAreaEcho = value;
+            record('area-deferred-update', value);
+            return;
+          }
+          areaValue.value = value;
+          record('area-update', value);
+        },
         onInput: (value, event) => record('area-input', value, event),
         onChange: (value, event) => record('area-change', value, event),
         onFocus: (value, event) => record('area-focus', value, event),
@@ -148,7 +175,10 @@ try {
   assert.equal(events.filter((event) => event.kind === 'disabled-update').length, 0);
   assert.equal(events.filter((event) => event.kind === 'readonly-update').length, 0);
 
-  await page.locator('#text-input').focus();
+  await page.locator('#text-input').click();
+  events = await page.evaluate(() => window.textLog);
+  assert.ok(events.some((event) => event.kind === 'focus' && event.source === 'pointer'));
+  await page.evaluate(() => { window.textLog = []; });
   await page.locator('#text-input').pressSequentially('abc');
   events = await page.evaluate(() => window.textLog);
   assert.ok(
@@ -165,7 +195,7 @@ try {
   assert.equal(events.filter((event) => event.kind === 'change' && event.value === 'abc').length, 1);
   assert.ok(events.some((event) => event.kind === 'change' && event.value === 'abc'));
   assert.ok(events.some((event) => event.kind === 'blur'));
-  assert.ok(events.some((event) => event.kind === 'focus'));
+  assert.ok(events.some((event) => event.kind === 'area-focus'));
 
   await page.evaluate(() => {
     const input = document.querySelector('#text-input');
@@ -236,8 +266,47 @@ try {
   assert.equal(events.filter((event) => event.kind === 'area-change').length, 0);
   assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-server'));
 
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferInputEcho = true;
+  });
+  await page.locator('#text-input').focus();
+  await page.locator('#text-input').fill('input-delayed-draft');
+  await page.evaluate(async () => {
+    window.setInputValue('input-newer-server');
+    await window.nextViewTick();
+    window.deferInputEcho = false;
+    window.flushInputEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === 'input-newer-server');
+  await page.evaluate(() => window.focusArea({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'change').length, 0);
+  assert.ok(events.some((event) => event.kind === 'blur' && event.value === 'input-newer-server'));
+  assert.ok(events.some((event) => event.kind === 'area-focus' && event.source === 'programmatic'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferAreaEcho = true;
+  });
+  await page.locator('#text-area').click();
+  await page.locator('#text-area').fill('area-delayed-draft');
+  await page.evaluate(async () => {
+    window.setAreaValue('area-newer-server');
+    await window.nextViewTick();
+    window.deferAreaEcho = false;
+    window.flushAreaEcho();
+    await window.nextViewTick();
+  });
+  await page.waitForFunction(() => document.querySelector('#text-area')?.value === 'area-newer-server');
+  await page.evaluate(() => window.focusInput({ preventScroll: true }));
+  events = await page.evaluate(() => window.textLog);
+  assert.equal(events.filter((event) => event.kind === 'area-change').length, 0);
+  assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-newer-server'));
+
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 37, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 45, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

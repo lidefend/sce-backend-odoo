@@ -16,6 +16,8 @@ window.rows=[];
 createApp({setup(){return()=>h('div',[
  h(Icon,{id:'semantic',name:'check',label:'完成',decorative:false}),
  h(Icon,{id:'decorative',name:'file'}),
+ h(Table,{id:'passive-table',rows:[{id:'p1',title:'P'}],columns:[{key:'title',label:'只读标题'}],rowKey:'id',accessibleLabel:'只读列表',interactiveRows:false,
+  onRowActivate:(row,event)=>window.rows.push({id:row.id,source:event.source,trusted:event.nativeEvent?.isTrusted??null})}),
  h(Table,{id:'table',rows:[{id:'r1',title:'A'},{id:'r2',title:'B'}],columns:[{key:'title',label:'标题'}],rowKey:'id',accessibleLabel:'列表',interactiveRows:true,emptyText:'暂无数据',
   onRowActivate:(row,event)=>window.rows.push({id:row.id,source:event.source,trusted:event.nativeEvent?.isTrusted??null})})
 ])}}).mount('#app');
@@ -41,8 +43,9 @@ try{
  await page.getByText('A',{exact:true}).click();
  await page.getByText('B',{exact:true}).locator('xpath=ancestor::tr').focus();
  await page.keyboard.press('Enter');
+ await page.getByText('P',{exact:true}).click();
  const rows=await page.evaluate(()=>window.rows);
  assert.deepEqual(rows,[{id:'r1',source:'pointer',trusted:true},{id:'r2',source:'keyboard',trusted:true}]);
  assert.deepEqual(errors,[]);
- console.log(JSON.stringify({browser:browser.version(),checks:9,consoleErrors:0,tableKeyboard:'PASS',emptyText:'PROJECTED'}));
+ console.log(JSON.stringify({browser:browser.version(),checks:10,consoleErrors:0,tableKeyboard:'PASS',passiveTable:'NO_ACTIVATION',emptyText:'PROJECTED'}));
 }finally{await browser.close()}

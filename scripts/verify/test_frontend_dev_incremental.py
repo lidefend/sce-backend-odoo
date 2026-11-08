@@ -50,6 +50,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.acceptance.evolution.binding"],
                 )
 
+    def test_component_takeover_inputs_select_their_inventory_lock(self) -> None:
+        for path in (
+            "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+            "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+            "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.component_driver_takeover.unit"],
+                )
+
     def test_contract_structure_fingerprint_keeps_its_lock(self) -> None:
         self.assertEqual(
             select_targets(["contracts/generated/contract_structure_fingerprint.json"]),

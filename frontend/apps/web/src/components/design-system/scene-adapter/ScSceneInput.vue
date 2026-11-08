@@ -53,7 +53,8 @@ let lastEditSource: PrimitiveEventSource = 'programmatic';
 let controlledValue = String(props.modelValue ?? '');
 let lastEditValue = controlledValue;
 let committedValue = controlledValue;
-let pendingUserEcho: string | undefined;
+const pendingUserEchoes: string[] = [];
+const supersededUserEchoes: string[] = [];
 let nativeInput: HTMLInputElement | null = null;
 let lastNativeInputEvent: Event | undefined;
 
@@ -79,12 +80,25 @@ function blockEdit(): boolean {
 watch(
   () => String(props.modelValue ?? ''),
   (value) => {
-    controlledValue = value;
-    if (pendingUserEcho === value) {
-      pendingUserEcho = undefined;
+    if (pendingUserEchoes[0] === value) {
+      pendingUserEchoes.shift();
+      controlledValue = value;
       return;
     }
-    pendingUserEcho = undefined;
+    if (pendingUserEchoes.length) {
+      supersededUserEchoes.push(...pendingUserEchoes);
+      pendingUserEchoes.splice(0);
+    }
+    if (supersededUserEchoes[0] === value) {
+      supersededUserEchoes.shift();
+      if (value !== controlledValue) {
+        // A delayed parent echo must not overwrite a newer external value.
+        pendingUserEchoes.push(controlledValue);
+        emit('update:modelValue', controlledValue);
+      }
+      return;
+    }
+    controlledValue = value;
     lastEditValue = value;
     committedValue = value;
   },
@@ -108,7 +122,8 @@ function onNativeInput(event: Event) {
   if (value === lastEditValue) return;
   lastEditSource = sourceFor(event);
   lastEditValue = value;
-  pendingUserEcho = value;
+  supersededUserEchoes.splice(0);
+  pendingUserEchoes.push(value);
   emit('update:modelValue', value);
   emit('input', value, { source: lastEditSource, nativeEvent: event });
 }
@@ -126,12 +141,11 @@ function onNativeChange(event: Event) {
 }
 function onNativeFocus(event: FocusEvent) {
   const value = eventValue(event);
-  lastSource = 'programmatic';
-  lastEditSource = 'programmatic';
+  lastEditSource = sourceFor(event);
   controlledValue = value;
   lastEditValue = value;
   committedValue = value;
-  emit('focus', value, { source: 'programmatic', nativeEvent: event });
+  emit('focus', value, { source: lastEditSource, nativeEvent: event });
 }
 function onNativeBlur(event: FocusEvent) {
   emit('blur', lastEditValue, { source: sourceFor(event), nativeEvent: event });
@@ -184,6 +198,7 @@ onMounted(bindNativeInput);
 onBeforeUnmount(unbindNativeInput);
 
 function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
+  lastSource = 'programmatic';
   resolveNativeInput()?.focus(options);
 }
 

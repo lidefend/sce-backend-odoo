@@ -121,6 +121,8 @@ verify.frontend.scene_primitive_adapter.unit: guard.prod.forbid verify.frontend.
 
 verify.frontend.scene_primitive_contract.behavior: guard.prod.forbid verify.frontend.scene_primitive_adapter.unit
 	@node frontend/apps/web/scripts/scene_primitive_adapter_test.mjs --behavior
+	@node frontend/apps/web/scripts/scene_primitive_collection_test.mjs
+	@node frontend/apps/web/scripts/scene_primitive_selection_test.mjs
 	@node frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs
 
 verify.frontend.scene_primitive_contract.all: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.behavior

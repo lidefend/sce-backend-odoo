@@ -78,6 +78,7 @@ function onKeyup(event: KeyboardEvent) {
   emit('keyup', { source: 'keyboard', nativeEvent: event });
 }
 function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
+  lastSource = 'programmatic';
   const root = dateRef.value?.$el;
   const container = root instanceof Node ? (root instanceof Element ? root : root.parentElement) : null;
   const target = container instanceof HTMLInputElement ? container : container?.querySelector<HTMLInputElement>('input');

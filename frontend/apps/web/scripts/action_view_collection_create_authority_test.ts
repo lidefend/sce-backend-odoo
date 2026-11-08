@@ -76,6 +76,14 @@ const cases = [
     effectiveCreate: true,
     rule: { ...authorizedRule, target: { type: 'action', action_id: 31, menu_id: 41 } },
   }),
+  caseOf('delegated action remains authorized when direct create is denied', {
+    effectiveCreate: false,
+    rule: { ...authorizedRule, target: { type: 'action', action_id: 31, menu_id: 41 } },
+  }),
+  caseOf('delegated action remains authorized when direct create capability is absent', {
+    includeCapabilities: false,
+    rule: { ...authorizedRule, target: { type: 'action', action_id: 31, menu_id: 41 } },
+  }),
   caseOf('record create without model', {
     effectiveCreate: true,
     rule: { ...authorizedRule, target: { type: 'record_create' } },
@@ -91,8 +99,10 @@ assert.deepEqual(cases.map((row) => row.allowed), [
   false,
   false,
   true,
+  true,
+  true,
   false,
   false,
 ]);
 
-console.log('[action_view_collection_create_authority] PASS cases=9');
+console.log('[action_view_collection_create_authority] PASS cases=11');

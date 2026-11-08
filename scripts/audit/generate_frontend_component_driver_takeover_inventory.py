@@ -90,6 +90,11 @@ DRIVER_FAMILY = {
     "Submenu": "Menu",
     "TimelineItem": "Timeline",
 }
+NAMED_SEMANTIC_ADAPTERS = {
+    "frontend/apps/web/src/components/MenuTree.vue": ("MenuTree",),
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue": ("MenuTree",),
+    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue": ("ActivityPageTabs",),
+}
 
 
 def relative(path: Path) -> str:
@@ -126,6 +131,12 @@ def is_p3(source: str) -> bool:
     return source in P3_FILES or source.startswith(P3_PREFIXES)
 
 
+def semantic_adapters_for(path: Path, source: str) -> set[str]:
+    if "/components/design-system/Sc" in source:
+        return {path.stem}
+    return set(NAMED_SEMANTIC_ADAPTERS.get(source, ()))
+
+
 def build_inventory() -> dict[str, object]:
     package = json.loads(PACKAGE.read_text(encoding="utf-8"))
     source_files = sources()
@@ -146,11 +157,7 @@ def build_inventory() -> dict[str, object]:
         if path.suffix == ".vue":
             for driver in sorted(set(TDESIGN_TAG.findall(text))):
                 driver = DRIVER_FAMILY.get(driver, driver)
-                semantic_adapters = set(SC_TAG.findall(text))
-                if "/components/design-system/Sc" in source:
-                    semantic_adapters.add(path.stem)
-                if source == "frontend/apps/web/src/components/MenuTree.vue":
-                    semantic_adapters.add("MenuTree")
+                semantic_adapters = semantic_adapters_for(path, source)
                 adapter_rows.setdefault(driver, []).append({"source": source, "semanticAdapters": sorted(semantic_adapters)})
             # Only the design-system adapter layer may own a native behavioural
             # element, because realising a primitive is exactly its job.  Every
@@ -173,10 +180,12 @@ def build_inventory() -> dict[str, object]:
         for adapter in set(SC_TAG.findall(text)):
             if f"/{adapter}.vue" not in source:
                 consumer_counts[adapter] = consumer_counts.get(adapter, 0) + len(re.findall(fr"<{re.escape(adapter)}\b", text))
-        if "<MenuTree" in text and source != "frontend/apps/web/src/components/MenuTree.vue":
-            consumer_counts["MenuTree"] = consumer_counts.get("MenuTree", 0) + text.count("<MenuTree")
+        for adapter in {name for names in NAMED_SEMANTIC_ADAPTERS.values() for name in names} | {"MenuTree"}:
+            if f"/{adapter}.vue" not in source:
+                consumer_counts[adapter] = consumer_counts.get(adapter, 0) + len(re.findall(fr"<{re.escape(adapter)}\b", text))
 
     rows: list[dict[str, object]] = []
+    bridge_behavior_bypasses: list[dict[str, str]] = []
     for component in official_components():
         pascal = "".join(part.capitalize() for part in component.split("-"))
         exports = sorted(set(re.findall(fr"\bTDesign{pascal}[A-Za-z0-9]*\b", ui_bridge)))
@@ -185,6 +194,7 @@ def build_inventory() -> dict[str, object]:
         adapter_names = sorted({name for row in adapters for name in row["semanticAdapters"]})
         required = component in REQUIRED_DRIVERS
         consumer_count = sum(consumer_counts.get(name, 0) for name in adapter_names)
+        bridge_bypasses = [row["source"] for row in adapters if not row["semanticAdapters"]]
         if not required:
             status = "not_required"
         elif exports and web_exports and adapters:
@@ -200,9 +210,15 @@ def build_inventory() -> dict[str, object]:
             "adapterSources": adapters,
             "adapterKeys": adapter_names,
             "productionConsumerCount": consumer_count,
+            "bridgeBehaviorBypasses": bridge_bypasses,
             "status": status,
             "requirementDecision": "required_current_semantic" if required else NOT_REQUIRED_DECISIONS.get(component, "not required by current formal product semantics"),
         })
+        if required:
+            bridge_behavior_bypasses.extend(
+                {"officialComponent": component, "source": source}
+                for source in bridge_bypasses
+            )
 
     counts = {status: sum(1 for row in rows if row["status"] == status) for status in ("adapter_present", "adapter_unconsumed", "bridge_only", "missing", "not_required")}
     # A required driver that is not fully adopted is a takeover the product still
@@ -224,10 +240,11 @@ def build_inventory() -> dict[str, object]:
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
         "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
         "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
-        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": unassessed_required_takeovers, "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
+        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": unassessed_required_takeovers, "directLibraryImportBypasses": len(direct_imports), "bridgeBehaviorBypasses": len(bridge_behavior_bypasses), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
         "capabilityAssessments": capability_assessments,
         "directLibraryImportBypasses": direct_imports,
+        "bridgeBehaviorBypasses": bridge_behavior_bypasses,
         "rawBehaviorSurfaces": raw_surfaces,
         "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
     }
@@ -347,7 +364,8 @@ def main() -> int:
             f"required={summary['requiredDrivers']} missing={summary['missing']} "
             f"bridge_only={summary['bridge_only']} adapter_unconsumed={summary['adapter_unconsumed']} "
             f"unassessedRequiredTakeovers={summary['unassessedRequiredTakeovers']} "
-            f"raw={summary['unassessedRawBehaviorSurfaces']}"
+            f"raw={summary['unassessedRawBehaviorSurfaces']} "
+            f"bridge_consumers={summary['bridgeBehaviorBypasses']}"
         )
         return 0
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
