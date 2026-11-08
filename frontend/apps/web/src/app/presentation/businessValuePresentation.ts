@@ -159,15 +159,20 @@ function selectionValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function declaredBusinessFieldType(field: DeclaredBusinessField): ReturnType<typeof normalizeFieldType> {
+  const nativeType = normalizeFieldType(field);
+  if (nativeType !== 'unknown') return nativeType;
+  return normalizeFieldType(String(field.dataType || ''));
+}
+
 export function declaredBusinessValueKind(
   field: DeclaredBusinessField,
   status = false,
 ): BusinessValueSemantic {
-  const type = normalizeFieldType(field);
-  const dataType = String(field.dataType || '').trim().toLowerCase();
+  const type = declaredBusinessFieldType(field);
   const componentKey = String(field.componentKey || '').trim();
   const cellRole = String(field.cellRole || '').trim().toLowerCase();
-  if (componentKey === 'sc.value.money' || type === 'monetary' || dataType === 'monetary') return 'money';
+  if (componentKey === 'sc.value.money' || type === 'monetary') return 'money';
   if (componentKey === 'sc.value.percentage') return 'percentage';
   if (status || componentKey === 'sc.display.status' || cellRole === 'status') return 'status';
   if (type === 'date') return 'date';
@@ -216,7 +221,7 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'status') {
     const key = selectionValue(input.value);
     const selection = normalizedSelection(input.field);
-    if (normalizeFieldType(input.field) === 'selection' && !selection.length) {
+    if (declaredBusinessFieldType(input.field) === 'selection' && !selection.length) {
       throw contractGapError({
         kind: 'contract_defect',
         missing: `field.${input.field.name || '(unknown)'}.selection`,

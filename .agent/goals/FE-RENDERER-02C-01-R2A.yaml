@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01-R2A
+  title: dataType 状态类型边界闭合
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 frontend field-type normalization for business-value presentation
+  module: businessValuePresentation, business semantics tests and guard
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    dataType 是共享业务表达字段声明的一部分；当原生 type/ttype 未声明时，必须通过同一
+    P0 字段类型归一入口参与 status selection fail-closed 判定。
+  why_not_elsewhere: >
+    不在页面、Renderer 或行业组件添加 dataType 特判；不改变 Contract V2 Schema。
+    只有 unknown 原生类型可回退 dataType，明确 type/ttype 始终优先。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01-R2A.yaml
+      - .agent/runs/FE-RENDERER-02C-01-R2A/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_r2a_datatype_status_20261108.md
+      - frontend/apps/web/src/app/presentation/businessValuePresentation.ts
+      - frontend/apps/web/scripts/business_semantics_consistency_test.ts
+      - scripts/verify/frontend_business_semantics_guard.py
+      - scripts/verify/test_frontend_business_semantics_guard.py
+  objective: >
+    close the dataType=selection status fail-open while preserving native type/ttype authority
+    and char-status compatibility.
+  acceptance:
+    - dataType=selection without type/ttype requires a valid selection projection
+    - dataType=selection with empty selection throws ContractGapError
+    - explicit type/ttype wins over conflicting dataType
+    - char-status readable values remain supported
+    - business semantics tests, static guard, BOQ consumer check, Lint/Typecheck and ci.local.iteration pass
+  results:
+    data_type_fallback: PASS
+    native_type_priority: PASS
+    char_status: PASS
+    business_semantics: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交并更新 PR #840，等待最新 HEAD 五项远端门禁和独立复审
+  exclusions:
+    - contract_v2_schema_change
+    - renderer_protocol_change
+    - page_local_special_case
+    - payment_entry_409_fix
+    - scheduled_ci_scope_change
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    Revert the dataType fallback and corresponding tests; preserve the explicit type/ttype
+    selection fail-closed behavior already merged into this PR.

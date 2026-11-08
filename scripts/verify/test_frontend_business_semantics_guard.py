@@ -42,13 +42,25 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         failures = guard.validate(lambda path: source(
             path,
             (
-                "if (normalizeFieldType(input.field) === 'selection' && !selection.length)",
+                "if (declaredBusinessFieldType(input.field) === 'selection' && !selection.length)",
                 "if (selection.length)",
             )
             if path == guard.AUTHORITY
             else None,
         ))
         self.assertTrue(any("selection-backed status does not fail closed" in failure for failure in failures))
+
+    def test_datatype_cannot_override_native_type(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (nativeType !== 'unknown') return nativeType;",
+                "if (false) return nativeType;",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("dataType fallback" in failure for failure in failures))
 
     def test_numeric_zero_empty_fails(self):
         failures = guard.validate(lambda path: source(

@@ -34,8 +34,17 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     ):
         if marker not in authority:
             failures.append(f"business-value authority missing {marker}")
+    if "function declaredBusinessFieldType(" not in authority:
+        failures.append("business-value authority is missing native-type-first field type normalization")
     if not re.search(
-        r"normalizeFieldType\(input\.field\)\s*===\s*'selection'\s*&&\s*!selection\.length",
+        r"const nativeType\s*=\s*normalizeFieldType\(field\);\s*"
+        r"if \(nativeType !== 'unknown'\) return nativeType;\s*"
+        r"return normalizeFieldType\(String\(field\.dataType \|\| ''\)\);",
+        authority,
+    ):
+        failures.append("dataType fallback must apply only after native type/ttype is unknown")
+    if not re.search(
+        r"declaredBusinessFieldType\(input\.field\)\s*===\s*'selection'\s*&&\s*!selection\.length",
         authority,
     ):
         failures.append("selection-backed status does not fail closed when selection metadata is missing")

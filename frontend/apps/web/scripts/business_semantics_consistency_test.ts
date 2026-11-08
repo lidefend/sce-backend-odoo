@@ -124,6 +124,55 @@ assert.throws(() => presentDeclaredBusinessValue({
   },
   value: 'pending_review',
 }), { name: 'ContractGapError' }, 'selection-backed status with empty selection metadata must fail closed');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'datatype_missing_selection_state',
+    dataType: 'selection',
+    componentKey: 'sc.display.status',
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'dataType-only selection status without selection metadata must fail closed');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'datatype_empty_selection_state',
+    dataType: 'selection',
+    componentKey: 'sc.display.status',
+    selection: [],
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'dataType-only selection status with empty selection metadata must fail closed');
+assert.deepEqual(presentDeclaredBusinessValue({
+  field: {
+    name: 'datatype_selection_state',
+    dataType: 'selection',
+    componentKey: 'sc.display.status',
+    selection: statusSelection,
+  },
+  value: 'pending',
+}), {
+  kind: 'status',
+  text: '待处理',
+  tone: 'warning',
+  badgeSemantic: 'warning',
+});
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'native_char_over_datatype_status',
+    type: 'char',
+    dataType: 'selection',
+    componentKey: 'sc.display.status',
+  },
+  value: '待复核',
+}).text, '待复核', 'explicit char type must win over conflicting dataType');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'native_selection_over_datatype_status',
+    type: 'selection',
+    dataType: 'char',
+    componentKey: 'sc.display.status',
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'explicit selection type must win over conflicting dataType');
 assert.equal(presentDeclaredBusinessValue({
   field: {
     name: 'readable_char_status',
@@ -199,4 +248,4 @@ assert.equal(formatProductMyWorkFact({
   display_role: 'text',
 }), FIELD_VALUE_EMPTY_TEXT);
 
-console.log('[business_semantics_consistency_test] PASS money=6 status=8 temporal=4 empty=3');
+console.log('[business_semantics_consistency_test] PASS money=6 status=13 temporal=4 empty=3');
