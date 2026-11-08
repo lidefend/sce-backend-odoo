@@ -1178,7 +1178,18 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
         self.assertEqual(first, second)
 
     class _TokenModel:
-        _fields = {"write_date": object()}
+        _fields = {
+            "write_date": object(),
+            "code": object(),
+            "name": object(),
+            "target_model": object(),
+            "active": object(),
+            "form_policy_json": object(),
+            "required_fields_json": object(),
+            "default_values_json": object(),
+            "field_name": object(),
+            "visible": object(),
+        }
 
         def __init__(self, row, id_rows=None):
             self.row = row
@@ -1207,7 +1218,7 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
 
         def __getitem__(self, model_code):
             value = self.rows[model_code]
-            if model_code == "ui.business.config.contract":
+            if model_code in {"ui.business.config.contract", "sc.business.category"}:
                 return TestAssembledCacheIdentityInvalidation._TokenModel(None, id_rows=value)
             return TestAssembledCacheIdentityInvalidation._TokenModel(value)
 
@@ -1246,6 +1257,18 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
                 version_no=1,
                 status="published",
                 active=True,
+            )
+        ]
+        rows["sc.business.category"] = [
+            SimpleNamespace(
+                id=1,
+                code="contract.income",
+                name="收入合同",
+                target_model="construction.contract",
+                active=True,
+                form_policy_json='{"sections":[]}',
+                required_fields_json='["amount"]',
+                default_values_json='{"type":"out"}',
             )
         ]
         return rows
@@ -1297,6 +1320,65 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
         ]
 
         self.assertNotEqual(self._source_token(before), self._source_token(after))
+
+    def test_business_category_projection_change_reaches_the_source_token(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["sc.business.category"] = [
+            SimpleNamespace(
+                id=1,
+                code="contract.income",
+                target_model="construction.contract",
+                active=True,
+                form_policy_json='{"sections":[{"title":"changed"}]}',
+                required_fields_json='["amount"]',
+                default_values_json='{"type":"out"}',
+            )
+        ]
+
+        self.assertNotEqual(self._source_token(before), self._source_token(after))
+
+    def test_business_category_name_change_reaches_the_source_token(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["sc.business.category"] = [
+            SimpleNamespace(
+                id=1,
+                code="contract.income",
+                name="收入合同（改名）",
+                target_model="construction.contract",
+                active=True,
+                form_policy_json='{"sections":[]}',
+                required_fields_json='["amount"]',
+                default_values_json='{"type":"out"}',
+            )
+        ]
+
+        self.assertNotEqual(
+            self._source_token(before),
+            self._source_token(after),
+            "category_name is projected into the contract and must invalidate the source token",
+        )
+
+    def test_business_category_non_projection_metadata_keeps_token_stable(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["sc.business.category"] = [
+            SimpleNamespace(
+                id=1,
+                code="contract.income",
+                name="收入合同",
+                target_model="construction.contract",
+                active=True,
+                form_policy_json='{"sections":[]}',
+                required_fields_json='["amount"]',
+                default_values_json='{"type":"out"}',
+                sequence=99,
+                note="non-projection metadata",
+            )
+        ]
+
+        self.assertEqual(self._source_token(before), self._source_token(after))
 
     def test_unchanged_authorities_produce_a_stable_source_token(self):
         self.assertEqual(

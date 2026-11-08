@@ -1083,10 +1083,17 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 # superuser has_group pass-through out of Odoo's public/portal audience markers;
 # the fixture fix freezes its own payment execution without weakening the model
 # guard. Both run against the registered local.dev profile and the real modules.
-.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm verify.contract.project_ledger_entry_carrier.orm
+.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.principal_group_request_scope.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm verify.contract.project_ledger_entry_carrier.orm
 verify.smart_core.res_users_audience_group.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=res_users_audience_group test.safe
+
+# Real-cursor request-scope lock for principal group XMLID memoization. This
+# on-demand lane uses the disposable local.test/sc_test profile and never
+# reuses a persistent development or acceptance database.
+verify.smart_core.principal_group_request_scope.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_core TEST_TAGS=principal_group_request_scope_orm
 
 # Root-cause lock for the P0 relation-open projection: a declared relation open
 # entry must be a published (menu_id, action_id) pair from the same authority as
