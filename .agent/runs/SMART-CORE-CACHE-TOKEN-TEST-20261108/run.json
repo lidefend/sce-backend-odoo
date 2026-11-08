@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "e319c46755d6b300b9c8d2547ede5657d51129d9",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SMART-CORE-CACHE-TOKEN-TEST-20261108.yaml",
+    ".agent/runs/SMART-CORE-CACHE-TOKEN-TEST-20261108/run.json",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/smart_core_cache_token_test_20261108.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing host Python and Make test tools"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "formal_list": {
+      "target": "verify.business_config.formal_list.unit",
+      "inputs": [
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the clean candidate, publish the test-only PR and wait for exact-head remote gates.",
+  "id": "SMART-CORE-CACHE-TOKEN-TEST-20261108",
+  "branch": "fix/smart-core-cache-token-test-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SMART-CORE-CACHE-TOKEN-TEST-20261108.yaml",
+  "record": "docs/ops/iterations/smart_core_cache_token_test_20261108.md"
+}

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/smart-core-cache-token-test-20261108": ".agent/runs/SMART-CORE-CACHE-TOKEN-TEST-20261108/run.json",
     "fix/smart-core-request-cache-performance": ".agent/runs/SMART-CORE-REQUEST-CACHE-PERF-20261108/run.json",
     "fix/fe-renderer-02c-01-business-semantics-20261108": ".agent/runs/FE-RENDERER-02C-01-R2C/run.json",
     "fix/fe-renderer-02b-extension-protocol-20261108": ".agent/runs/FE-RENDERER-02B/run.json",

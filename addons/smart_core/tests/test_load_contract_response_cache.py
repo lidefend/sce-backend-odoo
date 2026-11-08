@@ -1284,6 +1284,30 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
                     self._TokenEnv(rows), model_name="project.project", action_id=506
                 )
 
+    def _assert_business_category_projection_change_invalidates(
+        self,
+        field_name,
+        changed_value,
+    ):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        category = SimpleNamespace(**vars(after["sc.business.category"][0]))
+        setattr(category, field_name, changed_value)
+        after["sc.business.category"] = [category]
+
+        before_token = self._source_token(before)
+        after_token = self._source_token(after)
+        self.assertTrue(before_token, "the unchanged source token must be available")
+        self.assertTrue(
+            after_token,
+            f"changing {field_name} must not make source-token construction fail",
+        )
+        self.assertNotEqual(
+            before_token,
+            after_token,
+            f"changing projected field {field_name} must invalidate the source token",
+        )
+
     def test_role_revocation_reaches_the_source_token(self):
         before = self._default_token_rows()
         after = self._default_token_rows()
@@ -1321,64 +1345,43 @@ class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
 
         self.assertNotEqual(self._source_token(before), self._source_token(after))
 
-    def test_business_category_projection_change_reaches_the_source_token(self):
-        before = self._default_token_rows()
-        after = self._default_token_rows()
-        after["sc.business.category"] = [
-            SimpleNamespace(
-                id=1,
-                code="contract.income",
-                target_model="construction.contract",
-                active=True,
-                form_policy_json='{"sections":[{"title":"changed"}]}',
-                required_fields_json='["amount"]',
-                default_values_json='{"type":"out"}',
-            )
-        ]
+    def test_business_category_form_policy_change_reaches_the_source_token(self):
+        self._assert_business_category_projection_change_invalidates(
+            "form_policy_json",
+            '{"sections":[{"title":"changed"}]}',
+        )
 
-        self.assertNotEqual(self._source_token(before), self._source_token(after))
+    def test_business_category_required_fields_change_reaches_the_source_token(self):
+        self._assert_business_category_projection_change_invalidates(
+            "required_fields_json",
+            '["amount","project_id"]',
+        )
+
+    def test_business_category_default_values_change_reaches_the_source_token(self):
+        self._assert_business_category_projection_change_invalidates(
+            "default_values_json",
+            '{"type":"in"}',
+        )
 
     def test_business_category_name_change_reaches_the_source_token(self):
-        before = self._default_token_rows()
-        after = self._default_token_rows()
-        after["sc.business.category"] = [
-            SimpleNamespace(
-                id=1,
-                code="contract.income",
-                name="收入合同（改名）",
-                target_model="construction.contract",
-                active=True,
-                form_policy_json='{"sections":[]}',
-                required_fields_json='["amount"]',
-                default_values_json='{"type":"out"}',
-            )
-        ]
-
-        self.assertNotEqual(
-            self._source_token(before),
-            self._source_token(after),
-            "category_name is projected into the contract and must invalidate the source token",
+        self._assert_business_category_projection_change_invalidates(
+            "name",
+            "收入合同（改名）",
         )
 
     def test_business_category_non_projection_metadata_keeps_token_stable(self):
         before = self._default_token_rows()
         after = self._default_token_rows()
-        after["sc.business.category"] = [
-            SimpleNamespace(
-                id=1,
-                code="contract.income",
-                name="收入合同",
-                target_model="construction.contract",
-                active=True,
-                form_policy_json='{"sections":[]}',
-                required_fields_json='["amount"]',
-                default_values_json='{"type":"out"}',
-                sequence=99,
-                note="non-projection metadata",
-            )
-        ]
+        category = SimpleNamespace(**vars(after["sc.business.category"][0]))
+        category.sequence = 99
+        category.note = "non-projection metadata"
+        after["sc.business.category"] = [category]
 
-        self.assertEqual(self._source_token(before), self._source_token(after))
+        before_token = self._source_token(before)
+        after_token = self._source_token(after)
+        self.assertTrue(before_token)
+        self.assertTrue(after_token)
+        self.assertEqual(before_token, after_token)
 
     def test_unchanged_authorities_produce_a_stable_source_token(self):
         self.assertEqual(
