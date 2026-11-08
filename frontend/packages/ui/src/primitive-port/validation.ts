@@ -34,6 +34,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isVueComponentRuntimeShape(value: unknown): boolean {
+  if (typeof value === 'function') return true;
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.setup === 'function'
+    || typeof value.render === 'function'
+    || typeof value.__asyncLoader === 'function'
+  );
+}
+
 function fail(
   primitive: ScenePrimitiveName,
   capability: string,
@@ -65,8 +75,12 @@ export function validatePrimitiveAdapterRuntimeShape(
     }
 
     const component = binding.component;
-    if (!component || (typeof component !== 'function' && !isRecord(component))) {
-      return fail(primitive, 'component', 'component must be a Vue component');
+    if (!isVueComponentRuntimeShape(component)) {
+      return fail(
+        primitive,
+        'component',
+        'component must be a function component, an options component with setup/render, or an async component',
+      );
     }
 
     const contract = binding.contract;

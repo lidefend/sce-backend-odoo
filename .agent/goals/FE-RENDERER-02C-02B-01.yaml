@@ -52,7 +52,9 @@ goal:
     implementation: PASS
     primitive_port: PASS
     review_revision_r1: PASS
+    review_revision_r2: PASS
     capability_identity: PASS
+    component_runtime_shape: PASS
     compile_time_contract: PASS
     runtime_shape_validation: PASS
     import_boundary: PASS
@@ -64,7 +66,7 @@ goal:
     agent_ledger: PASS
     agent_resume: PASS
     ci_iteration: PASS
-    next_exact_step: 提交 Primitive Capability 身份闭合修复，更新 PR #844 并等待独立复审
+    next_exact_step: 提交 Primitive Component Runtime Shape 修复，更新 PR #844 并等待最终独立复审
   exclusions:
     - sc_component_change
     - scene_field_control_change

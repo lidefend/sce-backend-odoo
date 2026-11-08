@@ -6,7 +6,7 @@ import {
 } from '@sc/ui/primitive-port';
 
 type RuntimeBindingFixture = {
-  component: object;
+  component: unknown;
   contract: {
     primitive: string;
     portVersion: number;
@@ -16,7 +16,7 @@ type RuntimeBindingFixture = {
 
 function binding(primitive: (typeof SCENE_PRIMITIVE_NAMES)[number]): RuntimeBindingFixture {
   return {
-    component: {},
+    component: () => null,
     contract: {
       primitive,
       portVersion: 1,
@@ -31,6 +31,8 @@ function validAdapter(): Record<string, RuntimeBindingFixture> {
 
 const negativeBoundaries = [
   'missing binding',
+  'empty component object',
+  'business object component',
   'wrong identity',
   'missing capability',
   'duplicate capability',
@@ -53,6 +55,40 @@ if (!missingResult.ok) {
   assert.equal(missingResult.error.detail.primitive, 'Input');
   assert.equal(missingResult.error.detail.capability, 'binding');
 }
+
+const emptyComponent = validAdapter();
+emptyComponent.Button.component = {};
+const emptyComponentResult = validatePrimitiveAdapterRuntimeShape(emptyComponent);
+assert.equal(emptyComponentResult.ok, false);
+if (!emptyComponentResult.ok) {
+  assert.equal(emptyComponentResult.error.detail.primitive, 'Button');
+  assert.equal(emptyComponentResult.error.detail.capability, 'component');
+}
+
+const businessObjectComponent = validAdapter();
+businessObjectComponent.Input.component = { id: 7, name: 'ordinary business object' };
+const businessObjectResult = validatePrimitiveAdapterRuntimeShape(businessObjectComponent);
+assert.equal(businessObjectResult.ok, false);
+if (!businessObjectResult.ok) {
+  assert.equal(businessObjectResult.error.detail.primitive, 'Input');
+  assert.equal(businessObjectResult.error.detail.capability, 'component');
+}
+
+const functionComponent = validAdapter();
+functionComponent.Table.component = () => null;
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(functionComponent), { ok: true });
+
+const setupComponent = validAdapter();
+setupComponent.Select.component = { setup: () => () => null };
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(setupComponent), { ok: true });
+
+const renderComponent = validAdapter();
+renderComponent.Textarea.component = { render: () => null };
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(renderComponent), { ok: true });
+
+const asyncComponent = validAdapter();
+asyncComponent.DateField.component = { __asyncLoader: async () => () => null };
+assert.deepEqual(validatePrimitiveAdapterRuntimeShape(asyncComponent), { ok: true });
 
 const wrongIdentity = validAdapter();
 wrongIdentity.Button.contract.primitive = 'Input';
@@ -142,5 +178,5 @@ assert.equal(
   false,
   'non-object adapter must fail closed',
 );
-assert.equal(negativeBoundaries.length, 9);
+assert.equal(negativeBoundaries.length, 11);
 console.log(`[primitive_port_runtime_test] PASS primitives=${SCENE_PRIMITIVE_NAMES.length} boundaries=${negativeBoundaries.length}`);
