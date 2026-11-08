@@ -23,6 +23,7 @@
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"
+    :name="name"
     :clearable="clearable"
     :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
@@ -70,6 +71,8 @@
     :minlength="minLength"
     :maxlength="maxLength"
     :placeholder="placeholder"
+    :name="name"
+    :inputmode="inputMode"
     :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
@@ -93,6 +96,10 @@ import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, resolvePrimitive
 const inputRef = ref<HTMLInputElement | null>(null);
 const tdesignInputRef = ref<{ $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
+let focusStartValue = '';
+let lastValue = '';
+let lastChangeValue = '';
+let lastInputEvent: Event | undefined;
 
 const props = withDefaults(defineProps<{
   id?: string;
@@ -105,6 +112,8 @@ const props = withDefaults(defineProps<{
   loading?: boolean;
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
+  name?: string;
+  inputMode?: 'text' | 'decimal' | 'numeric';
   describedBy?: string;
   ariaLabel?: string;
   autocomplete?: string;
@@ -123,6 +132,8 @@ const props = withDefaults(defineProps<{
   status: 'default',
   type: 'text',
   placeholder: undefined,
+  name: undefined,
+  inputMode: undefined,
   describedBy: undefined,
   ariaLabel: undefined,
   autocomplete: undefined,
@@ -163,6 +174,8 @@ const nativeProjection = computed(() => ({
     max: props.max,
     step: props.step,
     autocomplete: props.autocomplete,
+    name: props.name,
+    inputmode: props.inputMode,
     minlength: props.minLength,
     maxlength: props.maxLength,
   },
@@ -179,48 +192,87 @@ function eventValue(event: Event): string | null {
 function onInput(event: Event) {
   const value = eventValue(event);
   if (value === null) return;
+  lastValue = value;
   emit('update:modelValue', value);
   emit('input', value, event);
 }
 function onChange(event: Event) {
   const value = eventValue(event);
-  if (value !== null) emit('change', value, event);
+  if (value !== null) {
+    lastValue = value;
+    lastChangeValue = value;
+    emit('change', value, event);
+  }
 }
 function onFocus(event: FocusEvent) {
+  focusStartValue = String(props.modelValue ?? '');
+  lastValue = focusStartValue;
+  lastChangeValue = focusStartValue;
   emit('focus', props.modelValue, event);
 }
 function onBlur(event: FocusEvent) {
   emit('blur', props.modelValue, event);
+  if (lastValue !== focusStartValue && lastValue !== lastChangeValue) {
+    lastChangeValue = lastValue;
+    emit('change', lastValue, event);
+  }
 }
 
-function tdesignEvent(context: unknown): Event {
-  return resolvePrimitiveNativeEvent(context) ?? new Event('input');
+function tdesignEvent(context: unknown): Event | undefined {
+  return resolvePrimitiveNativeEvent(context);
 }
 function onTDesignInput(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
   if (next === null) return;
+  lastValue = next;
   emit('update:modelValue', next);
-  emit('input', next, tdesignEvent(context));
+  const event = tdesignEvent(context);
+  if (event) {
+    lastInputEvent = event;
+    emit('input', next, event);
+  }
 }
 function onTDesignChange(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
-  if (next !== null) emit('change', next, tdesignEvent(context));
+  const event = tdesignEvent(context);
+  if (next === null || !event) return;
+  lastValue = next;
+  if (event.type === 'input') {
+    if (event !== lastInputEvent) {
+      lastInputEvent = event;
+      emit('input', next, event);
+    }
+    return;
+  }
+  lastChangeValue = next;
+  emit('change', next, event);
 }
 function onTDesignFocus(value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  emit('focus', value, event instanceof FocusEvent ? event : new FocusEvent('focus'));
+  if (event instanceof FocusEvent) {
+    focusStartValue = String(value ?? '');
+    lastValue = focusStartValue;
+    lastChangeValue = focusStartValue;
+    emit('focus', value, event);
+  }
 }
 function onTDesignBlur(value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  emit('blur', value, event instanceof FocusEvent ? event : new FocusEvent('blur'));
+  if (event instanceof FocusEvent) {
+    emit('blur', value, event);
+    if (lastValue !== focusStartValue && lastValue !== lastChangeValue) {
+      lastChangeValue = lastValue;
+      emit('change', lastValue, event);
+    }
+  }
 }
 function onTDesignKeydown(_value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  emit('keydown', event instanceof KeyboardEvent ? event : new KeyboardEvent('keydown'));
+  if (event instanceof KeyboardEvent) emit('keydown', event);
 }
 function onTDesignKeyup(_value: string | number, context?: unknown) {
   const event = resolvePrimitiveNativeEvent(context);
-  emit('keyup', event instanceof KeyboardEvent ? event : new KeyboardEvent('keyup'));
+  if (event instanceof KeyboardEvent) emit('keyup', event);
 }
 
 // IME callers commit text by reading the DOM event (`event.target.value`), so a

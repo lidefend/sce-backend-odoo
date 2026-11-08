@@ -4,11 +4,14 @@
     data-semantic-component="ProfessionalBaseFieldControl"
     :data-state="model.controlState"
     data-professional-field-family="base"
+    :data-field-name="field.name"
     :data-professional-field-type="model.fieldType"
     :data-control-kind="model.controlKind"
     :data-presentation-mode="model.presentationMode"
     :data-render-profile="model.renderProfile"
     :data-control-state="model.controlState"
+    :data-component-key="field.componentKey || undefined"
+    :data-component-binding="componentBinding?.bindingId"
   >
     <template v-if="field.readonly">
       <slot v-if="hasReadonlyOverride" name="readonly" :field="field" />
@@ -37,6 +40,18 @@
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
+    <div
+      v-else-if="contractBindingMissing"
+      class="professional-base-field-control__contract-error"
+      role="alert"
+      :data-field-component-binding-error="field.componentKey"
+    >Contract 组件实现未登记：{{ field.componentKey }} / {{ field.type }}</div>
+    <component
+      :is="bindingComponent"
+      v-else-if="componentBinding"
+      v-bind="componentProps"
+      v-on="componentListeners"
+    />
     <ScCheckbox
       v-else-if="field.type === 'boolean'"
       :id="controlId"
@@ -118,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue';
+import { computed, inject, type Component } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -134,6 +149,10 @@ import {
   type ScTaskActionDescriptor,
 } from '../template/taskActionResolver';
 import { resolveProfessionalBaseFieldModel, resolveReadonlyEmptyText } from './professionalBaseFieldModel';
+import {
+  resolveContractBaseComponentBinding,
+  type ContractBaseImplementationId,
+} from './contractComponentBindings';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -148,6 +167,25 @@ const emit = defineEmits<{
 }>();
 
 const normalizedType = computed(() => String(props.field.type || '').trim().toLowerCase());
+const componentBinding = computed(() => resolveContractBaseComponentBinding(props.field));
+const componentImplementations = {
+  ScInput,
+  ScTextarea,
+  RestrictedHtmlEditor,
+  ScNumberInput,
+  ScSelect,
+  ScCheckbox,
+  ScDateField,
+} satisfies Record<ContractBaseImplementationId, Component>;
+const bindingComponent = computed(() => (
+  componentBinding.value
+    ? componentImplementations[componentBinding.value.implementation]
+    : null
+));
+const contractBindingMissing = computed(() => (
+  Boolean(String(props.field.componentKey || '').trim())
+  && !componentBinding.value
+));
 
 const taskActionResolver = inject(ScTaskActionResolverKey, null);
 function taskActionFor(field: FormSectionFieldSchema): ScTaskActionDescriptor | null {
@@ -191,6 +229,100 @@ const numericValue = computed(() => {
   const value = Number(props.field.inputValue);
   return Number.isFinite(value) ? value : undefined;
 });
+
+const componentProps = computed<Record<string, unknown>>(() => {
+  const binding = componentBinding.value;
+  if (!binding) return {};
+  const common = {
+    id: props.controlId,
+    required: props.field.required,
+    invalid: props.field.invalid,
+    describedBy: props.describedBy,
+    ariaLabel: props.field.label || props.field.name,
+  };
+  if (binding.controlKind === 'boolean') {
+    return {
+      ...common,
+      checked: Boolean(props.field.value),
+      label: props.field.label || props.field.name,
+      hideLabel: true,
+    };
+  }
+  if (binding.controlKind === 'selection') {
+    return {
+      ...common,
+      name: props.field.name,
+      modelValue: String(props.field.inputValue ?? ''),
+      placeholder: props.placeholder,
+      options: (props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || [])
+        .filter(Boolean)
+        .map((option) => ({ value: option.id ?? option.value, label: option.label })),
+    };
+  }
+  if (binding.controlKind === 'date' || binding.controlKind === 'datetime') {
+    return {
+      ...common,
+      name: props.field.name,
+      modelValue: String(props.field.inputValue ?? ''),
+      placeholder: props.placeholder,
+      withTime: binding.controlKind === 'datetime',
+    };
+  }
+  if (binding.controlKind === 'number') {
+    return {
+      ...common,
+      name: props.field.name,
+      modelValue: numericValue.value,
+      decimalPlaces: props.field.type === 'integer' ? 0 : undefined,
+      status: props.field.invalid ? 'error' : 'default',
+      placeholder: props.placeholder,
+    };
+  }
+  if (binding.controlKind === 'multiline') {
+    return {
+      ...common,
+      name: props.field.name,
+      modelValue: String(props.field.inputValue ?? ''),
+      rows: 4,
+      status: props.field.invalid ? 'error' : 'default',
+      placeholder: props.placeholder,
+    };
+  }
+  if (binding.controlKind === 'html') {
+    return {
+      ...common,
+      modelValue: String(props.field.inputValue ?? ''),
+      placeholder: props.placeholder,
+    };
+  }
+  return {
+    ...common,
+    name: props.field.name,
+    modelValue: String(props.field.inputValue ?? ''),
+    status: props.field.invalid ? 'error' : 'default',
+    placeholder: props.placeholder,
+    ariaRequired: props.field.required || undefined,
+  };
+});
+
+const componentListeners = computed<Record<string, (...args: unknown[]) => void>>(() => {
+  const binding = componentBinding.value;
+  if (!binding) return {};
+  if (binding.controlKind === 'boolean') {
+    return { change: (value) => emitValue(Boolean(value)) };
+  }
+  return {
+    'update:modelValue': (value) => {
+      emitValue(contractControlValue(value));
+    },
+  };
+});
+
+function contractControlValue(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  return String(value);
+}
 
 function emitValue(value: string | number | boolean | null) {
   emit('update:value', value);
@@ -243,6 +375,17 @@ function emitValue(value: string | number | boolean | null) {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.professional-base-field-control__contract-error {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-status-error-border, currentColor);
+  border-radius: 6px;
+  color: var(--sc-status-error-text, currentColor);
+  background: var(--sc-status-error-bg, transparent);
+  font-size: var(--sc-product-text-sm);
 }
 
 /* A readonly fact that is actually the next business action (下一步办理).

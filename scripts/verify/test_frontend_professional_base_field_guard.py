@@ -66,6 +66,33 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
 
         self.assertTrue(any("data-professional-field-family" in failure for failure in validate(source)))
 
+    def test_component_binding_must_be_consumed_by_the_host(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                return value.replace(':is="bindingComponent"', ':is="legacyComponent"', 1)
+            return value
+
+        self.assertTrue(any("bindingComponent" in failure for failure in validate(source)))
+
+    def test_component_binding_cannot_name_an_ungenerated_identity(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("contractComponentBindings.ts"):
+                return value.replace("binding('sc.input.text'", "binding('sc.input.unregistered'", 1)
+            return value
+
+        self.assertTrue(any("ungenerated identity" in failure for failure in validate(source)))
+
+    def test_component_binding_cannot_add_product_special_case(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("contractComponentBindings.ts"):
+                return value.replace("export function resolveContractBaseComponentBinding", "// project.project\nexport function resolveContractBaseComponentBinding", 1)
+            return value
+
+        self.assertTrue(any("forbidden product special case" in failure for failure in validate(source)))
+
     def test_unguarded_text_handler_fails(self):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")

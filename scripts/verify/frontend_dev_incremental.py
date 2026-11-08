@@ -173,6 +173,23 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+        "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+        "frontend/apps/web/src/components/design-system/ScSelect.vue",
+        "frontend/apps/web/src/components/design-system/ScRadioGroup.vue",
+        "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "scripts/verify/frontend_professional_base_field_guard.py",
+        "scripts/verify/test_frontend_professional_base_field_guard.py",
+    ), (
+        "verify.frontend.professional_base_field.unit",
+    )),
+    Rule((
         "/app/presentation/businessValuePresentation.ts",
         "/app/presentation/collectionKanbanPresentation.ts",
         "/utils/fieldSemantics.ts",

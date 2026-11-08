@@ -73,7 +73,7 @@ const nativeProjection = computed(() => ({
 function onTDesignChange(checked: boolean, context: { e?: Event }) {
   if (props.disabled) return;
   emit('update:checked', checked);
-  emit('change', checked, context?.e ?? new Event('change'));
+  if (context?.e instanceof Event) emit('change', checked, context.e);
 }
 
 defineExpose({ focus: () => checkboxRef.value?.focus?.() ?? checkboxRef.value?.$el?.querySelector('input')?.focus() });

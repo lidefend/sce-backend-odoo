@@ -323,8 +323,11 @@ verify.semantic_runtime_resolution: guard.prod.forbid
 	@node /tmp/semantic-runtime-resolution-test.mjs
 
 verify.frontend.professional_base_field.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_component_bindings_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-component-bindings-test.mjs >/dev/null
+	@node /tmp/contract-component-bindings-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_base_field_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-base-field-model-test.mjs >/dev/null
 	@node /tmp/professional-base-field-model-test.mjs
+	@node frontend/apps/web/scripts/contract_tdesign_components_test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_base_field_guard.py
 	@python3 scripts/verify/frontend_professional_base_field_guard.py
 

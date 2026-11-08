@@ -26,6 +26,8 @@ def _compact(text: str) -> str:
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue")
+    bindings = read_text("frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts")
+    generated = read_text("frontend/apps/web/src/app/presentation/semantic_registry.generated.ts")
     html_editor = read_text("frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
@@ -40,6 +42,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         'data-professional-field-family="base"', ":data-professional-field-type", ":data-control-kind",
         ":data-presentation-mode", ":data-render-profile", ":data-control-state", 'name="readonly"', "hasReadonlyOverride",
         ":deep([data-semantic-component='ScDateField'])", "width: 100%;",
+        ":data-component-key", ":data-component-binding", "resolveContractBaseComponentBinding",
+        "componentImplementations", ':is="bindingComponent"', "v-bind=\"componentProps\"", "v-on=\"componentListeners\"",
+        'data-field-component-binding-error',
     ):
         if marker not in component:
             failures.append(f"professional base field missing marker {marker}")
@@ -88,6 +93,26 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"date range accessibility missing marker {marker}")
     if "ProfessionalBaseFieldControl" not in registry or "rendererByFieldType[fieldType]" not in registry:
         failures.append("component registry does not authorize the professional base field renderer")
+    binding_keys = set(re.findall(r"binding\('([^']+)'", bindings))
+    generated_keys = set(re.findall(r"componentKey: '([^']+)'", generated))
+    required_binding_keys = {
+        "sc.input.text",
+        "sc.input.textarea",
+        "sc.input.number",
+        "sc.select.remote",
+        "sc.input.boolean",
+        "sc.input.date",
+        "sc.input.datetime",
+    }
+    if not required_binding_keys.issubset(binding_keys):
+        failures.append("contract component binding is missing a required base identity")
+    for key in sorted(binding_keys - generated_keys):
+        failures.append(f"contract component binding names ungenerated identity {key}")
+    for implementation in (
+        "ScInput", "ScTextarea", "RestrictedHtmlEditor", "ScNumberInput", "ScSelect", "ScCheckbox", "ScDateField",
+    ):
+        if f"'{implementation}'" not in bindings or implementation not in component:
+            failures.append(f"contract component binding missing implementation {implementation}")
     for marker in ("presentationMode: field.presentationMode", "renderProfile: field.renderProfile"):
         if marker not in renderer:
             failures.append(f"canonical renderer missing profile projection {marker}")
@@ -108,7 +133,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if "setTextField(filenameField, payload.fileName);" in action_presentation:
         failures.append("binary filename companion bypasses the technical write path")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
-        if forbidden in component or forbidden in model:
+        if forbidden in component or forbidden in model or forbidden in bindings:
             failures.append(f"base field family contains forbidden product special case {forbidden}")
     return failures
 
@@ -120,7 +145,7 @@ def main() -> int:
         for failure in failures:
             print(f" - {failure}")
         return 1
-    print("[frontend_professional_base_field_guard] PASS fields=9")
+    print("[frontend_professional_base_field_guard] PASS fields=9 bindings=11")
     return 0
 
 

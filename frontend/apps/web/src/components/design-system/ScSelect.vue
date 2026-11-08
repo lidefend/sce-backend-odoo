@@ -13,6 +13,7 @@
     :data-readonly="readonly || undefined"
     :data-appearance="appearance"
     :model-value="modelValue"
+    :name="name"
     :options="tdesignOptions"
     :input-props="{ inputClass: `sc-select__control sc-select__control--${appearance}` }"
     :size="size"
@@ -30,16 +31,21 @@
     :aria-describedby="describedBy"
     @change="onChange"
     @search="onSearch"
+    @focus="onFocus"
+    @blur="onBlur"
+    @keydown="onKeydown"
+    @keyup="onKeyup"
     @popup-visible-change="onPopupVisibleChange"
   />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { TDesignSelect } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
 import {
   resolvePrimitiveControlUpdate,
+  resolvePrimitiveNativeEvent,
   selectPopupVisibilityEvent,
   type ScPrimitiveSize,
   type ScPrimitiveStatus,
@@ -53,6 +59,7 @@ export interface ScSelectOption {
 
 const props = withDefaults(defineProps<{
   id?: string;
+  name?: string;
   modelValue: string | number;
   options?: readonly ScSelectOption[];
   placeholder?: string;
@@ -70,6 +77,7 @@ const props = withDefaults(defineProps<{
   appearance?: 'default' | 'form-field';
 }>(), {
   id: undefined,
+  name: undefined,
   options: () => [],
   placeholder: undefined,
   size: 'medium',
@@ -83,12 +91,30 @@ const props = withDefaults(defineProps<{
 });
 const emit = defineEmits<{
   'update:modelValue': [value: string];
-  change: [value: string];
-  search: [value: string];
-  'popup-visible-change': [event: { visible: boolean; trigger: string }];
+  change: [value: string, event: Event];
+  search: [value: string, event: Event];
+  focus: [value: string, event: FocusEvent];
+  blur: [value: string, event: FocusEvent];
+  keydown: [event: KeyboardEvent];
+  keyup: [event: KeyboardEvent];
+  'popup-visible-change': [event: { visible: boolean; trigger: string }, nativeEvent: Event];
 }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
 let lastSearchValue: string | undefined;
+let nativeInput: HTMLInputElement | null = null;
+function onNativeSearch(event: Event) {
+  if (event.target instanceof HTMLInputElement) emitSearchValue(event.target.value, event);
+}
+function bindNativeSearch() {
+  const root = selectRef.value?.$el;
+  const input = root instanceof HTMLInputElement ? root : root?.querySelector<HTMLInputElement>('input') ?? null;
+  if (input === nativeInput) return;
+  nativeInput?.removeEventListener('input', onNativeSearch);
+  nativeInput = input;
+  nativeInput?.addEventListener('input', onNativeSearch);
+}
+onMounted(bindNativeSearch);
+onBeforeUnmount(() => nativeInput?.removeEventListener('input', onNativeSearch));
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({
   value: option.value,
@@ -99,6 +125,7 @@ const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
     id: props.id,
+    name: props.name,
     required: props.required,
     'aria-readonly': props.readonly || undefined,
     'aria-required': props.required || undefined,
@@ -108,27 +135,50 @@ const nativeProjection = computed(() => ({
   },
 }));
 
-function onChange(nextValue: unknown) {
+function onChange(nextValue: unknown, context?: unknown) {
   const value = resolvePrimitiveControlUpdate({ value: nextValue, disabled: props.disabled, readonly: props.readonly });
   if (value === null) return;
+  const event = resolvePrimitiveNativeEvent(context);
+  if (!(event instanceof Event)) return;
   emit('update:modelValue', value);
-  emit('change', value);
+  emit('change', value, event);
 }
 
-function emitSearchValue(value: unknown) {
+function emitSearchValue(value: unknown, event: Event) {
   const normalized = String(value || '');
   if (lastSearchValue === normalized) return;
   lastSearchValue = normalized;
-  emit('search', normalized);
+  emit('search', normalized, event);
 }
 
-function onSearch(value: unknown) {
-  emitSearchValue(value);
+function onSearch(value: unknown, context?: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  if (event instanceof Event) emitSearchValue(value, event);
 }
 
-function onPopupVisibleChange(visible: unknown, context?: { trigger?: string }) {
-  emit('popup-visible-change', selectPopupVisibilityEvent(visible, context?.trigger));
+function onPopupVisibleChange(visible: unknown, context?: { trigger?: string; e?: Event }) {
+  const event = resolvePrimitiveNativeEvent(context);
+  if (event instanceof Event) {
+    emit('popup-visible-change', selectPopupVisibilityEvent(visible, context?.trigger), event);
+  }
 }
 
-defineExpose({ focus: () => selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus() });
+function onFocus(context: { value: unknown; e: FocusEvent | KeyboardEvent }) {
+  if (context.e instanceof FocusEvent) emit('focus', String(context.value ?? ''), context.e);
+}
+function onBlur(context: { value: unknown; e: FocusEvent | KeyboardEvent }) {
+  if (context.e instanceof FocusEvent) emit('blur', String(context.value ?? ''), context.e);
+}
+function onKeydown(event: KeyboardEvent) {
+  emit('keydown', event);
+}
+function onKeyup(event: KeyboardEvent) {
+  emit('keyup', event);
+}
+
+defineExpose({
+  focus: (options?: Parameters<HTMLElement['focus']>[0]) => (
+    selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus(options)
+  ),
+});
 </script>

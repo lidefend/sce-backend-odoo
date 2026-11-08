@@ -54,7 +54,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string | number | boolea
 function onChange(value: string | number | boolean, context: { e?: Event }) {
   if (props.disabled || props.readonly) return;
   emit('update:modelValue', value);
-  emit('change', value, context?.e ?? new Event('change'));
+  if (context?.e instanceof Event) emit('change', value, context.e);
 }
 </script>
 

@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "f1ba79c173c4701c642b3e505daf33c7aaaedfb9",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-V1.yaml",
+    ".agent/runs/FE-RENDERER-V1/run.json",
+    "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.md",
+    "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.en.md",
+    "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+    "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+    "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
+    "frontend/apps/web/src/components/design-system/ScInput.vue",
+    "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+    "frontend/apps/web/src/components/design-system/ScSelect.vue",
+    "frontend/apps/web/src/components/design-system/ScRadioGroup.vue",
+    "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
+    "frontend/apps/web/src/components/design-system/ScDateField.vue",
+    "frontend/apps/web/src/components/design-system/ScTable.vue",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_professional_base_field_guard.py",
+    "scripts/verify/test_frontend_professional_base_field_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "latest main source audit plus local Make tools; no database or service writes"
+  },
+  "checks": {
+    "docs_temp_guard": {
+      "target": "verify.docs.temp_guard",
+      "inputs": [
+        "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.md",
+        "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.en.md",
+        "scripts/verify/docs_temp_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_component_binding": {
+      "target": "verify.frontend.professional_base_field.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/contractComponentBindings.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/scripts/contract_component_bindings_test.ts",
+        "frontend/apps/web/scripts/contract_tdesign_components_test.mjs",
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+        "frontend/apps/web/src/components/design-system/ScSelect.vue",
+        "frontend/apps/web/src/components/design-system/ScRadioGroup.vue",
+        "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "scripts/verify/frontend_professional_base_field_guard.py",
+        "scripts/verify/test_frontend_professional_base_field_guard.py",
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/tsconfig.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement and verify the V1 base-field component binding map, then integrate only source-verified TDesign capability repairs.",
+  "id": "FE-RENDERER-V1",
+  "branch": "feature/fe-renderer-v1-contract-tdesign-20261108",
+  "status": "active",
+  "goal": ".agent/goals/FE-RENDERER-V1.yaml",
+  "record": "docs/architecture/renderer_v1_contract_tdesign_plan_20261108.md"
+}
