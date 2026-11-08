@@ -57,6 +57,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.professional_component_registry.unit": "esbuild",
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
+    "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
     "verify.frontend.scene_primitive_adapter.unit": "esbuild",
     "verify.frontend.navigation_shell.unit": "esbuild",

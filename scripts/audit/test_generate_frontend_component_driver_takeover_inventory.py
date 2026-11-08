@@ -33,6 +33,20 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
         self.assertEqual(report["authority"]["lockedVersion"], "1.20.5")
         self.assertEqual(report["summary"]["officialComponents"], len(MODULE.official_components()))
 
+    def test_takeover_scope_is_not_claimed_repository_wide(self) -> None:
+        report = MODULE.build_inventory()
+        self.assertEqual(
+            report["scope"],
+            "frontend/apps/web/src production sources except the design-system adapter layer",
+        )
+        self.assertEqual(
+            report["scopeExclusions"],
+            [{
+                "path": "frontend/packages/ui/src",
+                "reason": "The legacy @sc/ui Scene primitives and TDesign driver imports remain outside the FE-RENDERER-V1 apps/web takeover count.",
+            }],
+        )
+
     def test_all_required_drivers_are_explicitly_assessed(self) -> None:
         report = MODULE.build_inventory()
         required = {row["officialComponent"] for row in report["components"] if row["requiredForCurrentProduct"]}

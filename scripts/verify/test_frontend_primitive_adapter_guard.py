@@ -93,7 +93,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScCard": '<TDesignCard :body-class-name="bodyClassName" /><!-- bodyClassName?: string -->',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
                 "ScErrorState": '<TDesignAlert data-state="error" role="alert" />',
-                "ScFormField": '<TDesignFormItem :data-state="state" :data-required="required" :for="controlId"><template #help><span :id="helpId" /></template><template #tips><span :id="errorId" role="alert" /></template></TDesignFormItem><!-- props.help ? helpId.value props.error ? errorId.value -->',
+                "ScFormField": '<TDesignFormItem :data-state="state" :data-required="required" :for="controlId" :help="helpContent" :tips="errorContent" /><!-- id: helpId.value id: errorId.value role: \'alert\' props.help ? helpId.value props.error ? errorId.value -->',
                 "ScNumberInput": '<TDesignInputNumber v-native-control-projection="nativeProjection" /><!-- selector: \'input\' as const id: props.id \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || props.status === \'error\' || undefined \'aria-describedby\': props.describedBy -->',
                 "ScDisclosure": '<TDesignCollapse><ScButton appearance="context-action" data-disclosure-trigger :aria-expanded="String(localOpen)" :aria-controls="contentId" @click.stop="toggle" /></TDesignCollapse>\n<script>import ScButton from \'./ScButton.vue\'</script>',
             }.get(name, "")

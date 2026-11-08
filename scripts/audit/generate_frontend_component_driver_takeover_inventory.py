@@ -242,7 +242,13 @@ def build_inventory() -> dict[str, object]:
     return {
         "schemaVersion": "frontend-component-driver-takeover/v1",
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
-        "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
+        "scope": "frontend/apps/web/src production sources except the design-system adapter layer",
+        "scopeExclusions": [
+            {
+                "path": "frontend/packages/ui/src",
+                "reason": "The legacy @sc/ui Scene primitives and TDesign driver imports remain outside the FE-RENDERER-V1 apps/web takeover count.",
+            },
+        ],
         "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
         "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": unassessed_required_takeovers, "directLibraryImportBypasses": len(direct_imports), "bridgeBehaviorBypasses": len(bridge_behavior_bypasses), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
