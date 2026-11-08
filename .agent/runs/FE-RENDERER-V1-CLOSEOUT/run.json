@@ -41,6 +41,7 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+    "scripts/verify/business_entry_matrix_browser.mjs",
     "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
     "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
     "make/frontend.mk",
@@ -265,6 +266,20 @@
       ],
       "kind": "offline"
     },
+    "business_entry_matrix": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/ops/evidence_scope.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
     "page_pattern_reference_parity": {
       "target": "verify.frontend.page_pattern_reference_parity.unit",
       "inputs": [
@@ -314,11 +329,10 @@
     }
   },
   "blockers": [
-    "L4 validation not_run for second-review product commit f88e49d59",
-    "Fresh independent review and exact-head remote CI not_run for the new candidate"
+    "Fresh independent review and exact-head remote CI not_run for the final closeout head"
   ],
   "results": {
-    "candidate_code_commit": "PASS_LOCAL: f88e49d59 closes second-review coalesced delayed echo, TypeScript raw-surface scanning, reactive Icon accessibility, driver-family attribution and evidence-narrative findings; L4 and independent review remain pending",
+    "candidate_code_commit": "PASS: f88e49d59 closes the second-review coalesced delayed echo, TypeScript raw-surface scanning, reactive Icon accessibility, driver-family attribution and evidence-narrative findings; L4 passed on its metadata/P4 child 866afcb11",
     "p0_text_controls_browser": "PASS: managed Chromium 147.0.7727.15, 59 exact assertions, 0 console errors; coalesced parent echoes cannot restore stale drafts after an external server update, including when the user resumes editing; pointer/programmatic focus sources remain distinguished",
     "p0_scene_adapter_unit": "PASS: primitive-port, real-SFC type, adapter bundle, 27 button assertions, 14 collection assertions, 13 selection assertions and 59 text assertions",
     "p0_button_behavior": "PASS: 27 browser assertions, 0 console errors, 0 network requests",
@@ -328,23 +342,24 @@
     "component_driver_takeover": "PASS: 17 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0 direct_imports=0 bridge_consumers=2; raw behavior scanning covers TypeScript/JavaScript, and RadioGroup/Layout subcomponents are attributed to their real drivers",
     "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
     "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
-    "ci_local_iteration": "PENDING: f88e49d59 scope is reconciled; the first clean planning attempt correctly stopped on undeclared Contract Form files before executing targets, and the complete affected iteration must now be rerun",
-    "frontend_build": "PASS_PRE_COMMIT_CONTENT_IDENTICAL: f88e49d59 product content built 5,375 modules in 25.20s with the existing large-chunk advisory; the exact clean affected iteration remains pending",
+    "ci_local_iteration": "PASS: 18/18 affected targets exited zero with non-zero real collections on 866afcb11; receipt=.runtime/frontend-dev-validation/executions/20261108T174449Z-2277077-703451500/receipt.json",
+    "frontend_build": "PASS: 5,375 modules transformed in 25.20s for the f88e49d59 product content, with the existing large-chunk advisory",
     "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
     "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters have wrappers and consumers; missing=0 bridge_only=0 adapter_unconsumed=0 raw=0 direct_imports=0; two explicit bridge consumer bypasses remain recorded for alert and select",
-    "l4_identity": "HISTORICAL_ONLY: managed isolated acceptance evidence exists on 9cea1b661, product identity f88e49d59 requires its own validation",
-    "l4_01_contract_form": "PENDING: historical ce9170b4b and 9cea1b661 presentation evidence is not inherited by f88e49d59",
-    "l4_02_payment_request": "PENDING: historical payment edit/restore evidence is not inherited by f88e49d59",
-    "l4_03_scene_collection": "PENDING: historical 18-state and project-table evidence is not inherited by f88e49d59",
+    "l4_identity": "PASS: managed Acceptance backend/preview were rebound to product commit f88e49d59 and the metadata/P4 child 866afcb11; evidence binds the same product frontend tree and candidate database",
+    "l4_01_contract_form": "PASS: sc.general.contract/2 action 758/menu 664, fixture_role_config_admin, 1440/1024/768/390, 0 overflow and 0 console/page/http errors",
+    "l4_02_payment_request": "PASS: FE-DELIVERY-HARDENING-001, two declared settlement rows, inline edit 200->150 persisted, restored to 0 rows/20.00, 0 problems",
+    "l4_03_scene_collection": "PASS: 18/18 list states, 30/30 record checks, 316/316 gated checks, 5/5 negative fixtures, 0 runtime errors; project ledger 382/590 passed with direct create=false, delegated action create=795 and edit=true",
     "p3_product_fix": "PASS: delegated action targets no longer require direct create=true; 11 authority cases pass; coalesced and resumed-edit text echoes cannot replace newer external state; table and icon contracts fail closed; required action reasons now use the Sc reason dialog instead of window.prompt",
     "p3_mutations": "BOUNDED: isolated acceptance fixture reset and declared detail-row edit/restore only; no local.dev route repair, production data, ACL change or cross-domain credential reuse",
     "p4_complexity": "RECORDED: page assembly, ActionView, HomeView and legacy/canonical consolidation remain excluded follow-ups; active legacy SceneUiProvider consumers prevent unjustified deletion",
+    "p4_collection_authority_probe": "FIXED: the project-ledger L4 probe treated delegated list.create actions as direct record creation; it now distinguishes direct create, delegated action identity and the rendered create affordance without changing product authority",
     "independent_review_1": "REQUEST_CHANGES on 9cea1b661; findings addressed by c6c7d6340; review=.runtime/pr845-independent-review.md sha256=c2d5769dd45c5c0db133908d025ded562e64c90e36b36f4acb1f2ba3800c2b34",
     "independent_review_2": "REQUEST_CHANGES on 12ea32ecd; the five evidenced findings are addressed by f88e49d59; review=.runtime/pr845-independent-review-12ea.md sha256=fb4d050fa81238f638e53f35517ed77493063f8fb7983cf48a5593a3aa30afe7; a fresh exact-head review remains pending",
-    "l4_product_review": "PENDING: Contract Form, Payment Request and Scene Collection must be rerun on product identity f88e49d59",
-    "final_v1_report": "VERIFICATION_PENDING: both independent-review rounds have been addressed locally; exact clean iteration, L4, publication, fresh independent review, exact-head CI and final merge authorization remain pending"
+    "l4_product_review": "PASS on 866afcb11: Contract Form, Payment Request, Scene Collection full matrix and project-ledger delegated-create boundary all passed",
+    "final_v1_report": "VERIFICATION_PENDING: local iteration and L4 pass; publication, fresh independent review, exact-head CI and final merge authorization remain pending"
   },
-  "next_exact_step": "Run the complete affected local iteration on f88e49d59, then revalidate the three business pages on that exact product identity before publishing metadata and requesting a fresh independent review.",
+  "next_exact_step": "Commit this L4/metadata closeout, publish the clean candidate through the governed PR flow, and request a fresh independent review bound to the pushed exact head; do not merge or deploy.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",

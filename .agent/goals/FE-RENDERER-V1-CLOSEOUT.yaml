@@ -44,6 +44,7 @@ goal:
       - frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/business_entry_matrix_browser.mjs
       - scripts/verify/test_frontend_action_view_page_actions_guard.py
       - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
       - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
@@ -88,7 +89,7 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Run the complete affected local iteration on product commit f88e49d59, then revalidate
-    Contract Form, Payment Request and Scene Collection on the managed Acceptance profile.
-    Publish the clean metadata candidate, obtain a new independent review and fresh required
-    remote checks. Do not inherit page or CI evidence from 9cea1b661 or any older head.
+    Commit this L4/metadata closeout, publish the clean candidate, then obtain a fresh
+    independent review bound to the exact pushed head. After review passes, verify the
+    exact-head required remote checks and prepare the final merge recommendation without
+    merging or deploying.

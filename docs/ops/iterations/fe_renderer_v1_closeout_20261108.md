@@ -7,6 +7,7 @@
 - PR: #845
 - Current second-review product commit: `f88e49d5901119489eda5aa8ffd001042f346412`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
+- Current L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -275,16 +276,24 @@ was not written to the report, run record or logs.
 | Contract Form | `verify.frontend.contract_form_presentation.browser` | PASS: `sc.general.contract/2`, action 758/menu 664, 1440/1024/768/390, 0 overflow, 0 console/page/http errors |
 | Payment Request | `verify.frontend.business_entry.payment_request.browser` | PASS: `FE-DELIVERY-HARDENING-001`, two declared settlement rows, inline edit 200→150 persisted, restored to row count 0 / amount 20.00, 0 problems |
 | Scene Collection | `verify.frontend.list_surface_structure.browser` | PASS: full list matrix, 18 normal/batch/empty × viewport states, 0 failures |
-| Scene Collection table identity | `verify.frontend.business_entry.matrix.browser` | PASS: project ledger menu 382/action 590, four rows, row search/detail contract, declared and observed create=false, edit=true, negative authority retained |
+| Scene Collection table identity | `verify.frontend.business_entry.matrix.browser` | PASS: project ledger menu 382/action 590, four rows, row search/detail contract, direct create=false, authorized delegated `项目立项` action 795, rendered create affordance=true, edit=true, expected negative 403 retained |
 
 Machine evidence:
 
 - `.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
-  and four viewport PNGs;
-- `.runtime/final-acceptance/payment-request/9cea1b661/report.json` and
-  `after-save.png`;
-- `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots;
-- `.runtime/final-acceptance/scene-collection-table/9cea1b661/summary.json`.
+  and four viewport PNGs, SHA256
+  `802dce545ec1f5417f4074bab88c9d4b5d2cc15dea3b9773aec969654511a0a6`;
+- `artifacts/frontend-business-entry-payment-request/1794158165902/report.json`
+  and `after-save.png`, report SHA256
+  `3cc3c0e8780c3319c4f32bc88d23c7db9804aa901f511585a0fd5350465d5e18`;
+- `.runtime/final-acceptance/list-surface-structure.json` and its 18 screenshots,
+  SHA256
+  `75f3f3f8df6c5314cf8430f595da1efe57c389aaceb42399c1a0a34c4acf8117`;
+- `.runtime/final-acceptance/scene-collection-table/866afcb11/summary.json`,
+  SHA256
+  `22528ae103a5fc622a2cc712d62bf4db3b663c47cdbb2e2b80169dcdd3946c90`;
+- `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
+  `1d8da7c989daf15da9d9b77816c1bf27f4aa0d9be8282f2b8858b957b4526515`.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -316,21 +325,20 @@ Neither fix changes ACL, Contract V2 or business data authority.
   `FE-FORM-CONSOLIDATION-01`.
 - Page Assembly, ActionView and HomeView remain independent follow-ups:
   `FE-PAGE-01`, `FE-ACTION-01`, `FE-HOME-01`.
+- The project-ledger acceptance probe now distinguishes direct record creation
+  from an authorized delegated `list.create` action. The first run incorrectly
+  treated the rendered delegated-create affordance as a direct capability
+  mismatch; the corrected probe binds the complete action/menu identity without
+  changing product authority.
 
 ### Current acceptance state
 
-L4 product acceptance passed on historical candidate `9cea1b661`. The current
-second-review product commit is `f88e49d59`; earlier page evidence is not inherited
-because delegated create and controlled text behavior changed again. Overall V1
-remains `verification_pending` until affected-page revalidation, exact-head
-publication and fresh remote checks complete.
+L4 product acceptance passed on candidate `866afcb11`, whose frontend product
+tree is from `f88e49d59`. The managed backend and 5180 preview both reported the
+candidate identity, the fixture was reset through the governed entry, and the
+page evidence was not inherited from `9cea1b661`.
 
-The first clean planning attempt for `f88e49d59` correctly stopped before running
-the affected target set because the Contract Form reason-dialog files were not
-yet registered in the run scope. That planning result is not a test PASS. The
-scope is now reconciled and the complete affected iteration is the next step.
-
-The final affected incremental iteration must execute all required targets with
+The complete affected incremental iteration passed all 18 required targets with
 non-zero execution:
 
 - Agent ledger;
@@ -338,6 +346,8 @@ non-zero execution:
 - ActionView create authority;
 - ActionView page-size runtime;
 - ActionView surface gate;
+- Business-entry evidence scope and incremental model;
+- Canonical form presenter;
 - Component driver takeover inventory;
 - Contract-basis unit and enforce;
 - Development-incremental routing unit;
@@ -345,17 +355,20 @@ non-zero execution:
 - page-pattern reference parity;
 - Primitive Adapter;
 - Primitive Port;
+- Product page pattern;
 - Scene Primitive Adapter;
 - real Scene Primitive behavior;
 - style-system guard;
 - strict UI/web typecheck.
 
-The frontend production build already passed on content identical to
-`f88e49d59`: 5,375 modules transformed in 25.20 seconds. The existing
-large-chunk advisory remains. A clean exact-commit iteration receipt is still
-required before publication.
+Receipt:
+`.runtime/frontend-dev-validation/executions/20261108T174449Z-2277077-703451500/receipt.json`.
 
-Affected L4 revalidation is currently `not_run` for `f88e49d59`.
+The frontend production build passed on the same product content: 5,375 modules
+transformed in 25.20 seconds. The existing large-chunk advisory remains.
+
+Overall V1 remains `verification_pending` only for the evidence/metadata commit,
+publication, fresh independent review and exact-head remote CI.
 
 ## Exclusions
 
@@ -364,6 +377,6 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Run the complete affected local iteration on `f88e49d59`, then revalidate the
-three business pages on that exact product identity before publishing metadata
-and requesting a fresh independent review.
+Commit this L4/metadata closeout, publish the clean candidate through the governed
+PR flow, and request a fresh independent review bound to the exact pushed head.
+Do not merge or deploy.
