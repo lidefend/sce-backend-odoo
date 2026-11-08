@@ -326,6 +326,13 @@ verify.frontend.professional_business_value.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_business_value_guard.py
 	@python3 scripts/verify/frontend_professional_business_value_guard.py
 
+.PHONY: verify.frontend.business_semantics.unit
+verify.frontend.business_semantics.unit: guard.prod.forbid verify.frontend.localized_display.unit verify.frontend.collection_status_presentation.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/business_semantics_consistency_test.ts --bundle --platform=node --format=esm --outfile=/tmp/business-semantics-consistency-test.mjs >/dev/null
+	@node /tmp/business-semantics-consistency-test.mjs
+	@python3 -m unittest scripts/verify/test_frontend_business_semantics_guard.py
+	@python3 scripts/verify/frontend_business_semantics_guard.py
+
 .PHONY: verify.frontend.professional_relation_field.unit
 verify.frontend.professional_relation_field.unit: guard.prod.forbid
 	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind attachment
@@ -817,7 +824,7 @@ verify.frontend.style_system.guard: guard.prod.forbid
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py
 
-.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.release_navigation_policy.guard verify.frontend.role_surface_exposure_declaration.guard
+.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.navigation_policy.unit verify.frontend.release_navigation_policy.guard verify.frontend.evidence_bundle.unit verify.frontend.role_surface_exposure_declaration.guard
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard scripts.verify.test_error_state_contract
 	@python3 scripts/verify/frontend_probe_toolchain_guard.py
@@ -830,9 +837,16 @@ verify.frontend.role_surface_exposure_declaration.guard: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_role_surface_exposure_declaration_guard.py
 	@python3 scripts/verify/role_surface_exposure_declaration_guard.py
 
-verify.frontend.release_navigation_policy.guard: guard.prod.forbid verify.frontend.role_surface_exposure_declaration.guard
+verify.frontend.navigation_policy.unit: guard.prod.forbid verify.frontend.role_surface_exposure_declaration.guard
 	@python3 -m unittest scripts/verify/test_frontend_release_navigation_policy_guard.py
 	@python3 scripts/verify/frontend_release_navigation_policy_guard.py
+	@node scripts/verify/frontend_navigation_audit.test.mjs
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_audit.py
+
+verify.frontend.release_navigation_policy.guard: verify.frontend.navigation_policy.unit
+
+verify.frontend.evidence_bundle.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/release python3 -m unittest scripts.verify.test_frontend_release_evidence_bundle
 
 verify.frontend.relation_entry.contract_guard: guard.prod.forbid
 	@python3 scripts/verify/relation_entry_contract_guard.py

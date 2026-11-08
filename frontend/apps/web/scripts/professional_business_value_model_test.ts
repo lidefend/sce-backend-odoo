@@ -6,8 +6,8 @@ import {
   formatPercentage,
   isProfessionalBusinessValueField,
   normalizeBusinessValueChoiceOptions,
-  statusSemantic,
 } from '../src/components/professional-fields/professionalBusinessValueModel';
+import { statusBadgeSemantic } from '../src/app/presentation/businessValuePresentation';
 
 const fieldTypes = new Map([
   ['sc.value.money', 'monetary'],
@@ -34,8 +34,8 @@ assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.input.number',
 assert.throws(() => businessValueKind({ componentKey: 'sc.value.money', type: 'char' } as never), /PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED/);
 assert.equal(formatPercentage(12.5), '12.5%');
 assert.equal(formatDuration(1.5), '1 小时 30 分钟');
-assert.equal(statusSemantic('approved'), 'success');
-assert.equal(statusSemantic('rejected'), 'danger');
+assert.equal(statusBadgeSemantic('approved'), 'success');
+assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.deepEqual(
   normalizeBusinessValueChoiceOptions([
     { id: 50, value: 50, label: 'Demo Role Owner' },

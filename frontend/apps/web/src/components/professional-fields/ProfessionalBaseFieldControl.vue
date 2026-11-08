@@ -179,7 +179,7 @@ const normalizedReadonlyValue = computed(() => (
 const readonlyText = computed(() => formatDisplayValue(
   normalizedReadonlyValue.value,
   { ...(props.field.descriptor || {}), type: normalizedType.value || props.field.descriptor?.type },
-  { emptyText: resolveReadonlyEmptyText(props.field, '-') },
+  { emptyText: resolveReadonlyEmptyText(props.field) },
 ));
 const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
 const readonlyDateTimeValue = computed(() => {

@@ -1,0 +1,58 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01-R2C
+  title: 空值状态契约校验
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 frontend status declaration validation before empty-value presentation
+  module: businessValuePresentation, business semantics tests and static guard
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    状态字段的类型身份与 selection 投影完整性是契约消费前提。当前为空值只表示记录值不存在，
+    不能证明字段声明合法；因此共享表达层必须先验证声明，再返回统一空值表达。
+  why_not_elsewhere: >
+    不在页面、Kanban、审批或行业组件增加空值特判，不从空值反推字段类型，
+    不修改 Contract V2 Schema 或生产数据。合法 selection/char 状态仍共用平台空值规则。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01-R2C.yaml
+      - .agent/runs/FE-RENDERER-02C-01-R2C/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_r2c_empty_status_20261108.md
+      - frontend/apps/web/src/app/presentation/businessValuePresentation.ts
+      - frontend/apps/web/scripts/business_semantics_consistency_test.ts
+      - scripts/verify/frontend_business_semantics_guard.py
+      - scripts/verify/test_frontend_business_semantics_guard.py
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    product_behavior: >
+      非法状态声明在 value=null 时仍抛 ContractGapError；合法 selection 或 char 状态在
+      value=null 时返回统一空值表达。
+  objective: >
+    闭合空值提前返回掩盖状态类型或 selection 投影缺失的 fail-open 边界。
+  acceptance:
+    - 未声明类型的 status，value=null 时抛 ContractGapError
+    - selection 类型缺少 selection，value=null 时抛 ContractGapError
+    - 合法 selection，value=null 时返回统一空值表达
+    - 静态守卫证明声明校验发生在空值返回之前
+    - freeze prepare 的组件接管清单 digest 变化可由共享业务表达源码变化解释
+    - business semantics、BOQ、Lint、Strict Typecheck 和 ci.local.iteration 真实非零通过
+  results:
+    implementation: PASS
+    empty_status_tests: PASS
+    static_guard: PASS
+    ci_iteration: PASS
+    next_exact_step: 更新 PR #840 HEAD，并等待最新 exact-head 五项远端门禁
+  exclusions:
+    - money_date_kanban_behavior_change
+    - contract_v2_schema_change
+    - renderer_protocol_change
+    - backend_permission_change
+    - acceptance_fixture_change
+    - browser_evidence_rerun
+    - payment_entry_409_fix
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    将状态声明校验移回非空 status 分支并删除三项空值回归测试；保留 R2/R2A/R2B
+    已通过的类型与 selection 规则。

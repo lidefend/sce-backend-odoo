@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "6cb2bdeade3aa9ffc9dea40a3a09aafef73f039c",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-01-R1.yaml",
+    ".agent/runs/FE-RENDERER-02C-01-R1/run.json",
+    "docs/ops/iterations/fe_renderer_02c_01_r1_fixture_closure_20261108.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_construction_acceptance_fixture",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "scripts/verify/business_entry_matrix_overlay.json",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_matrix_scope.mjs",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "scripts/verify/test_business_entry_matrix_model.py",
+    "scripts/verify/test_business_entry_matrix_incremental.py",
+    "scripts/verify/frontend_acceptance_login_probe.py",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/verify/frontend_my_work_approval_runtime.py",
+    "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "make/runtime_ops.mk",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing governed local acceptance profile local/sc-fe-r2-p1-01/sc_frontend_acceptance on 5180/18082",
+    "database": {
+      "target_database_role": "isolated_acceptance",
+      "target_tenant_id": "synthetic_acceptance_fixture",
+      "target_environment_id": "local/sc-fe-r2-p1-01/sc_frontend_acceptance",
+      "is_platform_control_database": false,
+      "is_industry_catalog_database": false,
+      "is_customer_tenant_database": true,
+      "is_isolated_rehearsal_database": false,
+      "customer_business_data_allowed": false,
+      "fixture_allowed": true,
+      "exact_database_filter_confirmed": true,
+      "filestore_identity_confirmed": true
+    }
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs"
+      ],
+      "kind": "offline"
+    },
+    "fixture_unit": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "make/ci.mk",
+        "Makefile"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "kanban_root_cause": "PASS: menu_sc_project_kanban is released and ACL-readable, but fixture lacked its project.management scenario binding; PM and project member also lacked the formal entry_p01 menu group",
+    "kanban_fix": "PASS: fixture-owned scenario binding, stale prototype cleanup and formal entry group assignment implemented",
+    "kanban_browser": "PASS: final source 6b377d73d config_admin 4 records, PM 4 records, project_a_member 1 record; released navigation, paging, search, detail and workflow passed for all three; negative authority leaked_entries=[]",
+    "approval_root_cause": "PASS: pending fixture request had state=submit but no review_ids, and the acceptance company had no active payment approval policy",
+    "approval_fix": "PASS: fixture-owned finance-manager policy, finance reviewer role and real current-step review assignment implemented",
+    "managed_browser_entry": "PASS: local profile routes My Work runtime/browser through the managed 5180 operation entry with preview and runtime identity binding",
+    "fixture_orm": "PASS: acceptance.frontend.fixture_orm 45 tests, 0 failed; log=.runtime/acceptance/fixture_orm_20261107T224955Z.log",
+    "l2": "PASS: final clean HEAD 3aa7f0d69 executed 7/7 required targets with testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261107T235250Z-77152-568103427/receipt.json",
+    "coverage_disposition": "PASS: verify.verification.lane.coverage and stale target-unregister path passed",
+    "approval_runtime": "PASS: source 6b377d73d; active single finance-manager policy, pending review assigned to fixture_role_finance_reviewer, can_review=true, unauthorized role matrix verified",
+    "approval_browser": "PASS: source 6b377d73d; approval summary identity/money, reviewer action, visible worklist update, finance approved state, project-member denial and responsive views passed with zero console/page/HTTP errors; report=.runtime/final-acceptance/my-work-approval/report.json",
+    "approval_browser_provenance": "PASS: backend=6b377d73d, database=sc_frontend_acceptance, preview_base=77447ff3, preview_entry_sha256=87014c4412941649ec46b5c14fae4aa6a4202198cf5e3b37b4591687b1e16136, project_id=1",
+    "kanban_evidence": "PASS: artifacts/frontend-business-entry-matrix/final-6b377d73d/{config-admin,pm,project-member}; records=4/4/1; completeness=complete",
+    "fixture_attachment_scope": "PASS: FE-JOURNEY-PAYMENT-001 attachment company_id aligned to payment company A; browser attachment metadata 403 removed",
+    "inline_feedback_risk": "P2_NOT_OBSERVED: approval ended with visible worklist count/card and finance-side approved state, but the component's inline success text did not persist after refresh; follow-up product presentation work required",
+    "candidate_form_create_risk": "P1_OUT_OF_SCOPE_NOT_FIXED: settlement '新建付款申请' navigated to /f/payment.request/new with render_profile=edit and returned 409 NATIVE_ACTION_GUIDANCE_INVALID/action_guidance.record_identity; R1 browser was narrowed to the required existing approval fixture and did not hide or count this product defect as PASS"
+  },
+  "next_exact_step": "Stop and wait for independent review and release authorization.",
+  "id": "FE-RENDERER-02C-01-R1",
+  "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-01-R1.yaml",
+  "record": "docs/ops/iterations/fe_renderer_02c_01_r1_fixture_closure_20261108.md"
+}

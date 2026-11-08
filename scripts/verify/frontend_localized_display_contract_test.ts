@@ -3,7 +3,6 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 
 import { formatDisplayValue, resolveLocalizedDisplayValue, stripInternalMigrationMetadata } from '../../frontend/apps/web/src/utils/display.ts';
 import {
-  COLLECTION_NUMERIC_EMPTY_TEXT,
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
   FIELD_VALUE_TRUE_TEXT,
@@ -12,7 +11,7 @@ import {
 } from '../../frontend/apps/web/src/utils/fieldSemantics.ts';
 import { presentListCell } from '../../frontend/apps/web/src/pages/listPage/listCellPresentation.ts';
 import { resolveReadonlyEmptyText } from '../../frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts';
-import { semanticBoolean } from '../../frontend/apps/web/src/utils/semantic.ts';
+import { presentDeclaredBusinessValue } from '../../frontend/apps/web/src/app/presentation/businessValuePresentation.ts';
 import {
   mergeWorkspaceNavigationLinks,
   resolveWorkspaceNavigationLink,
@@ -124,12 +123,18 @@ const listColumn = (type: string) => ({ field: 'f', label: 'F', type });
 // 字段语义单一权威：集合（列表）与记录／表单必须给出同一空值、布尔与数值口径。
 assert.equal(formatDisplayValue('', { type: 'char' }), FIELD_VALUE_EMPTY_TEXT);
 assert.equal(presentListCell({ raw: '', column: listColumn('char') }).text, FIELD_VALUE_EMPTY_TEXT);
-assert.equal(semanticBoolean(null), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'empty_boolean', type: 'boolean' },
+  value: null,
+}).text, FIELD_VALUE_EMPTY_TEXT);
 assert.equal(formatDisplayValue(null, { type: 'char' }), FIELD_VALUE_EMPTY_TEXT);
 
 assert.equal(formatDisplayValue(true, { type: 'boolean' }), FIELD_VALUE_TRUE_TEXT);
 assert.equal(presentListCell({ raw: true, column: listColumn('boolean') }).text, FIELD_VALUE_TRUE_TEXT);
-assert.equal(semanticBoolean(false), FIELD_VALUE_FALSE_TEXT);
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'false_boolean', type: 'boolean' },
+  value: false,
+}).text, FIELD_VALUE_FALSE_TEXT);
 
 assert.equal(formatNumericFieldValue('1234.5', 'float'), '1,234.50');
 assert.equal(formatNumericFieldValue('1234', 'integer'), '1,234');
@@ -146,10 +151,10 @@ assert.doesNotMatch(
   '机器格式的 ISO 时间戳不得泄漏到记录／表单取值呈现',
 );
 
-// 集合数值列缺少取值是已登记的集合密度策略，不是每条路径各自的分支。
+// 缺少取值不是业务零值；集合与记录使用同一平台空值口径。
 assert.equal(
   presentListCell({ raw: '', column: listColumn('float'), numeric: true }).text,
-  COLLECTION_NUMERIC_EMPTY_TEXT,
+  FIELD_VALUE_EMPTY_TEXT,
 );
 assert.equal(formatDisplayValue('', { type: 'float' }), FIELD_VALUE_EMPTY_TEXT);
 
@@ -231,11 +236,7 @@ for (const source of presentationSources) {
 // 复核点名「尚未收口」的取值呈现消费方：逐条锁定其本地回退与格式化事实。
 // 锁定即「已知、有意保留、需单独决策」；任何漂移都必须先更新登记，不得静默变化。
 const PENDING_VALUE_PRESENTATION_CONSUMERS: Record<string, readonly string[]> = {
-  'app/presentation/productMyWorkPresentation.ts': ["'未填写'", "'未知'", '.slice(0, 16)'],
   'views/ApiKeyManagementView.vue': ["'—'", 'toISOString().slice(0, 19)'],
-  'components/professional-fields/PaymentSettlementIntroduceDialog.vue': ["'—'"],
-  'components/boq/BoqImportPreviewPanel.vue': ["'—'"],
-  'pages/contractForm/RelationSearchDialog.vue': ["'未填写'"],
 };
 for (const [relativePath, markers] of Object.entries(PENDING_VALUE_PRESENTATION_CONSUMERS)) {
   const text = sourceText(relativePath);
@@ -251,7 +252,6 @@ for (const [relativePath, markers] of Object.entries(PENDING_VALUE_PRESENTATION_
 // 例外必须登记在此（含理由），登记即意味着「已知、有意保留、需另行决策」，不是静默放过。
 const AUTHORITY_CONSUMERS = [
   'utils/display.ts',
-  'utils/semantic.ts',
   'pages/listPage/listCellPresentation.ts',
   'pages/listPage/listColumnWidth.ts',
   'pages/ListPage.vue',
@@ -268,6 +268,7 @@ const AUTHORITY_CONSUMERS = [
   'components/page/blocks/BlockAccordionGroup.vue',
   'components/scene/SceneBlocksRenderer.vue',
   'views/SceneContractBlockGridView.vue',
+  'components/template/X2ManyRelationRenderer.vue',
 ];
 const LOCAL_FORMATTER_PATTERNS = [/toISOString\(/, /Intl\.DateTimeFormat\(/, /toLocaleString\(/, /new Date\(/];
 const REGISTERED_LOCAL_FORMATTERS: Record<string, Array<{ pattern: RegExp; reason: string }>> = {
@@ -281,7 +282,7 @@ const REGISTERED_LOCAL_FORMATTERS: Record<string, Array<{ pattern: RegExp; reaso
 let registeredFormatterAllowances = 0;
 for (const relativePath of AUTHORITY_CONSUMERS) {
   const text = sourceText(relativePath);
-  assert.match(text, /fieldSemantics\.ts/, `${relativePath} 必须消费字段语义权威`);
+  assert.match(text, /fieldSemantics(?:\.ts)?/, `${relativePath} 必须消费字段语义权威`);
   const registered = REGISTERED_LOCAL_FORMATTERS[relativePath] || [];
   for (const pattern of LOCAL_FORMATTER_PATTERNS) {
     if (registered.some((entry) => entry.pattern.source === pattern.source)) {
@@ -296,10 +297,10 @@ for (const relativePath of AUTHORITY_CONSUMERS) {
 // （2026-09-14 受管决定）。该路径是本批已登记的**契约权威例外**：必须保持显式声明，
 // 任何改动都会在这里失败并要求同步更新登记，不允许静默改口径。
 const FORM_READONLY_EMPTY_TEXT_REGISTRY = [
-  { path: 'components/template/FormSection.vue', token: "resolveReadonlyEmptyText(field, '-')", occurrences: 2 },
-  { path: 'components/professional-fields/ProfessionalBaseFieldControl.vue', token: "resolveReadonlyEmptyText(props.field, '-')" },
-  { path: 'components/template/formSection.mapper.ts', token: "emptyText = '-'" },
-  { path: 'pages/contractForm/ContractFormNativeCanvas.vue', token: "resolveReadonlyEmptyText(field, '未填写')" },
+  { path: 'components/template/FormSection.vue', token: 'resolveReadonlyEmptyText(field)', occurrences: 2 },
+  { path: 'components/professional-fields/ProfessionalBaseFieldControl.vue', token: 'resolveReadonlyEmptyText(props.field)' },
+  { path: 'components/professional-fields/ProfessionalBusinessValueControl.vue', token: 'resolveReadonlyEmptyText(props.field)' },
+  { path: 'pages/contractForm/ContractFormNativeCanvas.vue', token: 'resolveReadonlyEmptyText(field)' },
 ];
 for (const entry of FORM_READONLY_EMPTY_TEXT_REGISTRY) {
   const matches = sourceText(entry.path).split(entry.token).length - 1;
@@ -310,7 +311,7 @@ for (const entry of FORM_READONLY_EMPTY_TEXT_REGISTRY) {
   );
 }
 assert.equal(resolveReadonlyEmptyText({ readonlyEmptyText: '尚未生成' }), '尚未生成');
-assert.equal(resolveReadonlyEmptyText({}), '—');
+assert.equal(resolveReadonlyEmptyText({}), FIELD_VALUE_EMPTY_TEXT);
 assert.equal(resolveReadonlyEmptyText({ readonlyEmptyText: '   ' }, '-'), '-');
 
 // 权威消费方与例外规模必须可被读取者核对，避免「登记」退化为隐藏白名单。

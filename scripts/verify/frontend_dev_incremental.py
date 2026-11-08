@@ -173,6 +173,33 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "/app/presentation/businessValuePresentation.ts",
+        "/app/presentation/collectionKanbanPresentation.ts",
+        "/utils/fieldSemantics.ts",
+        "/utils/display.ts",
+        "/components/FieldValue.vue",
+        "/pages/KanbanPage.vue",
+        "/pages/listPage/listCellPresentation.ts",
+        "/components/professional-fields/professionalBusinessValueModel.ts",
+        "/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "/components/professional-fields/professionalBaseFieldModel.ts",
+        "/components/business/MyWorkApprovalWorkspace.vue",
+        "/app/presentation/productMyWorkPresentation.ts",
+        "/app/presentation/boqImportPreview.ts",
+        "/components/boq/BoqImportPreviewPanel.vue",
+        "/components/template/X2ManyRelationRenderer.vue",
+        "/pages/contractForm/ContractFormNativeCanvas.vue",
+        "/pages/contractForm/RelationSearchDialog.vue",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "scripts/verify/frontend_collection_status_presentation.test.mjs",
+    ), (
+        "verify.frontend.business_semantics.unit",
+        "verify.frontend.boq_import_preview.unit",
+    )),
+    Rule((
         "/components/template/FormSection.vue",
         "frontend/apps/web/scripts/relation_heading_component_test.mjs",
     ), (
@@ -303,6 +330,16 @@ RULES = (
         "verify.frontend.contract_basis.unit",
         "verify.frontend.contract_basis.enforce",
     )),
+    # Guard registry rows and their audit implementation are one executable
+    # contract. A disposition-only fix must run the full registry audit instead
+    # of falling through as an unmapped verification-tool path.
+    Rule((
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+    ), (
+        "verify.guard.registry",
+    )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
     # 让最小复用变成 make 直接报错，又退回人工全量。
@@ -340,6 +377,23 @@ RULES = (
         "make/ci.mk",
     ), (
         "verify.baseline.iteration.execution.policy",
+    )),
+    Rule((
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+    ), (
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    ), (
+        "verify.daily_dev.acceptance_fixture.unit",
     )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
@@ -568,6 +622,23 @@ RULES = (
         "scripts/audit/verification_lane_exemptions.json",
     ), (
         "verify.verification.lane_coverage",
+    )),
+    Rule((
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.test.mjs",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+    ), (
+        "verify.frontend.navigation_policy.unit",
+    )),
+    Rule((
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+    ), (
+        "verify.frontend.evidence_bundle.unit",
     )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"

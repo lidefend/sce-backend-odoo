@@ -105,9 +105,13 @@ import CollectionKanbanRecordCard, { type CollectionKanbanFact, type CollectionK
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionKanbanLane from '../components/product-list/CollectionKanbanLane.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
-import { semanticValueByField } from '../utils/semantic';
 import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
-import { resolveCollectionCell } from '../app/presentation/collectionStatusPresentation';
+import {
+  presentCollectionKanbanCell,
+  type CollectionKanbanFieldOption,
+} from '../app/presentation/collectionKanbanPresentation';
+import { formatDisplayValue } from '../utils/display';
+import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics';
 
 const props = defineProps<{
   title: string;
@@ -123,8 +127,10 @@ const props = defineProps<{
   primaryFields?: string[];
   secondaryFields?: string[];
   statusFields?: string[];
+  statusField?: string;
   fieldLabels?: Record<string, string>;
   fieldSelections?: Record<string, Array<{ value: string; label: string }>>;
+  columnOptions?: CollectionKanbanFieldOption[];
   titleField: string;
   onReload: () => void;
   onCardClick: (row: Record<string, unknown>) => void;
@@ -175,7 +181,8 @@ const fallbackMetaFields = computed(() => normalizedFields.value.filter(business
 const statusMetaFields = computed(() => {
   const preferred = (props.statusFields || []).map(normalizedFieldName).filter(businessMetaField);
   if (preferred.length) return preferred.slice(0, 2);
-  return [];
+  const declared = normalizedFieldName(props.statusField);
+  return declared && businessMetaField(declared) ? [declared] : [];
 });
 const primaryMetaFields = computed(() => {
   const preferred = (props.primaryFields || []).map(normalizedFieldName).filter(
@@ -231,12 +238,16 @@ const canPageNext = computed(() => {
   return listOffset.value + listLimit.value < total;
 });
 const paginationTotalText = computed(() => `共 ${listTotal.value ?? props.records.length} 条`);
-function semanticCell(field: string, value: unknown) {
-  return resolveCollectionCell({
-    field, value,
-    selection: props.fieldSelections?.[field],
-    status: statusMetaFields.value.includes(field),
-  }, semanticValueByField);
+function semanticCell(field: string, value: unknown, row: Record<string, unknown> = {}) {
+  const presentation = presentCollectionKanbanCell({
+    field,
+    value,
+    row,
+    statusFields: statusMetaFields.value,
+    fieldSelections: props.fieldSelections,
+    columnOptions: props.columnOptions,
+  });
+  return { text: presentation.text, tone: presentation.tone, badgeSemantic: presentation.badgeSemantic };
 }
 
 function rowTone(row: Record<string, unknown>) {
@@ -245,21 +256,24 @@ function rowTone(row: Record<string, unknown>) {
 }
 
 function rowTitle(row: Record<string, unknown>): string {
-  return formatValue(row[props.titleField]) || formatValue(row.name) || formatValue(row.display_name) || String(row.id ?? '');
+  return formatValue(row[props.titleField])
+    || formatValue(row.name)
+    || formatValue(row.display_name)
+    || String(row.id ?? FIELD_VALUE_EMPTY_TEXT);
 }
 
 function cardFacts(row: Record<string, unknown>, fields: string[]): CollectionKanbanFact[] {
-  return fields.map((field) => ({ key: field, label: fieldLabel(field), value: semanticCell(field, row[field]).text }));
+  return fields.map((field) => ({ key: field, label: fieldLabel(field), value: semanticCell(field, row[field], row).text }));
 }
 
 function cardStatuses(row: Record<string, unknown>): CollectionKanbanStatus[] {
   return statusMetaFields.value.map((field) => {
-    const cell = semanticCell(field, row[field]);
+    const cell = semanticCell(field, row[field], row);
     return {
       key: field,
       label: fieldLabel(field),
       value: cell.text,
-      semantic: cell.tone === 'neutral' ? 'default' : cell.tone,
+      semantic: cell.badgeSemantic,
     };
   });
 }
@@ -326,26 +340,7 @@ watch(
 );
 
 function formatValue(value: unknown) {
-  if (Array.isArray(value)) {
-    if (value.length > 1 && value[1] !== null && value[1] !== undefined) {
-      return String(value[1]);
-    }
-    if (value.length > 0 && value[0] !== null && value[0] !== undefined) {
-      return String(value[0]);
-    }
-    return '';
-  }
-  if (value && typeof value === 'object') {
-    const maybeName = (value as Record<string, unknown>).name;
-    if (maybeName !== null && maybeName !== undefined && String(maybeName).trim()) {
-      return String(maybeName);
-    }
-    return '';
-  }
-  if (value === null || value === undefined) {
-    return '';
-  }
-  return String(value);
+  return formatDisplayValue(value, undefined, { emptyText: FIELD_VALUE_EMPTY_TEXT });
 }
 </script>
 

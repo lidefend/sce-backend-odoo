@@ -32,15 +32,15 @@
         <dl class="boq-import-preview__meta" data-preview-meta>
           <div class="boq-import-preview__meta-item">
             <dt>文件</dt>
-            <dd data-batch-filename>{{ model.batch?.filename || '—' }}</dd>
+            <dd data-batch-filename>{{ model.batch?.filename || FIELD_VALUE_EMPTY_TEXT }}</dd>
           </div>
           <div class="boq-import-preview__meta-item">
             <dt>批次状态</dt>
-            <dd data-batch-state>{{ model.batch?.state || '—' }}</dd>
+            <dd data-batch-state>{{ model.batch?.state || FIELD_VALUE_EMPTY_TEXT }}</dd>
           </div>
           <div class="boq-import-preview__meta-item">
             <dt>导入时间</dt>
-            <dd data-batch-imported-at>{{ model.batch?.importedAtLabel || '—' }}</dd>
+            <dd data-batch-imported-at>{{ model.batch?.importedAtLabel || FIELD_VALUE_EMPTY_TEXT }}</dd>
           </div>
           <div class="boq-import-preview__meta-item">
             <dt>快照协议</dt>
@@ -81,6 +81,7 @@
  * digest 绑定 + [SC_GUARD:*] 错误透传），错误/空态均结构化渲染。
  */
 import type { BoqImportPreviewViewModel } from '../../app/presentation/boqImportPreview';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
 
 defineProps<{
   model: BoqImportPreviewViewModel;

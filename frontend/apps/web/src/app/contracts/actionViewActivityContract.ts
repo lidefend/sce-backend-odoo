@@ -1,6 +1,15 @@
 import { resolveUnifiedPageContractV2 } from './unifiedPageContractV2';
-import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../../components/template/formSection.mapper';
-import { FIELD_VALUE_EMPTY_TEXT, isScalarRelationFieldType, normalizeFieldType } from '../../utils/fieldSemantics.ts';
+import {
+  formatMonetaryDisplayValue,
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../presentation/businessValuePresentation';
+import {
+  FIELD_VALUE_EMPTY_TEXT,
+  formatTemporalFieldValue,
+  isScalarRelationFieldType,
+  normalizeFieldType,
+} from '../../utils/fieldSemantics.ts';
 
 type Dict = Record<string, unknown>;
 
@@ -90,6 +99,9 @@ export function activityCellText(value: unknown, field?: ActivitySurfaceField, r
   if (field?.widget === 'monetary') {
     const currencyLabel = resolveCurrencyDisplayLabel(record[field.currencyField]);
     return formatMonetaryDisplayValue(value, field.digits, currencyLabel);
+  }
+  if (['date', 'datetime'].includes(normalizeFieldType(field?.fieldType))) {
+    return formatTemporalFieldValue(value, field?.fieldType === 'datetime' ? 'full' : 'compact') || FIELD_VALUE_EMPTY_TEXT;
   }
   if (Array.isArray(value) && isScalarRelationFieldType(normalizeFieldType(field?.fieldType))) {
     return value.length > 1

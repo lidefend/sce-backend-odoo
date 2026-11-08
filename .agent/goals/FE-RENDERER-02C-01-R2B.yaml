@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01-R2B
+  title: 状态语义身份闭合与 guard registry 执行闭环
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 frontend status identity and P4 guard-registry disposition closure
+  module: businessValuePresentation, business semantics guard, guard registry audit
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    status=true、cellRole=status 和 sc.display.status 只是状态字段的消费身份，不是字段类型权威。
+    共享表达层必须要求显式 selection 或 char 类型；只有 selection 可消费选择项标签，
+    只有显式 char 可消费契约提供的可读值。guard registry 是同一候选的 P4 执行证据入口，
+    必须准确反映脚本是否真正接线，避免工具分类失真阻断 CI。
+  why_not_elsewhere: >
+    不在页面、Kanban、审批或行业组件增加局部兜底；不从字段名推断状态；
+    不放宽 Contract V2 Schema、生产权限或业务规则。guard registry 修复只更新工具分类，
+    不改变被登记脚本的产品行为。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01-R2B.yaml
+      - .agent/runs/FE-RENDERER-02C-01-R2B/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_r2b_status_identity_20261108.md
+      - frontend/apps/web/src/app/presentation/businessValuePresentation.ts
+      - frontend/apps/web/scripts/business_semantics_consistency_test.ts
+      - scripts/verify/frontend_business_semantics_guard.py
+      - scripts/verify/test_frontend_business_semantics_guard.py
+      - scripts/verify/registry.yaml
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    product_behavior: >
+      selection-backed status 必须有有效 selection 与已映射值；readable char-status
+      必须有显式 char 类型；仅由 status 标记、componentKey 或 cellRole 触发但类型缺失的状态
+      必须 ContractGapError，不得把原始内部 key 当成业务标签。
+  objective: >
+    闭合状态字段类型身份边界，并修复当前 PR exact HEAD 上 guard registry 的三个分类错误，
+    使状态语义测试、静态守卫和真实 ci.local.iteration 可证明通过。
+  acceptance:
+    - cellRole=status 且 selection 缺少对应标签时抛 ContractGapError
+    - status=true 且 type/ttype/dataType 缺失时抛 ContractGapError
+    - cellRole=status 且 type=char 时消费明确可读值
+    - componentKey=sc.display.status 且类型缺失时抛 ContractGapError
+    - selection-backed status 与 readable char-status 的边界由静态守卫固定
+    - guard registry 不再报告 stale、orphan 或 undispositioned 三项错误
+    - guard registry 输入必须路由到 verify.guard.registry，不得成为 unmapped 路径
+    - freeze prepare 生成物的差异必须由本轮代码规模和生成依赖解释
+    - business semantics、BOQ、Lint、Strict Typecheck 和 ci.local.iteration 真实非零通过
+  results:
+    implementation: PASS
+    status_identity_tests: PASS
+    static_guard: PASS
+    guard_registry: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交并更新 PR #840，等待最新 HEAD 五项远端门禁和独立复审
+  exclusions:
+    - money_date_kanban_behavior_change
+    - contract_v2_schema_change
+    - renderer_protocol_change
+    - backend_permission_change
+    - acceptance_fixture_change
+    - payment_entry_409_fix
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退状态类型身份检查与对应测试、静态守卫和 registry disposition 更新；
+    保留既有 selection 缺失 fail-closed 与 dataType fallback 行为。

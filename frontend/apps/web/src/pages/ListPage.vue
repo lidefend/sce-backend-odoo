@@ -326,19 +326,19 @@ import ProductListSurface from '../components/product-list/ProductListSurface.vu
 import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
-import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
+import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../app/presentation/businessValuePresentation';
 import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
 import type { StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
+import { toneToBadgeSemantic } from '../app/presentation/businessValuePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import {
-  COLLECTION_NUMERIC_EMPTY_TEXT,
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
   FIELD_VALUE_TRUE_TEXT,
@@ -757,9 +757,7 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
   });
 }
 function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
-  return ['info', 'success', 'warning', 'danger'].includes(tone)
-    ? tone as 'info' | 'success' | 'warning' | 'danger'
-    : 'default';
+  return toneToBadgeSemantic(tone as 'neutral' | 'info' | 'success' | 'warning' | 'danger');
 }
 function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecordFact[] {
   return mobileFactColumns.value.map((column) => {
@@ -814,8 +812,7 @@ async function previewRecordAttachmentCount(row: Record<string, unknown>, value:
 function isStatusColumn(field: string) {
   const normalized = String(field || '').trim();
   return isListStatusColumn(columnSemanticInput(field))
-    || props.listProfile?.status_field === normalized
-    || ['document_status', 'state', 'status', 'lifecycle_state'].includes(normalized);
+    || props.listProfile?.status_field === normalized;
 }
 
 function isStatusLikeColumn(field: string) {
@@ -1994,6 +1991,15 @@ function formatNumericCellValue(field: string, value: unknown, row?: Record<stri
 function formatFooterNumber(value: number, field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
+  if (type.toLowerCase() === 'monetary') {
+    const currencyField = String(option?.currencyField || '').trim();
+    const currencyLabel = currencyField
+      ? resolveCurrencyDisplayLabel(
+        props.records.find((row) => row[currencyField] !== null && row[currencyField] !== undefined)?.[currencyField],
+      )
+      : '';
+    return formatMonetaryDisplayValue(value, option?.digits, currencyLabel);
+  }
   return formatNumericFieldValue(value, type) ?? '';
 }
 

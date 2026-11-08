@@ -154,7 +154,7 @@
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
                 />
-                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</template>
+                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT }}</template>
               </dd>
             </div>
           </dl>
@@ -175,7 +175,7 @@
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
                 />
-                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</template>
+                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT }}</template>
               </dd>
               </div>
             </dl>
@@ -433,6 +433,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { businessRowErrorKey } from '../../app/businessValidationError';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScDisclosure from '../design-system/ScDisclosure.vue';
@@ -527,12 +528,12 @@ function one2manyRowRemovalLabel(row: RelationFieldRow) {
 
 function readonlyCellValue(value: unknown) {
   const text = String(value ?? '').trim();
-  return text || '—';
+  return text || FIELD_VALUE_EMPTY_TEXT;
 }
 
 function readonlyCellCanExpand(column: RelationFieldColumn, value: unknown) {
   const type = String(column.ttype || '').trim().toLowerCase();
-  return readonlyCellValue(value) !== '—'
+  return readonlyCellValue(value) !== FIELD_VALUE_EMPTY_TEXT
     && ['char', 'text', 'many2one', 'selection'].includes(type);
 }
 

@@ -56,6 +56,51 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.professional_detail_collection.unit"],
         )
 
+    def test_business_value_semantics_select_cross_page_executor(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+            "frontend/apps/web/src/pages/KanbanPage.vue",
+            "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+            "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+            "scripts/verify/frontend_business_semantics_guard.py",
+            "scripts/verify/frontend_localized_display_contract_test.ts",
+            "scripts/verify/frontend_collection_status_presentation.test.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.business_semantics.unit",
+                    select_targets([path]),
+                )
+        self.assertIn(
+            "verify.frontend.boq_import_preview.unit",
+            select_targets(["frontend/apps/web/src/app/presentation/boqImportPreview.ts"]),
+        )
+
+    def test_navigation_and_release_evidence_tools_select_their_units(self) -> None:
+        for path in (
+            "config/frontend/authoritative_navigation.json",
+            "scripts/verify/frontend_navigation_audit.mjs",
+            "scripts/verify/frontend_navigation_audit.test.mjs",
+            "scripts/verify/frontend_release_navigation_policy_guard.py",
+            "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+            "scripts/verify/frontend_release_audit.py",
+            "scripts/verify/test_frontend_release_audit.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.navigation_policy.unit"],
+                )
+        for path in (
+            "scripts/release/frontend_release_evidence.py",
+            "scripts/verify/test_frontend_release_evidence_bundle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.evidence_bundle.unit"],
+                )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",
@@ -202,6 +247,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.contract_basis.unit", targets)
                 self.assertIn("verify.frontend.contract_basis.enforce", targets)
 
+    def test_guard_registry_inputs_route_to_the_registry_audit(self) -> None:
+        for path in (
+            "scripts/verify/registry.yaml",
+            "scripts/verify/guard_registry_audit.py",
+            "scripts/verify/test_guard_registry_audit.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.guard.registry"])
+
     def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:
         # The v2 contract handler chain is asserted by backend unit suites.  It
         # must not fall through as "unmapped": on 2026-10-10 the chain was edited
@@ -291,7 +345,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.baseline.iteration.execution.policy"],
+                    [
+                        "verify.baseline.iteration.execution.policy",
+                        "verify.frontend.standard_preview.unit",
+                    ]
+                    if path == "make/runtime_ops.mk"
+                    else ["verify.baseline.iteration.execution.policy"],
                 )
         self.assertEqual(
             select_targets(["make/ci.mk"]),
@@ -300,6 +359,27 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.ci.workflow.contract",
             ],
         )
+
+    def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
+        for path in (
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/verify/frontend_menu_navigation_diagnostic.py",
+            "scripts/verify/frontend_my_work_approval_browser.mjs",
+            "scripts/verify/frontend_my_work_approval_runtime.py",
+            "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+            "scripts/verify/test_frontend_release_local_entry.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.standard_preview.unit", select_targets([path]))
+        for path in (
+            "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+            "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.daily_dev.acceptance_fixture.unit"],
+                )
 
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
         self.assertEqual(

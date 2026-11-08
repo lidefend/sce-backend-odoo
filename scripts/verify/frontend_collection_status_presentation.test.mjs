@@ -35,21 +35,21 @@ assert.equal(resolveStatusTone('overdue'), 'danger');
 assert.equal(resolveStatusTone('pending'), 'warning');
 assert.equal(resolveStatusTone('in_progress'), 'info');
 
-// utils/semantic.ts must forward to the single policy instead of keeping a
-// second value-to-tone table of its own.
-const semanticBundle = await build({
-  entryPoints: ['frontend/apps/web/src/utils/semantic.ts'],
+// Business-value presentation must reuse the same status policy instead of
+// keeping a second value-to-tone table of its own.
+const businessValueBundle = await build({
+  entryPoints: ['frontend/apps/web/src/app/presentation/businessValuePresentation.ts'],
   bundle: true,
   format: 'esm',
   platform: 'node',
   write: false,
 });
-const semantic = await import(
-  `data:text/javascript;base64,${Buffer.from(semanticBundle.outputFiles[0].text).toString('base64')}`
+const businessValue = await import(
+  `data:text/javascript;base64,${Buffer.from(businessValueBundle.outputFiles[0].text).toString('base64')}`
 );
-assert.equal(semantic.statusTone('approved'), 'success');
-assert.equal(semantic.statusTone('approve'), 'warning');
-assert.equal(semantic.statusTone('rejected'), 'danger');
-assert.equal(semantic.statusTone('not_a_declared_state'), 'neutral');
+assert.equal(businessValue.statusBadgeSemantic('approved'), 'success');
+assert.equal(businessValue.statusBadgeSemantic('approve'), 'warning');
+assert.equal(businessValue.statusBadgeSemantic('rejected'), 'danger');
+assert.equal(businessValue.statusBadgeSemantic('not_a_declared_state'), 'default');
 
 console.log('[frontend_collection_status_presentation] PASS cases=15');

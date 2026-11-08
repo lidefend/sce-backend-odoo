@@ -21,6 +21,7 @@ import type {
   BoqImportPreviewIntentData,
   BoqImportPreviewPayload,
 } from '../../api/boqImportPreview';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
 
 export const BOQ_IMPORT_PREVIEW_VIEW_READONLY = true;
 export const BOQ_IMPORT_PREVIEW_STATE_READY = 'ready';
@@ -83,7 +84,7 @@ function toText(value: unknown): string {
 
 /** 金额千分位格式化（无货币断言，展示层仅做分组） */
 export function formatBoqPreviewAmount(value: number | null | undefined): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return FIELD_VALUE_EMPTY_TEXT;
   return value.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 }
 

@@ -20,13 +20,33 @@ import { computed, ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
 import AttachmentViewer from './attachment/AttachmentViewer.vue';
 import { formatDisplayValue, parseAttachmentReferenceLinks } from '../utils/display';
+import {
+  formatMonetaryDisplayValue,
+  resolveCurrencyDisplayLabel,
+} from '../app/presentation/businessValuePresentation';
+import { FIELD_VALUE_EMPTY_TEXT, normalizeFieldType } from '../utils/fieldSemantics';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 
-const props = defineProps<{ value: unknown; field?: FieldDescriptor }>();
+const props = defineProps<{
+  value: unknown;
+  field?: FieldDescriptor;
+  currencyValue?: unknown;
+  currencyLabel?: string;
+  digits?: [number, number];
+}>();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
 
 const display = computed(() => {
-  return formatDisplayValue(props.value, props.field);
+  if (normalizeFieldType(props.field) === 'monetary') {
+    return formatMonetaryDisplayValue(
+      props.value,
+      props.digits || props.field?.digits,
+      props.currencyLabel || resolveCurrencyDisplayLabel(props.currencyValue),
+      'zh-CN',
+      FIELD_VALUE_EMPTY_TEXT,
+    );
+  }
+  return formatDisplayValue(props.value, props.field, { emptyText: FIELD_VALUE_EMPTY_TEXT });
 });
 
 const attachmentLinks = computed(() => parseAttachmentReferenceLinks(props.value));

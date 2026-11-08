@@ -1,7 +1,6 @@
 import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
 import { resolveStatusTone } from '../../app/presentation/collectionStatusPresentation.ts';
 import {
-  COLLECTION_NUMERIC_EMPTY_TEXT,
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
   FIELD_VALUE_TRUE_TEXT,
@@ -81,8 +80,8 @@ export function presentListCell(input: CellPresentationInput) {
   const missing = displayRaw === null || displayRaw === undefined || displayRaw === '';
   let text: string;
   if (selectionText) text = selectionText;
-  else if (missing) text = numeric ? COLLECTION_NUMERIC_EMPTY_TEXT : emptyText;
-  else if ((displayRaw === false || rawText.trim() === FIELD_VALUE_EMPTY_TEXT) && numeric) text = COLLECTION_NUMERIC_EMPTY_TEXT;
+  else if (missing) text = emptyText;
+  else if ((displayRaw === false || rawText.trim() === FIELD_VALUE_EMPTY_TEXT) && numeric) text = emptyText;
   else if (typeof displayRaw === 'boolean') text = fieldType === 'boolean' ? (displayRaw ? trueText : falseText) : emptyText;
   else text = attachmentText || temporalText || numericText || String(displayRaw);
   // A status badge colour is a frontend presentation decision, resolved from

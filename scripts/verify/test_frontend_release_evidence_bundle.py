@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts/release"))
+import frontend_release_evidence as release_evidence  # noqa: E402
 from frontend_release_evidence import (  # noqa: E402
     EvidenceBundleError,
     authoritative_navigation_total,
@@ -30,6 +31,50 @@ from frontend_release_evidence import (  # noqa: E402
 def write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+class NavigationAuditAuthorityTests(unittest.TestCase):
+    def test_total_uses_browser_audit_surface(self):
+        with tempfile.TemporaryDirectory(prefix="frontend-navigation-authority-") as temporary:
+            root = Path(temporary)
+            write_json(
+                root / "config/frontend/authoritative_navigation.json",
+                {
+                    "roles": {
+                        "finance": {
+                            "expected_count": 2,
+                            "leaf_keys": ["menu_a|action_a|model_a", "menu_b|action_b|model_b"],
+                            "browser_expected_count": 1,
+                            "browser_leaf_keys": ["menu_a|action_a|model_a"],
+                        }
+                    }
+                },
+            )
+            with patch.object(release_evidence, "ROOT", root):
+                self.assertEqual(authoritative_navigation_total(), 1)
+
+    def test_browser_surface_must_remain_inside_release_policy(self):
+        with tempfile.TemporaryDirectory(prefix="frontend-navigation-authority-") as temporary:
+            root = Path(temporary)
+            write_json(
+                root / "config/frontend/authoritative_navigation.json",
+                {
+                    "roles": {
+                        "finance": {
+                            "expected_count": 1,
+                            "leaf_keys": ["menu_a|action_a|model_a"],
+                            "browser_expected_count": 1,
+                            "browser_leaf_keys": ["menu_b|action_b|model_b"],
+                        }
+                    }
+                },
+            )
+            with patch.object(release_evidence, "ROOT", root):
+                with self.assertRaisesRegex(
+                    EvidenceBundleError,
+                    "AUTHORITATIVE_BROWSER_NAVIGATION_NOT_POLICY_SUBSET:finance",
+                ):
+                    authoritative_navigation_total()
 
 
 class FrontendReleaseEvidenceBundleTests(unittest.TestCase):

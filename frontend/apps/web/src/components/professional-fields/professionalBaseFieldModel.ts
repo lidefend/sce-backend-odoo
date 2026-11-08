@@ -1,5 +1,6 @@
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
 
 export const PROFESSIONAL_BASE_FIELD_TYPES = Object.freeze([
   'char', 'text', 'html', 'integer', 'float', 'date', 'datetime', 'boolean', 'selection',
@@ -14,7 +15,7 @@ const SPECIAL_WIDGETS = new Set(['radio', 'daterange']);
 
 export function resolveReadonlyEmptyText(
   field: Pick<FormSectionFieldSchema, 'readonlyEmptyText'>,
-  fallback = '—',
+  fallback = FIELD_VALUE_EMPTY_TEXT,
 ): string {
   return String(field.readonlyEmptyText || '').trim() || fallback;
 }

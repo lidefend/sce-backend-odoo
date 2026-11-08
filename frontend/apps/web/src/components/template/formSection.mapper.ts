@@ -1,5 +1,9 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { FormSectionFieldSchema, TemplateSelectOption } from './formSection.types';
+import {
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../../app/presentation/businessValuePresentation';
 
 export type ResolveTemplateInputValueOptions = {
   fieldName: string;
@@ -96,77 +100,6 @@ export function projectMany2oneCapabilities(
       options.relationTextValue,
     ),
   };
-}
-
-export function normalizeMonetaryDigits(value: unknown): [number, number] | undefined {
-  if (!Array.isArray(value) || value.length !== 2) return undefined;
-  const precision = Number(value[0]);
-  const scale = Number(value[1]);
-  if (!Number.isInteger(precision) || !Number.isInteger(scale) || precision <= 0 || scale < 0 || scale > 20 || scale > precision) {
-    return undefined;
-  }
-  return [precision, scale];
-}
-
-export function resolveCurrencyDisplayLabel(value: unknown): string {
-  if (Array.isArray(value)) return String(value[1] || '').trim();
-  if (value && typeof value === 'object') {
-    const row = value as Record<string, unknown>;
-    return String(row.name || row.display_name || row.symbol || '').trim();
-  }
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-export function resolveMonetaryScale(digits?: [number, number], currencyLabel = ''): number | undefined {
-  if (digits) return digits[1];
-  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
-  if (!currencyCode) return undefined;
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currencyCode })
-      .resolvedOptions().maximumFractionDigits;
-  } catch {
-    return undefined;
-  }
-}
-
-export function monetaryInputStep(digits?: [number, number], currencyLabel = ''): string {
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  if (!Number.isInteger(scale)) return 'any';
-  return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
-}
-
-export function formatMonetaryInputValue(
-  value: unknown,
-  digits?: [number, number],
-  currencyLabel = '',
-): string | number {
-  if (value === null || value === undefined || value === '') return '';
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return String(value);
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  return Number.isInteger(scale) ? numeric.toFixed(scale) : value as string | number;
-}
-
-export function formatMonetaryDisplayValue(
-  value: unknown,
-  digits?: [number, number],
-  currencyLabel = '',
-  locale = 'zh-CN',
-  emptyText = '-',
-): string {
-  if (value === null || value === undefined || value === false || value === '') return emptyText;
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return emptyText;
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  const options: Intl.NumberFormatOptions = Number.isInteger(scale)
-    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
-    : {};
-  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
-  if (currencyCode) {
-    return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency: currencyCode }).format(numeric);
-  }
-  const formatted = new Intl.NumberFormat(locale, options).format(numeric);
-  return currencyLabel ? `${formatted} ${currencyLabel}` : formatted;
 }
 
 export function buildFormSectionFieldSchemas(

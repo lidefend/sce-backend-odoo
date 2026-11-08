@@ -26,7 +26,7 @@
         :options="selectionOptions.map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
         @update:model-value="emitInputValue"
       />
-      <FieldValue v-else :value="value" :field="descriptor" />
+      <FieldValue v-else :value="value" :field="descriptor" :currency-value="currencyValue" />
     </div>
   </div>
 </template>
@@ -51,6 +51,7 @@ const props = defineProps<{
   field: ViewFieldNode;
   descriptor?: ViewContract['fields'][string];
   value: unknown;
+  currencyValue?: unknown;
   parentId?: number;
   editing: boolean;
   draftName: string;

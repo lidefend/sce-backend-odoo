@@ -40,7 +40,7 @@
         <div class="work-card__main">
           <div class="work-card__identity">
             <span class="business-type">{{ item.business_type }}</span>
-            <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
+            <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusBadgeSemantic(item.state.key)" />
           </div>
           <h3 :title="item.record.label">{{ item.record.label }}</h3>
           <dl class="work-card__summary" aria-label="关键事实">
@@ -116,6 +116,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
 import { formatProductMyWorkFact, partitionProductMyWorkFacts } from '../../app/presentation/productMyWorkPresentation';
+import { statusBadgeSemantic } from '../../app/presentation/businessValuePresentation';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
@@ -197,12 +198,6 @@ function primaryFacts(item: ProductMyWorkItem) {
 
 function supplementaryFacts(item: ProductMyWorkItem) {
   return partitionProductMyWorkFacts(item.facts, 1).supplementary;
-}
-
-function statusSemantic(value?: string) {
-  const semantic = String(value || '').toLowerCase();
-  if (semantic === 'success' || semantic === 'warning' || semantic === 'danger' || semantic === 'info') return semantic;
-  return 'default';
 }
 
 function confirmationSummary(item: ProductMyWorkItem) {

@@ -3,6 +3,113 @@ import logging
 import json
 from odoo import api
 from odoo.addons.smart_core.handlers.menu_configuration import MenuConfigurationLoadHandler
+from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+
+
+def _xmlid(record):
+    if not record:
+        return ""
+    return str(record.get_external_id().get(record.id) or "")
+
+
+def _flatten_navigation_pairs(nodes):
+    pairs = set()
+    stack = list(nodes or [])
+    while stack:
+        node = stack.pop()
+        if not isinstance(node, dict):
+            continue
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+        menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+        if action_id > 0 and menu_id > 0:
+            pairs.add((menu_id, action_id))
+        stack.extend(node.get("children") or [])
+    return pairs
+
+
+def _target_menu_diagnostic(env, actor, menu_xmlid):
+    from odoo.addons.smart_core.delivery.runtime_route_authority import (
+        menu_publication_decision,
+        published_route_authority,
+    )
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+        load_runtime_surface,
+        runtime_menu_scope,
+    )
+    from odoo.addons.smart_construction_scene.services.business_scene_enablement import (
+        business_catalog,
+        business_key,
+    )
+    from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+        read_tenant_enablement,
+    )
+
+    menu = env.ref(menu_xmlid)
+    action = menu.action
+    action_id = int(action.id or 0)
+    menu_id = int(menu.id or 0)
+    context = dict(actor.context or {})
+    context["allowed_company_ids"] = [int(actor.user.company_id.id)]
+    actor = api.Environment(env.cr, actor.user.id, context)
+    authority = published_route_authority(actor)
+    surface = load_runtime_surface(actor)
+    index, _by_id, _by_action = runtime_menu_scope(actor, surface)
+    company_id = int(actor.user.company_id.id)
+    tenant_enabled = read_tenant_enablement(
+        actor,
+        company_id,
+        business_key("project.management"),
+    )
+    release_states = _load_published_menu_release_states(actor)
+    release_state = {
+        row["scene_key"]: row
+        for row in business_catalog(surface, release_states, {
+            business_key("project.management"): tenant_enabled,
+        })
+        if row.get("scene_key") == "project.management"
+    }
+    nav, nav_meta = MenuConfigurationLoadHandler(actor)._runtime_release_navigation_tree()
+    nav_pairs = _flatten_navigation_pairs(nav)
+    denied = [
+        row for row in authority.get("denied_actions", [])
+        if int(row.get("menu_id") or 0) in {0, menu_id}
+        or int(row.get("action_id") or 0) in {0, action_id}
+    ]
+    group_xmlids = [
+        _xmlid(group) for group in menu.groups_id
+    ]
+    return {
+        "menu_xmlid": menu_xmlid,
+        "menu_id": menu_id,
+        "action_id": action_id,
+        "action_xmlid": _xmlid(action),
+        "model": str(action.res_model or ""),
+        "native_visible": menu_id in set(
+            actor["ir.ui.menu"].with_user(actor.user)._visible_menu_ids()
+        ),
+        "menu_group_xmlids": [value for value in group_xmlids if value],
+        "menu_groups_match": all(actor.user.has_group(value) for value in group_xmlids if value),
+        "model_read_acl": bool(
+            actor[action.res_model].check_access_rights("read", raise_exception=False)
+        ),
+        "surface_location": index.get(menu_xmlid),
+        "menu_release_state": release_states.get(menu_xmlid),
+        "tenant_project_management_enabled": tenant_enabled,
+        "business_catalog": release_state.get("project.management"),
+        "published": menu_publication_decision(authority, menu_id, action_id),
+        "published_in_runtime_nav": (menu_id, action_id) in nav_pairs,
+        "runtime_nav_target_count": len(nav_pairs),
+        "runtime_nav_meta": nav_meta,
+        "denied_route_rows": denied,
+    }
+
+
+def _load_published_menu_release_states(env):
+    from odoo.addons.smart_construction_core.services.product_menu_source import (
+        load_published_menu_release_states,
+    )
+    return load_published_menu_release_states(env)
 assert env.cr.dbname == 'sc_frontend_acceptance'
 env.cr.rollback()
 env.cr.execute('SET TRANSACTION READ ONLY')
@@ -46,6 +153,43 @@ try:
     candidate._runtime_role_surface = lambda: dict(surface, is_platform_admin=flags['is_platform_admin'], is_business_config_admin=flags['is_business_config_admin'])
     nav, meta = candidate._runtime_release_navigation_tree()
     print('MENU_NAV_CANONICAL_IDENTITY_DIAGNOSTIC', {'count': len(nav), 'exposure': surface.get('exposure_policy_declared'), 'meta': meta})
+    role_diagnostics = {}
+    for label, user_xmlid in (
+        ("config_admin", "smart_construction_acceptance_fixture.fe_user_config_admin"),
+        ("pm", "smart_construction_acceptance_fixture.fe_user_pm"),
+        ("project_member", "smart_construction_acceptance_fixture.fe_user_project_a_member"),
+    ):
+        role_user = env.ref(user_xmlid)
+        role_actor = api.Environment(
+            env.cr,
+            role_user.id,
+            dict(env.context, allowed_company_ids=[role_user.company_id.id]),
+        )
+        role_resolver = IdentityResolver(role_actor)
+        role_groups = role_resolver.user_group_xmlids(role_user)
+        role_codes, role_evidence = role_resolver.resolve_role_codes_with_evidence(role_groups)
+        role_diagnostics[label] = {
+            "uid": role_user.id,
+            "login": role_user.login,
+            "company_id": role_user.company_id.id,
+            "role_codes": role_codes,
+            "role_evidence": role_evidence,
+            "project_kanban": _target_menu_diagnostic(
+                env,
+                role_actor,
+                "smart_construction_core.menu_sc_project_kanban",
+            ),
+            "project_dashboard": _target_menu_diagnostic(
+                env,
+                role_actor,
+                "smart_construction_core.menu_sc_project_dashboard",
+            ),
+        }
+    print("MENU_KANBAN_ROLE_DIAGNOSTIC", json.dumps(
+        role_diagnostics,
+        ensure_ascii=False,
+        default=str,
+    ))
 finally:
     logger.removeHandler(handler)
     logger.setLevel(previous)

@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "53c4f3dd185c36e5a276fd89f032376fa39b6294",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-01-R2B.yaml",
+    ".agent/runs/FE-RENDERER-02C-01-R2B/run.json",
+    "docs/ops/iterations/fe_renderer_02c_01_r2b_status_identity_20261108.md",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "scripts/verify/frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_business_semantics_guard.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make verification tools; no database or service access"
+  },
+  "checks": {
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_readiness_non_draft_resolver.py",
+        "scripts/verify/frontend_role_release_projection.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint_source": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "review_finding": "P1 boundary: status identity could bypass type validation when status=true, cellRole=status or componentKey selected the status branch without type/ttype/dataType",
+    "ci_failure": "professional_quality_checks failed in verify.guard.registry with stale/disposition classification errors",
+    "implementation": "PASS: status presentation now requires an explicit selection or char field type before resolving the value",
+    "status_identity_tests": "PASS: cellRole selection miss, status without type, cellRole char, component without type, dataType fallback and native-type priority are covered",
+    "static_guard": "PASS: business semantics test and 11 guard tests passed; removing status type identity makes the guard fail",
+    "guard_registry": "PASS: registry audit 24 tests and 1601-script audit passed; stale, orphan and wire-or-retire classification errors are closed",
+    "planner_route": "PASS: registry and audit inputs route to verify.guard.registry; 81 incremental planner tests passed",
+    "freeze_prepare": "PASS: generated evidence current; only registry/planner size ordering and component inventory digest changed",
+    "business_semantics": "PASS: money=6 status=17 temporal=4 empty=3",
+    "boq_import_preview": "PASS: readonly projection 22 checks and BOQ request 27 checks passed",
+    "lint": "PASS: 0 errors; existing warnings only",
+    "typecheck": "PASS",
+    "ci_iteration": "PASS: 8/8 required targets, testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261108T005856Z-413866-718314972/receipt.json"
+  },
+  "next_exact_step": "Run ci.delivery.freeze.prepare, review generated evidence, commit and publish the exact clean candidate to PR #840, then wait for all current-head remote gates.",
+  "id": "FE-RENDERER-02C-01-R2B",
+  "branch": "fix/fe-renderer-02c-01-business-semantics-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-01-R2B.yaml",
+  "record": "docs/ops/iterations/fe_renderer_02c_01_r2b_status_identity_20261108.md"
+}
