@@ -312,7 +312,12 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     material: list[str] = []
     suite = registry["suites"][suite_id]
     make_input_paths = {item["path"] for item in suite.get("make_inputs") or []}
-    strict_selectors = revision == str(_git("rev-parse", "HEAD"))
+    # A suite fingerprint must be reproducible for the revision it names.
+    # Comparing a historical revision with the current checkout previously made
+    # the same immutable tree hash differently, so unrelated product commits
+    # could falsely invalidate runtime evidence. Missing declared selectors
+    # always fail closed, regardless of which revision is being inspected.
+    strict_selectors = True
     for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
         _, _, path = line.partition("\t")
         if (path == 'config/acceptance/evolution_binding.v1.json'

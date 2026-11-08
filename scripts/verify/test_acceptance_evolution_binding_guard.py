@@ -1241,6 +1241,34 @@ class TestCarryForwardPolicy(unittest.TestCase):
             guard.suite_input_sha256(self.registry, "frontend_contract", head),
         )
 
+    def test_missing_declared_selector_fails_for_current_and_historical_revisions(self):
+        registry = {
+            "suites": {
+                "runtime_probe": {
+                    "description": "runtime probe",
+                    "entrypoints": ["make verify.runtime.probe"],
+                    "evidence": None,
+                    "stages": ["merge"],
+                    "inputs": [],
+                    "make_inputs": [{
+                        "path": "Makefile",
+                        "targets": ["verify.runtime.probe"],
+                        "variables": [],
+                    }],
+                },
+            },
+            "rules": [],
+        }
+        self._write("Makefile", "verify.runtime.other:\n\t@true\n")
+        base = self._commit("missing selector baseline")
+        self._write("Makefile", "verify.runtime.still_other:\n\t@true\n")
+        head = self._commit("missing selector head")
+        for revision in (base, head):
+            with self.subTest(revision=revision), self.assertRaisesRegex(
+                guard.BindingError, "make target is missing"
+            ):
+                guard.suite_input_sha256(registry, "runtime_probe", revision)
+
     def test_offline_scene_tests_and_planner_bookkeeping_preserve_browser_inputs(self):
         registry = json.loads(json.dumps(self.registry))
         suites = ('list_surface_structure', 'relation_roundtrip')
