@@ -35,10 +35,6 @@ const invalidPrimitives = {
   ...primitives,
   Input: { ...primitives.Input, contract: contract('Input', ['value', 'change', 'focus', 'blur', 'keyboard']) },
 };
-const realButtonPrimitives = {
-  ...primitives,
-  Button: scenePrimitiveAdapter.Button,
-};
 
 window.scenePrimitiveLog = [];
 const record = (kind, event) => window.scenePrimitiveLog.push({
@@ -58,6 +54,20 @@ const ProviderButtonConsumer = {
     }, () => 'Pointer');
   },
 };
+const AllPrimitiveConsumer = {
+  setup() {
+    const context = useScenePrimitiveContext();
+    return () => h('div', { id: 'all-primitives' }, [
+      h(context.primitives.Button.component, { id: 'context-button' }, () => 'Button'),
+      h(context.primitives.Input.component, { id: 'context-input', modelValue: '' }),
+      h(context.primitives.Select.component, { id: 'context-select', modelValue: '', options: [] }),
+      h(context.primitives.DateField.component, { id: 'context-date', modelValue: { precision: 'date', value: '' } }),
+      h(context.primitives.Textarea.component, { id: 'context-textarea', modelValue: '' }),
+      h(context.primitives.Table.component, { rows: [], columns: [], accessibleLabel: '空列表', interactiveRows: false }),
+      h(context.primitives.Icon.component, { name: 'check', decorative: true }),
+    ]);
+  },
+};
 
 const Host = {
   setup() {
@@ -71,8 +81,9 @@ const Host = {
       pointerButton.value.focus(options);
       await nextTick();
     };
-    return () => h(ScenePrimitiveProvider, { primitives: realButtonPrimitives, density: 'cozy' }, {
+    return () => h(ScenePrimitiveProvider, { primitives: scenePrimitiveAdapter, density: 'cozy' }, {
       default: () => h('div', [
+        h(AllPrimitiveConsumer),
         h(ProviderButtonConsumer),
         h(ScSceneButton, { ref: pointerButton, style: 'display:none' }),
         h(ScSceneButton, {
@@ -104,7 +115,7 @@ const Host = {
           onActivate: event => record('activate', event),
         }, () => ''),
         h(ScenePrimitiveProvider, {
-          primitives: primitivesBroken.value ? invalidPrimitives : realButtonPrimitives,
+          primitives: primitivesBroken.value ? invalidPrimitives : scenePrimitiveAdapter,
         }, {
           default: () => h('div', { id: 'dynamic-consumer' }, 'Dynamic'),
         }),
@@ -245,6 +256,7 @@ if (behaviorMode) {
     await page.setContent('<div id="app"></div>');
     await page.addScriptTag({ content: code });
     await page.locator('#pointer-button').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#all-primitives').count(), 1);
 
     let checks = 0;
     const equal = (actual, expected, message) => {

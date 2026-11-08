@@ -24,8 +24,9 @@ const Host = { setup() {
       onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
       onSearch: (v,e) => window.log.push('search:'+v), onChange: (v,e) => window.log.push('change:'+v),
       onPopupVisibleChange: (s,e) => window.log.push('popup:'+s.visible) }),
-    h(DateField, { ref: dateRef, id: 'date', modelValue: {precision:'date',value:'2026-11-08'},
+    h(DateField, { ref: dateRef, id: 'date', name: 'start_date', modelValue: {precision:'date',value:'2026-11-08'},
       required: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type) }),
+    h(DateField, { id: 'datetime', modelValue: {precision:'datetime',value:'2026-11-08 10:30:00'} }),
   ]);
 }};
 createApp(Host).mount('#app');
@@ -50,6 +51,8 @@ try {
   assert.equal(await page.locator('#select').getAttribute('required'), '');
   assert.equal(await page.locator('#date').getAttribute('aria-label'), '日期');
   assert.equal(await page.locator('#date').getAttribute('required'), '');
+  assert.equal(await page.locator('#date').getAttribute('name'), 'start_date');
+  assert.ok(await page.locator('#datetime').count());
   await page.evaluate(() => window.focusSelect({preventScroll:true}));
   await page.locator('#select').fill('B');
   await page.getByText('B',{exact:true}).last().click();
@@ -59,5 +62,5 @@ try {
   assert.ok(events.includes('focus')); assert.ok(events.some(e=>e.startsWith('search:')));
   assert.ok(events.some(e=>e.startsWith('popup:'))); assert.ok(events.includes('change:b'));
   assert.deepEqual(errors, []);
- console.log(JSON.stringify({browser:browser.version(),checks:11,consoleErrors:0,selectPopupSearch:'PASS',datePopupEvent:'N/A_PORT_HAS_NO_POPUP_EVENT'}));
+ console.log(JSON.stringify({browser:browser.version(),checks:13,consoleErrors:0,selectPopupSearch:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));
 } finally { await browser.close(); }

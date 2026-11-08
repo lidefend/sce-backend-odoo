@@ -50,6 +50,7 @@ const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
     id: props.id,
+    name: props.name,
     required: props.required,
     'aria-required': props.required ? 'true' : undefined,
     'aria-invalid': props.invalid ? 'true' : undefined,

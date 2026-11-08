@@ -122,6 +122,10 @@ goal:
     button_compile_time_witness: PASS
     button_behavior: PASS
     provider_real_button_chain: PASS
+    provider_full_registry_chain: PASS
+    select_type_safety: PASS
+    table_row_identity: PASS
+    datefield_projection: PASS
     adapter_bundle_boundary: PASS
     adapter_guard: PASS
     lint: PASS

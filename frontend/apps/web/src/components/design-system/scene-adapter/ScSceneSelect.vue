@@ -65,11 +65,7 @@ function onChange(value: string, event: Event) {
   emit('change', String(value), { source: source(event), nativeEvent: event });
 }
 function onSearch(value: string, event: Event) {
-  // Vue's intersection-based defineEmits overload resolution drops `search`
-  // when SelectPortEmits also inherits ControlEvents; the event remains fully
-  // typed by PrimitiveBinding and is exercised by the browser contract.
-  const emitPortEvent = emit as (...args: unknown[]) => void;
-  emitPortEvent('search', String(value), {
+  emit('search', String(value), {
     source: source(event),
     nativeEvent: event instanceof InputEvent ? event : undefined,
   });
