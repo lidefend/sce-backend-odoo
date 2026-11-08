@@ -292,6 +292,15 @@ RULES = (
         "verify.frontend.scene_entry_contract.unit",
         "verify.frontend.navigation_shell.unit",
     )),
+    Rule((
+        "frontend/packages/ui/src/primitive-port/",
+        "frontend/apps/web/scripts/primitive_port_",
+        "frontend/apps/web/tsconfig.primitive-port.json",
+        "scripts/verify/frontend_primitive_port_guard.py",
+        "scripts/verify/test_frontend_primitive_port_guard.py",
+    ), (
+        "verify.frontend.primitive_port.unit",
+    )),
     Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.page_pattern_reference_parity.unit",

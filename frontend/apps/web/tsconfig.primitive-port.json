@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "scripts/primitive_port_type_test.ts",
+    "scripts/primitive_port_runtime_test.ts",
+    "../../packages/ui/src/primitive-port/**/*.ts"
+  ]
+}

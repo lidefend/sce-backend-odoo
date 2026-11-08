@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "fb1af3eec75349ecdaff1e06b69281292883c590",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02B-01.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-01/run.json",
+    "frontend/packages/ui/package.json",
+    "frontend/packages/ui/src/primitive-port/types.ts",
+    "frontend/packages/ui/src/primitive-port/events.ts",
+    "frontend/packages/ui/src/primitive-port/slots.ts",
+    "frontend/packages/ui/src/primitive-port/validation.ts",
+    "frontend/packages/ui/src/primitive-port/index.ts",
+    "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+    "frontend/apps/web/scripts/primitive_port_type_test.ts",
+    "frontend/apps/web/tsconfig.primitive-port.json",
+    "scripts/verify/frontend_primitive_port_guard.py",
+    "scripts/verify/test_frontend_primitive_port_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local TypeScript, vue-tsc, esbuild, Node and Make tools; no browser, database, service, or external write"
+  },
+  "checks": {
+    "primitive_port": {
+      "target": "verify.frontend.primitive_port.unit",
+      "inputs": [
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+        "frontend/apps/web/scripts/primitive_port_type_test.ts",
+        "frontend/apps/web/tsconfig.primitive-port.json",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "scripts/verify/frontend_primitive_port_guard.py",
+        "scripts/verify/test_frontend_primitive_port_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint_source": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/packages/ui/src/primitive-port",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "implementation": "PASS: added @sc/ui/primitive-port exports, seven Port contracts, PrimitiveEvent source protocol, Vue 3.5.27 component compatibility, runtime shape validation, and no consumer wiring",
+    "review_revision_r1": "PASS: Primitive capability closure separated required and supported maps; validation now rejects cross-component capabilities by Primitive identity",
+    "review_revision_r2": "PASS: Runtime component shape now accepts function, setup, render and async-loader components while rejecting empty or ordinary business objects",
+    "capability_identity": "PASS: Button/search, Icon/loading and Table/ime reject; Select/popup and Button/loading accept; all seven minimal adapters remain valid",
+    "component_runtime_shape": "PASS: function, setup, render and __asyncLoader forms accept; empty object and ordinary business object reject",
+    "primitive_port": "PASS: 16 assertions; guard tests 5, seven Primitive bindings and eleven fail-closed runtime boundaries; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/primitive_port.log",
+    "compile_time_contract": "PASS: vue-tsc strict type test includes valid input bindings plus rejected Props, Emits and Slots; reverse assertions use @ts-expect-error",
+    "runtime_shape_validation": "PASS: missing binding, invalid component shape, identity mismatch, capability closure and wrong port version fail closed",
+    "import_boundary": "PASS: primitive-port bundle inputs contain only the five protocol files; no Scene components, apps/web, TDesign or vendor icons",
+    "lint": "PASS: 0 errors; pre-existing warnings only; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/lint_source.log",
+    "strict_typecheck": "PASS: app and UI vue-tsc strict checks; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/strict_typecheck.log",
+    "dev_incremental": "PASS: 82 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/dev_incremental.log",
+    "primitive_adapter": "PASS: 41 tests; existing Sc adapter contract remains green; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/primitive_adapter.log",
+    "page_pattern_reference_parity": "PASS: 28 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/page_pattern_reference_parity.log",
+    "agent_ledger": "PASS: 18 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/agent_ledger.log",
+    "agent_resume": "PASS: 56 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/agent_resume.log",
+    "ci_iteration": "PASS: 8 required targets executed and exited zero; log=.runtime/agent-runs/FE-RENDERER-02C-02B-01/ci_local_iteration.log",
+    "runtime_consumers": "NOT_CHANGED: no Sc component, SceneFieldControl, SceneUiProvider, TDesign bridge, Kit Registry or business page imports the new subpath",
+    "product_l2_l4": "NOT_RUN: no runtime consumer or behavior changed",
+    "date_field_type": "PASS: DateFieldPortEmits no longer defaults its value generic to unknown; Adapter uses CanonicalDateValue",
+    "table_generic_rows": "DEFERRED: concrete row generic preservation remains an 02C-02C3 consumer-integration check",
+    "independent_review": "PENDING: R2 fixed; PR #844 requires a final exact-head review",
+    "remote_gates": "NOT_RUN: pending R2 publication"
+  },
+  "next_exact_step": "Commit the component runtime-shape R2, update PR #844, then obtain final independent re-review and inspect all required checks on the exact new head.",
+  "id": "FE-RENDERER-02C-02B-01",
+  "branch": "fix/fe-renderer-02c-02b-01-primitive-port-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02B-01.yaml",
+  "record": ".agent/runs/FE-RENDERER-02C-02B-01/run.json"
+}

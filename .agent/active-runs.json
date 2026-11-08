@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/fe-renderer-02c-02b-01-primitive-port-20261108": ".agent/runs/FE-RENDERER-02C-02B-01/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",
     "fix/smart-core-cache-token-test-20261108": ".agent/runs/SMART-CORE-CACHE-TOKEN-TEST-20261108/run.json",
     "fix/smart-core-request-cache-performance": ".agent/runs/SMART-CORE-REQUEST-CACHE-PERF-20261108/run.json",
