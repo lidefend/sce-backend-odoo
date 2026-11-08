@@ -38,6 +38,18 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("second status tone" in failure for failure in failures))
 
+    def test_selection_backed_status_fail_open_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (normalizeFieldType(input.field) === 'selection' && !selection.length)",
+                "if (selection.length)",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("selection-backed status does not fail closed" in failure for failure in failures))
+
     def test_numeric_zero_empty_fails(self):
         failures = guard.validate(lambda path: source(
             path,

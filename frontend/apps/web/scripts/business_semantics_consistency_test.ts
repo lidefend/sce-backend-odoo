@@ -107,6 +107,31 @@ assert.throws(() => presentDeclaredBusinessValue({
   },
   value: 'missing',
 }), { name: 'ContractGapError' });
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'missing_selection_state',
+    type: 'selection',
+    componentKey: 'sc.display.status',
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'selection-backed status without selection metadata must fail closed');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'empty_selection_state',
+    type: 'selection',
+    componentKey: 'sc.display.status',
+    selection: [],
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'selection-backed status with empty selection metadata must fail closed');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'readable_char_status',
+    type: 'char',
+    componentKey: 'sc.display.status',
+  },
+  value: '待复核',
+}).text, '待复核', 'declared char-status keeps its contract-provided readable value');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.equal(presentCollectionKanbanCell({
@@ -174,4 +199,4 @@ assert.equal(formatProductMyWorkFact({
   display_role: 'text',
 }), FIELD_VALUE_EMPTY_TEXT);
 
-console.log('[business_semantics_consistency_test] PASS money=6 status=4 temporal=4 empty=3');
+console.log('[business_semantics_consistency_test] PASS money=6 status=8 temporal=4 empty=3');

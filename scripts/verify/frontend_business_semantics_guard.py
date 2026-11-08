@@ -34,6 +34,11 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     ):
         if marker not in authority:
             failures.append(f"business-value authority missing {marker}")
+    if not re.search(
+        r"normalizeFieldType\(input\.field\)\s*===\s*'selection'\s*&&\s*!selection\.length",
+        authority,
+    ):
+        failures.append("selection-backed status does not fail closed when selection metadata is missing")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 

@@ -216,6 +216,13 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'status') {
     const key = selectionValue(input.value);
     const selection = normalizedSelection(input.field);
+    if (normalizeFieldType(input.field) === 'selection' && !selection.length) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `field.${input.field.name || '(unknown)'}.selection`,
+        requiredDeclarationLayer: 'P0:smart_core:field_selection_projection',
+      }, `状态字段 ${input.field.name || input.field.componentKey || '(unknown)'} 缺少有效选择项投影`);
+    }
     const presentation = resolveCollectionStatusPresentation({
       value: input.value,
       ...(selection.length ? { selection } : {}),

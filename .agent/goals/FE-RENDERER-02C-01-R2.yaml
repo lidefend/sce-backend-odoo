@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-01-R2
+  title: 状态选择项缺失 fail-closed 修复
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 frontend business-value status interpretation
+  module: frontend businessValuePresentation and shared business-semantics verification
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    selection-backed status 的 label 来自字段 selection 投影，属于所有业务页面共享的
+    P0 契约消费规则；缺失投影必须在统一表达协调层 fail-closed。
+  why_not_elsewhere: >
+    不在页面、Kanban、审批或行业 Renderer 添加局部特判；不放宽后端 action guidance；
+    不修改 Contract V2 Schema、生产权限或验收 fixture。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-01-R2.yaml
+      - .agent/runs/FE-RENDERER-02C-01-R2/run.json
+      - docs/ops/iterations/fe_renderer_02c_01_r2_status_selection_20261108.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/app/presentation/businessValuePresentation.ts
+      - frontend/apps/web/scripts/business_semantics_consistency_test.ts
+      - scripts/verify/frontend_business_semantics_guard.py
+      - scripts/verify/test_frontend_business_semantics_guard.py
+    product_behavior: >
+      selection 类型状态字段在 selection 缺失、为空或值未映射时必须 ContractGapError；
+      char 类型 status 仍消费契约提供的可读展示值。
+  objective: >
+    修复 status 分支在 selection 元数据为空时静默使用原始 key 的 fail-open 行为，
+    并补充缺失、空数组和合法 char-status 回归测试。
+  acceptance:
+    - selection-backed status 缺失 selection 元数据时抛 ContractGapError
+    - selection-backed status 的 selection 为空数组时抛 ContractGapError
+    - selection-backed status 值未出现在有效选择项时继续 fail-closed
+    - char-status 合法可读值路径保持可用
+    - 业务表达单测、静态守卫、Lint、Typecheck 和 ci.local.iteration 通过
+  results:
+    implementation: PASS
+    missing_selection_negative: PASS
+    empty_selection_negative: PASS
+    char_status_positive: PASS
+    static_guard_negative: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交并更新 PR #840，等待最新 HEAD 的五项远端门禁和独立复审
+  exclusions:
+    - contract_v2_schema_change
+    - backend_selection_projection_change
+    - industry_renderer_change
+    - kanban_semantic_change
+    - approval_feedback_change
+    - payment_entry_409_fix
+    - pr_834_change
+    - deployment
+    - merge
+  rollback: >
+    回退 status selection 严格校验与对应负向测试；不改变其他业务表达、验收 fixture、
+    契约 Schema 或生产权限。
