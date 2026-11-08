@@ -215,7 +215,7 @@
     "l4_product_review": "PASS: Contract Form, Payment Request and Scene Collection now have governed browser evidence on ce9170b4b; two real product defects found by L4 were fixed without ACL or contract changes",
     "final_v1_report": "READY_FOR_INDEPENDENT_REVIEW: component delivery and all three L4 page samples pass; publication, fresh remote checks and final merge authorization remain pending"
   },
-  "next_exact_step": "Complete independent review of ce9170b4b and the full two-commit delta, then publish the exact clean SHA and obtain fresh required checks before any merge decision.",
+  "next_exact_step": "Complete independent review of the clean final HEAD whose product-code identity is ce9170b4b, then publish that exact HEAD and obtain fresh required checks before any merge decision.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",

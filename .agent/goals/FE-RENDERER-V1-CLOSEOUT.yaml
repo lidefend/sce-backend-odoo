@@ -74,6 +74,6 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Complete independent review of ce9170b4b, then publish that exact clean SHA and obtain
-    fresh required remote checks before any merge decision. Do not inherit checks from the
-    old PR head.
+    Complete independent review of the clean final HEAD whose product-code identity is
+    ce9170b4b, then publish that exact HEAD and obtain fresh required remote checks before
+    any merge decision. Do not inherit checks from the old PR head.
