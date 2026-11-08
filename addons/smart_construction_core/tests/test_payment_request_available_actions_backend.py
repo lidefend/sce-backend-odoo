@@ -171,6 +171,13 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         self.assertEqual((reject.get("presentation") or {}).get("tier"), "secondary")
         self.assertEqual((reject.get("presentation") or {}).get("semantic"), "destructive")
         self.assertTrue((reject.get("presentation") or {}).get("requires_reason"))
+        self.assertEqual((reject.get("presentation") or {}).get("reason_input"), {
+            "title": "驳回付款申请",
+            "label": "拒绝原因",
+            "help": "请说明拒绝原因，提交后会写入正式审批记录。",
+            "submit_label": "确认驳回",
+            "cancel_label": "取消",
+        })
         self.assertIsInstance(submit.get("actor_matches_required_role"), bool)
         self.assertIsInstance(submit.get("handoff_required"), bool)
         self.assertEqual(int(submit.get("delivery_priority") or 0), 10)

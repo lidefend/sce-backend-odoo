@@ -28,6 +28,7 @@ import type {
   TextareaPortProps,
 } from '@sc/ui/primitive-port';
 import ScTextarea from '../ScTextarea.vue';
+import { createPrimitiveFocusSourceTracker } from './primitiveFocusSource';
 
 const props = withDefaults(defineProps<TextareaPortProps>(), {
   placeholder: undefined,
@@ -48,6 +49,7 @@ const emit = defineEmits<TextareaPortEmits>();
 defineSlots<NoPortSlots>();
 
 const textareaRef = ref<{ $el?: unknown } | null>(null);
+const focusSourceTracker = createPrimitiveFocusSourceTracker();
 let lastSource: PrimitiveEventSource = 'programmatic';
 let lastEditSource: PrimitiveEventSource = 'programmatic';
 let controlledValue = String(props.modelValue ?? '');
@@ -55,6 +57,7 @@ let lastEditValue = controlledValue;
 let committedValue = controlledValue;
 const pendingUserEchoes: string[] = [];
 const supersededUserEchoes: string[] = [];
+const staleUserEchoes: string[] = [];
 let nativeTextarea: HTMLTextAreaElement | null = null;
 let lastNativeInputEvent: Event | undefined;
 
@@ -76,23 +79,36 @@ function eventValue(event: Event): string {
 function blockEdit(): boolean {
   return props.disabled || props.readonly || props.loading;
 }
+function rememberStaleUserEchoes(values: string[]) {
+  for (const value of values) {
+    if (value && !staleUserEchoes.includes(value)) staleUserEchoes.push(value);
+  }
+}
 function consumeUserEcho(queue: string[], value: string): boolean {
   const index = queue.indexOf(value);
   if (index >= 0) {
     // The parent may coalesce several edits and echo only the latest value.
     // That echo acknowledges every earlier value in this ordered queue.
-    queue.splice(0, index + 1);
+    const removed = queue.splice(0, index + 1);
+    rememberStaleUserEchoes(removed.slice(0, -1));
     return true;
   }
   let joined = '';
   for (let prefixEnd = 0; prefixEnd < queue.length; prefixEnd += 1) {
     joined += queue[prefixEnd];
     if (joined === value) {
-      queue.splice(0, prefixEnd + 1);
+      const removed = queue.splice(0, prefixEnd + 1);
+      rememberStaleUserEchoes(removed);
       return true;
     }
   }
   return false;
+}
+function consumeStaleUserEcho(value: string): boolean {
+  const index = staleUserEchoes.indexOf(value);
+  if (index < 0) return false;
+  staleUserEchoes.splice(index, 1);
+  return true;
 }
 function currentUserAuthority(): string {
   return pendingUserEchoes[pendingUserEchoes.length - 1] ?? controlledValue;
@@ -117,6 +133,11 @@ watch(
       }
       return;
     }
+    if (consumeStaleUserEcho(value)) {
+      const authority = currentUserAuthority();
+      if (value !== authority) emit('update:modelValue', authority);
+      return;
+    }
     if (pendingUserEchoes.length) {
       supersededUserEchoes.push(...pendingUserEchoes);
       pendingUserEchoes.splice(0);
@@ -128,9 +149,11 @@ watch(
   { flush: 'sync' },
 );
 function onNativePointerdown() {
+  focusSourceTracker.pointer();
   lastSource = 'pointer';
 }
 function onNativeKeydown(event: KeyboardEvent) {
+  focusSourceTracker.keyboard();
   lastSource = 'keyboard';
   emit('keydown', { source: 'keyboard', nativeEvent: event });
 }
@@ -149,6 +172,7 @@ function onNativeInput(event: Event) {
   // as current user intent rather than treating its echo as stale history.
   removeTrackedUserEcho(supersededUserEchoes, value);
   removeTrackedUserEcho(pendingUserEchoes, value);
+  removeTrackedUserEcho(staleUserEchoes, value);
   pendingUserEchoes.push(value);
   emit('update:modelValue', value);
   emit('input', value, { source: lastEditSource, nativeEvent: event });
@@ -167,14 +191,17 @@ function onNativeChange(event: Event) {
 }
 function onNativeFocus(event: FocusEvent) {
   const value = eventValue(event);
-  lastEditSource = sourceFor(event);
+  lastSource = focusSourceTracker.consume();
+  lastEditSource = lastSource;
   controlledValue = value;
   lastEditValue = value;
   committedValue = value;
   emit('focus', value, { source: lastEditSource, nativeEvent: event });
 }
 function onNativeBlur(event: FocusEvent) {
-  emit('blur', lastEditValue, { source: sourceFor(event), nativeEvent: event });
+  const blurSource = sourceFor(event);
+  focusSourceTracker.programmatic();
+  emit('blur', lastEditValue, { source: blurSource, nativeEvent: event });
   commitValue(event);
 }
 function onNativeCompositionStart(event: CompositionEvent) {
@@ -220,10 +247,17 @@ function bindNativeTextarea() {
   nativeTextarea?.addEventListener('compositionupdate', onNativeCompositionUpdate);
   nativeTextarea?.addEventListener('compositionend', onNativeCompositionEnd);
 }
-onMounted(bindNativeTextarea);
-onBeforeUnmount(unbindNativeTextarea);
+onMounted(() => {
+  focusSourceTracker.bind();
+  bindNativeTextarea();
+});
+onBeforeUnmount(() => {
+  focusSourceTracker.unbind();
+  unbindNativeTextarea();
+});
 
 function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
+  focusSourceTracker.programmatic();
   lastSource = 'programmatic';
   resolveNativeTextarea()?.focus(options);
 }

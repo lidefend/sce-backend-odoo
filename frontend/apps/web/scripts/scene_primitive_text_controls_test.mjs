@@ -93,6 +93,11 @@ const Host = {
         onCompositionstart: event => record('area-compositionstart', areaValue.value, event),
         onCompositionend: event => record('area-compositionend', areaValue.value, event),
       }),
+      h('button', { id: 'tab-origin', type: 'button' }, 'Tab origin'),
+      h(ScSceneInput, {
+        id: 'tab-target', modelValue: '', name: 'tab-target',
+        onFocus: (value, event) => record('tab-focus', value, event),
+      }),
     ]);
   },
 };
@@ -207,6 +212,36 @@ try {
   assert.ok(events.some((event) => event.kind === 'compositionstart'));
   assert.ok(events.some((event) => event.kind === 'input-native-compositionupdate'));
   assert.ok(events.some((event) => event.kind === 'compositionend'));
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.setInputValue('');
+  });
+  await page.locator('#text-input').focus();
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.imeSetComposition', {
+    text: '合',
+    selectionStart: 1,
+    selectionEnd: 1,
+    replacementStart: 0,
+    replacementEnd: 0,
+  });
+  await cdp.send('Input.insertText', { text: '合' });
+  await page.waitForFunction(() => document.querySelector('#text-input')?.value === '合');
+  events = await page.evaluate(() => window.textLog);
+  assert.ok(events.some((event) => event.kind === 'compositionstart'), JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'input-native-compositionupdate'), JSON.stringify(events));
+  assert.ok(events.some((event) => event.kind === 'input' && event.value === '合'), JSON.stringify(events));
+  await cdp.detach();
+
+  await page.evaluate(() => { window.textLog = []; });
+  await page.locator('#tab-origin').focus();
+  await page.keyboard.press('Tab');
+  events = await page.evaluate(() => window.textLog);
+  assert.ok(
+    events.some((event) => event.kind === 'tab-focus' && event.source === 'keyboard'),
+    JSON.stringify(events),
+  );
 
   await page.evaluate(() => { window.textLog = []; });
   await page.locator('#text-area').fill('第一行\n第二行');
@@ -363,6 +398,40 @@ try {
     window.setInputValue('');
   });
   await page.locator('#text-input').focus();
+  await page.locator('#text-input').pressSequentially('ab');
+  await page.evaluate(async () => {
+    window.deferInputEcho = false;
+    window.flushInputEcho();
+    await window.nextViewTick();
+  });
+  const latestInputEcho = await page.locator('#text-input').inputValue();
+  await page.evaluate(() => window.setInputValue('a'));
+  await page.waitForFunction((latest) => document.querySelector('#text-input')?.value === latest, latestInputEcho);
+  assert.equal(await page.locator('#text-input').inputValue(), latestInputEcho);
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferAreaEcho = true;
+    window.setAreaValue('');
+  });
+  await page.locator('#text-area').focus();
+  await page.locator('#text-area').pressSequentially('ab');
+  await page.evaluate(async () => {
+    window.deferAreaEcho = false;
+    window.flushAreaEcho();
+    await window.nextViewTick();
+  });
+  const latestAreaEcho = await page.locator('#text-area').inputValue();
+  await page.evaluate(() => window.setAreaValue('a'));
+  await page.waitForFunction((latest) => document.querySelector('#text-area')?.value === latest, latestAreaEcho);
+  assert.equal(await page.locator('#text-area').inputValue(), latestAreaEcho);
+
+  await page.evaluate(() => {
+    window.textLog = [];
+    window.deferInputEcho = true;
+    window.setInputValue('');
+  });
+  await page.locator('#text-input').focus();
   await page.locator('#text-input').pressSequentially('xy');
   await page.evaluate(async () => {
     window.setInputValue('input-resumed-server');
@@ -420,7 +489,7 @@ try {
   assert.ok(events.some((event) => event.kind === 'area-blur' && event.value === 'area-resumed-live'));
 
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: browser.version(), checks: 59, consoleErrors: 0 }));
+  console.log(JSON.stringify({ browser: browser.version(), checks: 67, consoleErrors: 0 }));
 } finally {
   await browser.close();
 }

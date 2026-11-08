@@ -37,6 +37,7 @@ ALLOWED_IMPORTS = {
     './collectionContracts',
     './selectionContracts',
     './scenePrimitiveAdapter',
+    './primitiveFocusSource',
 }
 FORBIDDEN_SOURCE = (
     re.compile(r"\bas\s+Primitive(?:Component|Binding)\b"),

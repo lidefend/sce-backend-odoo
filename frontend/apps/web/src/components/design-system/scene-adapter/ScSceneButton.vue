@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type {
   ButtonPortEmits,
   ButtonPortProps,
@@ -28,6 +28,7 @@ import type {
   PrimitiveEventSource,
 } from '@sc/ui/primitive-port';
 import ScButton from '../ScButton.vue';
+import { createPrimitiveFocusSourceTracker } from './primitiveFocusSource';
 
 defineOptions({ inheritAttrs: true });
 
@@ -44,9 +45,10 @@ const emit = defineEmits<ButtonPortEmits>();
 defineSlots<ButtonPortSlots>();
 
 const buttonRef = ref<InstanceType<typeof ScButton> | null>(null);
+const focusSourceTracker = createPrimitiveFocusSourceTracker();
 let keyboardActivationPending = false;
 let resetKeyboardActivationTimer: ReturnType<typeof setTimeout> | undefined;
-let focusSource: PrimitiveEventSource = 'programmatic';
+let lastFocusSource: PrimitiveEventSource = 'programmatic';
 
 function clearKeyboardActivationTimer() {
   if (resetKeyboardActivationTimer !== undefined) {
@@ -56,7 +58,9 @@ function clearKeyboardActivationTimer() {
 }
 
 function rememberFocusSource(source: PrimitiveEventSource) {
-  focusSource = source;
+  if (source === 'pointer') focusSourceTracker.pointer();
+  if (source === 'keyboard') focusSourceTracker.keyboard();
+  if (source === 'programmatic') focusSourceTracker.programmatic();
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -103,16 +107,18 @@ function onClick(event: MouseEvent) {
 }
 
 function onFocus(event: FocusEvent) {
-  emit('focus', { source: focusSource, nativeEvent: event });
-  focusSource = 'programmatic';
+  lastFocusSource = focusSourceTracker.consume();
+  emit('focus', { source: lastFocusSource, nativeEvent: event });
 }
 
 function onBlur(event: FocusEvent) {
-  emit('blur', { source: focusSource, nativeEvent: event });
-  focusSource = 'programmatic';
+  emit('blur', { source: lastFocusSource, nativeEvent: event });
+  lastFocusSource = 'programmatic';
+  focusSourceTracker.programmatic();
 }
 
 function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
+  focusSourceTracker.programmatic();
   const root: Node | null | undefined = buttonRef.value?.$el;
   const container = root instanceof Element ? root : root?.parentElement;
   const target = container instanceof HTMLButtonElement
@@ -121,5 +127,7 @@ function focus(options?: Parameters<PrimitiveHandle['focus']>[0]) {
   target?.focus(options);
 }
 
+onMounted(() => focusSourceTracker.bind());
+onBeforeUnmount(() => focusSourceTracker.unbind());
 defineExpose({ focus });
 </script>

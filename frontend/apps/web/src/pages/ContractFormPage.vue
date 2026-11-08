@@ -1248,8 +1248,13 @@ const {
   busyKind,
   collectActionParams: (action) => collectActionParamsFromPlan(
     action,
-    () => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: '请填写操作原因' }),
-    (title) => actionReasonDialogRef.value?.request({ title }) ?? Promise.resolve(null),
+    (failure) => applyPageStatusEvent({
+      kind: 'status',
+      transaction: 'runAction',
+      status: 'error',
+      errorMessage: failure === 'missing_contract' ? 'OPERATION_REASON_CONTRACT_MISSING' : '请填写操作原因',
+    }),
+    (presentation) => actionReasonDialogRef.value?.request(presentation) ?? Promise.resolve(null),
   ),
   confirmActionSafety: (action) => confirmActionSafety(action),
   currentQuery: () => route.query,

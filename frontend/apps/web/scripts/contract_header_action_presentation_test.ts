@@ -33,10 +33,21 @@ const action = (overrides: Record<string, unknown>) => ({
 
 const reasonPromptTitles: string[] = [];
 assert.deepEqual(await collectActionParams(
-  action({ label: '提交合同', requiresReason: true, requiredParams: [] }),
+  action({
+    label: '提交合同',
+    requiresReason: true,
+    requiredParams: [],
+    reasonPresentation: {
+      title: '提交合同原因',
+      label: '提交原因',
+      help: '请说明提交原因。',
+      submitLabel: '确认提交',
+      cancelLabel: '取消',
+    },
+  }),
   () => assert.fail('a submitted reason must not be reported missing'),
-  async (title) => {
-    reasonPromptTitles.push(title);
+  async (presentation) => {
+    reasonPromptTitles.push(presentation.title);
     return '  合同条款已确认  ';
   },
 ), { reason: '合同条款已确认' });
@@ -49,6 +60,18 @@ assert.equal(await collectActionParams(
   async () => '   ',
 ), null);
 assert.equal(missingReasonCount, 1);
+
+let missingReasonContractCount = 0;
+assert.equal(await collectActionParams(
+  action({ label: '驳回', requiresReason: true, requiredParams: [] }),
+  (failure) => {
+    if (failure === 'missing_contract') missingReasonContractCount += 1;
+  },
+  async () => {
+    assert.fail('a missing reason declaration must not open the reason dialog');
+  },
+), null);
+assert.equal(missingReasonContractCount, 1);
 
 for (const [method, expected] of [
   [' action_submit ', true], ['action_submit_progress', true], ['action_confirm', true],
