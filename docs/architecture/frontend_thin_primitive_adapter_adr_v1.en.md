@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A: Thin Primitive Adapter Architecture Decision
 
-- Status: owner direction accepted; revised after the first independent architecture review and pending re-review/freeze. This ADR does not authorize product-code migration.
+- Status: owner direction accepted; final protocol revision after two independent architecture reviews, pending final exact-head re-review/freeze. This ADR does not authorize product-code migration.
 - Audit baseline: `c8be18bc26cb262a30764a53b9d0765f646427aa`
 - Date: 2026-11-08
 - Formal Product Layer: P0 platform kernel product
@@ -304,11 +304,11 @@ export interface PrimitiveCommonProps {
 }
 
 export interface ControlEvents {
-  change: [value: string, event: PrimitiveEvent];
-  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
-  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
-  keydown: [event: PrimitiveEvent<KeyboardEvent>];
-  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+  change(value: string, event: PrimitiveEvent): void;
+  focus(value: string, event: PrimitiveEvent<FocusEvent>): void;
+  blur(value: string, event: PrimitiveEvent<FocusEvent>): void;
+  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
+  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
 }
 ```
 
@@ -325,9 +325,9 @@ export interface ButtonPortProps {
 }
 
 export interface ButtonPortEmits {
-  activate: [event: PrimitiveEvent<MouseEvent>];
-  focus: [event: PrimitiveEvent<FocusEvent>];
-  blur: [event: PrimitiveEvent<FocusEvent>];
+  activate(event: PrimitiveEvent): void;
+  focus(event: PrimitiveEvent<FocusEvent>): void;
+  blur(event: PrimitiveEvent<FocusEvent>): void;
 }
 
 export interface ButtonPortSlots {
@@ -355,10 +355,10 @@ export interface InputPortProps extends PrimitiveCommonProps {
 }
 
 export interface InputPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  input: [value: string, event: PrimitiveEvent];
-  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
-  compositionend: [event: PrimitiveEvent<CompositionEvent>];
+  'update:modelValue'(value: string): void;
+  input(value: string, event: PrimitiveEvent): void;
+  compositionstart(event: PrimitiveEvent<CompositionEvent>): void;
+  compositionend(event: PrimitiveEvent<CompositionEvent>): void;
 }
 
 ```
@@ -383,9 +383,9 @@ export interface SelectPortProps extends PrimitiveCommonProps {
 }
 
 export interface SelectPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  search: [query: string, event: PrimitiveEvent<InputEvent>];
-  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
+  'update:modelValue'(value: string): void;
+  search(query: string, event: PrimitiveEvent<InputEvent>): void;
+  popupVisibleChange(state: { visible: boolean; trigger: string }, event: PrimitiveEvent): void;
 }
 ```
 
@@ -404,12 +404,12 @@ export type CanonicalDateValue =
   | { precision: 'datetime'; value: string };
 
 export interface DateFieldPortEmits {
-  'update:modelValue': [value: CanonicalDateValue];
-  change: [value: CanonicalDateValue, event: PrimitiveEvent];
-  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
-  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
-  keydown: [event: PrimitiveEvent<KeyboardEvent>];
-  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+  'update:modelValue'(value: CanonicalDateValue): void;
+  change(value: CanonicalDateValue, event: PrimitiveEvent): void;
+  focus(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
+  blur(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
+  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
+  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
 }
 ```
 
@@ -428,8 +428,8 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
 }
 
 export interface TextareaPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  input: [value: string, event: PrimitiveEvent];
+  'update:modelValue'(value: string): void;
+  input(value: string, event: PrimitiveEvent): void;
 }
 ```
 
@@ -460,14 +460,14 @@ export interface TablePortProps<Row extends TablePortRow> {
 }
 
 export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate: [row: Row, event: PrimitiveEvent<MouseEvent>];
+  rowActivate(row: Row, event: PrimitiveEvent): void;
 }
 
 ```
 
 v1 covers the current governed readonly collection and row navigation only. It does not define `selectionMode`, `selectedRowKeys`, or `selectionChange`. A real selectable-collection consumer can add selection through an explicit v1.x optional extension; TDesign support alone is not a reason to predefine it.
 
-Interactive rows need keyboard activation and accessible names. The horizontal scroll region must not swallow focus. Empty text comes from the platform. v1 defines no custom table cell or top-content slots; Scene headers and relation composition stay in Scene, and slots are added only when a real consumer requires them.
+Interactive rows need keyboard activation and accessible names. Pointer activation preserves the real `MouseEvent`; keyboard activation preserves the real `KeyboardEvent`; programmatic activation may omit `nativeEvent`, with `PrimitiveEvent.source` identifying the source. The horizontal scroll region must not swallow focus. Empty text comes from the platform. v1 defines no custom table cell or top-content slots; Scene headers and relation composition stay in Scene, and slots are added only when a real consumer requires them.
 
 ### 5.9 IconPort
 
@@ -511,8 +511,28 @@ export interface PrimitivePortDefinition<Props, Emits, Slots> {
   exposed: PrimitiveHandle;
 }
 
+export type PrimitiveComponent<
+  Props,
+  Emits,
+  Slots,
+> = DefineComponent<
+  Props,
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  Emits,
+  string,
+  {},
+  Props,
+  {},
+  Slots
+>;
+
 export interface PrimitiveBinding<Props, Emits, Slots> {
-  component: Component;
+  component: PrimitiveComponent<Props, Emits, Slots>;
   readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
 }
 
@@ -532,7 +552,17 @@ export interface SceneCompositionContext {
 }
 ```
 
-Each `PrimitiveBinding.component` must use Vue `DefineComponent`, `ComponentProps` / `ComponentEmits` / `SlotsType` assertions, or equivalent typed machinery in 02C-02B to prove conformance with `contract`. The `contract` is also the runtime declaration consumed by component contract tests; it cannot exist only in documentation.
+`PrimitiveComponent` uses a parameterized Vue `DefineComponent` constraint and must not degrade to an arbitrary `Component` or an untyped component dictionary. `PrimitiveBinding.contract` is the stable Port declaration, but a handwritten declaration alone is not proof that the component implements it.
+
+Validation has three distinct layers:
+
+| Layer | Required validation | What it cannot replace |
+| --- | --- | --- |
+| Compile time | Actual Adapter component Props / Emits / Slots are compatible with the Port, using `ComponentProps`, `ComponentEmits`, `SlotsType`, and type-level compatibility witnesses where useful | Runtime binding completeness or real event behavior |
+| Runtime | Primitive key presence, binding identity, explicit capabilities, and contract metadata consistency | Vue prop/emit internals or ARIA/keyboard behavior |
+| Contract test | Mount the actual component and verify event identity, focus/blur, keyboard, ARIA, slots, and controlled-value behavior | Static types or handwritten metadata |
+
+Do not use a TypeScript `as` assertion as Adapter compatibility proof. A compatibility helper must make incompatible Props/Emits/Slots fail at compile time.
 
 ### 5.11 Adapter Failure Strategy
 
@@ -555,7 +585,8 @@ Rules:
 - A non-required capability may degrade only when the Port explicitly declares it optional. The degradation is visible and diagnosable.
 - Never fall back to `sc-native`, a Scene-local HTML control, or another base-control implementation.
 - The Provider loads no asynchronous vendor driver and must not preserve the old “automatic recovery after driver load failure” behavior.
-- `@sc/ui/primitive-port` exports one validation function. Tests cover missing bindings, wrong Props/Emits, missing capabilities, and diagnostic identity.
+- `@sc/ui/primitive-port` exports `validatePrimitiveAdapterRuntimeShape()` for binding presence, Primitive identity, capabilities, and contract metadata. It must not be described as proof of types or behavior.
+- Compile-time compatibility, runtime shape validation, and real component contract tests execute separately. Missing any layer means the Adapter is not conformant.
 
 ### 5.12 Target Provider
 

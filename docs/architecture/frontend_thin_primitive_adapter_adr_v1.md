@@ -1,6 +1,6 @@
 # ADR-FE-RENDERER-02C-02A：薄层 Primitive Adapter 架构裁定
 
-- 文档状态：所有者方向已裁定；已纳入首轮独立架构评审意见的协议修订版，等待复审冻结；本 ADR 不授权产品代码迁移
+- 文档状态：所有者方向已裁定；已纳入两轮独立架构评审意见的最终协议修订版，等待最终 exact-HEAD 复审冻结；本 ADR 不授权产品代码迁移
 - 审计基线：`c8be18bc26cb262a30764a53b9d0765f646427aa`
 - 日期：2026-11-08
 - Formal Product Layer：P0 platform kernel product
@@ -304,11 +304,11 @@ export interface PrimitiveCommonProps {
 }
 
 export interface ControlEvents {
-  change: [value: string, event: PrimitiveEvent];
-  focus: [value: string, event: PrimitiveEvent<FocusEvent>];
-  blur: [value: string, event: PrimitiveEvent<FocusEvent>];
-  keydown: [event: PrimitiveEvent<KeyboardEvent>];
-  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+  change(value: string, event: PrimitiveEvent): void;
+  focus(value: string, event: PrimitiveEvent<FocusEvent>): void;
+  blur(value: string, event: PrimitiveEvent<FocusEvent>): void;
+  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
+  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
 }
 ```
 
@@ -325,9 +325,9 @@ export interface ButtonPortProps {
 }
 
 export interface ButtonPortEmits {
-  activate: [event: PrimitiveEvent<MouseEvent>];
-  focus: [event: PrimitiveEvent<FocusEvent>];
-  blur: [event: PrimitiveEvent<FocusEvent>];
+  activate(event: PrimitiveEvent): void;
+  focus(event: PrimitiveEvent<FocusEvent>): void;
+  blur(event: PrimitiveEvent<FocusEvent>): void;
 }
 
 export interface ButtonPortSlots {
@@ -355,10 +355,10 @@ export interface InputPortProps extends PrimitiveCommonProps {
 }
 
 export interface InputPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  input: [value: string, event: PrimitiveEvent];
-  compositionstart: [event: PrimitiveEvent<CompositionEvent>];
-  compositionend: [event: PrimitiveEvent<CompositionEvent>];
+  'update:modelValue'(value: string): void;
+  input(value: string, event: PrimitiveEvent): void;
+  compositionstart(event: PrimitiveEvent<CompositionEvent>): void;
+  compositionend(event: PrimitiveEvent<CompositionEvent>): void;
 }
 
 ```
@@ -389,9 +389,9 @@ export interface SelectPortProps extends PrimitiveCommonProps {
 }
 
 export interface SelectPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  search: [query: string, event: PrimitiveEvent<InputEvent>];
-  popupVisibleChange: [state: { visible: boolean; trigger: string }, event: PrimitiveEvent];
+  'update:modelValue'(value: string): void;
+  search(query: string, event: PrimitiveEvent<InputEvent>): void;
+  popupVisibleChange(state: { visible: boolean; trigger: string }, event: PrimitiveEvent): void;
 }
 ```
 
@@ -414,12 +414,12 @@ export type CanonicalDateValue =
   | { precision: 'datetime'; value: string };
 
 export interface DateFieldPortEmits {
-  'update:modelValue': [value: CanonicalDateValue];
-  change: [value: CanonicalDateValue, event: PrimitiveEvent];
-  focus: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
-  blur: [value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>];
-  keydown: [event: PrimitiveEvent<KeyboardEvent>];
-  keyup: [event: PrimitiveEvent<KeyboardEvent>];
+  'update:modelValue'(value: CanonicalDateValue): void;
+  change(value: CanonicalDateValue, event: PrimitiveEvent): void;
+  focus(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
+  blur(value: CanonicalDateValue, event: PrimitiveEvent<FocusEvent>): void;
+  keydown(event: PrimitiveEvent<KeyboardEvent>): void;
+  keyup(event: PrimitiveEvent<KeyboardEvent>): void;
 }
 ```
 
@@ -442,8 +442,8 @@ export interface TextareaPortProps extends PrimitiveCommonProps {
 }
 
 export interface TextareaPortEmits extends ControlEvents {
-  'update:modelValue': [value: string];
-  input: [value: string, event: PrimitiveEvent];
+  'update:modelValue'(value: string): void;
+  input(value: string, event: PrimitiveEvent): void;
 }
 ```
 
@@ -477,7 +477,7 @@ export interface TablePortProps<Row extends TablePortRow> {
 }
 
 export interface TablePortEmits<Row extends TablePortRow> {
-  rowActivate: [row: Row, event: PrimitiveEvent<MouseEvent>];
+  rowActivate(row: Row, event: PrimitiveEvent): void;
 }
 
 ```
@@ -487,6 +487,7 @@ export interface TablePortEmits<Row extends TablePortRow> {
 - v1 只覆盖当前受管只读集合和行导航，不定义 `selectionMode`、`selectedRowKeys` 或 `selectionChange`。
 - 如果未来出现真实的可选择集合消费者，以明确的 v1.x 可选扩展增加选择协议；不能因为 TDesign 支持就提前复制。
 - 可交互行必须支持键盘激活并保持可访问名称。
+- 指针激活保留真实 `MouseEvent`；键盘激活保留真实 `KeyboardEvent`；程序化激活允许 `nativeEvent` 缺失，由 `PrimitiveEvent.source` 区分来源。
 - 水平滚动区域不能吞掉 Focus。
 - 表格空态由平台已经解释的 `emptyText` 提供，Scene 不自行写 `无`。
 - v1 不定义 Table 自定义单元格/顶栏插槽；Scene 的表头和关系组合保留在 Scene composition，只有真实消费者需要时才扩展。
@@ -537,8 +538,28 @@ export interface PrimitivePortDefinition<Props, Emits, Slots> {
   exposed: PrimitiveHandle;
 }
 
+export type PrimitiveComponent<
+  Props,
+  Emits,
+  Slots,
+> = DefineComponent<
+  Props,
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  Emits,
+  string,
+  {},
+  Props,
+  {},
+  Slots
+>;
+
 export interface PrimitiveBinding<Props, Emits, Slots> {
-  component: Component;
+  component: PrimitiveComponent<Props, Emits, Slots>;
   readonly contract: PrimitivePortDefinition<Props, Emits, Slots>;
 }
 
@@ -558,7 +579,17 @@ export interface SceneCompositionContext {
 }
 ```
 
-`PrimitiveBinding.component` 的实际包装必须在 02C-02B 使用 Vue `DefineComponent`、`ComponentProps` / `ComponentEmits` / `SlotsType` 类型断言或等价机制证明其符合 `contract`，禁止退化为无类型组件字典。`contract` 同时作为组件契约测试的运行时声明，不得只存在于文档。
+`PrimitiveComponent` 使用参数化的 Vue `DefineComponent` 约束，不能退化为任意 `Component` 或无类型组件字典。`PrimitiveBinding.contract` 是稳定的 Port 声明，但单独的手写声明不构成组件符合 Port 的类型证明。
+
+验证必须拆成三层：
+
+| 层次 | 必须验证 | 不能替代什么 |
+| --- | --- | --- |
+| 编译期 | 实际 Adapter 组件 Props / Emits / Slots 与 Port 类型兼容；可用 `ComponentProps`、`ComponentEmits`、`SlotsType` 和类型级兼容 witness 构造证明 | 不能证明运行时绑定完整，也不能证明真实事件行为 |
+| 运行期 | Primitive key 存在、绑定身份、显式 capability 与 contract metadata 一致 | 不能证明 Vue Props/Emits 的内部行为或 ARIA/键盘行为 |
+| 契约测试 | 实际挂载组件，验证事件身份、Focus/Blur、键盘、ARIA、插槽和受控值行为 | 不能被静态类型或手写 metadata 替代 |
+
+禁止把 TypeScript `as` 类型断言当作 Adapter 兼容性证明。若具体包装使用兼容性辅助类型，必须让不兼容的 Props/Emits/Slots 在编译期失败，而不是跳过检查。
 
 ### 5.11 Adapter 失败策略
 
@@ -581,7 +612,8 @@ export interface ScenePrimitiveContractErrorDetail {
 - 非必需能力只有在 Port 明确声明为可选时才能降级；降级结果必须可见、可诊断。
 - 不允许回退到 `sc-native`、Scene 自带 HTML 控件或另一套基础组件实现。
 - Provider 不再异步加载厂商 Driver，因此也不应保留“驱动加载失败后自动恢复”的旧语义。
-- `@sc/ui/primitive-port` 暴露统一校验函数；测试必须覆盖缺失、错误 Props/Emits、错误 capability 和诊断身份。
+- `@sc/ui/primitive-port` 暴露运行期 `validatePrimitiveAdapterRuntimeShape()`，只检查绑定存在性、Primitive 身份、capability 与 contract metadata；不得把该函数宣称成类型或行为证明。
+- 编译期兼容、运行期形状校验和真实组件契约测试分别执行；任何一层缺失都不能记为 Adapter Conformant。
 
 ### 5.12 Provider 目标
 

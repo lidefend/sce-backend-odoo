@@ -49,6 +49,7 @@
     "audit": "PASS: 30 @sc/ui source files, 12 Vue components, 63 Sc components, 52 TDesign bridge consumers, 11 app imports, two SceneUiProvider entries, vendor/Kit/token/semantic/guard facts recorded",
     "adr": "PASS: bilingual ADR records four-layer authority, dependency direction, typed Primitive Port v1, migration graph, guard map, rollback and parity matrix",
     "review_revision": "PASS: first architecture review incorporated: minimal TablePort v1, five consumed icons, PrimitiveEvent source wrapper, modelValue naming, canonical date values, fail-closed Adapter errors, per-component density mapping, editable/display value split, primitive-port subpath, and C1-C2-C3 sequencing",
+    "review_revision_r1": "PASS: second architecture review incorporated: Table row activation accepts PrimitiveEvent, typed PrimitiveComponent replaces unconstrained Component, and compile-time/runtime/contract-test proof responsibilities are separated with no `as` compatibility proof",
     "docs_links": "PASS: 2537 files scanned, 333 links checked, 0 missing; log=.runtime/agent-runs/FE-RENDERER-02C-02A/docs_links.log",
     "docs_temp_guard": "PASS: docs temp guard; log=.runtime/agent-runs/FE-RENDERER-02C-02A/docs_temp_guard.log",
     "agent_ledger": "PASS: 18 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02A/agent_ledger.log",
@@ -58,7 +59,7 @@
     "independent_review": "PENDING: first review direction accepted and revisions implemented; a new exact-head architecture re-review remains required",
     "remote_gates": "NOT_RUN: pending publication of the exact candidate"
   },
-  "next_exact_step": "Commit the ADR revision, update PR #843, then obtain independent re-review and inspect all required checks on the exact new head.",
+  "next_exact_step": "Commit the R1 ADR revision, update PR #843, then obtain final independent re-review and inspect all required checks on the exact new head.",
   "id": "FE-RENDERER-02C-02A",
   "branch": "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108",
   "status": "verification_pending",
