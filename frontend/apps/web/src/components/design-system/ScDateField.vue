@@ -74,9 +74,12 @@ function nativeEvent(context: unknown): Event | undefined {
 function onChange(value: unknown, context?: unknown) {
   const next = String(value ?? '');
   const event = nativeEvent(context);
-  if (!event) return;
   emit('update:modelValue', next);
-  emit('change', next, event);
+  // TDesign's picker emits a semantic context for calendar selections, not a
+  // native DOM event. Preserve the value change and use a normalized,
+  // untrusted change event so adapters can classify it as programmatic rather
+  // than dropping the field update entirely.
+  emit('change', next, event ?? new Event('change'));
 }
 function onFocus(value: unknown, context?: unknown) {
   const event = nativeEvent(context);

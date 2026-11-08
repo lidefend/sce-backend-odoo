@@ -116,7 +116,7 @@ Generated from repository source files. This report is informational during the 
 | 1313 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1287 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1288 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1276 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |

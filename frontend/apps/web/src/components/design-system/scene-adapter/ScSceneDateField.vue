@@ -68,7 +68,11 @@ function onUpdate(value: string) {
   emit('update:modelValue', canonical(value));
 }
 function onChange(value: string, event: Event) {
-  emit('change', canonical(value), { source: source(event), nativeEvent: event });
+  const nativeEvent = event instanceof Event ? event : undefined;
+  emit('change', canonical(value), {
+    source: nativeEvent ? source(nativeEvent) : lastSource,
+    nativeEvent,
+  });
 }
 function onFocus(value: string, event: FocusEvent) {
   lastSource = focusSourceTracker.consume();

@@ -1498,10 +1498,16 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "5b5a752b4987fbbe7ac524a4e08178e1999e1c752d01850ce3c13d523cad5208",
+  "inputDigest": "36d2da0f07b273ce206a681f64d6430f856b68a9460a6d414879ba0483f63ff0",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
-  "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
+  "scope": "frontend/apps/web/src production sources except the design-system adapter layer",
+  "scopeExclusions": [
+    {
+      "path": "frontend/packages/ui/src",
+      "reason": "The legacy @sc/ui Scene primitives and TDesign driver imports remain outside the FE-RENDERER-V1 apps/web takeover count."
+    }
+  ],
   "summary": {
     "adapter_present": 33,
     "adapter_unconsumed": 0,

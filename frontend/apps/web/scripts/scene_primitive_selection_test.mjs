@@ -25,7 +25,9 @@ const Host = { setup() {
       onSearch: (v,e) => window.log.push('search:'+v), onChange: (v,e) => window.log.push('change:'+v),
       onPopupVisibleChange: (s,e) => window.log.push('popup:'+s.visible) }),
     h(DateField, { ref: dateRef, id: 'date', name: 'start_date', modelValue: {precision:'date',value:'2026-11-08'},
-      required: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type) }),
+      required: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
+      'onUpdate:modelValue': v => window.log.push('date-update:'+v.value),
+      onChange: (v,e) => window.log.push('date-change:'+v.value) }),
     h(DateField, { id: 'datetime', modelValue: {precision:'datetime',value:'2026-11-08 10:30:00'} }),
   ]);
 }};
@@ -58,9 +60,18 @@ try {
   await page.getByText('B',{exact:true}).last().click();
   await page.evaluate(() => window.focusDate({preventScroll:true}));
   await page.keyboard.press('Tab');
+  await page.locator('#date').click();
+  await page.waitForTimeout(500);
+  await page.locator('.t-date-picker__panel .t-date-picker__cell:not(.t-date-picker__cell--additional)')
+    .filter({ hasText: /^15$/ })
+    .click({ force: true });
+  const dateValue = await page.locator('#date').inputValue();
   const events=await page.evaluate(()=>window.log);
   assert.ok(events.includes('focus')); assert.ok(events.some(e=>e.startsWith('search:')));
   assert.ok(events.some(e=>e.startsWith('popup:'))); assert.ok(events.includes('change:b'));
+  assert.ok(events.some(e=>e.startsWith('date-change:')), `${JSON.stringify(events)} value=${dateValue}`);
+  assert.equal(events.filter(e=>e.startsWith('date-update:')).length, 1, JSON.stringify(events));
+  assert.equal(events.filter(e=>e.startsWith('date-change:')).length, 1, JSON.stringify(events));
   assert.deepEqual(errors, []);
- console.log(JSON.stringify({browser:browser.version(),checks:13,consoleErrors:0,selectPopupSearch:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));
+ console.log(JSON.stringify({browser:browser.version(),checks:16,consoleErrors:0,selectPopupSearch:'PASS',dateChange:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));
 } finally { await browser.close(); }
