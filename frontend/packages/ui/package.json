@@ -9,6 +9,7 @@
     "./collection": "./src/collection.ts",
     "./form": "./src/form.ts",
     "./icons": "./src/icons.ts",
+    "./primitive-port": "./src/primitive-port/index.ts",
     "./primitives": "./src/primitives.ts"
   },
   "dependencies": {

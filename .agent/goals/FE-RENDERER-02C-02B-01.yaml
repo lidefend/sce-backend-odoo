@@ -1,0 +1,80 @@
+schema_version: 1
+goal:
+  id: FE-RENDERER-02C-02B-01
+  title: Primitive Port 类型基础设施
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Scene Primitive Port types and runtime shape contract
+  module: "@sc/ui/primitive-port"
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Primitive Port 是所有 Scene composition 与 Web Sc Adapter 共享的依赖倒置协议，
+    必须先以独立类型基础设施和编译期证明存在，之后才允许接入 Provider 或迁移业务消费者。
+  why_not_elsewhere: >
+    不修改 Sc 基础组件、SceneFieldControl、SceneUiProvider、TDesign Bridge、Kit Registry
+    或任何业务页面；Adapter 注入与真实消费者迁移分别属于后续 02C-02B-02 及 02C-02C。
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RENDERER-02C-02B-01.yaml
+      - .agent/runs/FE-RENDERER-02C-02B-01/run.json
+      - frontend/packages/ui/package.json
+      - frontend/packages/ui/src/primitive-port/types.ts
+      - frontend/packages/ui/src/primitive-port/events.ts
+      - frontend/packages/ui/src/primitive-port/slots.ts
+      - frontend/packages/ui/src/primitive-port/validation.ts
+      - frontend/packages/ui/src/primitive-port/index.ts
+      - frontend/apps/web/scripts/primitive_port_runtime_test.ts
+      - frontend/apps/web/scripts/primitive_port_type_test.ts
+      - frontend/apps/web/tsconfig.primitive-port.json
+      - scripts/verify/frontend_primitive_port_guard.py
+      - scripts/verify/test_frontend_primitive_port_guard.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - make/frontend.mk
+    product_behavior: no_runtime_consumer_change
+    authority: primitive_port_types_and_tests_only
+  objective: >
+    建立 @sc/ui/primitive-port 公开协议、PrimitiveEvent、Vue 3.5.27 兼容组件类型、
+    PrimitiveBinding、Adapter Runtime Shape Validation 和正反向类型测试；不接入消费者。
+  acceptance:
+    - Port 类型不含 TDesign 类型
+    - 错误 Props、Emits 和 Slots 在编译期失败
+    - Adapter 缺失绑定或必需 capability 时运行期校验 fail-closed
+    - "@sc/ui/primitive-port 不加载 Scene 页面入口"
+    - 不出现 @sc/ui 到 apps/web 的依赖
+    - package exports 公开 ./primitive-port
+    - 运行时校验测试为非零真实执行
+  results:
+    implementation: PASS
+    primitive_port: PASS
+    compile_time_contract: PASS
+    runtime_shape_validation: PASS
+    import_boundary: PASS
+    lint: PASS
+    strict_typecheck: PASS
+    dev_incremental: PASS
+    primitive_adapter: PASS
+    page_pattern_reference_parity: PASS
+    agent_ledger: PASS
+    agent_resume: PASS
+    ci_iteration: PASS
+    next_exact_step: 提交 Primitive Port 基础设施候选，发布 PR 并等待独立评审
+  exclusions:
+    - sc_component_change
+    - scene_field_control_change
+    - scene_provider_change
+    - tdesign_bridge_move
+    - kit_registry_retirement
+    - scene_consumer_migration
+    - business_page_change
+    - runtime_driver_change
+    - contract_v2_change
+    - backend_change
+    - database_change
+    - browser_acceptance
+    - deployment
+    - merge
+  rollback: >
+    删除 primitive-port 子路径、测试、Make 目标和 Agent 元数据即可回退；
+    不涉及现有 Scene 或 Sc 运行路径。

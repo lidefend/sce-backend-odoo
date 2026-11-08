@@ -56,6 +56,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.professional_detail_collection.unit"],
         )
 
+    def test_primitive_port_inputs_select_port_contract(self) -> None:
+        source_targets = set(select_targets([
+            "frontend/packages/ui/src/primitive-port/types.ts",
+        ]))
+        self.assertIn("verify.frontend.primitive_port.unit", source_targets)
+        self.assertTrue(set(BASE_FRONTEND_TARGETS).issubset(source_targets))
+
+        for path in (
+            "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+            "frontend/apps/web/scripts/primitive_port_type_test.ts",
+            "frontend/apps/web/tsconfig.primitive-port.json",
+            "scripts/verify/frontend_primitive_port_guard.py",
+            "scripts/verify/test_frontend_primitive_port_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.primitive_port.unit", select_targets([path]))
+
     def test_business_value_semantics_select_cross_page_executor(self) -> None:
         for path in (
             "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
