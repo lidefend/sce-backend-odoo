@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "c8be18bc26cb262a30764a53b9d0765f646427aa",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02A.yaml",
+    ".agent/runs/FE-RENDERER-02C-02A/run.json",
+    "docs/architecture/frontend_thin_primitive_adapter_adr_v1.md",
+    "docs/architecture/frontend_thin_primitive_adapter_adr_v1.en.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make documentation and agent-ledger checks; no product runtime, database, service, or external write"
+  },
+  "checks": {
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/architecture/frontend_thin_primitive_adapter_adr_v1.md",
+        "docs/architecture/frontend_thin_primitive_adapter_adr_v1.en.md",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "audit": "PASS: 30 @sc/ui source files, 12 Vue components, 63 Sc components, 52 TDesign bridge consumers, 11 app imports, two SceneUiProvider entries, vendor/Kit/token/semantic/guard facts recorded",
+    "adr": "PASS: bilingual ADR records four-layer authority, dependency direction, typed Primitive Port v1, migration graph, guard map, rollback and parity matrix",
+    "review_revision": "PASS: first architecture review incorporated: minimal TablePort v1, five consumed icons, PrimitiveEvent source wrapper, modelValue naming, canonical date values, fail-closed Adapter errors, per-component density mapping, editable/display value split, primitive-port subpath, and C1-C2-C3 sequencing",
+    "review_revision_r1": "PASS: second architecture review incorporated: Table row activation accepts PrimitiveEvent, typed PrimitiveComponent replaces unconstrained Component, and compile-time/runtime/contract-test proof responsibilities are separated with no `as` compatibility proof",
+    "review_revision_r2": "PASS: third review incorporated: Port event and slot maps use type aliases, ShortEmitsToObject converts event tuples, SlotsType maps slots, DefineComponent constraints match Vue 3.5.27, and event source must be resolved from the actual event chain",
+    "vue_type_probe": "PASS: repository Vue 3.5.27 / TypeScript 5.9.3 / vue-tsc 2.2.12 signature probe compiled under strict mode with tsc and vue-tsc; evidence=.runtime/agent-runs/FE-RENDERER-02C-02A/vue_type_probe.log, vue_type_probe_vue_tsc.log and vue_type_probe_versions.log; full positive/negative Sc Adapter compilation remains an 02C-02B gate",
+    "docs_links": "PASS: 2537 files scanned, 333 links checked, 0 missing; log=.runtime/agent-runs/FE-RENDERER-02C-02A/docs_links.log",
+    "docs_temp_guard": "PASS: docs temp guard; log=.runtime/agent-runs/FE-RENDERER-02C-02A/docs_temp_guard.log",
+    "agent_ledger": "PASS: 18 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02A/agent_ledger.log",
+    "agent_resume": "PASS: 56 tests; log=.runtime/agent-runs/FE-RENDERER-02C-02A/agent_resume.log",
+    "ci_iteration": "PASS: docs-only delta mapped to verify.agent.ledger.unit, executed non-zero and exited zero; log=.runtime/agent-runs/FE-RENDERER-02C-02A/ci_local_iteration.log",
+    "product_l2_l4": "NOT_RUN: documentation and .agent metadata only; no product source, build, runtime, browser, ORM, schema, or data change",
+    "independent_review": "PASS: final independent architecture review approved exact HEAD 6e7958a1989a298e0c8db7e1870883e41a341175; no R3 requested and ADR content frozen",
+    "remote_gates": "PASS: exact HEAD 6e7958a1989a298e0c8db7e1870883e41a341175 passed public_guard, release_candidate_gate, frontend_release_gate, professional_quality_gate and merge_policy_gate",
+    "merge_status": "PENDING: governance record update requires a new exact-head check cycle before protected PR merge"
+  },
+  "next_exact_step": "Commit the governance record update, refresh PR #843 checks on the new exact head, then merge through the protected PR flow.",
+  "id": "FE-RENDERER-02C-02A",
+  "branch": "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02A.yaml",
+  "record": "docs/architecture/frontend_thin_primitive_adapter_adr_v1.md"
+}
