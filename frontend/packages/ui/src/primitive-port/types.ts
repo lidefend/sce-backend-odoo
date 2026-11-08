@@ -1,8 +1,6 @@
 import type {
   ComponentOptionsMixin,
-  ComputedOptions,
   DefineComponent,
-  MethodOptions,
   PublicProps,
 } from 'vue';
 import type {
@@ -177,12 +175,13 @@ export type PrimitiveComponent<
   Props,
   Emits extends Record<string, unknown[]>,
   Slots extends Record<string, unknown>,
+  Bindings extends object = object,
 > = DefineComponent<
   Props,
+  Bindings,
   EmptyVueOptions,
   EmptyVueOptions,
-  ComputedOptions,
-  MethodOptions,
+  EmptyVueOptions,
   ComponentOptionsMixin,
   ComponentOptionsMixin,
   RuntimeEmits<Emits>,

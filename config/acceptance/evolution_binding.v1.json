@@ -526,6 +526,30 @@
       ]
     },
     {
+      "id": "scene-primitive-contract-internal",
+      "description": "Internal Primitive Port, Provider and Scene adapter conformance has no product-page consumer; it requires contract/static verification but does not invalidate list-surface runtime evidence.",
+      "paths": [
+        "frontend/packages/ui/src/primitive-port/**",
+        "frontend/apps/web/src/components/design-system/scene-adapter/**",
+        "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+        "frontend/apps/web/tsconfig.scene-primitive-adapter.json"
+      ],
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
+      "id": "ui-package-export-only",
+      "description": "Adding a @sc/ui export subpath cannot change an existing consumer; dependency/manifest changes outside exports fall through to the conservative frontend-runtime rule.",
+      "paths": [
+        "frontend/packages/ui/package.json"
+      ],
+      "condition": "package_export_addition_only",
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
       "id": "frontend-runtime",
       "paths": [
         "frontend/**"

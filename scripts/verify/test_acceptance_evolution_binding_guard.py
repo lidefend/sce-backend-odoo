@@ -436,6 +436,30 @@ class TestGlobAndPlan(unittest.TestCase):
             with self.subTest(after=after):
                 self.assertFalse(guard.manifest_version_only(before, after))
 
+    def test_package_export_addition_only_is_exact_and_conservative(self):
+        before = json.dumps({
+            "name": "@sc/ui",
+            "dependencies": {"vue": "^3.5.6"},
+            "exports": {".": "./src/index.ts"},
+        })
+        after = json.dumps({
+            "name": "@sc/ui",
+            "dependencies": {"vue": "^3.5.6"},
+            "exports": {
+                ".": "./src/index.ts",
+                "./primitive-port/provider": "./src/primitive-port/provider/index.ts",
+            },
+        })
+        self.assertTrue(guard.package_export_addition_only(before, after))
+        for invalid in (
+            after.replace('"^3.5.6"', '"^3.5.7"'),
+            after.replace('"./src/index.ts"', '"./src/index-new.ts"'),
+            json.dumps({"name": "@sc/ui", "exports": {".": "./src/index.ts"}}),
+            "[]",
+        ):
+            with self.subTest(after=invalid):
+                self.assertFalse(guard.package_export_addition_only(before, invalid))
+
     def test_manifest_conditional_plan_falls_back_on_runtime_or_missing_input(self):
         path = "addons/smart_construction_core/__manifest__.py"
         before = "{'version': '1', 'depends': ['base']}"

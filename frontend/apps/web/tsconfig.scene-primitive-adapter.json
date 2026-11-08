@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "scripts/scene_primitive_adapter_type_test.ts",
+    "src/components/design-system/ScButton.vue",
+    "src/components/design-system/ScTooltip.vue",
+    "src/components/design-system/primitiveAdapter.ts",
+    "src/components/design-system/scene-adapter/**/*.ts",
+    "src/components/design-system/scene-adapter/**/*.vue",
+    "src/components/design-system/tdesignPrimitiveBridge.ts",
+    "../../packages/ui/src/primitive-port/**/*.ts",
+    "../../packages/ui/src/primitive-port/**/*.vue"
+  ]
+}

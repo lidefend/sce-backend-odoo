@@ -38,6 +38,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.semantic.registry.lint"],
         )
 
+    def test_acceptance_evolution_inputs_select_their_binding_lock(self) -> None:
+        for path in (
+            "config/acceptance/evolution_binding.v1.json",
+            "scripts/verify/acceptance_evolution_binding_guard.py",
+            "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.acceptance.evolution.binding"],
+                )
+
     def test_contract_structure_fingerprint_keeps_its_lock(self) -> None:
         self.assertEqual(
             select_targets(["contracts/generated/contract_structure_fingerprint.json"]),
@@ -61,6 +73,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/packages/ui/src/primitive-port/types.ts",
         ]))
         self.assertIn("verify.frontend.primitive_port.unit", source_targets)
+        self.assertIn("verify.frontend.scene_primitive_adapter.unit", source_targets)
         self.assertTrue(set(BASE_FRONTEND_TARGETS).issubset(source_targets))
 
         for path in (
@@ -72,6 +85,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         ):
             with self.subTest(path=path):
                 self.assertIn("verify.frontend.primitive_port.unit", select_targets([path]))
+
+    def test_scene_primitive_adapter_inputs_select_real_component_contract(self) -> None:
+        for path in (
+            "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue",
+            "frontend/apps/web/src/components/design-system/scene-adapter/buttonContract.ts",
+            "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+            "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+            "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+            "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+            "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.scene_primitive_adapter.unit",
+                    select_targets([path]),
+                )
+
+    def test_scene_button_behavior_test_change_runs_real_browser_contract(self) -> None:
+        targets = select_targets([
+            "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        ])
+        self.assertIn("verify.frontend.scene_primitive_adapter.unit", targets)
+        self.assertIn("verify.frontend.scene_primitive_contract.behavior", targets)
 
     def test_business_value_semantics_select_cross_page_executor(self) -> None:
         for path in (

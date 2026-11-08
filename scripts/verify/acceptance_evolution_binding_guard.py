@@ -214,6 +214,7 @@ def load_registry(path: Path) -> dict:
             None,
             "manifest_version_only",
             "approval_policy_initialization_only",
+            "package_export_addition_only",
         ):
             raise BindingError(f"unsupported rule condition: {rule.get('condition')!r}")
         suites_for_rule = rule.get("suites")
@@ -482,9 +483,36 @@ def approval_policy_initialization_only(before: str, after: str) -> bool:
         return False
 
 
+def package_export_addition_only(before: str, after: str) -> bool:
+    """Allow only added package exports; dependencies and existing exports stay exact."""
+    try:
+        old = json.loads(before)
+        new = json.loads(after)
+    except (TypeError, ValueError):
+        return False
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        return False
+    old_exports = old.get("exports")
+    new_exports = new.get("exports")
+    if not isinstance(old_exports, dict) or not isinstance(new_exports, dict):
+        return False
+    old_without_exports = {key: value for key, value in old.items() if key != "exports"}
+    new_without_exports = {key: value for key, value in new.items() if key != "exports"}
+    if old_without_exports != new_without_exports:
+        return False
+    if any(new_exports.get(key) != value for key, value in old_exports.items()):
+        return False
+    added = new_exports.keys() - old_exports.keys()
+    return bool(added) and all(
+        isinstance(key, str) and key.startswith("./") and isinstance(new_exports[key], str)
+        for key in added
+    )
+
+
 CONDITION_HANDLERS = {
     "manifest_version_only": manifest_version_only,
     "approval_policy_initialization_only": approval_policy_initialization_only,
+    "package_export_addition_only": package_export_addition_only,
 }
 
 

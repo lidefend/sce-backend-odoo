@@ -1243,7 +1243,6 @@ ci.local.quick.run: guard.prod.forbid verify.capability.module_tooling.unit veri
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 
-
 test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
@@ -1417,3 +1416,5 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
+
+verify.contract.architecture.suite: verify.frontend.scene_primitive_adapter.unit

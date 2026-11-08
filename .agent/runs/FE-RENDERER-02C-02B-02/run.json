@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "f1ba79c173c4701c642b3e505daf33c7aaaedfb9",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RENDERER-02C-02B-02.yaml",
+    ".agent/runs/FE-RENDERER-02C-02B-02/run.json",
+    "docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/packages/ui/package.json",
+    "frontend/packages/ui/src/primitive-port/types.ts",
+    "frontend/packages/ui/src/primitive-port/provider/context.ts",
+    "frontend/packages/ui/src/primitive-port/provider/ScenePrimitiveProvider.vue",
+    "frontend/packages/ui/src/primitive-port/provider/index.ts",
+    "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue",
+    "frontend/apps/web/src/components/design-system/scene-adapter/buttonContract.ts",
+    "frontend/apps/web/src/components/design-system/scene-adapter/index.ts",
+    "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
+    "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+    "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+    "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+    "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+    "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "make/ci.mk",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local TypeScript/vue-tsc, esbuild, managed Playwright, unit, bundle-boundary and Agent-ledger tools; no backend, database, service, external write or deployment"
+  },
+  "checks": {
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_temp_guard": {
+      "target": "verify.docs.temp_guard",
+      "inputs": [
+        "docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md",
+        "scripts/verify/docs_temp_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_port": {
+      "target": "verify.frontend.primitive_port.unit",
+      "inputs": [
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/scripts/primitive_port_runtime_test.ts",
+        "frontend/apps/web/scripts/primitive_port_type_test.ts",
+        "frontend/apps/web/tsconfig.primitive-port.json",
+        "scripts/verify/frontend_primitive_port_guard.py",
+        "scripts/verify/test_frontend_primitive_port_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk",
+        "make/dev.mk",
+        "make/runtime_ops.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "config/ci",
+        "scripts/ci",
+        ".github/workflows",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_primitive_adapter": {
+      "target": "verify.frontend.scene_primitive_adapter.unit",
+      "inputs": [
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/primitive-port",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScTooltip.vue",
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/scripts/scene_primitive_adapter_type_test.ts",
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+        "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+        "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_primitive_contract_behavior": {
+      "target": "verify.frontend.scene_primitive_contract.behavior",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScTooltip.vue",
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter_regression": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "frontend/packages/ui/src/primitives.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/packages/ui/src/primitive-port",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "make/frontend.mk",
+        "make/ci.mk",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "results": {
+    "phase1_audit": "PASS: source-bound A/B/C/D phase-one audit on origin/main baseline f1ba79c173c4701c642b3e505daf33c7aaaedfb9; only this goal, run, run index and iteration record were written, with no product source change",
+    "executor_a": "PASS: independent Sc API audit completed and total-control source points were rechecked",
+    "executor_b": "PASS: Provider lifecycle design completed and total-control type/runtime assumptions rechecked",
+    "executor_c": "RECONSTRUCTED_BY_TOTAL_CONTROL: delegated Conformance sessions did not return audit evidence; total control derived the test design directly from repository source and records no independent-executor PASS",
+    "execution_model": "PASS: no additional worktree was created because the repository already exceeds its two-active-worktree hard limit; all audits used the same clean baseline and no executor result was inherited without source corroboration",
+    "sc_api_inventory": "PASS: seven Sc Primitive APIs and conformance gaps recorded; direct ScButton binding is insufficient because click/focus/blur are attribute fallthrough and no activate or PrimitiveEvent-source protocol exists",
+    "provider_design": "PASS: a distinct synchronous Primitive Provider directly implements frozen SceneCompositionContext through reactive getters, validates with no fallback and coexists with the untouched legacy SceneUiProvider",
+    "conformance_design": "PASS: actual Sc wrapper type witnesses, forbidden-assertion guard, Provider runtime tests, and a real-browser Button test using the existing esbuild + managed Playwright harness are recorded without adding a test framework",
+    "architecture_guard_design": "PASS: zero-new-debt dependency ratchet, adapter import authority, application import boundary, bundle metafile checks, two non-candidate targets and incremental routing are mapped to existing guard/planner mechanisms",
+    "critical_gate": "OPEN: frozen ScenePrimitiveAdapter and runtime validation require all seven primitives, while the proposed first real sample is Button only; Provider must remain fixture-only until all seven bindings are truthfully conformant, or the sequencing must be explicitly re-cut by the total-control review",
+    "docs_links": "PASS: 2538 files scanned and 333 links checked with 0 missing; original log is retained under .runtime/agent-runs/FE-RENDERER-02C-02B-02/",
+    "docs_temp_guard": "PASS: documentation temporary-file guard exited zero; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/docs_temp_guard.log",
+    "agent_ledger": "PASS: 18 tests in the final ci.local.iteration; goals=253 runs=237 pinned_residuals=2 open_run_allowlist=2",
+    "agent_resume": "PASS: 56 tests in the final ci.local.iteration",
+    "ci_iteration": "PASS: final ci.local.iteration executed 13 affected targets with exit 0 and no blocked or unmapped paths; receipts and all original output log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/ci_local_iteration.log",
+    "interface_freeze": "PASS: total-control review retained the seven-primitive Provider closure and sequenced Button as an independent real wrapper without weakening runtime validation",
+    "interface_freeze_rationale": "PASS: retained the seven-primitive Provider closure; Provider is fixture-only until all seven real bindings are conformant, while Button proceeds as an independent real wrapper. Runtime validator was not weakened.",
+    "primitive_component_type_revision": "PASS: PrimitiveComponent now accepts component instance bindings so the actual ScSceneButton defineExpose({focus}) witness compiles without casts; Props/Emits/Slots compatibility remains exact",
+    "provider_implementation": "PASS: added @sc/ui/primitive-port/provider with synchronous runtime validation, reactive context getters, fail-closed alert state, and explicit provider-misuse error; legacy SceneUiProvider unchanged",
+    "provider_runtime": "PASS: valid seven-primitive fixture renders the context consumer with density=cozy; missing Input.ime renders role=alert and mounts zero consumers; outside-provider use raises ScenePrimitiveProviderError",
+    "provider_adapter_replacement": "PASS: managed Chromium changed a live Provider adapter to an invalid seven-item shape; slot was removed and Input:ime contract error became visible",
+    "button_adapter": "PASS: real ScSceneButton wraps ScButton; it preserves native events, maps pointer/keyboard/programmatic activation, guards disabled/loading, projects accessibleLabel and exposes focus()",
+    "button_compile_time_witness": "PASS: vue-tsc strict compiled the actual SFC against PrimitiveBinding<ButtonPortProps, ButtonPortEmits, ButtonPortSlots, Button>; wrong identity fails with @ts-expect-error",
+    "button_behavior": "PASS: Chromium 147.0.7727.15 ran 20 dynamic checks with 0 console errors and 0 network requests; pointer/Enter/Space each activate once, programmatic is classified separately, disabled/loading activate zero times, component-ref focus({preventScroll}) reaches the native focus target, focus/blur and ARIA are real DOM outcomes",
+    "scene_primitive_adapter_unit": "PASS: 6 guard tests, 5 runtime/SSR assertions, real-SFC strict typecheck, and bundle guard; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/scene_primitive_adapter_unit.log",
+    "scene_primitive_contract_behavior": "PASS: 20 browser assertions; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/scene_primitive_contract_behavior.log",
+    "adapter_guard": "PASS: scene-adapter imports are restricted to ScButton, Vue and @sc/ui/primitive-port; vendor/path/vendor-cast escapes fail; bundle excludes UI Scene components and product pages",
+    "bundle": "PASS: actual scene-adapter entry bundled 3621 inputs, included ScSceneButton and ScButton, and contained no forbidden UI Scene component or product-page input",
+    "lint": "PASS: 0 errors; three UI and one web pre-existing warnings only; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_lint_typecheck.log",
+    "strict_typecheck": "PASS: UI and web strict vue-tsc succeeded; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_lint_typecheck.log",
+    "primitive_adapter_regression": "PASS: 46 components and 11 event cases plus 41 guard tests; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_regression.log",
+    "dev_incremental": "PASS: 85 tests; scene-adapter and primitive-port inputs route to non-zero unit targets, and the shared browser test routes to unit + behavior; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_regression.log",
+    "page_pattern_reference_parity": "PASS: 15 parity tests + 13 ledger tests, 17 surfaces and 67 entries; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_regression.log",
+    "guard_registry": "PASS: 24 tests; 1605 scripts audited, 92/92 orphans acknowledged, 169/169 unwired dispositioned; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_regression.log",
+    "acceptance_evolution_binding": "PASS: 69 tests; package-export-only addition is accepted while dependency changes, existing-export changes and removals fall back to the conservative frontend runtime rule",
+    "verification_lane_coverage": "PASS: surface remained within the frozen baseline; scene adapter unit is referenced by quick and release lanes, and the real Button behavior is referenced by the release aggregate",
+    "delivery_plan": "PASS: ready_for_existing_gates with no runtime evidence blockers; this is not candidate evidence",
+    "baseline_iteration_policy": "PASS: 19 policy tests; BASELINE_ITERATION_EXECUTION_POLICY=v1 documents=3 make_authorities=9",
+    "ci_workflow_contract": "PASS: workflow/contract lane exited zero in the final ci.local.iteration",
+    "frontend_lint": "PASS: 0 errors; four pre-existing warnings remain in SceneObjectPage, SceneUiProvider, SceneRelationTable and StatusPanel",
+    "frontend_typecheck": "PASS: UI and web strict vue-tsc exited zero in the final ci.local.iteration",
+    "frontend_build": "PASS: Vite dev build transformed 5373 modules and built successfully; only the existing >500 kB chunk warnings remain; log=.runtime/agent-runs/FE-RENDERER-02C-02B-02/frontend_build.log",
+    "validation_tool_recovery": "PASS: independent review found that shared browser-test edits originally routed only to the SSR unit; planner now selects unit + behavior and has an 85-test lock. A product-import guard now invalidates the zero-consumer list-surface exemption if apps/web/src imports scene-adapter or the Provider. The run ledger duplicate key was removed. First iteration attempts also exposed and fixed verification-lane registration and false list-surface invalidation.",
+    "independent_review": "FINDINGS_ADDRESSED: independent reviewer found one blocker in behavior-test routing and one blocker in duplicate run JSON, plus focus proof, assertion-count and zero-consumer self-invalidation gaps. All five were fixed and the current unit/SSR/browser/planner/guard evidence was rerun; no final merge approval is claimed.",
+    "product_wiring": "NOT_CHANGED: no product page imports scene-adapter or @sc/ui/primitive-port/provider; legacy SceneUiProvider, Kit, FieldControl, relation table and business pages are untouched",
+    "remaining_six_primitive_conformance": "PENDING: Input, Select, DateField, Textarea, Table and Icon have not been repaired or proven conformant; no full real adapter is exposed",
+    "product_l2_l4": "PASS: isolated L1 type/guard/bundle and L2 Provider/Button runtime contracts; L3-L4 are NOT_RUN because no product consumer, contract, data, module upgrade or user journey changed",
+    "ci_delivery_freeze": "NOT_RUN: review and generated-evidence preparation are not yet closed",
+    "remote_gates": "NOT_RUN: no candidate publication or remote integration was requested",
+    "remote_gate_review": "PENDING: remote PR checks and independent PR review begin after exact-head publication"
+  },
+  "next_exact_step": "Complete independent diff review, commit and push the Button-first slice, then open the integration PR and launch A/B/C component waves with D on shared conformance.",
+  "id": "FE-RENDERER-02C-02B-02",
+  "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RENDERER-02C-02B-02.yaml",
+  "record": "docs/ops/iterations/fe_renderer_02c_02b_02_phase1_parallel_audit_20261108.md"
+}

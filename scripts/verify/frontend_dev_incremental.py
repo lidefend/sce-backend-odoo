@@ -58,6 +58,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
     "verify.frontend.primitive_adapter.unit": "esbuild",
+    "verify.frontend.scene_primitive_adapter.unit": "esbuild",
     "verify.frontend.navigation_shell.unit": "esbuild",
     "verify.frontend.scene_entry_contract.unit": "esbuild",
     "verify.frontend.product_page_pattern.unit": "esbuild",
@@ -88,6 +89,13 @@ RULES = (
         ".agent/",
     ), (
         "verify.agent.ledger.unit",
+    )),
+    Rule((
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    ), (
+        "verify.acceptance.evolution.binding",
     )),
     Rule((
         "config/ci/path_ownership_v1.json",
@@ -300,6 +308,21 @@ RULES = (
         "scripts/verify/test_frontend_primitive_port_guard.py",
     ), (
         "verify.frontend.primitive_port.unit",
+        "verify.frontend.scene_primitive_adapter.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/components/design-system/scene-adapter/",
+        "frontend/apps/web/scripts/scene_primitive_adapter_",
+        "frontend/apps/web/tsconfig.scene-primitive-adapter.json",
+        "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+    ), (
+        "verify.frontend.scene_primitive_adapter.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+    ), (
+        "verify.frontend.scene_primitive_contract.behavior",
     )),
     Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",

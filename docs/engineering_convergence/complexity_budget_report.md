@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5130`
+- Scanned files: `5135`
 - Files requiring split plan: `73`
 - Files above warning threshold: `151`
 
@@ -95,7 +95,7 @@ Generated from repository source files. This report is informational during the 
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1441 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 1465 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -117,21 +117,21 @@ Generated from repository source files. This report is informational during the 
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
+| 1276 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
-| 1248 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
+| 1256 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
-| 1233 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
+| 1204 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1168 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1159 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
@@ -320,7 +320,7 @@ Generated from repository source files. This report is informational during the 
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1441 | warning | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 1465 | warning | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1440 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
