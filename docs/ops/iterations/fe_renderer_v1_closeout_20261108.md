@@ -5,9 +5,9 @@
 - Goal: `FE-RENDERER-V1-CLOSEOUT`
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
-- Current second-review product commit: `f88e49d5901119489eda5aa8ffd001042f346412`
+- Current third-review product commit: `62f7b57a26d4648646936f529f46d3880cfbef12`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
-- Current L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
+- Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -80,15 +80,18 @@ edit. No debounce, timer window or value-equality timer is used.
 
 Chromium `147.0.7727.15` real-SFC evidence:
 
-- 59 exact assertions, 0 console errors;
+- 67 exact assertions, 0 console errors;
 - three typed Input characters produce exactly three `update` and three `input`
   events;
 - one Input edit commit produces exactly one `change`;
 - one Textarea fill produces exactly one `update`, one `input` and one `change`;
 - `update` precedes the committed `change`, and blur does not repeat it;
 - disabled/readonly DOM input attempts produce zero model updates;
-- native IME `compositionstart`, `compositionupdate` and `compositionend` are
-  observed; Input/Textarea `compositionstart`/`compositionend` are forwarded;
+- Chromium CDP IME composition produces `compositionstart`,
+  `compositionupdate`, a committed value and one final `input`; forwarding of
+  `compositionend` is separately asserted with a browser-dispatched
+  `CompositionEvent` because headless Chromium does not emit the native end
+  event through CDP;
 - name, inputmode, ARIA, required, error and Textarea element identity remain
   intact.
 - if a user draft is replaced by an external controlled `modelValue` update
@@ -120,7 +123,7 @@ or unauthorized rules; incomplete targets; and invalid identity.
 The local review and first independent-review follow-up also closed:
 
 - delayed parent echo versus newer external server state;
-- pointer/programmatic focus provenance;
+- pointer/keyboard/programmatic focus provenance, including Tab entry;
 - passive Table rows emitting row activation;
 - an unnamed non-decorative Icon;
 - unrelated same-file Sc tags inflating TDesign adapter attribution.
@@ -132,7 +135,8 @@ and a TypeScript blind spot in the generated takeover inventory. Product commit
 - treats all outstanding user echoes as an ordered queue, accepts a coalesced
   latest echo, and keeps stale history across a resumed edit after an external
   server update;
-- preserves the user's newest edit when an older coalesced echo arrives late;
+- tombstones values acknowledged by a newer/coalesced echo, so an older echo
+  arriving afterward cannot replace the newest value;
 - validates the non-decorative Icon label reactively, so a post-mount prop change
   also fails closed;
 - scans `.ts` and `.js` source for raw behavioural APIs, with a negative test for
@@ -141,7 +145,9 @@ and a TypeScript blind spot in the generated takeover inventory. Product commit
   Footer` subcomponents to the Layout driver;
 - replaces the Contract Form action-reason `window.prompt` path with the
   contract-local `ContractReasonDialog`, built from ScDialog, ScFormField,
-  ScTextarea and ScButton.
+  ScTextarea and ScButton;
+- consumes backend-declared `presentation.reason_input` copy and fails closed
+  when a required reason action omits any title, label, help or action copy.
 
 The takeover inventory now reports two real bridge-consumer bypasses rather than
 hiding them: `NativeFormTreeRenderer` for alert input and
@@ -220,17 +226,17 @@ The 33 required drivers are:
 |---|---|---:|---|
 | alert | ScErrorState, ScInlineState | 80 | adapter present; bridge consumer bypass: `NativeFormTreeRenderer` |
 | badge | ScBadge | 1 | adapter present |
-| button | ScButton, ScIconButton | 462 | adapter present |
+| button | ScButton, ScIconButton | 464 | adapter present |
 | card | ScCard, ScPanel | 87 | adapter present |
 | checkbox | ScCheckbox | 14 | adapter present |
 | collapse | ScCollapse, ScDisclosure | 10 | adapter present |
 | date-picker | ScDateField, ScDatePicker | 4 | adapter present |
 | descriptions | ScDescriptions | 5 | adapter present |
-| dialog | ScDialog | 15 | adapter present |
+| dialog | ScDialog | 16 | adapter present |
 | drawer | ScDrawer | 3 | adapter present |
 | dropdown | ScDropdown | 5 | adapter present |
 | empty | ScEmptyState | 34 | adapter present |
-| form | ScForm, ScFormField, ScFormItem | 27 | adapter present |
+| form | ScForm, ScFormField, ScFormItem | 28 | adapter present |
 | input | ScInput | 62 | adapter present |
 | input-adornment | ScInputGroup | 1 | adapter present |
 | input-number | ScNumberInput | 1 | adapter present |
@@ -333,10 +339,11 @@ Neither fix changes ACL, Contract V2 or business data authority.
 
 ### Current acceptance state
 
-L4 product acceptance passed on candidate `866afcb11`, whose frontend product
-tree is from `f88e49d59`. The managed backend and 5180 preview both reported the
-candidate identity, the fixture was reset through the governed entry, and the
-page evidence was not inherited from `9cea1b661`.
+The previous review candidate `866afcb11` passed L4, but the third independent
+review found contract-copy, out-of-order echo, focus-provenance and evidence
+boundary defects. Product commit `62f7b57a2` fixes those findings and now
+requires its own managed Acceptance rerun. The earlier page evidence is retained
+only as historical evidence and is not inherited by the new product tree.
 
 The complete affected incremental iteration passed all 18 required targets with
 non-zero execution:
@@ -367,8 +374,8 @@ Receipt:
 The frontend production build passed on the same product content: 5,375 modules
 transformed in 25.20 seconds. The existing large-chunk advisory remains.
 
-Overall V1 remains `verification_pending` only for the evidence/metadata commit,
-publication, fresh independent review and exact-head remote CI.
+Overall V1 remains `verification_pending` for the final L4 rerun, affected
+iteration, publication, fresh independent review and exact-head remote CI.
 
 ## Exclusions
 
@@ -377,6 +384,7 @@ registered follow-up work, not V1 blockers.
 
 ## Next Exact Step
 
-Commit this L4/metadata closeout, publish the clean candidate through the governed
-PR flow, and request a fresh independent review bound to the exact pushed head.
-Do not merge or deploy.
+Commit the third-review remediation metadata, rebind the managed Acceptance
+backend and preview to `62f7b57a2`, rerun the three pages plus project-ledger
+boundary, run the complete affected iteration, publish, and request a fresh
+review bound to the exact pushed head. Do not merge or deploy.

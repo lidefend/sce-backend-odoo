@@ -27,6 +27,8 @@ goal:
       - frontend/apps/web/src/components/design-system/ScInput.vue
       - frontend/apps/web/src/components/design-system/ScTextarea.vue
       - frontend/apps/web/src/components/design-system/scene-adapter
+      - addons/smart_construction_core/handlers/payment_request_available_actions.py
+      - addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py
       - frontend/apps/web/src/pages/ContractFormPage.vue
       - frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue
       - frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts
@@ -45,6 +47,7 @@ goal:
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/business_entry_matrix_browser.mjs
+      - scripts/verify/frontend_scene_primitive_adapter_guard.py
       - scripts/verify/test_frontend_action_view_page_actions_guard.py
       - scripts/audit/generate_frontend_component_driver_takeover_inventory.py
       - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
@@ -89,7 +92,7 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Commit this L4/metadata closeout, publish the clean candidate, then obtain a fresh
-    independent review bound to the exact pushed head. After review passes, verify the
-    exact-head required remote checks and prepare the final merge recommendation without
-    merging or deploying.
+    Commit the third-review remediation metadata, rebind the managed Acceptance backend and
+    preview to 62f7b57a2, rerun the three pages plus project-ledger boundary, run the complete
+    affected iteration, publish, and obtain a fresh review bound to the exact pushed head.
+    Do not merge or deploy.
