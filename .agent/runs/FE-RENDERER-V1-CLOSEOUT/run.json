@@ -376,11 +376,11 @@
     "component_driver_takeover": "PASS: 17 tests; required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessed=0 raw=0 direct_imports=0 bridge_consumers=2; raw behavior scanning covers TypeScript/JavaScript, and RadioGroup/Layout subcomponents are attributed to their real drivers",
     "primitive_adapter_regression": "PASS: 46 components, 11 event cases and 41 guard tests",
     "contract_basis": "PASS: bindings=15 exemptions=8 logic_sites=3 open_defects=0; coverage remains limited to the declared scan/binding boundary",
-    "ci_local_iteration": "PASS: 20/20 affected targets exited zero with non-zero real collections on 79e0e704a; receipt=.runtime/frontend-dev-validation/executions/20261108T191625Z-2791083-791273/receipt.json",
+    "ci_local_iteration": "PASS: 20/20 affected targets exited zero with non-zero real collections on 080f0c03b; receipt=.runtime/frontend-dev-validation/executions/20261108T192053Z-2823257-517785323/receipt.json",
     "frontend_build": "PASS: 5,375 modules transformed in 25.20s for the f88e49d59 product content, with the existing large-chunk advisory",
     "p1_component_key_mapping": "RECONCILED: 25 rows recorded; no duplicate componentKey registration; split implementation for sc.input.number and declaration-only auth/collection consumers recorded honestly",
     "p2_takeover": "PASS_STRUCTURAL: 33/33 required adapters have wrappers and consumers; missing=0 bridge_only=0 adapter_unconsumed=0 raw=0 direct_imports=0; two explicit bridge consumer bypasses remain recorded for alert and select",
-    "l4_identity": "PASS: backend/preview were rebound to product commit 62f7b57a2; Contract Form/Payment evidence binds metadata child c97e68a1b, while list/relation/project evidence binds P4 child 79e0e704a with the same product frontend tree",
+    "l4_identity": "PASS: backend/preview were rebound to product commit 62f7b57a2; Contract Form/Payment evidence binds metadata child c97e68a1b, list/relation/project evidence binds P4 child 79e0e704a, and the acceptance manifest is carried to 080f0c03b",
     "l4_01_contract_form": "PASS: sc.general.contract/2 action 758/menu 664, fixture_role_config_admin, 1440/1024/768/390, 0 overflow and 0 console/page/http errors",
     "l4_02_payment_request": "PASS: FE-DELIVERY-HARDENING-001, two declared settlement rows, inline edit 200->150 persisted, restored to 0 rows/20.00, 0 problems; backend-declared payment reject reason_input is visible in the live contract",
     "l4_03_scene_collection": "PASS: 18/18 list states, 30/30 record checks, 316/316 gated checks, 5/5 negative fixtures, 0 runtime errors; project ledger direct create=false, delegated action 795=true, edit=true, authority negative covered",
@@ -394,7 +394,7 @@
     "independent_review_3": "REQUEST_CHANGES on 577fbd176; all three S1 and three S2 findings are addressed by product commit 62f7b57a2 and P4 follow-up 79e0e704a; review=.runtime/pr845-independent-review-577.md sha256=04f0c73fcd48d3dd1c317f5a137cbab17a8020de004c1ac59a93be1d53dfb44d; a fresh exact-head review remains pending",
     "backend_reason_contract_test": "PASS: local.test.test executed 1 non-zero ORM case for payment request action reason presentation; receipt=.runtime/test-baseline/1794162435843820831/receipt.json",
     "l4_product_review": "PASS on 62f7b57a2/79e0e704a: Contract Form, Payment Request, Scene Collection, relation roundtrip and project-ledger delegated-create boundary all passed",
-    "final_v1_report": "VERIFICATION_PENDING: final L4 and 20-target affected iteration pass; publication, fresh independent review and exact-head CI remain pending"
+    "final_v1_report": "VERIFICATION_PENDING: final L4, exact manifest carry-forward and 20-target affected iteration pass; publication, fresh independent review and exact-head CI remain pending"
   },
   "next_exact_step": "Commit this final L4/evidence metadata, publish the clean candidate through the governed PR flow, and request a fresh independent review bound to the pushed exact head; do not merge or deploy.",
   "id": "FE-RENDERER-V1-CLOSEOUT",

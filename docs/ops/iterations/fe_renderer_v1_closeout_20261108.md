@@ -8,7 +8,7 @@
 - Current third-review product commit: `62f7b57a26d4648646936f529f46d3880cfbef12`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
 - Previous L4/metadata candidate: `866afcb11e16d67c18cf7d2035fc954b95b0bade`
-- Current L4/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
+- L4 evidence/P4 candidate: `79e0e704af2fbdbd6046a1b960da857083181fc6`
 - Original PR head: `7d3ed98979c17125b3dc987c26fcf6df3f1be701`
 - Remote main at start: `f1ba79c173c4701c642b3e505daf33c7aaaedfb9`
 - Worktree was clean at the L4 acceptance checkpoint.
@@ -304,7 +304,7 @@ Machine evidence:
   SHA256
   `70acfc3c0fafb0124f2f89afef0bfc193cb8388981157dc5326757b5a00bbc36`;
 - `.runtime/acceptance-evolution/evidence.v1.json`, SHA256
-  `175250dd2fd6c54429d86ef8fadd9bfdf8d11a848698d43e7c4d71ab9be39c32`.
+  `7324618d0399432e3bb21fe095f11e6428f832c6c530242a0a6daec75115a882`.
 
 Two reproducible product defects were found and fixed during L4:
 
@@ -349,11 +349,11 @@ Neither fix changes ACL, Contract V2 or business data authority.
 ### Current acceptance state
 
 L4 passed for product commit `62f7b57a2`. Contract Form and Payment Request bind
-metadata child `c97e68a1b`; list, relation, project-ledger and the acceptance
-evidence manifest bind P4 child `79e0e704a`. Those commits contain the same
-product frontend tree; the later commits change only contract declarations,
-verification tooling and evidence. No page evidence was inherited from
-`866afcb11` or older candidates.
+metadata child `c97e68a1b`; list, relation and project-ledger bind P4 child
+`79e0e704a`; the acceptance manifest is carried to final evidence-tool head
+`080f0c03b`. Those commits contain the same product frontend tree; later commits
+change only verification tooling and evidence. No page evidence was inherited
+from `866afcb11` or older candidates.
 
 The complete affected incremental iteration passed all 20 required targets with
 non-zero execution:
@@ -381,7 +381,7 @@ non-zero execution:
 - strict UI/web typecheck.
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261108T191625Z-2791083-791273/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261108T192053Z-2823257-517785323/receipt.json`.
 
 The frontend production build passed on the same product content: 5,375 modules
 transformed in 25.20 seconds. The existing large-chunk advisory remains.

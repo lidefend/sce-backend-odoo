@@ -94,6 +94,6 @@ goal:
     configuration is part of this batch; the existing component registries remain the
     rollback boundary.
   next_exact_step: >
-    Commit the final L4/evidence metadata, publish the clean candidate, and obtain a fresh
-    independent review bound to the exact pushed head. Then verify current-head required CI
-    and prepare the final merge recommendation without merging or deploying.
+    Commit the final L4/evidence metadata, publish the clean candidate, obtain a fresh
+    independent review bound to the exact pushed head, and verify current-head required CI.
+    Prepare the final merge recommendation without merging or deploying.
