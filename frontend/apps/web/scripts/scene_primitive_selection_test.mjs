@@ -16,6 +16,7 @@ import DateField from ${JSON.stringify(dateFile)};
 window.log = [];
 const Host = { setup() {
   const selectRef = ref(null); const dateRef = ref(null);
+  const dateValue = ref({precision:'date',value:'2026-11-08'});
   window.focusSelect = options => selectRef.value.focus(options);
   window.focusDate = options => dateRef.value.focus(options);
   return () => h('div', [
@@ -24,9 +25,9 @@ const Host = { setup() {
       onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
       onSearch: (v,e) => window.log.push('search:'+v), onChange: (v,e) => window.log.push('change:'+v),
       onPopupVisibleChange: (s,e) => window.log.push('popup:'+s.visible) }),
-    h(DateField, { ref: dateRef, id: 'date', name: 'start_date', modelValue: {precision:'date',value:'2026-11-08'},
-      required: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
-      'onUpdate:modelValue': v => window.log.push('date-update:'+v.value),
+    h(DateField, { ref: dateRef, id: 'date', name: 'start_date', modelValue: dateValue.value,
+      required: true, clearable: true, ariaLabel: '日期', onKeydown: e => window.log.push(e.nativeEvent.type), onFocus: (v,e) => window.log.push(e.nativeEvent.type),
+      'onUpdate:modelValue': v => { dateValue.value = v; window.log.push('date-update:'+v.value); },
       onChange: (v,e) => window.log.push('date-change:'+v.value) }),
     h(DateField, { id: 'datetime', modelValue: {precision:'datetime',value:'2026-11-08 10:30:00'} }),
   ]);
@@ -65,13 +66,26 @@ try {
   await page.locator('.t-date-picker__panel .t-date-picker__cell:not(.t-date-picker__cell--additional)')
     .filter({ hasText: /^15$/ })
     .click({ force: true });
-  const dateValue = await page.locator('#date').inputValue();
+  const selectedDateValue = await page.locator('#date').inputValue();
+  const datePicker = page.locator('#date').locator('xpath=ancestor::div[contains(@class,"t-date-picker")]').first();
+  await datePicker.hover();
+  const clearDate = datePicker.locator('.t-input__clear');
+  assert.equal(await clearDate.count(), 1);
+  await clearDate.click({ force: true });
+  const clearedDateValue = await page.locator('#date').inputValue();
   const events=await page.evaluate(()=>window.log);
   assert.ok(events.includes('focus')); assert.ok(events.some(e=>e.startsWith('search:')));
   assert.ok(events.some(e=>e.startsWith('popup:'))); assert.ok(events.includes('change:b'));
-  assert.ok(events.some(e=>e.startsWith('date-change:')), `${JSON.stringify(events)} value=${dateValue}`);
-  assert.equal(events.filter(e=>e.startsWith('date-update:')).length, 1, JSON.stringify(events));
-  assert.equal(events.filter(e=>e.startsWith('date-change:')).length, 1, JSON.stringify(events));
+  assert.ok(events.some(e=>e.startsWith('date-change:')), `${JSON.stringify(events)} value=${selectedDateValue}`);
+  assert.equal(clearedDateValue, '');
+  assert.deepEqual(events.filter(e=>e.startsWith('date-update:')), [
+    `date-update:2026-11-15`,
+    `date-update:`,
+  ], JSON.stringify(events));
+  assert.deepEqual(events.filter(e=>e.startsWith('date-change:')), [
+    `date-change:2026-11-15`,
+    `date-change:`,
+  ], JSON.stringify(events));
   assert.deepEqual(errors, []);
- console.log(JSON.stringify({browser:browser.version(),checks:16,consoleErrors:0,selectPopupSearch:'PASS',dateChange:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));
+ console.log(JSON.stringify({browser:browser.version(),checks:20,consoleErrors:0,selectPopupSearch:'PASS',dateSelectAndClear:'PASS',dateName:'PASS',datePrecisions:'date+datetime-mounted'}));
 } finally { await browser.close(); }

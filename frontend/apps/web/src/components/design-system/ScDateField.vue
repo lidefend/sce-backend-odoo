@@ -25,7 +25,7 @@
   />
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { TDesignDatePicker } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
 import type { ScPrimitiveSize } from './primitiveAdapter';
@@ -59,6 +59,7 @@ const nativeProjection = computed(() => ({
   },
 }));
 const dateRef = ref<{ $el?: unknown; focus?: (options?: Parameters<HTMLElement['focus']>[0]) => void } | null>(null);
+let committedValue = String(props.modelValue ?? '');
 const emit = defineEmits<{
   'update:modelValue': [value: string];
   change: [value: string, event: Event];
@@ -67,12 +68,17 @@ const emit = defineEmits<{
   keydown: [event: KeyboardEvent];
   keyup: [event: KeyboardEvent];
 }>();
+watch(() => props.modelValue, (value) => {
+  committedValue = String(value ?? '');
+}, { flush: 'sync' });
 function nativeEvent(context: unknown): Event | undefined {
   const event = (context as { e?: unknown } | undefined)?.e;
   return event instanceof Event ? event : undefined;
 }
 function onChange(value: unknown, context?: unknown) {
   const next = String(value ?? '');
+  if (next === committedValue) return;
+  committedValue = next;
   const event = nativeEvent(context);
   emit('update:modelValue', next);
   // TDesign's picker emits a semantic context for calendar selections, not a
