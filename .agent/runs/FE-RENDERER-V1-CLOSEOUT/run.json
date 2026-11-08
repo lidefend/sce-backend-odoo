@@ -423,7 +423,7 @@
     }
   },
   "blockers": [
-    "Final metadata-only closeout, fresh independent review and exact-head remote CI are not yet complete"
+    "Fresh independent review, publication and exact-head remote CI are not yet complete"
   ],
   "results": {
     "candidate_code_commit": "PASS: 476cb6278, 8c0876c2f and 986e60535 close the fourth-review DateField drop/duplicate-change, FormField help/error, real V2 reason, cancel and date-clear Port findings while preserving the prior event ordering, focus, IME and ActionView boundaries",
@@ -462,9 +462,9 @@
     "relation_roundtrip": "PASS carried from 98a9f76c2 to 986e60535 because DateField, reason-action and primitive-Port changes do not affect the relation probe; 13 declared entries, 7 contract comparisons, 3 opened records, 0 blocking differences, 0 denied/console errors; summary sha256=0e29b879901f6be3dcea65891a6bd57086e68eeed34ade6f94e88195a342c11e",
     "acceptance_manifest": "PASS_MERGE_STAGE: head=986e60535, required=list_surface_structure+relation_roundtrip, path_namespace_identity explicitly deferred to deployment stage, manifest sha256=f6f390aef632c937f0963d9ca54ce21325c09523f59b7aaa00ac2665d033f68f",
     "l4_product_review": "PASS on 986e60535: Contract Form, Payment Request, Scene Collection and relation roundtrip all bind the same served SHA",
-    "final_v1_report": "VERIFICATION_PENDING: product fixes, exact-head L4 and 24-target affected iteration are complete; final metadata carry, fresh independent review, publication and exact-head remote CI remain pending"
+    "final_v1_report": "VERIFICATION_PENDING: product fixes, exact-head L4, 24-target affected iteration and metadata-only closeout are complete; fresh independent review, publication and exact-head remote CI remain pending"
   },
-  "next_exact_step": "Commit the metadata-only closeout, carry the merge-stage evidence manifest to the final candidate, publish it through the governed PR flow, obtain a fresh independent review, and verify all required checks on the exact pushed head.",
+  "next_exact_step": "Publish the clean branch tip through the governed PR flow, obtain a fresh independent review bound to that exact pushed head, and verify all required checks on the same head.",
   "id": "FE-RENDERER-V1-CLOSEOUT",
   "branch": "fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108",
   "status": "verification_pending",

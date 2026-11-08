@@ -6,6 +6,7 @@
 - Branch: `fix/fe-renderer-02c-02b-02-sc-adapter-phase1-20261108`
 - PR: #845
 - Current product/evidence head: `986e60535201f6bed72cf60650e7be58ef6279b6`
+- Later metadata-only commits do not change the product tree or re-bind L4.
 - Fourth-review product fixes: `476cb6278`, `8c0876c2f` and `986e60535`
 - Previously reviewed head: `ba5d4b53f7e19748669cce34c9f144fedb4aa5ba`
 - Previous reviewed head: `12ea32ecd2fca13d5abff8ce7c4008c5bc991360`
@@ -445,7 +446,8 @@ The frontend production build passed on the same product content: 5,375 modules
 transformed in 26.89 seconds. The existing large-chunk advisory remains.
 
 Overall V1 remains `verification_pending` only for publication, fresh independent
-review and exact-head remote CI.
+review and exact-head remote CI. The metadata-only closeout is complete; the
+manifest intentionally stays bound to product/evidence head `986e60535`.
 
 ## Exclusions
 
