@@ -181,6 +181,37 @@ assert.equal(presentDeclaredBusinessValue({
   },
   value: '待复核',
 }).text, '待复核', 'declared char-status keeps its contract-provided readable value');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'cell_role_selection_state',
+    type: 'selection',
+    cellRole: 'status',
+    selection: statusSelection,
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'cellRole=status must reject a value missing from its selection');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'status_without_type',
+  },
+  value: 'pending_review',
+  status: true,
+}), { name: 'ContractGapError' }, 'status=true is an identity marker, not a field type declaration');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'cell_role_char_state',
+    type: 'char',
+    cellRole: 'status',
+  },
+  value: '待复核',
+}).text, '待复核', 'cellRole=status with explicit char type consumes the readable value');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'component_without_type',
+    componentKey: 'sc.display.status',
+  },
+  value: 'pending_review',
+}), { name: 'ContractGapError' }, 'sc.display.status must declare selection or char field type');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.equal(presentCollectionKanbanCell({
@@ -188,6 +219,11 @@ assert.equal(presentCollectionKanbanCell({
   value: 'pending',
   statusFields: ['opaque_state'],
   fieldSelections: { opaque_state: [...statusSelection] },
+  columnOptions: [{
+    name: 'opaque_state',
+    type: 'selection',
+    selection: [...statusSelection],
+  }],
 }).badgeSemantic, 'warning');
 
 const dateValue = '2026-09-09T08:30:45Z';
@@ -248,4 +284,4 @@ assert.equal(formatProductMyWorkFact({
   display_role: 'text',
 }), FIELD_VALUE_EMPTY_TEXT);
 
-console.log('[business_semantics_consistency_test] PASS money=6 status=13 temporal=4 empty=3');
+console.log('[business_semantics_consistency_test] PASS money=6 status=17 temporal=4 empty=3');

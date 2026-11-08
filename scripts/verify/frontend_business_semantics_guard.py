@@ -44,10 +44,22 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     ):
         failures.append("dataType fallback must apply only after native type/ttype is unknown")
     if not re.search(
-        r"declaredBusinessFieldType\(input\.field\)\s*===\s*'selection'\s*&&\s*!selection\.length",
+        r"statusType\s*===\s*'selection'\s*&&\s*!selection\.length",
         authority,
     ):
         failures.append("selection-backed status does not fail closed when selection metadata is missing")
+    if not re.search(
+        r"if \(kind === 'status'\)\s*\{\s*"
+        r"const key = selectionValue\(input\.value\);\s*"
+        r"const statusType = declaredBusinessFieldType\(input\.field\);",
+        authority,
+    ):
+        failures.append("status presentation does not resolve its declared field type")
+    if not re.search(
+        r"if \(statusType !== 'selection' && statusType !== 'char'\)",
+        authority,
+    ):
+        failures.append("status type identity must be explicitly selection or char")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 

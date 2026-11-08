@@ -220,8 +220,16 @@ export function presentDeclaredBusinessValue(input: {
   }
   if (kind === 'status') {
     const key = selectionValue(input.value);
+    const statusType = declaredBusinessFieldType(input.field);
+    if (statusType !== 'selection' && statusType !== 'char') {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `field.${input.field.name || '(unknown)'}.status.type`,
+        requiredDeclarationLayer: 'P0:smart_core:field_type',
+      }, `状态字段 ${input.field.name || input.field.componentKey || '(unknown)'} 缺少 selection 或 char 类型声明`);
+    }
     const selection = normalizedSelection(input.field);
-    if (declaredBusinessFieldType(input.field) === 'selection' && !selection.length) {
+    if (statusType === 'selection' && !selection.length) {
       throw contractGapError({
         kind: 'contract_defect',
         missing: `field.${input.field.name || '(unknown)'}.selection`,

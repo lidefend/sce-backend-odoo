@@ -42,7 +42,7 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         failures = guard.validate(lambda path: source(
             path,
             (
-                "if (declaredBusinessFieldType(input.field) === 'selection' && !selection.length)",
+                "if (statusType === 'selection' && !selection.length)",
                 "if (selection.length)",
             )
             if path == guard.AUTHORITY
@@ -61,6 +61,18 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
             else None,
         ))
         self.assertTrue(any("dataType fallback" in failure for failure in failures))
+
+    def test_status_identity_requires_selection_or_char(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (statusType !== 'selection' && statusType !== 'char')",
+                "if (false)",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("status type identity" in failure for failure in failures))
 
     def test_numeric_zero_empty_fails(self):
         failures = guard.validate(lambda path: source(
