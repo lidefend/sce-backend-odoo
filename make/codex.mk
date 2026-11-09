@@ -1555,7 +1555,7 @@ DAILY_RUNTIME_RELEASE_ARGS = \
 	--published-face-login "$(DAILY_RUNTIME_RELEASE_PUBLISHED_FACE_LOGIN)" \
 	--report-root "$(DAILY_RUNTIME_RELEASE_REPORT_ROOT)"
 
-verify.daily.runtime.deployment_identity.unit: guard.prod.forbid verify.runtime.release_identity.unit
+verify.daily.runtime.deployment_identity.unit: guard.prod.forbid verify.platform.runtime_identity.unit
 	@python3 -m py_compile \
 		scripts/ops/daily_runtime_release_orchestration.py \
 		scripts/ops/test_daily_runtime_release_orchestration.py \

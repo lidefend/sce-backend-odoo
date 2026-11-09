@@ -46,7 +46,7 @@ Implementation and validation results are appended to this living record.
 - `verify.daily.runtime.source_revision.align`: 8 tests PASS.
 - `verify.daily.runtime.frontend.build`: 25 tests PASS.
 - `verify.daily.runtime.release_orchestration.unit`: 51 tests PASS.
-- `verify.runtime.release_identity.unit`: 2 tests PASS.
+- `verify.platform.runtime_identity.unit`: 2 tests PASS.
 - `verify.frontend.runtime_identity.unit`: 19 assertions PASS.
 - `verify.frontend.dev.incremental.unit`: 102 tests PASS.
 - `verify.frontend.standard_preview.unit`: 131 tests plus 42 Node assertions PASS.

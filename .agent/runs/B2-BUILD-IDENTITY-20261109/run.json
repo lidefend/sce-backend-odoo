@@ -61,7 +61,7 @@
   },
   "checks": {
     "runtime_identity": {
-      "target": "verify.runtime.release_identity.unit",
+      "target": "verify.platform.runtime_identity.unit",
       "kind": "offline",
       "inputs": [
         "addons/smart_core/utils/product_release.py",

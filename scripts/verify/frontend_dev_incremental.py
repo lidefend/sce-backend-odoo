@@ -188,7 +188,7 @@ RULES = (
         "addons/smart_core/utils/product_release.py",
         "addons/smart_core/tests/test_runtime_release_identity.py",
     ), (
-        "verify.runtime.release_identity.unit",
+        "verify.platform.runtime_identity.unit",
     )),
     Rule((
         "scripts/dev/frontend_static_build.sh",
