@@ -518,6 +518,7 @@ RULES = (
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
         "addons/smart_construction_core/services/financial_workspace_contract.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
         "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
     ), (
         "verify.frontend.contract_header_action.unit",

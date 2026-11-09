@@ -12,6 +12,8 @@ This batch salvages only the still-valid material from closed pull requests:
   the current capability identity specification.
 - PR #814: correct the automatic approval chatter copy so an explicitly
   no-approval effective rule is not described as an absent approval policy.
+- Integrate the final branch on top of merged PR #850 and rely on its general
+  evidence-scope policy instead of retaining a payment-specific classifier.
 
 No closed branch is restored wholesale. PR #846 and PR #848 remain superseded,
 and the other closed operational or historical candidates remain archived.
@@ -29,9 +31,9 @@ and the other closed operational or historical candidates remain archived.
 ## Validation policy
 
 Documentation changes use link and ledger checks. The payment audit-copy change
-uses a focused automatic-approval backend test and the affected acceptance
-evidence classifier. Browser L4 is not applicable because no contract shape,
-render model, frontend consumer, permission or runtime state transition changes.
+uses a focused automatic-approval backend test. Evidence selection is owned by
+merged PR #850. Browser L4 is not applicable because no contract shape, render
+model, frontend consumer, permission or runtime state transition changes.
 
 ## Results
 
@@ -48,16 +50,19 @@ The current dirty candidate has the following actual results:
 | Automatic approval real path | PASS, 1/1 ORM test | `.runtime/closed-pr-salvage-20261109/payment-auto-approval-copy.log` |
 | `ci.local.iteration` | PASS, 5/5 required targets executed | `.runtime/closed-pr-salvage-20261109/ci-local-iteration-recorded.log` |
 
-An initial classifier test failed because its compact fixture represented the
-message call without the real `IfExp` shape. The fixture was corrected to the
-actual production AST; no classifier rule, product assertion or gate was
-weakened.
+The pre-integration payment-specific evidence classifier was removed after
+PR #850 because the general policy now sends ordinary construction backend
+changes to `backend_contract` and reserves list/relation runtime suites for
+their real consumers.
 
 ## Stage status
 
 - Batch validation: passed for the declared dirty candidate.
 - Mainline: not integrated.
-- PR: not yet created at the time of this record.
+- PR: [#851](https://github.com/lidefend/sce-backend-odoo/pull/851) created.
+- PR creation HEAD: `21b4e2f0c9ec7ece153dc7d6d10a464b70628066`.
+- A final PR-ledger synchronization commit follows the creation HEAD; remote CI
+  must be read from the resulting exact PR HEAD, not from this creation HEAD.
 - Deployment: not performed.
 - L4 browser matrix: not applicable because no contract structure or frontend
   consumer changed.

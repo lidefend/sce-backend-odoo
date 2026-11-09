@@ -78,7 +78,6 @@ Generated from repository source files. This report is informational during the 
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1530 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
@@ -107,10 +106,10 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
-| 1361 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1362 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1353 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1354 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
@@ -315,7 +314,6 @@ Generated from repository source files. This report is informational during the 
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1530 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |

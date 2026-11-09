@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CLOSED-PR-SALVAGE-20261109",
   "branch": "fix/closed-pr-salvage-20261109",
-  "baseline_sha": "277f31a3b0750d0c9df2893de88403d7991c0d02",
+  "baseline_sha": "346c194e765808727584466d69ab0d2b0605b7b8",
   "status": "verification_pending",
   "goal": ".agent/goals/CLOSED-PR-SALVAGE-20261109.yaml",
   "record": "docs/ops/iterations/closed_pr_salvage_20261109.md",
@@ -13,14 +13,11 @@
     ".agent/decisions/ARCH-DECISION-011.yaml",
     "addons/smart_construction_core/models/core/payment_request.py",
     "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-    "config/acceptance/evolution_binding.v1.json",
     "docs/architecture/capability_identity_spec_v1.md",
     "docs/architecture/capability_ontology_v1.md",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/closed_pr_salvage_20261109.md",
-    "scripts/verify/acceptance_evolution_binding_guard.py",
-    "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -93,12 +90,11 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze the clean commits through the governed generation check, publish the PR and read back its exact head.",
+  "next_exact_step": "Commit and publish the PR-ledger synchronization, read back PR #851 at the final exact HEAD, and wait for current-HEAD required workflows.",
   "validation_plan": {
     "changed_layers": [
       "P0 capability governance documentation",
-      "P1 payment request audit text",
-      "P4 exact-impact validation classification"
+      "P1 payment request audit text"
     ],
     "earliest_required_layers": [
       "L0 identity and clean baseline",
@@ -112,6 +108,8 @@
     }
   },
   "supplemental_validation": {
+    "status": "invalidated_by_pr850_rebase",
+    "note": "The earlier supplement was bound to the pre-rebase head and old evidence policy; rerun after the integration commit.",
     "automatic_approval_message": {
       "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1PaymentRequestCapability.test_automatic_approval_message_matches_effective_no_approval_rule",
       "status": "passed",
@@ -133,12 +131,18 @@
     }
   },
   "ledger_sync": {
-    "state": "checks_recorded",
+    "state": "pr_created_metadata_sync_pending",
     "registered_checks": 6,
     "reusable_checks": 6,
     "goal_status": "verification_pending",
     "run_status": "verification_pending",
-    "pr": null,
+    "pr": {
+      "number": 851,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/851",
+      "state": "open",
+      "creation_head": "21b4e2f0c9ec7ece153dc7d6d10a464b70628066",
+      "metadata_sync_commit_follows": true
+    },
     "remote_ci": "not_run",
     "merge": "not_performed",
     "deployment": "not_performed"
