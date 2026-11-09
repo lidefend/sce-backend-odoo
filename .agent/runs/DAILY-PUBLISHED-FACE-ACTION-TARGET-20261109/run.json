@@ -12,6 +12,7 @@
     ".agent/runs/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109/run.json",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "docs/ops/iterations/daily_published_face_action_target_20261109.md",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",

@@ -102,11 +102,11 @@ Generated from repository source files. This report is informational during the 
 | 1416 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
+| 1398 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
-| 1383 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1370 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1377 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -199,10 +199,10 @@ Generated from repository source files. This report is informational during the 
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
+| 851 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 844 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
-| 844 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
