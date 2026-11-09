@@ -240,8 +240,14 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         self.assertEqual("b" * 64, entry_digest)
         command = run.call_args[0][0]
         self.assertIn("daily.runtime.database.duty.plan", command)
-        self.assertIn("DAILY_RUNTIME_EXPECTED_SHA=" + OLD, command)
-        self.assertNotIn("DAILY_RUNTIME_EXPECTED_SHA=" + HEAD, command)
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["DAILY_RUNTIME_EXPECTED_SHA"], OLD)
+        self.assertEqual(
+            environment["DAILY_RUNTIME_DATABASE_DUTY_SELECTION"],
+            "demo platform_control",
+        )
+        self.assertNotIn("MAKEFLAGS", environment)
+        self.assertNotIn("MAKEOVERRIDES", environment)
         plan_report.unlink()
 
     def test_derive_digests_fails_closed_when_plan_fails(self):

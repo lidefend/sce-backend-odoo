@@ -341,21 +341,32 @@ def derive_digests(repository: Path, args: argparse.Namespace, identity: Identit
         "make",
         "--no-print-directory",
         "daily.runtime.database.duty.plan",
-        "DAILY_RUNTIME_SSH_HOST=" + args.ssh_host,
-        "DAILY_RUNTIME_EXPECTED_SHA=" + identity.expected_old_sha,
-        "DAILY_RUNTIME_DATABASE_DUTY_SELECTION=demo platform_control",
-        "DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT=" + str(plan_report),
     ]
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"MAKEFLAGS", "MFLAGS", "MAKELEVEL", "MAKEOVERRIDES"}
+    }
+    environment.update({
+        "DAILY_RUNTIME_SSH_HOST": args.ssh_host,
+        "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_old_sha,
+        "DAILY_RUNTIME_DATABASE_DUTY_SELECTION": "demo platform_control",
+        "DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT": str(plan_report),
+    })
     result = subprocess.run(
         command,
         cwd=repository,
+        env=environment,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
     )
     if result.returncode:
-        raise ReleaseError("governed duty plan failed; cannot derive digests: " + result.stderr.strip()[-600:])
+        output = (result.stdout + "\n" + result.stderr).strip()
+        raise ReleaseError(
+            "governed duty plan failed; cannot derive digests: " + output[-1200:]
+        )
     try:
         payload = json.loads(plan_report.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
