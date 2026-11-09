@@ -44,6 +44,6 @@ goal:
     references; reverting the audit-copy commit restores the prior message with no
     data migration. No persistent runtime state is changed by validation.
   next_exact_step: >
-    Freeze the clean commits through the governed generation check, publish the
-    exact-head PR, synchronize the run with its PR/head identity, and wait for
-    current-HEAD remote gates.
+    Publish the PR-ledger synchronization commit, read back PR #851 and the
+    remote branch at the final exact HEAD, then wait for all current-HEAD
+    required workflows. Do not merge or deploy.

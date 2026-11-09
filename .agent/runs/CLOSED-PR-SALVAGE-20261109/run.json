@@ -93,7 +93,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze the clean commits through the governed generation check, publish the PR and read back its exact head.",
+  "next_exact_step": "Commit and publish the PR-ledger synchronization, read back PR #851 at the final exact HEAD, and wait for current-HEAD required workflows.",
   "validation_plan": {
     "changed_layers": [
       "P0 capability governance documentation",
@@ -133,12 +133,18 @@
     }
   },
   "ledger_sync": {
-    "state": "checks_recorded",
+    "state": "pr_created_metadata_sync_pending",
     "registered_checks": 6,
     "reusable_checks": 6,
     "goal_status": "verification_pending",
     "run_status": "verification_pending",
-    "pr": null,
+    "pr": {
+      "number": 851,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/851",
+      "state": "open",
+      "creation_head": "21b4e2f0c9ec7ece153dc7d6d10a464b70628066",
+      "metadata_sync_commit_follows": true
+    },
     "remote_ci": "not_run",
     "merge": "not_performed",
     "deployment": "not_performed"

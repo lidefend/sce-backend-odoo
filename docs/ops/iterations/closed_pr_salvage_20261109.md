@@ -57,7 +57,10 @@ weakened.
 
 - Batch validation: passed for the declared dirty candidate.
 - Mainline: not integrated.
-- PR: not yet created at the time of this record.
+- PR: [#851](https://github.com/lidefend/sce-backend-odoo/pull/851) created.
+- PR creation HEAD: `21b4e2f0c9ec7ece153dc7d6d10a464b70628066`.
+- A final PR-ledger synchronization commit follows the creation HEAD; remote CI
+  must be read from the resulting exact PR HEAD, not from this creation HEAD.
 - Deployment: not performed.
 - L4 browser matrix: not applicable because no contract structure or frontend
   consumer changed.
