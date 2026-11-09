@@ -79,4 +79,19 @@ Receipt:
 
 ## Result
 
-Pending commit, clean-HEAD iteration and 1440/390 browser review.
+Completed on product candidate `204baf9e6e2aa79204947af278d494e40ed6c1a5`.
+WorkspaceHome, MyWork and PaymentRequestForm passed at 1440x960 and 390x844:
+all six route/viewport checks report zero overflow, zero Console errors, zero
+HTTP errors and `mutationCount=0`. Manual screenshot review confirmed the card
+and form density remained stable after moving static styles to classes.
+
+Browser summary:
+`.runtime/m3-browser-204baf9/summary.json`, SHA-256
+`b111bb5c8dfd73d5481e5e037350c32d6ab730b3e2085ec78afdf79e3c0e34d5`.
+
+The original M3 target of `32 → ≤10` was based on the ambiguous `style=`
+substring count and would have required deleting contract-driven order,
+resizable geometry and user/contract colors. M3 instead closes the real
+ownership gap: literal static styling stays at zero, the raw ambiguous count
+drops 32/98 → 26/91, and all 28 retained template/script mechanism files have a
+declared owner.

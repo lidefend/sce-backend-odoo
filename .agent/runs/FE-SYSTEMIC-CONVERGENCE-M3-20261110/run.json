@@ -3,7 +3,7 @@
   "id": "FE-SYSTEMIC-CONVERGENCE-M3-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "c78167b82a69905a5e2489116ab2bb72b76b6a63",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M3-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md",
   "scope": [
@@ -85,7 +85,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the M3 candidate, rerun the clean-HEAD iteration, then verify 1440/390 golden samples.",
+  "next_exact_step": "M3 completed; begin the M4 split-usage audit on the same long branch.",
   "validation": {
     "style_system": {
       "status": "passed",
@@ -126,6 +126,18 @@
     "professional_relation_field": {
       "status": "passed",
       "command": "make verify.frontend.professional_relation_field.unit"
+    },
+    "browser": {
+      "status": "passed",
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "candidate_head": "204baf9e6e2aa79204947af278d494e40ed6c1a5",
+      "route_viewport_checks": 6,
+      "mutation_count": 0,
+      "overflow": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/m3-browser-204baf9/summary.json",
+      "summary_sha256": "b111bb5c8dfd73d5481e5e037350c32d6ab730b3e2085ec78afdf79e3c0e34d5"
     }
   }
 }
