@@ -292,6 +292,13 @@ RULES = (
         "verify.frontend.rich_text.guard",
     )),
     Rule((
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+    )),
+    Rule((
         "frontend/apps/web/scripts/logger_runtime_test.ts",
         "frontend/apps/web/src/utils/logger.ts",
         "scripts/verify/frontend_console_guard.py",

@@ -45,6 +45,77 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_action_group_intersection_filters_native_nav_and_route(self):
+        class GroupSet:
+            def __init__(self, ids):
+                self.ids = set(ids)
+
+            def __and__(self, other):
+                return GroupSet(self.ids & set(other.ids))
+
+            def __bool__(self):
+                return bool(self.ids)
+
+        class Action:
+            id = 601
+            name = 'Expense'
+            _name = 'ir.actions.act_window'
+            active = True
+            res_model = 'res.partner'
+            view_mode = 'tree,form'
+            groups_id = GroupSet({7})
+
+            def sudo(self):
+                return self
+
+        class Model:
+            def sudo(self):
+                return self
+
+            def browse(self, _value):
+                return self
+
+            def exists(self):
+                return Action()
+
+            def check_access_rights(self, _operation, raise_exception=False):
+                return True
+
+        class Env(dict):
+            user = None
+
+        service = menu_service.MenuService(Env({
+            'ir.actions.act_window': Model(),
+            'res.partner': Model(),
+        }))
+        service.env.user = types.SimpleNamespace(groups_id=GroupSet({8}))
+        row = {
+            'menu_id': 501, 'action_id': 601, 'action_exists': True,
+            'action_model': 'ir.actions.act_window',
+            'menu_xmlid': 'test.expense', 'name': 'Expense',
+        }
+        nodes = [{
+            'menu_id': 501, 'menu_xmlid': 'test.expense', 'label': 'Expense',
+            'action_id': 601, 'action_model': 'ir.actions.act_window',
+            'route': '/a/601?menu_id=501', 'meta': {
+                'action_id': 601, 'action_xmlid': 'test.action_expense', 'route': '/a/601?menu_id=501',
+            }, 'children': [],
+        }]
+        self.assertEqual(service._filter_native_action_groups(nodes), [])
+        self.assertIsNone(service._route_entry_from_menu(
+            row, route_kind='PRIMARY_NAV', source='native',
+            action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
+        ))
+
+        service.env.user.groups_id = GroupSet({7})
+        filtered = service._filter_native_action_groups(nodes)
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0]['action_id'], 601)
+        self.assertIsNotNone(service._route_entry_from_menu(
+            row, route_kind='PRIMARY_NAV', source='native',
+            action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
+        ))
+
     def test_native_configuration_scope_survives_route_publication(self):
         action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
         model = types.SimpleNamespace(sudo=lambda: model, browse=lambda value: model, exists=lambda: action)

@@ -69,7 +69,12 @@ def _load_authorization_native_nav():
         for node in tree.body
         if isinstance(node, ast.ClassDef) and node.name == "MenuService"
     )
-    wanted = {"_authorization_native_nav", "_menu_fact_tree_as_native", "_menu_fact_snapshot"}
+    wanted = {
+        "_authorization_native_nav",
+        "_filter_native_action_groups",
+        "_menu_fact_tree_as_native",
+        "_menu_fact_snapshot",
+    }
     body = []
     for node in cls.body:
         if isinstance(node, ast.FunctionDef) and node.name in wanted:

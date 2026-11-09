@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "NAV-AUTHORITY-LEAK-01-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "8df1203830892475c57eb94ba3b39e4d8dda59dc",
-  "status": "active",
+  "baseline_sha": "d24efbafdb40d95a05a103cef657aa31a440a0b4",
+  "status": "verification_pending",
   "goal": ".agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml",
   "record": "docs/ops/iterations/nav_authority_leak_01_20261110.md",
   "scope": [
@@ -11,6 +11,7 @@
     ".agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml",
     ".agent/runs/NAV-AUTHORITY-LEAK-01-20261110/run.json",
     "addons/smart_construction_core/",
+    "addons/smart_core/",
     "docs/architecture/",
     "docs/ops/iterations/nav_authority_leak_01_20261110.md",
     "scripts/verify/"
@@ -31,14 +32,48 @@
       "kind": "offline"
     },
     "backend_targeted": {
-      "target": "verify.backend.model_declaration.guard",
+      "target": "verify.backend.navigation_delivery.unit",
       "inputs": [
+        "addons/smart_core/delivery/",
+        "addons/smart_core/tests/",
         "addons/smart_construction_core/",
-        "scripts/verify/"
+        "scripts/verify/",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Trace the released navigation producer for the two leaked expense actions."
+  "next_exact_step": "Commit the P0 action-group filter, rerun the clean iteration, then repeat the two-entry released-navigation matrix.",
+  "validation": {
+    "navigation_delivery_unit": {
+      "status": "passed",
+      "command": "make verify.backend.navigation_delivery.unit",
+      "menu_service_unit_cases": 51,
+      "carrier_authorization_tests": 10,
+      "static_route_authority_tests": 3
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 4,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T214647Z-419140-427677112/receipt.json",
+      "identity": "dirty:d24efbafdb40d95a05a103cef657aa31a440a0b4"
+    },
+    "runtime_matrix": {
+      "status": "passed",
+      "command": "make verify.frontend.business_entry.matrix.browser",
+      "candidate": "backend-dirty:d24efbafdb40d95a05a103cef657aa31a440a0b4",
+      "entries": [
+        "smart_construction_core.menu_sc_reimbursement_request",
+        "smart_construction_core.menu_sc_advance_fund"
+      ],
+      "authorized_entries": 2,
+      "denied_leaks": 0,
+      "uncovered": 0,
+      "console_errors": 0,
+      "summary": ".runtime/m9-authority-fix/summary.json",
+      "summary_sha256": "e71420bb576c7ae15bff1ce7af3e6006f05a6052236fb7d6700524b5f26d7d23"
+    }
+  }
 }

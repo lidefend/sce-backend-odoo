@@ -194,7 +194,54 @@ class MenuService:
         # action (a scene-entry page such as the role home) is authorized by
         # its groups and must stay observable.
         facts = self._menu_fact_snapshot("authorized")
-        return self._menu_fact_tree_as_native(facts.tree)
+        return self._filter_native_action_groups(self._menu_fact_tree_as_native(facts.tree))
+
+    def _filter_native_action_groups(self, native_nav: list[dict]) -> list[dict]:
+        """Remove action-backed nodes outside the requesting user's action groups.
+
+        Menu groups authorize the product entry carrier; action groups authorize
+        the target operation. Both layers are independent and must intersect the
+        acting user's closure. An actionless node remains a declared container or
+        scene anchor and is retained for the normal role projection.
+        """
+        user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
+
+        def walk(node: dict) -> dict | None:
+            if not isinstance(node, dict):
+                return None
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            try:
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                action_id = 0
+            action_model = str(node.get("action_model") or meta.get("action_model") or "").strip()
+            action = None
+            if action_id and action_model and self.env is not None and action_model in self.env:
+                action = self.env[action_model].sudo().browse(action_id).exists()
+            allowed = True
+            if action:
+                action_groups = getattr(action, "groups_id", None)
+                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                    allowed = False
+
+            children = [
+                kept for child in node.get("children") or []
+                if (kept := walk(child)) is not None
+            ]
+            if not allowed and not children:
+                return None
+            out = dict(node)
+            out["children"] = children
+            if not allowed:
+                out["action_id"] = None
+                out["route"] = ""
+                out["meta"] = {
+                    key: value for key, value in meta.items()
+                    if key not in {"action_id", "action_xmlid", "action_model", "route"}
+                }
+            return out
+
+        return [kept for node in native_nav or [] if (kept := walk(node)) is not None]
 
     def build_contextual_routes(self, role_surface: dict | None) -> list[dict]:
         surface = role_surface if isinstance(role_surface, dict) else {}
@@ -349,6 +396,9 @@ class MenuService:
         # and model ACL remain current-user decisions below.
         action = self.env[action_model].sudo().browse(action_id).exists() if action_model in self.env else None
         if not action or not self._action_is_runtime_allowed(action, "read"):
+            return None
+        action_groups = getattr(action, "groups_id", None)
+        if action_groups and not bool(action_groups & self.env.user.groups_id):
             return None
         action_meta = row.get("action_meta") if isinstance(row.get("action_meta"), dict) else {}
         model_name = str(action_meta.get("res_model") or "").strip()
