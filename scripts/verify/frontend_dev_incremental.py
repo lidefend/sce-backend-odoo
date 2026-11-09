@@ -806,7 +806,7 @@ RULES = (
         "scripts/ops/daily_runtime_release_orchestration.py",
         "scripts/ops/test_daily_runtime_release_orchestration.py",
     ), (
-        "verify.daily.runtime.release_orchestration.unit",
+        "verify.daily.runtime.deployment_identity.unit",
     )),
     # The duty entry's own suite is the behavior lock of the phase machinery the
     # declaration drives; its test file was unmapped while the entry itself was

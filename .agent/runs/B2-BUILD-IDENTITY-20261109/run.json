@@ -81,7 +81,7 @@
       ]
     },
     "release_orchestration": {
-      "target": "verify.daily.runtime.release_orchestration.unit",
+      "target": "verify.daily.runtime.deployment_identity.unit",
       "kind": "offline",
       "inputs": [
         "scripts/ops/daily_runtime_build_identity.py",

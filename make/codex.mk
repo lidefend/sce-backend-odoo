@@ -741,7 +741,7 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build daily.runtime.build_identity.record verify.daily.runtime.build_identity verify.daily.runtime.build_identity.unit daily.runtime.main.release daily.runtime.candidate.release verify.daily.runtime.release_orchestration.unit
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build daily.runtime.build_identity.record verify.daily.runtime.build_identity verify.daily.runtime.build_identity.unit verify.daily.runtime.deployment_identity.unit daily.runtime.main.release daily.runtime.candidate.release verify.daily.runtime.release_orchestration.unit
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
@@ -1555,7 +1555,7 @@ DAILY_RUNTIME_RELEASE_ARGS = \
 	--published-face-login "$(DAILY_RUNTIME_RELEASE_PUBLISHED_FACE_LOGIN)" \
 	--report-root "$(DAILY_RUNTIME_RELEASE_REPORT_ROOT)"
 
-verify.daily.runtime.release_orchestration.unit: guard.prod.forbid verify.runtime.release_identity.unit
+verify.daily.runtime.deployment_identity.unit: guard.prod.forbid verify.runtime.release_identity.unit
 	@python3 -m py_compile \
 		scripts/ops/daily_runtime_release_orchestration.py \
 		scripts/ops/test_daily_runtime_release_orchestration.py \
@@ -1570,6 +1570,8 @@ verify.daily.runtime.release_orchestration.unit: guard.prod.forbid verify.runtim
 		scripts.ops.test_daily_runtime_build_identity \
 		scripts.ops.test_daily_runtime_frontend_build_align \
 		scripts.ops.test_daily_runtime_source_revision_align
+
+verify.daily.runtime.release_orchestration.unit: verify.daily.runtime.deployment_identity.unit
 
 .PHONY: verify.quick.input_scope.unit
 verify.quick.input_scope.unit: guard.prod.forbid
