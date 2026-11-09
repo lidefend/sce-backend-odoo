@@ -53,6 +53,25 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             return value.replace('data-professional-workflow-component="action-bar"', "data-marker-removed")
         self.assertTrue(any("action bar missing" in item for item in validate(read_text)))
+
+    def test_action_bar_disabled_reason_trigger_cannot_be_removed(self):
+        for marker, reason in (
+            ('data-workflow-reason-trigger', "action bar missing data-workflow-reason-trigger"),
+            ('@keydown="activateWorkflowReasonTrigger"', "action bar missing @keydown=\"activateWorkflowReasonTrigger\""),
+            ("import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';", "action bar bypasses shared disabled-reason keyboard activation"),
+        ):
+            with self.subTest(marker=marker):
+                def read_text(path):
+                    value = (ROOT / path).read_text(encoding="utf-8")
+                    return value.replace(marker, "") if path.endswith("CanonicalActionBar.vue") else value
+                self.assertTrue(any(reason in item for item in validate(read_text)))
+
+    def test_header_local_reason_handler_cannot_return(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            return value + "\nfunction activateReasonTrigger(event: KeyboardEvent) {}\n" if path.endswith("ContractFormProductHeader.vue") else value
+        self.assertTrue(any("local disabled-reason keyboard handler" in item for item in validate(read_text)))
+
     def test_special_case_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

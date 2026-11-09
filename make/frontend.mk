@@ -388,6 +388,8 @@ verify.frontend.professional_detail_collection.unit: guard.prod.forbid
 verify.frontend.professional_workflow.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_workflow_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-workflow-model-test.mjs >/dev/null
 	@node /tmp/professional-workflow-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/workflow_reason_trigger_test.ts --bundle --platform=node --format=esm --outfile=/tmp/workflow-reason-trigger-test.mjs >/dev/null
+	@node /tmp/workflow-reason-trigger-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_workflow_guard.py
 	@python3 scripts/verify/frontend_professional_workflow_guard.py
 
@@ -699,6 +701,7 @@ verify.frontend.action_view_context_policy.unit: guard.prod.forbid
 
 verify.frontend.native_form_action_presentation.browser: guard.prod.forbid
 	@node scripts/verify/frontend_native_form_action_presentation_browser.mjs
+	@node frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs
 
 verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py

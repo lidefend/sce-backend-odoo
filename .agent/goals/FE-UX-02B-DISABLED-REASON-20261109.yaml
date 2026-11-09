@@ -1,0 +1,75 @@
+schema_version: 1
+goal:
+  id: FE-UX-02B-DISABLED-REASON-20261109
+  title: FE-UX-02-B Disabled Action Reason Consistency
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Frontend workflow disabled-action reason presentation and activation
+  module: CanonicalActionBar, ContractFormProductHeader and shared workflow reason interaction
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The backend contract already decides whether a workflow action is enabled and
+    supplies its reason. The frontend owns only the generic presentation and
+    interaction needed to expose that reason through mouse, touch, keyboard and
+    assistive technology. CanonicalActionBar and ContractFormProductHeader are the
+    existing shared workflow consumers.
+  why_not_elsewhere: >
+    This is not a Contract V2, permission, state-transition, industry, customer or
+    low-code rule. The change must not calculate eligibility, duplicate reason
+    semantics or introduce model-specific exceptions. Existing ScPopover and
+    design tokens provide the overlay and interaction primitive.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-UX-02B-DISABLED-REASON-20261109.yaml
+      - .agent/runs/FE-UX-02B-DISABLED-REASON-20261109/run.json
+      - docs/ops/iterations/fe_ux_02b_disabled_reason_20261109.md
+      - frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue
+      - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
+      - frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts
+      - frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs
+      - frontend/apps/web/scripts/workflow_reason_trigger_test.ts
+      - frontend/apps/web/scripts/professional_workflow_model_test.ts
+      - scripts/verify/frontend_professional_workflow_guard.py
+      - scripts/verify/test_frontend_professional_workflow_guard.py
+      - frontend/apps/web/scripts/scene_primitive_selection_test.mjs
+      - make/frontend.mk
+    product_behavior: >
+      A visible disabled workflow action retains the backend-declared reason.
+      The reason is reachable by pointer, touch and keyboard, is exposed through an
+      accessible name, and opening the explanation never executes the action.
+  objective: >
+    Make CanonicalActionBar expose disabled workflow reasons with the same
+    accessible interaction already used by ContractFormProductHeader, and share
+    the keyboard activation rule so the two consumers cannot drift.
+  acceptance:
+    - enabled actions remain directly executable and expose no denial trigger
+    - disabled actions remain non-executable
+    - disabled direct actions expose a focusable denial trigger with role=button and the declared reason as its accessible name
+    - mouse and touch activation open the declared reason without executing the action
+    - Enter and Space open the declared reason exactly once without scrolling the page
+    - ContractFormProductHeader and CanonicalActionBar use the same keyboard activation helper
+    - overflow disabled reasons continue to use the existing ScDropdown reason presentation
+    - desktop 1440 and mobile 390 browser checks have no horizontal overflow or console errors
+    - targeted tests, guards, lint, strict typecheck and production build pass with non-zero collection
+  exclusions:
+    - Contract V2, ACL, permission, workflow transition or backend business changes
+    - changes to the meaning or text of a backend reason
+    - new components, renderer runtimes or registries
+    - ScDropdown behavior changes unless a verified defect is found
+    - FE-UX-02-C acceptance evidence work
+    - FE-UX-02-D timezone research
+    - deployment or merge
+  validation_dependency: >
+    The already-merged main exposes two TDesign-internal selectors in the
+    existing scene primitive selection test. The vendor-coupling guard blocks
+    the affected page-header target. Repair only that test harness to use public
+    roles and semantic surfaces; do not raise the vendor-selector baseline.
+  rollback: >
+    Revert the topic commits. The change is limited to shared frontend workflow
+    interaction, tests and documentation; no data migration or external runtime
+    mutation exists.
+  next_exact_step: >
+    Implement the shared keyboard activation helper, route CanonicalActionBar and
+    ContractFormProductHeader through it, add the disabled-reason wrapper in
+    CanonicalActionBar, then run the focused unit and real Chromium coverage.

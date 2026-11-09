@@ -955,7 +955,7 @@
         "TDesignPopup"
       ],
       "officialComponent": "popup",
-      "productionConsumerCount": 8,
+      "productionConsumerCount": 9,
       "requiredForCurrentProduct": false,
       "requirementDecision": "not required by current formal product semantics",
       "status": "not_required"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "94e36b5e1d926a57bc8870d685457b27b0b35c81d37b345a51489aefe3873736",
+  "inputDigest": "71414a49096a827425e7e0c89ac5a00dc827eed3a3ed20194b680bd1720487d3",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",

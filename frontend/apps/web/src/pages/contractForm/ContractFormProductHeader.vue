@@ -81,15 +81,15 @@
       <span v-if="showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length" class="form-header-primary-actions">
         <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" data-form-draft-save="save-draft" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
         <ScPopover v-if="showPrimaryFormAction" trigger="click" :disabled="!primaryFormActionDisabled || !primaryFormActionHint">
-          <template #trigger><span :tabindex="primaryFormActionDisabled && primaryFormActionHint ? 0 : undefined" :role="primaryFormActionDisabled && primaryFormActionHint ? 'button' : undefined" :aria-label="primaryFormActionDisabled ? primaryFormActionHint : undefined" :class="{ 'form-action-denial-trigger': primaryFormActionDisabled && primaryFormActionHint }" @keydown="activateReasonTrigger"><ScButton data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="!primaryFormActionDisabled && !busy && $emit('run-primary')">{{ submitLabel }}</ScButton></span></template>
+          <template #trigger><span :tabindex="primaryFormActionDisabled && primaryFormActionHint ? 0 : undefined" :role="primaryFormActionDisabled && primaryFormActionHint ? 'button' : undefined" :aria-label="primaryFormActionDisabled ? primaryFormActionHint : undefined" :class="{ 'form-action-denial-trigger': primaryFormActionDisabled && primaryFormActionHint }" @keydown="activateWorkflowReasonTrigger"><ScButton data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="!primaryFormActionDisabled && !busy && $emit('run-primary')">{{ submitLabel }}</ScButton></span></template>
           {{ primaryFormActionHint }}
         </ScPopover>
         <ScPopover v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" trigger="click" :disabled="!(!action.enabled ? action.hint : '')">
-          <template #trigger><span :tabindex="(!action.enabled ? action.hint : '') ? 0 : undefined" :role="(!action.enabled ? action.hint : '') ? 'button' : undefined" :aria-label="(!action.enabled ? action.hint : '') || undefined" :class="{ 'form-action-denial-trigger': Boolean(!action.enabled ? action.hint : '') }" @keydown="activateReasonTrigger"><ScButton v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="!busy && action.enabled && $emit('run-action', action)">{{ action.label }}</ScButton></span></template>
+          <template #trigger><span :tabindex="(!action.enabled ? action.hint : '') ? 0 : undefined" :role="(!action.enabled ? action.hint : '') ? 'button' : undefined" :aria-label="(!action.enabled ? action.hint : '') || undefined" :class="{ 'form-action-denial-trigger': Boolean(!action.enabled ? action.hint : '') }" @keydown="activateWorkflowReasonTrigger"><ScButton v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="!busy && action.enabled && $emit('run-action', action)">{{ action.label }}</ScButton></span></template>
           {{ !action.enabled ? action.hint : '' }}
         </ScPopover>
         <ScPopover v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" trigger="click" :disabled="!(workflowDisabledReason(action))">
-          <template #trigger><span :tabindex="(workflowDisabledReason(action)) ? 0 : undefined" :role="(workflowDisabledReason(action)) ? 'button' : undefined" :aria-label="(workflowDisabledReason(action)) || undefined" :class="{ 'form-action-denial-trigger': Boolean(workflowDisabledReason(action)) }" @keydown="activateReasonTrigger"><ScButton v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" :loading="action.loading" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="!busy && action.enabled && $emit('canonical-action', action)">{{ action.label }}</ScButton></span></template>
+          <template #trigger><span :tabindex="(workflowDisabledReason(action)) ? 0 : undefined" :role="(workflowDisabledReason(action)) ? 'button' : undefined" :aria-label="(workflowDisabledReason(action)) || undefined" :class="{ 'form-action-denial-trigger': Boolean(workflowDisabledReason(action)) }" @keydown="activateWorkflowReasonTrigger"><ScButton v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" :loading="action.loading" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="!busy && action.enabled && $emit('canonical-action', action)">{{ action.label }}</ScButton></span></template>
           {{ workflowDisabledReason(action) }}
         </ScPopover>
       </span>
@@ -127,6 +127,7 @@ import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRe
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
 import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
+import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';
 
 /**
  * A record-scoped operation the contract declares for this record.  The surface
@@ -285,13 +286,6 @@ function canonicalActionEvidenceAttributes(action: CanonicalFormAction) {
   };
 }
 
-function activateReasonTrigger(event: KeyboardEvent) {
-  if (event.currentTarget !== event.target) return;
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault(); (event.currentTarget as HTMLElement).click();
-  }
-}
-
 function selectHeaderOverflow(item: ScDropdownItem) {
   dispatchDropdownAction(String(item.value));
 }
@@ -429,5 +423,9 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 </style>
 
 <style scoped>
+.form-action-denial-trigger:focus-visible {
+  outline: var(--sc-component-button-focus-ring-width) solid var(--sc-semantic-focus-ring);
+  outline-offset: var(--sc-component-button-focus-inset-offset);
+}
 .form-action-denial-trigger :deep(button:disabled) { pointer-events: none; }
 </style>
