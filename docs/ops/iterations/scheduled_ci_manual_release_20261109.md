@@ -26,6 +26,9 @@ Two validation-tool defects were confirmed:
   snapshot collection succeed.
 - Navigate from the rendered role-home “查看全部” action for the My Work timing
   scenario instead of fabricating a browser history entry.
+- Integrate the paused published-face candidate so native action pages retain
+  `/a/<action_id>?menu_id=<menu_id>` targets when they also carry a scene
+  association.
 
 ## Validation
 
@@ -34,7 +37,8 @@ Two validation-tool defects were confirmed:
 | Delivery hardening guard | PASS, 17 tests |
 | Release local entry and release audit | PASS |
 | Frontend release unit suite | PASS |
-| `ci.local.iteration` | PASS, 5/5 affected targets |
+| Published-face target unit | PASS, 4 tests |
+| `ci.local.iteration` | PASS, 7/7 affected targets |
 | Exact-head full frontend release gate | Pending after commit |
 
 ## Boundary

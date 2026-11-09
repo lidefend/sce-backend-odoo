@@ -28,6 +28,7 @@ goal:
   acceptance:
     - role release projection reports VERIFIED only after successful snapshot collection
     - My Work performance navigation uses the rendered role-home action
+    - the paused published-face action-target candidate is integrated
     - release unit, delivery hardening guard and affected incremental targets pass
     - a new exact-head full frontend release gate completes successfully
   rollback: Revert this batch; it changes verification tooling only.

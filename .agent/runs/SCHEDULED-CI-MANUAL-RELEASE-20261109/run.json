@@ -107,6 +107,16 @@
         "make/guards.mk"
       ],
       "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -132,9 +142,13 @@
     },
     "ci_local_iteration": {
       "status": "passed",
-      "executed_targets": 5,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T120859Z-1003588-668320979/receipt.json",
-      "receipt_sha256": "1e2b7e733ddbe576782adeb96da1a740d48d601380b6f1a6f42e18f7e6d29b56"
+      "executed_targets": 7,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T123746Z-1360584-607714050/receipt.json",
+      "receipt_sha256": "e09d5b76f1ab33750582ad625838e92d5d36a5c63cbf333b495cddfbc1e6f6c8",
+      "includes": [
+        "verify.daily.published_face.target.unit",
+        "verify.frontend.dev.incremental.unit"
+      ]
     }
   }
 }
