@@ -29,6 +29,8 @@ set are unchanged.
   `reusedTargetCount=3`、`testsRun=false`、`verificationPassed=true`，不再次执行 3 个 target。
 - 首次回执：
   `.runtime/frontend-dev-validation/executions/20261109T145927Z-2160635-236873218/receipt.json`
+- 跨 bookkeeping-only HEAD `8ba7922de65ae8a34bf8a790bed7eb4c3082d2b5` 的复用回执：
+  `.runtime/frontend-dev-validation/executions/20261109T150257Z-2178981-365292890/receipt.json`。
 
 测试覆盖：dirty worktree 不复用、target log 被篡改不复用、runtime source 变化不复用、
 bookkeeping-only 提交保持复用身份，以及 failed/blocked/interrupted/not-run 不作为通过。

@@ -73,19 +73,20 @@
     "clean_execution": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "head": "51fdccf3ad036d13e19a3921520e32325af42544",
+      "head": "df87a428fb8167ff166c424956e8e63004c9ca68",
       "executed_targets": 3,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T144940Z-2110155-665824890/receipt.json"
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T145927Z-2160635-236873218/receipt.json"
     },
     "clean_reuse": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "head": "51fdccf3ad036d13e19a3921520e32325af42544",
+      "head": "8ba7922de65ae8a34bf8a790bed7eb4c3082d2b5",
       "reused": true,
       "reused_targets": 3,
       "tests_run_again": false,
-      "source_receipt": ".runtime/frontend-dev-validation/executions/20261109T144940Z-2110155-665824890/receipt.json",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T145009Z-2117315-569376311/receipt.json"
+      "bookkeeping_only_head": true,
+      "source_receipt": ".runtime/frontend-dev-validation/executions/20261109T145927Z-2160635-236873218/receipt.json",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T150257Z-2178981-365292890/receipt.json"
     }
   }
 }
