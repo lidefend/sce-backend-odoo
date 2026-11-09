@@ -848,14 +848,8 @@ verify.frontend.page_identity: guard.prod.forbid
 .PHONY: verify.frontend.my_work_approval.guard
 verify.frontend.my_work_approval.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_my_work_approval_guard.py
-
-.PHONY: verify.frontend.fe_polish_b1.unit verify.frontend.fe_polish_b1.browser
-verify.frontend.fe_polish_b1.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/fe_polish_b1_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/fe-polish-b1-presentation-test.mjs >/dev/null
 	@node /tmp/fe-polish-b1-presentation-test.mjs
-
-verify.frontend.fe_polish_b1.browser: guard.prod.forbid verify.frontend.fe_polish_b1.unit
-	@node scripts/verify/fe_polish_b1_browser.mjs
 
 .PHONY: verify.frontend.style_system.guard
 verify.frontend.style_system.guard: guard.prod.forbid

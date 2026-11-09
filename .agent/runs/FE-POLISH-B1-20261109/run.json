@@ -10,6 +10,7 @@
     ".agent/active-runs.json",
     ".agent/goals/FE-POLISH-B1-20261109.yaml",
     ".agent/runs/FE-POLISH-B1-20261109/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe_polish_b1_20261109.md",
     "frontend/apps/web/src/layouts/AppShell.vue",
@@ -19,6 +20,7 @@
     "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
     "scripts/verify/fe_polish_b1_presentation_test.ts",
     "scripts/verify/fe_polish_b1_browser.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
     "make/frontend.mk"
   ],
   "environment": {
@@ -56,15 +58,6 @@
       ],
       "kind": "offline"
     },
-    "presentation_unit": {
-      "target": "verify.frontend.fe_polish_b1.unit",
-      "inputs": [
-        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
-        "scripts/verify/fe_polish_b1_presentation_test.ts",
-        "make/frontend.mk"
-      ],
-      "kind": "offline"
-    },
     "typecheck_strict": {
       "target": "verify.frontend.typecheck.strict",
       "inputs": [
@@ -78,15 +71,87 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "scripts/verify/fe_polish_b1_presentation_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
+    },
+    "lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/layouts/AppShell.css"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze the corrected candidate, run the governed 1440/390 browser probe and consolidate its screenshots and summary.",
+  "next_exact_step": "Commit the evidence-only closeout and publish the clean exact head through the governed PR flow.",
   "validation": {
     "my_work_approval_guard": {
       "status": "passed",
-      "command": "python3 scripts/verify/frontend_my_work_approval_guard.py",
-      "result": "[OK] FE-B05 authoritative work/form/approval guard"
+      "command": "make verify.frontend.my_work_approval.guard",
+      "result": "[OK] FE-B05 authoritative work/form/approval guard; presentation unit 5 cases"
     },
     "agent_ledger": {
       "status": "passed",
@@ -100,8 +165,31 @@
     },
     "eslint": {
       "status": "passed",
-      "command": "npx eslint AppShell.vue MyWorkApprovalWorkspace.vue WorkspaceHome.vue",
+      "command": "make verify.frontend.lint.src",
+      "warnings": 3,
       "exit": 0
+    },
+    "dev_incremental": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 95
+    },
+    "ci_local_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 11,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T140046Z-1838459-713828689/receipt.json"
+    },
+    "browser_1440_390": {
+      "status": "passed",
+      "command": "node scripts/verify/fe_polish_b1_browser.mjs",
+      "environment": "sc-local-dev/sc_dev_demo@8368bc049c6a82a8d963ac8d81e14fe687b30aeb",
+      "pass": true,
+      "mutation_count": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/fe-polish-b1-8368bc049/summary.json",
+      "summary_sha256": "87d3184e677c1f9834a3ea99a3d734fc8f70410d7c9c6b6cae098e232e2180be"
     }
   }
 }

@@ -20,6 +20,7 @@ goal:
       - .agent/goals/FE-POLISH-B1-20261109.yaml
       - .agent/runs/FE-POLISH-B1-20261109/run.json
       - docs/ops/iterations/fe_polish_b1_20261109.md
+      - docs/engineering_convergence/complexity_budget_report.md
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - frontend/apps/web/src/layouts/AppShell.vue
       - frontend/apps/web/src/layouts/AppShell.css
@@ -28,6 +29,7 @@ goal:
       - frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts
       - scripts/verify/fe_polish_b1_presentation_test.ts
       - scripts/verify/fe_polish_b1_browser.mjs
+      - scripts/verify/frontend_dev_incremental.py
       - make/frontend.mk
     product_behavior: >
       The shell footer stays below the routed page body, the work card title keeps the

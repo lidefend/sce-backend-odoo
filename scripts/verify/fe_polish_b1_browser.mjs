@@ -8,7 +8,7 @@ const login = String(process.env.E2E_LOGIN || '');
 const password = String(process.env.E2E_PASSWORD || '');
 const head = String(process.env.CANDIDATE_GIT_HEAD || '');
 const outputDir = path.resolve(
-  process.env.FE_POLISH_B1_OUTPUT_DIR || 'artifacts/playwright/fe-polish-b1',
+  process.env.FE_POLISH_B1_OUTPUT_DIR || '.runtime/fe-polish-b1-browser',
 );
 
 if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)) {
@@ -94,14 +94,15 @@ for (const viewport of [
       const style = title ? getComputedStyle(title) : null;
       const rawLabel = title?.getAttribute('title') || '';
       const visibleTitle = String(title?.textContent || '').trim();
-      const amount = String(amountNode?.textContent || '').trim();
+      const amountText = String(amountNode?.textContent || '').trim();
+      const amount = amountText.replace(/^.*[：:]/, '').trim();
       return {
         recordId: node.getAttribute('data-record-id'),
         rawLabel,
         visibleTitle,
         amount,
         titleContainsAmount: Boolean(amount && visibleTitle.includes(amount)),
-        summaryContainsAmount: Boolean(amount && String(amountNode?.textContent || '').includes(amount)),
+        summaryContainsAmount: Boolean(amount && amountText.includes(amount)),
         rawLabelContainsAmount: Boolean(amount && rawLabel.includes(amount)),
         whiteSpace: style?.whiteSpace || '',
         lineClamp: style?.webkitLineClamp || '',
