@@ -16,6 +16,7 @@ import {
 export type BusinessValueSemantic =
   | 'money'
   | 'percentage'
+  | 'duration'
   | 'status'
   | 'date'
   | 'datetime'
@@ -136,6 +137,41 @@ export function formatBusinessPercentage(value: unknown, emptyText = FIELD_VALUE
   return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(numeric)}%`;
 }
 
+/**
+ * Format an Odoo float_time value with the platform's Chinese business copy.
+ *
+ * Rounding and carry follow Odoo 17's authoritative `formatFloatTime`:
+ * - false/null/undefined are empty, never numeric zero;
+ * - minutes use the rounded millisecond remainder;
+ * - a rounded 60th minute carries into the next hour;
+ * - the sign belongs to the whole duration.
+ *
+ * The contract's `float_time` widget selects this semantic. No frontend-only
+ * precision declaration is introduced.
+ */
+export function formatBusinessDuration(
+  value: unknown,
+  emptyText = FIELD_VALUE_EMPTY_TEXT,
+): string {
+  if (value === false || value === null || value === undefined || value === '') return emptyText;
+  const numeric = numericFieldValue(value);
+  if (numeric === null) return emptyText;
+  const negative = numeric < 0;
+  const absolute = Math.abs(numeric);
+  let hours = Math.floor(absolute);
+  const milliSecondsWithinHour = Math.round(absolute * 3_600_000) - hours * 3_600_000;
+  let minutes = Math.round(milliSecondsWithinHour / 60_000);
+  if (minutes === 60) {
+    hours += 1;
+    minutes = 0;
+  }
+  const sign = negative ? '-' : '';
+  if (hours === 0 && minutes === 0) return '0 小时';
+  if (hours === 0) return `${sign}${minutes} 分钟`;
+  if (minutes === 0) return `${sign}${hours} 小时`;
+  return `${sign}${hours} 小时 ${minutes} 分钟`;
+}
+
 function normalizedSelection(field: DeclaredBusinessField): Array<{ value: string; label: string }> {
   if (!Array.isArray(field.selection)) return [];
   return field.selection.flatMap((item) => {
@@ -197,6 +233,7 @@ export function declaredBusinessValueKind(
   const cellRole = String(field.cellRole || '').trim().toLowerCase();
   if (componentKey === 'sc.value.money' || type === 'monetary') return 'money';
   if (componentKey === 'sc.value.percentage') return 'percentage';
+  if (componentKey === 'sc.value.duration' || String(field.widget || '').trim().toLowerCase() === 'float_time') return 'duration';
   if (status || componentKey === 'sc.display.status' || cellRole === 'status') return 'status';
   if (type === 'date') return 'date';
   if (type === 'datetime') return 'datetime';
@@ -240,6 +277,15 @@ export function presentDeclaredBusinessValue(input: {
     return Object.freeze({
       kind: 'percentage',
       text: formatBusinessPercentage(input.value, emptyText),
+      tone: 'neutral',
+      badgeSemantic: 'default',
+    });
+  }
+  if (kind === 'duration') {
+    const text = formatBusinessDuration(input.value, emptyText);
+    return Object.freeze({
+      kind: text === emptyText ? 'empty' : 'duration',
+      text,
       tone: 'neutral',
       badgeSemantic: 'default',
     });
