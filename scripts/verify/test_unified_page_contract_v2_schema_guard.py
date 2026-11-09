@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import unittest
 
-from unified_page_contract_v2_schema_guard import ts_derives_business_list
+from unified_page_contract_v2_schema_guard import (
+    OPTIONAL_TOP_LEVEL_KEYS,
+    TOP_LEVEL_PROPERTIES,
+    ts_derives_business_list,
+)
 
 
 CONTROLLED = (
@@ -40,6 +44,10 @@ class BusinessPurposeDerivationTest(unittest.TestCase):
 
     def test_a_restated_list_is_rejected(self) -> None:
         self.assertFalse(ts_derives_business_list(RESTATED_LIST))
+
+    def test_notice_contract_remains_a_declared_optional_surface(self) -> None:
+        self.assertIn("noticeContract", OPTIONAL_TOP_LEVEL_KEYS)
+        self.assertIn("noticeContract", TOP_LEVEL_PROPERTIES)
 
 
 if __name__ == "__main__":

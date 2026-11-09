@@ -10,14 +10,22 @@
     ".agent/active-runs.json",
     ".agent/goals/SCHEDULED-CI-RUNTIME-NAV-20261109.yaml",
     ".agent/runs/SCHEDULED-CI-RUNTIME-NAV-20261109/run.json",
+    "docs/audit/guard_registry/guard_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
     "scripts/release/frontend_release_evidence.py",
+    "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_my_work_approval_browser.mjs",
     "scripts/verify/frontend_navigation_audit.mjs",
     "scripts/verify/frontend_navigation_audit.test.mjs",
     "scripts/verify/frontend_release_audit.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_frontend_release_audit.py",
     "scripts/verify/test_frontend_release_evidence_bundle.py",
+    "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+    "scripts/verify/unified_page_contract_v2_schema_guard.py",
     "docs/ops/iterations/scheduled_ci_runtime_nav_20261109.md"
   ],
   "environment": {
@@ -119,10 +127,32 @@
         "frontend/apps/web/scripts/standard_project_save_scope_test.mjs"
       ],
       "kind": "offline"
+    },
+    "unified_page_contract_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze the candidate, commit it, run one clean-HEAD ci.local.quick, then update PR #852 and rerun the exact-head full release gate.",
+  "next_exact_step": "Commit the baseline guard fixes, rerun the full clean-HEAD local gate, then update PR #852 and rerun the exact-head full release gate.",
   "source_failure": {
     "run": 42529817408,
     "workflow": "frontend_release_gate",
@@ -150,20 +180,24 @@
     "frontend_dev_incremental": {
       "status": "passed",
       "tests": 94,
-      "log": ".runtime/scheduled-ci-runtime-nav-20261109/frontend-dev-incremental.log",
-      "sha256": "bc672d1ac3989c4416c847d42fdf44c277aca1a56775fd0738e8f2213b66bdba"
+      "log": ".runtime/frontend-dev-validation/executions/20261109T103532Z-169581-399017555/verify.frontend.dev.incremental.unit.log",
+      "sha256": "051f1712fed452dadb232d43ee16f4802fcaa345a11c5488ab1f74d6f3abc8ff"
     },
     "ci_local_iteration": {
       "status": "passed",
-      "executed_targets": 5,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T102411Z-44422-838887709/receipt.json",
-      "receipt_sha256": "7a5be478e0ea1864ce78224a1f438f7520379532467a6137270365fed716ee88",
+      "executed_targets": 9,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T103532Z-169581-399017555/receipt.json",
+      "receipt_sha256": "62990a8958b0a7c4f63ac4247313a31677781419ec9a14046ae57ba005b874c2",
       "required_targets": [
         "verify.agent.ledger.unit",
+        "verify.agent.resume.unit",
+        "verify.frontend.dev.incremental.unit",
         "verify.frontend.evidence_bundle.unit",
         "verify.frontend.navigation_policy.unit",
         "verify.frontend.standard_preview.unit",
-        "verify.frontend.typecheck.strict"
+        "verify.frontend.typecheck.strict",
+        "verify.guard.registry",
+        "verify.unified_page_contract.v2.schema"
       ]
     },
     "playwright_vendor_coupling": {
@@ -173,6 +207,19 @@
       "log": ".runtime/scheduled-ci-runtime-nav-20261109/playwright-vendor-coupling-r2.log",
       "sha256": "59175c039a339a556c6bd0e3e3b8e2e7b59b4127576fad945b56bde7b03c9abf"
     },
+    "unified_page_contract_schema": {
+      "status": "passed",
+      "tests": 4,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/unified-page-contract-v2-schema-r2.log",
+      "sha256": "c01195f3beb18d1c0edc507c8e7ed92a3f81dd32bce0b4eb268c7a806746be08"
+    },
+    "guard_registry": {
+      "status": "passed",
+      "tests": 24,
+      "unwired_dispositioned": "212/212",
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/guard-registry-r2.log",
+      "sha256": "8eaf7fb367f778deffe0f75b8851f5d9b1ee41636ac6146b03322ab637e84785"
+    },
     "full_release_first_attempt": {
       "status": "failed",
       "run": 42599816709,
@@ -181,6 +228,20 @@
       "failure": "inline_geometry_assertion: scripts/verify/frontend_my_work_approval_browser.mjs 2 > baseline 0",
       "log": ".runtime/scheduled-ci-runtime-nav-20261109/full-release-42599816709.wiLk4i/run.log",
       "sha256": "d395ece61d28ad171c71f1fe819e28b70058a8912876ddc42c5e93dc52019bab"
+    },
+    "full_quick_first_attempt": {
+      "status": "failed",
+      "head_sha": "5e62e118f6cf5033866f9f099d3473439c8b5b3a",
+      "passed_shards": 6,
+      "failed_shards": 2,
+      "failures": [
+        "verify.unified_page_contract.v2.schema",
+        "verify.guard.registry"
+      ],
+      "logs": {
+        "schema": ".runtime/quick-shard-5e62e118f6cf-1-of-8.log",
+        "guard_registry": ".runtime/quick-shard-5e62e118f6cf-3-of-8.log"
+      }
     }
   }
 }

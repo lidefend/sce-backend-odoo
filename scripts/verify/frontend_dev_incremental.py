@@ -545,6 +545,12 @@ RULES = (
         "verify.backend.contract_lifecycle.authority",
     )),
     Rule((
+        "scripts/verify/unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.schema",
+    )),
+    Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     ), (
         "verify.execute_button.authority.unit",

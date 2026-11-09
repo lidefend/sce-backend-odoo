@@ -31,6 +31,7 @@ OPTIONAL_TOP_LEVEL_KEYS = {
     "workflowContract",
     "fieldOwnership",
     "pageComposition",
+    "noticeContract",
 }
 TOP_LEVEL_PROPERTIES = TOP_LEVEL_KEYS | OPTIONAL_TOP_LEVEL_KEYS
 

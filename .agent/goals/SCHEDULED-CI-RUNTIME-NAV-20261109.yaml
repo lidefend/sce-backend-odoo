@@ -11,7 +11,9 @@ goal:
     checked-in static 63/89 expectation is no longer an authoritative gate and
     caused scheduled CI to fail after legitimate product evolution. The full
     release lane also exposed a new probe-level inline geometry assertion that
-    belongs to the P4 browser verification tool.
+    belongs to the P4 browser verification tool. The explicit full local gate
+    then exposed a stale schema-guard expectation and undispositioned active
+    guards, both owned by the verification system.
   why_not_elsewhere: >
     Do not change product menus, ACL, role policy or runtime navigation to
     satisfy a stale declaration. Do not create the future dynamic navigation
@@ -34,6 +36,9 @@ goal:
     - page identity, console, HTTP, accessibility and journey checks remain
     - release evidence validates observation invariants without static counts
     - playwright probe coupling guard passes after removing transient geometry
+    - unified page contract schema guard recognizes the declared notice surface
+    - every unwired active guard has a wire-or-retire disposition
+    - the clean-HEAD full local gate passes
     - affected unit and incremental gates pass
   rollback: Revert this batch; no database or deployed runtime state is changed.
-  next_exact_step: Freeze the candidate, commit it, run one clean-HEAD ci.local.quick, then update PR #852 and rerun the exact-head full release gate.
+  next_exact_step: Commit the baseline guard fixes, rerun the full clean-HEAD local gate, then update PR #852 and rerun the exact-head full release gate.

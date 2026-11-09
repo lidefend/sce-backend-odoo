@@ -311,6 +311,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.backend.contract_lifecycle.authority"],
                 )
         for path in (
+            "scripts/verify/unified_page_contract_v2_schema_guard.py",
+            "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.unified_page_contract.v2.schema"],
+                )
+        for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",
         ):

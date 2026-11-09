@@ -32,6 +32,12 @@ that becomes stale whenever the product evolves.
   `frontend_my_work_approval_browser.mjs` recorded transient button geometry,
   exceeding the `playwright_vendor_coupling_guard` baseline of zero. The probe
   now records the public action facts only; the guard baseline was not raised.
+- The explicit full local gate exposed two baseline verification defects:
+  the Page Contract schema guard omitted the already-declared optional
+  `noticeContract` surface, and 43 active guards had no machine-checkable
+  wire-or-retire disposition.
+- The schema guard now recognizes `noticeContract`; every newly dispositioned
+  guard is registered as `file-consumed`, not ignored or retired.
 - The runtime scene-aware expectation gate remains scheduled for
   `FE-NAV-CAPABILITY-RELEASE-01`.
 
@@ -45,8 +51,10 @@ Current candidate results:
 | Release navigation/release audit | PASS, 16 + 18 + 10 + 31 tests/scenarios |
 | Release evidence bundle | PASS, 10 tests |
 | Frontend incremental planner | PASS, 94 tests |
-| `ci.local.iteration` | PASS, 5/5 affected targets |
+| `ci.local.iteration` | PASS, 9/9 affected targets |
 | Playwright vendor coupling guard | PASS, baseline unchanged |
+| Unified Page Contract v2 schema guard | PASS, 4 tests |
+| Guard registry audit | PASS, 24 tests; 212/212 unwired dispositioned |
 
 The exact logs and hashes are indexed in the run JSON.
 
@@ -63,3 +71,8 @@ The probe fix was then validated by the full affected incremental set:
 agent ledger, evidence bundle, navigation policy, standard preview and strict
 typecheck all passed. `playwright_vendor_coupling` passed with its baseline
 unchanged.
+
+The first complete local run on `5e62e118f` passed 6/8 shards. The two failed
+shards were isolated to the schema-guard expectation and guard-registry
+disposition defects above. Both owning tools now pass; the complete local gate
+must be rerun on the next clean commit before publication.
