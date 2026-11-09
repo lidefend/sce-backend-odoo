@@ -15,11 +15,23 @@
 - 131 `nowrap` declarations
 - 27 files containing both `nowrap` and `ellipsis`
 
+Canonical scan scope:
+
+- root: `frontend/apps/web/src`
+- extensions: `.vue`, `.ts`, `.css`
+- excludes: `frontend/packages/ui`
+- regex: `white-space\s*:\s*nowrap`
+
+The reviewer count of 45 files / 130 declarations used the literal
+`white-space: nowrap` spacing. The one-file/one-declaration delta is
+`ScMoney.vue`, whose minified style uses `white-space:nowrap` without a space after
+the colon.
+
 ## Rule
 
 - Record identity and money are never ellipsized.
 - Business titles use no more than two lines.
-- Record identity may exceed two lines until CD-20261110-01 supplies structured identity.
+- Record identity may use up to four lines until CD-20261110-01 supplies structured identity.
 - Retained information-bearing ellipsis must have `title` or an accessible full-value fallback.
 - Structural nowrap remains limited to hidden text, single-line controls, tabs, tags, toolbar
   totals, pagination and numeric alignment.

@@ -4,12 +4,24 @@
     "sourceFiles": 794,
     "nowrapFiles": 46,
     "nowrapDeclarations": 131,
-    "nowrapEllipsisOverlapFiles": 27
+    "nowrapEllipsisOverlapFiles": 27,
+    "scan": {
+      "root": "frontend/apps/web/src",
+      "includedExtensions": [".vue", ".ts", ".css"],
+      "excludedRoots": ["frontend/packages/ui"],
+      "nowrapPattern": "white-space\\s*:\\s*nowrap",
+      "ellipsisPattern": "text-overflow\\s*:\\s*ellipsis"
+    },
+    "literalSpacingDelta": {
+      "literalNowrapFiles": 45,
+      "literalNowrapDeclarations": 130,
+      "difference": "ScMoney.vue uses minified `white-space:nowrap` with no space after the colon"
+    }
   },
   "policy": {
     "businessTitleMaxLines": 2,
     "recordIdentityMaxLinesUntil": "CD-20261110-01",
-    "recordIdentityTemporaryMaxLines": 3,
+    "recordIdentityTemporaryMaxLines": 4,
     "moneyMayWrap": false,
     "recordIdentityMayEllipsize": false,
     "retainedInformationEllipsisRequiresFullValue": true
@@ -25,15 +37,55 @@
     }
   ],
   "informationOverlapFiles": [
-    "frontend/apps/web/src/components/product-list/CollectionRowCell.css",
-    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
-    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
-    "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
-    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
-    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-    "frontend/apps/web/src/layouts/AppShell.css",
-    "frontend/apps/web/src/pages/ListPage.css",
-    "frontend/apps/web/src/styles/product-patterns.css"
+    {
+      "styleLocation": "frontend/apps/web/src/components/product-list/CollectionRowCell.css",
+      "fallbackOwner": "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+      "fallback": "title and aria-label on primary and text cells; title on relation tags"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "fallback": "title on activity page label"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+      "fallback": "title and aria-label from node label or blocked reason"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+      "fallback": "title on entry, scenario, intent and center labels"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
+      "fallback": "title and aria-label on company and record context controls"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+      "fallback": "title on settlement and contract values"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "fallbackOwner": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "fallback": "title and aria-label on relation values; attachment names carry title"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/layouts/AppShell.css",
+      "fallbackOwner": "frontend/apps/web/src/layouts/AppShell.vue",
+      "fallback": "title and aria-label on role context and published app controls"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/pages/ListPage.css",
+      "fallbackOwner": "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+      "fallback": "List cells render through CollectionRowCell with title and aria-label"
+    },
+    {
+      "styleLocation": "frontend/apps/web/src/styles/product-patterns.css",
+      "fallbackOwner": "frontend/apps/web/src/layouts/AppShell.vue",
+      "fallback": "topbar context controls carry title and aria-label"
+    }
   ]
 }

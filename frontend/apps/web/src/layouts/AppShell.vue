@@ -138,6 +138,8 @@
               type="button"
               variant="ghost"
               :disabled="Boolean(openingAppId)"
+              :title="app.label"
+              :aria-label="app.label"
               @click="openPublishedApp(app)"
             >
               <span class="published-app__content">

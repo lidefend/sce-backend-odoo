@@ -74,7 +74,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1587 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1571 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1557 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
@@ -309,7 +309,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1587 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
-| 1571 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1557 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
