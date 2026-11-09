@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "ae8d5dc68b71abe5a1414fee79ba858b30d32492",
+  "status": "active",
+  "goal": ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
+    ".agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json",
+    "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "managed GitHub origin and exact PR head checks"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "pr_push": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "scripts/ops/git_safe_push.sh",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit integration metadata, freeze the new clean candidate and start independent review."
+}
