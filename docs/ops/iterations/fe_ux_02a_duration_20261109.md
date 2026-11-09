@@ -111,8 +111,8 @@
 
 ### Clean candidate 增量门禁
 
-在 S1 修复后的 clean 代码/测试候选
-`d328a72ed19d0b57b8839a73da750f22d09b4f3e` 上执行：
+在 S1/S2 修复后的 clean 代码/测试候选
+`e0a9ea7b1e1d346d085295e9b3f051be28a25e2b` 上执行：
 
 ```text
 make ci.local.iteration
@@ -126,9 +126,9 @@ make ci.local.iteration
 - not-run：0
 - status：PASSED
 - receipt：
-  `.runtime/frontend-dev-validation/executions/20261109T004438Z-695696-567994980/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261109T005657Z-793830-167577381/receipt.json`
 - receipt SHA256：
-  `176506ae3242deb6b170018251f0ebdc6afc9733ab43fb6d9a5caab41c0188fe`
+  `20434441be19dd45981eb021325b0f5f7eaa4c6eb2c823cecb165be844049bac`
 
 当前 main 的 delivery evidence manifest 中，`list_surface_structure` 的来源仍不是
 本分支 head 的祖先，因此该 runtime suite 明确记为 `verification_pending`。
@@ -145,7 +145,16 @@ column projection dropped `componentKey`, so real List/Kanban did not reach the
 shared duration path. The repair now preserves `componentKey` from the actual
 `resolveListColumnOptions` producer and adds a producer-to-List/Kanban test.
 
-S1 修复候选：`d328a72ed19d0b57b8839a73da750f22d09b4f3e`。
+S1 首次修复候选：`d328a72ed19d0b57b8839a73da750f22d09b4f3e`。
+
+第二轮独立审查确认 S1 已关闭，但指出两个 S2：
+
+- 保留所有 componentKey 会顺带改变 Kanban percentage；
+- 记录中的 list-surface fingerprint 归属错误。
+
+S2 修复候选：`e0a9ea7b1e1d346d085295e9b3f051be28a25e2b`。
+集合投影只对 `sc.value.duration` 暴露 componentKey；percentage 继续维持
+本批之前的普通 float 表达。实际生产者回归增至 14 cases。
 
 修复后定向验证：
 
@@ -166,6 +175,8 @@ List Surface 输入对账：
   `96e943aa56dd35b91636a26e2688fbd79b9bc8907a9200b4d5ab19b7b4e373cf`。
 - S1 修复候选 `d328a72ed` 与其 metadata head `000ed1650` 都对应：
   `7338b5a8cd8adec53f46262b70fb2effc405445659810d4b0c56a346b893cdc3`。
+- S2 收窄投影后的候选 `e0a9ea7b1` 对应：
+  `692e273dd76a0d78c1f663cd69e6f5327df07ec5b299da73ca229b7fd4e3edac`。
 - fingerprint 改变，因此不得把旧 runtime PASS 直接复用于本候选。
 - manifest 原绑定 `0ef405468` 经过 squash 后不在本分支祖先链，工具以
   `not an ancestor` fail-closed，身份行为正确。
