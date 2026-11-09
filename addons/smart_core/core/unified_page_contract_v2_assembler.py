@@ -4419,8 +4419,21 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             if modifier_authoritative and permission_resolved:
                 row["entitlementEvaluated"] = True
             if verdict is True:
-                status["visible"] = False
-                status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
+                business_state_explained = (
+                    runtime_business is not None
+                    and isinstance(runtime_business.get("businessAvailable"), bool)
+                    and runtime_business.get("authorizationAllowed") is not False
+                    and bool(_text(runtime_business.get("reasonCode")))
+                )
+                if business_state_explained:
+                    status["visible"] = True
+                    status["disabled"] = True
+                    status["reasonCode"] = runtime_business.get("reasonCode")
+                    if _text(runtime_business.get("reasonMessage")):
+                        status["reasonMessage"] = runtime_business["reasonMessage"]
+                else:
+                    status["visible"] = False
+                    status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
             else:
                 status["visible"] = False
                 status["disabled"] = True

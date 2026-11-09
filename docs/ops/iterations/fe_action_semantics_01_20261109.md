@@ -83,8 +83,13 @@
   reason code 与用户可读原因。
 - 通用工作流目录仅作为状态候选和收紧输入，不充当执行授权；显式
   `authorizationAllowed=false` 不会再被改写为 `businessAvailable=false`。
-- 组装缓存身份升级为 `ui-contract-v2-action-semantics-auth-business-v33`，
+- 组装缓存身份升级为 `ui-contract-v2-action-semantics-state-visible-v34`，
   并重钉装配输入摘要，防止旧动作语义继续从缓存供出。
+- 真实付款页验收发现，状态条目仅带 `reasonCode` 时 presenter 会丢弃动作上的
+  `reasonMessage`；已改为状态消息优先、动作消息回退。
+- 真实付款页验收发现，运行时业务动作已有“有权 + 状态阻断 + 原因”时，原生
+  modifier 仍会把结果隐藏；已保留为可见禁用，无法解析的 modifier 继续
+  fail-closed。
 
 ## Producer 分类收口
 
@@ -97,7 +102,7 @@
 
 ## 门禁记录
 
-- `test_unified_page_contract_v2_mobile_compact.py`：139 tests PASS。
+- `test_unified_page_contract_v2_mobile_compact.py`：140 tests PASS。
 - `verify.unified_page_contract.v2.runtime`：23 + 139 tests PASS，runtime guard
   score=6。
 - `verify.unified_page_contract.v2.action`：PASS，actions=7。
@@ -109,8 +114,10 @@
 - `workflow_inventory_profile_method_guard`：补齐已声明方法后 PASS。
 - `ci.local.iteration`：PASS，实际执行 20 个目标；receipt
   `.runtime/frontend-dev-validation/executions/20261109T045112Z-2215379-628180713/receipt.json`。
+- 验收驱动修正后 `ci.local.iteration`：PASS，实际执行 21 个目标；receipt
+  `.runtime/frontend-dev-validation/executions/20261109T052241Z-2411004-448368188/receipt.json`。
 - 付款能力 ORM：63 tests PASS，source unchanged，receipt
-  `.runtime/test-baseline/1794199968022763220/receipt.json`。
+  `.runtime/test-baseline/1794201550101189534/receipt.json`。
 - `TestWorkflowContractBackend` 单独运行仍存在历史夹具失败（31 tests 中
   1 failed / 13 errors），失败发生在测试构造付款/费用/收款记录时被现有业务
   guard 拒绝，不是本轮 action projection 断言失败；保留为独立基线问题。

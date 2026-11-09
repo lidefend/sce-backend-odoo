@@ -5383,6 +5383,57 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertIs(rule["enabled"], False)
         self.assertIs(contract["statusContract"]["buttonStatus"][0]["visible"], True)
 
+    def test_runtime_business_state_denial_stays_visible_after_native_modifier(self):
+        contract = {
+            "pageInfo": {"model": "test.document", "viewType": "form"},
+            "dataContract": {"mainData": {"id": 43, "state": "draft"}},
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.payment_execution",
+                "actionKey": "payment_execution",
+                "backendIdentity": "button:object:action_create_payment_execution",
+                "button": {"type": "object", "name": "action_create_payment_execution"},
+                "sourceChannel": "native_form_header",
+                "sourceTrace": [
+                    {"sourceChannel": "native_form_header"},
+                    {"sourceChannel": "runtime_business_action"},
+                ],
+                "nativeIdentity": {
+                    "native_locator": "/form[1]/header[1]/button[1]",
+                    "authoritative": True,
+                },
+                "visible": {
+                    "attrs": {"invisible": {
+                        "kind": "field_compare",
+                        "field": "state",
+                        "operator": "!=",
+                        "value": "approved",
+                    }},
+                },
+                "authorizationAllowed": True,
+                "businessAvailable": False,
+                "entitlementEvaluated": True,
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "reasonCode": "PAYMENT_REQUEST_NOT_APPROVED",
+                "reasonMessage": "付款申请必须处于已批准状态。",
+            }]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.payment_execution",
+                "backendIdentity": "button:object:action_create_payment_execution",
+                "visible": True,
+                "disabled": True,
+            }]},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertIs(status["visible"], True)
+        self.assertIs(status["disabled"], True)
+        self.assertEqual(status["reasonCode"], "PAYMENT_REQUEST_NOT_APPROVED")
+        self.assertEqual(status["reasonMessage"], "付款申请必须处于已批准状态。")
+
     def test_existing_same_reason_receives_its_current_message(self):
         contract = self._workflow_denial_contract()
         rule = contract["actionContract"]["actionRuleList"][0]
