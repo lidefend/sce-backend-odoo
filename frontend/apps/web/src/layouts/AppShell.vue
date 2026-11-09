@@ -319,8 +319,8 @@
             @select="(item) => setThemeProfile(item.value as ScThemeProfile)"
           >
             <template #trigger>
-              <ScButton variant="ghost" size="small" :title="`切换界面风格，当前${profileLabel}`">
-                {{ profileLabel }}
+              <ScButton class="scene-style-trigger" variant="ghost" size="small" :title="`切换界面风格，当前${profileLabel}`" :aria-label="`切换界面风格，当前${profileLabel}`">
+                <span class="scene-style-trigger__label">{{ profileLabel }}</span>
                 <ScIcon name="chevron-down" :size="14" class="scene-style-picker__caret" />
               </ScButton>
             </template>

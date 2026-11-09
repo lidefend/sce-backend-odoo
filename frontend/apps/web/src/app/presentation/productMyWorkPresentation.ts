@@ -32,6 +32,28 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
   return String(fact.value ?? '').trim() || FIELD_VALUE_EMPTY_TEXT;
 }
 
+export function productMyWorkIdentityDisplay(
+  label: string,
+  amount?: ProductMyWorkFact,
+): string {
+  const identity = String(label || '').trim();
+  if (!identity || amount?.display_role !== 'money') return identity;
+  const amountDisplay = formatProductMyWorkFact(amount).trim();
+  if (!amountDisplay || amountDisplay === FIELD_VALUE_EMPTY_TEXT) return identity;
+  const segments = identity.split(/\s+\/\s+/);
+  if (!segments.includes(amountDisplay)) return identity;
+  return segments.filter((segment) => segment !== amountDisplay).join(' / ').trim() || identity;
+}
+
+export function productMyWorkTaskFacts(
+  facts: ProductMyWorkFact[],
+  hasAmountChip: boolean,
+): ProductMyWorkFact[] {
+  return hasAmountChip
+    ? facts.filter((fact) => fact.display_role !== 'money')
+    : facts;
+}
+
 export function partitionProductMyWorkFacts(
   facts: ProductMyWorkFact[],
   visibleLimit = 3,

@@ -20,9 +20,9 @@
                 <ScStatusBadge v-if="task.state?.label" :value="task.state.key" :label="task.state.label" />
                 <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
               </div>
-              <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
-              <dl v-if="task.facts.length" class="role-home-surface__task-facts">
-                <div v-for="fact in task.facts" :key="fact.key">
+              <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ taskIdentity(task) }}</p>
+              <dl v-if="taskFacts(task).length" class="role-home-surface__task-facts">
+                <div v-for="fact in taskFacts(task)" :key="fact.key">
                   <dt>{{ fact.label }}</dt>
                   <dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" /><template v-else>{{ formatFact(fact) }}</template></dd>
                 </div>
@@ -161,10 +161,21 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import type { ProductMyWorkFact } from '../../api/myWork';
-import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPresentation';
+import {
+  formatProductMyWorkFact,
+  productMyWorkIdentityDisplay,
+  productMyWorkTaskFacts,
+} from '../../app/presentation/productMyWorkPresentation';
 import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 
 const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
+
+const taskIdentity = (task: { label: string; amount?: ProductMyWorkFact }) =>
+  productMyWorkIdentityDisplay(task.label, task.amount);
+
+/** The heading chip already presents the amount; keep identity and facts from repeating it. */
+const taskFacts = (task: { facts: ProductMyWorkFact[]; amount?: ProductMyWorkFact }) =>
+  productMyWorkTaskFacts(task.facts, Boolean(task.amount));
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 
@@ -295,6 +306,18 @@ const {
 .role-home-surface__task-facts dt { color: var(--sc-app-text-muted); }
 .role-home-surface__task-facts dd { margin: 0; color: var(--sc-app-text-primary); overflow-wrap: anywhere; }
 .role-home-surface__task-list :deep(.sc-btn) { min-height: 44px; align-self: flex-start; }
+
+@media (max-width: 640px) {
+  .role-home-surface__task-list .role-home-surface__task-record {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
 
 .role-home-surface__summary-list {
   display: grid;

@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "id": "FE-POLISH-B1-20261109",
+  "branch": "fix/fe-polish-b1-20261109",
+  "baseline_sha": "758a01e4df63a5ec0cb43c00cd02b463d01962b3",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-POLISH-B1-20261109.yaml",
+  "record": "docs/ops/iterations/fe_polish_b1_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-POLISH-B1-20261109.yaml",
+    ".agent/runs/FE-POLISH-B1-20261109/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_polish_b1_20261109.md",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/layouts/AppShell.css",
+    "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+    "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+    "scripts/verify/fe_polish_b1_presentation_test.ts",
+    "scripts/verify/fe_polish_b1_browser.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies; no database, service or deployment mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "my_work_guard": {
+      "target": "verify.frontend.my_work_approval.guard",
+      "inputs": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "scripts/verify/fe_polish_b1_presentation_test.ts",
+        "scripts/verify/frontend_my_work_approval_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "scripts/verify/fe_polish_b1_presentation_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "boq_import_preview": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
+    },
+    "lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/layouts/AppShell.css"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Push the clean published-branch synchronization commit and verify PR #856 on its new exact head.",
+  "validation": {
+    "my_work_approval_guard": {
+      "status": "passed",
+      "command": "make verify.frontend.my_work_approval.guard",
+      "result": "[OK] FE-B05 authoritative work/form/approval guard; presentation unit 5 cases"
+    },
+    "agent_ledger": {
+      "status": "passed",
+      "target": "verify.agent.ledger.unit",
+      "tests": 18,
+      "result": "goals=265 runs=249 pinned_residuals=2 open_run_allowlist=2"
+    },
+    "typecheck_strict": {
+      "status": "passed",
+      "command": "pnpm run typecheck:strict"
+    },
+    "eslint": {
+      "status": "passed",
+      "command": "make verify.frontend.lint.src",
+      "warnings": 3,
+      "exit": 0
+    },
+    "dev_incremental": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 95
+    },
+    "ci_local_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 11,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T140046Z-1838459-713828689/receipt.json"
+    },
+    "browser_1440_390": {
+      "status": "passed",
+      "command": "node scripts/verify/fe_polish_b1_browser.mjs",
+      "environment": "sc-local-dev/sc_dev_demo@a46fa96121e7a69582fe9e3024ad5fbc1a60a4ef",
+      "pass": true,
+      "mutation_count": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/fe-polish-b1-a46fa961/summary.json",
+      "summary_sha256": "51d02b1425962cb781314cac42828c53f393ee9c24fd5298134af16821a1efe3"
+    }
+  }
+}
