@@ -22,6 +22,9 @@ goal:
       - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M1-20261110/run.json
       - docs/ops/iterations/frontend_systemic_m1_text_containment_20261110.md
       - docs/architecture/text_containment_allowlist.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - frontend/apps/web/src/
     product_behavior: >
       Record identity and money values remain readable; business titles use at
