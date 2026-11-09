@@ -42,7 +42,7 @@ Implementation and validation results are appended to this living record.
 
 ## Focused validation
 
-- `verify.daily.runtime.build_identity`: 7 tests PASS.
+- `verify.daily.runtime.build_identity`: 8 tests PASS.
 - `verify.daily.runtime.source_revision.align`: 8 tests PASS.
 - `verify.daily.runtime.frontend.build`: 25 tests PASS.
 - `verify.daily.runtime.release_orchestration.unit`: 51 tests PASS.

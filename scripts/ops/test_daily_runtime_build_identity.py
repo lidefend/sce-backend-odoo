@@ -143,6 +143,10 @@ class DailyRuntimeBuildIdentityTest(unittest.TestCase):
         ):
             self.assertIn(token, identity.REMOTE_PROGRAM)
 
+    def test_server_receipt_is_ignored_by_the_source_checkout(self):
+        ignored = (identity.ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("/.deployed.json", ignored)
+
 
 if __name__ == "__main__":
     unittest.main()

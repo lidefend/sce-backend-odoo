@@ -7,6 +7,7 @@
   "goal": ".agent/goals/B2-BUILD-IDENTITY-20261109.yaml",
   "record": "docs/ops/iterations/b2_build_identity_20261109.md",
   "scope": [
+    ".gitignore",
     ".agent/active-runs.json",
     ".agent/goals/B2-BUILD-IDENTITY-20261109.yaml",
     ".agent/runs/B2-BUILD-IDENTITY-20261109/run.json",

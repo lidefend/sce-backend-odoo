@@ -51,6 +51,9 @@ artifacts/continue/**
 # Runtime environment files are always local. Only explicit templates may be
 # committed to the public product repository.
 .env*
+# The daily source deployment writes its current receipt at the repository
+# root. It is runtime evidence, not source.
+/.deployed.json
 !.env.example
 !.env.*.example
 
