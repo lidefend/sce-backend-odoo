@@ -183,13 +183,13 @@
     "browser_1440_390": {
       "status": "passed",
       "command": "node scripts/verify/fe_polish_b1_browser.mjs",
-      "environment": "sc-local-dev/sc_dev_demo@8368bc049c6a82a8d963ac8d81e14fe687b30aeb",
+      "environment": "sc-local-dev/sc_dev_demo@a46fa96121e7a69582fe9e3024ad5fbc1a60a4ef",
       "pass": true,
       "mutation_count": 0,
       "console_errors": 0,
       "http_errors": 0,
-      "summary": ".runtime/fe-polish-b1-8368bc049/summary.json",
-      "summary_sha256": "87d3184e677c1f9834a3ea99a3d734fc8f70410d7c9c6b6cae098e232e2180be"
+      "summary": ".runtime/fe-polish-b1-a46fa961/summary.json",
+      "summary_sha256": "51d02b1425962cb781314cac42828c53f393ee9c24fd5298134af16821a1efe3"
     }
   }
 }
