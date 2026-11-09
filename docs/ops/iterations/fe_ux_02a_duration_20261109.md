@@ -158,7 +158,7 @@ S2 修复候选：`e0a9ea7b1e1d346d085295e9b3f051be28a25e2b`。
 
 修复后定向验证：
 
-- `verify.frontend.contract_shape_projection.unit`：12 cases PASS；
+- `verify.frontend.contract_shape_projection.unit`：14 cases PASS；
 - 真实列投影 `duration_hours` 同时驱动 List/Kanban 的
   `1 小时 30 分钟`；
 - business semantics、professional business value Chromium、collection view
