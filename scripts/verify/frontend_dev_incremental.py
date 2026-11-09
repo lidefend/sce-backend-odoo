@@ -99,6 +99,11 @@ RULES = (
         "verify.agent.ledger.unit",
     )),
     Rule((
+        ".gitignore",
+    ), (
+        "verify.pr.push.unit",
+    )),
+    Rule((
         "config/acceptance/evolution_binding.v1.json",
         "scripts/verify/acceptance_evolution_binding_guard.py",
         "scripts/verify/test_acceptance_evolution_binding_guard.py",
@@ -818,6 +823,12 @@ RULES = (
         "scripts/ops/test_daily_runtime_release_orchestration.py",
     ), (
         "verify.daily.runtime.deployment_identity.unit",
+    )),
+    Rule((
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+    ), (
+        "verify.daily.runtime.candidate.bundle_sync",
     )),
     # The duty entry's own suite is the behavior lock of the phase machinery the
     # declaration drives; its test file was unmapped while the entry itself was
