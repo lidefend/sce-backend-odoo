@@ -135,7 +135,12 @@ class DailyRuntimeBuildIdentityTest(unittest.TestCase):
 
     def test_remote_program_embeds_the_shared_comparison_authority(self):
         self.assertIn("def identity_mismatches(", identity.REMOTE_PROGRAM)
-        for token in ("build-info.json", "runtime-version", ".deployed.json", "docker"):
+        for token in (
+            'http_json("/build-info.json")',
+            "runtime-version",
+            ".deployed.json",
+            "docker",
+        ):
             self.assertIn(token, identity.REMOTE_PROGRAM)
 
 

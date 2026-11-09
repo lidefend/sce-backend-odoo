@@ -109,6 +109,7 @@ state = {
     "env_written": False, "backup_path": "", "restarted": False,
     "platform_admin_database": platform_admin_database,
     "entry_prefix": entry_prefix,
+    "served_build_info": None,
     "physical_db_sweep": "NOT_RUN", "physical_db_bakes": [],
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
@@ -227,6 +228,13 @@ def http_status(path):
     except Exception:
         return None
 
+def http_json(path):
+    try:
+        with urllib.request.urlopen(base_url + path, timeout=20) as resp:
+            return resp.getcode(), json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None, None
+
 def entry_of(html):
     match = entry_re.search(html or "")
     return match.group(1) if match else ""
@@ -313,6 +321,8 @@ with lock_path.open("a+b") as lock:
     served_before = readback()
     state["served"] = served_before
     state["served_entry_asset"] = entry_before
+    _build_status_before, served_build_info_before = http_json("/build-info.json")
+    state["served_build_info"] = served_build_info_before
 
     declared = env_single("FRONTEND_BUILD_SHA256")
     disk_fp = ""
@@ -327,6 +337,7 @@ with lock_path.open("a+b") as lock:
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
         and build_info(dist_dir) is not None
+        and served_build_info_before == build_info(dist_dir)
         and not physical_db_bakes()
     )
     if reused:
@@ -396,6 +407,8 @@ with lock_path.open("a+b") as lock:
     state["runtime_refresh_required"] = True
     served = readback()
     state["served"] = served
+    served_build_status, served_build_info = http_json("/build-info.json")
+    state["served_build_info"] = served_build_info
 
     served_code, served_html = http_text(entry_prefix + "/index.html")
     served_entry = entry_of(served_html)
@@ -407,6 +420,8 @@ with lock_path.open("a+b") as lock:
         and asset_code == 200
         and state["physical_db_sweep"] == "NO_PHYSICAL_DB_NAME"
         and state["build_info"] is not None
+        and served_build_status == 200
+        and served_build_info == state["build_info"]
     )
     if not ok and state["env_written"]:
         restore_env()
@@ -572,6 +587,7 @@ def align(
         or evidence.get("platform_admin_database") != platform_admin_database
         or evidence.get("deployment_environment") != deployment_environment
         or not isinstance(evidence.get("build_info"), dict)
+        or evidence.get("served_build_info") != evidence.get("build_info")
         or evidence.get("physical_db_sweep") != "NO_PHYSICAL_DB_NAME"
         or evidence.get("physical_db_bakes") != []
         or evidence.get("entry_prefix") != entry_prefix

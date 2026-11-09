@@ -247,7 +247,7 @@ def snapshot():
     platform_status, platform_runtime = http_json(
         platform_prefix + "/api/runtime-version"
     )
-    build_status, build_info = http_json(demo_prefix + "/build-info.json")
+    build_status, build_info = http_json("/build-info.json")
     containers = container_facts()
     head = git_head()
     healthy_containers = bool(containers) and all(

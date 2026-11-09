@@ -42,6 +42,13 @@ def evidence(**overrides: object) -> bytes:
             "environment": "daily",
             "version": "1.0.0-rc.20",
         },
+        "served_build_info": {
+            "schema": "frontend.build_info.v1",
+            "sha": SHA,
+            "built_at": "2026-11-09T16:00:00.000Z",
+            "environment": "daily",
+            "version": "1.0.0-rc.20",
+        },
         "reused": False,
         "rebuilt": True,
         "fingerprint": FINGERPRINT,
@@ -219,6 +226,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["fingerprint"], FINGERPRINT)
         self.assertEqual(result["served_entry_asset"], ENTRY_ASSET)
+        self.assertEqual(result["served_build_info"], result["build_info"])
 
     def test_align_accepts_reused_generation(self) -> None:
         completed = mock.Mock(
