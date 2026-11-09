@@ -310,8 +310,8 @@
   "blockers": [],
   "notes": [
     "Acceptance page testing found and closed two presenter/projection defects: reasonMessage fallback and authorized state-denial visibility.",
-    "ci.local.iteration passed 21 targets at .runtime/frontend-dev-validation/executions/20261109T052241Z-2411004-448368188/receipt.json.",
-    "Payment ORM evidence passed 63 tests at .runtime/test-baseline/1794201550101189534/receipt.json; later edits are documentation and run metadata only.",
+    "ci.local.iteration passed 21 targets at .runtime/frontend-dev-validation/executions/20261109T053822Z-2510833-285884341/receipt.json.",
+    "Payment ORM evidence passed 63 tests at .runtime/test-baseline/1794202496142537919/receipt.json; later edits are documentation and run metadata only.",
     "TestWorkflowContractBackend remains independently red on historical fixture construction guards; this batch's focused workflow/action guards and contract tests pass."
   ],
   "next_exact_step": "Run the final affected gates, commit the acceptance-driven fixes, rebuild the exact acceptance runtime, and complete the payment plus second-domain browser journeys.",

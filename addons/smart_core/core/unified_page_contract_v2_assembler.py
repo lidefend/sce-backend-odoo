@@ -4002,6 +4002,8 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             )
             if _text(status.get("reasonCode")) in {"", "OK"}:
                 status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
+        if not _text(status.get("reasonMessage")) and _text(rule.get("reasonMessage")):
+            status["reasonMessage"] = rule["reasonMessage"]
     contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
     # A singleton runtime action must obey the same schema as a merged native
     # action. Keep boolean source facts in sourceTrace, not the final rule.

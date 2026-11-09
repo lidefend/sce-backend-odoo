@@ -5434,6 +5434,34 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(status["reasonCode"], "PAYMENT_REQUEST_NOT_APPROVED")
         self.assertEqual(status["reasonMessage"], "付款申请必须处于已批准状态。")
 
+    def test_action_reason_message_survives_backend_identity_merge(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.payment_execution",
+                "actionKey": "payment_execution",
+                "backendIdentity": "button:object:action_create_payment_execution",
+                "button": {"type": "object", "name": "action_create_payment_execution"},
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "reasonCode": "PAYEE_ACCOUNT_INCOMPLETE",
+                "reasonMessage": "请先补全收款户名、开户行和账号。",
+                "visible": {"attrs": {"invisible": {"kind": "static", "value": False}}},
+            }]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.payment_execution",
+                "backendIdentity": "button:object:action_create_payment_execution",
+                "visible": True,
+                "disabled": True,
+                "reasonCode": "PAYEE_ACCOUNT_INCOMPLETE",
+            }]},
+        }
+
+        assembler._merge_action_rules_by_backend_identity(contract)
+
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertEqual(status["reasonMessage"], "请先补全收款户名、开户行和账号。")
+
     def test_existing_same_reason_receives_its_current_message(self):
         contract = self._workflow_denial_contract()
         rule = contract["actionContract"]["actionRuleList"][0]
