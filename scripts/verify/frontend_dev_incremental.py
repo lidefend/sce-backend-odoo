@@ -466,6 +466,12 @@ RULES = (
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    ), (
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
     ), (

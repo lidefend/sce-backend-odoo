@@ -1211,7 +1211,7 @@ verify.frontend.role_release_projection: guard.prod.forbid
 	printf '%s\n' "$$line" | sed 's/^ROLE_RELEASE_PROJECTION=//' | \
 	  jq --arg sha "$$(git rev-parse HEAD)" --arg ts "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 	    --arg run_id "$$run_id" --arg run_attempt "$$run_attempt" \
-	  '{schema_version:"frontend-role-release-projection/v1", git_sha:$$sha, generated_at:$$ts, scope_status:"NOT_VERIFIED", run_id:$$run_id, run_attempt:$$run_attempt, release_snapshot:.release_snapshot, db:.db, roles:.roles}' \
+	  '{schema_version:"frontend-role-release-projection/v1", git_sha:$$sha, generated_at:$$ts, scope_status:"VERIFIED", run_id:$$run_id, run_attempt:$$run_attempt, release_snapshot:.release_snapshot, db:.db, roles:.roles}' \
 	  > artifacts/frontend-release-audit/role-release-projection.json.tmp; \
 	mv artifacts/frontend-release-audit/role-release-projection.json.tmp artifacts/frontend-release-audit/role-release-projection.json; \
 	echo "[verify.frontend.role_release_projection] wrote artifacts/frontend-release-audit/role-release-projection.json"

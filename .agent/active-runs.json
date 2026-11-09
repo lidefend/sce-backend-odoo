@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/scheduled-ci-manual-release-20261109": ".agent/runs/SCHEDULED-CI-MANUAL-RELEASE-20261109/run.json",
     "fix/scheduled-ci-runtime-nav-20261109": ".agent/runs/SCHEDULED-CI-RUNTIME-NAV-20261109/run.json",
     "fix/acceptance-evidence-scope-20261109": ".agent/runs/ACCEPTANCE-EVIDENCE-SCOPE-20261109/run.json",
     "fix/fe-renderer-02c-02b-b-selection-date-r2-20261108": ".agent/runs/FE-RENDERER-02C-02B-B-SELECTION-DATE/run.json",

@@ -1,0 +1,34 @@
+goal:
+  id: SCHEDULED-CI-MANUAL-RELEASE-20261109
+  title: close the manual frontend release gate on main
+  status: verification_pending
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend release acceptance and role projection evidence
+  module: frontend delivery hardening, role release projection and release audit
+  standard_vs_user_specific: platform delivery verification standard
+  why_here: >
+    The failure is in the release acceptance chain: the role projection writes
+    NOT_VERIFIED after a successful runtime collection, and the delivery
+    hardening probe navigates to My Work with manual history state that the
+    current Vue router resolves back to the role home.
+  why_not_elsewhere: >
+    Product routes, permissions, ACL and business contracts are not changed.
+    The runtime pages already expose the role home and My Work surfaces; the
+    defective observations belong to the governed verification tools.
+  blast_radius:
+    product_behavior: none
+    verification: manual full frontend release gate
+    exclusions:
+      - no business route or ACL changes
+      - no static navigation count restoration
+      - no production deployment
+  objective: >
+    Make the full release chain observe the real role-home-to-My-Work
+    navigation and mark the validated release snapshot as VERIFIED.
+  acceptance:
+    - role release projection reports VERIFIED only after successful snapshot collection
+    - My Work performance navigation uses the rendered role-home action
+    - release unit, delivery hardening guard and affected incremental targets pass
+    - a new exact-head full frontend release gate completes successfully
+  rollback: Revert this batch; it changes verification tooling only.
+  next_exact_step: Commit the clean candidate and rerun the exact-head full frontend release gate.

@@ -328,6 +328,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.native_view.workflow_action_coverage"],
                 )
+        for path in (
+            "scripts/verify/frontend_delivery_hardening_browser.mjs",
+            "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.standard_preview.unit"],
+                )
         self.assertEqual(
             select_targets(["scripts/verify/contract_form_runtime_state_protocol_guard.py"]),
             ["verify.contract.architecture.suite"],

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-MANUAL-RELEASE-20261109",
+  "branch": "fix/scheduled-ci-manual-release-20261109",
+  "baseline_sha": "9086ddab6cd19b0ee30e6f6dae149c0df83ededd",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-CI-MANUAL-RELEASE-20261109.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_manual_release_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-MANUAL-RELEASE-20261109.yaml",
+    ".agent/runs/SCHEDULED-CI-MANUAL-RELEASE-20261109/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/scheduled_ci_manual_release_20261109.md",
+    "make/runtime_ops.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_release_local_entry.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and exact failed release evidence; no new acceptance database or credential authority"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "make/ci.mk",
+        "make/codex.mk",
+        "make/runtime_ops.mk",
+        "make/dev.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_local_entry": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_audit": {
+      "target": "verify.frontend.release.unit",
+      "inputs": [
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate and rerun the exact-head full frontend release gate.",
+  "source_failure": {
+    "run": 42608865956,
+    "head_sha": "33513f00ff8d441739adeae608152e568452711c",
+    "job": 129131739803,
+    "classification": "validation_tool_defect",
+    "evidence": ".runtime/manual-release-42608865956/artifact.6u8VFQ/frontend-delivery-hardening/failure.json"
+  },
+  "validation": {
+    "delivery_hardening": {
+      "status": "passed",
+      "tests": 17,
+      "log": ".runtime/scheduled-ci-manual-release-20261109/delivery-hardening-guard.log",
+      "sha256": "dc0907fd8b95c80b189e90766b09664b053820d4594719b3d38c64da7b868ddf"
+    },
+    "release_audit": {
+      "status": "passed",
+      "log": ".runtime/scheduled-ci-manual-release-20261109/frontend-release-unit.log",
+      "sha256": "55974fd8c20889abe90728a01e166a3529af1dad8e3cd9f5e2a4189733ee951e"
+    },
+    "ci_local_iteration": {
+      "status": "passed",
+      "executed_targets": 5,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T120859Z-1003588-668320979/receipt.json",
+      "receipt_sha256": "1e2b7e733ddbe576782adeb96da1a740d48d601380b6f1a6f42e18f7e6d29b56"
+    }
+  }
+}

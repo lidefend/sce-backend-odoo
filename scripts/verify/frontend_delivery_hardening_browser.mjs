@@ -591,6 +591,15 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
   }
   await page.waitForTimeout(50);
 }
+async function openMyWorkFromRoleHome(page) {
+  const roleHome = page.locator('[data-role-home]');
+  await roleHome.waitFor({ state: 'visible', timeout: 45000 });
+  const allItems = roleHome.getByRole('button', { name: '查看全部', exact: true });
+  await allItems.waitFor({ state: 'visible', timeout: 45000 });
+  await allItems.click();
+  await page.waitForURL((url) => url.pathname === '/my-work', { timeout: 45000 });
+  await page.locator('.product-work').waitFor({ state: 'visible', timeout: 45000 });
+}
 async function assertNoOverflow(page, label) {
   const size = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
   check(size.scroll <= size.client + 1, `${label}: overflow ${size.scroll}/${size.client}`);
@@ -1109,22 +1118,24 @@ async function main() {
         }
         const samples = [];
         const requestSamples = [];
+        await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await page.waitForTimeout(2000);
         if (name === 'my_work') {
+          await openMyWorkFromRoleHome(page);
+        } else {
+          await openMyWorkFromRoleHome(page);
+          await navigateSpa(page, route, readySelector);
+        }
+        for (let i = 0; i < PERF_RUNS; i += 1) {
           await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           await page.waitForTimeout(2000);
-        } else {
-          await navigateSpa(page, '/my-work', '.product-work');
-        }
-        await navigateSpa(page, route, readySelector);
-        for (let i = 0; i < PERF_RUNS; i += 1) {
-          if (name === 'my_work') {
-            await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-            await page.waitForTimeout(2000);
-          } else {
-            await navigateSpa(page, '/my-work', '.product-work');
-          }
           const requestOffset = performanceRequests.length;
-          samples.push(await time(() => navigateSpa(page, route, readySelector)));
+          if (name === 'my_work') {
+            samples.push(await time(() => openMyWorkFromRoleHome(page)));
+          } else {
+            await openMyWorkFromRoleHome(page);
+            samples.push(await time(() => navigateSpa(page, route, readySelector)));
+          }
           requestSamples.push(performanceRequests.slice(requestOffset));
         }
         if (name.endsWith('_detail')) {
