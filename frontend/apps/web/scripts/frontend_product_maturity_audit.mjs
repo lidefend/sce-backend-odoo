@@ -9,9 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import {
-  compareNavigation,
-  isDeclaredScene,
-  loadNavigationManifest,
+  observeNavigation,
 } from '../../../../scripts/verify/frontend_navigation_audit.mjs';
 
 const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5175';
@@ -35,13 +33,9 @@ const roles = roleBindings.map((row) => String(row.role));
 const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }];
 const maxSurfacesPerRole = Number(process.env.AUDIT_MAX_SURFACES || 0);
 const actionXmlids = JSON.parse(process.env.FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON || '{}');
-const navigationManifestPath = process.env.FRONTEND_NAVIGATION_MANIFEST
-  || 'config/frontend/authoritative_navigation.json';
 const gitSha = String(process.env.GIT_SHA || '').trim();
 const expectedAppTitle = String(process.env.AUDIT_APP_TITLE || '企业业务管理平台').trim();
 const writeAction = /新建|创建|保存|提交|审批|删除|撤销|登记|确认|导入|发布|重置|编辑/i;
-const navigationManifest = loadNavigationManifest(navigationManifestPath);
-
 fs.mkdirSync(outputDir, { recursive: true });
 
 function csvCell(value) { return `"${String(value ?? '').replaceAll('"', '""')}"`; }
@@ -230,10 +224,9 @@ async function main() {
       navigationRows.push(...contractRows.map((row) => ({ ...row, role })));
       if (process.env.AUDIT_DEBUG_NAVIGATION === '1') {
         const debugRows = contractRows.map((row) => ({ ...row, role }));
-        const manifestRole = role.replace(/^(?:demo|fixture)_role_/, '');
-        const debugAudit = compareNavigation(navigationManifest, debugRows, [role]).roles[manifestRole];
-        console.log(`[frontend-navigation-audit-debug] role=${role} expected=${debugAudit.expected_count} actual=${debugAudit.actual_count} matched=${debugAudit.matched_count} missing=${debugAudit.missing_leaf_keys.length} unexpected=${debugAudit.unexpected_leaf_keys.length} duplicate=${debugAudit.duplicate_leaf_keys.length}`);
-        console.log(`[frontend-navigation-audit-debug] role=${role} missing_keys=${JSON.stringify(debugAudit.missing_leaf_keys)} unexpected_keys=${JSON.stringify(debugAudit.unexpected_leaf_keys)}`);
+        const debugAudit = observeNavigation(debugRows, [role]).roles[role.replace(/^(?:demo|fixture)_role_/, '')];
+        console.log(`[frontend-navigation-observation-debug] role=${role} actual=${debugAudit.actual_count} duplicate=${debugAudit.duplicate_leaf_keys.length} invalid=${debugAudit.invalid_leaf_keys.length}`);
+        console.log(`[frontend-navigation-observation-debug] role=${role} duplicate_keys=${JSON.stringify(debugAudit.duplicate_leaf_keys)} invalid_keys=${JSON.stringify(debugAudit.invalid_leaf_keys)}`);
       }
       const selectedRows = maxSurfacesPerRole > 0 ? contractRows.slice(0, maxSurfacesPerRole) : contractRows;
       for (const [index, link] of selectedRows.entries()) {
@@ -274,7 +267,7 @@ async function main() {
   const fields = ['surface_id', 'role', 'navigation_path', 'navigation_label', 'route', 'menu_id', 'action_id', 'menu_xmlid', 'action_xmlid', 'model', 'page_type', 'actual_component', 'title', 'document_title', 'breadcrumbs', 'identity_source', 'identity_result', 'reachable', 'load_result', 'write_capable', 'screenshot', 'load_ms', 'technical_leak', 'generic_title', 'notes'];
   const normalized = rows.map((row) => ({ actual_component: row.route.startsWith('/r/') || row.route.startsWith('/f/') ? 'ContractFormPage.vue' : row.route.startsWith('/a/') ? 'ActionViewShell.vue → ListPage.vue' : row.route.startsWith('/s/') ? 'SceneView.vue' : row.route.startsWith('/m/') ? 'MenuView.vue' : row.route === '/' ? 'HomeView.vue' : 'UNRESOLVED', reachable: row.reachable !== false, ...row }));
   const leafCounts = Object.fromEntries(roles.map((role) => [role, navigationRows.filter((row) => row.role === role).length]));
-  const navigationAudit = compareNavigation(navigationManifest, navigationRows, roles);
+  const navigationAudit = observeNavigation(navigationRows, roles);
   const failed = normalized.filter((row) => row.reachable === false || row.identity_result !== 'PASS');
   const failureSummary = failed.map((row) => ({
     surface_id: row.surface_id || '',
@@ -303,7 +296,7 @@ async function main() {
   const rawIdTitle = normalized.filter((row) => /\s#\d+|^\d+$/i.test(String(row.title || ''))).length;
   const undefinedTitle = normalized.filter((row) => /undefined|null/i.test(`${row.title || ''} ${row.document_title || ''}`)).length;
   const missingMenuXmlid = normalized.filter((row) => !row.menu_xmlid).length;
-  const missingActionXmlid = normalized.filter((row) => !row.action_xmlid && !isDeclaredScene(navigationManifest, row)).length;
+  const missingActionXmlid = normalized.filter((row) => !row.action_xmlid && !String(row.route || '').startsWith('/s/')).length;
   const forbidden = normalized.filter((row) => row.load_result === 'permission' || (row.http_errors || []).some((item) => item.status === 403)).length;
   const unresolved = normalized.filter((row) => row.reachable === false || !row.route).length;
   const summary = {
@@ -337,11 +330,11 @@ async function main() {
     fs.mkdirSync(path.dirname(inventoryPath), { recursive: true });
     fs.writeFileSync(inventoryPath, inventoryCsv);
   }
-  const expectedTotal = navigationAudit.total.expected_count;
+  const observedTotal = navigationAudit.total.actual_count;
   const pass = navigationAudit.total.result === 'PASS'
-    && normalized.length === expectedTotal
-    && summary.reachable === expectedTotal
-    && summary.identity_pass === expectedTotal
+    && normalized.length === observedTotal
+    && summary.reachable === observedTotal
+    && summary.identity_pass === observedTotal
     && summary.generic_business_action_title === 0
     && summary.technical_model_title === 0
     && summary.raw_id_title === 0

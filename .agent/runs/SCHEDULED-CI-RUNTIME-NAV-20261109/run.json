@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-RUNTIME-NAV-20261109",
+  "branch": "fix/scheduled-ci-runtime-nav-20261109",
+  "baseline_sha": "346c194e765808727584466d69ab0d2b0605b7b8",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-RUNTIME-NAV-20261109.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_runtime_nav_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-RUNTIME-NAV-20261109.yaml",
+    ".agent/runs/SCHEDULED-CI-RUNTIME-NAV-20261109/run.json",
+    "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+    "scripts/release/frontend_release_evidence.py",
+    "scripts/verify/frontend_navigation_audit.mjs",
+    "scripts/verify/frontend_navigation_audit.test.mjs",
+    "scripts/verify/frontend_release_audit.py",
+    "scripts/verify/test_frontend_release_audit.py",
+    "scripts/verify/test_frontend_release_evidence_bundle.py",
+    "docs/ops/iterations/scheduled_ci_runtime_nav_20261109.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and exact scheduled workflow failure logs; no acceptance database or browser access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_policy": {
+      "target": "verify.frontend.navigation_policy.unit",
+      "inputs": [
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.test.mjs",
+        "scripts/verify/frontend_release_audit.py",
+        "scripts/verify/test_frontend_release_audit.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "evidence_bundle": {
+      "target": "verify.frontend.evidence_bundle.unit",
+      "inputs": [
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate, verify acceptance classification, publish the PR and wait for current-head gates.",
+  "source_failure": {
+    "run": 42529817408,
+    "workflow": "frontend_release_gate",
+    "head_sha": "f1ba79c173c4701c642b3e505daf33c7aaaedfb9",
+    "expected_total": 63,
+    "actual_total": 89,
+    "log": ".runtime/scheduled-ci-page-identity-20261109/frontend-release-failed.log"
+  },
+  "validation": {
+    "navigation_policy": {
+      "status": "passed",
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/navigation-policy.log",
+      "sha256": "41016355e243af81333a6019b8ab674c889504134473b35d570b9d0388d4b1cf",
+      "role_surface_tests": 16,
+      "navigation_policy_tests": 18,
+      "navigation_observation_scenarios": 10,
+      "release_audit_tests": 31
+    },
+    "evidence_bundle": {
+      "status": "passed",
+      "tests": 10,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/evidence-bundle.log",
+      "sha256": "95698e0ebc17a917fb058091871f2ddcfc17a0c7361da718e0e6c6e401fd64a8"
+    },
+    "frontend_dev_incremental": {
+      "status": "passed",
+      "tests": 94,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/frontend-dev-incremental.log",
+      "sha256": "bc672d1ac3989c4416c847d42fdf44c277aca1a56775fd0738e8f2213b66bdba"
+    },
+    "ci_local_iteration": {
+      "status": "passed",
+      "executed_targets": 4,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/ci-local-iteration-r2.log",
+      "sha256": "bcb4e3a2cc97d4978cf54138b856bb9613603444a6700ea83ac71d51d34cb2ca",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T101019Z-4137321-673614276/receipt.json",
+      "receipt_sha256": "948d351821e23d332ca32db140cf839f1a9840945accbc2690203ebf8029983e"
+    }
+  }
+}
