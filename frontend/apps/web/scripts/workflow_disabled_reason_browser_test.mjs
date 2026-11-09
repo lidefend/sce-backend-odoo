@@ -4,6 +4,7 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 
 const entryId = '\0workflow-disabled-reason-browser-entry';
 const reason = '先完成审批前置条件';
+const overflowReason = '当前记录不允许归档';
 const providerUrl = `/@fs${new URL('../../../packages/ui/src/components/SceneUiProvider.vue', import.meta.url).pathname}`;
 const server = await createServer({
   root: new URL('..', import.meta.url).pathname,
@@ -62,7 +63,10 @@ const server = await createServer({
                   action('save', '保存', true),
                   action('approve', '审批', false, ${JSON.stringify(reason)}),
                 ],
-                overflowActions: [],
+                overflowActions: [
+                  action('archive', '归档', false, ${JSON.stringify(overflowReason)}),
+                  action('publish', '发布', true),
+                ],
                 effectivePrimaryKey: 'save',
                 onActionRef: value => window.workflowReasonEvidence.events.push(value.actionKey),
               }),
@@ -129,6 +133,49 @@ try {
     const enabled = bar.locator('[data-action-key="save"]');
     if (width === 390) await enabled.tap();
     else await enabled.click();
+
+    const more = page.getByRole('button', { name: '展开更多表单操作', exact: true });
+    if (width === 390) await more.tap();
+    else await more.click();
+    const overflowExplanation = page.getByRole('button', {
+      name: `归档: ${overflowReason}`,
+      exact: true,
+    });
+    await overflowExplanation.waitFor({ state: 'visible' });
+    const overflowTabIndex = await overflowExplanation.getAttribute('tabindex');
+    const overflowRole = await overflowExplanation.getAttribute('role');
+    let overflowTabFocused = false;
+    for (let index = 0; index < 12 && !overflowTabFocused; index += 1) {
+      await page.keyboard.press('Tab');
+      overflowTabFocused = await overflowExplanation.evaluate((element) => element === document.activeElement);
+    }
+
+    const overflowScrollBeforeSpace = await page.evaluate(() => scrollY);
+    await overflowExplanation.press('Enter');
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'visible' });
+    const overflowEnterVisible = await page.getByText(overflowReason, { exact: true }).isVisible();
+    await overflowExplanation.click();
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'hidden' });
+
+    await overflowExplanation.focus();
+    await overflowExplanation.press(' ');
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'visible' });
+    const overflowSpaceVisible = await page.getByText(overflowReason, { exact: true }).isVisible();
+    const overflowScrollAfterSpace = await page.evaluate(() => scrollY);
+    await overflowExplanation.click();
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'hidden' });
+
+    if (width === 390) await overflowExplanation.tap();
+    else await overflowExplanation.click();
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'visible' });
+    const overflowPointerVisible = await page.getByText(overflowReason, { exact: true }).isVisible();
+    await overflowExplanation.click();
+    await page.getByText(overflowReason, { exact: true }).waitFor({ state: 'hidden' });
+
+    const enabledOverflow = page.getByText('发布', { exact: true }).last();
+    if (width === 390) await enabledOverflow.tap();
+    else await enabledOverflow.click();
+
     const evidence = await page.evaluate(() => window.workflowReasonEvidence);
     const layout = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
@@ -142,21 +189,39 @@ try {
       pointerVisible,
       keyboardFocusOutline,
       spaceScrollDelta: scrollAfterSpace - scrollBeforeSpace,
+      overflowTabIndex,
+      overflowRole,
+      overflowTabFocused,
+      overflowEnterVisible,
+      overflowSpaceVisible,
+      overflowPointerVisible,
+      overflowSpaceScrollDelta: overflowScrollAfterSpace - overflowScrollBeforeSpace,
       disabledActionEvents: evidence.events.filter((key) => key === 'approve').length,
       enabledActionEvents: evidence.events.filter((key) => key === 'save').length,
+      disabledOverflowEvents: evidence.events.filter((key) => key === 'archive').length,
+      enabledOverflowEvents: evidence.events.filter((key) => key === 'publish').length,
       layout,
       pass: enterVisible && spaceVisible && pointerVisible
         && keyboardFocusOutline.style !== 'none'
         && Number.parseFloat(keyboardFocusOutline.width) > 0
         && scrollAfterSpace === scrollBeforeSpace
+        && overflowTabIndex === '0'
+        && overflowRole === 'button'
+        && overflowTabFocused
+        && overflowEnterVisible
+        && overflowSpaceVisible
+        && overflowPointerVisible
+        && overflowScrollAfterSpace === overflowScrollBeforeSpace
         && evidence.events.filter((key) => key === 'approve').length === 0
         && evidence.events.filter((key) => key === 'save').length === 1
+        && evidence.events.filter((key) => key === 'archive').length === 0
+        && evidence.events.filter((key) => key === 'publish').length === 1
         && layout.documentWidth <= layout.viewportWidth + 1,
     });
   }
 
   const pass = results.every((result) => result.pass) && errors.length === 0;
-  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 13, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + SceneButton', reason, results, errors }, null, 2));
+  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 24, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + ScDropdown + SceneButton', reason, overflowReason, results, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

@@ -54,7 +54,12 @@
       v-if="overflowActions.length"
       class="canonical-action-bar__overflow"
       :data-overflow-count="overflowActions.length"
-      :items="overflowActions.map((action) => ({ value: action.key, label: action.label, disabled: !action.enabled }))"
+      :items="overflowActions.map((action) => ({
+        value: action.key,
+        label: action.label,
+        disabled: !action.enabled,
+        reasonMessage: workflowDisabledReason(action),
+      }))"
       @select="selectOverflowAction"
     >
       <template #trigger><ScButton variant="secondary" aria-label="展开更多表单操作">更多操作</ScButton></template>

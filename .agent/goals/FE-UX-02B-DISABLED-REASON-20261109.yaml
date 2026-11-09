@@ -57,6 +57,9 @@ goal:
     - Enter and Space open the declared reason exactly once without scrolling the page
     - ContractFormProductHeader and CanonicalActionBar use the same keyboard activation helper
     - overflow disabled reasons continue to use the existing ScDropdown reason presentation
+    - CanonicalActionBar overflow options pass workflowDisabledReason(action) as reasonMessage
+    - overflow reason is reachable by Tab, Enter, Space, mouse and touch through the real ScDropdown
+    - disabled overflow action execution count is zero and enabled overflow action execution count is one
     - desktop 1440 and mobile 390 browser checks have no horizontal overflow or console errors
     - targeted tests, guards, lint, strict typecheck and production build pass with non-zero collection
   exclusions:
@@ -77,5 +80,6 @@ goal:
     interaction, tests and documentation; no data migration or external runtime
     mutation exists.
   next_exact_step: >
-    Publish the clean candidate for independent review. Keep real-page runtime
-    evidence and remote exact-head CI pending; do not merge or deploy in this task.
+    Publish the overflow-closure candidate and obtain renewed exact-head CI and
+    independent review. Keep real-page runtime evidence pending; do not merge or
+    deploy in this task.

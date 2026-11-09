@@ -59,6 +59,7 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
             ('data-workflow-reason-trigger', "action bar missing data-workflow-reason-trigger"),
             ('@keydown="activateWorkflowReasonTrigger"', "action bar missing @keydown=\"activateWorkflowReasonTrigger\""),
             ("import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';", "action bar bypasses shared disabled-reason keyboard activation"),
+            ("reasonMessage: workflowDisabledReason(action),", "action bar missing reasonMessage: workflowDisabledReason(action)"),
         ):
             with self.subTest(marker=marker):
                 def read_text(path):

@@ -66,6 +66,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         'data-workflow-reason-trigger',
         'canonical-action-bar__denial-trigger',
         '@keydown="activateWorkflowReasonTrigger"',
+        'reasonMessage: workflowDisabledReason(action)',
     ):
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
     failures.extend(shared_action_bar_errors(driver, surface))

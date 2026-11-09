@@ -123,3 +123,34 @@ make ci.local.iteration
 - 独立审查：PENDING
 - PR：NOT_CREATED
 - 合并、部署：未执行
+
+### PR #848-R1：CanonicalActionBar Overflow Disabled Reason Closure
+
+评审 P1：`CanonicalActionBar` 的 overflow item 映射没有传递
+`reasonMessage`，导致真实 `ScDropdown` 无法创建已有 disabled reason Popover。
+
+最小修复：
+
+- overflow item 增加
+  `reasonMessage: workflowDisabledReason(action)`。
+- 不修改 `ScDropdown`、动作执行权限、Contract V2、ACL 或后端。
+- workflow guard 固定该字段，防止后续回归。
+
+真实 Chromium 覆盖：
+
+- `overflowActions` fixture 同时包含 disabled `archive` 与 enabled `publish`。
+- 1440 鼠标、390 触摸均可打开 disabled overflow reason。
+- Tab 可聚焦原因触发器，`role=button`、`tabindex=0`。
+- Enter / Space 打开原因，Space 不滚动页面。
+- disabled overflow 动作执行 0 次。
+- enabled overflow 动作只执行 1 次。
+- 两视口无横向溢出、无 Console 错误。
+- 新 browser suite 合计 48 项受控断言。
+
+R1 定向验证：
+
+- `verify.frontend.professional_workflow.unit`：PASS。
+- `verify.frontend.native_form_action_presentation.browser`：PASS。
+- lint：0 errors。
+- strict typecheck：PASS。
+- production build：PASS。

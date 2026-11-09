@@ -246,7 +246,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the clean candidate for independent review; keep real-page runtime evidence and remote exact-head CI pending.",
+  "next_exact_step": "Publish the overflow-closure candidate; obtain renewed exact-head CI and independent review, keeping real-page runtime evidence pending.",
   "id": "FE-UX-02B-DISABLED-REASON-20261109",
   "branch": "fix/fe-ux-02b-disabled-reason-20261109",
   "status": "verification_pending",
