@@ -22,6 +22,7 @@ from scripts.verify.frontend_dev_incremental import (
     select_targets,
     worktree_changed_paths,
 )
+from scripts.ops.incremental_execution import current_identity
 from scripts.verify.frontend_style_system_guard import (
     RECORD_RUNTIME_SIZE_LIMITS,
     SIZE_LIMITS,
@@ -943,13 +944,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
 
     def test_incremental_executor_guard_change_runs_its_own_unit(self) -> None:
-        self.assertEqual(
-            select_targets(["scripts/verify/frontend_dev_incremental.py"]),
-            [
-                "verify.agent.resume.unit",
-                "verify.frontend.dev.incremental.unit",
-            ],
-        )
+        for path in (
+            "scripts/verify/frontend_dev_incremental.py",
+            "scripts/ops/incremental_execution.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.agent.resume.unit",
+                        "verify.frontend.dev.incremental.unit",
+                    ],
+                )
 
     def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(
@@ -1045,7 +1051,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn('"unmappedPaths": ["addons/smart_core/models/example.py"]', text)
         self.assertIn("verify.frontend.primitive_adapter.unit", text)
 
-    def test_plan_reports_missing_run_registration_without_claiming_tests_ran(self) -> None:
+    def test_plan_reports_planner_owned_targets_without_duplicate_run_registration(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):
             self.assertEqual(
@@ -1057,11 +1063,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             )
         payload = json.loads(output.getvalue().split("] ", 1)[1])
         self.assertEqual(payload["registrationMissingTargets"], ["verify.frontend.lint.src"])
-        self.assertFalse(payload["executionReady"])
+        self.assertEqual(payload["registrationMode"], "planner_managed")
+        self.assertTrue(payload["executionReady"])
         self.assertFalse(payload["testsRun"])
-        self.assertTrue(payload["manualNonZeroL2Required"])
+        self.assertFalse(payload["manualNonZeroL2Required"])
 
-    def test_expression_only_registration_cannot_cover_a_product_batch(self) -> None:
+    def test_planner_target_set_is_not_reduced_to_explicit_run_registration(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):
             self.assertEqual(
@@ -1076,7 +1083,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 0,
             )
         payload = json.loads(output.getvalue().split("] ", 1)[1])
-        self.assertFalse(payload["executionReady"])
+        self.assertTrue(payload["executionReady"])
+        self.assertEqual(payload["registrationMode"], "planner_managed")
         self.assertIn("verify.frontend.lint.src", payload["registrationMissingTargets"])
         self.assertIn("verify.frontend.typecheck.strict", payload["registrationMissingTargets"])
         self.assertIn(
@@ -1172,7 +1180,14 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.state_patch.start()
         self.addCleanup(self.state_patch.stop)
 
-    def execute(self, *, registered=None, blocked=None, paths=None) -> tuple[int, dict]:
+    def execute(
+        self,
+        *,
+        registered=None,
+        blocked=None,
+        paths=None,
+        identity=None,
+    ) -> tuple[int, dict]:
         receipt_dir = self.root / f"receipt-{len(list(self.root.glob('receipt-*')))}"
         output = io.StringIO()
         with redirect_stdout(output):
@@ -1182,6 +1197,11 @@ class IncrementalExecutionTest(unittest.TestCase):
                 registered_targets=registered,
                 blocked_targets=blocked,
                 receipt_dir=receipt_dir,
+                worktree_identity=identity or {
+                    "head": "a" * 40,
+                    "worktreeClean": True,
+                    "authoritySha256": {"planner.py": "b" * 64},
+                },
             )
         return code, json.loads((receipt_dir / "receipt.json").read_text())
 
@@ -1233,17 +1253,87 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertIn("verify.frontend.primitive_adapter.unit", receipt["requiredTargets"])
         self.assertTrue(receipt["verificationPassed"])
 
-    def test_missing_run_registration_blocks_before_any_target_runs(self) -> None:
+    def test_missing_run_registration_is_owned_by_the_planner(self) -> None:
         code, receipt = self.execute(registered={"verify.frontend.lint.src"})
-        self.assertEqual(code, 2)
-        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(code, 0)
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["registrationMode"], "planner_managed")
         self.assertEqual(
             receipt["registrationMissingTargets"],
             ["verify.frontend.typecheck.strict"],
         )
-        self.assertEqual(receipt["targetResults"], [])
-        self.assertEqual(receipt["notRunTargets"], list(BASE_FRONTEND_TARGETS))
-        self.assertFalse(receipt["testsRun"])
+        self.assertEqual(
+            [row["target"] for row in receipt["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertEqual(receipt["notRunTargets"], [])
+        self.assertTrue(receipt["testsRun"])
+        self.assertTrue(receipt["verificationPassed"])
+
+    def test_identical_clean_execution_reuses_verified_receipt_without_rerun(self) -> None:
+        identity = {
+            "head": "a" * 40,
+            "worktreeClean": True,
+            "authoritySha256": {"planner.py": "b" * 64},
+        }
+        first_code, first = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity=identity,
+        )
+        self.assertEqual(first_code, 0)
+        self.assertFalse(first["reused"])
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            side_effect=AssertionError("reusable execution must not rerun targets"),
+        ):
+            second_code, second = self.execute(
+                registered=set(BASE_FRONTEND_TARGETS),
+                identity=identity,
+            )
+        self.assertEqual(second_code, 0)
+        self.assertTrue(second["reused"])
+        self.assertEqual(second["status"], "passed")
+        self.assertEqual(second["reusedTargetCount"], len(BASE_FRONTEND_TARGETS))
+        self.assertEqual(second["targetResults"], [])
+        self.assertFalse(second["testsRun"])
+        self.assertTrue(second["verificationPassed"])
+        self.assertEqual(second["sourceReceipt"], "receipt-0/receipt.json")
+
+    def test_dirty_execution_identity_never_reuses_a_clean_receipt(self) -> None:
+        clean = {
+            "head": "a" * 40,
+            "worktreeClean": True,
+            "authoritySha256": {"planner.py": "b" * 64},
+        }
+        dirty = {**clean, "worktreeClean": False}
+        self.execute(registered=set(BASE_FRONTEND_TARGETS), identity=clean)
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity=dirty,
+        )
+        self.assertEqual(code, 0)
+        self.assertFalse(receipt["reused"])
+        self.assertTrue(receipt["targetResults"])
+
+    def test_tampered_target_log_invalidates_reuse(self) -> None:
+        identity = {
+            "head": "a" * 40,
+            "worktreeClean": True,
+            "authoritySha256": {"planner.py": "b" * 64},
+        }
+        _, first = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity=identity,
+        )
+        log = self.root / first["targetResults"][0]["log"]
+        log.write_text("tampered\n", encoding="utf-8")
+        code, second = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity=identity,
+        )
+        self.assertEqual(code, 0)
+        self.assertFalse(second["reused"])
+        self.assertTrue(second["targetResults"])
 
     def test_unchanged_recorded_failure_blocks_instead_of_blind_retry(self) -> None:
         code, receipt = self.execute(
@@ -1346,6 +1436,39 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(receipt["status"], "blocked")
         self.assertEqual(receipt["notRunTargets"], ["verify.frontend.typecheck.strict"])
         self.assertFalse(receipt["verificationPassed"])
+
+
+class IncrementalExecutionIdentityTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        subprocess.run(["git", "init", "-q", "-b", "main", str(self.root)], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.name", "Codex Test"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.email", "codex@example.invalid"],
+            check=True,
+        )
+        self.authority = self.root / "planner.py"
+        self.authority.write_text("one\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "base"], check=True)
+
+    def test_clean_head_identity_binds_head_and_authority_bytes(self) -> None:
+        identity = current_identity(self.root, (self.authority,))
+        self.assertEqual(identity["head"], subprocess.check_output(
+            ["git", "-C", str(self.root), "rev-parse", "HEAD"],
+            text=True,
+        ).strip())
+        self.assertTrue(identity["worktreeClean"])
+        self.assertEqual(len(identity["authoritySha256"]["planner.py"]), 64)
+
+    def test_dirty_worktree_is_never_reusable(self) -> None:
+        self.authority.write_text("two\n", encoding="utf-8")
+        self.assertFalse(current_identity(self.root, (self.authority,))["worktreeClean"])
 
 
 class RunScopedPlannerTest(unittest.TestCase):

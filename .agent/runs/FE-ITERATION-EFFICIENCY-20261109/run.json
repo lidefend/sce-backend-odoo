@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "FE-ITERATION-EFFICIENCY-20261109",
+  "branch": "fix/fe-iteration-efficiency-20261109",
+  "baseline_sha": "daa158808e380db0cae4a484e3fcb3adf359d66c",
+  "status": "active",
+  "goal": ".agent/goals/FE-ITERATION-EFFICIENCY-20261109.yaml",
+  "record": "docs/ops/iterations/fe_iteration_efficiency_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-ITERATION-EFFICIENCY-20261109.yaml",
+    ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",
+    "docs/ops/iterations/fe_iteration_efficiency_20261109.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ops/incremental_execution.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or deployment access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "AGENTS.md"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement planner-owned target execution and exact clean-head receipt reuse, then run the focused planner tests."
+}

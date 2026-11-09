@@ -29,6 +29,11 @@ from scripts.ops.agent_run_context import (
     delta_paths,
     resolve_run,
 )
+from scripts.ops.incremental_execution import (
+    current_identity as incremental_current_identity,
+    verified_receipt as incremental_verified_receipt,
+    write_index as write_incremental_index,
+)
 
 WATCH_ROOTS = (
     "frontend/apps/web/src",
@@ -40,6 +45,7 @@ WATCH_ROOTS = (
     "frontend/packages/ui/package.json",
     "frontend/packages/ui/tsconfig.json",
     "scripts/verify/frontend_",
+    "scripts/ops/incremental_execution.py",
 )
 STATE_PATH = ROOT / ".runtime/frontend-dev-validation/status.json"
 FRONTEND_SOURCE_ROOTS = (
@@ -436,6 +442,7 @@ RULES = (
     Rule((
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
         "scripts/ops/agent_run_context.py",
         "scripts/verify/test_agent_run_context.py",
         "make/frontend.mk",
@@ -976,6 +983,7 @@ def print_plan(
         "recordedChecks": checks or {},
         "mode": "development_incremental_plan",
         "status": "recommendation_only",
+        "registrationMode": "planner_managed",
         "changedPathCount": len(paths),
         "requiredTargets": sorted(required_targets),
         "targets": sorted(targets),
@@ -985,12 +993,11 @@ def print_plan(
         "unmappedPathCount": len(unmapped_paths),
         "unmappedPaths": unmapped_paths,
         "executionReady": bool(required_targets)
-        and not registration_missing
         and not unmapped_paths
         and not (required_targets & blocked),
         "candidateEvidence": False,
         "testsRun": False,
-        "manualNonZeroL2Required": bool(unmapped_paths or registration_missing),
+        "manualNonZeroL2Required": bool(unmapped_paths),
     }
     print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
     return 0
@@ -1043,6 +1050,13 @@ def _execution_directory(root: Path, requested: Path | None) -> Path:
         )
     directory.mkdir(parents=True, exist_ok=False)
     return directory
+
+
+def current_execution_identity(root: Path = ROOT) -> dict:
+    return incremental_current_identity(
+        root,
+        (Path(__file__).resolve(), root / "make/frontend.mk"),
+    )
 
 
 def _write_receipt(directory: Path, payload: dict) -> Path:
@@ -1144,9 +1158,11 @@ def execute_targets(
     registered_targets: set[str] | None = None,
     blocked_targets: set[str] | None = None,
     receipt_dir: Path | None = None,
+    worktree_identity: dict | None = None,
 ) -> int:
+    paths = sorted(set(paths))
     targets = select_targets(paths)
-    receipt_directory = _execution_directory(root, receipt_dir)
+    identity = worktree_identity or current_execution_identity(root)
     unmapped_paths = [
         path
         for path in paths
@@ -1165,6 +1181,8 @@ def execute_targets(
         "schemaVersion": 1,
         "mode": "development_incremental_execution",
         "status": "not_run",
+        "registrationMode": "planner_managed",
+        "identity": identity,
         "changedPaths": paths,
         "requiredTargets": targets,
         "targetOrder": targets,
@@ -1193,12 +1211,6 @@ def execute_targets(
             reason="unmapped changed paths require an explicit registered target",
             notRunTargets=targets,
         )
-    elif registration_missing:
-        payload.update(
-            status="blocked",
-            reason="run.json does not register every required target",
-            notRunTargets=targets,
-        )
     elif blocked:
         payload.update(
             status="blocked",
@@ -1206,6 +1218,7 @@ def execute_targets(
             notRunTargets=targets,
         )
     if payload["status"] == "blocked":
+        receipt_directory = _execution_directory(root, receipt_dir)
         receipt = _write_receipt(receipt_directory, payload)
         write_state(
             status="blocked",
@@ -1223,6 +1236,7 @@ def execute_targets(
         return 2
     if not targets:
         payload.update(status="not_run", reason="no relevant L2 checks")
+        receipt_directory = _execution_directory(root, receipt_dir)
         receipt = _write_receipt(receipt_directory, payload)
         write_state(
             status="not_run",
@@ -1233,6 +1247,36 @@ def execute_targets(
             reason=payload["reason"],
         )
         print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
+        return 0
+
+    source_receipt = incremental_verified_receipt(root, paths, targets, identity)
+    receipt_directory = _execution_directory(root, receipt_dir)
+    if source_receipt is not None:
+        payload.update(
+            status="passed",
+            reason="reused identical passed execution",
+            reused=True,
+            sourceReceipt=_json_path(source_receipt, root),
+            reusedTargetCount=len(targets),
+            notRunTargets=[],
+            testsRun=False,
+            verificationPassed=True,
+            executedTargetCount=0,
+        )
+        receipt = _write_receipt(receipt_directory, payload)
+        write_state(
+            status="passed",
+            paths=paths,
+            targets=targets,
+            returncode=0,
+            receipt=_json_path(receipt, root),
+            reason=payload["reason"],
+            target_results=[],
+        )
+        print(
+            "[frontend.dev.incremental] PASS "
+            f"reused={_json_path(source_receipt, root)} receipt={_json_path(receipt, root)}"
+        )
         return 0
 
     print(
@@ -1262,6 +1306,7 @@ def execute_targets(
     payload["testsRun"] = bool(payload["targetResults"])
     payload["verificationPassed"] = payload["status"] == "passed"
     payload["executedTargetCount"] = len(payload["targetResults"])
+    payload["reused"] = False
     receipt = _write_receipt(receipt_directory, payload)
     returncode = {
         "passed": 0,
@@ -1278,6 +1323,8 @@ def execute_targets(
         reason=payload["reason"],
         target_results=payload["targetResults"],
     )
+    if payload["status"] == "passed":
+        write_incremental_index(root, paths, targets, identity, receipt)
     print(
         f"[frontend.dev.incremental] {payload['status'].upper()} "
         f"executed={payload['executedTargetCount']} "
