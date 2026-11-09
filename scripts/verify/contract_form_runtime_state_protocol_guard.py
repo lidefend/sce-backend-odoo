@@ -289,7 +289,7 @@ def main() -> int:
     required_page_status_tokens = [
         "transaction: 'runAction'",
         "transaction: 'primaryAction'",
-        "errorMessage: '请填写操作原因'",
+        "errorMessage: failure === 'missing_contract' ? 'OPERATION_REASON_CONTRACT_MISSING' : '请填写操作原因'",
     ]
     for token in required_page_status_tokens:
         if token not in page:

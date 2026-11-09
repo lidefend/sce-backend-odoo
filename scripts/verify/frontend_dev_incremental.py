@@ -557,6 +557,11 @@ RULES = (
         "verify.native_view.workflow_action_coverage",
     )),
     Rule((
+        "scripts/verify/contract_form_runtime_state_protocol_guard.py",
+    ), (
+        "verify.contract.architecture.suite",
+    )),
+    Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     ), (
         "verify.execute_button.authority.unit",

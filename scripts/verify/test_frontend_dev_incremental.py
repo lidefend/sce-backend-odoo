@@ -328,6 +328,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.native_view.workflow_action_coverage"],
                 )
+        self.assertEqual(
+            select_targets(["scripts/verify/contract_form_runtime_state_protocol_guard.py"]),
+            ["verify.contract.architecture.suite"],
+        )
         for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",

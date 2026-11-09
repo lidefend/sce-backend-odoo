@@ -15,12 +15,14 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "addons/smart_construction_core/core_extension.py",
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+    "make/ci.mk",
     "scripts/release/frontend_release_evidence.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_my_work_approval_browser.mjs",
     "scripts/verify/frontend_navigation_audit.mjs",
     "scripts/verify/frontend_navigation_audit.test.mjs",
     "scripts/verify/frontend_release_audit.py",
+    "scripts/verify/contract_form_runtime_state_protocol_guard.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_frontend_release_audit.py",
@@ -163,6 +165,41 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "contract_architecture_suite": {
+      "target": "verify.contract.architecture.suite",
+      "inputs": [
+        "make/ci.mk",
+        "make/frontend.mk",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/verify/static_suite_frontend_toolchain_guard.py",
+        "scripts/verify/test_static_suite_frontend_toolchain_guard.py",
+        "scripts/verify/contract_form_runtime_state_protocol_guard.py",
+        "frontend/apps/web/src/pages/ContractFormPage.vue"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "make/ci.mk",
+        "make/codex.mk",
+        "make/runtime_ops.mk",
+        "make/dev.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "make/ci.mk",
+        ".github/workflows/",
+        "scripts/ci/",
+        "scripts/verify/ci_workflow_contract_guard.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -199,12 +236,15 @@
     },
     "ci_local_iteration": {
       "status": "passed",
-      "executed_targets": 10,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T104324Z-276398-33739276/receipt.json",
-      "receipt_sha256": "6286c2b486626c2eb0392e64e485f2319de99c319912fcc344f6f80739904ca1",
+      "executed_targets": 13,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T110616Z-562957-964703021/receipt.json",
+      "receipt_sha256": "4788af7dd47948ff664dcd0ad7cc3d3e975f2ad6a975deb22d7a065f92305716",
       "required_targets": [
         "verify.agent.ledger.unit",
         "verify.agent.resume.unit",
+        "verify.baseline.iteration.execution.policy",
+        "verify.ci.workflow.contract",
+        "verify.contract.architecture.suite",
         "verify.frontend.dev.incremental.unit",
         "verify.frontend.evidence_bundle.unit",
         "verify.frontend.navigation_policy.unit",
@@ -241,6 +281,14 @@
       "log": ".runtime/scheduled-ci-runtime-nav-20261109/native-view-workflow-action-coverage-r2.log",
       "sha256": "0297db05a10c15330e4033e070fb6d6734b0a99ba48a25fb30faa516879a41e6"
     },
+    "contract_architecture_suite": {
+      "status": "passed",
+      "tests": 14,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/contract-architecture-suite-r4.log",
+      "sha256": "3f343065dbcdf780a345a6ef21775d831fd6071aee5f238f777e8fbe1273c8a6",
+      "static_suite_frontend_toolchain": "PASS",
+      "verification_lane_coverage": "PASS"
+    },
     "full_release_first_attempt": {
       "status": "failed",
       "run": 42599816709,
@@ -270,6 +318,16 @@
       "failure_owner": "validation_tool_defect",
       "failure": "native-view AST test omitted the finalize hook's submission-readiness notice dependency",
       "log": ".runtime/quick-shard-615e5f6403cd-1-of-8.log"
+    },
+    "full_quick_third_attempt": {
+      "status": "failed",
+      "head_sha": "93fafb9b61ffb3f5bc1d9104f5d172de5d0eed41",
+      "failure_owner": "validation_tool_defect",
+      "failures": [
+        "remote backend suite carried a frontend-toolchain target",
+        "contract_form_runtime_state_protocol_guard retained a stale status-applier token"
+      ],
+      "log": ".runtime/quick-shard-93fafb9b61ff-3-of-8.log"
     }
   }
 }

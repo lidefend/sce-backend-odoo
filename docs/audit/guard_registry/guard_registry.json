@@ -4,16 +4,16 @@
     "active": 1513,
     "orphan": 92,
     "retired": 4,
-    "unwired": 212,
+    "unwired": 169,
     "unwired_undispositioned": 0,
     "wire_or_retire": {
-      "file-consumed": 212,
+      "file-consumed": 169,
       "wire-pending": 0,
       "retire-pending": 0
     },
     "gate_anchors": 4,
-    "gate_enforced": 198,
-    "manual_lane_only": 1315,
+    "gate_enforced": 251,
+    "manual_lane_only": 1262,
     "gate_required": 18,
     "gate_required_unenforced": 0
   },
@@ -218,13 +218,14 @@
       "script": "action_view_responsibility_map_guard.py",
       "path": "scripts/verify/action_view_responsibility_map_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 276,
-      "wire_or_retire": "file-consumed"
+      "lines": 276
     },
     {
       "script": "agent_context_lint.py",
@@ -1864,7 +1865,8 @@
       "path": "scripts/verify/construction_core_extension_actor_roles_split_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.construction.create_defaults.unit"
+        "verify.construction.create_defaults.unit",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -1877,60 +1879,65 @@
       "script": "construction_core_extension_capability_rows_split_guard.py",
       "path": "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 111,
-      "wire_or_retire": "file-consumed"
+      "lines": 111
     },
     {
       "script": "construction_core_extension_contract_helpers_split_guard.py",
       "path": "scripts/verify/construction_core_extension_contract_helpers_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 125,
-      "wire_or_retire": "file-consumed"
+      "lines": 125
     },
     {
       "script": "construction_core_extension_contract_normalizers_split_guard.py",
       "path": "scripts/verify/construction_core_extension_contract_normalizers_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 173,
-      "wire_or_retire": "file-consumed"
+      "lines": 173
     },
     {
       "script": "construction_core_extension_hook_facts_split_guard.py",
       "path": "scripts/verify/construction_core_extension_hook_facts_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 130,
-      "wire_or_retire": "file-consumed"
+      "lines": 130
     },
     {
       "script": "construction_core_extension_intent_handlers_split_guard.py",
       "path": "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "ci.local.iteration"
+        "ci.local.iteration",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -1946,7 +1953,8 @@
       "path": "scripts/verify/construction_core_extension_policy_accessors_split_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.construction.create_defaults.unit"
+        "verify.construction.create_defaults.unit",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -1961,7 +1969,8 @@
       "status": "active",
       "referenced_by_make_targets": [
         "verify.construction.create_defaults.unit",
-        "verify.construction.policy_maps.unit"
+        "verify.construction.policy_maps.unit",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -1976,21 +1985,23 @@
       "script": "construction_core_extension_project_layout_split_guard.py",
       "path": "scripts/verify/construction_core_extension_project_layout_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 141,
-      "wire_or_retire": "file-consumed"
+      "lines": 141
     },
     {
       "script": "construction_core_extension_relation_entry_policy_split_guard.py",
       "path": "scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.construction.create_defaults.unit"
+        "verify.construction.create_defaults.unit",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -2003,39 +2014,42 @@
       "script": "construction_core_extension_responsibility_map_guard.py",
       "path": "scripts/verify/construction_core_extension_responsibility_map_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 220,
-      "wire_or_retire": "file-consumed"
+      "lines": 220
     },
     {
       "script": "construction_core_extension_service_builders_split_guard.py",
       "path": "scripts/verify/construction_core_extension_service_builders_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 170,
-      "wire_or_retire": "file-consumed"
+      "lines": 170
     },
     {
       "script": "construction_core_extension_system_init_rows_split_guard.py",
       "path": "scripts/verify/construction_core_extension_system_init_rows_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 299,
-      "wire_or_retire": "file-consumed"
+      "lines": 299
     },
     {
       "script": "construction_diary_visible_fields_audit.py",
@@ -2231,27 +2245,29 @@
       "script": "contract_form_action_plan_builder_guard.py",
       "path": "scripts/verify/contract_form_action_plan_builder_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
         "scripts/verify/contract_form_side_effect_regression_guard.py"
       ],
-      "lines": 113,
-      "wire_or_retire": "file-consumed"
+      "lines": 113
     },
     {
       "script": "contract_form_behavior_regression_runbook_guard.py",
       "path": "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 112,
-      "wire_or_retire": "file-consumed"
+      "lines": 112
     },
     {
       "script": "contract_form_handling_policy_audit.py",
@@ -2266,15 +2282,16 @@
       "script": "contract_form_onchange_normalization_guard.py",
       "path": "scripts/verify/contract_form_onchange_normalization_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
         "scripts/verify/contract_form_side_effect_regression_guard.py"
       ],
-      "lines": 132,
-      "wire_or_retire": "file-consumed"
+      "lines": 132
     },
     {
       "script": "contract_form_runtime_state_behavior_guard.sh",
@@ -2298,29 +2315,31 @@
       "script": "contract_form_runtime_state_protocol_guard.py",
       "path": "scripts/verify/contract_form_runtime_state_protocol_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
         "scripts/verify/contract_form_side_effect_regression_guard.py"
       ],
-      "lines": 335,
-      "wire_or_retire": "file-consumed"
+      "lines": 335
     },
     {
       "script": "contract_form_save_payload_builder_guard.py",
       "path": "scripts/verify/contract_form_save_payload_builder_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
         "scripts/verify/contract_form_side_effect_regression_guard.py"
       ],
-      "lines": 106,
-      "wire_or_retire": "file-consumed"
+      "lines": 106
     },
     {
       "script": "contract_form_semantic_identity_guard.py",
@@ -2339,28 +2358,30 @@
       "script": "contract_form_side_effect_regression_guard.py",
       "path": "scripts/verify/contract_form_side_effect_regression_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
         "scripts/verify/test_frontend_standard_preview.py"
       ],
-      "lines": 223,
-      "wire_or_retire": "file-consumed"
+      "lines": 223
     },
     {
       "script": "contract_governance_access_policy_split_guard.py",
       "path": "scripts/verify/contract_governance_access_policy_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 103,
-      "wire_or_retire": "file-consumed"
+      "lines": 103
     },
     {
       "script": "contract_governance_brief.py",
@@ -2380,40 +2401,43 @@
       "script": "contract_governance_canonicalization_split_guard.py",
       "path": "scripts/verify/contract_governance_canonicalization_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 98,
-      "wire_or_retire": "file-consumed"
+      "lines": 98
     },
     {
       "script": "contract_governance_capabilities_split_guard.py",
       "path": "scripts/verify/contract_governance_capabilities_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 96,
-      "wire_or_retire": "file-consumed"
+      "lines": 96
     },
     {
       "script": "contract_governance_contract_detection_split_guard.py",
       "path": "scripts/verify/contract_governance_contract_detection_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 165,
-      "wire_or_retire": "file-consumed"
+      "lines": 165
     },
     {
       "script": "contract_governance_coverage.py",
@@ -2433,14 +2457,15 @@
       "script": "contract_governance_create_profile_split_guard.py",
       "path": "scripts/verify/contract_governance_create_profile_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 151,
-      "wire_or_retire": "file-consumed"
+      "lines": 151
     },
     {
       "script": "contract_governance_determinism_guard.py",
@@ -2460,221 +2485,238 @@
       "script": "contract_governance_domain_overrides_split_guard.py",
       "path": "scripts/verify/contract_governance_domain_overrides_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 117,
-      "wire_or_retire": "file-consumed"
+      "lines": 117
     },
     {
       "script": "contract_governance_enterprise_forms_split_guard.py",
       "path": "scripts/verify/contract_governance_enterprise_forms_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 178,
-      "wire_or_retire": "file-consumed"
+      "lines": 178
     },
     {
       "script": "contract_governance_field_semantics_split_guard.py",
       "path": "scripts/verify/contract_governance_field_semantics_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 128,
-      "wire_or_retire": "file-consumed"
+      "lines": 128
     },
     {
       "script": "contract_governance_form_actions_split_guard.py",
       "path": "scripts/verify/contract_governance_form_actions_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 149,
-      "wire_or_retire": "file-consumed"
+      "lines": 149
     },
     {
       "script": "contract_governance_form_fields_split_guard.py",
       "path": "scripts/verify/contract_governance_form_fields_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 157,
-      "wire_or_retire": "file-consumed"
+      "lines": 157
     },
     {
       "script": "contract_governance_form_layout_split_guard.py",
       "path": "scripts/verify/contract_governance_form_layout_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 137,
-      "wire_or_retire": "file-consumed"
+      "lines": 137
     },
     {
       "script": "contract_governance_form_render_split_guard.py",
       "path": "scripts/verify/contract_governance_form_render_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 204,
-      "wire_or_retire": "file-consumed"
+      "lines": 204
     },
     {
       "script": "contract_governance_form_validation_split_guard.py",
       "path": "scripts/verify/contract_governance_form_validation_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 141,
-      "wire_or_retire": "file-consumed"
+      "lines": 141
     },
     {
       "script": "contract_governance_labels_split_guard.py",
       "path": "scripts/verify/contract_governance_labels_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 115,
-      "wire_or_retire": "file-consumed"
+      "lines": 115
     },
     {
       "script": "contract_governance_list_surface_split_guard.py",
       "path": "scripts/verify/contract_governance_list_surface_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 464,
-      "wire_or_retire": "file-consumed"
+      "lines": 464
     },
     {
       "script": "contract_governance_native_bridge_split_guard.py",
       "path": "scripts/verify/contract_governance_native_bridge_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 109,
-      "wire_or_retire": "file-consumed"
+      "lines": 109
     },
     {
       "script": "contract_governance_project_form_split_guard.py",
       "path": "scripts/verify/contract_governance_project_form_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 505,
-      "wire_or_retire": "file-consumed"
+      "lines": 505
     },
     {
       "script": "contract_governance_registry_split_guard.py",
       "path": "scripts/verify/contract_governance_registry_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 178,
-      "wire_or_retire": "file-consumed"
+      "lines": 178
     },
     {
       "script": "contract_governance_responsibility_map_guard.py",
       "path": "scripts/verify/contract_governance_responsibility_map_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 271,
-      "wire_or_retire": "file-consumed"
+      "lines": 271
     },
     {
       "script": "contract_governance_scenes_split_guard.py",
       "path": "scripts/verify/contract_governance_scenes_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 92,
-      "wire_or_retire": "file-consumed"
+      "lines": 92
     },
     {
       "script": "contract_governance_surface_mapping_split_guard.py",
       "path": "scripts/verify/contract_governance_surface_mapping_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 134,
-      "wire_or_retire": "file-consumed"
+      "lines": 134
     },
     {
       "script": "contract_governance_user_surface_split_guard.py",
       "path": "scripts/verify/contract_governance_user_surface_split_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 243,
-      "wire_or_retire": "file-consumed"
+      "lines": 243
     },
     {
       "script": "contract_handler_layout_boundary_guard.py",
@@ -3817,14 +3859,15 @@
       "script": "file_line_budget_uniform_guard.py",
       "path": "scripts/verify/file_line_budget_uniform_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/line_budgets.py"
       ],
-      "lines": 110,
-      "wire_or_retire": "file-consumed"
+      "lines": 110
     },
     {
       "script": "finance_business_category_action_audit.py",
@@ -5095,6 +5138,7 @@
       "path": "scripts/verify/frontend_contract_consumer_intrusion_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.contract.architecture.suite",
         "verify.frontend.contract_consumer_intrusion.guard",
         "verify.frontend.contract_consumer_intrusion.report"
       ],
@@ -5406,7 +5450,7 @@
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 1353
+      "lines": 1365
     },
     {
       "script": "frontend_dev_process_isolation_guard.py",
@@ -5980,6 +6024,7 @@
       "status": "active",
       "referenced_by_make_targets": [
         "ci.local.iteration",
+        "verify.contract.architecture.suite",
         "verify.frontend.page_contract_boundary.guard"
       ],
       "referenced_by_workflows": [],
@@ -6013,6 +6058,7 @@
       "path": "scripts/verify/frontend_page_contract_orchestration_consumption_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.contract.architecture.suite",
         "verify.frontend.page_contract.orchestration_consumption.guard"
       ],
       "referenced_by_workflows": [],
@@ -6796,7 +6842,9 @@
       "script": "frontend_release_evidence_bundle.py",
       "path": "scripts/verify/frontend_release_evidence_bundle.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [
         ".github/workflows/frontend_release_evidence_bundle.yml",
         ".github/workflows/public_guard.yml"
@@ -7056,6 +7104,7 @@
       "path": "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.contract.architecture.suite",
         "verify.frontend.shared_surface_semantic_boundary.guard"
       ],
       "referenced_by_workflows": [],
@@ -8644,13 +8693,14 @@
       "script": "list_field_semantic_integrity_guard.py",
       "path": "scripts/verify/list_field_semantic_integrity_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 72,
-      "wire_or_retire": "file-consumed"
+      "lines": 72
     },
     {
       "script": "list_preference_single_application_guard.py",
@@ -10589,6 +10639,8 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
@@ -11872,6 +11924,7 @@
       "path": "scripts/verify/product_client_action_boundary_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.contract.architecture.suite",
         "verify.product.client_action_boundary.guard"
       ],
       "referenced_by_workflows": [],
@@ -15183,14 +15236,15 @@
       "script": "static_suite_frontend_toolchain_guard.py",
       "path": "scripts/verify/static_suite_frontend_toolchain_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/test_static_suite_frontend_toolchain_guard.py"
       ],
-      "lines": 224,
-      "wire_or_retire": "file-consumed"
+      "lines": 224
     },
     {
       "script": "stress_regression_policy_guard.py",
@@ -16303,7 +16357,8 @@
       "path": "scripts/verify/test_construction_create_default_hooks.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.construction.create_defaults.unit"
+        "verify.construction.create_defaults.unit",
+        "verify.contract.architecture.suite"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
@@ -17463,7 +17518,7 @@
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
         "scripts/verify/frontend_dev_incremental.py"
       ],
-      "lines": 1361
+      "lines": 1379
     },
     {
       "script": "test_frontend_finance_center_rollout.py",
@@ -17982,6 +18037,7 @@
       "path": "scripts/verify/test_frontend_release_evidence_bundle.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.contract.architecture.suite",
         "verify.frontend.evidence_bundle.unit"
       ],
       "referenced_by_workflows": [
@@ -18999,9 +19055,11 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 872
+      "lines": 879
     },
     {
       "script": "test_nginx_proxy_db_authority_guard.py",
@@ -19832,14 +19890,15 @@
       "script": "test_static_suite_frontend_toolchain_guard.py",
       "path": "scripts/verify/test_static_suite_frontend_toolchain_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/static_suite_frontend_toolchain_guard.py"
       ],
-      "lines": 232,
-      "wire_or_retire": "file-consumed"
+      "lines": 232
     },
     {
       "script": "test_system_performance_baseline.py",
@@ -20058,7 +20117,9 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/ci.mk"
+        "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
       "lines": 54
     },
@@ -20225,13 +20286,14 @@
       "script": "ui_contract_v2_responsibility_map_guard.py",
       "path": "scripts/verify/ui_contract_v2_responsibility_map_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 284,
-      "wire_or_retire": "file-consumed"
+      "lines": 284
     },
     {
       "script": "ui_surface_stability_ready.py",
@@ -21249,6 +21311,8 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
@@ -21569,13 +21633,14 @@
       "script": "v1_1_convergence_status_guard.py",
       "path": "scripts/verify/v1_1_convergence_status_guard.py",
       "status": "active",
-      "referenced_by_make_targets": [],
+      "referenced_by_make_targets": [
+        "verify.contract.architecture.suite"
+      ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 99,
-      "wire_or_retire": "file-consumed"
+      "lines": 99
     },
     {
       "script": "view_orchestration_boundary_guard.py",

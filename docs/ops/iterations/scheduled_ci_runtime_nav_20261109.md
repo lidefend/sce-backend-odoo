@@ -42,6 +42,12 @@ that becomes stale whenever the product evolves.
   finalize function without supplying its submission-readiness notice hook.
   The product hook was already defined; the harness now supplies a mock and
   asserts the exact call instead of failing with `NameError`.
+- A third full run exposed two lane-governance drifts: the remote backend
+  architecture suite carried a frontend-toolchain target, and the runtime-state
+  protocol guard still required the pre-contract-failure reason literal.
+- `verify.frontend.scene_primitive_adapter.unit` now remains in the local quick
+  and frontend lanes instead of the remote backend suite; the runtime-state
+  guard now recognizes the contract-aware `missing_contract` reason path.
 - The runtime scene-aware expectation gate remains scheduled for
   `FE-NAV-CAPABILITY-RELEASE-01`.
 
@@ -55,11 +61,12 @@ Current candidate results:
 | Release navigation/release audit | PASS, 16 + 18 + 10 + 31 tests/scenarios |
 | Release evidence bundle | PASS, 10 tests |
 | Frontend incremental planner | PASS, 94 tests |
-| `ci.local.iteration` | PASS, 10/10 affected targets |
+| `ci.local.iteration` | PASS, 13/13 affected targets |
 | Playwright vendor coupling guard | PASS, baseline unchanged |
 | Unified Page Contract v2 schema guard | PASS, 4 tests |
 | Guard registry audit | PASS, 24 tests; 212/212 unwired dispositioned |
 | Native-view workflow action coverage | PASS, 59 tests |
+| Contract architecture suite | PASS, including toolchain and lane coverage guards |
 
 The exact logs and hashes are indexed in the run JSON.
 
@@ -86,3 +93,7 @@ The complete local run on `615e5f640` then reached the native-view contract
 guard and found the stale finalize-test namespace. The harness is corrected and
 the native-view workflow coverage target passes; one final complete local run
 is required to obtain the clean exact-head receipt.
+
+The complete local run on `93fafb9b6` then exposed the cross-lane frontend
+toolchain dependency and the stale runtime-state guard token. Both are corrected
+without changing product behavior or raising a governance baseline.
