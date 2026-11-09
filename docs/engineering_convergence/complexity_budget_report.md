@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5150`
-- Files requiring split plan: `74`
-- Files above warning threshold: `150`
+- Scanned files: `5151`
+- Files requiring split plan: `75`
+- Files above warning threshold: `149`
 
 ## Split Plan Required
 
@@ -76,6 +76,7 @@ Generated from repository source files. This report is informational during the 
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1570 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1557 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
@@ -96,16 +97,15 @@ Generated from repository source files. This report is informational during the 
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1442 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1416 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1416 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1411 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1391 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
@@ -312,6 +312,7 @@ Generated from repository source files. This report is informational during the 
 | 1570 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1557 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
@@ -321,11 +322,10 @@ Generated from repository source files. This report is informational during the 
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1442 | warning | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1440 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1416 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1416 | warning | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 
 ## Interpretation
 
