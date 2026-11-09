@@ -120,6 +120,8 @@ class DailyRuntimeBundleSyncTests(unittest.TestCase):
         self.assertIn('remote worktree is not clean', source)
         self.assertIn('candidate is not a fast-forward descendant', source)
         self.assertIn('normalized_from_candidate', source)
+        self.assertIn('preserved_deploy_receipt', source)
+        self.assertIn('target main does not ignore', source)
         self.assertIn('refs/daily-candidates/', source)
         self.assertIn('BLOCKED detached HEAD is not a recorded daily candidate', source)
         self.assertNotIn('git config', source)
@@ -167,6 +169,42 @@ class DailyRuntimeBundleSyncTests(unittest.TestCase):
             self.assertEqual(git(target, "status", "--porcelain"), "")
             self.assertEqual((target / "value.txt").read_text(encoding="utf-8"), "new\n")
             self.assertFalse((target / "candidate.txt").exists())
+
+    def test_remote_program_preserves_ignored_receipt_across_main_normalization(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, target, old_sha, _ = build_pair(root)
+            (source / ".gitignore").write_text("/.deployed.json\n", encoding="utf-8")
+            git(source, "add", ".gitignore")
+            git(source, "commit", "-m", "ignore deployment receipt")
+            expected_sha = git(source, "rev-parse", "HEAD")
+            candidate_sha = detach_candidate(target)
+            (target / ".deployed.json").write_text('{"git_head":"candidate"}\n', encoding="utf-8")
+            bundle, digest = make_bundle(root, source, old_sha, expected_sha)
+
+            result = run_remote(target, bundle, expected_sha, old_sha, digest, candidate_sha)
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertIn('"preserved_deploy_receipt": true', result.stdout.decode())
+            self.assertEqual(git(target, "rev-parse", "HEAD"), expected_sha)
+            self.assertEqual(git(target, "status", "--porcelain"), "")
+            self.assertEqual((target / ".deployed.json").read_text(encoding="utf-8"), '{"git_head":"candidate"}\n')
+
+    def test_remote_program_refuses_receipt_when_target_does_not_ignore_it(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, target, old_sha, expected_sha = build_pair(root)
+            candidate_sha = detach_candidate(target)
+            (target / ".deployed.json").write_text('{"git_head":"candidate"}\n', encoding="utf-8")
+            bundle, digest = make_bundle(root, source, old_sha, expected_sha)
+
+            result = run_remote(target, bundle, expected_sha, old_sha, digest, candidate_sha)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("target main does not ignore", result.stderr.decode())
+            self.assertEqual(git(target, "rev-parse", "HEAD"), old_sha)
+            self.assertEqual(
+                (target / ".deployed.json").read_text(encoding="utf-8"),
+                '{"git_head":"candidate"}\n',
+            )
 
     def test_remote_program_rejects_unrecorded_detached_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
