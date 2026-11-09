@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "id": "FE-ITERATION-EFFICIENCY-20261109",
+  "branch": "fix/fe-iteration-efficiency-20261109",
+  "baseline_sha": "daa158808e380db0cae4a484e3fcb3adf359d66c",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-ITERATION-EFFICIENCY-20261109.yaml",
+  "record": "docs/ops/iterations/fe_iteration_efficiency_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-ITERATION-EFFICIENCY-20261109.yaml",
+    ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",
+    "docs/ops/iterations/fe_iteration_efficiency_20261109.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ops/incremental_execution.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or deployment access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "AGENTS.md"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean exact head, then verify the current-head required checks.",
+  "validation": {
+    "focused_planner_tests": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 100
+    },
+    "clean_execution": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "head": "df87a428fb8167ff166c424956e8e63004c9ca68",
+      "executed_targets": 3,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T145927Z-2160635-236873218/receipt.json"
+    },
+    "clean_reuse": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "head": "8ba7922de65ae8a34bf8a790bed7eb4c3082d2b5",
+      "reused": true,
+      "reused_targets": 3,
+      "tests_run_again": false,
+      "bookkeeping_only_head": true,
+      "source_receipt": ".runtime/frontend-dev-validation/executions/20261109T145927Z-2160635-236873218/receipt.json",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T150257Z-2178981-365292890/receipt.json"
+    }
+  }
+}

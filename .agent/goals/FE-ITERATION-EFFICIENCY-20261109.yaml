@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: FE-ITERATION-EFFICIENCY-20261109
+  title: 前端增量执行去重与回执复用
+  status: verification_pending
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend incremental target registration and execution receipt reuse
+  module: scripts/verify/frontend_dev_incremental.py
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Required-target discovery, duplicate run registration and repeated execution of
+    identical evidence are delivery-tool mechanics. No product rendering, contract,
+    permission, database or runtime behavior is being changed.
+  why_not_elsewhere: >
+    Repeating the same target list in run.json and planner declarations creates two
+    authorities. Moving the workaround into a frontend component or backend module
+    would hide a P4 execution defect behind product code.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-ITERATION-EFFICIENCY-20261109.yaml
+      - .agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json
+      - docs/ops/iterations/fe_iteration_efficiency_20261109.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/ops/incremental_execution.py
+    product_behavior: none
+  objective: >
+    Make the planner's required target set the execution authority without requiring
+    a second per-target copy in run.json, and reuse a passed execution receipt when the
+    exact clean HEAD, changed path set and required target set are unchanged.
+  acceptance:
+    - planner execution is not blocked solely because run.json omits planner-owned targets
+    - run.json keeps explicit cross-lane checks and planner targets are visible in the receipt
+    - exact clean HEAD plus identical changed paths and target set reuse the prior passed receipt
+    - changed head, dirty tree, changed target set or tampered logs invalidate reuse
+    - failed, blocked, interrupted and not-run receipts are never treated as reusable passes
+    - the behavior lock uses non-zero targeted tests
+    - the identity and receipt cache is a reusable P4 helper for other planners
+  exclusions:
+    - frontend_product_code
+    - backend_product_code
+    - contract_or_permission_change
+    - browser_or_candidate_release_gate
+    - database_or_runtime_write
+    - push_merge_or_deploy
+  rollback: Revert the single P4 topic commit; no persistent data or runtime state is involved.
