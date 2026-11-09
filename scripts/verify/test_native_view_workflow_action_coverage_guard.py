@@ -13,7 +13,7 @@ import copy
 import json
 import unittest
 import xml.etree.ElementTree as ET
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -706,8 +706,10 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'smart_core_finalize_unified_page_contract_v2')
         def workflow(env, out, source, **kw):
             out['actionContract'] = {'reviewerActions': ['validate_tier', 'reject_tier']}
+        notice_injection = Mock()
         namespace = {'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
             '_sc_inject_workflow_contract': workflow, 'inject_financial_workspace_runtime': lambda *args: None,
+            '_sc_inject_submission_readiness_notice': notice_injection,
             'smart_core_form_business_actions': None,
             '_contract_normalizers': SimpleNamespace(normalize_declared_field_presentation=lambda *args, **kw: None)}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
@@ -724,6 +726,11 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(result['meta'], {})
         self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
         self.assertEqual(contract, baseline)
+        notice_injection.assert_called_once_with(
+            None,
+            result,
+            {'model': 'sc.construction.diary', 'view_type': 'form'},
+        )
 
     def test_project_actions_keep_approval_and_lifecycle_separate(self):
         for approved, pending, reviewer, expected in (

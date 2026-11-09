@@ -105,10 +105,10 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
-| 1370 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1379 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1365 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
-| 1359 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
@@ -191,8 +191,8 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 882 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 879 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
-| 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |

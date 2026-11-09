@@ -38,6 +38,10 @@ that becomes stale whenever the product evolves.
   wire-or-retire disposition.
 - The schema guard now recognizes `noticeContract`; every newly dispositioned
   guard is registered as `file-consumed`, not ignored or retired.
+- A second full local run exposed one stale AST test harness: it extracted the
+  finalize function without supplying its submission-readiness notice hook.
+  The product hook was already defined; the harness now supplies a mock and
+  asserts the exact call instead of failing with `NameError`.
 - The runtime scene-aware expectation gate remains scheduled for
   `FE-NAV-CAPABILITY-RELEASE-01`.
 
@@ -51,10 +55,11 @@ Current candidate results:
 | Release navigation/release audit | PASS, 16 + 18 + 10 + 31 tests/scenarios |
 | Release evidence bundle | PASS, 10 tests |
 | Frontend incremental planner | PASS, 94 tests |
-| `ci.local.iteration` | PASS, 9/9 affected targets |
+| `ci.local.iteration` | PASS, 10/10 affected targets |
 | Playwright vendor coupling guard | PASS, baseline unchanged |
 | Unified Page Contract v2 schema guard | PASS, 4 tests |
 | Guard registry audit | PASS, 24 tests; 212/212 unwired dispositioned |
+| Native-view workflow action coverage | PASS, 59 tests |
 
 The exact logs and hashes are indexed in the run JSON.
 
@@ -76,3 +81,8 @@ The first complete local run on `5e62e118f` passed 6/8 shards. The two failed
 shards were isolated to the schema-guard expectation and guard-registry
 disposition defects above. Both owning tools now pass; the complete local gate
 must be rerun on the next clean commit before publication.
+
+The complete local run on `615e5f640` then reached the native-view contract
+guard and found the stale finalize-test namespace. The harness is corrected and
+the native-view workflow coverage target passes; one final complete local run
+is required to obtain the clean exact-head receipt.

@@ -551,6 +551,12 @@ RULES = (
         "verify.unified_page_contract.v2.schema",
     )),
     Rule((
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    ), (
+        "verify.native_view.workflow_action_coverage",
+    )),
+    Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     ), (
         "verify.execute_button.authority.unit",

@@ -13,6 +13,7 @@
     "docs/audit/guard_registry/guard_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_construction_core/core_extension.py",
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
     "scripts/release/frontend_release_evidence.py",
     "scripts/verify/frontend_dev_incremental.py",
@@ -24,6 +25,7 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_frontend_release_audit.py",
     "scripts/verify/test_frontend_release_evidence_bundle.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
     "scripts/verify/unified_page_contract_v2_schema_guard.py",
     "docs/ops/iterations/scheduled_ci_runtime_nav_20261109.md"
@@ -149,6 +151,18 @@
         "make/guards.mk"
       ],
       "kind": "offline"
+    },
+    "native_view_workflow_action_coverage": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "config/contract/native_view_undeclared_actions.v1.json",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -185,9 +199,9 @@
     },
     "ci_local_iteration": {
       "status": "passed",
-      "executed_targets": 9,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T103532Z-169581-399017555/receipt.json",
-      "receipt_sha256": "62990a8958b0a7c4f63ac4247313a31677781419ec9a14046ae57ba005b874c2",
+      "executed_targets": 10,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T104324Z-276398-33739276/receipt.json",
+      "receipt_sha256": "6286c2b486626c2eb0392e64e485f2319de99c319912fcc344f6f80739904ca1",
       "required_targets": [
         "verify.agent.ledger.unit",
         "verify.agent.resume.unit",
@@ -197,6 +211,7 @@
         "verify.frontend.standard_preview.unit",
         "verify.frontend.typecheck.strict",
         "verify.guard.registry",
+        "verify.native_view.workflow_action_coverage",
         "verify.unified_page_contract.v2.schema"
       ]
     },
@@ -220,6 +235,12 @@
       "log": ".runtime/scheduled-ci-runtime-nav-20261109/guard-registry-r2.log",
       "sha256": "8eaf7fb367f778deffe0f75b8851f5d9b1ee41636ac6146b03322ab637e84785"
     },
+    "native_view_workflow_action_coverage": {
+      "status": "passed",
+      "tests": 59,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/native-view-workflow-action-coverage-r2.log",
+      "sha256": "0297db05a10c15330e4033e070fb6d6734b0a99ba48a25fb30faa516879a41e6"
+    },
     "full_release_first_attempt": {
       "status": "failed",
       "run": 42599816709,
@@ -242,6 +263,13 @@
         "schema": ".runtime/quick-shard-5e62e118f6cf-1-of-8.log",
         "guard_registry": ".runtime/quick-shard-5e62e118f6cf-3-of-8.log"
       }
+    },
+    "full_quick_second_attempt": {
+      "status": "failed",
+      "head_sha": "615e5f6403cdaee8964dc5a3520b0b748a719111",
+      "failure_owner": "validation_tool_defect",
+      "failure": "native-view AST test omitted the finalize hook's submission-readiness notice dependency",
+      "log": ".runtime/quick-shard-615e5f6403cd-1-of-8.log"
     }
   }
 }

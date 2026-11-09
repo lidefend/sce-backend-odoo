@@ -320,6 +320,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.unified_page_contract.v2.schema"],
                 )
         for path in (
+            "scripts/verify/native_view_workflow_action_coverage_guard.py",
+            "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.native_view.workflow_action_coverage"],
+                )
+        for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",
         ):
