@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M7-20261110
+  title: "自定义前端系统性收敛 M7 390/1440 中心旅程对等"
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: responsive parity and representative business journey continuity
+  module: frontend shell, workspaces, collections, forms, overlays and navigation
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Responsive parity and cross-page journey continuity are shared product-shell
+    and renderer behavior. They belong to the P0 frontend platform.
+  why_not_elsewhere: >
+    No business rule or permission is being inferred. Page-specific mobile fixes
+    or cosmetic exceptions would create inconsistent product interaction rules.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M7-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M7-20261110/run.json
+      - docs/ops/iterations/frontend_systemic_m7_parity_20261110.md
+      - frontend/apps/web/src/
+      - scripts/verify/
+      - make/frontend.mk
+    product_behavior: >
+      The selected center journeys expose equivalent business facts, actions,
+      focus behavior and error handling at 1440 and 390, with no hidden overflow
+      or viewport-only loss of identity.
+  objective: >
+    Verify ten center journeys at 1440 and 390, fix only proven responsive parity
+    defects, and register every uncovered journey explicitly.
+  acceptance:
+    - ten named center journeys are bound to the current product candidate
+    - each journey records desktop and mobile outcome, overflow and errors
+    - proven parity defects are fixed within the shared P0 layer
+    - unaffected journey evidence is reused by input identity
+    - targeted tests and iteration pass non-zero
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M7 commits; no persistent data or service state is involved.

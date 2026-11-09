@@ -37,4 +37,12 @@ its existing six-decimal upper bound and empty-value behavior.
 
 ## Result
 
-Pending commit, clean-HEAD iteration and affected 1440/390 page review.
+Completed on candidate `f78a26322cebea01147d778569480b51a76a44dc`.
+The clean iteration passed 20 affected targets. WorkspaceHome, MyWork and
+PaymentRequestForm passed at 1440x960 and 390x844 with zero overflow, zero
+Console/HTTP errors and `mutationCount=0`; logger silencing did not hide request
+failures because the browser probe observed HTTP responses directly.
+
+Browser summary:
+`.runtime/m6-browser-f78a263/summary.json`, SHA-256
+`8db26fe20dd4721c785a9e2b29225149eedf379f902fed2ddc2eba7fc6e8c303`.
