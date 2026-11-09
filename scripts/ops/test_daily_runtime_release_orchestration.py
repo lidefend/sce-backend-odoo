@@ -63,6 +63,8 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
                 "align-platform",
                 "published-face",
                 "entry-verify",
+                "build-identity-record",
+                "build-identity-verify",
             ],
         )
         self.assertEqual(steps[0].target, "daily.runtime.candidate.bundle_sync")
@@ -99,6 +101,27 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         )
         self.assertTrue(
             steps[4].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/platform-admin")
+        )
+        self.assertEqual(
+            [step.variables["DAILY_RUNTIME_DEPLOY_ENV"] for step in steps[3:5]],
+            ["daily", "daily"],
+        )
+        self.assertEqual(
+            steps[7].target,
+            "daily.runtime.build_identity.record",
+        )
+        self.assertEqual(
+            steps[7].environment["CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD"],
+            "RECORD_EXACT_DAILY_RUNTIME_BUILD_IDENTITY",
+        )
+        self.assertEqual(
+            steps[8].target,
+            "verify.daily.runtime.build_identity",
+        )
+        self.assertTrue(
+            steps[8].variables["DAILY_RUNTIME_BUILD_IDENTITY_REPORT"].endswith(
+                "/build-identity-verification.json"
+            )
         )
 
     def test_main_sequence_uses_the_main_bundle_entry(self):
@@ -232,7 +255,15 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         steps = orchestration.plan_steps(ROOT, arguments(), identity())
         resumed = orchestration.resume_steps(steps, "duty-refresh")
         self.assertEqual(
-            ["duty-refresh", "align-demo", "align-platform", "published-face", "entry-verify"],
+            [
+                "duty-refresh",
+                "align-demo",
+                "align-platform",
+                "published-face",
+                "entry-verify",
+                "build-identity-record",
+                "build-identity-verify",
+            ],
             [step.key for step in resumed],
         )
         with self.assertRaises(orchestration.ReleaseError):

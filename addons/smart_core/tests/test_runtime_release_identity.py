@@ -20,7 +20,8 @@ class RuntimeReleaseIdentityTest(unittest.TestCase):
             os.environ,
             {
                 "SC_SOURCE_REVISION": source_revision,
-                "SC_ENVIRONMENT": "daily",
+                "SC_DEPLOY_ENV": "daily",
+                "SC_ENVIRONMENT": "demo",
                 "FRONTEND_BUILD_SHA256": build_sha,
             },
             clear=False,
@@ -31,6 +32,7 @@ class RuntimeReleaseIdentityTest(unittest.TestCase):
         self.assertEqual(payload["source_revision"], source_revision)
         self.assertEqual(payload["database"], "sc_demo")
         self.assertEqual(payload["environment"], "daily")
+        self.assertEqual(payload["runtime_environment"], "demo")
         self.assertEqual(payload["frontend_build_sha256"], build_sha)
 
     def test_invalid_optional_hashes_fail_closed(self):

@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
+import fs from 'fs';
+import { execFileSync } from 'child_process';
 
 function readNumberEnv(name: string, fallback: number): number {
   const value = Number(process.env[name] ?? fallback);
@@ -38,9 +40,80 @@ const watchBinaryInterval = readNumberEnv('VITE_WATCH_BINARY_INTERVAL', 300);
 const rootDir = __dirname;
 const workspaceRoot = path.resolve(__dirname, '../..');
 const cacheDir = path.resolve(workspaceRoot, 'node_modules/.vite/web');
+const fullSha = /^[0-9a-f]{40}$/;
+const isoTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+
+function readBuildIdentity() {
+  const firstNonEmpty = (...values: Array<string | undefined>) => (
+    values.map((value) => String(value ?? '').trim()).find(Boolean) ?? ''
+  );
+  const configuredSha = firstNonEmpty(process.env.SC_SOURCE_REVISION, process.env.SC_BUILD_SHA).toLowerCase();
+  let buildSha = fullSha.test(configuredSha) ? configuredSha : '';
+  if (!buildSha) {
+    try {
+      buildSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: workspaceRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim().toLowerCase();
+    } catch {
+      buildSha = '';
+    }
+  }
+  const configuredTime = firstNonEmpty(process.env.SC_BUILD_TIME);
+  const builtAt = isoTime.test(configuredTime) ? configuredTime : new Date().toISOString();
+  const environment = firstNonEmpty(
+    process.env.SC_DEPLOY_ENV
+    , process.env.SC_ENVIRONMENT
+    , process.env.VITE_APP_ENV
+    , 'unknown',
+  );
+  let version = firstNonEmpty(process.env.SC_PRODUCT_VERSION);
+  if (!version) {
+    try {
+      version = fs.readFileSync(path.resolve(workspaceRoot, '../VERSION'), 'utf8').trim();
+    } catch {
+      version = 'unknown';
+    }
+  }
+  return {
+    sha: fullSha.test(buildSha) ? buildSha : 'unknown',
+    builtAt,
+    environment,
+    version: version || 'unknown',
+  };
+}
+
+const buildIdentity = readBuildIdentity();
+
+function buildInfoPlugin() {
+  return {
+    name: 'sc-build-info',
+    apply: 'build' as const,
+    generateBundle() {
+      this.emitFile({
+        type: 'asset' as const,
+        fileName: 'build-info.json',
+        source: `${JSON.stringify({
+          schema: 'frontend.build_info.v1',
+          sha: buildIdentity.sha,
+          built_at: buildIdentity.builtAt,
+          environment: buildIdentity.environment,
+          version: buildIdentity.version,
+        }, null, 2)}\n`,
+      });
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), buildInfoPlugin()],
+  define: {
+    __SC_BUILD_SHA__: JSON.stringify(buildIdentity.sha),
+    __SC_BUILD_TIME__: JSON.stringify(buildIdentity.builtAt),
+    __SC_BUILD_ENV__: JSON.stringify(buildIdentity.environment),
+    __SC_BUILD_VERSION__: JSON.stringify(buildIdentity.version),
+  },
   cacheDir,
   resolve: {
     alias: {

@@ -73,11 +73,12 @@ class BuildError(RuntimeError):
 
 REMOTE_BUILD = r'''
 import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 (expected_sha, env_name, env_file, database, base_url, remote_root,
  fingerprint_hint, entry_hint, platform_admin_database,
- entry_prefix) = sys.argv[1:11]
+ entry_prefix, deployment_env) = sys.argv[1:12]
 
 tag = "[daily.runtime.frontend.build]"
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
@@ -86,6 +87,7 @@ full_sha = re.compile(r"^[0-9a-f]{40}$")
 full_fp = re.compile(r"^[0-9a-f]{64}$")
 entry_re = re.compile(r'src="/assets/(index-[^"?]+\.js)"')
 entry_prefix_re = re.compile(r"^/(t/[a-z0-9-]+|platform-admin)$")
+deployment_environment_re = re.compile(r"^[a-z][a-z0-9_-]*$")
 
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
@@ -93,6 +95,10 @@ if not full_sha.fullmatch(expected_sha):
     raise SystemExit(tag + " BLOCKED invalid deployed revision")
 if not entry_prefix_re.fullmatch(entry_prefix or ""):
     raise SystemExit(tag + " BLOCKED invalid entry namespace prefix")
+if not deployment_environment_re.fullmatch(deployment_env or ""):
+    raise SystemExit(tag + " BLOCKED invalid deployment environment")
+
+built_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 env_path = root / env_file
 dist_dir = root / "frontend/apps/web/dist-dev"
@@ -106,6 +112,8 @@ state = {
     "physical_db_sweep": "NOT_RUN", "physical_db_bakes": [],
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
+    "deployment_environment": deployment_env, "built_at": built_at,
+    "build_info": None,
     "build_tail": "", "fingerprint_tail": "", "restart_tail": "",
 }
 
@@ -224,15 +232,42 @@ def entry_of(html):
     return match.group(1) if match else ""
 
 def run_make(*args):
+    environment = {
+        **os.environ,
+        "SC_SOURCE_REVISION": expected_sha,
+        "SC_DEPLOY_ENV": deployment_env,
+        "SC_BUILD_TIME": built_at,
+    }
     result = subprocess.run(
-        ["make", *args], cwd=root, text=True,
+        ["make", *args], cwd=root, text=True, env=environment,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
     )
     return result.returncode, result.stdout
 
 def build():
     return run_make("verify.frontend.build", "ENV=" + env_name,
-                    "ENV_FILE=" + env_file, "DB_NAME=" + database)
+                    "ENV_FILE=" + env_file, "DB_NAME=" + database,
+                    "SC_SOURCE_REVISION=" + expected_sha,
+                    "SC_DEPLOY_ENV=" + deployment_env,
+                    "SC_BUILD_TIME=" + built_at)
+
+def build_info(dist):
+    path = dist / "build-info.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if (
+        payload.get("schema") != "frontend.build_info.v1"
+        or payload.get("sha") != expected_sha
+        or payload.get("environment") != deployment_env
+        or payload.get("built_at") != built_at
+        or not str(payload.get("version") or "").strip()
+    ):
+        return None
+    return payload
 
 def fingerprint(dist):
     result = subprocess.run(
@@ -291,12 +326,14 @@ with lock_path.open("a+b") as lock:
         and declared == fingerprint_hint
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
+        and build_info(dist_dir) is not None
         and not physical_db_bakes()
     )
     if reused:
         state["reused"] = True
         state["fingerprint"] = fingerprint_hint
         state["entry_asset"] = entry_hint
+        state["build_info"] = build_info(dist_dir)
         # The reuse precondition already scanned the served bundle for physical
         # database names.  Report that fact instead of NOT_RUN, otherwise a
         # byte-identical reuse is rejected by the caller as missing evidence.
@@ -319,6 +356,11 @@ with lock_path.open("a+b") as lock:
     if code:
         restore_env()
         blocked("governed frontend build failed")
+
+    state["build_info"] = build_info(dist_dir)
+    if state["build_info"] is None:
+        restore_env()
+        blocked("frontend build-info.json does not bind the exact build identity")
 
     code, fingerprint, fingerprint_tail = fingerprint(dist_dir)
     state["fingerprint"] = fingerprint
@@ -364,6 +406,7 @@ with lock_path.open("a+b") as lock:
         served_entry == entry
         and asset_code == 200
         and state["physical_db_sweep"] == "NO_PHYSICAL_DB_NAME"
+        and state["build_info"] is not None
     )
     if not ok and state["env_written"]:
         restore_env()
@@ -383,6 +426,7 @@ def remote_command(
     entry_hint: str,
     platform_admin_database: str,
     entry_prefix: str,
+    deployment_environment: str,
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -400,12 +444,17 @@ def remote_command(
             entry_hint,
             platform_admin_database,
             entry_prefix,
+            deployment_environment,
         )
     )
 
 
 def preflight(
-    expected_sha: str, ssh_host: str, platform_admin_database: str, entry_prefix: str
+    expected_sha: str,
+    ssh_host: str,
+    platform_admin_database: str,
+    entry_prefix: str,
+    deployment_environment: str = "daily",
 ) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD") != CONFIRMATION:
         raise BuildError("exact daily runtime frontend build confirmation is required")
@@ -419,6 +468,8 @@ def preflight(
         )
     if not ENTRY_PREFIX.fullmatch(entry_prefix or ""):
         raise BuildError("the entry namespace prefix must be a declared path prefix")
+    if not re.fullmatch(r"^[a-z][a-z0-9_-]*$", deployment_environment or ""):
+        raise BuildError("deployment environment is invalid")
 
 
 def reuse_hint(receipt_path: str, expected_sha: str) -> tuple[str, str]:
@@ -457,8 +508,15 @@ def align(
     entry_hint: str,
     platform_admin_database: str,
     entry_prefix: str,
+    deployment_environment: str = "daily",
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host, platform_admin_database, entry_prefix)
+    preflight(
+        expected_sha,
+        ssh_host,
+        platform_admin_database,
+        entry_prefix,
+        deployment_environment,
+    )
     if not DATABASE_NAME.fullmatch(database or ""):
         raise BuildError(
             "the served database must be a declared duty database name; this "
@@ -485,6 +543,7 @@ def align(
             entry_hint,
             platform_admin_database,
             entry_prefix,
+            deployment_environment,
         ),
     ]
     result = run(command)
@@ -511,6 +570,8 @@ def align(
         or not isinstance(served, dict)
         or not isinstance(evidence.get("runtime_refresh_required"), bool)
         or evidence.get("platform_admin_database") != platform_admin_database
+        or evidence.get("deployment_environment") != deployment_environment
+        or not isinstance(evidence.get("build_info"), dict)
         or evidence.get("physical_db_sweep") != "NO_PHYSICAL_DB_NAME"
         or evidence.get("physical_db_bakes") != []
         or evidence.get("entry_prefix") != entry_prefix
@@ -529,6 +590,7 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--platform-admin-database", required=True)
     parser.add_argument("--entry-prefix", required=True)
+    parser.add_argument("--deployment-environment", default="daily")
     parser.add_argument("--receipt", default=DEFAULT_RECEIPT)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
@@ -545,6 +607,7 @@ def main() -> int:
             entry_hint,
             args.platform_admin_database,
             args.entry_prefix,
+            args.deployment_environment,
         )
     except BuildError as exc:
         raise SystemExit(f"[daily.runtime.frontend.build] BLOCKED: {exc}") from exc

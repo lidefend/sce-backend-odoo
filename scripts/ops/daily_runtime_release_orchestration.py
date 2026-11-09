@@ -23,6 +23,8 @@ CONFIRMATION = "PUBLISH_EXACT_DAILY_RUNTIME_VERSION"
 ENTRY_DECLARATION = Path("config/ops/daily_runtime_entry.v1.json")
 DEFAULT_REPORT_ROOT = ".runtime/final-acceptance/daily-deployed/release"
 DUTY_PLAN_REPORT = ".runtime/final-acceptance/daily-deployed/database-duty-plan.json"
+DEPLOYMENT_ENVIRONMENT = "daily"
+BUILD_IDENTITY_RECEIPT_ROOT = ".runtime/final-acceptance/daily-deployed"
 # Makefile exports every variable when an operator env file is present. That
 # freezes recursively expanded argument builders at the parent make's values,
 # so a child make can see a non-empty input while still receiving an empty
@@ -166,6 +168,7 @@ def plan_steps(
     platform_align_report = report_root / "source-revision-platform.json"
     face_report = report_root / "published-face.json"
     entry_report = report_root / "entry-verify.json"
+    identity_report = report_root / "build-identity-verification.json"
 
     if identity.mode == "main":
         sync = Step(
@@ -240,6 +243,7 @@ def plan_steps(
                 **common,
                 "DAILY_RUNTIME_SOURCE_REVISION_SHA": identity.expected_sha,
                 "DAILY_RUNTIME_DUTY": "demo",
+                "DAILY_RUNTIME_DEPLOY_ENV": DEPLOYMENT_ENVIRONMENT,
                 "DAILY_RUNTIME_SOURCE_REVISION_BASE_URL": demo_base,
                 "DAILY_RUNTIME_SOURCE_REVISION_REPORT": str(demo_align_report),
             },
@@ -255,6 +259,7 @@ def plan_steps(
                 **common,
                 "DAILY_RUNTIME_SOURCE_REVISION_SHA": identity.expected_sha,
                 "DAILY_RUNTIME_DUTY": "platform_control",
+                "DAILY_RUNTIME_DEPLOY_ENV": DEPLOYMENT_ENVIRONMENT,
                 "DAILY_RUNTIME_SOURCE_REVISION_BASE_URL": platform_base,
                 "DAILY_RUNTIME_SOURCE_REVISION_REPORT": str(platform_align_report),
             },
@@ -285,6 +290,33 @@ def plan_steps(
                 **common,
                 "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_sha,
                 "DAILY_RUNTIME_ENTRY_VERIFY_REPORT": str(entry_report),
+            },
+            environment={},
+        ),
+        Step(
+            key="build-identity-record",
+            target="daily.runtime.build_identity.record",
+            variables={
+                **common,
+                "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_sha,
+                "DAILY_RUNTIME_DEPLOY_ENV": DEPLOYMENT_ENVIRONMENT,
+                "DAILY_RUNTIME_BUILD_IDENTITY_RECEIPT_ROOT": (
+                    f"{BUILD_IDENTITY_RECEIPT_ROOT}/{DEPLOYMENT_ENVIRONMENT}"
+                ),
+            },
+            environment={
+                "CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD":
+                    "RECORD_EXACT_DAILY_RUNTIME_BUILD_IDENTITY",
+            },
+        ),
+        Step(
+            key="build-identity-verify",
+            target="verify.daily.runtime.build_identity",
+            variables={
+                **common,
+                "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_sha,
+                "DAILY_RUNTIME_DEPLOY_ENV": DEPLOYMENT_ENVIRONMENT,
+                "DAILY_RUNTIME_BUILD_IDENTITY_REPORT": str(identity_report),
             },
             environment={},
         ),

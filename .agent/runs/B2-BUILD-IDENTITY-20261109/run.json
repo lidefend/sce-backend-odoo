@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "id": "B2-BUILD-IDENTITY-20261109",
+  "branch": "fix/b2-build-identity-20261109",
+  "baseline_sha": "ed3525193bc9a7fd6731cdbbd427cbf867f57bfd",
+  "status": "active",
+  "goal": ".agent/goals/B2-BUILD-IDENTITY-20261109.yaml",
+  "record": "docs/ops/iterations/b2_build_identity_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/B2-BUILD-IDENTITY-20261109.yaml",
+    ".agent/runs/B2-BUILD-IDENTITY-20261109/run.json",
+    "addons/smart_core/utils/product_release.py",
+    "addons/smart_core/tests/test_runtime_release_identity.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/b2_build_identity_20261109.md",
+    "frontend/apps/web/vite.config.ts",
+    "frontend/apps/web/src/env.d.ts",
+    "frontend/apps/web/src/app/runtime/buildIdentity.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+    "frontend/apps/web/scripts/build_identity_test.ts",
+    "make/codex.mk",
+    "make/frontend.mk",
+    "scripts/dev/frontend_static_build.sh",
+    "scripts/ops/daily_runtime_build_identity.py",
+    "scripts/ops/test_daily_runtime_build_identity.py",
+    "scripts/ops/daily_runtime_frontend_build_align.py",
+    "scripts/ops/test_daily_runtime_frontend_build_align.py",
+    "scripts/ops/daily_runtime_source_revision_align.py",
+    "scripts/ops/test_daily_runtime_source_revision_align.py",
+    "scripts/ops/daily_runtime_release_orchestration.py",
+    "scripts/ops/test_daily_runtime_release_orchestration.py",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered sc-root daily runtime and exact candidate deployment through daily.runtime.candidate.release"
+  },
+  "layer": {
+    "formal_product_layer": "P0 platform identity with P4 deployment plumbing",
+    "layer_target": "smart_core runtime identity, web shell build identity and governed daily deployment",
+    "module": "smart_core product release identity; frontend product shell; daily runtime operations",
+    "standard_vs_user_specific": "platform delivery standard",
+    "why_here": "The platform owns how a deployed commit and frontend artifact identify themselves; the deployment tooling owns exact target binding and receipts.",
+    "why_not_elsewhere": "Business modules, contracts and runtime configuration must not encode deployment identity, and the browser must not infer the backend commit.",
+    "blast_radius": "Runtime-version payload, product-shell footer, Vite build metadata, daily release orchestration and read-only deployment verification.",
+    "exclusions": [
+      "business contracts",
+      "ACL and permissions",
+      "menus and models",
+      "business data",
+      "B3 image or tarball delivery"
+    ]
+  },
+  "checks": {
+    "runtime_identity": {
+      "target": "verify.runtime.release_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/utils/product_release.py",
+        "addons/smart_core/tests/test_runtime_release_identity.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_build_identity": {
+      "target": "verify.frontend.runtime_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/src/env.d.ts",
+        "frontend/apps/web/src/app/runtime/buildIdentity.ts",
+        "frontend/apps/web/scripts/build_identity_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "release_orchestration": {
+      "target": "verify.daily.runtime.release_orchestration.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_build_identity.py",
+        "scripts/ops/test_daily_runtime_build_identity.py",
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_readback": {
+      "target": "verify.daily.runtime.build_identity",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/ops/daily_runtime_build_identity.py",
+        "scripts/ops/test_daily_runtime_build_identity.py",
+        "make/codex.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/final-acceptance/daily-deployed/build-identity-verification.json"
+      }
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement build metadata, footer identity, deployment receipt and the four-way verifier."
+}

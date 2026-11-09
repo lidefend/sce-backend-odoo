@@ -33,6 +33,15 @@ def evidence(**overrides: object) -> bytes:
         "entry_prefix": "/t/demo",
         "expected_sha": SHA,
         "head": SHA,
+        "deployment_environment": "daily",
+        "built_at": "2026-11-09T16:00:00.000Z",
+        "build_info": {
+            "schema": "frontend.build_info.v1",
+            "sha": SHA,
+            "built_at": "2026-11-09T16:00:00.000Z",
+            "environment": "daily",
+            "version": "1.0.0-rc.20",
+        },
         "reused": False,
         "rebuilt": True,
         "fingerprint": FINGERPRINT,
@@ -93,6 +102,7 @@ def call_align(**overrides: object):
         "entry_hint": "",
         "platform_admin_database": ADMIN_DB,
         "entry_prefix": "/t/demo",
+        "deployment_environment": "daily",
     }
     args.update(overrides)
     return build_module.align(**args)  # type: ignore[arg-type]
@@ -146,7 +156,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
     def test_remote_command_binds_exact_revision_and_reuse_hint(self) -> None:
         command = build_module.remote_command(
             SHA, "dev", ".env.dev", "sc_demo", "http://127.0.0.1:18081", FINGERPRINT,
-            ENTRY_ASSET, ADMIN_DB, "/t/demo",
+            ENTRY_ASSET, ADMIN_DB, "/t/demo", "daily",
         )
         self.assertEqual(
             shlex.split(command),
@@ -164,6 +174,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
                 ENTRY_ASSET,
                 ADMIN_DB,
                 "/t/demo",
+                "daily",
             ],
         )
 
@@ -172,6 +183,9 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             "verify.frontend.build",
             "frontend_build_fingerprint.sh",
             "FRONTEND_BUILD_SHA256",
+            "build-info.json",
+            "SC_DEPLOY_ENV",
+            "SC_BUILD_TIME",
             "make",
             "restart",
             "/api/runtime-version",

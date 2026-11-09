@@ -1,0 +1,24 @@
+schema_version: 1
+goal:
+  id: B2-BUILD-IDENTITY-20261109
+  title: B2 build identity and deployment receipt
+  status: active
+  formal_product_layer: P0
+  layer_target: runtime build identity plus governed daily source deployment
+  module: smart_core runtime identity, web build identity, daily runtime release tooling
+  standard_vs_user_specific: platform delivery standard
+  objective: >
+    Make the page, runtime API, served frontend artifact, deployment directory and
+    deployment receipt independently name the same commit, build and environment.
+  acceptance:
+    - The runtime API exposes a 40-character source revision, a frontend fingerprint and the daily deployment environment.
+    - The frontend build emits build-info.json and the product shell displays the initialized source revision.
+    - The daily deployment writes a local timestamped receipt and the exact server-side .deployed.json pointer.
+    - The build-identity verifier compares build-info.sha, runtime git_sha, expected git HEAD and receipt.git_head and fails on any mismatch.
+    - Focused backend, frontend and deployment-tool tests pass with non-zero assertions.
+    - The exact candidate is deployed to the daily development server and read back from its public entry.
+  exclusions:
+    - business contracts, ACL, menus, models and permissions
+    - image or tarball artifact delivery
+    - B3 release packaging
+    - CI gate policy changes

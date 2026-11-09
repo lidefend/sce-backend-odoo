@@ -263,7 +263,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 464,
+      "productionConsumerCount": 465,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "36145a4fa237856630ad1aaf08fb53319c5ce077f434bd2947dfb540c130f792",
+  "inputDigest": "c5fd164d42e2f7dbae154469b436a1173bd12aecc06f04542d5c4c88693c0b30",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",
