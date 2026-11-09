@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "CLOSED-PR-SALVAGE-20261109",
+  "branch": "fix/closed-pr-salvage-20261109",
+  "baseline_sha": "346c194e765808727584466d69ab0d2b0605b7b8",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CLOSED-PR-SALVAGE-20261109.yaml",
+  "record": "docs/ops/iterations/closed_pr_salvage_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CLOSED-PR-SALVAGE-20261109.yaml",
+    ".agent/runs/CLOSED-PR-SALVAGE-20261109/run.json",
+    ".agent/decisions/ARCH-DECISION-011.yaml",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "docs/architecture/capability_identity_spec_v1.md",
+    "docs/architecture/capability_ontology_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/closed_pr_salvage_20261109.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and existing governed local test profile; no acceptance database or browser access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the rebased PR #851 candidate and body, read back the final exact HEAD, and wait for current-HEAD workflows while keeping the PR unmerged.",
+  "validation_plan": {
+    "changed_layers": [
+      "P0 capability governance documentation",
+      "P1 payment request audit text"
+    ],
+    "earliest_required_layers": [
+      "L0 identity and clean baseline",
+      "L1 documentation/schema/static guards",
+      "L2 focused backend behavior and non-zero guard tests"
+    ],
+    "not_applicable": {
+      "L3": "No module schema, data model, ACL or import path changes.",
+      "L4": "No contract structure, render model or frontend consumer changes; browser evidence is intentionally not required.",
+      "production": "No deployment or persistent business-data mutation is authorized."
+    }
+  },
+  "supplemental_validation": {
+    "status": "passed_after_pr850_rebase",
+    "automatic_approval_message": {
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1PaymentRequestCapability.test_automatic_approval_message_matches_effective_no_approval_rule",
+      "status": "passed",
+      "test_count": 1,
+      "log": ".runtime/closed-pr-salvage-20261109/payment-auto-approval-copy-post850.log",
+      "log_sha256": "a9d513fed448ab41ac53d0385fee11a1be829b75e778a4d64fdcc61a30a0e823",
+      "environment": "sc-local-dev / sc_dev_demo",
+      "coverage": "real route from _route_submitted_approval into automatic _complete_payment_approval and chatter assertion"
+    },
+    "ci_local_iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/closed-pr-salvage-20261109/ci-local-iteration-post850.log",
+      "log_sha256": "0b722d0dc6b23da1277b1892e36d33a8fa18129a9d3fd34102664367de198cce",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T092807Z-3872695-244143135/receipt.json",
+      "receipt_sha256": "6ace32f59e8c14a24e32a9cfd9a064158c15ee74f9890dc224c377f9837c0994",
+      "executed_targets": 4,
+      "all_required_targets_passed": true
+    },
+    "acceptance_policy": {
+      "command": "make verify.acceptance.evolution.binding",
+      "status": "passed",
+      "test_count": 71,
+      "log": ".runtime/closed-pr-salvage-20261109/acceptance-evolution-post850.log",
+      "log_sha256": "474263f4e37235f6316dbbcf909e8e5feca0e14d3d527411da475b14c05b9a6a"
+    },
+    "docs_links": {
+      "command": "make verify.docs.links",
+      "status": "passed",
+      "test_count": 337,
+      "log": ".runtime/closed-pr-salvage-20261109/docs-links-post850.log",
+      "log_sha256": "cc34a1aaa0e22877b27f1155060fff242800a1cc234c7a30a1d761e2b2b3f6fd"
+    }
+  },
+  "ledger_sync": {
+    "state": "rebased_on_merged_pr850_pending_publication",
+    "registered_checks": 6,
+    "reusable_checks": 6,
+    "goal_status": "verification_pending",
+    "run_status": "verification_pending",
+    "pr": {
+      "number": 851,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/851",
+      "state": "open",
+      "creation_head": "21b4e2f0c9ec7ece153dc7d6d10a464b70628066",
+      "integration_base": "346c194e765808727584466d69ab0d2b0605b7b8",
+      "rebased_head": "1f61ce390b1cd9fdcc7c8139d7fabdcfe93b6be8",
+      "metadata_sync_commit_follows": true
+    },
+    "remote_ci": "pending_current_head",
+    "merge": "not_performed",
+    "deployment": "not_performed"
+  }
+}

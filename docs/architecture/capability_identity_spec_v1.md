@@ -1,7 +1,8 @@
 # Capability Identity Spec v1（CAP-01B · B1）
 
 状态：候选规范，待架构复核
-上游：B0 能力本体、ARCH-DECISION-011
+上游：[B0 能力本体](capability_ontology_v1.md)、
+[ARCH-DECISION-011](../../.agent/decisions/ARCH-DECISION-011.yaml)
 
 ## 1. 身份格式
 

@@ -1031,6 +1031,23 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
             request.action_submit()
         self.assertEqual(request.state, "approved")
 
+    def test_automatic_approval_message_matches_effective_no_approval_rule(self):
+        request = self._set_request_state(self._request(), "submit")
+        policy_model = type(self.env["sc.approval.policy"])
+        with patch.object(policy_model, "_start_submission_review", return_value=False):
+            request._route_submitted_approval()
+
+        self.assertEqual(request.state, "approved")
+        message_bodies = request.message_ids.mapped("body")
+        self.assertTrue(
+            any("当前适用规则无需审批" in body for body in message_bodies),
+            "automatic approval must identify the effective no-approval rule",
+        )
+        self.assertFalse(
+            any("未配置审批" in body for body in message_bodies),
+            "an explicit no-approval rule must not be reported as missing policy configuration",
+        )
+
     def test_rejection_requires_explicit_reason_and_resubmit_preserves_audit(self):
         request = self._set_request_state(self._request(), "submit")
         # A real reviewer decision requires an active internal reviewer on the
