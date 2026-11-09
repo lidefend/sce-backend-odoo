@@ -37,7 +37,7 @@ def carriers() -> tuple[dict, dict, str, dict]:
         "sha": SHA,
         "built_at": "2026-11-09T16:00:00.000Z",
         "environment": "daily",
-        "version": "1.0.0-rc.20",
+        "version": "9.8.7-rc.20",
     }
     runtime = {
         "demo": {
