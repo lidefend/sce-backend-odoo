@@ -1774,6 +1774,12 @@ assert.equal(
 );
 actionReasonSnapshot.actionContract.actionRuleList[0].reasonMessage = '先补齐办理依据';
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '先补齐办理依据');
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = 'PAYMENT_EXECUTION_BASIS_MISSING';
+assert.equal(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage,
+  '先补齐办理依据',
+  'a status reason code without a status message must retain the action-authored user message',
+);
 actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = 'ACL_DENIED';
 actionReasonSnapshot.statusContract.buttonStatus[0].reasonMessage = '当前角色不可办理';
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '当前角色不可办理');

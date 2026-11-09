@@ -12,6 +12,9 @@
     "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
     "docs/architecture/action_semantics_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe_action_semantics_01_20261109.md",
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
@@ -219,6 +222,20 @@
         "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
         "scripts/verify/frontend_primitive_adapter_guard.py",
         "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
       ],
       "kind": "offline"

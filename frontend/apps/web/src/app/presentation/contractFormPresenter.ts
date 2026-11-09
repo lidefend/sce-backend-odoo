@@ -642,7 +642,7 @@ function presentAction(
     enabled: allowed && enabled,
     reasonCode: text(stateDerivedStatus ? '' : status?.reasonCode || action.reasonCode) || declaredDenial
       || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
-    reasonMessage: stateDerivedStatus ? undefined : text(status?.reasonCode ? status.reasonMessage : action.reasonMessage),
+    reasonMessage: stateDerivedStatus ? undefined : text(status?.reasonMessage || action.reasonMessage),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,
