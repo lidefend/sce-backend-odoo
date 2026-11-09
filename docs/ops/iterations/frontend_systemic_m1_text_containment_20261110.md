@@ -49,8 +49,8 @@ the colon.
 - `make verify.frontend.typecheck.strict`: PASS.
 - `make verify.frontend.style_system.guard`: PASS.
 - `make verify.frontend.page_pattern_reference_parity.unit`: 28 tests PASS.
-- `make ci.local.iteration`: PASS, 12 required targets, receipt
-  `.runtime/frontend-dev-validation/executions/20261109T185916Z-3665478-377874651/receipt.json`.
+- `make ci.local.iteration`: PASS, 15 required targets, receipt
+  `.runtime/frontend-dev-validation/executions/20261109T191524Z-3744329-529868814/receipt.json`.
 - Candidate build and browser carrier: product code `0217fb40035055e5e08cd30392af84a0116feb53`.
 - Browser summary: `.runtime/m1-browser-0217fb400/summary.json`, SHA256
   `b13a578cc0916d86eb8196e77d2b84e3e38d53898a0b21df75cd487cdb040bce`.
