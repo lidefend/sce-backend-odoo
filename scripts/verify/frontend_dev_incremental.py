@@ -189,6 +189,16 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+        "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+        "frontend/apps/web/src/components/design-system/ScPopover.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+        "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
         "scripts/verify/frontend_professional_workflow_guard.py",
         "scripts/verify/test_frontend_professional_workflow_guard.py",
     ), (

@@ -289,6 +289,27 @@ async function main() {
     await waitForCanonicalForm(page, TARGETS.approval);
     await waitForWorkflowState(page, 'approved');
     check((await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
+    const approvedWorkflowBars = page.locator('[data-professional-workflow-component="action-bar"]:visible');
+    await approvedWorkflowBars.first().waitFor({ timeout: 15000 });
+    const approvedWorkflow = await approvedWorkflowBars.evaluateAll((nodes) => nodes.map((node) => ({
+      actionCount: node.getAttribute('data-workflow-action-count'),
+      disabledCount: node.getAttribute('data-workflow-disabled-count'),
+      text: node.textContent,
+      buttons: [...node.querySelectorAll('button')].map((button) => ({
+        text: button.textContent,
+        disabled: button.disabled,
+        actionEnabled: button.getAttribute('data-action-enabled'),
+        visible: Boolean(button.getBoundingClientRect().width && button.getBoundingClientRect().height),
+      })),
+    })));
+    const approvedDenialTriggers = await page.locator(
+      '.form-action-denial-trigger:visible, [data-workflow-reason-trigger]:visible',
+    ).evaluateAll((nodes) => nodes.map((node) => ({
+      text: node.textContent,
+      label: node.getAttribute('aria-label'),
+      role: node.getAttribute('role'),
+      tabindex: node.getAttribute('tabindex'),
+    })));
     assertClean(runtime, 'J08');
     report.j08 = {
       status: 'PASS',
@@ -301,6 +322,8 @@ async function main() {
       pending_inline_feedback: 'NOT_OBSERVED',
       todo_before: reviewerTodoBefore,
       todo_after: reviewerTodoAfter,
+      approved_workflow: approvedWorkflow,
+      approved_denial_triggers: approvedDenialTriggers,
     };
 
     // Explicit reject validation and unauthorized isolation.

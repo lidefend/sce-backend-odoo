@@ -392,6 +392,7 @@ verify.frontend.professional_workflow.unit: guard.prod.forbid
 	@node /tmp/workflow-reason-trigger-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_workflow_guard.py
 	@python3 scripts/verify/frontend_professional_workflow_guard.py
+	@node frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs
 
 .PHONY: verify.frontend.professional_audit.unit
 verify.frontend.professional_audit.unit: guard.prod.forbid

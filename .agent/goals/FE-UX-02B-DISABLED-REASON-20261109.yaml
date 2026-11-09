@@ -34,6 +34,9 @@ goal:
       - scripts/verify/test_frontend_professional_workflow_guard.py
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/dev/frontend_acceptance_runtime.sh
+      - scripts/verify/test_frontend_standard_preview.py
+      - scripts/verify/frontend_my_work_approval_browser.mjs
       - frontend/apps/web/scripts/scene_primitive_selection_test.mjs
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/e2e_journey_matrix.md
@@ -80,6 +83,6 @@ goal:
     interaction, tests and documentation; no data migration or external runtime
     mutation exists.
   next_exact_step: >
-    Publish the overflow-closure candidate and obtain renewed exact-head CI and
-    independent review. Keep real-page runtime evidence pending; do not merge or
-    deploy in this task.
+    Await the independent exact-head review and final L4 applicability ruling.
+    PR #848 is already published at b38ff36be with exact-head CI passing; do not
+    merge or deploy until the total controller closes the remaining evidence.

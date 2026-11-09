@@ -27,6 +27,8 @@ from scripts.verify.frontend_style_system_guard import (
     SIZE_LIMITS,
 )
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
@@ -82,14 +84,33 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_professional_workflow_guard_selects_its_nonzero_executor(self) -> None:
         for path in (
+            "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+            "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+            "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+            "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+            "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+            "frontend/apps/web/src/components/design-system/ScPopover.vue",
+            "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+            "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+            "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+            "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
             "scripts/verify/frontend_professional_workflow_guard.py",
             "scripts/verify/test_frontend_professional_workflow_guard.py",
         ):
             with self.subTest(path=path):
-                self.assertEqual(
-                    select_targets([path]),
-                    ["verify.frontend.professional_workflow.unit"],
-                )
+                targets = select_targets([path])
+                self.assertIn("verify.frontend.professional_workflow.unit", targets)
+                self.assertNotIn("verify.frontend.native_form_action_presentation.browser", targets)
+
+    def test_professional_workflow_unit_executes_interaction_browser(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        block = source.split("verify.frontend.professional_workflow.unit:", 1)[1].split(
+            ".PHONY:", 1
+        )[0]
+        self.assertIn(
+            "node frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+            block,
+        )
 
     def test_primitive_port_inputs_select_port_contract(self) -> None:
         source_targets = set(select_targets([

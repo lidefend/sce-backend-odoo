@@ -221,7 +221,7 @@ try {
   }
 
   const pass = results.every((result) => result.pass) && errors.length === 0;
-  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 24, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + ScDropdown + SceneButton', reason, overflowReason, results, errors }, null, 2));
+  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 22 + 1, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + ScDropdown + SceneButton', reason, overflowReason, results, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

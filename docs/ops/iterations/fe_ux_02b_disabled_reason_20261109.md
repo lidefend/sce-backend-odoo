@@ -118,10 +118,12 @@ make ci.local.iteration
 ### 状态
 
 - 实现：PASS（批次范围）
-- 真实浏览器验收：PASS（组件级 1440/390）
-- 真实业务页面 L4：NOT_RUN
-- 独立审查：PENDING
-- PR：NOT_CREATED
+- 真实浏览器验收：PASS（组件级 1440/390，48 项受控断言）
+- 真实 Contract Form 页面呈现：PASS（当前 HEAD，1440/1024/768/390）
+- disabled workflow reason 的真实页面适用性：PENDING 独立 R2 裁定
+- 独立审查：IN_PROGRESS
+- PR：#848 OPEN at `b38ff36be520f5fb4e7e5e13cfccf3d07e43623b`
+- 远端 exact-head CI：5/5 PASS
 - 合并、部署：未执行
 
 ### PR #848-R1：CanonicalActionBar Overflow Disabled Reason Closure
@@ -154,3 +156,35 @@ R1 定向验证：
 - lint：0 errors。
 - strict typecheck：PASS。
 - production build：PASS。
+
+### PR #848-R2：最终合并前收口
+
+- PR：#848，HEAD `b38ff36be520f5fb4e7e5e13cfccf3d07e43623b`，
+  base `2d1614aacc44967061fd7e6259e26ffc830127df`。
+- clean candidate 增量门禁：12/12 PASS。
+- 最新 receipt：
+  `.runtime/frontend-dev-validation/executions/20261109T021521Z-1301038-569765381/receipt.json`
+  SHA256 `b2b693c17606cb3294c8da25bbb9813dfb23dda09a4bfbeb7b42e74fa3896e16`。
+- 远端五项 exact-head workflow：全部 PASS。
+- 独立审查：全新未参与实现会话执行中，结论尚未返回。
+
+真实 Contract Form L4：
+
+- 受管环境：`sc-fe-r2-p1-01` / `sc_frontend_acceptance` / 5180。
+- route：`/r/sc.general.contract/2?action_id=758&menu_id=664`。
+- login：`fixture_role_config_admin`。
+- 当前 served/expected SHA：`b38ff36be520f5fb4e7e5e13cfccf3d07e43623b`。
+- 1440 / 1024 / 768 / 390：PASS。
+- horizontal overflow：0。
+- console / pageerror / HTTP errors：0。
+- report：`.runtime/final-acceptance/contract-form-presentation/contract/summary.json`
+  SHA256 `0b43741ae81c1eff464c2dd84e5a60e9812c66f99eb94050bb0311a274550a1b`。
+
+适用性边界：
+
+- 该真实页面证明了当前表单、页头、工作流动作入口和响应式链路在该 HEAD
+  正常运行，并实际显示“当前业务状态不允许删除”的禁用原因。
+- 现有 Contract Form L4 脚本没有主动打开该 disabled trigger；触发器的键盘、
+  鼠标、触摸和零执行已由真实 SFC Chromium 48 项断言覆盖。
+- 最终是否接受“真实页面呈现 + 组件交互”组合作为本批 L4 证据，由独立 R2
+  审查给出裁定；在新裁定前不宣称 L4 适用性已关闭。

@@ -17,6 +17,9 @@
     "scripts/verify/test_frontend_professional_workflow_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/e2e_journey_matrix.md",
     "docs/engineering_convergence/test_inventory.csv",
@@ -68,6 +71,7 @@
         "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
         "frontend/apps/web/scripts/professional_workflow_model_test.ts",
         "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
         "scripts/verify/frontend_professional_workflow_guard.py",
         "scripts/verify/test_frontend_professional_workflow_guard.py",
         "make/frontend.mk"
@@ -149,6 +153,20 @@
         "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
         "scripts/verify/playwright_runtime.mjs",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "make/runtime_ops.mk"
       ],
       "kind": "offline"
     },
@@ -246,7 +264,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the overflow-closure candidate; obtain renewed exact-head CI and independent review, keeping real-page runtime evidence pending.",
+  "next_exact_step": "Await the independent exact-head review and final L4 applicability ruling; PR #848 is published at b38ff36be with CI passing, and must not merge yet.",
   "id": "FE-UX-02B-DISABLED-REASON-20261109",
   "branch": "fix/fe-ux-02b-disabled-reason-20261109",
   "status": "verification_pending",
