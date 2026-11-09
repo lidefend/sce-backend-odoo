@@ -162,9 +162,9 @@ List Surface 输入对账：
 - manifest 当前 `input_sha256`：
   `7e3563f0e2b10337eb2f3e7d18efe47b2286b88c3e929d63ec814a47920bd34d`
 - 本批修改后的 suite input fingerprint：
-  S1 修复后的 `d328a72ed` 对应
+  S1 修复前 `c8441fbdf` 对应
   `96e943aa56dd35b91636a26e2688fbd79b9bc8907a9200b4d5ab19b7b4e373cf`。
-- 追加 S1 metadata 后的当前 suite input fingerprint：
+- S1 修复候选 `d328a72ed` 与其 metadata head `000ed1650` 都对应：
   `7338b5a8cd8adec53f46262b70fb2effc405445659810d4b0c56a346b893cdc3`。
 - fingerprint 改变，因此不得把旧 runtime PASS 直接复用于本候选。
 - manifest 原绑定 `0ef405468` 经过 squash 后不在本分支祖先链，工具以

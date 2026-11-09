@@ -275,7 +275,11 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           : undefined;
         const type = String(schema.type || field?.fieldType || '').trim();
         const widget = String(schema.widget || field?.widgetType || field?.fieldType || '').trim();
-        const componentKey = String(schema.componentKey || field?.componentKey || '').trim();
+        const declaredComponentKey = String(schema.componentKey || field?.componentKey || '').trim();
+        // Collection projection previously omitted component identity. Expose
+        // only the duration identity in this batch so Kanban does not acquire
+        // unrelated percentage/money/status semantics while fixing float_time.
+        const componentKey = declaredComponentKey === 'sc.value.duration' ? declaredComponentKey : '';
         const valueField = String(schema.value_field || name).trim() || name;
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
         const rawSelection = Array.isArray(schema.selection) ? schema.selection : field?.selection;

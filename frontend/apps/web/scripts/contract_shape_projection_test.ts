@@ -124,15 +124,43 @@ const durationStore = {
   primaryDataSource: {},
 } as unknown as ContractV2NormalizedStore;
 const durationOption = runtime.resolveListColumnOptions(durationStore, { columns: ['duration_hours'] })[0];
+assert.ok(durationOption);
 check(durationOption?.componentKey, 'sc.value.duration', 'collection projection preserves duration component identity');
 check(presentListCell({
   raw: 1.5,
-  column: durationOption,
+  column: { ...durationOption, field: durationOption.name },
 }).text, '1 小时 30 分钟', 'List consumes projected duration identity');
 check(presentCollectionKanbanCell({
   field: 'duration_hours',
   value: 1.5,
   columnOptions: [durationOption],
 }).text, '1 小时 30 分钟', 'Kanban consumes projected duration identity');
+
+// The duration repair must not become a blanket componentKey migration for
+// fields outside this batch. Before this change the collection producer omitted
+// percentage identity, so Kanban displayed its ordinary float value.
+const percentageWidget = {
+  widgetId: 'percentage',
+  fieldCode: 'completion_ratio',
+  label: 'Ratio',
+  widgetType: 'percentage',
+  componentKey: 'sc.value.percentage',
+  componentConfig: { fieldType: 'float' },
+};
+const percentageStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[percentageWidget.widgetId, percentageWidget]]),
+  widgetsByFieldCode: new Map([[percentageWidget.fieldCode, percentageWidget]]),
+  widgetsByFieldCodeAll: new Map([[percentageWidget.fieldCode, [percentageWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const percentageOption = runtime.resolveListColumnOptions(percentageStore, { columns: ['completion_ratio'] })[0];
+check(percentageOption?.componentKey, undefined, 'collection projection does not widen percentage identity in this batch');
+check(presentCollectionKanbanCell({
+  field: 'completion_ratio',
+  value: 12.5,
+  columnOptions: [percentageOption],
+}).text, '12.5', 'Kanban percentage output remains unchanged in this batch');
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);
