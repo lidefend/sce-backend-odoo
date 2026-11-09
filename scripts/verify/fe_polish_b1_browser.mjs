@@ -186,11 +186,17 @@ for (const viewport of [
       const label = node.querySelector('.role-home-surface__task-record');
       const amount = String(chip?.textContent || '').replace(/^.*[：:]/, '').trim();
       const visibleLabel = String(label?.textContent || '').trim();
+      const labelStyle = label ? getComputedStyle(label) : null;
       return {
         recordId: node.getAttribute('data-record-id'),
         amount,
         visibleLabel,
         labelContainsAmount: Boolean(amount && visibleLabel.includes(amount)),
+        labelWhiteSpace: labelStyle?.whiteSpace || '',
+        labelLineClamp: labelStyle?.webkitLineClamp || '',
+        labelClientHeight: label?.clientHeight || 0,
+        labelScrollHeight: label?.scrollHeight || 0,
+        labelFullyVisible: Boolean(label && label.scrollHeight <= label.clientHeight + 1),
       };
     }));
     check(tasks.length > 0, `${viewport.name}: role-home tasks present`, tasks.length);
@@ -198,6 +204,11 @@ for (const viewport of [
       tasks.every((task) => task.amount && !task.labelContainsAmount),
       `${viewport.name}: role-home amount chip owns the money expression`,
       tasks.slice(0, 3),
+    );
+    check(
+      tasks.every((task) => task.labelFullyVisible),
+      `${viewport.name}: role-home record identity is not clipped`,
+      tasks.filter((task) => !task.labelFullyVisible).slice(0, 3),
     );
     await page.screenshot({
       path: path.join(outputDir, `${viewport.name}-workspace-home.png`),

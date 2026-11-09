@@ -307,6 +307,18 @@ const {
 .role-home-surface__task-facts dd { margin: 0; color: var(--sc-app-text-primary); overflow-wrap: anywhere; }
 .role-home-surface__task-list :deep(.sc-btn) { min-height: 44px; align-self: flex-start; }
 
+@media (max-width: 640px) {
+  .role-home-surface__task-list .role-home-surface__task-record {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
 .role-home-surface__summary-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
