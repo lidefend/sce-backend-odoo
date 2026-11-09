@@ -105,8 +105,8 @@
     "iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "targets": 11,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T185125Z-3625351-380095538/receipt.json"
+      "targets": 12,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T185916Z-3665478-377874651/receipt.json"
     },
     "browser": {
       "status": "passed",

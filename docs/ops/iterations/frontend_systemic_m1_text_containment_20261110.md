@@ -37,8 +37,8 @@
 - `make verify.frontend.typecheck.strict`: PASS.
 - `make verify.frontend.style_system.guard`: PASS.
 - `make verify.frontend.page_pattern_reference_parity.unit`: 28 tests PASS.
-- `make ci.local.iteration`: PASS, 11 required targets, receipt
-  `.runtime/frontend-dev-validation/executions/20261109T185125Z-3625351-380095538/receipt.json`.
+- `make ci.local.iteration`: PASS, 12 required targets, receipt
+  `.runtime/frontend-dev-validation/executions/20261109T185916Z-3665478-377874651/receipt.json`.
 - Candidate build and browser carrier: product code `30ab6a8922bfab2757f0a871bf644adc443d8b8e`.
 - Browser summary: `.runtime/m1-browser-30ab6a892/summary.json`, SHA256
   `87b215f1d3b2b97f8a84d78024520edb786b19dcf3131ea72d8952321aba3993`.
