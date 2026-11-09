@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: CLOSED-PR-SALVAGE-20261109
+  title: Closed PR governance archive and payment audit copy salvage
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product; P1 construction industry standard product
+  layer_target: capability release governance documentation and payment approval audit text
+  module: smart_core capability governance; smart_construction_core payment.request
+  standard_vs_user_specific: platform and construction-industry standard
+  why_here: >
+    ARCH-DECISION-011 and the B0 capability ontology are platform governance
+    references already consumed by the current capability identity specification.
+    The payment approval audit text is produced by the construction industry
+    payment request model and must describe the effective approval policy there.
+  why_not_elsewhere: >
+    Do not restore closed PR branches wholesale, introduce a second capability
+    registry, change Contract V2, infer approval state in the frontend, or alter
+    payment permissions and execution rules for an audit-copy correction.
+  blast_radius:
+    product_behavior: >
+      The automatic approval chatter identifies the effective rule as requiring
+      no approval instead of falsely saying no approval policy exists.
+    documentation: >
+      Restores the referenced governance authority without changing capability
+      publication state or capability qualification.
+    exclusions:
+      - no Contract V2 schema or runtime semantics change
+      - no permission, ACL, approval policy or payment state transition change
+      - no frontend component or renderer change
+      - no database upgrade, browser matrix or acceptance-fixture write
+  objective: >
+    Salvage only the still-valid governance references from closed PRs #801 and
+    #802 and the one-line payment audit-copy correction from closed PR #814,
+    binding each claim to current main and affected-input validation.
+  acceptance:
+    - current main references to B0 and ARCH-DECISION-011 resolve to tracked documents
+    - recovered documents identify their closed-PR provenance and authority status
+    - automatic payment approval reports the effective no-approval rule accurately
+    - an affected backend test proves the chatter text through the real automatic path
+    - docs links, focused guard tests and ci.local.iteration pass
+    - no full browser or acceptance matrix is run because no contract structure or frontend consumer changes
+  rollback: >
+    Revert this branch. Documentation removal restores the prior dangling
+    references; reverting the audit-copy commit restores the prior message with no
+    data migration. No persistent runtime state is changed by validation.
+  next_exact_step: >
+    Freeze the clean commits through the governed generation check, publish the
+    exact-head PR, synchronize the run with its PR/head identity, and wait for
+    current-HEAD remote gates.
