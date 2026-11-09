@@ -64,8 +64,8 @@
 
 - 01A：PASS（权威 Producer/Consumer 分类清单见 Action Semantics v1）
 - 01B：PASS（字段责任与状态矩阵已冻结）
-- 01C：IN_PROGRESS（核心投影、付款样板和审计工具已修正，正在完成门禁）
-- 01D：NOT_STARTED
+- 01C：PASS（核心投影、付款样板和审计工具已修正并通过门禁）
+- 01D：PASS（隔离 Acceptance 真实页面与真实审批/付款链均通过）
 - 合并、部署：未执行
 
 ## 01C 首批实施
@@ -124,3 +124,33 @@
 - `TestWorkflowContractBackend` 单独运行仍存在历史夹具失败（31 tests 中
   1 failed / 13 errors），失败发生在测试构造付款/费用/收款记录时被现有业务
   guard 拒绝，不是本轮 action projection 断言失败；保留为独立基线问题。
+
+## 01D 隔离 Acceptance
+
+- 环境：`sc-fe-r2-p1-01` / `sc_frontend_acceptance`
+- 后端与前端服务 SHA：`6fd219ae1377fac6f122f9428fceeb641b03ee5a`
+- 主报告：`.runtime/fe-action-semantics-01/acceptance-report.json`
+  - SHA256：`9b93c2cda19dc5fc5ebdf3bac7d7a31c1407e310b28a002751683b8892afd391`
+  - 19 checks PASS。
+- 真实审批/付款报告：`.runtime/fe-action-semantics-01/fully-paid-report.json`
+  - SHA256：`2f5fb5be79701230d567c63af2c50d14669c40d37592686eccebdbe11cc8074b`
+  - 12 checks PASS。
+
+已验证：
+
+- 收款账户缺失：动作可见、禁用、显示“请先补全收款户名、开户行和账号。”
+- 草稿状态：有权用户仍看到动作，禁用并显示“付款申请必须处于已批准状态。”
+- 已批准且数据完整：动作正常执行，真实创建付款登记。
+- 旧页面重复发起：服务端拒绝 `PAYMENT_EXECUTION_ALREADY_EXISTS`，活动执行
+  仍只有 1 条，不发生重复写入。
+- 已有办理中付款登记：页面动作可见禁用并显示明确原因。
+- 未授权项目成员：付款申请菜单 Contract 403 拒绝，页面进入
+  `access-denied`，动作数量为 0。
+- 真实审批/付款链：保存付款登记 → 提交审批 → 财务经理审批通过 → 登记付款；
+  付款申请回读为 `done`、`is_fully_paid=true`、未付金额 0。
+- 已足额付款：动作仍可见禁用并显示“付款申请已足额付款，不能继续生成付款登记。”
+- 第二业务领域：`sc.general.contract.action_confirm` 通过同一 Contract V2 /
+  `execute_button` 链执行成功。
+- 浏览器错误：2 条均为预期 403（旧页面重复和未授权菜单），无意外 Console、
+  pageerror 或 HTTP 失败。
+- Acceptance fixture 已在写路径后重置，恢复隔离数据。

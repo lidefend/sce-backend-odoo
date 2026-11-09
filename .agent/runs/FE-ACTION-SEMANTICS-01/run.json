@@ -312,12 +312,13 @@
     "Acceptance page testing found and closed two presenter/projection defects: reasonMessage fallback and authorized state-denial visibility.",
     "ci.local.iteration passed 21 targets at .runtime/frontend-dev-validation/executions/20261109T053822Z-2510833-285884341/receipt.json.",
     "Payment ORM evidence passed 63 tests at .runtime/test-baseline/1794202496142537919/receipt.json; later edits are documentation and run metadata only.",
-    "TestWorkflowContractBackend remains independently red on historical fixture construction guards; this batch's focused workflow/action guards and contract tests pass."
+    "Isolated acceptance passed 19 browser checks plus 12 real approval/paid checks at .runtime/fe-action-semantics-01/acceptance-report.json and fully-paid-report.json.",
+    "The acceptance fixture was reset after the write journeys. TestWorkflowContractBackend remains independently red on historical fixture construction guards; this batch's focused workflow/action guards and contract tests pass."
   ],
-  "next_exact_step": "Run the final affected gates, commit the acceptance-driven fixes, rebuild the exact acceptance runtime, and complete the payment plus second-domain browser journeys.",
+  "next_exact_step": "Commit updated evidence metadata, push the exact candidate through the governed PR entrypoint, and obtain a fresh independent review plus new-HEAD CI.",
   "id": "FE-ACTION-SEMANTICS-01",
   "branch": "fix/fe-action-semantics-01-20261109",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-ACTION-SEMANTICS-01.yaml",
   "record": "docs/ops/iterations/fe_action_semantics_01_20261109.md"
 }

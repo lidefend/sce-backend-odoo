@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-ACTION-SEMANTICS-01
   title: Contract V2 Action Semantics Unified Governance
-  status: active
+  status: verification_pending
   formal_product_layer: P0 platform kernel product
   layer_target: Contract V2 action visibility, authorization, business-state availability, execution and feedback semantics
   module: smart_core Action Rule and execute_button; P1 business action producers; frontend Action Presenter and workflow consumers
@@ -57,6 +57,6 @@ goal:
     migration is planned unless separately approved. Acceptance data is restored via
     the existing managed fixture entrypoint.
   next_exact_step: >
-    Review the complete diff, commit the clean candidate, then rebuild the
-    isolated acceptance artifact and execute the payment plus second-domain
-    journeys.
+    Commit updated evidence metadata, push the exact candidate through the
+    governed PR entrypoint, and obtain a fresh independent review plus new-HEAD
+    CI.
