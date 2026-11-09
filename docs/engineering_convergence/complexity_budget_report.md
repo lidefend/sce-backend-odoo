@@ -5,8 +5,8 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `5154`
-- Files requiring split plan: `75`
-- Files above warning threshold: `149`
+- Files requiring split plan: `76`
+- Files above warning threshold: `148`
 
 ## Split Plan Required
 
@@ -83,6 +83,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
+| 1512 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1026 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 682 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -94,7 +95,6 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1495 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
@@ -319,7 +319,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1495 | warning | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1512 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

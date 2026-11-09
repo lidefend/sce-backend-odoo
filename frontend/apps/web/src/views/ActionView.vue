@@ -3570,17 +3570,17 @@ function refreshForRecordContextChange(): void {
 }
 
 .empty-next-title {
-  color: var(--sc-app-text-primary) !important;
+  color: var(--sc-app-text-primary);
   font-weight: 700;
 }
 
 .empty-next-hint {
-  color: var(--sc-app-text-secondary) !important;
+  color: var(--sc-app-text-secondary);
 }
 
 .empty-next-reason {
-  color: var(--sc-semantic-text-muted) !important;
-  font-size: 12px !important;
+  color: var(--sc-semantic-text-muted);
+  font-size: 12px;
 }
 
 .contract-label {

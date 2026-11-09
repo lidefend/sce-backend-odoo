@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M2-20261110
+  title: "自定义前端系统性收敛 M2 层叠与 !important 清理"
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: generic frontend cascade order and accessibility style split
+  module: frontend/apps/web/src styles, shell, hierarchy, form and collection surfaces
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    CSS specificity, accessibility foundations and reduced-motion behavior are
+    shared rendering mechanics. They belong to the P0 design-system/style layer.
+  why_not_elsewhere: >
+    No business semantics, permissions or contract values are involved. Local
+    page hacks or more `!important` declarations would preserve the defect.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M1-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M1-20261110/run.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M2-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M2-20261110/run.json
+      - docs/ops/iterations/frontend_systemic_m2_cascade_20261110.md
+      - docs/architecture/text_containment_allowlist.json
+      - docs/ops/iterations/frontend_systemic_m1_text_containment_20261110.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - scripts/verify/
+      - frontend/apps/web/src/
+    product_behavior: >
+      Visual priority remains stable while component and page overrides obey a
+      deterministic token -> primitive -> pattern -> page cascade.
+  objective: >
+    Remove every production `!important` from frontend/apps/web/src and split
+    global accessibility/reduced-motion foundations out of product-patterns.css.
+  acceptance:
+    - "!important count in frontend/apps/web/src is zero"
+    - product-patterns.css no longer owns global accessibility foundations
+    - style-system, lint, strict typecheck and affected iteration gates pass
+    - 1440/390 Golden Sample pages show no visual or interaction regression
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M2 commits; no persistent data or service state is involved.

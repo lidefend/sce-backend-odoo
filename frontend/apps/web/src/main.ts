@@ -5,6 +5,7 @@ import { bootstrapApp } from './app/init';
 import { useSessionStore } from './stores/session';
 import App from './App.vue';
 import './styles/design-system.css';
+import './styles/accessibility.css';
 import './styles/product-patterns.css';
 import { bootTheme, bootThemeProfile } from './styles/theme';
 import { startThemeApplicationRuntime, stopThemeApplicationRuntime } from './styles/themeApplicationRuntime';

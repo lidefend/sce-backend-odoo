@@ -23,7 +23,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     declaration = read_text("contracts/registry/component.yaml")
     carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     money = read_text("frontend/apps/web/src/components/design-system/ScMoney.vue")
-    patterns = read_text("frontend/apps/web/src/styles/product-patterns.css")
+    accessibility = read_text("frontend/apps/web/src/styles/accessibility.css")
     keys = (
         "sc.value.money", "sc.value.percentage", "sc.display.status",
         "sc.value.duration",
@@ -56,20 +56,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     money_style = money.split("<style", 1)[1] if "<style" in money else ""
     if "sc-visually-hidden" in money_style:
         failures.append("money control overrides the shared visually-hidden style")
-    rules = re.findall(r"\.sc-visually-hidden\s*\{(?P<body>[^}]*)\}", patterns)
+    rules = re.findall(r"\.sc-visually-hidden\s*\{(?P<body>[^}]*)\}", accessibility)
     if len(rules) != 1:
         failures.append(
-            "styles/product-patterns.css must declare .sc-visually-hidden exactly once, "
+            "styles/accessibility.css must declare .sc-visually-hidden exactly once, "
             f"got {len(rules)}"
         )
     hidden_body = rules[0] if rules else ""
     for prop in (
-        "position: absolute !important",
-        "width: 1px !important",
-        "height: 1px !important",
-        "overflow: hidden !important",
-        "clip: rect(0, 0, 0, 0) !important",
-        "clip-path: inset(50%) !important",
+        "position: absolute",
+        "width: 1px",
+        "height: 1px",
+        "overflow: hidden",
+        "clip: rect(0, 0, 0, 0)",
+        "clip-path: inset(50%)",
     ):
         if prop not in hidden_body:
             failures.append(f"shared visually-hidden style lost {prop}")

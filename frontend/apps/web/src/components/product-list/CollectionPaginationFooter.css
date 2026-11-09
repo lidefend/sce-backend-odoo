@@ -14,4 +14,4 @@
 @media (max-width: 900px) { .pagination-actions { flex-wrap: wrap; justify-content: flex-start; white-space: normal; } }
 @media (max-width: 760px) { .pagination-footer { padding: var(--sc-space-xs); } .pagination-actions { width: auto; max-width: 100%; justify-content: flex-end; gap: var(--sc-space-xs); } .pagination-btn { min-height: 44px; } }
 @media (max-width: 520px) { .pagination-footer, .pagination-actions { justify-content: flex-start; } .pagination-actions { width: 100%; } }
-@media (prefers-reduced-motion: reduce) { .pagination-footer * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .pagination-footer * { scroll-behavior: auto; transition-duration: 0.01ms; } }

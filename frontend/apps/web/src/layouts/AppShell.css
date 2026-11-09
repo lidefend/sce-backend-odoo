@@ -31,7 +31,7 @@
 
 /* BOSS-aligned shell: a single quiet navigation column keeps attention on data. */
 .workspace-activity-rail {
-  display: none !important;
+  display: none;
 }
 
 .workspace-sidebar-panel {
@@ -964,7 +964,7 @@
   }
 
   .workspace-activity-rail {
-    display: none !important;
+    display: none;
     padding: 12px 6px;
     border-right-color: var(--sc-app-border);
     background: var(--sc-navigation-bg);

@@ -128,7 +128,7 @@ def validate(root: Path = ROOT) -> list[str]:
         if marker not in desktop_shell:
             errors.append(f"desktop sidebar must retain its public width contract: {marker}")
     if "grid-template-columns: 48px minmax(0, 1fr)" in desktop_shell or not re.search(
-        r"\.workspace-activity-rail\s*\{[^}]*display:\s*none\s*!important", desktop_shell, re.DOTALL
+        r"\.workspace-activity-rail\s*\{[^}]*display:\s*none", desktop_shell, re.DOTALL
     ):
         errors.append("desktop navigation must retain the single-column product menu")
     if (component_root / "PrimaryNavigation.vue").exists() or "<PrimaryNavigation" in shell:

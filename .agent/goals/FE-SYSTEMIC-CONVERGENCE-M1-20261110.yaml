@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-CONVERGENCE-M1-20261110
   title: 自定义前端系统性收敛 M1 信息截断规则
-  status: verification_pending
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: generic frontend information containment and title fallback
   module: frontend/apps/web/src shared shell, work, list, form, relation and configuration surfaces

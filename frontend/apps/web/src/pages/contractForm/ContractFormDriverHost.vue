@@ -393,7 +393,7 @@ const workspaceSectionLinks = computed(() => [
 .canonical-form-action--primary {
   border-color: var(--sc-semantic-surface-interactive);
   background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive) !important;
+  color: var(--sc-semantic-text-on-interactive);
 }
 .canonical-form-action.is-danger { color: var(--sc-app-danger-text); }
 .canonical-form-action:disabled { cursor: not-allowed; opacity: 0.55; }

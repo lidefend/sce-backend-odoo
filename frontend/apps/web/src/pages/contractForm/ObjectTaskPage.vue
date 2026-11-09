@@ -571,9 +571,9 @@ const sectionLinks = computed(() => uniqueSectionLinks([
   box-shadow: none;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node) {
-  grid-column: auto !important;
+  grid-column: auto;
   height: auto;
-  margin-top: 0 !important;
+  margin-top: 0;
   padding: 10px 14px;
   border: 0;
   border-right: 1px solid var(--sc-app-border);
@@ -581,7 +581,7 @@ const sectionLinks = computed(() => uniqueSectionLinks([
   background: transparent;
 }
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary']) {
-  grid-column: span 2 !important;
+  grid-column: span 2;
   background: var(--sc-app-panel);
 }
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .readonly-value),
@@ -708,7 +708,7 @@ const sectionLinks = computed(() => uniqueSectionLinks([
   }
   .object-task-page__summary-grid :deep([data-value-emphasis='monetary']) {
     order: -1;
-    grid-column: 1 / -1 !important;
+    grid-column: 1 / -1;
   }
   .object-task-page__current-task-actions {
     position: fixed;

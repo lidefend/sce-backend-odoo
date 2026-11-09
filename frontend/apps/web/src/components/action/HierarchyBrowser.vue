@@ -426,24 +426,24 @@ onBeforeUnmount(() => { window.removeEventListener('pointermove', onResizeMove);
 
 @media (max-width: 1100px) {
   .hierarchy-head :deep(.product-list-header__tools--aligned) {
-    grid-template-columns: 260px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(360px, 1fr) !important;
+    grid-template-columns: 260px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(360px, 1fr);
     grid-template-areas: 'leading divider-left search' 'leading divider-left actions';
   }
   .hierarchy-head :deep(.product-list-header__search) { padding-inline: var(--sc-surface-padding); }
-  .hierarchy-layout { grid-template-columns: 260px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(0, 1fr) !important; }
+  .hierarchy-layout { grid-template-columns: 260px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(0, 1fr); }
   .hierarchy-detail { grid-column: 1 / 4; border-top: 1px solid var(--sc-app-border); }
   .hierarchy-resizer-right { display: none; }
 }
 
 @media (max-width: 800px) {
   .hierarchy-head :deep(.product-list-header__tools--aligned) {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'leading' 'search' 'actions';
   }
   .hierarchy-head :deep(.product-list-header__search) { padding: var(--sc-space-xs) var(--sc-surface-padding); }
   .hierarchy-head :deep(.product-list-header__actions) { align-items: stretch; flex-direction: column; }
   .hierarchy-layout { display: flex; flex-direction: column; }
-  .hierarchy-layout { height: auto !important; min-height: calc(var(--sc-component-hierarchy-browser-min-height) * 1px); }
+  .hierarchy-layout { height: auto; min-height: calc(var(--sc-component-hierarchy-browser-min-height) * 1px); }
   .hierarchy-resizer { display: none; }
   .hierarchy-tree { max-height: 320px; }
   .hierarchy-list,

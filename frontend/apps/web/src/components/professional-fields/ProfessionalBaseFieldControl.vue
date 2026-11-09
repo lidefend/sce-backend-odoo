@@ -255,8 +255,8 @@ function emitValue(value: string | number | boolean | null) {
   border: 0;
   background: transparent;
   font: inherit;
-  color: var(--sc-text-link, var(--sc-app-accent)) !important;
-  font-weight: 400 !important;
+  color: var(--sc-text-link, var(--sc-app-accent));
+  font-weight: 400;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;

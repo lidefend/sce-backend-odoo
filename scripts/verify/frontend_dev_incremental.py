@@ -232,6 +232,23 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+    ), (
+        "verify.frontend.navigation_shell.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py",
+    ), (
+        "verify.frontend.professional_business_value.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+    ), (
+        "verify.frontend.scene_component_bridge.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
