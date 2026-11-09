@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: NAV-AUTHORITY-LEAK-01-20261110
+  title: "P1 navigation authority leak for expense actions"
+  status: active
+  formal_product_layer: P1 construction industry standard product
+  layer_target: role-surface released navigation action authorization
+  module: smart_construction_core menu exposure and role-surface projection
+  standard_vs_user_specific: construction_product_standard
+  why_here: >
+    The leaked entries and their capability groups are construction product menu
+    declarations. Their release filtering belongs to the industry product layer.
+  why_not_elsewhere: >
+    The frontend must not hide actions that the backend improperly released, and
+    smart_core must not encode industry-specific menu group exceptions.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml
+      - .agent/runs/NAV-AUTHORITY-LEAK-01-20261110/run.json
+      - addons/smart_construction_core/
+      - docs/architecture/
+      - docs/ops/iterations/nav_authority_leak_01_20261110.md
+      - scripts/verify/
+    product_behavior: >
+      A role receives an action only when its capability closure intersects the
+      action's declared authority groups, while legitimately authorized finance
+      and config-admin roles continue to receive the same entries.
+  objective: >
+    Find and fix why demo_role_pm receives reimbursement and advance-fund actions
+    despite a disjoint capability closure, then prove positive and negative
+    navigation outcomes without changing business ACLs or data.
+  acceptance:
+    - backend producer and reason for the leak are identified
+    - the fix lives at the declared P1 navigation owner
+    - authorized roles retain both entries
+    - denied role receives neither action
+    - targeted Odoo tests and released-navigation browser readback pass
+  exclusions:
+    - frontend cosmetic change
+    - payment or expense business data write
+    - ACL broadening
+    - deployment
+  rollback: Revert the P1 navigation projection fix and its tests.

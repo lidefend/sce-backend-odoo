@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-CONVERGENCE-M8-20261110
   title: "自定义前端系统性收敛 M8 静态门禁闭环"
-  status: active
+  status: completed
   formal_product_layer: P4 ops delivery tool
   layer_target: frontend systemic convergence static gate registry
   module: frontend verification targets, allowlists and ownership manifests

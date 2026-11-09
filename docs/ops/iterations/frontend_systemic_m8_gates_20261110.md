@@ -21,8 +21,22 @@ The umbrella target is `verify.frontend.systemic.convergence.guard`.
 
 ## Validation
 
-Pending.
+- `make verify.frontend.systemic.convergence.guard`: PASS.
+- Text containment: 39 files with `nowrap`; 12 structural/information
+  overlap files; 10 information ownership entries; `!important=0`.
+- Inline styles: 28 registered mechanism files / 9 mechanisms.
+- Semantic split: 39 files / 61 occurrences / 19 mechanisms.
+- Rich text: one `v-html` owner, five consumer calls, 10 browser checks.
+- Console: zero scattered sites and zero direct console calls.
+- Gate registry: all five required gate IDs/targets/authorities match.
+- `make ci.local.iteration`: PASS, 5 targets.
+- Receipt:
+  `.runtime/frontend-dev-validation/executions/20261109T213156Z-331231-324151435/receipt.json`.
+
+No `frontend/apps/web/src` product input changed in M8, so M6 browser evidence
+remains valid by input comparison.
 
 ## Result
 
-Planned.
+M1-M8 engineering convergence gates are closed. Overall permission convergence
+remains pending the separate P1 navigation finding recorded in M7.

@@ -869,6 +869,20 @@ verify.frontend.style_system.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
 	@python3 scripts/verify/frontend_style_system_guard.py
 
+.PHONY: verify.frontend.text_containment.guard verify.frontend.inline_style.guard
+verify.frontend.text_containment.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_text_containment_guard
+	@python3 scripts/verify/frontend_text_containment_guard.py
+
+verify.frontend.inline_style.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
+	@python3 scripts/verify/frontend_inline_style_guard.py
+
+.PHONY: verify.frontend.systemic.convergence.guard
+verify.frontend.systemic.convergence.guard: guard.prod.forbid verify.frontend.text_containment.guard verify.frontend.inline_style.guard verify.frontend.split_usage.guard verify.frontend.rich_text.guard verify.frontend.console.guard
+	@python3 -m unittest scripts.verify.test_frontend_systemic_convergence_gate_guard
+	@python3 scripts/verify/frontend_systemic_convergence_gate_guard.py
+
 .PHONY: verify.frontend.split_usage.guard
 verify.frontend.split_usage.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_split_usage_guard

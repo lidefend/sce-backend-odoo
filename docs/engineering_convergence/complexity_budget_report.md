@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5165`
+- Scanned files: `5169`
 - Files requiring split plan: `76`
 - Files above warning threshold: `148`
 
@@ -77,8 +77,8 @@ Generated from repository source files. This report is informational during the 
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1568 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1566 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
-| 1552 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
@@ -312,9 +312,9 @@ Generated from repository source files. This report is informational during the 
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1568 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1566 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
-| 1552 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |

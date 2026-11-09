@@ -263,6 +263,20 @@ RULES = (
         "verify.frontend.style_system.guard",
     )),
     Rule((
+        "docs/architecture/text_containment_allowlist.json",
+        "scripts/verify/frontend_text_containment_guard.py",
+        "scripts/verify/test_frontend_text_containment_guard.py",
+    ), (
+        "verify.frontend.text_containment.guard",
+    )),
+    Rule((
+        "docs/architecture/frontend_systemic_convergence_gates.json",
+        "scripts/verify/frontend_systemic_convergence_gate_guard.py",
+        "scripts/verify/test_frontend_systemic_convergence_gate_guard.py",
+    ), (
+        "verify.frontend.systemic.convergence.guard",
+    )),
+    Rule((
         "docs/architecture/split_usage_allowlist.json",
         "scripts/verify/frontend_split_usage_guard.py",
         "scripts/verify/test_frontend_split_usage_guard.py",

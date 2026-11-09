@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "gates": [
+    {
+      "id": "text_containment",
+      "target": "verify.frontend.text_containment.guard",
+      "authority": "docs/architecture/text_containment_allowlist.json"
+    },
+    {
+      "id": "inline_style",
+      "target": "verify.frontend.inline_style.guard",
+      "authority": "docs/architecture/inline_style_allowlist.json"
+    },
+    {
+      "id": "semantic_split",
+      "target": "verify.frontend.split_usage.guard",
+      "authority": "docs/architecture/split_usage_allowlist.json"
+    },
+    {
+      "id": "rich_text",
+      "target": "verify.frontend.rich_text.guard",
+      "authority": "frontend/apps/web/src/components/content/ScRichText.vue"
+    },
+    {
+      "id": "console",
+      "target": "verify.frontend.console.guard",
+      "authority": "frontend/apps/web/src/utils/logger.ts"
+    }
+  ]
+}

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M8-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "6f2e52a34d7d2112d9d1ffe6925c4ecc33eecf0e",
-  "status": "active",
+  "baseline_sha": "8df1203830892475c57eb94ba3b39e4d8dda59dc",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M8-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m8_gates_20261110.md",
   "scope": [
@@ -41,6 +41,16 @@
       ],
       "kind": "offline"
     },
+    "text_containment": {
+      "target": "verify.frontend.text_containment.guard",
+      "inputs": [
+        "docs/architecture/text_containment_allowlist.json",
+        "frontend/apps/web/src/",
+        "scripts/verify/frontend_text_containment_guard.py",
+        "scripts/verify/test_frontend_text_containment_guard.py"
+      ],
+      "kind": "offline"
+    },
     "incremental_planner": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
@@ -69,5 +79,31 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Add the remaining nowrap/!important gate and umbrella target, then run all five gates."
+  "next_exact_step": "M8 completed; investigate the separate P1 navigation authority leak.",
+  "validation": {
+    "umbrella": {
+      "status": "passed",
+      "command": "make verify.frontend.systemic.convergence.guard",
+      "gates": 5,
+      "text_containment": "nowrap_files=39 overlap_files=12 information_files=10 important=0",
+      "inline_style": "registered_files=28 mechanisms=9",
+      "split_usage": "files=39 occurrences=61 mechanisms=19",
+      "rich_text": "owner_directives=1 consumers=5 browser_checks=10",
+      "console": "console_sites=0 console_calls=0"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 5,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T213156Z-331231-324151435/receipt.json",
+      "identity": "dirty:8df1203830892475c57eb94ba3b39e4d8dda59dc"
+    },
+    "browser_reuse": {
+      "status": "passed",
+      "reason": "M8 changed only verification tooling, docs and Make wiring; frontend product inputs equal the M6 candidate.",
+      "source_candidate": "f78a26322cebea01147d778569480b51a76a44dc",
+      "summary": ".runtime/m6-browser-f78a263/summary.json",
+      "summary_sha256": "8db26fe20dd4721c785a9e2b29225149eedf379f902fed2ddc2eba7fc6e8c303"
+    }
+  }
 }

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "NAV-AUTHORITY-LEAK-01-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "8df1203830892475c57eb94ba3b39e4d8dda59dc",
+  "status": "active",
+  "goal": ".agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml",
+  "record": "docs/ops/iterations/nav_authority_leak_01_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml",
+    ".agent/runs/NAV-AUTHORITY-LEAK-01-20261110/run.json",
+    "addons/smart_construction_core/",
+    "docs/architecture/",
+    "docs/ops/iterations/nav_authority_leak_01_20261110.md",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing sc-local-dev/sc_dev_demo and demo role principals; no business write"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "backend_targeted": {
+      "target": "verify.backend.model_declaration.guard",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "scripts/verify/"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Trace the released navigation producer for the two leaked expense actions."
+}
