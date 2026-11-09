@@ -32,7 +32,14 @@ goal:
       - frontend/apps/web/scripts/professional_workflow_model_test.ts
       - scripts/verify/frontend_professional_workflow_guard.py
       - scripts/verify/test_frontend_professional_workflow_guard.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
       - frontend/apps/web/scripts/scene_primitive_selection_test.mjs
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/e2e_journey_matrix.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - make/frontend.mk
     product_behavior: >
       A visible disabled workflow action retains the backend-declared reason.

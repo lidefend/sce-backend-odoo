@@ -80,6 +80,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.professional_detail_collection.unit"],
         )
 
+    def test_professional_workflow_guard_selects_its_nonzero_executor(self) -> None:
+        for path in (
+            "scripts/verify/frontend_professional_workflow_guard.py",
+            "scripts/verify/test_frontend_professional_workflow_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.professional_workflow.unit"],
+                )
+
     def test_primitive_port_inputs_select_port_contract(self) -> None:
         source_targets = set(select_targets([
             "frontend/packages/ui/src/primitive-port/types.ts",

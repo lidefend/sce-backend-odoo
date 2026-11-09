@@ -15,6 +15,13 @@
     "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
     "scripts/verify/frontend_professional_workflow_guard.py",
     "scripts/verify/test_frontend_professional_workflow_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "make/frontend.mk"
   ],
   "environment": {
@@ -63,6 +70,67 @@
         "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
         "scripts/verify/frontend_professional_workflow_guard.py",
         "scripts/verify/test_frontend_professional_workflow_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormActionIcon.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
       ],
       "kind": "offline"

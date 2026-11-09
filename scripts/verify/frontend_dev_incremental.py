@@ -189,6 +189,12 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "scripts/verify/frontend_professional_workflow_guard.py",
+        "scripts/verify/test_frontend_professional_workflow_guard.py",
+    ), (
+        "verify.frontend.professional_workflow.unit",
+    )),
+    Rule((
         "/app/presentation/businessValuePresentation.ts",
         "/app/presentation/collectionKanbanPresentation.ts",
         "/utils/fieldSemantics.ts",
