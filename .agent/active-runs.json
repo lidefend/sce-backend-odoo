@@ -116,8 +116,7 @@
     "fix/scheduled-ci-mechanism-impact-rg": ".agent/runs/CI-SCHEDULED-MECHANISM-IMPACT-20261107/run.json",
     "fix/acceptance-fixture-readiness-evidence": ".agent/runs/ACCEPTANCE-READINESS-EVIDENCE-20261107/run.json",
     "codex/nav-01-sidebar-canonical-closeout": ".agent/runs/NAV-01-CLOSEOUT/run.json",
-    "fix/fe-polish-b1-20261109": ".agent/runs/FE-POLISH-B1-20261109/run.json"
-    ,
+    "fix/fe-polish-b1-20261109": ".agent/runs/FE-POLISH-B1-20261109/run.json",
     "fix/fe-iteration-efficiency-20261109": ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json"
   }
 }
