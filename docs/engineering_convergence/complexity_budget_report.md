@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5154`
+- Scanned files: `5156`
 - Files requiring split plan: `76`
 - Files above warning threshold: `148`
 
@@ -63,7 +63,7 @@ Generated from repository source files. This report is informational during the 
 | 1789 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1726 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1727 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1716 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
@@ -79,11 +79,11 @@ Generated from repository source files. This report is informational during the 
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
+| 1529 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1518 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1026 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 682 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -297,7 +297,7 @@ Generated from repository source files. This report is informational during the 
 | 1789 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1726 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1727 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1716 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
@@ -315,11 +315,11 @@ Generated from repository source files. This report is informational during the 
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
+| 1529 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1518 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

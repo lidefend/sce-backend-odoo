@@ -15,7 +15,7 @@
       :search-label="labels.search_label"
       :search-placeholder="labels.search_placeholder"
       :aligned-layout="true"
-      :layout-style="headerLayoutStyle"
+      :planner-layout="true"
       @search-input="onSearchInput"
       @search-submit="keyword = keyword.trim()"
       @search-clear="keyword = ''"
@@ -231,7 +231,6 @@ const visibleEntries = computed<OutlineEntry[]>(() => {
 });
 const displayedTotal = computed(() => keyword.value.trim() ? visibleEntries.value.length : allPlannerNodes.value.length);
 const plannerTableWidth = computed(() => `${Math.max(900, columns.value.length * 150)}px`);
-const headerLayoutStyle = computed(() => ({ gridTemplateColumns: 'minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content' }));
 const plannerTableRows = computed(() => visibleEntries.value.map((entry) => ({ ...entry, __rowKey: entry.node.key })));
 const plannerTableColumns = computed(() => columns.value.map((column) => ({
   colKey: column.field,

@@ -5,7 +5,7 @@
     <span v-else-if="text === declaration?.empty_text">{{ text }}</span>
     <ScPopover
       v-else trigger="click" placement="bottom-left"
-      :overlay-style="{ maxWidth: '100vw', whiteSpace: 'normal', overflowWrap: 'anywhere' }">
+      overlay-class-name="native-weighted-display__overlay">
       <span data-native-weighted-full-value>{{ text }}</span>
       <template #trigger>
         <ScButton
@@ -60,5 +60,10 @@ onBeforeUnmount(() => { generation += 1; });
 .native-weighted-display :deep(.native-weighted-trigger .sc-btn__content) {
   display: -webkit-box; overflow: hidden; overflow-wrap: anywhere;
   white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+:global(.native-weighted-display__overlay) {
+  max-width: 100vw;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 </style>

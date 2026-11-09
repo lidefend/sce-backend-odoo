@@ -89,7 +89,7 @@
                 v-else-if="readonlyCellCanExpand(column, row[column.name])"
                 trigger="click"
                 placement="bottom-left"
-                :overlay-style="readonlyValueOverlayStyle"
+                overlay-class-name="o2m-readonly-overlay"
               >
                 <span class="o2m-readonly-full-value">{{ readonlyCellValue(row[column.name]) }}</span>
                 <template #trigger>
@@ -504,11 +504,6 @@ const readonlyMobileColumns = computed(() => detailCollectionMobileColumnSplit(
 ));
 const readonlyMobilePrimaryColumns = computed(() => readonlyMobileColumns.value.primary);
 const readonlyMobileAdditionalColumns = computed(() => readonlyMobileColumns.value.additional);
-const readonlyValueOverlayStyle = Object.freeze({
-  maxWidth: 'min(480px, calc(100vw - 32px))',
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
-});
 watch(one2manyPageCount, (count) => {
   if (one2manyPage.value > count) one2manyPage.value = count;
 });
@@ -1156,6 +1151,12 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   display: block;
   max-width: min(480px, calc(100vw - 32px));
   color: var(--sc-app-text-primary);
+  overflow-wrap: anywhere;
+}
+
+:global(.o2m-readonly-overlay) {
+  max-width: min(480px, calc(100vw - 32px));
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 

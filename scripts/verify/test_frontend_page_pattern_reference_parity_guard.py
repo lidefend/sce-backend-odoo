@@ -22,6 +22,16 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_readonly_fact_card_body_must_remove_padding(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/components/design-system/ScCard.vue"
+        values[target] = values[target].replace(
+            "[data-appearance='fact'] :deep(.t-card__body) { padding: 0; }",
+            "[data-appearance='fact'] :deep(.t-card__body) { padding: 16px; }",
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
     def test_intrinsic_page_tracks_are_required(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"

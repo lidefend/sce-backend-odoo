@@ -255,6 +255,14 @@ RULES = (
         "verify.frontend.scene_component_bridge.guard",
     )),
     Rule((
+        "docs/architecture/inline_style_allowlist.json",
+        "scripts/verify/frontend_inline_style_guard.py",
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/test_frontend_inline_style_guard.py",
+    ), (
+        "verify.frontend.style_system.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
@@ -565,7 +573,10 @@ RULES = (
         "verify.frontend.collection_action_toolbar.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
-    Rule(("scripts/verify/frontend_page_pattern_reference_parity_guard.py",), (
+    Rule((
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+    ), (
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
     # The business-entry matrix shares one pure model, one scope adapter and one

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M3-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "9d616d608fa3630c9851128960ea304eefd55917",
-  "status": "active",
+  "baseline_sha": "c78167b82a69905a5e2489116ab2bb72b76b6a63",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M3-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md",
   "scope": [
@@ -12,6 +12,7 @@
     ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M3-20261110/run.json",
     "docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md",
     "docs/architecture/inline_style_allowlist.json",
+    "make/frontend.mk",
     "frontend/apps/web/src/",
     "scripts/verify/"
   ],
@@ -33,8 +34,10 @@
     "style_system": {
       "target": "verify.frontend.style_system.guard",
       "inputs": [
+        "docs/architecture/inline_style_allowlist.json",
         "frontend/apps/web/src/styles/",
         "frontend/apps/web/src/layouts/AppShell.css",
+        "scripts/verify/frontend_inline_style_guard.py",
         "scripts/verify/frontend_style_system_guard.py"
       ],
       "kind": "offline"
@@ -77,5 +80,47 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Classify all actual inline-style bindings and component style props before editing product source."
+  "next_exact_step": "Commit the M3 candidate, rerun the clean-HEAD iteration, then verify 1440/390 golden samples.",
+  "validation": {
+    "style_system": {
+      "status": "passed",
+      "command": "make verify.frontend.style_system.guard",
+      "inline_guard_tests": 6,
+      "registered_files": 28,
+      "mechanisms": 9
+    },
+    "incremental_planner": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 103
+    },
+    "page_patterns": {
+      "status": "passed",
+      "command": "make verify.frontend.page_pattern_reference_parity.unit",
+      "tests": 16
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 13,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T195656Z-4002557-438242662/receipt.json",
+      "identity": "dirty:c78167b82a69905a5e2489116ab2bb72b76b6a63"
+    },
+    "node_component": {
+      "status": "passed",
+      "command": "make verify.frontend.node_component.component",
+      "cases": [
+        36,
+        42
+      ]
+    },
+    "overlay_lifecycle_browser": {
+      "status": "passed",
+      "command": "make verify.frontend.overlay_lifecycle.browser"
+    },
+    "professional_relation_field": {
+      "status": "passed",
+      "command": "make verify.frontend.professional_relation_field.unit"
+    }
+  }
 }
