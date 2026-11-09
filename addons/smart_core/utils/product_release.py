@@ -46,10 +46,17 @@ def runtime_product_identity() -> dict[str, str]:
 def runtime_release_identity(database: str) -> dict[str, str]:
     identity = runtime_product_identity()
     build_sha = str(os.getenv("FRONTEND_BUILD_SHA256") or "").strip().lower()
+    runtime_environment = str(
+        os.getenv("SC_ENVIRONMENT") or os.getenv("ENV") or ""
+    ).strip()
+    deployment_environment = str(
+        os.getenv("SC_DEPLOY_ENV") or runtime_environment
+    ).strip()
     return {
         **identity,
         "git_sha": identity["source_revision"],
         "database": str(database or "").strip(),
-        "environment": str(os.getenv("SC_ENVIRONMENT") or os.getenv("ENV") or "").strip(),
+        "environment": deployment_environment,
+        "runtime_environment": runtime_environment,
         "frontend_build_sha256": build_sha if _BUILD_SHA_RE.fullmatch(build_sha) else "",
     }

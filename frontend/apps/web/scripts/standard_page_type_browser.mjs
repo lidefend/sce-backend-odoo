@@ -578,6 +578,7 @@ async function login(role) {
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data), ...(process.env.TPL07_SCOPE === 'scene-entry' ? { workspaceHome: Boolean(result.data?.workspace_home), scenes: (result.data?.scene_ready_contract?.scenes || []).filter(row => ['workspace.home', 'dashboard.company', 'project.management'].includes(row.scene?.key)).map(row => ({ scene: row.scene, target: row.meta?.target })) } : {}) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
+          report.sourceRevision = result.data?.source_revision;
           if (process.env.TPL07_APPROVAL_CONFIG_SCOPE_INSPECT === '1') {
             const nav = result.data?.navigation?.nav;
             const matches = [];
@@ -764,14 +765,19 @@ async function navigationScope() {
   await list(page, 545, 'navigation-desktop');
   check('navigation: desktop keeps one official aside', await page.locator('[data-navigation-driver="official-aside"]').count() === 1);
   check('navigation: runtime product version is declared', typeof report.productVersion === 'string' && report.productVersion.length > 0);
-  check('navigation: expanded footer consumes runtime version', (await page.locator('[data-product-version]').innerText()).trim() === `版本 ${report.productVersion}`);
+  check('navigation: runtime source revision is declared', typeof report.sourceRevision === 'string' && /^[0-9a-f]{40}$/.test(report.sourceRevision));
+  const compactVersion = String(report.productVersion).match(/^\d+\.\d+\.\d+-(.+)$/)?.[1] || report.productVersion;
+  const expectedIdentity = `${compactVersion} · ${String(report.sourceRevision).slice(0, 9)}`;
+  const footerIdentity = page.locator('[data-product-build-identity]');
+  check('navigation: expanded footer consumes runtime build identity', (await footerIdentity.innerText()).trim() === expectedIdentity);
+  check('navigation: footer exposes the full source revision', (await footerIdentity.getAttribute('title') || '').includes(report.sourceRevision));
   const before = new URL(page.url()).pathname;
   await page.setViewportSize({ width: 390, height: 844 });
   const toggle = page.getByRole('button', { name: '菜单', exact: true });
   await toggle.click();
   const dialog = page.getByRole('dialog', { name: '主导航', exact: true });
   await dialog.waitFor();
-  check('navigation: mobile footer preserves runtime version', (await dialog.locator('[data-product-version]').innerText()).trim() === `版本 ${report.productVersion}`);
+  check('navigation: mobile footer preserves runtime build identity', (await dialog.locator('[data-product-build-identity]').innerText()).trim() === expectedIdentity);
   check('navigation: mobile version fits drawer', await dialog.locator('[data-product-version]').evaluate((el) => { const box = el.getBoundingClientRect(); return box.right <= innerWidth && box.bottom <= innerHeight; }));
   check('navigation: exactly one dialog', await page.getByRole('dialog').count() === 1);
   check('navigation: official drawer owns the navigation', await dialog.locator('[data-navigation-driver="official-drawer"]').count() === 1);

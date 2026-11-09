@@ -222,6 +222,13 @@ class DailyCandidateBundleSyncTests(unittest.TestCase):
         self.assertIn('git("hash-object", "--", path, check=False)', source)
         self.assertIn("remote preseed differs from candidate", source)
 
+    def test_remote_contract_preserves_only_an_ignored_deployment_receipt(self) -> None:
+        source = sync.REMOTE_SYNC
+        self.assertIn('path == ".deployed.json"', source)
+        self.assertIn('"/.deployed.json"', source)
+        self.assertIn("preserved_receipt_paths", source)
+        self.assertIn("post-sync worktree is not clean", source)
+
 
 if __name__ == "__main__":
     unittest.main()

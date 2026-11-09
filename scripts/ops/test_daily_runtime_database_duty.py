@@ -761,6 +761,12 @@ class DeclarationTests(unittest.TestCase):
                 "the duty stack must forward %s into the application container" % key,
             )
 
+    def test_the_daily_stack_forwards_the_deployment_environment(self):
+        compose = COMPOSE_FILE.read_text(encoding="utf-8")
+        template = ENV_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("SC_DEPLOY_ENV: ${SC_DEPLOY_ENV}", compose)
+        self.assertIn("SC_DEPLOY_ENV=daily", template)
+
     def test_the_rendered_environment_is_shell_sourceable(self):
         """The duty env file is read by two parsers, not one.
 

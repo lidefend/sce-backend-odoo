@@ -29,6 +29,8 @@ def evidence(**overrides: object) -> bytes:
         "compose_project": "sc-demo-dev",
         "container": "sc-demo-dev-odoo-1",
         "previous_revision": OLD_SHA,
+        "previous_environment": "demo",
+        "deployment_environment": "daily",
         "env_file": "/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env",
         "env_written": True,
         "backup_path": "/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env.bak",
@@ -38,7 +40,8 @@ def evidence(**overrides: object) -> bytes:
             "git_sha": SHA,
             "source_revision": SHA,
             "database": "sc_demo",
-            "environment": "dev",
+            "environment": "daily",
+            "runtime_environment": "demo",
         },
         "remote_root": align_module.REMOTE_ROOT,
         "restart_tail": "",
@@ -59,21 +62,25 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ):
             with self.assertRaisesRegex(align_module.AlignError, "commit SHA"):
-                align_module.preflight("HEAD", "sc-root", "demo")
+                align_module.preflight("HEAD", "sc-root", "demo", "daily")
             with self.assertRaisesRegex(align_module.AlignError, "host alias"):
-                align_module.preflight(SHA, "sc-root; rm -rf /", "demo")
+                align_module.preflight(SHA, "sc-root; rm -rf /", "demo", "daily")
             with self.assertRaisesRegex(align_module.AlignError, "duty"):
-                align_module.preflight(SHA, "sc-root", "../demo")
+                align_module.preflight(SHA, "sc-root", "../demo", "daily")
+            with self.assertRaisesRegex(align_module.AlignError, "deployment environment"):
+                align_module.preflight(SHA, "sc-root", "demo", "Daily Server")
 
     def test_preflight_accepts_governed_inputs(self) -> None:
         with mock.patch.dict(
             os.environ,
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ):
-            align_module.preflight(SHA, "sc-root", "demo")
+            align_module.preflight(SHA, "sc-root", "demo", "daily")
 
     def test_remote_command_binds_exact_revision_and_duty(self) -> None:
-        command = align_module.remote_command(SHA, "demo", "http://127.0.0.1:18081")
+        command = align_module.remote_command(
+            SHA, "demo", "http://127.0.0.1:18081", "daily"
+        )
         self.assertEqual(
             shlex.split(command),
             [
@@ -84,8 +91,13 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
                 "demo",
                 "http://127.0.0.1:18081",
                 align_module.REMOTE_ROOT,
+                "daily",
             ],
         )
+
+    def test_remote_declaration_writes_source_and_deployment_environment(self) -> None:
+        for token in ("SC_SOURCE_REVISION", "SC_DEPLOY_ENV", "deployment_environment"):
+            self.assertIn(token, align_module.REMOTE_ALIGN)
 
     def test_align_accepts_matching_evidence(self) -> None:
         completed = mock.Mock(returncode=0, stdout=evidence(), stderr=b"")
@@ -93,7 +105,9 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             os.environ,
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
-            result = align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
+            result = align_module.align(
+                SHA, "sc-root", "demo", "http://127.0.0.1:18081", "daily"
+            )
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["expected_sha"], SHA)
 
@@ -105,7 +119,9 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "evidence differs"):
-                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
+                align_module.align(
+                    SHA, "sc-root", "demo", "http://127.0.0.1:18081", "daily"
+                )
 
     def test_align_rejects_rolled_back_result(self) -> None:
         rolled = evidence(status="BLOCKED", rolled_back=True)
@@ -115,7 +131,9 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "evidence differs"):
-                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
+                align_module.align(
+                    SHA, "sc-root", "demo", "http://127.0.0.1:18081", "daily"
+                )
 
     def test_align_reports_remote_failure(self) -> None:
         completed = mock.Mock(returncode=1, stdout=b"", stderr=b"BLOCKED remote HEAD differs")
@@ -124,7 +142,9 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "remote HEAD differs"):
-                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
+                align_module.align(
+                    SHA, "sc-root", "demo", "http://127.0.0.1:18081", "daily"
+                )
 
 
 if __name__ == "__main__":

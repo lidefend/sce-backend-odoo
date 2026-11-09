@@ -624,6 +624,7 @@ export const useSessionStore = defineStore('session', {
   }),
   getters: {
     productVersion: (state): string => typeof state.initMeta?.product_version === 'string' ? state.initMeta.product_version.trim() : '',
+    sourceRevision: (state): string => typeof state.initMeta?.source_revision === 'string' ? state.initMeta.source_revision.trim() : '',
     workspaceHeroRows(state): WorkspaceHeroRow[] {
       const hero = asRecord(state.workspaceHome?.hero);
       const source = Array.isArray(hero.summary_rows) ? hero.summary_rows : [];

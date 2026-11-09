@@ -63,6 +63,8 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
                 "align-platform",
                 "published-face",
                 "entry-verify",
+                "build-identity-record",
+                "build-identity-verify",
             ],
         )
         self.assertEqual(steps[0].target, "daily.runtime.candidate.bundle_sync")
@@ -99,6 +101,27 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         )
         self.assertTrue(
             steps[4].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/platform-admin")
+        )
+        self.assertEqual(
+            [step.variables["DAILY_RUNTIME_DEPLOY_ENV"] for step in steps[3:5]],
+            ["daily", "daily"],
+        )
+        self.assertEqual(
+            steps[7].target,
+            "daily.runtime.build_identity.record",
+        )
+        self.assertEqual(
+            steps[7].environment["CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD"],
+            "RECORD_EXACT_DAILY_RUNTIME_BUILD_IDENTITY",
+        )
+        self.assertEqual(
+            steps[8].target,
+            "verify.daily.runtime.build_identity",
+        )
+        self.assertTrue(
+            steps[8].variables["DAILY_RUNTIME_BUILD_IDENTITY_REPORT"].endswith(
+                "/build-identity-verification.json"
+            )
         )
 
     def test_main_sequence_uses_the_main_bundle_entry(self):
@@ -217,8 +240,43 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         self.assertEqual("b" * 64, entry_digest)
         command = run.call_args[0][0]
         self.assertIn("daily.runtime.database.duty.plan", command)
-        self.assertIn("DAILY_RUNTIME_EXPECTED_SHA=" + OLD, command)
-        self.assertNotIn("DAILY_RUNTIME_EXPECTED_SHA=" + HEAD, command)
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["DAILY_RUNTIME_EXPECTED_SHA"], OLD)
+        self.assertEqual(
+            environment["DAILY_RUNTIME_DATABASE_DUTY_SELECTION"],
+            "demo platform_control",
+        )
+        self.assertNotIn("MAKEFLAGS", environment)
+        self.assertNotIn("MAKEOVERRIDES", environment)
+        for name in orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES:
+            self.assertNotIn(name, environment)
+        plan_report.unlink()
+
+    def test_derive_digests_removes_parent_frozen_make_flags(self):
+        plan_report = ROOT / ".runtime" / "test-duty-plan-frozen.json"
+        plan_report.parent.mkdir(parents=True, exist_ok=True)
+        plan_report.write_text(
+            '{"declaration_digest":"' + "a" * 64 + '","entry_digest":"' + "b" * 64 + '"}'
+        )
+        run = mock.Mock(return_value=type(
+            "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+        )())
+        frozen = {
+            name: "empty-from-parent"
+            for name in (
+                *orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES,
+                "MAKEFLAGS",
+                "MAKEOVERRIDES",
+                "GNUMAKEFLAGS",
+            )
+        }
+        with mock.patch.object(orchestration, "DUTY_PLAN_REPORT", ".runtime/test-duty-plan-frozen.json"):
+            with mock.patch.dict(os.environ, frozen):
+                with mock.patch.object(orchestration.subprocess, "run", run):
+                    orchestration.derive_digests(ROOT, arguments(), identity())
+        environment = run.call_args.kwargs["env"]
+        for name in frozen:
+            self.assertNotIn(name, environment)
         plan_report.unlink()
 
     def test_derive_digests_fails_closed_when_plan_fails(self):
@@ -232,7 +290,15 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         steps = orchestration.plan_steps(ROOT, arguments(), identity())
         resumed = orchestration.resume_steps(steps, "duty-refresh")
         self.assertEqual(
-            ["duty-refresh", "align-demo", "align-platform", "published-face", "entry-verify"],
+            [
+                "duty-refresh",
+                "align-demo",
+                "align-platform",
+                "published-face",
+                "entry-verify",
+                "build-identity-record",
+                "build-identity-verify",
+            ],
             [step.key for step in resumed],
         )
         with self.assertRaises(orchestration.ReleaseError):
