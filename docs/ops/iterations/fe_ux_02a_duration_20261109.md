@@ -139,6 +139,11 @@ make ci.local.iteration
 
 固定产品/测试候选：`2a3969f5072b4554408148395b45161f3908f129`。
 
+Independent review first returned `REQUEST_CHANGES` S1：Contract V2 collection
+column projection dropped `componentKey`, so real List/Kanban did not reach the
+shared duration path. The repair now preserves `componentKey` from the actual
+`resolveListColumnOptions` producer and adds a producer-to-List/Kanban test.
+
 List Surface 输入对账：
 
 - manifest 当前 `input_sha256`：

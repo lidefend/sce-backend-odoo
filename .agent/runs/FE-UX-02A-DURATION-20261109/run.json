@@ -7,11 +7,13 @@
     ".agent/runs/FE-UX-02A-DURATION-20261109/run.json",
     "docs/ops/iterations/fe_ux_02a_duration_20261109.md",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
     "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "docs/engineering_convergence/complexity_budget_report.md",
@@ -118,6 +120,19 @@
         "frontend/apps/web/scripts/professional_component_registry_test.ts",
         "scripts/verify/frontend_professional_component_registry_guard.py",
         "scripts/verify/test_frontend_professional_component_registry_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
         "make/frontend.mk"
       ],
       "kind": "offline"
