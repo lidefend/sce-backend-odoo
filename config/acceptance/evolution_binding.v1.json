@@ -620,6 +620,27 @@
       ]
     },
     {
+      "id": "payment-automatic-approval-audit-copy",
+      "description": "Only the automatic approval chatter literal changes; the complete remaining PaymentRequest AST must stay identical. Runtime, condition, call-site or action changes retain construction-product-runtime evidence.",
+      "paths": [
+        "addons/smart_construction_core/models/core/payment_request.py"
+      ],
+      "condition": "payment_approval_audit_copy_only",
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "payment-request-capability-tests",
+      "description": "The payment capability test module is executable backend contract input, not a page or relation surface. Product source changes remain governed by their own exact rules.",
+      "paths": [
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
       "id": "native-product-publication",
       "description": "Native catalog maintenance, publication qualification and its ORM regression. Backend contract coverage; no list layout or relation-field behavior. Exact paths only; mixed business changes retain their own suites.",
       "paths": [

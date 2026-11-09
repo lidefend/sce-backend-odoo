@@ -460,6 +460,43 @@ class TestGlobAndPlan(unittest.TestCase):
             with self.subTest(after=invalid):
                 self.assertFalse(guard.package_export_addition_only(before, invalid))
 
+    def test_payment_audit_copy_condition_is_exact_and_scoped(self):
+        before = (
+            "class PaymentRequest(models.Model):\n"
+            "    def _complete_payment_approval(self, automatic=False):\n"
+            "        self._message_post_non_blocking(_('旧的自动通过文案') if automatic else _('审批通过'))\n"
+            "        self.write({'state': 'approved'})\n"
+        )
+        after_copy = before.replace("旧的自动通过文案", "当前适用规则无需审批")
+        self.assertTrue(guard.payment_approval_audit_copy_only(before, after_copy))
+        for invalid in (
+            after_copy.replace("if automatic", "if not automatic"),
+            after_copy.replace("self.write({'state': 'approved'})", "self.write({'state': 'done'})"),
+            after_copy.replace("_message_post_non_blocking", "message_post"),
+            before.replace("class PaymentRequest", "class OtherModel"),
+            "not valid python(",
+        ):
+            with self.subTest(after=invalid):
+                self.assertFalse(guard.payment_approval_audit_copy_only(before, invalid))
+
+        path = "addons/smart_construction_core/models/core/payment_request.py"
+        with patch.object(guard, "_git", side_effect=[before, OTHER, after_copy]):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "payment-automatic-approval-audit-copy")
+        self.assertEqual(plan["required_suites"], ["backend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
+        test_path = "addons/smart_construction_core/tests/test_p1_payment_request_capability.py"
+        test_plan = guard.build_plan(self.registry, [test_path], "base", HEAD)
+        self.assertEqual(test_plan["matched_rules"][test_path], "payment-request-capability-tests")
+        self.assertEqual(test_plan["required_evidence_suites"], [])
+
+        with patch.object(guard, "_git", side_effect=[before, OTHER, after_copy.replace("'approved'", "'done'")]):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "construction-product-runtime")
+        self.assertIn("list_surface_structure", plan["required_evidence_suites"])
+        self.assertIn("relation_roundtrip", plan["required_evidence_suites"])
+
     def test_manifest_conditional_plan_falls_back_on_runtime_or_missing_input(self):
         path = "addons/smart_construction_core/__manifest__.py"
         before = "{'version': '1', 'depends': ['base']}"

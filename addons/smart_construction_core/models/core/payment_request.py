@@ -3684,7 +3684,7 @@ class PaymentRequest(models.Model):
             ).write({"state": "approved"})
             after = rec._snapshot_audit_payload()
             rec._audit_transition("payment_approved", before, after, action_name="action_submit" if automatic else "action_on_tier_approved")
-            rec._message_post_non_blocking(_("付款/收款申请提交自动通过（未配置审批）。") if automatic else _("付款/收款申请审批通过。"))
+            rec._message_post_non_blocking(_("付款/收款申请提交自动通过（当前适用规则无需审批）。") if automatic else _("付款/收款申请审批通过。"))
 
     def _get_tier_reject_reason(self):
         self.ensure_one()

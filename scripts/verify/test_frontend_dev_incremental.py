@@ -249,6 +249,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn(
             "verify.frontend.contract_header_action.unit",
             select_targets([
+                "addons/smart_construction_core/models/core/payment_request.py",
                 "addons/smart_construction_core/services/financial_workspace_contract.py",
                 "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
             ]),

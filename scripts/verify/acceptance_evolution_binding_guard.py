@@ -215,6 +215,7 @@ def load_registry(path: Path) -> dict:
             "manifest_version_only",
             "approval_policy_initialization_only",
             "package_export_addition_only",
+            "payment_approval_audit_copy_only",
         ):
             raise BindingError(f"unsupported rule condition: {rule.get('condition')!r}")
         suites_for_rule = rule.get("suites")
@@ -514,10 +515,69 @@ def package_export_addition_only(before: str, after: str) -> bool:
     )
 
 
+def _mask_payment_approval_audit_copy(tree: ast.Module) -> bool:
+    """Mask the automatic-approval chatter literal in PaymentRequest only."""
+    masked = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef) or node.name != "PaymentRequest":
+            continue
+        for method in node.body:
+            if not isinstance(method, ast.FunctionDef) or method.name != "_complete_payment_approval":
+                continue
+            for statement in ast.walk(method):
+                if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+                    continue
+                call = statement.value
+                if not (
+                    isinstance(call.func, ast.Attribute)
+                    and call.func.attr == "_message_post_non_blocking"
+                    and len(call.args) == 1
+                    and not call.keywords
+                    and isinstance(call.args[0], ast.IfExp)
+                ):
+                    continue
+                translated = call.args[0].body
+                if not (
+                    isinstance(translated, ast.Call)
+                    and isinstance(translated.func, ast.Name)
+                    and translated.func.id == "_"
+                    and len(translated.args) == 1
+                    and not translated.keywords
+                    and isinstance(translated.args[0], ast.Constant)
+                    and isinstance(translated.args[0].value, str)
+                ):
+                    continue
+                translated.args[0].value = "__automatic_approval_audit_copy__"
+                masked += 1
+    return masked == 1
+
+
+def payment_approval_audit_copy_only(before: str, after: str) -> bool:
+    """Allow only the automatic approval chatter literal to differ.
+
+    The payment model is runtime-facing, so a missing or ambiguous call site,
+    syntax error, or any condition/action/value/state change falls back to the
+    broad construction-product runtime evidence plan.
+    """
+    try:
+        old_tree, new_tree = ast.parse(before), ast.parse(after)
+    except (SyntaxError, ValueError, TypeError, RecursionError):
+        return False
+    if not _mask_payment_approval_audit_copy(old_tree) or not _mask_payment_approval_audit_copy(new_tree):
+        return False
+    try:
+        return ast.dump(old_tree, include_attributes=False) == ast.dump(
+            new_tree, include_attributes=False
+        )
+    except (TypeError, RecursionError):
+        return False
+
+
 CONDITION_HANDLERS = {
     "manifest_version_only": manifest_version_only,
     "approval_policy_initialization_only": approval_policy_initialization_only,
     "package_export_addition_only": package_export_addition_only,
+    "payment_approval_audit_copy_only": payment_approval_audit_copy_only,
 }
 
 
