@@ -9,10 +9,30 @@ from pathlib import Path
 
 
 SCHEMA_VERSION = 1
+NON_RUNTIME_PREFIXES = (".agent/", "docs/")
 
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else ""
+
+
+def runtime_tree_sha256(root: Path) -> str:
+    """Hash tracked runtime inputs while excluding bookkeeping-only trees."""
+    try:
+        listing = subprocess.run(
+            ["git", "-C", str(root), "ls-tree", "-r", "--full-tree", "HEAD"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        ).stdout.splitlines()
+    except subprocess.CalledProcessError:
+        return ""
+    rows = [
+        row
+        for row in listing
+        if not (row.split("\t", 1)[1] if "\t" in row else "").startswith(NON_RUNTIME_PREFIXES)
+    ]
+    return hashlib.sha256(("\n".join(rows) + "\n").encode("utf-8")).hexdigest()
 
 
 def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict:
@@ -31,7 +51,12 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
             stdout=subprocess.PIPE,
         ).stdout
     except subprocess.CalledProcessError:
-        return {"head": "", "worktreeClean": False, "authoritySha256": {}}
+        return {
+            "head": "",
+            "worktreeClean": False,
+            "runtimeTreeSha256": "",
+            "authoritySha256": {},
+        }
     authorities = {}
     for path in authority_paths:
         try:
@@ -42,7 +67,17 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
     return {
         "head": head,
         "worktreeClean": not bool(status),
+        "runtimeTreeSha256": runtime_tree_sha256(root),
         "authoritySha256": dict(sorted(authorities.items())),
+    }
+
+
+def reuse_identity(identity: dict) -> dict:
+    """Fields that decide reuse; HEAD remains provenance, not validity."""
+    return {
+        "worktreeClean": identity.get("worktreeClean", False),
+        "runtimeTreeSha256": identity.get("runtimeTreeSha256", ""),
+        "authoritySha256": identity.get("authoritySha256", {}),
     }
 
 
@@ -51,7 +86,7 @@ def cache_path(root: Path, paths: list[str], targets: list[str], identity: dict)
         json.dumps(
             {
                 "schemaVersion": SCHEMA_VERSION,
-                "identity": identity,
+                "identity": reuse_identity(identity),
                 "changedPaths": sorted(set(paths)),
                 "requiredTargets": sorted(set(targets)),
             },
@@ -75,7 +110,10 @@ def verified_receipt(
         return None
     try:
         cached = json.loads(index.read_text(encoding="utf-8"))
-        if cached.get("schemaVersion") != SCHEMA_VERSION or cached.get("identity") != identity:
+        if (
+            cached.get("schemaVersion") != SCHEMA_VERSION
+            or cached.get("identity") != reuse_identity(identity)
+        ):
             return None
         receipt_path = Path(str(cached["receipt"]))
         if not receipt_path.is_absolute():
@@ -86,7 +124,7 @@ def verified_receipt(
         if (
             receipt.get("status") != "passed"
             or not receipt.get("verificationPassed")
-            or receipt.get("identity") != identity
+            or reuse_identity(receipt.get("identity", {})) != reuse_identity(identity)
             or sorted(receipt.get("changedPaths", [])) != sorted(set(paths))
             or sorted(receipt.get("requiredTargets", [])) != sorted(set(targets))
         ):
@@ -122,7 +160,7 @@ def write_index(
         json.dumps(
             {
                 "schemaVersion": SCHEMA_VERSION,
-                "identity": identity,
+                "identity": reuse_identity(identity),
                 "receipt": receipt.resolve().relative_to(root.resolve()).as_posix(),
             },
             indent=2,

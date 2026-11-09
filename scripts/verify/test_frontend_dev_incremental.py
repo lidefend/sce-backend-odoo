@@ -22,7 +22,7 @@ from scripts.verify.frontend_dev_incremental import (
     select_targets,
     worktree_changed_paths,
 )
-from scripts.ops.incremental_execution import current_identity
+from scripts.ops.incremental_execution import current_identity, reuse_identity
 from scripts.verify.frontend_style_system_guard import (
     RECORD_RUNTIME_SIZE_LIMITS,
     SIZE_LIMITS,
@@ -1469,6 +1469,24 @@ class IncrementalExecutionIdentityTest(unittest.TestCase):
     def test_dirty_worktree_is_never_reusable(self) -> None:
         self.authority.write_text("two\n", encoding="utf-8")
         self.assertFalse(current_identity(self.root, (self.authority,))["worktreeClean"])
+
+    def test_bookkeeping_commit_keeps_runtime_reuse_identity(self) -> None:
+        before = current_identity(self.root, (self.authority,))
+        (self.root / "docs").mkdir()
+        (self.root / "docs/record.md").write_text("record\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "docs"], check=True)
+        after = current_identity(self.root, (self.authority,))
+        self.assertNotEqual(before["head"], after["head"])
+        self.assertEqual(reuse_identity(before), reuse_identity(after))
+
+    def test_runtime_source_commit_changes_reuse_identity(self) -> None:
+        before = current_identity(self.root, (self.authority,))
+        self.authority.write_text("two\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "source"], check=True)
+        after = current_identity(self.root, (self.authority,))
+        self.assertNotEqual(reuse_identity(before), reuse_identity(after))
 
 
 class RunScopedPlannerTest(unittest.TestCase):

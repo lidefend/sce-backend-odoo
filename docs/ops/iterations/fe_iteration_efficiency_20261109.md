@@ -22,4 +22,18 @@ set are unchanged.
 
 ## Validation
 
-Pending implementation.
+- `make verify.frontend.dev.incremental.unit`：100 tests PASS。
+- 首次 clean HEAD `51fdccf3ad036d13e19a3921520e32325af42544` 的
+  `make ci.local.iteration`：planner 执行 3 个 target，全程 PASS。
+- 同一 clean HEAD 第二次执行：planner 直接复用首次回执，`reusedTargetCount=3`，
+  `testsRun=false`，`verificationPassed=true`，未再次执行 3 个 target。
+- 首次回执：
+  `.runtime/frontend-dev-validation/executions/20261109T144940Z-2110155-665824890/receipt.json`
+- 复用回执：
+  `.runtime/frontend-dev-validation/executions/20261109T145009Z-2117315-569376311/receipt.json`
+
+负例测试覆盖：dirty worktree 不复用、target log 被篡改不复用、failed/blocked/interrupted/not-run
+不作为通过；缺失的 planner target 不再要求逐项复制到 `run.json`，但仍保留在 receipt 的
+`registrationMissingTargets` 中。
+
+可复用身份与日志校验位于 `scripts/ops/incremental_execution.py`，供其他增量 planner 复用相同原则。

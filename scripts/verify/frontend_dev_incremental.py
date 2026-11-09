@@ -1055,7 +1055,11 @@ def _execution_directory(root: Path, requested: Path | None) -> Path:
 def current_execution_identity(root: Path = ROOT) -> dict:
     return incremental_current_identity(
         root,
-        (Path(__file__).resolve(), root / "make/frontend.mk"),
+        (
+            Path(__file__).resolve(),
+            root / "scripts/ops/incremental_execution.py",
+            root / "make/frontend.mk",
+        ),
     )
 
 

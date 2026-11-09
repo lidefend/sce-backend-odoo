@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-ITERATION-EFFICIENCY-20261109
   title: 前端增量执行去重与回执复用
-  status: active
+  status: verification_pending
   formal_product_layer: P4 ops delivery tool
   layer_target: frontend incremental target registration and execution receipt reuse
   module: scripts/verify/frontend_dev_incremental.py
