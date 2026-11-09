@@ -20,6 +20,11 @@ goal:
       - .agent/runs/NAV-AUTHORITY-LEAK-01-20261110/run.json
       - addons/smart_construction_core/
       - addons/smart_core/
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - docs/architecture/
       - docs/ops/iterations/nav_authority_leak_01_20261110.md
       - scripts/verify/
