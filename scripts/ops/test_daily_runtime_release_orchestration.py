@@ -248,6 +248,35 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         )
         self.assertNotIn("MAKEFLAGS", environment)
         self.assertNotIn("MAKEOVERRIDES", environment)
+        for name in orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES:
+            self.assertNotIn(name, environment)
+        plan_report.unlink()
+
+    def test_derive_digests_removes_parent_frozen_make_flags(self):
+        plan_report = ROOT / ".runtime" / "test-duty-plan-frozen.json"
+        plan_report.parent.mkdir(parents=True, exist_ok=True)
+        plan_report.write_text(
+            '{"declaration_digest":"' + "a" * 64 + '","entry_digest":"' + "b" * 64 + '"}'
+        )
+        run = mock.Mock(return_value=type(
+            "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+        )())
+        frozen = {
+            name: "empty-from-parent"
+            for name in (
+                *orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES,
+                "MAKEFLAGS",
+                "MAKEOVERRIDES",
+                "GNUMAKEFLAGS",
+            )
+        }
+        with mock.patch.object(orchestration, "DUTY_PLAN_REPORT", ".runtime/test-duty-plan-frozen.json"):
+            with mock.patch.dict(os.environ, frozen):
+                with mock.patch.object(orchestration.subprocess, "run", run):
+                    orchestration.derive_digests(ROOT, arguments(), identity())
+        environment = run.call_args.kwargs["env"]
+        for name in frozen:
+            self.assertNotIn(name, environment)
         plan_report.unlink()
 
     def test_derive_digests_fails_closed_when_plan_fails(self):

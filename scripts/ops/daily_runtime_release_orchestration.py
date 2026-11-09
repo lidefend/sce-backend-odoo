@@ -342,10 +342,18 @@ def derive_digests(repository: Path, args: argparse.Namespace, identity: Identit
         "--no-print-directory",
         "daily.runtime.database.duty.plan",
     ]
+    isolated_names = {
+        "MAKEFLAGS",
+        "MFLAGS",
+        "MAKELEVEL",
+        "MAKEOVERRIDES",
+        "GNUMAKEFLAGS",
+        *FROZEN_RECURSIVE_MAKE_VARIABLES,
+    }
     environment = {
         key: value
         for key, value in os.environ.items()
-        if key not in {"MAKEFLAGS", "MFLAGS", "MAKELEVEL", "MAKEOVERRIDES"}
+        if key not in isolated_names
     }
     environment.update({
         "DAILY_RUNTIME_SSH_HOST": args.ssh_host,
