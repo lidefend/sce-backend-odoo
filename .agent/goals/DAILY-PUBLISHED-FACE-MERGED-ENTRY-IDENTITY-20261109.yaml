@@ -1,0 +1,18 @@
+schema_version: 1
+goal:
+  id: DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109
+  status: active
+  formal_product_layer: P0
+  objective: >
+    Preserve the stable native menu XMLID when a published product-policy leaf
+    is merged into its same-menu directory, so the release gate can prove that
+    every frozen released entry is present in the delivered navigation.
+  acceptance:
+    - The merged directory retains menu_xmlid and action_xmlid from the executable leaf.
+    - The native navigation delivery unit passes with non-zero tests.
+    - Daily published-face convergence and entry verification pass at the merged mainline SHA.
+  exclusions:
+    - business menu or product-policy data mutation
+    - role or ACL changes
+    - frontend rendering
+    - production deployment

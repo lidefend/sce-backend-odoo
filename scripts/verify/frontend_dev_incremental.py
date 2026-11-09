@@ -422,6 +422,12 @@ RULES = (
     ), (
         "verify.daily.published_face.target.unit",
     )),
+    Rule((
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+    )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
     # 让最小复用变成 make 直接报错，又退回人工全量。
