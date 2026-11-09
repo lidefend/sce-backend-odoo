@@ -258,13 +258,20 @@ class EditionReleaseSnapshotService:
                     continue
                 enabled = bool(menu.get("enabled", True))
                 release_state = _text(menu.get("release_state")) or ("released" if enabled else "hidden")
+                route = _text(menu.get("route"))
+                scene_key = _text(menu.get("scene_key"))
+                # ``target_scene_key`` is an entry identity only for a declared
+                # scene entry. An action menu may retain a scene association,
+                # but its published target remains the native action route.
+                if not scene_key and route.startswith("/s/"):
+                    scene_key = _text(menu.get("target_scene_key"))
                 rows.append(
                     {
                         "page_key": page_key,
                         "menu_key": _text(menu.get("menu_key")),
                         "label": _text(menu.get("page_label") or menu.get("label") or page_key),
                         "visible_menu_path": _text(menu.get("visible_menu_path")),
-                        "route": _text(menu.get("route")),
+                        "route": route,
                         "release_state": release_state,
                         "enabled": enabled,
                         "access_level": _text(menu.get("access_level")) or _text(policy.get("access_level")) or "public",
@@ -273,7 +280,7 @@ class EditionReleaseSnapshotService:
                         "menu_xmlid": _text(menu.get("menu_xmlid")),
                         "action_xmlid": _text(menu.get("action_xmlid")),
                         "res_model": _text(menu.get("res_model")),
-                        "scene_key": _text(menu.get("scene_key") or menu.get("target_scene_key")),
+                        "scene_key": scene_key,
                     }
                 )
         return rows

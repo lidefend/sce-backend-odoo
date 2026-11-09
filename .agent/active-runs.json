@@ -62,6 +62,7 @@
     "fix/daily-release-orchestration-digest-derivation": ".agent/runs/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION/run.json",
     "fix/daily-runtime-first-deploy-20261022": ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
     "fix/daily-runtime-payload-import-closeout-20261016": ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json",
+    "fix/daily-published-face-action-target-20261109": ".agent/runs/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109/run.json",
     "fix/delivery-lanes-orchestration-20261023": ".agent/runs/DELIVERY-LANES-ORCHESTRATION-20261023/run.json",
     "fix/demo-company-membership-persistence-20261023": ".agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json",
     "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",

@@ -8,10 +8,16 @@
   "record": "docs/ops/iterations/scheduled_ci_manual_release_20261109.md",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/goals/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109.yaml",
     ".agent/goals/SCHEDULED-CI-MANUAL-RELEASE-20261109.yaml",
+    ".agent/runs/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109/run.json",
     ".agent/runs/SCHEDULED-CI-MANUAL-RELEASE-20261109/run.json",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/daily_published_face_action_target_20261109.md",
     "docs/ops/iterations/scheduled_ci_manual_release_20261109.md",
+    "make/guards.mk",
     "make/runtime_ops.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
@@ -90,6 +96,15 @@
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "published_face_target": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
       ],
       "kind": "offline"
     }

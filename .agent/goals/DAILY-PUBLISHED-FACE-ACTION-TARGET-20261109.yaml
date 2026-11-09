@@ -1,0 +1,19 @@
+schema_version: 1
+goal:
+  id: DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109
+  status: active
+  formal_product_layer: P0
+  objective: >
+    Keep native action release pages on their action target when a maintained
+    product policy also carries a scene association, so the daily published
+    face can be frozen from the current database policy without deleting
+    business declarations or converting action entries into scene entries.
+  acceptance:
+    - A `/a/` page ignores `target_scene_key` as a target unless the row declares a `/s/` route.
+    - A declared `/s/` scene entry still projects `target_scene_key` as `scene_key`.
+    - The focused release preflight unit target passes with non-zero tests.
+    - The resulting mainline revision deploys through the governed daily runtime release entry.
+  exclusions:
+    - frontend behavior
+    - product-policy business data mutation
+    - production deployment
