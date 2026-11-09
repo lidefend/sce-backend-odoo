@@ -44,4 +44,4 @@ goal:
     - the clean-HEAD full local gate passes
     - affected unit and incremental gates pass
   rollback: Revert this batch; no database or deployed runtime state is changed.
-  next_exact_step: Commit the baseline guard fixes, rerun the full clean-HEAD local gate, then update PR #852 and rerun the exact-head full release gate.
+  next_exact_step: Commit the metadata-only receipt update, push the final clean HEAD, then require current-head remote checks and the full frontend release gate before merge consideration.

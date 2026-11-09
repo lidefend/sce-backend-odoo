@@ -203,7 +203,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the baseline guard fixes, rerun the full clean-HEAD local gate, then update PR #852 and rerun the exact-head full release gate.",
+  "next_exact_step": "Commit the metadata-only receipt update, push the final clean HEAD, then require current-head remote checks and the full frontend release gate before merge consideration.",
   "source_failure": {
     "run": 42529817408,
     "workflow": "frontend_release_gate",
@@ -328,6 +328,17 @@
         "contract_form_runtime_state_protocol_guard retained a stale status-applier token"
       ],
       "log": ".runtime/quick-shard-93fafb9b61ff-3-of-8.log"
+    },
+    "full_quick_final_passed": {
+      "status": "passed",
+      "head_sha": "9797c53e751f21d831c2034b59122f268456a734",
+      "tree": "37df2dbbc4e41a19805ad7d52530bb986898f3ce",
+      "shards": 8,
+      "shards_passed": 8,
+      "producer": "atomic-ci-local-quick-runner-v2",
+      "receipt": ".git/codex/evidence/ci.local.quick/9797c53e751f21d831c2034b59122f268456a734.json",
+      "receipt_sha256": "055c187b829e40dd74e78cb246d2985f4ae10addd785a7f5a9699df2384f035d",
+      "logs": "`.runtime/quick-shard-9797c53e751f-{0..7}-of-8.log`"
     }
   }
 }

@@ -67,6 +67,7 @@ Current candidate results:
 | Guard registry audit | PASS, 24 tests; 212/212 unwired dispositioned |
 | Native-view workflow action coverage | PASS, 59 tests |
 | Contract architecture suite | PASS, including toolchain and lane coverage guards |
+| Full local `ci.local.quick.full` | PASS, 8/8 shards on `9797c53e751f` |
 
 The exact logs and hashes are indexed in the run JSON.
 
@@ -97,3 +98,7 @@ is required to obtain the clean exact-head receipt.
 The complete local run on `93fafb9b6` then exposed the cross-lane frontend
 toolchain dependency and the stale runtime-state guard token. Both are corrected
 without changing product behavior or raising a governance baseline.
+
+The final full local run on `9797c53e751f` passed all eight shards and produced
+the exact-head receipt indexed in the run record. The subsequent metadata-only
+commit may carry this receipt forward because its runtime tree is unchanged.
