@@ -1523,7 +1523,7 @@ class MenuService:
             merged_meta["merged_native_entry_key"] = str(entry.get("key") or "")
             directory["menu_id"] = config_menu_id
             for field in (
-                "route", "scene_key", "action_id", "action_xmlid", "model",
+                "menu_xmlid", "menu_key", "route", "scene_key", "action_id", "action_xmlid", "model",
                 "view_modes", "entry_target",
             ):
                 value = entry.get(field) if entry.get(field) not in (None, "", []) else entry_meta.get(field)

@@ -603,6 +603,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["make/guards.mk"]),
             ["verify.guard.registry"],
         )
+        for path in (
+            "addons/smart_core/delivery/menu_service.py",
+            "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.backend.navigation_delivery.unit"],
+                )
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
