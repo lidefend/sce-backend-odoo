@@ -81,7 +81,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the M1 evidence closeout and publish the clean exact head for independent review.",
+  "next_exact_step": "Owner reviews M1 counts and 1440/390 Golden Sample evidence; prepare M2 kickoff only after approval.",
   "validation": {
     "lint": {
       "status": "passed",
