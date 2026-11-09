@@ -355,9 +355,14 @@ def derive_digests(repository: Path, args: argparse.Namespace, identity: Identit
         for key, value in os.environ.items()
         if key not in isolated_names
     }
+    plan_sha = (
+        identity.expected_candidate_sha
+        if identity.mode == "main" and identity.expected_candidate_sha
+        else identity.expected_old_sha
+    )
     environment.update({
         "DAILY_RUNTIME_SSH_HOST": args.ssh_host,
-        "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_old_sha,
+        "DAILY_RUNTIME_EXPECTED_SHA": plan_sha,
         "DAILY_RUNTIME_DATABASE_DUTY_SELECTION": "demo platform_control",
         "DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT": str(plan_report),
     })
