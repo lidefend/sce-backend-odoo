@@ -511,8 +511,29 @@ RULES = (
     Rule((
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+        "addons/smart_construction_core/services/financial_workspace_contract.py",
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
     ), (
         "verify.frontend.contract_header_action.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    ), (
+        "verify.unified_page_contract.v2.assembler",
+        "verify.unified_page_contract.v2.action",
+        "verify.unified_page_contract.v2.status",
+        "verify.unified_page_contract.v2.runtime",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    ), (
+        "verify.execute_button.authority.unit",
+    )),
+    Rule((
+        "scripts/audit/workflow_state_inventory.py",
+    ), (
+        "verify.workflow_action_semantics.guard",
     )),
     # The relation acceptance runner owns the placeholder classification used
     # by its public-control assertion; changing it requires the real journey.

@@ -3366,6 +3366,25 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         label = _text(row.get("label") or row.get("name") or row.get("title"), source_key)
         intent = _text(row.get("intent"), "ui.contract")
         source_id = _text(row.get("sourceWidgetId") or row.get("source_widget_id"), source_widget_id)
+        allowed = row.get("allowed") is not False
+        enabled = row.get("enabled") is not False
+        disabled = row.get("disabled") is True or not allowed or not enabled
+        authorization_hidden = row.get("authorization_allowed") is False
+        reason_code = (
+            "ACTION_NOT_AUTHORIZED"
+            if authorization_hidden
+            else _text(row.get("reason_code") or row.get("reasonCode"), "ACTION_NOT_ALLOWED")
+        )
+        reason_message = _text(
+            row.get("reason_message")
+            or row.get("reasonMessage")
+            or row.get("blocked_message")
+            or row.get("blockedMessage")
+        )
+        reason_payload = {
+            "reasonCode": reason_code,
+            **({"reasonMessage": reason_message} if reason_message else {}),
+        }
         action_rule = {
                 "actionId": action_id,
                 "actionKey": key,
@@ -3396,6 +3415,8 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                     "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
                 }],
             }
+        if disabled or authorization_hidden:
+            action_rule.update(reason_payload)
         # Native visibility/safety remains declarative.  Preserve it so the
         # product renderer can evaluate the same Odoo view conditions against
         # current form data instead of inventing action-specific branches.
@@ -3426,17 +3447,18 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             action_rule["actionSemantics"] = declared_semantics
         contract["actionContract"]["actionRuleList"].append(action_rule)
         contract["actionContract"]["dependencyGraph"].setdefault(source_id, []).append(action_id)
-        allowed = row.get("allowed") is not False
-        enabled = row.get("enabled") is not False
-        disabled = row.get("disabled") is True or not allowed or not enabled
         contract["statusContract"]["buttonStatus"].append({
             "btnId": f"btn.{key}",
             # Visibility and executability are independent only when the
             # action authority explicitly declares that visibility. Unknown
             # permission remains fail-closed.
-            "visible": row.get("visible") is not False and (allowed or row.get("visible") is True),
+            "visible": (
+                not authorization_hidden
+                and row.get("visible") is not False
+                and (allowed or row.get("visible") is True)
+            ),
             "disabled": disabled,
-            **({"reasonCode": _text(row.get("reason_code"), "ACTION_NOT_ALLOWED")} if disabled else {}),
+            **(reason_payload if disabled or authorization_hidden else {}),
         })
 
 
@@ -3789,6 +3811,7 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             "permissionConstraints": deepcopy(_dict(row.get("permissionConstraints"))),
             "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
             "reasonCode": _text(row.get("reasonCode") or row.get("reason_code")),
+            "reasonMessage": _text(row.get("reasonMessage") or row.get("reason_message")),
         }
         existing_trace = [
             {**synthesized_trace, **deepcopy(item)}
@@ -3892,6 +3915,10 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             current["presentation"] = deepcopy(row.get("presentation"))
         if declared_guidance is not None:
             current.setdefault("presentation", {})["action_guidance"] = deepcopy(declared_guidance)
+        if not _text(current.get("reasonCode")) and _text(row.get("reasonCode")):
+            current["reasonCode"] = row.get("reasonCode")
+        if not _text(current.get("reasonMessage")) and _text(row.get("reasonMessage")):
+            current["reasonMessage"] = row.get("reasonMessage")
     action_contract["actionRuleList"] = merged
     source_action_to_winner: dict[str, str] = {}
     source_key_to_identity: dict[str, str] = {}
@@ -4220,6 +4247,14 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
         declaration = denied.get(method)
         if not declaration or not matches_record(rule.get("target"), method):
             continue
+        authorization_denied = (
+            declaration.get("authorization_allowed") is False
+            or declaration.get("authorizationAllowed") is False
+        )
+        authorization_allowed = declaration.get(
+            "authorization_allowed",
+            declaration.get("authorizationAllowed"),
+        )
         identity = _text(rule.get("backendIdentity"))
         btn_id = "btn." + _text(rule.get("actionKey"))
         matches = [status for status in statuses if isinstance(status, dict) and (
@@ -4236,12 +4271,24 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
         was_denied = rule.get("allowed") is False or rule.get("enabled") is False or rule.get("disabled") is True
         if not was_denied or _text(rule.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED", reason}:
             rule["reasonCode"] = reason
-            message = _text(declaration.get("blocked_message"))
+            message = _text(
+                declaration.get("blocked_message")
+                or declaration.get("reason_message")
+                or declaration.get("reasonMessage")
+            )
             if message:
                 rule["reasonMessage"] = message
             else:
                 rule.pop("reasonMessage", None)
-        rule.update({"businessAvailable": False, "allowed": False, "enabled": False, "disabled": True})
+        rule.update({"allowed": False, "enabled": False, "disabled": True})
+        if authorization_denied:
+            rule["authorizationAllowed"] = False
+            rule["entitlementEvaluated"] = True
+        else:
+            if isinstance(authorization_allowed, bool):
+                rule["authorizationAllowed"] = authorization_allowed
+                rule["entitlementEvaluated"] = True
+            rule["businessAvailable"] = False
         for status in matches:
             if status.get("disabled") is not True or _text(status.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED", _text(rule.get("reasonCode"))}:
                 status["reasonCode"] = rule.get("reasonCode") or reason
@@ -4252,6 +4299,35 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
             status["disabled"] = True
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract
+    _enforce_action_authorization_visibility(contract)
+
+
+def _enforce_action_authorization_visibility(contract: dict[str, Any]) -> None:
+    """Actor denial hides the action; business-state denial may stay visible."""
+    statuses = _list(_dict(contract.get("statusContract")).get("buttonStatus"))
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict) or rule.get("authorizationAllowed") is not False:
+            continue
+        identity = _text(rule.get("backendIdentity"))
+        btn_id = "btn." + _text(rule.get("actionKey"))
+        matches = [
+            status for status in statuses
+            if isinstance(status, dict) and (
+                bool(identity) and _text(status.get("backendIdentity")) == identity
+                or not status.get("backendIdentity") and status.get("btnId") == btn_id
+            )
+        ]
+        reason = _text(
+            rule.get("reasonCode")
+            or next((status.get("reasonCode") for status in matches if _text(status.get("reasonCode")) not in {"", "OK"}), ""),
+            "ACTION_NOT_AUTHORIZED",
+        )
+        for status in matches:
+            status["visible"] = False
+            status["disabled"] = True
+            status["reasonCode"] = reason
+            if _text(rule.get("reasonMessage")):
+                status["reasonMessage"] = rule["reasonMessage"]
 
 
 def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
@@ -4407,6 +4483,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     contract["statusContract"] = status_contract
     _tighten_workflow_action_denials(contract)
     _enforce_single_effective_primary_action(contract)
+    _enforce_action_authorization_visibility(contract)
 
 
 def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
@@ -4507,6 +4584,7 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
     status_contract["containerStatus"] = container_statuses
     status_contract["widgetStatus"] = widget_statuses
     contract["statusContract"] = status_contract
+    _enforce_action_authorization_visibility(contract)
 
 
 def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, source_widget_id: str) -> None:
@@ -4514,6 +4592,25 @@ def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, 
         action_key = _stable_id(key, "action")
         action_id = f"action.{action_key}"
         source_row = _dict(row)
+        allowed = source_row.get("allowed") is not False
+        enabled = source_row.get("enabled") is not False
+        disabled = source_row.get("disabled") is True or not allowed or not enabled
+        authorization_hidden = source_row.get("authorization_allowed") is False
+        reason_code = (
+            "ACTION_NOT_AUTHORIZED"
+            if authorization_hidden
+            else _text(source_row.get("reason_code") or source_row.get("reasonCode"), "ACTION_NOT_ALLOWED")
+        )
+        reason_message = _text(
+            source_row.get("reason_message")
+            or source_row.get("reasonMessage")
+            or source_row.get("blocked_message")
+            or source_row.get("blockedMessage")
+        )
+        reason_payload = {
+            "reasonCode": reason_code,
+            **({"reasonMessage": reason_message} if reason_message else {}),
+        }
         contract["actionContract"]["actionRuleList"].append(
             {
                 "actionId": action_id,
@@ -4528,9 +4625,24 @@ def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, 
                 "dispatchMode": "server",
                 "targetScope": "page",
                 "refreshMode": "partial",
+                **({
+                    "authorizationAllowed": source_row.get("authorization_allowed"),
+                } if isinstance(source_row.get("authorization_allowed"), bool) else {}),
+                **({
+                    "businessAvailable": source_row.get("business_available"),
+                } if isinstance(source_row.get("business_available"), bool) else {}),
+                "allowed": allowed,
+                "enabled": enabled,
+                "disabled": disabled,
+                **(reason_payload if disabled or authorization_hidden else {}),
             }
         )
-        contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{action_key}", "visible": True, "disabled": False})
+        contract["statusContract"]["buttonStatus"].append({
+            "btnId": f"btn.{action_key}",
+            "visible": not authorization_hidden and source_row.get("visible") is not False,
+            "disabled": disabled,
+            **(reason_payload if disabled or authorization_hidden else {}),
+        })
 
 
 def _native_layout_button_authority(action: dict[str, Any]) -> dict[str, Any] | None:

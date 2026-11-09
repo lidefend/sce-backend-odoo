@@ -5188,12 +5188,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             action_guidance.project_native_action_guidance(contract, lambda field: (reads.append(field), fact)[1])
             self.assertEqual(reads, ["native_fact"])
             self.assertEqual(action["enabled"], not blocking)
+            self.assertIs(action["authorizationAllowed"], True)
             self.assertEqual(action["presentation"].get("requires_confirmation", False), confirm)
             self.assertNotIn("action_guidance", contract["actionContract"]["actionRuleList"][1].get("presentation", {}))
             if confirm:
                 self.assertEqual(action["presentation"]["warning_message"], fact["message"])
             if blocking:
                 self.assertEqual(action["reasonMessage"], fact["message"])
+                self.assertIs(action["businessAvailable"], False)
+                self.assertEqual(contract["statusContract"]["buttonStatus"][0]["reasonMessage"], fact["message"])
 
     def test_native_fact_reader_checks_computed_field_and_actor_read(self):
         import ast
@@ -5296,10 +5299,89 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             self.assertFalse(rule["enabled"])
             self.assertFalse(rule["authorizationAllowed"])
             self.assertEqual(rule["reasonCode"], "ACL_DENIED")
+            self.assertFalse(status["visible"])
             self.assertTrue(status["disabled"])
             self.assertEqual(status["reasonCode"], "ACL_DENIED")
             self.assertEqual(rule["reasonMessage"], "角色不可办理")
             self.assertEqual(status["reasonMessage"], "角色不可办理")
+
+    def test_action_authorization_hides_but_business_denial_stays_visible(self):
+        contract = {
+            "actionContract": {"actionRuleList": [], "dependencyGraph": {}},
+            "statusContract": {"buttonStatus": []},
+        }
+        base = {
+            "button": {"type": "object", "name": "action_test"},
+            "target": {},
+            "presentation": {"tier": "secondary"},
+            "visible": True,
+            "entitlement_evaluated": True,
+            "allowed": False,
+            "enabled": False,
+            "disabled": True,
+        }
+        assembler._append_action_schema(contract, {
+            "actor_denied": {
+                **base,
+                "label": "Actor denied",
+                "authorization_allowed": False,
+                "business_available": True,
+                "reason_code": "ACL_DENIED",
+            },
+            "business_denied": {
+                **base,
+                "label": "Business denied",
+                "authorization_allowed": True,
+                "business_available": False,
+                "reason_code": "ACTION_NOT_AVAILABLE_IN_STATE",
+                "blocked_message": "当前业务状态不允许执行。",
+            },
+        }, source_widget_id="page.header")
+        statuses = {row["btnId"]: row for row in contract["statusContract"]["buttonStatus"]}
+        self.assertFalse(statuses["btn.actor_denied"]["visible"])
+        self.assertEqual(statuses["btn.actor_denied"]["reasonCode"], "ACTION_NOT_AUTHORIZED")
+        self.assertTrue(statuses["btn.business_denied"]["visible"])
+        self.assertTrue(statuses["btn.business_denied"]["disabled"])
+        self.assertEqual(statuses["btn.business_denied"]["reasonCode"], "ACTION_NOT_AVAILABLE_IN_STATE")
+        self.assertEqual(statuses["btn.business_denied"]["reasonMessage"], "当前业务状态不允许执行。")
+
+    def test_workflow_authorization_denial_does_not_rewrite_business_availability(self):
+        contract = self._workflow_denial_contract()
+        declaration = contract["workflowContract"]["availableActions"][0]
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule["businessAvailable"] = True
+        declaration.update({
+            "authorization_allowed": False,
+            "enabled": False,
+            "reason_code": "ROLE_HANDOFF_REQUIRED",
+            "blocked_message": "请由具有办理权限的人员执行。",
+        })
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        self.assertIs(rule["authorizationAllowed"], False)
+        self.assertIs(rule["entitlementEvaluated"], True)
+        self.assertIs(rule["businessAvailable"], True)
+        self.assertIs(rule["enabled"], False)
+        self.assertIs(contract["statusContract"]["buttonStatus"][0]["visible"], False)
+        self.assertEqual(rule["reasonCode"], "ROLE_HANDOFF_REQUIRED")
+
+        contract = self._workflow_denial_contract()
+        declaration = contract["workflowContract"]["availableActions"][0]
+        rule = contract["actionContract"]["actionRuleList"][0]
+        declaration.update({
+            "authorization_allowed": True,
+            "enabled": False,
+            "reason_code": "STATE_NOT_ADVANCEABLE",
+            "blocked_message": "当前业务状态不允许推进。",
+        })
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        self.assertIs(rule["authorizationAllowed"], True)
+        self.assertIs(rule["businessAvailable"], False)
+        self.assertIs(rule["enabled"], False)
+        self.assertIs(contract["statusContract"]["buttonStatus"][0]["visible"], True)
 
     def test_existing_same_reason_receives_its_current_message(self):
         contract = self._workflow_denial_contract()

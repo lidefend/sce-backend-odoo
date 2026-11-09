@@ -212,6 +212,14 @@ export function buildContractFormActions(params: {
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
     const presentationSemantic = String(presentation.semantic || '').trim();
     if (row.visible === false || row.invisible === true) continue;
+    const declaredAuthorizationAllowed = row.authorizationAllowed === false
+      ? false
+      : row.authorizationAllowed === true
+        ? true
+        : null;
+    // Contract actors without authorization do not receive a visible denial
+    // action. Business-state and data-completeness denials remain visible.
+    if (declaredAuthorizationAllowed === false) continue;
     const statuses = [...new Set(Object.values(params.v2ButtonStatus))];
     const identityStatuses = statuses.filter((candidate) => (
       String(candidate?.backendIdentity || '').trim() === backendIdentity
@@ -243,10 +251,22 @@ export function buildContractFormActions(params: {
     // The declared actor-authorization / business-availability deny is
     // authoritative on its own; the folded flags are only a producer shortcut.
     const declaredDenial = declaredActionAuthorityDenial(row);
-    const authorizationAllowed = declaredDenial === '' && contractAllowed && contractEnabled && !contractDisabled
-      && status.disabled !== true;
+    const authorizationAllowed = declaredAuthorizationAllowed === true
+      || (
+        declaredAuthorizationAllowed === null
+        && contractAllowed
+        && contractEnabled
+        && !contractDisabled
+        && status.disabled !== true
+      );
     const requiresSavedRecord = needRecord && !params.recordId;
-    const enabled = authorizationAllowed && !requiresSavedRecord;
+    const enabled = authorizationAllowed
+      && declaredDenial === ''
+      && contractAllowed
+      && contractEnabled
+      && !contractDisabled
+      && status.disabled !== true
+      && !requiresSavedRecord;
     out.push({
       key,
       authorityActionId,

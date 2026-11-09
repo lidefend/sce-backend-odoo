@@ -3762,16 +3762,19 @@ assert.equal(
 );
 
 const businessDenied = presentContractV2Form(
-  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ businessAvailable: false }))), 'edit',
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({
+    authorizationAllowed: true, businessAvailable: false,
+  }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
 assert.equal(businessDenied?.enabled, false, 'an injected business unavailability must disable the action');
+assert.equal(businessDenied?.actionRef.authorizationAllowed, true,
+  'business unavailability must not be rewritten as actor denial');
 assert.equal(businessDenied?.reasonCode, 'ACTION_NOT_BUSINESS_AVAILABLE', 'the business denial must be named');
 
 const actorDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: false }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
-assert.equal(actorDenied?.enabled, false, 'an injected actor denial must disable the action');
-assert.equal(actorDenied?.reasonCode, 'ACTION_NOT_AUTHORIZED', 'the actor denial must be named');
+assert.equal(actorDenied, undefined, 'an unauthorized action must be hidden');
 
 const declaredAllowed = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: true, businessAvailable: true }))), 'edit',
@@ -3805,11 +3808,9 @@ assert.equal(legacyRows({})[0].enabled, true, 'legacy baseline: the action is en
 assert.equal(legacyRows({})[0].authorizationAllowed, true, 'legacy baseline: authorization is allowed');
 const legacyBusinessDenied = legacyRows({ businessAvailable: false })[0];
 assert.equal(legacyBusinessDenied.enabled, false, 'legacy: an injected business denial must disable the action');
-assert.equal(legacyBusinessDenied.authorizationAllowed, false, 'legacy: the denial must reach the executor gate');
+assert.equal(legacyBusinessDenied.authorizationAllowed, true, 'legacy: business denial must not be rewritten as actor denial');
 assert.equal(legacyBusinessDenied.hint, 'ACTION_NOT_BUSINESS_AVAILABLE', 'legacy: the business denial must be named');
-const legacyActorDenied = legacyRows({ authorizationAllowed: false })[0];
-assert.equal(legacyActorDenied.enabled, false, 'legacy: an injected actor denial must disable the action');
-assert.equal(legacyActorDenied.hint, 'ACTION_NOT_AUTHORIZED', 'legacy: the actor denial must be named');
+assert.deepEqual(legacyRows({ authorizationAllowed: false }), [], 'legacy: an unauthorized action must be hidden');
 
 console.log('[canonical_form_presenter] legacy declared action authority cases PASS count=7');
 

@@ -760,7 +760,8 @@ class WorkItemActionOriginTest(unittest.TestCase):
             'access_mode_for_intent': lambda *a: 'write', 'work_item_request_access_mode': self.request_mode,
             'call_extension_hook_first': hook, '_resolve_model': lambda *a: model,
             '_is_ui_only_config_intent': lambda *a: False, '_model_acl_policy': lambda *a, **kw: {},
-            '_record_ids': lambda *a: [], '_capability_key': lambda *a: '', '_find_capability': lambda *a: None}
+            '_record_ids': lambda *a: [], '_capability_key': lambda *a: '', '_find_capability': lambda *a: None,
+            'authorize_intent': Mock()}
         exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), namespace)
         payload = {'intent': 'execute_button', 'params': {'model': 'x.record', 'res_id': 7,
             'button': {'type': 'object', 'name': 'validate_tier'}}, 'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}}

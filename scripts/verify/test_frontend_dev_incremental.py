@@ -245,6 +245,38 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
+        self.assertIn(
+            "verify.frontend.contract_header_action.unit",
+            select_targets([
+                "addons/smart_construction_core/services/financial_workspace_contract.py",
+                "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+            ]),
+        )
+        for path in (
+            "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+            "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                for target in (
+                    "verify.unified_page_contract.v2.assembler",
+                    "verify.unified_page_contract.v2.action",
+                    "verify.unified_page_contract.v2.status",
+                    "verify.unified_page_contract.v2.runtime",
+                ):
+                    self.assertIn(target, targets)
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+            ]),
+            ["verify.execute_button.authority.unit"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/audit/workflow_state_inventory.py"]),
+            ["verify.workflow_action_semantics.guard"],
+        )
+
     def test_backend_security_guard_selects_its_own_tests(self) -> None:
         for path in ("scripts/verify/github_actions_security_guard.py",
                      "scripts/verify/test_github_actions_security_guard.py"):

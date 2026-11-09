@@ -619,6 +619,7 @@ function presentAction(
   const statusDisabledDenied = status?.disabled === true && !stateDerivedStatus;
   // A declared actor-authorization or business-availability deny is honoured
   // directly, not just through the producer's folded allowed/enabled/disabled.
+  const authorizationDenied = action.authorizationAllowed === false;
   const declaredDenial = declaredActionAuthorityDenial(action);
   const declaredAuthority = declaredDenial === '';
   const allowed = declaredAuthority && explicitAuthority && action.allowed === true;
@@ -633,6 +634,7 @@ function presentAction(
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: explicitAuthority
+      && !authorizationDenied
       && !definitionInvisible
       && profiles.includes(mode)
       && !statusVisibilityDenied
