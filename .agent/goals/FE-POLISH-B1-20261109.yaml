@@ -20,6 +20,7 @@ goal:
       - .agent/goals/FE-POLISH-B1-20261109.yaml
       - .agent/runs/FE-POLISH-B1-20261109/run.json
       - docs/ops/iterations/fe_polish_b1_20261109.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - frontend/apps/web/src/layouts/AppShell.vue
       - frontend/apps/web/src/layouts/AppShell.css
       - frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue

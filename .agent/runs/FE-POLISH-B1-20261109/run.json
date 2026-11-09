@@ -10,6 +10,7 @@
     ".agent/active-runs.json",
     ".agent/goals/FE-POLISH-B1-20261109.yaml",
     ".agent/runs/FE-POLISH-B1-20261109/run.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe_polish_b1_20261109.md",
     "frontend/apps/web/src/layouts/AppShell.vue",
     "frontend/apps/web/src/layouts/AppShell.css",
@@ -42,7 +43,7 @@
       "kind": "offline"
     },
     "my_work_guard": {
-      "target": "verify.frontend.my_work_approval.unit",
+      "target": "verify.frontend.my_work_approval.guard",
       "inputs": [
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "scripts/verify/frontend_my_work_approval_guard.py"
