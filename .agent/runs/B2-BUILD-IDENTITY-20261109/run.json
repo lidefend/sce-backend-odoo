@@ -3,7 +3,7 @@
   "id": "B2-BUILD-IDENTITY-20261109",
   "branch": "fix/b2-build-identity-20261109",
   "baseline_sha": "ed3525193bc9a7fd6731cdbbd427cbf867f57bfd",
-  "status": "completed",
+  "status": "verification_pending",
   "goal": ".agent/goals/B2-BUILD-IDENTITY-20261109.yaml",
   "record": "docs/ops/iterations/b2_build_identity_20261109.md",
   "scope": [
@@ -116,5 +116,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Completed: final incremental gate passed; product candidate 5932931824c0123f574ec1e40d5e4483dd544e18 is deployed and read back. Later metadata/bookkeeping changes do not alter the served product."
+  "next_exact_step": "Publish the exact branch head through the protected PR path, merge current required checks, fast-forward main, then redeploy and verify the exact merged main SHA on the daily server."
 }
