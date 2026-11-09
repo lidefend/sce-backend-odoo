@@ -831,6 +831,12 @@ RULES = (
     ), (
         "verify.daily.runtime.candidate.bundle_sync",
     )),
+    Rule((
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+    ), (
+        "verify.daily.runtime.main.bundle_sync",
+    )),
     # The duty entry's own suite is the behavior lock of the phase machinery the
     # declaration drives; its test file was unmapped while the entry itself was
     # claimed by the identity rule, so a test-only edit selected nothing.
