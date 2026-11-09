@@ -25,6 +25,10 @@ goal:
       - frontend/apps/web/src/layouts/AppShell.css
       - frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue
       - frontend/apps/web/src/components/role-home/WorkspaceHome.vue
+      - frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts
+      - scripts/verify/fe_polish_b1_presentation_test.ts
+      - scripts/verify/fe_polish_b1_browser.mjs
+      - make/frontend.mk
     product_behavior: >
       The shell footer stays below the routed page body, the work card title keeps the
       record number readable on a second line, the role-home task card no longer repeats
@@ -38,4 +42,4 @@ goal:
     - the work card title wraps to two lines so the record code is not clipped
     - the role-home task card does not repeat a money fact already shown by its chip
     - the style profile label is not clipped on a 390 wide topbar
-    - targeted guard, strict typecheck and lint pass
+    - targeted unit, guard, strict typecheck, lint and governed 1440/390 browser evidence pass

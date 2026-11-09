@@ -20,7 +20,7 @@
                 <ScStatusBadge v-if="task.state?.label" :value="task.state.key" :label="task.state.label" />
                 <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
               </div>
-              <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
+              <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ taskIdentity(task) }}</p>
               <dl v-if="taskFacts(task).length" class="role-home-surface__task-facts">
                 <div v-for="fact in taskFacts(task)" :key="fact.key">
                   <dt>{{ fact.label }}</dt>
@@ -161,14 +161,21 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import type { ProductMyWorkFact } from '../../api/myWork';
-import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPresentation';
+import {
+  formatProductMyWorkFact,
+  productMyWorkIdentityDisplay,
+  productMyWorkTaskFacts,
+} from '../../app/presentation/productMyWorkPresentation';
 import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 
 const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
 
-/** The heading chip already presents the amount; keep the fact list from repeating it. */
+const taskIdentity = (task: { label: string; amount?: ProductMyWorkFact }) =>
+  productMyWorkIdentityDisplay(task.label, task.amount);
+
+/** The heading chip already presents the amount; keep identity and facts from repeating it. */
 const taskFacts = (task: { facts: ProductMyWorkFact[]; amount?: ProductMyWorkFact }) =>
-  task.amount ? task.facts.filter((fact) => fact.display_role !== 'money') : task.facts;
+  productMyWorkTaskFacts(task.facts, Boolean(task.amount));
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 

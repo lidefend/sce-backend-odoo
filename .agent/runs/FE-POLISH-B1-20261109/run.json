@@ -15,7 +15,11 @@
     "frontend/apps/web/src/layouts/AppShell.vue",
     "frontend/apps/web/src/layouts/AppShell.css",
     "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+    "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+    "scripts/verify/fe_polish_b1_presentation_test.ts",
+    "scripts/verify/fe_polish_b1_browser.mjs",
+    "make/frontend.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -46,7 +50,18 @@
       "target": "verify.frontend.my_work_approval.guard",
       "inputs": [
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "scripts/verify/fe_polish_b1_presentation_test.ts",
         "scripts/verify/frontend_my_work_approval_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "presentation_unit": {
+      "target": "verify.frontend.fe_polish_b1.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "scripts/verify/fe_polish_b1_presentation_test.ts",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     },
@@ -55,13 +70,18 @@
       "inputs": [
         "frontend/apps/web/tsconfig.strict.json",
         "frontend/apps/web/package.json",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
         "make/frontend.mk"
       ],
       "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the clean candidate, publish the batch PR through the governed flow, then verify required checks on that exact head.",
+  "next_exact_step": "Freeze the corrected candidate, run the governed 1440/390 browser probe and consolidate its screenshots and summary.",
   "validation": {
     "my_work_approval_guard": {
       "status": "passed",

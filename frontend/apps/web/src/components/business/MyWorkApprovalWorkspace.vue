@@ -42,7 +42,7 @@
             <span class="business-type">{{ item.business_type }}</span>
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusBadgeSemantic(item.state.key)" />
           </div>
-          <h3 :title="item.record.label">{{ item.record.label }}</h3>
+          <h3 :title="item.record.label">{{ itemIdentity(item) }}</h3>
           <dl class="work-card__summary" aria-label="关键事实">
             <div v-for="entry in primaryFacts(item)" :key="entry.key" :data-primary-fact-key="entry.fact.key">
               <dt>{{ entry.fact.label }}</dt>
@@ -115,7 +115,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
-import { formatProductMyWorkFact, partitionProductMyWorkFacts } from '../../app/presentation/productMyWorkPresentation';
+import { formatProductMyWorkFact, partitionProductMyWorkFacts, productMyWorkIdentityDisplay } from '../../app/presentation/productMyWorkPresentation';
 import { statusBadgeSemantic } from '../../app/presentation/businessValuePresentation';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
@@ -190,6 +190,13 @@ watch(
 
 function formatFact(fact: ProductMyWorkFact) {
   return formatProductMyWorkFact(fact);
+}
+
+function itemIdentity(item: ProductMyWorkItem) {
+  return productMyWorkIdentityDisplay(
+    item.record.label,
+    item.facts.find((fact) => fact.display_role === 'money'),
+  );
 }
 
 function primaryFacts(item: ProductMyWorkItem) {
@@ -321,7 +328,7 @@ async function confirmAction() {
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .product-work__filters { grid-template-columns: 1fr; padding: 12px; --sc-component-input-form-height: 44px; }
   .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }
-  .work-card h3 { display: -webkit-box; margin: 9px 0 12px; overflow: hidden; font-size: 17px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .work-card h3 { display: -webkit-box; margin: 9px 0 12px; overflow: hidden; font-size: 17px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
   .work-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
   .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }
