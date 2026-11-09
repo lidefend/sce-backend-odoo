@@ -19,6 +19,12 @@ goal:
       - .agent/active-runs.json
       - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml
       - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M6-20261110/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/e2e_journey_matrix.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md
       - frontend/apps/web/scripts/
       - frontend/apps/web/src/
