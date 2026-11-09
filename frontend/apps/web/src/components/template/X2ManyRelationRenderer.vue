@@ -104,7 +104,7 @@
                   >{{ readonlyCellValue(row[column.name]) }}</ScButton>
                 </template>
               </ScPopover>
-              <span v-else class="o2m-readonly-cell-value">
+              <span v-else class="o2m-readonly-cell-value" :title="readonlyCellValue(row[column.name])">
                 {{ readonlyCellValue(row[column.name]) }}
               </span>
             </template>
@@ -149,7 +149,7 @@
               class="o2m-readonly-fact"
             >
               <dt>{{ column.label }}</dt>
-              <dd>
+              <dd :title="adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT">
                 <NativeWeightedRelationDisplay
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
@@ -170,7 +170,7 @@
                 class="o2m-readonly-fact"
               >
                 <dt>{{ column.label }}</dt>
-                <dd>
+                <dd :title="adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT">
                 <NativeWeightedRelationDisplay
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
@@ -1117,15 +1117,17 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 }
 
 .o2m-readonly-cell-value {
-  display: block;
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .o2m-readonly :deep(.o2m-readonly-value-trigger) {
-  display: block;
+  display: -webkit-box;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -1135,15 +1137,19 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   font: inherit;
   line-height: inherit;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .o2m-readonly :deep(.o2m-readonly-value-trigger .sc-btn__content) {
-  display: block;
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .o2m-readonly-full-value {
@@ -1169,8 +1175,8 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 .o2m-readonly-fact dd {
   margin-top: 2px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
   color: var(--sc-app-text-primary);
   font-size: 14px;
 }

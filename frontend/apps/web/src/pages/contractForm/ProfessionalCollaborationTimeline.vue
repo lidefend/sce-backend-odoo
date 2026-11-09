@@ -87,7 +87,7 @@
         <div class="native-chatter-generic-item">
           <span class="native-chatter-type">{{ entry.typeLabel }}</span>
           <span class="native-chatter-body">{{ entry.body || entry.title }}</span>
-          <span class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.meta) }}</span>
+          <span class="native-chatter-meta" :title="formatCollaborationTimelineMeta(entry.meta)">{{ formatCollaborationTimelineMeta(entry.meta) }}</span>
         </div>
         </template>
         </template>

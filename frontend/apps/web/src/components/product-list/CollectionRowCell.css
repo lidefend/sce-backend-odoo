@@ -1,11 +1,13 @@
 .collection-row-cell {
-  display: inline-block;
+  display: -webkit-box;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
   vertical-align: middle;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .relation-tags {
@@ -34,16 +36,18 @@
 }
 
 .cell-primary-link {
-  display: block;
+  display: -webkit-box;
   max-width: 100%;
   padding: 0;
   font: inherit;
   font-weight: 500;
   text-align: left;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  white-space: normal;
   cursor: pointer;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .cell-primary-link:hover {

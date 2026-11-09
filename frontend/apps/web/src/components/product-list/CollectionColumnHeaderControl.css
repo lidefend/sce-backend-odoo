@@ -11,7 +11,7 @@
 .column-drag-handle:active { cursor: grabbing; }
 .cell-sortable :deep(.column-sort-btn) { display: inline-flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: var(--sc-table-header-height, 40px); max-width: 100%; padding-left: 10px; padding-right: var(--sc-column-header-control-space); font: var(--sc-font-title-small); text-align: left; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
 .column-sort-btn > span:first-child { min-width: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
-.column-long-text .column-sort-btn, .column-long-text .column-drag-handle { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.column-long-text .column-sort-btn, .column-long-text .column-drag-handle { min-width: 0; max-width: 100%; white-space: normal; overflow: hidden; overflow-wrap: anywhere; }
 .is-sort-disabled .column-sort-btn { cursor: default; }
 .column-resize-handle { position: absolute; inset: 0 0 0 auto; z-index: var(--sc-z-content); width: 8px; padding: 0; cursor: col-resize; opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
 .cell-sortable:hover .column-resize-handle,

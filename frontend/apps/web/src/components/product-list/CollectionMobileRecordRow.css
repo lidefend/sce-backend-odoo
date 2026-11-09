@@ -88,8 +88,8 @@
   padding: 2px 8px;
   overflow: hidden;
   color: var(--sc-color-text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
   background: var(--sc-color-bg-secondary);
   border-radius: var(--sc-radius-small, 4px);
 }

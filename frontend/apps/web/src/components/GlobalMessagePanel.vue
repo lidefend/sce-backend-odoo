@@ -46,7 +46,7 @@
               @click="selectConversation(conversation)"
             >
               <span class="global-message__conversation-title">{{ conversation.title || '未命名会话' }}</span>
-              <small>{{ conversation.latest_message?.body || '暂无消息' }}</small>
+              <small :title="conversation.latest_message?.body || '暂无消息'">{{ conversation.latest_message?.body || '暂无消息' }}</small>
               <span v-if="conversation.unread_count" class="global-message__dot sc-badge sc-badge-danger">{{ conversation.unread_count }}</span>
             </ScButton>
           </div>
@@ -556,9 +556,12 @@ onUnmounted(() => {
 }
 
 .global-message__conversation small {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .global-message__dot {

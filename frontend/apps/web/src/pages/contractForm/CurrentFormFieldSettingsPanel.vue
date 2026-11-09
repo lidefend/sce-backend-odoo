@@ -89,8 +89,8 @@
                 :disabled="busy"
                 @click="$emit('select-field', item.fieldKey)"
               >
-                <span>{{ item.label }}</span>
-                <em>{{ item.groupTitle }}</em>
+                <span :title="item.label">{{ item.label }}</span>
+                <em :title="item.groupTitle">{{ item.groupTitle }}</em>
               </ScButton>
             </div>
             <ScEmptyState v-else density="compact" :heading-level="5" title="没有匹配字段" />
@@ -108,7 +108,7 @@
               :class="{ 'contract-form-field-nav-item--active': item.active }"
               @click="$emit('select-group', item.title)"
             >
-              <span>{{ item.title }}</span>
+              <span :title="item.title">{{ item.title }}</span>
               <em>{{ item.count }}</em>
             </ScButton>
           </section>
@@ -314,6 +314,7 @@
         v-if="auditSummary"
         class="contract-field-governance-audit"
         :class="{ 'contract-field-governance-audit--warning': auditResult?.hasConflict }"
+        :title="auditSummary"
       >{{ auditSummary }}</span>
       <ScButton class="ghost" type="button" :disabled="busy || auditBusy" @click="$emit('audit')">
         {{ auditBusy ? '检查中...' : (auditResult ? '重新检查' : '检查效果') }}

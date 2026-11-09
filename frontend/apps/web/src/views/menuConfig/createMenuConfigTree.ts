@@ -79,7 +79,7 @@ export function createMenuConfigTree(options: {
           'data-menu-expanded': node.expandable && expandedIdSet.value.has(node.value) ? 'true' : 'false',
           title: node.pathLabel,
         }, [
-          h('span', { class: 'tree-node-label' }, node.label),
+          h('span', { class: 'tree-node-label', title: node.label }, node.label),
           h('span', { class: ['menu-origin-badge', 'tree-origin-badge', node.stateClass] }, node.stateLabel),
           node.deletable
             ? h('span', { class: ['menu-origin-badge', 'deletable', 'tree-origin-badge'] }, '可删除')

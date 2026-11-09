@@ -36,8 +36,8 @@
                 :aria-current="hit.entry.menu_id === activeMenuId ? 'true' : undefined"
                 @click="emit('select', hit.entry)"
               >
-                <span class="scenario-entry__label">{{ hit.entry.label }}</span>
-                <span class="scenario-entry__scenario">{{ hit.scenarioName || hit.centerName }}</span>
+                <span class="scenario-entry__label" :title="hit.entry.label">{{ hit.entry.label }}</span>
+                <span class="scenario-entry__scenario" :title="hit.scenarioName || hit.centerName">{{ hit.scenarioName || hit.centerName }}</span>
               </ScButton>
             </li>
           </ul>
@@ -75,7 +75,7 @@
                   :aria-current="entry.menu_id === activeMenuId ? 'true' : undefined"
                   @click="emit('select', entry)"
                 >
-                  <span class="scenario-entry__label">{{ entry.label }}</span>
+                  <span class="scenario-entry__label" :title="entry.label">{{ entry.label }}</span>
                   <span class="scenario-entry__unconfigured">待配置</span>
                 </ScButton>
               </li>
@@ -108,8 +108,8 @@
                     :aria-current="entry.menu_id === activeMenuId ? 'true' : undefined"
                     @click="emit('select', entry)"
                   >
-                    <span class="scenario-entry__label">{{ entry.label }}</span>
-                    <span v-if="entry.intent_label" class="scenario-entry__intent">{{ entry.intent_label }}</span>
+                    <span class="scenario-entry__label" :title="entry.label">{{ entry.label }}</span>
+                    <span v-if="entry.intent_label" class="scenario-entry__intent" :title="entry.intent_label">{{ entry.intent_label }}</span>
                   </ScButton>
                 </li>
               </ul>

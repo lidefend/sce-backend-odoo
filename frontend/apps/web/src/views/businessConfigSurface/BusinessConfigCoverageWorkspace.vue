@@ -55,7 +55,7 @@
           <span>业务页面目录</span>
           <strong>{{ visibleCoverageRows.length }} 个匹配页面</strong>
         </div>
-        <em>{{ selectedCoverageRow?.name || selectedPageLabel || '未选择' }}</em>
+        <em :title="selectedCoverageRow?.name || selectedPageLabel || '未选择'">{{ selectedCoverageRow?.name || selectedPageLabel || '未选择' }}</em>
       </div>
       <div v-if="visibleCoverageRows.length" class="scan-list">
         <div
@@ -254,9 +254,9 @@
           :class="{ 'delivery-readiness-item--pending': item.status !== 'ready' }"
           @click="$emit('runDeliveryReadinessAction', item)"
         >
-          <span>{{ item.label }}</span>
-          <strong>{{ deliveryReadinessItemStatusText(item) }}</strong>
-          <em>{{ deliveryReadinessItemMetaText(item) }}</em>
+          <span :title="item.label">{{ item.label }}</span>
+          <strong :title="deliveryReadinessItemStatusText(item)">{{ deliveryReadinessItemStatusText(item) }}</strong>
+          <em :title="deliveryReadinessItemMetaText(item)">{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
       <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />

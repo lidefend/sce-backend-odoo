@@ -63,7 +63,7 @@ Generated from repository source files. This report is informational during the 
 | 1789 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1720 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1726 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1716 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
@@ -297,7 +297,7 @@ Generated from repository source files. This report is informational during the 
 | 1789 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1720 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1726 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1716 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |

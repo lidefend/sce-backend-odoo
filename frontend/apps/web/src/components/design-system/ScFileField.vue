@@ -64,11 +64,14 @@ function clearSelection() {
 <style scoped>
 .sc-file-field { width: 100%; }
 .sc-file-field__name {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--sc-app-text-secondary);
   font-size: calc(var(--sc-component-input-font-size) * 1px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 </style>

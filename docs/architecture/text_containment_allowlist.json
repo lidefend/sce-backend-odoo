@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "baseline": {
+    "sourceFiles": 794,
+    "nowrapFiles": 46,
+    "nowrapDeclarations": 131,
+    "nowrapEllipsisOverlapFiles": 27
+  },
+  "policy": {
+    "businessTitleMaxLines": 2,
+    "recordIdentityMaxLinesUntil": "CD-20261110-01",
+    "recordIdentityTemporaryMaxLines": 3,
+    "moneyMayWrap": false,
+    "recordIdentityMayEllipsize": false,
+    "retainedInformationEllipsisRequiresFullValue": true
+  },
+  "structuralOverlapExceptions": [
+    {
+      "file": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+      "reason": "single-line filter chips, toolbar controls and numeric totals"
+    },
+    {
+      "file": "frontend/apps/web/src/views/businessConfigSurface/style.css",
+      "reason": "configuration toolbar controls, selectable field chips and status pills"
+    }
+  ],
+  "informationOverlapFiles": [
+    "frontend/apps/web/src/components/product-list/CollectionRowCell.css",
+    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+    "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+    "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
+    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/layouts/AppShell.css",
+    "frontend/apps/web/src/pages/ListPage.css",
+    "frontend/apps/web/src/styles/product-patterns.css"
+  ]
+}

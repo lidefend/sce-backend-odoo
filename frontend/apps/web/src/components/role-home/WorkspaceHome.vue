@@ -299,7 +299,7 @@ const {
 .role-home-surface__task-copy { min-width: 0; flex: 1; }
 .role-home-surface__task-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .role-home-surface__task-heading h3 { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
-.role-home-surface__task-list .role-home-surface__task-record { margin-top: 4px; font-size: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.role-home-surface__task-list .role-home-surface__task-record { display: -webkit-box; min-width: 0; margin-top: 4px; overflow: hidden; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .role-home-surface__task-amount { margin-left: auto; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
 .role-home-surface__task-facts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
 .role-home-surface__task-facts > div { min-width: 0; }

@@ -20,7 +20,7 @@
     <header v-if="designerMode" class="contract-form-canvas-head">
       <div>
         <strong>表单画布</strong>
-        <span>{{ selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性' }}</span>
+        <span :title="selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性'">{{ selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性' }}</span>
       </div>
       <em>{{ rootColumns }} 栏布局</em>
     </header>
