@@ -206,6 +206,32 @@ runtime suite 保持 `verification_pending`，不写成 PASS。
 ### 状态
 
 - 批次产品实现与本地定向验证：完成。
-- 独立第二审查：第一轮 REQUEST_CHANGES，S1 修复后等待新 HEAD 复审。
+- 独立第二审查：最终 APPROVE。
 - list-surface 运行证据：verification_pending。
 - PR、合并、部署：未执行。
+
+### Independent review 历史
+
+- r1 `REQUEST_CHANGES`：发现 S1，集合投影丢失 duration componentKey。
+- r2 `REQUEST_CHANGES`：S1 关闭；发现两个 S2，即 componentKey 全量暴露影响
+  Kanban percentage，以及 fingerprint attribution 错误。
+- r3 `REQUEST_CHANGES`：S2 关闭；只剩文档 test count 12/14 不一致。
+- r4 `APPROVE`：无 S0/S1/S2；审阅 head
+  `0766369880e4bb645af69e3e67d5688e789e2312`，最终产品/测试父提交
+  `e0a9ea7b1e1d346d085295e9b3f051be28a25e2b`。
+
+Independent review evidence：
+
+- `.runtime/fe-ux-02a/independent-review.md`
+  SHA256 `0598f607088da1159a5c036dd844ef109d4b0d20c181184c4832fa4e3a0d2374`
+- `.runtime/fe-ux-02a/independent-review-r2.md`
+  SHA256 `789604b68cd76c618b1dd7adacd3dd8b749aa5dba401ef4dcd60acd4e5be143a`
+- `.runtime/fe-ux-02a/independent-review-r3.md`
+  SHA256 `82f321023d65de44c5f12645ffbe111d033e92045fe1b6d2a2f9af8ceb30b6c3`
+- `.runtime/fe-ux-02a/independent-review-r4.md`
+  SHA256 `d2a01a6720ac61cbc0b39c71dcb3652b701ed267397003f6de4415ec0feceb98`
+
+最终本地代码候选：`e0a9ea7b1`。
+
+唯一剩余阻断：List Surface merge-time runtime evidence 仍是
+`verification_pending`；不得改写为 PASS，也不得绕过 `make pr.merge` 的证据门禁。

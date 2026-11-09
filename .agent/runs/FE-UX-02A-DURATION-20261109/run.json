@@ -185,10 +185,9 @@
     }
   },
   "blockers": [
-    "Independent re-review is pending on the S1/S2 repair candidate",
-    "list_surface_structure runtime evidence is not yet rebound to the exact candidate; the existing suite source is not an ancestor of this branch"
+    "list_surface_structure runtime evidence remains pending at the merge-time evidence stage; the existing suite source is not an ancestor of this branch"
   ],
-  "next_exact_step": "Obtain independent re-review of the S1/S2 repair candidate and keep list-surface runtime evidence explicitly pending.",
+  "next_exact_step": "Submit the independently approved candidate to the total controller for the merge-time List Surface evidence decision; do not merge or deploy in this task.",
   "id": "FE-UX-02A-DURATION-20261109",
   "branch": "fix/fe-ux-02a-duration-r2-20261109",
   "status": "verification_pending",
