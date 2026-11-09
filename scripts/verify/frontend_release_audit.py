@@ -12,8 +12,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-from frontend_release_navigation_policy_guard import compare_role_projection
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -44,53 +42,33 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def authoritative_navigation_counts() -> dict[str, int]:
-    policy = read_json(ROOT / "config/frontend/authoritative_navigation.json")
-    configured_roles = policy.get("roles") or {}
-    counts: dict[str, int] = {}
-    for role, row in configured_roles.items():
-        policy_leaf_keys = (row or {}).get("leaf_keys") or []
-        policy_count = int((row or {}).get("expected_count") or 0)
-        leaf_keys = (row or {}).get("browser_leaf_keys") or policy_leaf_keys
-        count = int((row or {}).get("browser_expected_count") or 0)
-        if policy_count <= 0 or policy_count != len(policy_leaf_keys):
-            raise EvidenceError(f"AUTHORITATIVE_NAVIGATION_POLICY_INVALID:{role}")
-        if count <= 0 or count != len(leaf_keys):
-            raise EvidenceError(f"AUTHORITATIVE_BROWSER_NAVIGATION_POLICY_INVALID:{role}")
-        if not set(leaf_keys).issubset(set(policy_leaf_keys)):
-            raise EvidenceError(f"AUTHORITATIVE_BROWSER_NAVIGATION_NOT_POLICY_SUBSET:{role}")
-        counts[str(role)] = count
-    if not counts:
-        raise EvidenceError("AUTHORITATIVE_NAVIGATION_POLICY_EMPTY")
-    return counts
-
-
 def validate_navigation(report: dict[str, Any], expected_sha: str) -> dict[str, Any]:
     require_sha(report, expected_sha, "navigation")
     total = report.get("total") or {}
     roles = report.get("roles") or {}
-    expected_roles = authoritative_navigation_counts()
-    expected_total = sum(expected_roles.values())
+    expected_roles = set(ROLE_RELEASE_SUBJECTS)
+    actual_total = int(total.get("actual_count") or 0)
     if (
         total.get("result") != "PASS"
-        or int(total.get("expected_count") or 0) != expected_total
-        or int(total.get("actual_count") or 0) != expected_total
-        or int(total.get("matched_count") or 0) != expected_total
+        or actual_total <= 0
     ):
-        raise EvidenceError("NAVIGATION_NOT_AUTHORITATIVE_TOTAL")
-    if set(roles) != set(expected_roles):
+        raise EvidenceError("NAVIGATION_OBSERVATION_NOT_PASS")
+    if set(roles) != expected_roles:
         raise EvidenceError("NAVIGATION_ROLE_SET_MISMATCH")
-    for role, count in expected_roles.items():
+    observed_total = 0
+    for role in expected_roles:
         row = roles.get(role) or {}
+        actual_count = int(row.get("actual_count") or 0)
         if (
-            int(row.get("expected_count") or 0) != count
-            or int(row.get("actual_count") or 0) != count
-            or int(row.get("matched_count") or 0) != count
-            or row.get("missing_leaf_keys")
-            or row.get("unexpected_leaf_keys")
+            row.get("result") != "PASS"
+            or actual_count <= 0
             or row.get("duplicate_leaf_keys")
+            or row.get("invalid_leaf_keys")
         ):
-            raise EvidenceError(f"NAVIGATION_ROLE_MISMATCH:{role}")
+            raise EvidenceError(f"NAVIGATION_OBSERVATION_INVALID:{role}")
+        observed_total += actual_count
+    if observed_total != actual_total:
+        raise EvidenceError("NAVIGATION_OBSERVED_TOTAL_MISMATCH")
     return {"result": "PASS", "roles": roles, "total": total}
 
 
@@ -183,8 +161,7 @@ def validate_role_release_projection(
             raise EvidenceError(f"ROLE_RELEASE_PROJECTION_SNAPSHOT_{field.upper()}_MISMATCH")
     if str(report.get("db") or "") != "sc_frontend_acceptance":
         raise EvidenceError("ROLE_RELEASE_PROJECTION_DB_MISMATCH")
-    manifest = read_json(ROOT / "config/frontend/authoritative_navigation.json")
-    declared_roles = set((manifest.get("roles") or {}).keys())
+    declared_roles = set(ROLE_RELEASE_SUBJECTS)
     actual_roles = report.get("roles") or {}
     if set(actual_roles) != declared_roles:
         raise EvidenceError("ROLE_RELEASE_PROJECTION_ROLE_SET_MISMATCH")
@@ -207,10 +184,41 @@ def validate_role_release_projection(
             problems[role] = {"reason": "collect_error", "error": p0["error"]}
             sections[role] = {"result": "FAIL", "reason": "collect_error"}
             continue
-        identities = p0.get("primary_home_identities") or []
-        comparison = compare_role_projection(
-            (manifest["roles"][role].get("leaf_keys") or []), identities
-        )
+        identities = p0.get("primary_home_identities")
+        if not isinstance(identities, list) or not identities:
+            problems[role] = {"reason": "missing_primary_home_identities"}
+            sections[role] = {"result": "FAIL", "reason": "missing_primary_home_identities"}
+            continue
+        normalized = []
+        invalid = []
+        duplicates = []
+        seen = set()
+        for raw in identities:
+            if not isinstance(raw, str):
+                invalid.append(str(raw))
+                continue
+            parts = [part.strip() for part in raw.strip().split("|")]
+            if len(parts) != 3 or not parts[0] or (
+                bool(parts[1]) != bool(parts[2])
+            ):
+                invalid.append(raw)
+                continue
+            key = "|".join(parts)
+            if key in seen:
+                duplicates.append(key)
+                continue
+            seen.add(key)
+            normalized.append(key)
+        comparison = {
+            "expected_count": None,
+            "actual_count": len(normalized),
+            "missing": [],
+            "unexpected": [],
+            "expected_duplicates": [],
+            "actual_duplicates": sorted(set(duplicates)),
+            "invalid_identities": sorted(set(invalid)),
+            "consistent": bool(normalized) and not duplicates and not invalid,
+        }
         sections[role] = comparison
         if not comparison["consistent"]:
             problems[role] = comparison

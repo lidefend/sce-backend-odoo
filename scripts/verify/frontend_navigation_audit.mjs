@@ -15,6 +15,48 @@ export function isDeclaredScene(manifest, row) {
     && row?.route === target.route);
 }
 
+function invalidNavigationRow(row) {
+  const menu = String(row?.menu_xmlid || '').trim();
+  const action = String(row?.action_xmlid || '').trim();
+  const model = String(row?.model || '').trim();
+  const route = String(row?.route || '').trim();
+  if (!menu) return true;
+  if (Boolean(action) !== Boolean(model)) return true;
+  if (!action && !route.startsWith('/s/')) return true;
+  return false;
+}
+
+export function observeNavigation(rows, roleLogins) {
+  const reports = {};
+  for (const login of roleLogins) {
+    const role = String(login || '').replace(/^(?:demo|fixture)_role_/, '');
+    const roleRows = rows.filter((row) => row.role === login);
+    const actualKeys = roleRows.map(stableLeafKey).sort();
+    const invalid = roleRows
+      .filter(invalidNavigationRow)
+      .map(stableLeafKey)
+      .sort();
+    const duplicate = duplicates(actualKeys);
+    reports[role] = {
+      actual_count: actualKeys.length,
+      duplicate_leaf_keys: duplicate,
+      invalid_leaf_keys: invalid,
+      result: actualKeys.length > 0 && !duplicate.length && !invalid.length ? 'PASS' : 'FAIL',
+    };
+  }
+  const totalActual = Object.values(reports).reduce((sum, row) => sum + row.actual_count, 0);
+  return {
+    schema_version: 'frontend-navigation-observation/v1',
+    source: 'authenticated_runtime_navigation',
+    identity: 'menu_xmlid|action_xmlid|model',
+    roles: reports,
+    total: {
+      actual_count: totalActual,
+      result: totalActual > 0 && Object.values(reports).every((row) => row.result === 'PASS') ? 'PASS' : 'FAIL',
+    },
+  };
+}
+
 function duplicates(values) {
   const counts = new Map();
   for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);

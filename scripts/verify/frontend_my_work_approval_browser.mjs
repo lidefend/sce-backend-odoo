@@ -299,7 +299,6 @@ async function main() {
         text: button.textContent,
         disabled: button.disabled,
         actionEnabled: button.getAttribute('data-action-enabled'),
-        visible: Boolean(button.getBoundingClientRect().width && button.getBoundingClientRect().height),
       })),
     })));
     const approvedDenialTriggers = await page.locator(

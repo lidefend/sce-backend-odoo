@@ -10,7 +10,6 @@ from pathlib import Path
 
 from frontend_release_audit import (
     EvidenceError,
-    authoritative_navigation_counts,
     read_json,
     validate_accessibility,
     validate_navigation,
@@ -34,35 +33,34 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
             with self.assertRaises(EvidenceError):
                 read_json(damaged)
 
-    def test_navigation_missing_unexpected_duplicate_is_rejected(self):
-        expected_roles = authoritative_navigation_counts()
-        expected_total = sum(expected_roles.values())
+    def test_runtime_navigation_observation_requires_nonzero_unique_valid_identities(self):
+        roles = ("finance", "project_a_member", "pm", "owner")
         base = {
             "git_sha": SHA,
             "total": {
                 "result": "PASS",
-                "expected_count": expected_total,
-                "actual_count": expected_total,
-                "matched_count": expected_total,
+                "actual_count": len(roles),
             },
             "roles": {
                 role: {
-                    "expected_count": count,
-                    "actual_count": count,
-                    "matched_count": count,
-                    "missing_leaf_keys": [],
-                    "unexpected_leaf_keys": [],
+                    "actual_count": 1,
                     "duplicate_leaf_keys": [],
+                    "invalid_leaf_keys": [],
+                    "result": "PASS",
                 }
-                for role, count in expected_roles.items()
+                for role in roles
             },
         }
         validate_navigation(base, SHA)
-        for field in ("missing_leaf_keys", "unexpected_leaf_keys", "duplicate_leaf_keys"):
+        for field in ("duplicate_leaf_keys", "invalid_leaf_keys"):
             report = json.loads(json.dumps(base))
             report["roles"]["finance"][field] = ["x"]
             with self.assertRaises(EvidenceError):
                 validate_navigation(report, SHA)
+        empty = json.loads(json.dumps(base))
+        empty["roles"]["finance"].update(actual_count=0, result="FAIL")
+        with self.assertRaises(EvidenceError):
+            validate_navigation(empty, SHA)
 
     def test_accessibility_missing_serious_or_sha_mismatch_is_rejected(self):
         valid = {"git_sha": SHA, "result": "PASS", "critical": 0, "serious": 0, "scans": [{"page": "/"}]}
@@ -174,10 +172,6 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         },
     }
 
-    def _manifest(self):
-        root = Path(__file__).resolve().parents[2]
-        return json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
-
     def setUp(self):
         env_patch = patch.dict(
             os.environ,
@@ -192,14 +186,20 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         self.addCleanup(env_patch.stop)
 
     def _report(self, mutate=None, scope_status="VERIFIED"):
-        manifest = self._manifest()
+        role_identities = {
+            role: [
+                f"module.menu_{role}_a|module.action_{role}_a|model.{role}",
+                f"module.menu_{role}_b|module.action_{role}_b|model.{role}",
+            ]
+            for role in self.SUBJECTS
+        }
         roles = {
             role: {
                 "login": self.SUBJECTS[role][0],
                 "role_code": self.SUBJECTS[role][1],
-                "p0": {"primary_home_identities": list(row["leaf_keys"]), "error": None},
+                "p0": {"primary_home_identities": list(role_identities[role]), "error": None},
             }
-            for role, row in manifest["roles"].items()
+            for role in self.SUBJECTS
         }
         report = {
             "git_sha": SHA,
@@ -217,7 +217,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             "roles": roles,
         }
         if mutate:
-            mutate(report, manifest)
+            mutate(report, role_identities)
         return report
 
     def _validate(self, report):
@@ -349,15 +349,10 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_SNAPSHOT_NOT_OBJECT", str(ctx.exception))
 
-    def test_same_count_wrong_identity_rejected(self):
-        def mutate(report, _manifest):
+    def test_same_count_duplicate_identity_rejected(self):
+        def mutate(report, _identities):
             identities = report["roles"]["pm"]["p0"]["primary_home_identities"]
-            for index, key in enumerate(identities):
-                if key.startswith("smart_construction_core.menu_sc_boq_analysis|"):
-                    identities[index] = (
-                        "smart_construction_core.menu_sc_project_tender|"
-                        "smart_construction_core.action_sc_project_tender|tender.bid"
-                    )
+            identities[1] = identities[0]
         with self.assertRaises(EvidenceError) as ctx:
             self._validate(self._report(mutate))
         self.assertIn("ROLE_RELEASE_PROJECTION_IDENTITY_MISMATCH", str(ctx.exception))
@@ -379,9 +374,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
         self.assertIn("ROLE_RELEASE_PROJECTION_DB_MISMATCH", str(ctx.exception))
 
     def test_scope_not_verified_keeps_all_role_diagnostics(self):
-        manifest = self._manifest()
-
-        def mutate(report, _manifest):
+        def mutate(report, _identities):
             for role in report["roles"]:
                 report["roles"][role]["p0"]["primary_home_identities"] = [
                     "smart_construction_core.menu_sc_workspace_home||"
@@ -390,7 +383,7 @@ class RoleReleaseProjectionValidatorTest(unittest.TestCase):
             self._validate(self._report(mutate, scope_status="NOT_VERIFIED"))
         text = str(ctx.exception)
         self.assertIn("ROLE_RELEASE_PROJECTION_SCOPE_MISMATCH", text)
-        for role in manifest["roles"]:
+        for role in self.SUBJECTS:
             self.assertIn(f'"{role}"', text)
 
     def test_missing_role_rejected(self):

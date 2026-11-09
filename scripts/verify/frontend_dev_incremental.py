@@ -545,6 +545,23 @@ RULES = (
         "verify.backend.contract_lifecycle.authority",
     )),
     Rule((
+        "scripts/verify/unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.schema",
+    )),
+    Rule((
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    ), (
+        "verify.native_view.workflow_action_coverage",
+    )),
+    Rule((
+        "scripts/verify/contract_form_runtime_state_protocol_guard.py",
+    ), (
+        "verify.contract.architecture.suite",
+    )),
+    Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     ), (
         "verify.execute_button.authority.unit",

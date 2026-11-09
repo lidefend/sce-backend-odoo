@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import { compareNavigation } from './frontend_navigation_audit.mjs';
+import { compareNavigation, observeNavigation } from './frontend_navigation_audit.mjs';
 
 const keyA = 'module.menu_a|module.action_a|model.a';
 const keyB = 'module.menu_b|module.action_b|model.b';
@@ -49,3 +49,24 @@ const undeclared = structuredClone(sceneManifest);
 delete undeclared.scene_targets;
 assert.equal(compareNavigation(undeclared, [sceneRow], ['fixture_role_finance']).total.result, 'FAIL');
 console.log('[frontend_navigation_audit.test] PASS 10 scenarios including exact scene route and missing declaration rejection');
+
+const observed = observeNavigation([row(keyA), sceneRow], ['fixture_role_finance']);
+assert.equal(observed.total.result, 'PASS');
+assert.equal(observed.total.actual_count, 2);
+assert.equal(observed.roles.finance.actual_count, 2);
+const observedDuplicate = observeNavigation([row(keyA), row(keyA)], ['fixture_role_finance']);
+assert.equal(observedDuplicate.total.result, 'FAIL');
+assert.deepEqual(observedDuplicate.roles.finance.duplicate_leaf_keys, [keyA]);
+for (const invalid of (
+  [
+    { role: 'fixture_role_finance', menu_xmlid: '', action_xmlid: 'm.a', model: 'model.a', route: '/a/1' },
+    { role: 'fixture_role_finance', menu_xmlid: 'm.menu', action_xmlid: 'm.action', model: '', route: '/a/1' },
+    { role: 'fixture_role_finance', menu_xmlid: 'm.menu', action_xmlid: '', model: '', route: '/a/1' },
+  ]
+)) {
+  const report = observeNavigation([invalid], ['fixture_role_finance']);
+  assert.equal(report.total.result, 'FAIL');
+  assert.equal(report.roles.finance.invalid_leaf_keys.length, 1);
+}
+assert.equal(observeNavigation([], ['fixture_role_finance']).total.result, 'FAIL');
+console.log('[frontend_navigation_audit.test] PASS runtime observation validates count, duplicate and structural identity');

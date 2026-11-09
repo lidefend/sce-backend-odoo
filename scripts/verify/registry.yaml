@@ -43,6 +43,11 @@ entries:
   date: '2026-07-20'
   reason: consumed only by scripts/tests; no governed make/workflow entry
   wire_or_retire: file-consumed
+- script: action_view_responsibility_map_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-18'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: agent_context_lint.py
   status: active
   owner: platform-team
@@ -272,6 +277,46 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_capability_rows_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_contract_helpers_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_contract_normalizers_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-12'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_hook_facts_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_project_layout_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-11'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_responsibility_map_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-18'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_service_builders_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_core_extension_system_init_rows_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-14'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: construction_diary_visible_fields_audit.py
   status: active
   owner: platform-team
@@ -290,17 +335,157 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_form_action_plan_builder_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_form_behavior_regression_runbook_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: contract_form_handling_policy_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: contract_form_onchange_normalization_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-27'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_form_runtime_state_protocol_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_form_save_payload_builder_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: contract_form_semantic_identity_guard.py
   status: active
   owner: platform-team
   date: '2026-08-27'
   wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_form_side_effect_regression_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-27'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_access_policy_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_canonicalization_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_capabilities_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_contract_detection_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_create_profile_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_domain_overrides_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_enterprise_forms_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-19'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_field_semantics_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_form_actions_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_form_fields_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_form_layout_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_form_render_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_form_validation_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_labels_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_list_surface_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-12'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_native_bridge_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_project_form_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_registry_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_responsibility_map_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_scenes_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_surface_mapping_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_governance_user_surface_split_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-12'
   reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: contract_settlement_payment_closure_audit.py
   status: active
@@ -360,6 +545,11 @@ entries:
   owner: platform-team
   date: '2026-07-20'
   wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: file_line_budget_uniform_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
   reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: finance_business_category_action_audit.py
   status: active
@@ -689,6 +879,11 @@ entries:
   owner: platform-team
   date: '2026-10-01'
   wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: list_field_semantic_integrity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-30'
   reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: local_dev_accounting_center_ids.py
   status: active
@@ -1328,6 +1523,11 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: static_suite_frontend_toolchain_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-12'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: subcontract_request_contract_anchor_audit.py
   status: active
   owner: platform-team
@@ -1940,6 +2140,11 @@ entries:
   owner: platform-team
   date: '2026-09-08'
   reason: 'Governed unittest module invocation in: verify.scene.company_snapshot.collect'
+- script: test_static_suite_frontend_toolchain_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-12'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_tax_certificate_formal_contract.py
   status: orphan
   owner: platform-team
@@ -1996,6 +2201,11 @@ entries:
   owner: platform-team
   date: '2026-10-01'
   reason: 'Governed unittest module invocation in: verify.frontend.workspace_composition.unit'
+- script: ui_contract_v2_responsibility_map_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-11-01'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: um_p1_ownership_visibility_contract_guard.py
   status: active
   owner: platform-team
@@ -2110,6 +2320,11 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: v1_1_convergence_status_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: visible_data_usability_matrix_probe.py
   status: orphan
   owner: platform-team

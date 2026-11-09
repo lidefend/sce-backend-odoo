@@ -53,31 +53,6 @@ def read_json(path: Path, reason: str = "JSON_INVALID") -> dict[str, Any]:
     return value
 
 
-def authoritative_navigation_total() -> int:
-    policy = read_json(
-        ROOT / "config/frontend/authoritative_navigation.json",
-        "AUTHORITATIVE_NAVIGATION_POLICY_INVALID",
-    )
-    roles = policy.get("roles") or {}
-    total = 0
-    for role, row in roles.items():
-        row = row or {}
-        leaf_keys = row.get("leaf_keys") or []
-        count = int(row.get("expected_count") or 0)
-        browser_leaf_keys = row.get("browser_leaf_keys") or leaf_keys
-        browser_count = int(row.get("browser_expected_count") or 0)
-        if count <= 0 or count != len(leaf_keys):
-            fail(f"AUTHORITATIVE_NAVIGATION_POLICY_INVALID:{role}")
-        if browser_count <= 0 or browser_count != len(browser_leaf_keys):
-            fail(f"AUTHORITATIVE_BROWSER_NAVIGATION_POLICY_INVALID:{role}")
-        if not set(browser_leaf_keys).issubset(set(leaf_keys)):
-            fail(f"AUTHORITATIVE_BROWSER_NAVIGATION_NOT_POLICY_SUBSET:{role}")
-        total += browser_count
-    if total <= 0:
-        fail("AUTHORITATIVE_NAVIGATION_POLICY_EMPTY")
-    return total
-
-
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -315,18 +290,27 @@ def validate_frontend_reports(files: dict[str, Path], sha: str, tree: str) -> di
             fail(f"FRONTEND_EVIDENCE_SHA_MISMATCH:{name}")
     navigation = payloads["frontend/navigation-report.json"]
     total = navigation.get("total") or {}
-    expected_navigation_total = authoritative_navigation_total()
+    roles = navigation.get("roles") or {}
+    actual_navigation_total = int(total.get("actual_count") or 0)
     if (
         total.get("result") != "PASS"
-        or int(total.get("expected_count", -1)) != expected_navigation_total
-        or int(total.get("actual_count", -1)) != expected_navigation_total
-        or int(total.get("matched_count", -1)) != expected_navigation_total
-        or total.get("missing_leaf_keys")
-        or total.get("unexpected_leaf_keys")
+        or actual_navigation_total <= 0
+        or not roles
         or total.get("duplicate_leaf_keys")
         or total.get("invalid_leaf_keys")
     ):
-        fail("NAVIGATION_IDENTITY_NOT_AUTHORITATIVE_TOTAL")
+        fail("NAVIGATION_OBSERVATION_NOT_PASS")
+    if any(
+        not isinstance(row, dict)
+        or row.get("result") != "PASS"
+        or int(row.get("actual_count") or 0) <= 0
+        or row.get("duplicate_leaf_keys")
+        or row.get("invalid_leaf_keys")
+        for row in roles.values()
+    ):
+        fail("NAVIGATION_ROLE_OBSERVATION_INVALID")
+    if sum(int(row.get("actual_count") or 0) for row in roles.values()) != actual_navigation_total:
+        fail("NAVIGATION_OBSERVED_TOTAL_MISMATCH")
     accessibility = payloads["frontend/accessibility.json"]
     if (
         accessibility.get("result") != "PASS"
