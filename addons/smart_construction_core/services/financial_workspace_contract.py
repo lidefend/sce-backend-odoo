@@ -609,7 +609,9 @@ def build_financial_form_business_actions(env, model_name, record_id):
                 "key": f"payment_{action_key}", "action_key": action_key, "label": label,
                 "kind": "mutation", "level": "header", "source_widget_id": "page.header",
                 "selection": "none", "visible_profiles": ["edit", "readonly"], "method": method,
-                "visible": True,
+                # Actor authorization controls product exposure. Business-state
+                # unavailability remains representable as visible+disabled.
+                "visible": authorization_allowed,
                 "intent": str(row.get("execute_intent") or row.get("intent") or "payment.request.execute"),
                 "allowed": executable, "enabled": executable, "disabled": not executable,
                 "business_available": business_available,
@@ -648,18 +650,24 @@ def build_financial_form_business_actions(env, model_name, record_id):
         lambda execution: execution.state in ("draft", "confirmed")
     )
     has_payment_basis = bool(record._has_payment_basis())
-    execution_business_available = bool(
+    execution_state_available = bool(
         record.type == "pay"
         and record.state == "approved"
         and not record.is_fully_paid
-        and has_payment_basis
-        and record.payee_account_completeness == "complete"
         and not active_executions
+    )
+    execution_data_complete = bool(
+        has_payment_basis
+        and record.payee_account_completeness == "complete"
     )
     execution_authorization_allowed = bool(
         env.user.has_group(PAYMENT_EXECUTION_ROLE_GROUP)
     )
-    execution_enabled = bool(execution_business_available and execution_authorization_allowed)
+    execution_enabled = bool(
+        execution_state_available
+        and execution_data_complete
+        and execution_authorization_allowed
+    )
     if active_executions:
         execution_reason_code = "PAYMENT_EXECUTION_ALREADY_EXISTS"
         execution_blocked_message = "该申请已有办理中的付款登记，请先完成或取消现有记录。"
@@ -697,13 +705,13 @@ def build_financial_form_business_actions(env, model_name, record_id):
         "source_widget_id": "page.header",
         "selection": "none",
         "visible_profiles": ["edit", "readonly"],
-        "visible": True,
+        "visible": execution_authorization_allowed,
         "method": "action_create_payment_execution",
         "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "financial_workspace_contract.payment_request_execution"},
         "allowed": execution_enabled,
         "enabled": execution_enabled,
         "disabled": not execution_enabled,
-        "business_available": execution_business_available,
+        "business_available": execution_state_available,
         "authorization_allowed": execution_authorization_allowed,
         "entitlement_evaluated": True,
         "reason_code": execution_reason_code,
@@ -711,7 +719,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         "required_group_xmlids": [PAYMENT_EXECUTION_ROLE_GROUP],
         "required_role_key": role_code_for_group(PAYMENT_EXECUTION_ROLE_GROUP, env=env),
         "required_role_label": "财务办理能力",
-        "handoff_required": bool(execution_business_available and not execution_authorization_allowed),
+        "handoff_required": bool(execution_state_available and not execution_authorization_allowed),
         "handoff_hint": "请由具有财务办理能力的人员生成付款登记。",
         "primary": execution_enabled,
         "presentation": {

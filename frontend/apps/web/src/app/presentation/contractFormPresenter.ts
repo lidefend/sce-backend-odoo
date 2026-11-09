@@ -611,7 +611,15 @@ function presentAction(
   const disabledModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'disabled')
     ? action.modifiers?.disabled
     : action.modifiers?.readonly;
-  const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
+  const explicitBusinessStateDenial = explicitAuthority
+    && status?.visible === true
+    && status?.disabled === true
+    && status?.visibilityExplanation === 'business_state'
+    && action.authorizationAllowed !== false
+    && typeof action.businessAvailable === 'boolean'
+    && Boolean(text(action.reasonCode));
+  const definitionInvisible = !explicitBusinessStateDenial
+    && evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
   const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
   // A state-derived button status is recomputed from the declared visibility
   // modifier against live form values; every other status stays authoritative.
@@ -619,6 +627,7 @@ function presentAction(
   const statusDisabledDenied = status?.disabled === true && !stateDerivedStatus;
   // A declared actor-authorization or business-availability deny is honoured
   // directly, not just through the producer's folded allowed/enabled/disabled.
+  const authorizationDenied = action.authorizationAllowed === false;
   const declaredDenial = declaredActionAuthorityDenial(action);
   const declaredAuthority = declaredDenial === '';
   const allowed = declaredAuthority && explicitAuthority && action.allowed === true;
@@ -633,6 +642,7 @@ function presentAction(
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: explicitAuthority
+      && !authorizationDenied
       && !definitionInvisible
       && profiles.includes(mode)
       && !statusVisibilityDenied
@@ -640,7 +650,7 @@ function presentAction(
     enabled: allowed && enabled,
     reasonCode: text(stateDerivedStatus ? '' : status?.reasonCode || action.reasonCode) || declaredDenial
       || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
-    reasonMessage: stateDerivedStatus ? undefined : text(status?.reasonCode ? status.reasonMessage : action.reasonMessage),
+    reasonMessage: stateDerivedStatus ? undefined : text(status?.reasonMessage || action.reasonMessage),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,

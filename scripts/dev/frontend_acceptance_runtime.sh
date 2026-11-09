@@ -515,7 +515,7 @@ PYMYWORKTARGETS
         git -C "$ROOT_DIR" merge-base --is-ancestor "$preview_base_sha" "$expected_sha" || {
           echo "DENY: preview base is not an ancestor of the candidate" >&2; exit 2;
         }
-        git -C "$ROOT_DIR" diff --quiet "$preview_base_sha" "$expected_sha" -- frontend || {
+        git -C "$ROOT_DIR" diff --quiet "$preview_base_sha" "$expected_sha" -- frontend ':!frontend/apps/web/scripts' || {
           echo "DENY: preview bundle does not include the candidate frontend tree" >&2; exit 2;
         }
         SC_ACCEPTANCE_PROFILE="$(standard_profile_name)" SC_ACCEPTANCE_FRONTEND_URL="$(standard_preview_url)" SC_ACCEPTANCE_API_URL="$(standard_api_url)" \

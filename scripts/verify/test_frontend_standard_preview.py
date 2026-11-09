@@ -1556,6 +1556,15 @@ node(){
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+class StandardPreviewBundleScopeTest(unittest.TestCase):
+    def test_standard_preview_identity_uses_its_declared_build_inputs(self):
+        source = Path("scripts/dev/frontend_acceptance_runtime.sh").read_text()
+        self.assertIn(
+            'git -C "$ROOT_DIR" diff --quiet "$preview_base_sha" "$expected_sha" -- frontend \':!frontend/apps/web/scripts\'',
+            source,
+        )
+
+
 class StandardListSurfaceMakeBoundaryTest(unittest.TestCase):
     def invoke_make(self, overrides=None, arguments=()):
         import subprocess

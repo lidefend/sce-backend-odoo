@@ -27,6 +27,8 @@ from scripts.verify.frontend_style_system_guard import (
     SIZE_LIMITS,
 )
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
@@ -78,6 +80,36 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["frontend/apps/web/scripts/relation_heading_component_test.mjs"]),
             ["verify.frontend.professional_detail_collection.unit"],
+        )
+
+    def test_professional_workflow_guard_selects_its_nonzero_executor(self) -> None:
+        for path in (
+            "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+            "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+            "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+            "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+            "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+            "frontend/apps/web/src/components/design-system/ScPopover.vue",
+            "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+            "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+            "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+            "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+            "scripts/verify/frontend_professional_workflow_guard.py",
+            "scripts/verify/test_frontend_professional_workflow_guard.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.frontend.professional_workflow.unit", targets)
+                self.assertNotIn("verify.frontend.native_form_action_presentation.browser", targets)
+
+    def test_professional_workflow_unit_executes_interaction_browser(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        block = source.split("verify.frontend.professional_workflow.unit:", 1)[1].split(
+            ".PHONY:", 1
+        )[0]
+        self.assertIn(
+            "node frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+            block,
         )
 
     def test_primitive_port_inputs_select_port_contract(self) -> None:
@@ -212,6 +244,70 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(select_targets([".github/workflows/backend_test_suite.yml"]), [
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
+
+    def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
+        self.assertIn(
+            "verify.frontend.contract_header_action.unit",
+            select_targets([
+                "addons/smart_construction_core/services/financial_workspace_contract.py",
+                "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+            ]),
+        )
+        for path in (
+            "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+            "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                for target in (
+                    "verify.unified_page_contract.v2.assembler",
+                    "verify.unified_page_contract.v2.action",
+                    "verify.unified_page_contract.v2.status",
+                    "verify.unified_page_contract.v2.runtime",
+                ):
+                    self.assertIn(target, targets)
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+            ]),
+            ["verify.execute_button.authority.unit"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/audit/workflow_state_inventory.py"]),
+            ["verify.workflow_action_semantics.guard"],
+        )
+
+    def test_contract_visibility_proof_inputs_select_their_executors(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "frontend/apps/web/src/app/contracts/v2/schema.ts",
+                "frontend/apps/web/src/app/contracts/v2/types.ts",
+            ]),
+            [
+                "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+            ],
+        )
+        for path in (
+            "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+            "docs/architecture/unified_page_contract_v2/examples/form_project.json",
+            "addons/smart_core/core/contract_lifecycle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.backend.contract_lifecycle.authority"],
+                )
+        for path in (
+            "scripts/verify/frontend_v2_policy_projection_guard.py",
+            "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.form_structure_authority_unification.unit"],
+                )
 
     def test_backend_security_guard_selects_its_own_tests(self) -> None:
         for path in ("scripts/verify/github_actions_security_guard.py",

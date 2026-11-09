@@ -189,6 +189,22 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+        "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+        "frontend/apps/web/src/components/design-system/ScPopover.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+        "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+        "scripts/verify/frontend_professional_workflow_guard.py",
+        "scripts/verify/test_frontend_professional_workflow_guard.py",
+    ), (
+        "verify.frontend.professional_workflow.unit",
+    )),
+    Rule((
         "/app/presentation/businessValuePresentation.ts",
         "/app/presentation/collectionKanbanPresentation.ts",
         "/utils/fieldSemantics.ts",
@@ -495,8 +511,42 @@ RULES = (
     Rule((
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+        "addons/smart_construction_core/services/financial_workspace_contract.py",
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
     ), (
         "verify.frontend.contract_header_action.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    ), (
+        "verify.unified_page_contract.v2.assembler",
+        "verify.unified_page_contract.v2.action",
+        "verify.unified_page_contract.v2.status",
+        "verify.unified_page_contract.v2.runtime",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+    ), (
+        "verify.frontend.canonical_form_presenter.unit",
+    )),
+    Rule((
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "addons/smart_core/core/contract_lifecycle.py",
+    ), (
+        "verify.backend.contract_lifecycle.authority",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    ), (
+        "verify.execute_button.authority.unit",
+    )),
+    Rule((
+        "scripts/audit/workflow_state_inventory.py",
+    ), (
+        "verify.workflow_action_semantics.guard",
     )),
     # The relation acceptance runner owns the placeholder classification used
     # by its public-control assertion; changing it requires the real journey.
@@ -559,6 +609,8 @@ RULES = (
     )),
     Rule((
         "scripts/verify/test_form_structure_authority_unification.py",
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
     ), (
         "verify.form_structure_authority_unification.unit",
     )),

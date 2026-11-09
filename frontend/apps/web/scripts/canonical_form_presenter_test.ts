@@ -1774,6 +1774,12 @@ assert.equal(
 );
 actionReasonSnapshot.actionContract.actionRuleList[0].reasonMessage = '先补齐办理依据';
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '先补齐办理依据');
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = 'PAYMENT_EXECUTION_BASIS_MISSING';
+assert.equal(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage,
+  '先补齐办理依据',
+  'a status reason code without a status message must retain the action-authored user message',
+);
 actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = 'ACL_DENIED';
 actionReasonSnapshot.statusContract.buttonStatus[0].reasonMessage = '当前角色不可办理';
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '当前角色不可办理');
@@ -3762,23 +3768,80 @@ assert.equal(
 );
 
 const businessDenied = presentContractV2Form(
-  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ businessAvailable: false }))), 'edit',
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({
+    authorizationAllowed: true, businessAvailable: false,
+  }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
 assert.equal(businessDenied?.enabled, false, 'an injected business unavailability must disable the action');
+assert.equal(businessDenied?.actionRef.authorizationAllowed, true,
+  'business unavailability must not be rewritten as actor denial');
 assert.equal(businessDenied?.reasonCode, 'ACTION_NOT_BUSINESS_AVAILABLE', 'the business denial must be named');
+
+const explainedStateDeniedSnapshot = declaredSnapshot({
+  authorizationAllowed: true,
+  businessAvailable: false,
+  allowed: false,
+  enabled: false,
+  disabled: true,
+  reasonCode: 'STATE_NOT_APPROVED',
+  reasonMessage: '付款申请必须处于已批准状态。',
+  visible: {
+    attrs: {
+      invisible: { kind: 'field_compare', field: 'state', operator: '!=', value: 'approved' },
+    },
+  },
+});
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].visible = true;
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].disabled = true;
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonCode = 'STATE_NOT_APPROVED';
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonMessage = '付款申请必须处于已批准状态。';
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].visibilityExplanation = 'business_state';
+const explainedStateDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(explainedStateDeniedSnapshot)), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(
+  explainedStateDenied?.visible,
+  true,
+  'an explicit authorized business-state denial must remain visible despite the source modifier',
+);
+assert.equal(explainedStateDenied?.enabled, false, 'the explained business-state denial must remain disabled');
+assert.equal(
+  explainedStateDenied?.reasonMessage,
+  '付款申请必须处于已批准状态。',
+  'the explained business-state denial must keep its user-facing reason',
+);
+
+const unprovenStateDeniedSnapshot = structuredClone(explainedStateDeniedSnapshot);
+delete unprovenStateDeniedSnapshot.statusContract.buttonStatus[0].visibilityExplanation;
+const unprovenStateDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(unprovenStateDeniedSnapshot)), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(
+  unprovenStateDenied,
+  undefined,
+  'a business reason without an explicit visibility explanation must not override the native modifier',
+);
+
+const invalidVisibilityExplanationSnapshot = structuredClone(explainedStateDeniedSnapshot);
+(invalidVisibilityExplanationSnapshot.statusContract.buttonStatus[0] as unknown as Record<string, unknown>)
+  .visibilityExplanation = 'native_modifier';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidVisibilityExplanationSnapshot),
+  /visibilityExplanation must equal business_state/,
+  'visibility explanation must use the declared contract vocabulary',
+);
 
 const actorDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: false }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
-assert.equal(actorDenied?.enabled, false, 'an injected actor denial must disable the action');
-assert.equal(actorDenied?.reasonCode, 'ACTION_NOT_AUTHORIZED', 'the actor denial must be named');
+assert.equal(actorDenied, undefined, 'an unauthorized action must be hidden');
 
 const declaredAllowed = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: true, businessAvailable: true }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
 assert.equal(declaredAllowed?.enabled, true, 'a declared allow must not block the action');
 
-console.log('[canonical_form_presenter] declared action authority cases PASS count=10');
+console.log('[canonical_form_presenter] declared action authority cases PASS count=13');
 
 // The ContractFormPage presenter carries the same declared authority, and must not
 // drop it while re-projecting the rule row it consumes.
@@ -3805,11 +3868,9 @@ assert.equal(legacyRows({})[0].enabled, true, 'legacy baseline: the action is en
 assert.equal(legacyRows({})[0].authorizationAllowed, true, 'legacy baseline: authorization is allowed');
 const legacyBusinessDenied = legacyRows({ businessAvailable: false })[0];
 assert.equal(legacyBusinessDenied.enabled, false, 'legacy: an injected business denial must disable the action');
-assert.equal(legacyBusinessDenied.authorizationAllowed, false, 'legacy: the denial must reach the executor gate');
+assert.equal(legacyBusinessDenied.authorizationAllowed, true, 'legacy: business denial must not be rewritten as actor denial');
 assert.equal(legacyBusinessDenied.hint, 'ACTION_NOT_BUSINESS_AVAILABLE', 'legacy: the business denial must be named');
-const legacyActorDenied = legacyRows({ authorizationAllowed: false })[0];
-assert.equal(legacyActorDenied.enabled, false, 'legacy: an injected actor denial must disable the action');
-assert.equal(legacyActorDenied.hint, 'ACTION_NOT_AUTHORIZED', 'legacy: the actor denial must be named');
+assert.deepEqual(legacyRows({ authorizationAllowed: false }), [], 'legacy: an unauthorized action must be hidden');
 
 console.log('[canonical_form_presenter] legacy declared action authority cases PASS count=7');
 

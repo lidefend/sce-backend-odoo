@@ -91,6 +91,14 @@ class RefusalMarkerGuardTest(unittest.TestCase):
         self.assertNotEqual(result, 0)
         self.assertIn('must not publish actionSemanticsInvalid', output)
 
+    def test_button_visibility_explanation_is_bound_to_schema_and_consumers(self):
+        result, output = self.run_guard()
+        self.assertEqual(result, 0, output)
+        with patch.object(guard, 'BUTTON_VISIBILITY_EXPLANATION_VALUES', ('native_modifier',)):
+            result, output = self.run_guard()
+        self.assertNotEqual(result, 0)
+        self.assertIn('buttonStatus.visibilityExplanation enum must be', output)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -282,6 +282,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
         blocked = self._execution_action(self.env(user=executive), request)
         self.assertTrue(blocked["business_available"])
         self.assertFalse(blocked["authorization_allowed"])
+        self.assertFalse(blocked["visible"])
         self.assertFalse(blocked["enabled"])
         self.assertTrue(blocked["disabled"])
         self.assertEqual(blocked["reason_code"], "ROLE_HANDOFF_REQUIRED")
@@ -306,8 +307,9 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
         self.assertEqual(request.legal_next_action_display, "补充合同或结算依据")
 
         action = self._execution_action(self.env, request)
-        self.assertFalse(action["business_available"])
+        self.assertTrue(action["business_available"])
         self.assertTrue(action["authorization_allowed"])
+        self.assertTrue(action["visible"])
         self.assertFalse(action["allowed"])
         self.assertFalse(action["enabled"])
         self.assertTrue(action["disabled"])
@@ -315,6 +317,31 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
         self.assertEqual(action["reason_code"], "PAYMENT_EXECUTION_BASIS_MISSING")
         with self.assertRaisesRegex(UserError, "关联合同或已审批结算单"):
             request.action_create_payment_execution()
+
+    def test_incomplete_account_is_visible_business_state_with_data_denial(self):
+        request = self._request(
+            payment_account_name=False,
+            payment_bank_name=False,
+            payment_account_no=False,
+        )
+        self.partner.write(
+            {
+                "sc_account_name": False,
+                "sc_bank_name": False,
+                "sc_bank_account": False,
+            }
+        )
+        self._set_request_state(request)
+
+        action = self._execution_action(self.env, request)
+        self.assertTrue(action["visible"])
+        self.assertTrue(action["authorization_allowed"])
+        # The approved document state still permits this action; missing payee
+        # data disables execution without rewriting it as an authorization denial.
+        self.assertTrue(action["business_available"])
+        self.assertFalse(action["enabled"])
+        self.assertTrue(action["disabled"])
+        self.assertEqual(action["reason_code"], "PAYEE_ACCOUNT_INCOMPLETE")
 
     def test_execution_continuation_is_disabled_after_execution_exists(self):
         request, execution = self._approved_execution()

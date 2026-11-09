@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "2d1614aacc44967061fd7e6259e26ffc830127df",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-UX-02B-DISABLED-REASON-20261109.yaml",
+    ".agent/runs/FE-UX-02B-DISABLED-REASON-20261109/run.json",
+    "docs/ops/iterations/fe_ux_02b_disabled_reason_20261109.md",
+    "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+    "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+    "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+    "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+    "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+    "scripts/verify/frontend_professional_workflow_guard.py",
+    "scripts/verify/test_frontend_professional_workflow_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies, managed Chromium and governed Make entries; no database or service mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/registry.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_workflow": {
+      "target": "verify.frontend.professional_workflow.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+        "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+        "frontend/apps/web/scripts/workflow_reason_trigger_test.ts",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+        "scripts/verify/frontend_professional_workflow_guard.py",
+        "scripts/verify/test_frontend_professional_workflow_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormActionIcon.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_form_action_presentation_browser": {
+      "target": "verify.frontend.native_form_action_presentation.browser",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+        "frontend/apps/web/src/components/design-system/ScPopover.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+        "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_header": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/app/presentation/productPageHeader.ts",
+        "frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts",
+        "frontend/apps/web/src/components/product-page/ProductPageHeader.vue",
+        "frontend/apps/web/src/components/template/PageHeader.vue",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "form_header_action_primitives": {
+      "target": "verify.frontend.form_header_action_primitives.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "scripts/verify/frontend_form_header_action_primitives_guard.py",
+        "scripts/verify/test_frontend_form_header_action_primitives_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "playwright_vendor_coupling": {
+      "target": "verify.frontend.playwright_vendor_coupling.guard",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+        "scripts/verify/playwright_vendor_coupling_guard.py",
+        "scripts/verify/test_playwright_vendor_coupling_guard.py",
+        "scripts/verify/baselines/playwright_vendor_coupling_baseline.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_primitive_contract_behavior": {
+      "target": "verify.frontend.scene_primitive_contract.behavior",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/scene-adapter",
+        "frontend/apps/web/scripts/scene_primitive_adapter_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_collection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_selection_test.mjs",
+        "frontend/apps/web/scripts/scene_primitive_text_controls_test.mjs",
+        "frontend/packages/ui/src/primitive-port",
+        "scripts/verify/frontend_scene_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_scene_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/packages/design-tokens"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Await the independent exact-head review and final L4 applicability ruling; PR #848 is published at b38ff36be with CI passing, and must not merge yet.",
+  "id": "FE-UX-02B-DISABLED-REASON-20261109",
+  "branch": "fix/fe-ux-02b-disabled-reason-20261109",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-UX-02B-DISABLED-REASON-20261109.yaml",
+  "record": "docs/ops/iterations/fe_ux_02b_disabled_reason_20261109.md"
+}

@@ -58,7 +58,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     header = read_text("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     confirm = read_text("frontend/apps/web/src/components/business/IntentConfirmationDialog.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts")
-    for marker in ('data-professional-workflow-component="action-bar"', ':data-disabled-reason', ':data-workflow-primary-key'):
+    for marker in (
+        'data-professional-workflow-component="action-bar"',
+        ':data-disabled-reason',
+        ':data-workflow-primary-key',
+        '<ScPopover',
+        'data-workflow-reason-trigger',
+        'canonical-action-bar__denial-trigger',
+        '@keydown="activateWorkflowReasonTrigger"',
+        'reasonMessage: workflowDisabledReason(action)',
+    ):
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
     failures.extend(shared_action_bar_errors(driver, surface))
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
@@ -66,8 +75,19 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in header: failures.append(f"selection status control bypasses canonical field state {marker}")
     if '<ScSteps' in header or 'native-statusbar-track' in header:
         failures.append("selection status must not imply ordered workflow topology")
-    for marker in (":data-professional-workflow-component", "canonicalWorkflowAuthority", "workflowDisabledReason(action)"):
+    for marker in (
+        ":data-professional-workflow-component",
+        "canonicalWorkflowAuthority",
+        "workflowDisabledReason(action)",
+        "activateWorkflowReasonTrigger",
+    ):
         if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")
+    shared_import = "import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';"
+    for source, component in ((action_bar, "action bar"), (header, "header")):
+        if shared_import not in source:
+            failures.append(f"{component} bypasses shared disabled-reason keyboard activation")
+    if re.search(r"\bfunction\s+activateReasonTrigger\s*\(", header):
+        failures.append("header reintroduced a local disabled-reason keyboard handler")
     if "<ScDialog" not in confirm or 'data-professional-workflow-component="confirm-dialog"' not in confirm: failures.append("workflow confirmation bypasses the dialog primitive")
     if 'data-dialog-purpose="intent-confirmation"' not in confirm: failures.append("workflow confirmation lacks a non-conflicting dialog purpose")
     if "当前操作不可用" not in model: failures.append("disabled workflow action lacks a fail-closed reason")

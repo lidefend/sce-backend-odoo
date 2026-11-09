@@ -63,13 +63,11 @@ try {
   await page.keyboard.press('Tab');
   await page.locator('#date').click();
   await page.waitForTimeout(500);
-  await page.locator('.t-date-picker__panel .t-date-picker__cell:not(.t-date-picker__cell--additional)')
-    .filter({ hasText: /^15$/ })
-    .click({ force: true });
+  await page.getByRole('cell', { name: '15', exact: true }).click({ force: true });
   const selectedDateValue = await page.locator('#date').inputValue();
-  const datePicker = page.locator('#date').locator('xpath=ancestor::div[contains(@class,"t-date-picker")]').first();
-  await datePicker.hover();
-  const clearDate = datePicker.locator('.t-input__clear');
+  const dateField = page.locator('[data-semantic-component="ScDateField"]').first();
+  await dateField.hover();
+  const clearDate = dateField.locator('svg').last();
   assert.equal(await clearDate.count(), 1);
   await clearDate.click({ force: true });
   const clearedDateValue = await page.locator('#date').inputValue();

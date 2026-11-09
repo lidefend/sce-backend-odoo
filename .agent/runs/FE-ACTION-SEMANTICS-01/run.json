@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "ce5af3f04f5cbb7cb6b95ff659d79564808ef612",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-ACTION-SEMANTICS-01.yaml",
+    ".agent/runs/FE-ACTION-SEMANTICS-01/run.json",
+    "addons/smart_construction_core/services/financial_workspace_contract.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "docs/architecture/action_semantics_v1.md",
+    "docs/architecture/unified_page_contract_v2/examples/form_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/list_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
+    "docs/architecture/unified_page_contract_v2/examples/tree_project.json",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_action_semantics_01_20261109.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+    "make/ci.mk",
+    "scripts/audit/workflow_state_inventory.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_v2_policy_projection_guard.py",
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source, governed local test profile, managed isolated acceptance carrier sc-fe-r2-p1-01, and registered browser tooling; no production access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "docs/architecture/unified_page_contract_v2/fixtures",
+        "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_contract_action": {
+      "target": "verify.unified_page_contract.v2.action",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_action_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_contract_status": {
+      "target": "verify.unified_page_contract.v2.status",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_status.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_status_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_contract_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_runtime_guard.py",
+        "docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json",
+        "docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "execute_button_authority": {
+      "target": "verify.execute_button.authority.unit",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/core/work_item_action_authority.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "workflow_action_semantics": {
+      "target": "verify.workflow_action_semantics.guard",
+      "inputs": [
+        "addons/smart_core/core/action_semantics_vocabulary.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "scripts/verify/workflow_action_semantics_completeness_guard.py",
+        "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_lifecycle_authority": {
+      "target": "verify.backend.contract_lifecycle.authority",
+      "inputs": [
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/tests/test_contract_lifecycle.py",
+        "addons/smart_core/tests/test_backend_contract_boundary_guard.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/examples",
+        "scripts/verify/contract_schema_declaration_sync.py",
+        "scripts/verify/test_contract_schema_declaration_sync.py",
+        "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormActionIcon.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/registry.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "execution_policy_unit": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/ci.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "configuration_projection": {
+      "target": "verify.business_config.formal_list.unit",
+      "inputs": [
+        "addons/smart_core/utils/load_contract_response_cache.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "entry_equivalence": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "inputs": [
+        "addons/smart_core/",
+        "make/dev.mk",
+        "scripts/verify/contract_v2_entry_equivalence_guard.py",
+        "scripts/verify/test_contract_v2_entry_equivalence_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "form_structure_authority": {
+      "target": "verify.form_structure_authority_unification.unit",
+      "inputs": [
+        "addons/smart_core/",
+        "make/frontend.mk",
+        "scripts/verify/test_form_structure_authority_unification.py",
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/packages/design-tokens"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "notes": [
+    "Acceptance page testing found and closed two presenter/projection defects: reasonMessage fallback and authorized state-denial visibility.",
+    "ci.local.iteration passed 21 targets at .runtime/frontend-dev-validation/executions/20261109T053822Z-2510833-285884341/receipt.json.",
+    "Payment ORM evidence passed 63 tests at .runtime/test-baseline/1794202496142537919/receipt.json; later edits are documentation and run metadata only.",
+    "Isolated acceptance passed 19 browser checks plus 12 real approval/paid checks at .runtime/fe-action-semantics-01/acceptance-report.json and fully-paid-report.json.",
+    "The acceptance fixture was reset after the write journeys. TestWorkflowContractBackend remains independently red on historical fixture construction guards; this batch's focused workflow/action guards and contract tests pass.",
+    "Independent review F-01 found that one business reason could override a composite native hide without proving every condition was explained.",
+    "F-01 fix requires one dynamic native visibility leaf plus the explicit status marker visibilityExplanation=business_state; composite any/all and static hides remain fail-closed.",
+    "Focused evidence after the fix: unified page contract tests 143 passed; canonical form presenter core 177 plus declared-authority 13 passed; backend contract lifecycle authority passed with score 100.",
+    "ci.local.iteration passed 22 targets for the F-01 fix at .runtime/frontend-dev-validation/executions/20261109T072632Z-3115896-21382285/receipt.json.",
+    "The first iteration run stopped in verify.form_structure_authority_unification.unit because the formal schema vocabulary guard did not yet bind business_state; the guard now derives that enum from the schema and requires both the strict decoder and type consumer to accept it."
+  ],
+  "next_exact_step": "Commit the locally validated F-01 candidate, freeze the new clean HEAD, then obtain a fresh independent review plus new-HEAD CI.",
+  "id": "FE-ACTION-SEMANTICS-01",
+  "branch": "fix/fe-action-semantics-01-20261109",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-ACTION-SEMANTICS-01.yaml",
+  "record": "docs/ops/iterations/fe_action_semantics_01_20261109.md"
+}

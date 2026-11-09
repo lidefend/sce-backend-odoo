@@ -1,0 +1,63 @@
+schema_version: 1
+goal:
+  id: FE-ACTION-SEMANTICS-01
+  title: Contract V2 Action Semantics Unified Governance
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2 action visibility, authorization, business-state availability, execution and feedback semantics
+  module: smart_core Action Rule and execute_button; P1 business action producers; frontend Action Presenter and workflow consumers
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Contract V2 is already the shared authority for action visibility, authorization,
+    business availability, disabled state and reason. The same semantics must govern
+    P0 projection and execution, P1 business producers, and frontend consumption.
+  why_not_elsewhere: >
+    Do not create a parallel permission or action registry; do not move business
+    eligibility into the frontend; do not special-case payment, contract or approval
+    in generic components. P1 producer rules remain business-owned while consuming the
+    common semantics.
+  blast_radius:
+    layers:
+      - P0 Contract V2 action semantics, projection and execute_button boundary
+      - P1 declared financial, contract and approval action producers
+      - P0 frontend Action Presenter, CanonicalActionBar, Product Header and ScDropdown consumption
+      - P4 inventories, guards and acceptance evidence
+    product_behavior: >
+      Unauthorized actions are hidden. Authorized actions expose business-state
+      availability, stable reason identity and user reason. State-ineligible actions
+      may be visible+disabled where the contract declares business explanation value.
+      Data-completion checks follow a declared business guidance strategy and are
+      finally validated by the server. Transient busy state remains frontend-owned.
+  objective: >
+    Inventory every action-state producer and consumer, freeze one field-semantic
+    matrix, align P0/P1 producers and frontend presentation, preserve execute_button
+    as the final security boundary, and prove the model with real payment execution
+    and one second-domain representative journey.
+  acceptance:
+    - a complete Producer to Projection to Presenter to execute_button to Service inventory exists
+    - visible, authorizationAllowed, businessAvailable, enabled, disabled, reasonCode and reasonMessage have one frozen meaning
+    - unauthorized actions are hidden rather than represented as visible denial
+    - authorized state-ineligible actions follow the declared visible-disabled-reason rule where applicable
+    - business-state explanation overrides only a single dynamic native hide; composite or static hides remain fail-closed
+    - data completeness and dynamic validation are not indiscriminately converted to disabled
+    - busy/pending is frontend transient state and does not redefine business availability
+    - execute_button revalidates ACL, business state, identity, concurrency and data consistency
+    - PR #848 frontend work is preserved and integrated only under the unified semantics
+    - payment execution and one second-domain action pass real isolated acceptance
+    - exact-head local and remote gates pass; no deployment is performed
+  exclusions:
+    - new generic renderer runtime or parallel action registry
+    - frontend authorization or business-eligibility inference
+    - deleting execute_button final checks
+    - forcing every action to visible-disabled or every authorized action to enabled
+    - historical approval/payment data mutation
+    - production deployment
+    - merge without total-controller approval
+  rollback: >
+    Revert this batch's commits and restore prior action projection fields. No schema
+    migration is planned unless separately approved. Acceptance data is restored via
+    the existing managed fixture entrypoint.
+  next_exact_step: >
+    Complete focused and iteration validation for the F-01 contract proof,
+    commit the updated candidate, then obtain a fresh independent review plus
+    new-HEAD CI. Do not merge or deploy without a new review decision.
