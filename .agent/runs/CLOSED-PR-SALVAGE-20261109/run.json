@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "id": "CLOSED-PR-SALVAGE-20261109",
+  "branch": "fix/closed-pr-salvage-20261109",
+  "baseline_sha": "277f31a3b0750d0c9df2893de88403d7991c0d02",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CLOSED-PR-SALVAGE-20261109.yaml",
+  "record": "docs/ops/iterations/closed_pr_salvage_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CLOSED-PR-SALVAGE-20261109.yaml",
+    ".agent/runs/CLOSED-PR-SALVAGE-20261109/run.json",
+    ".agent/decisions/ARCH-DECISION-011.yaml",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "docs/architecture/capability_identity_spec_v1.md",
+    "docs/architecture/capability_ontology_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/closed_pr_salvage_20261109.md",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and existing governed local test profile; no acceptance database or browser access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze the clean commits through the governed generation check, publish the PR and read back its exact head.",
+  "validation_plan": {
+    "changed_layers": [
+      "P0 capability governance documentation",
+      "P1 payment request audit text",
+      "P4 exact-impact validation classification"
+    ],
+    "earliest_required_layers": [
+      "L0 identity and clean baseline",
+      "L1 documentation/schema/static guards",
+      "L2 focused backend behavior and non-zero guard tests"
+    ],
+    "not_applicable": {
+      "L3": "No module schema, data model, ACL or import path changes.",
+      "L4": "No contract structure, render model or frontend consumer changes; browser evidence is intentionally not required.",
+      "production": "No deployment or persistent business-data mutation is authorized."
+    }
+  },
+  "supplemental_validation": {
+    "automatic_approval_message": {
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1PaymentRequestCapability.test_automatic_approval_message_matches_effective_no_approval_rule",
+      "status": "passed",
+      "test_count": 1,
+      "log": ".runtime/closed-pr-salvage-20261109/payment-auto-approval-copy.log",
+      "log_sha256": "6495af7b9aa2bd759224463780dd201f9516a8b481dca59df3ac2aade4e1f66e",
+      "environment": "sc-local-dev / sc_dev_demo",
+      "coverage": "real route from _route_submitted_approval into automatic _complete_payment_approval and chatter assertion"
+    },
+    "ci_local_iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/closed-pr-salvage-20261109/ci-local-iteration-recorded.log",
+      "log_sha256": "6bda02efcb23d25b0fefd2f15600abf1cfc0bcb22f3a5e914238c40f0b06e66b",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T090536Z-3709075-596433559/receipt.json",
+      "receipt_sha256": "342c5592c1162ed2b0eebcb6b073da3680a1cbcbee2d4a8f37c0eb36fff0b052",
+      "executed_targets": 5,
+      "all_required_targets_passed": true
+    }
+  },
+  "ledger_sync": {
+    "state": "checks_recorded",
+    "registered_checks": 6,
+    "reusable_checks": 6,
+    "goal_status": "verification_pending",
+    "run_status": "verification_pending",
+    "pr": null,
+    "remote_ci": "not_run",
+    "merge": "not_performed",
+    "deployment": "not_performed"
+  }
+}
