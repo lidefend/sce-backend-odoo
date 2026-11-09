@@ -1194,6 +1194,10 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 "model": "sc.norm.item",
                 "route": "/a/829?menu_id=616",
                 "children": [],
+                "meta": {
+                    "menu_xmlid": "sc_norm_engine.menu_sc_norm_root",
+                    "action_xmlid": "sc_norm_engine.action_sc_norm_item",
+                },
             },
             {
                 "key": "group:construction.config.norm",
@@ -1206,10 +1210,16 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
         self.assertEqual(len(nodes), 1)
         self.assertEqual(nodes[0].get("menu_id"), 616)
+        self.assertEqual(nodes[0].get("menu_xmlid"), "sc_norm_engine.menu_sc_norm_root")
         self.assertEqual(nodes[0].get("action_id"), 829)
+        self.assertEqual(nodes[0].get("action_xmlid"), "sc_norm_engine.action_sc_norm_item")
         self.assertEqual(nodes[0].get("route"), "/a/829?menu_id=616")
         self.assertEqual(len(nodes[0].get("children") or []), 1)
         self.assertTrue((nodes[0].get("meta") or {}).get("explicit_group_entry_target"))
+        self.assertEqual(
+            (nodes[0].get("meta") or {}).get("menu_xmlid"),
+            "sc_norm_engine.menu_sc_norm_root",
+        )
 
     def test_ambiguous_same_label_entries_do_not_merge_into_policy_directory(self):
         service = menu_service.MenuService()

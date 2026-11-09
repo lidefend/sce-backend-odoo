@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109",
+  "branch": "fix/daily-published-face-merged-entry-identity-20261109",
+  "baseline_sha": "c4e2061fa284c6402b0c49e38c056d90080e29db",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109.yaml",
+  "record": "docs/ops/iterations/daily_published_face_merged_entry_identity_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109.yaml",
+    ".agent/runs/DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109/run.json",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/daily_published_face_merged_entry_identity_20261109.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and registered pure unit Make targets; no database, credentials or remote writes"
+  },
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "MenuService delivered navigation directory-entry merge",
+    "module": "smart_core",
+    "standard_vs_user_specific": "generic platform projection",
+    "why_here": "The platform owns the delivered navigation node identity and its merge behavior.",
+    "why_not_elsewhere": "The policy, native menu, ACL and release snapshot all remain correct; changing construction business data or the frontend would compensate for a platform projection defect.",
+    "blast_radius": "Only merged directory nodes and their stable identity metadata; native menus, actions, ACL, routes and release-page selection remain unchanged.",
+    "exclusions": [
+      "business data mutation",
+      "frontend code",
+      "database schema",
+      "production deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "frontend_dev_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze the verified hotfix commit and run daily.runtime.candidate.release with old SHA 9086ddab to complete daily published-face convergence and entry verification; mainline integration remains deferred."
+}
