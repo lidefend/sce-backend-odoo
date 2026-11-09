@@ -57,4 +57,13 @@ Fix:
 
 ## Result
 
-Pending clean candidate commit, clean iteration and same-matrix runtime repeat.
+Completed on clean candidate `0a7c37eca606bd4fd38c80028aa91e92f32c368d`.
+
+- Clean iteration: PASS, 4 targets.
+- Runtime matrix: 2 authorized entries, `problems=0`, `console_errors=0`.
+- `demo_role_pm`: `leaked_entries=[]`.
+- `uncovered_entries=0`.
+
+Clean evidence:
+`.runtime/m9-authority-clean/summary.json`, SHA-256
+`4f85b9dd8ebc2b1ce3e112823c46c8b8ca775409e85b218ac34cd3a6cacf0484`.

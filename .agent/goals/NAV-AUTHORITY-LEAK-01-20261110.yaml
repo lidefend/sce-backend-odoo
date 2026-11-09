@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NAV-AUTHORITY-LEAK-01-20261110
   title: "P1 navigation authority leak for expense actions"
-  status: verification_pending
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: released navigation action-group intersection
   module: smart_core menu/nav projection with construction P1 regression data
@@ -26,6 +26,7 @@ goal:
       - docs/engineering_convergence/test_inventory_summary.md
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
       - docs/architecture/
+      - docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md
       - docs/ops/iterations/nav_authority_leak_01_20261110.md
       - scripts/verify/
     product_behavior: >

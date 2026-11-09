@@ -3,7 +3,7 @@
   "id": "NAV-AUTHORITY-LEAK-01-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "d24efbafdb40d95a05a103cef657aa31a440a0b4",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml",
   "record": "docs/ops/iterations/nav_authority_leak_01_20261110.md",
   "scope": [
@@ -18,6 +18,7 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/architecture/",
+    "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
     "docs/ops/iterations/nav_authority_leak_01_20261110.md",
     "scripts/verify/"
   ],
@@ -49,7 +50,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the P0 action-group filter, rerun the clean iteration, then repeat the two-entry released-navigation matrix.",
+  "next_exact_step": "Navigation authority leak closed; frontend systemic convergence closeout complete.",
   "validation": {
     "navigation_delivery_unit": {
       "status": "passed",
@@ -65,6 +66,13 @@
       "receipt": ".runtime/frontend-dev-validation/executions/20261109T214647Z-419140-427677112/receipt.json",
       "identity": "dirty:d24efbafdb40d95a05a103cef657aa31a440a0b4"
     },
+    "clean_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 4,
+      "candidate_head": "0a7c37eca606bd4fd38c80028aa91e92f32c368d",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T214928Z-435591-221089533/receipt.json"
+    },
     "runtime_matrix": {
       "status": "passed",
       "command": "make verify.frontend.business_entry.matrix.browser",
@@ -79,6 +87,17 @@
       "console_errors": 0,
       "summary": ".runtime/m9-authority-fix/summary.json",
       "summary_sha256": "e71420bb576c7ae15bff1ce7af3e6006f05a6052236fb7d6700524b5f26d7d23"
+    },
+    "clean_runtime_matrix": {
+      "status": "passed",
+      "command": "make verify.frontend.business_entry.matrix.browser",
+      "candidate": "0a7c37eca606bd4fd38c80028aa91e92f32c368d",
+      "entries": 2,
+      "denied_leaks": 0,
+      "uncovered": 0,
+      "console_errors": 0,
+      "summary": ".runtime/m9-authority-clean/summary.json",
+      "summary_sha256": "4f85b9dd8ebc2b1ce3e112823c46c8b8ca775409e85b218ac34cd3a6cacf0484"
     }
   }
 }

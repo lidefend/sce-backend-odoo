@@ -76,9 +76,7 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "P1 navigation authority leak remains outside M7 scope: demo_role_pm receives reimbursement and advance-fund actions despite a disjoint capability closure."
-  ],
+  "blockers": [],
   "next_exact_step": "M7 completed for responsive parity; register a separate P1 navigation-authority batch and proceed to M8 gate closure.",
   "validation": {
     "negative_closures": {
@@ -110,11 +108,13 @@
       "summary_sha256": "80224f9116de05ecacd778f91ea16c760232c1509a5d5aa11c3a3473a5fd1c3c"
     },
     "security_finding": {
-      "status": "failed",
+      "status": "resolved",
       "owner": "P1 navigation authority",
       "evidence": ".runtime/m7-matrix-1440-v2/summary.json",
       "evidence_sha256": "18941d7b0ffcfa039f048b3578de1f09ff675a0813f21ccc31a58cc595dc911c",
-      "detail": "demo_role_pm received reimbursement and advance-fund actions despite a disjoint capability closure"
+      "detail": "demo_role_pm received reimbursement and advance-fund actions despite a disjoint capability closure",
+      "resolved_by": "NAV-AUTHORITY-LEAK-01-20261110",
+      "resolution_evidence": ".runtime/m9-authority-clean/summary.json"
     }
   }
 }
