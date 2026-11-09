@@ -39,21 +39,21 @@
       <ScIcon name="user" :size="16" />
       <span class="shell-sidebar-footer__label">退出登录</span>
     </ScButton>
-    <ScButton
-      v-if="productVersion && (!compact || mobile)"
-      class="shell-sidebar-footer__version"
-      type="button"
-      variant="ghost"
-      size="small"
-      data-product-version
-      data-product-build-identity
-      :title="identityTitle"
-      :aria-label="`${identityLabel}，点击复制构建身份`"
-      @click="copyIdentity"
-    >
-      <span>{{ identityLabel }}</span>
-      <span class="shell-sidebar-footer__copy" aria-live="polite">{{ copyStatus }}</span>
-    </ScButton>
+    <span v-if="productVersion && (!compact || mobile)" class="shell-sidebar-footer__identity">
+      <ScButton
+        type="button"
+        variant="ghost"
+        size="small"
+        data-product-version
+        data-product-build-identity
+        :title="identityTitle"
+        :aria-label="`${identityLabel}，点击复制构建身份`"
+        @click="copyIdentity"
+      >
+        <span class="shell-sidebar-footer__version">{{ identityLabel }}</span>
+        <span class="shell-sidebar-footer__copy" aria-live="polite">{{ copyStatus }}</span>
+      </ScButton>
+    </span>
   </div>
 </template>
 
@@ -130,24 +130,20 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .shell-sidebar-footer { flex-wrap: wrap; }
-.shell-sidebar-footer__version {
+.shell-sidebar-footer__identity {
   display: inline-flex;
   align-items: center;
   gap: var(--sc-space-1);
   flex-basis: 100%;
   min-width: 0;
+  flex-wrap: wrap;
+}
+.shell-sidebar-footer__version {
+  min-width: 0;
   overflow-wrap: anywhere;
-  padding: 0;
-  border: 0;
-  background: transparent;
   text-align: left;
-  cursor: copy;
   font: var(--sc-font-body-small);
   color: var(--sc-semantic-text-secondary);
-}
-.shell-sidebar-footer__version:focus-visible {
-  outline: 2px solid var(--sc-semantic-border-focus, var(--sc-color-primary));
-  outline-offset: 2px;
 }
 .shell-sidebar-footer__copy {
   color: var(--sc-semantic-text-tertiary, var(--sc-semantic-text-secondary));

@@ -187,6 +187,7 @@ RULES = (
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
     ), (
         "verify.frontend.runtime_identity.unit",
+        "verify.frontend.primitive_adapter.unit",
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
