@@ -327,6 +327,14 @@ load_profile
             self.assertIn("frontend_delivery_hardening_runtime_ids.py", operation)
             self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
 
+    def test_role_release_projection_scope_is_verified_after_collection(self) -> None:
+        runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        target = runtime_make.split(
+            "verify.frontend.role_release_projection:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn('scope_status:"VERIFIED"', target)
+        self.assertNotIn('scope_status:"NOT_VERIFIED"', target)
+
     def test_release_delivery_browser_uses_governed_acceptance_identity_only(self) -> None:
         runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
         target = runtime_make.split(

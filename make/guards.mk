@@ -184,7 +184,14 @@ verify.product_menu_release_gate.contract.unit:
 	@python3 -m py_compile scripts/verify/production_menu_release_gate_guard.py scripts/verify/test_product_menu_release_gate_contract.py
 	@python3 scripts/verify/test_product_menu_release_gate_contract.py
 
-verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid verify.product_menu_release_gate.contract.unit
+.PHONY: verify.daily.published_face.target.unit
+verify.daily.published_face.target.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/delivery/edition_release_snapshot_service.py \
+		addons/smart_core/tests/test_release_preflight_target_validation.py
+	@python3 addons/smart_core/tests/test_release_preflight_target_validation.py
+
+verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid verify.product_menu_release_gate.contract.unit verify.daily.published_face.target.unit
 	@test -n "$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" || { echo "[DENY] DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN must name the daily full-product principal (set PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
 	@python3 -m py_compile scripts/ops/daily_runtime_duty_odoo_shell.py scripts/ops/test_daily_runtime_duty_odoo_shell.py
 	@python3 -m unittest scripts.ops.test_daily_runtime_duty_odoo_shell

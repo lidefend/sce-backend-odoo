@@ -140,6 +140,23 @@ console.log('runtime sample assertions PASS');
         subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, check=True)
 
 
+class MyWorkPerformanceNavigationTest(unittest.TestCase):
+    def test_my_work_timing_uses_the_rendered_role_home_action(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("async function openMyWorkFromRoleHome(page)", source)
+        self.assertIn(
+            "roleHome.getByRole('button', { name: '查看全部', exact: true })",
+            source,
+        )
+        performance = source.split("let performanceRole = FINANCE_LOGIN;", 1)[1].split(
+            "const formSamples = [];", 1
+        )[0]
+        self.assertNotIn("navigateSpa(page, '/my-work'", performance)
+        self.assertIn("openMyWorkFromRoleHome(page)", performance)
+
+
 class MissingRecordResponseTest(unittest.TestCase):
     def test_only_matching_contract_record_absence_is_expected(self):
         source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()

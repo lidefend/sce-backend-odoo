@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109",
+  "branch": "fix/daily-published-face-action-target-20261109",
+  "baseline_sha": "9086ddab6cd19b0ee30e6f6dae149c0df83ededd",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109.yaml",
+  "record": "docs/ops/iterations/daily_published_face_action_target_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109.yaml",
+    ".agent/runs/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109/run.json",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/daily_published_face_action_target_20261109.md",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and registered pure unit Make target; no database, credentials or remote writes"
+  },
+  "layer": {
+    "formal_product_layer": "P0",
+    "layer_target": "EditionReleaseSnapshotService release-page projection",
+    "module": "smart_core",
+    "standard_vs_user_specific": "generic platform projection",
+    "why_here": "The platform owns whether an action route or a declared scene route is projected into the published face.",
+    "why_not_elsewhere": "The policy row legitimately retains both action and scene association; P1 business data and the frontend must not compensate for a P0 target projection error.",
+    "blast_radius": "Release draft pages and preflight only; native actions, ACL, product-policy rows and frontend navigation remain unchanged.",
+    "exclusions": [
+      "frontend code",
+      "product-policy data mutation",
+      "database schema",
+      "production deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "frontend_dev_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "kind": "offline",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "scripts/verify/test_guard_registry_audit.py"
+      ]
+    },
+    "release_preflight_target_validation": {
+      "target": "verify.daily.published_face.target.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk",
+        "scripts/verify/production_menu_release_gate_guard.py",
+        "scripts/verify/test_product_menu_release_gate_contract.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified candidate, publish it through the governed PR flow, merge at the exact reviewed SHA, then redeploy the new mainline to the daily runtime and complete published-face and entry verification."
+}
