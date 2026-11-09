@@ -65,3 +65,51 @@ Implementation and validation results are appended to this living record.
 in turn: `build-info.sha`, demo runtime `git_sha`, deployment git HEAD and
 `receipt.git_head`. Each mutation must produce a mismatch, so a four-way
 identity disagreement cannot pass silently.
+
+## Deployment and browser readback
+
+The daily candidate deployment at `5932931824c0123f574ec1e40d5e4483dd544e18`
+completed all nine governed steps:
+
+- source bundle sync;
+- frontend build and `build-info.json` generation;
+- demo/platform duty refresh;
+- deployment-environment alignment for both duties;
+- published-face convergence;
+- single-entry verification;
+- timestamped receipt plus server `.deployed.json`;
+- four-way build-identity verification.
+
+Observed identities:
+
+- build-info SHA: `5932931824c0123f574ec1e40d5e4483dd544e18`;
+- demo runtime git SHA: `5932931824c0123f574ec1e40d5e4483dd544e18`;
+- platform runtime git SHA: `5932931824c0123f574ec1e40d5e4483dd544e18`;
+- receipt git HEAD: `5932931824c0123f574ec1e40d5e4483dd544e18`;
+- frontend fingerprint:
+  `08650b0a899e73445be9773bc13a8cc5b6de9a4c9933469860af8e84456cfe73`;
+- environment: `daily`;
+- eight demo/platform containers: running and healthy.
+
+Browser walkthrough on `/platform-admin` displayed
+`rc.20 · 593293182`; hover exposed the full SHA, build time and environment,
+and click reported `已复制`. Browser console and page errors were zero.
+
+Evidence:
+
+- release sequence:
+  `.runtime/final-acceptance/daily-deployed/release/candidate/5932931824c0123f574ec1e40d5e4483dd544e18/release.json`
+- identity verification:
+  `.runtime/final-acceptance/daily-deployed/release/candidate/5932931824c0123f574ec1e40d5e4483dd544e18/build-identity-verification.json`
+- local receipt:
+  `.runtime/final-acceptance/daily-deployed/daily/20261109T163037264000Z/receipt.json`
+- page identity:
+  `.runtime/b2-build-identity/page/page-identity.json`
+- screenshot:
+  `.runtime/b2-build-identity/page/build-identity-footer-1440.png`
+
+Two pre-deployment failures were classified as P4 tooling defects and fixed:
+the release orchestrator leaked parent make's frozen recursive arguments into
+the duty-plan subprocess, and the duty stack did not forward `SC_DEPLOY_ENV`
+into Odoo. Both were corrected with focused tests; a failed environment
+alignment rolled back automatically before the successful deployment above.
