@@ -96,9 +96,30 @@
   `audit.verification.lane_coverage.check` 随后 PASS。
 - 下一轮在 clean 提交上执行 `make ci.local.iteration`。
 
+### Clean candidate 增量门禁
+
+在 clean 候选 `7fb9d8411ac3a145d527592e79c4123a109025e5` 上执行：
+
+```text
+make ci.local.iteration
+```
+
+- status：PASSED
+- required / executed：12 / 12
+- blocked / not-run / unmapped：0 / 0 / 0
+- 原始日志与逐目标结果均保留。
+- receipt：
+  `.runtime/frontend-dev-validation/executions/20261109T015355Z-1175531-460974728/receipt.json`
+- receipt SHA256：
+  `e07b1fb13cdbf0a03774796c569924ae2108cbda601afc7daa0e0604c9e44fac`
+
+该 receipt 是本地开发批次证据，不是远端 CI、真实页面 L4 或合并资格。
+
 ### 状态
 
-- 实现：IN_PROGRESS
+- 实现：PASS（批次范围）
 - 真实浏览器验收：PASS（组件级 1440/390）
+- 真实业务页面 L4：NOT_RUN
+- 独立审查：PENDING
 - PR：NOT_CREATED
 - 合并、部署：未执行

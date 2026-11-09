@@ -246,10 +246,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the product and supporting validation changes, then run make ci.local.iteration on the clean candidate.",
+  "next_exact_step": "Publish the clean candidate for independent review; keep real-page runtime evidence and remote exact-head CI pending.",
   "id": "FE-UX-02B-DISABLED-REASON-20261109",
   "branch": "fix/fe-ux-02b-disabled-reason-20261109",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-UX-02B-DISABLED-REASON-20261109.yaml",
   "record": "docs/ops/iterations/fe_ux_02b_disabled_reason_20261109.md"
 }

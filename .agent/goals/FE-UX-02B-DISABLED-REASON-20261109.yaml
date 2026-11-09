@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-UX-02B-DISABLED-REASON-20261109
   title: FE-UX-02-B Disabled Action Reason Consistency
-  status: active
+  status: verification_pending
   formal_product_layer: P0 platform kernel product
   layer_target: Frontend workflow disabled-action reason presentation and activation
   module: CanonicalActionBar, ContractFormProductHeader and shared workflow reason interaction
@@ -77,6 +77,5 @@ goal:
     interaction, tests and documentation; no data migration or external runtime
     mutation exists.
   next_exact_step: >
-    Implement the shared keyboard activation helper, route CanonicalActionBar and
-    ContractFormProductHeader through it, add the disabled-reason wrapper in
-    CanonicalActionBar, then run the focused unit and real Chromium coverage.
+    Publish the clean candidate for independent review. Keep real-page runtime
+    evidence and remote exact-head CI pending; do not merge or deploy in this task.
