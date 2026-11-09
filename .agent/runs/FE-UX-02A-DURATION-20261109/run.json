@@ -175,7 +175,7 @@
   ],
   "next_exact_step": "Obtain independent review of the clean FE-UX-02-A candidate and keep list-surface runtime evidence explicitly pending.",
   "id": "FE-UX-02A-DURATION-20261109",
-  "branch": "fix/fe-ux-02a-duration-20261109",
+  "branch": "fix/fe-ux-02a-duration-r2-20261109",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-UX-02A-DURATION-20261109.yaml",
   "record": "docs/ops/iterations/fe_ux_02a_duration_20261109.md"

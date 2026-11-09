@@ -111,7 +111,7 @@
 
 ### Clean candidate 增量门禁
 
-在 clean 代码候选 `6dbbdda01a8e4308dd0c048834c010af7aae5b5a` 上执行：
+在 clean 代码/测试候选 `2a3969f5072b4554408148395b45161f3908f129` 上执行：
 
 ```text
 make ci.local.iteration
@@ -125,13 +125,43 @@ make ci.local.iteration
 - not-run：0
 - status：PASSED
 - receipt：
-  `.runtime/frontend-dev-validation/executions/20261108T234939Z-375621-729074729/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261108T235324Z-408548-225833322/receipt.json`
+- receipt SHA256：
+  `4fac67e8e251ade0dcf859b9a365ac049e59388abf82a865d12cc34f86f2b78e`
 
 当前 main 的 delivery evidence manifest 中，`list_surface_structure` 的来源仍不是
 本分支 head 的祖先，因此该 runtime suite 明确记为 `verification_pending`。
 本批没有正式产品字段消费 `sc.value.duration`，重复执行整个 list-surface 矩阵
 不能提供额外 duration discriminator；应在合并证据收口时按受管环境重新绑定，
 而不是把历史 suite PASS 冒充当前候选证据。
+
+### R2：Independent review 与 list-surface 证据裁定
+
+固定产品/测试候选：`2a3969f5072b4554408148395b45161f3908f129`。
+
+List Surface 输入对账：
+
+- manifest 当前 `input_sha256`：
+  `7e3563f0e2b10337eb2f3e7d18efe47b2286b88c3e929d63ec814a47920bd34d`
+- 本批修改后的 suite input fingerprint：
+  `96e943aa56dd35b91636a26e2688fbd79b9bc8907a9200b4d5ab19b7b4e373cf`
+- fingerprint 改变，因此不得把旧 runtime PASS 直接复用于本候选。
+- manifest 原绑定 `0ef405468` 经过 squash 后不在本分支祖先链，工具以
+  `not an ancestor` fail-closed，身份行为正确。
+
+R2 受影响列表调用链定向验证：
+
+- `verify.frontend.collection_view_semantics.unit`：PASS。
+- `verify.frontend.list_surface_search_contract.unit`：PASS。
+- `verify.frontend.list_order_field_contract.unit`：PASS。
+- `verify.frontend.list_surface_evidence_binding.unit`：PASS。
+- `business_semantics` 与 Chromium 已证明新增分支只改变 duration，
+  money/status/date/普通值路径保持原结果。
+
+建议裁定：不因本批重新执行完整 list-surface 大矩阵；该矩阵没有
+`sc.value.duration` 正式消费者，无法提供新的 duration discriminator。
+合并前仍需由独立审查确认“定向调用链覆盖充分”的裁定；在确认前，
+runtime suite 保持 `verification_pending`，不写成 PASS。
 
 ### 剩余边界
 
