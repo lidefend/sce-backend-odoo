@@ -1094,10 +1094,9 @@ def _parse_timestamp(value: object, label: str) -> datetime.datetime:
         raise BindingError(f"{label} is not ISO 8601: {exc}") from exc
 
 
-def _assert_fresh(recorded: datetime.datetime, max_age: int, label: str) -> None:
+def _assert_not_future(recorded: datetime.datetime, label: str) -> None:
     age = datetime.datetime.now(datetime.timezone.utc) - recorded
     _require(age.total_seconds() >= -300, f"{label} is in the future")
-    _require(age.total_seconds() <= max_age * 3600, f"{label} is older than {max_age}h")
 
 
 def _is_ancestor(source: str, head: str) -> bool:
@@ -1132,10 +1131,9 @@ def validate_suite_record(
     _require(str(record.get("status", "")).lower() == "pass", f"suite {suite_id} is not passing")
     bound_head = str(record.get("bound_head") or manifest_head)
     _require(bool(SHA_RE.match(bound_head)), f"suite {suite_id} bound_head is invalid")
-    max_age = int((registry.get("policy") or {}).get("evidence_max_age_hours") or 72)
     verified_at = record.get("verified_at") or manifest_recorded_at
     verified = _parse_timestamp(verified_at, f"suite {suite_id} verified_at")
-    _assert_fresh(verified, max_age, f"suite {suite_id} verified_at")
+    _assert_not_future(verified, f"suite {suite_id} verified_at")
 
     input_sha = record.get("input_sha256")
     if bound_head != manifest_head:
@@ -1204,8 +1202,7 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
     _require(manifest.get("head_sha") == head, "manifest head_sha does not match the evaluated head")
     recorded_at = manifest.get("recorded_at")
     recorded = _parse_timestamp(recorded_at, "manifest recorded_at")
-    max_age = int((registry.get("policy") or {}).get("evidence_max_age_hours") or 72)
-    _assert_fresh(recorded, max_age, "manifest recorded_at")
+    _assert_not_future(recorded, "manifest recorded_at")
     suites = manifest.get("suites")
     _require(isinstance(suites, dict), "manifest suites must be an object")
     unknown = sorted(set(suites) - set(registry["suites"]))

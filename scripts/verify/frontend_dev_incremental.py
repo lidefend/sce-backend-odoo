@@ -99,6 +99,12 @@ RULES = (
         "verify.acceptance.evolution.binding",
     )),
     Rule((
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/test_validation_delivery_plan.py",
+    ), (
+        "verify.validation.delivery.unit",
+    )),
+    Rule((
         "config/ci/path_ownership_v1.json",
         "config/ci/risk_tiering_v1.json",
         "scripts/ci/ci_path_ownership.py",

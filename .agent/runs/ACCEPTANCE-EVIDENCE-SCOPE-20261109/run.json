@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-EVIDENCE-SCOPE-20261109",
+  "branch": "fix/acceptance-evidence-scope-20261109",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ACCEPTANCE-EVIDENCE-SCOPE-20261109.yaml",
+  "record": "docs/ops/iterations/acceptance_evidence_scope_convergence_20261109.md",
+  "baseline_sha": "277f31a3b0750d0c9df2893de88403d7991c0d02",
+  "scope": [
+    "AGENTS.md",
+    ".agent/active-runs.json",
+    ".agent/goals/ACCEPTANCE-EVIDENCE-SCOPE-20261109.yaml",
+    ".agent/runs/ACCEPTANCE-EVIDENCE-SCOPE-20261109/run.json",
+    "config/acceptance/evolution_binding.v1.json",
+    "docs/acceptance/acceptance_evolution_binding_v1.md",
+    "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+    "docs/ops/iterations/acceptance_evidence_scope_convergence_20261109.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and registered pure unit make targets; no runtime, database, credential, deployment or PR writes"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "make/ci.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "acceptance_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "make/guards.mk",
+        "scripts/ops/acceptance_evolution_record.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py"
+      ]
+    },
+    "delivery_unit": {
+      "target": "verify.validation.delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "make/guards.mk",
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_validation_delivery_plan.py"
+      ]
+    },
+    "frontend_dev_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "make/frontend.mk",
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_validation_delivery_plan.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review the P4 diff, commit the clean candidate, then publish through the governed PR flow."
+}

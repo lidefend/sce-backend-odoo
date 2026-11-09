@@ -4,7 +4,6 @@
   "owner": "platform-team",
   "policy": {
     "unmapped_changes": "fail",
-    "evidence_max_age_hours": 72,
     "evidence_carry_forward": {
       "enabled": true,
       "mode": "suite_input_fingerprint"
@@ -422,8 +421,7 @@
       ],
       "suites": [
         "governance_static",
-        "path_namespace_identity",
-        "list_surface_structure"
+        "path_namespace_identity"
       ]
     },
     {
@@ -487,13 +485,25 @@
       ]
     },
     {
+      "id": "frontend-product-runtime-config",
+      "paths": [
+        "config/frontend/authoritative_navigation.json",
+        "config/frontend/product_stable_baseline_v1.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "config/frontend/release_performance_budgets_v1.json"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
       "id": "frontend-acceptance-config",
       "paths": [
         "config/frontend/**"
       ],
       "suites": [
-        "frontend_contract",
-        "list_surface_structure"
+        "frontend_contract"
       ]
     },
     {
@@ -526,6 +536,66 @@
       ]
     },
     {
+      "id": "frontend-relation-consumer",
+      "paths": [
+        "frontend/apps/web/src/app/nativeModifierRelationValue.ts",
+        "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+        "frontend/apps/web/src/app/runtime/relationRendererDataRuntime.ts",
+        "frontend/apps/web/src/components/design-system/ScRelationField.vue",
+        "frontend/apps/web/src/components/design-system/ScRelationshipFlow.vue",
+        "frontend/apps/web/src/components/design-system/relationSelectPanelA11y.ts",
+        "frontend/apps/web/src/components/professional-fields/*Relation*",
+        "frontend/apps/web/src/components/template/*Relation*",
+        "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/Relation*",
+        "frontend/apps/web/src/pages/contractForm/relation*",
+        "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
+        "frontend/apps/web/src/pages/contractForm/professionalRelationLifecycleModel.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelation*",
+        "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts"
+      ],
+      "suites": [
+        "frontend_contract",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "frontend-contract-form-consumer",
+      "paths": [
+        "frontend/apps/web/src/app/contracts/v2/**",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/**"
+      ],
+      "suites": [
+        "frontend_contract",
+        "frontend_presentation"
+      ]
+    },
+    {
+      "id": "frontend-list-surface-consumer",
+      "paths": [
+        "frontend/apps/web/src/pages/listPage/**",
+        "frontend/apps/web/src/pages/ListPage.css",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/components/product-list/**",
+        "frontend/apps/web/src/components/action/**",
+        "frontend/apps/web/src/components/design-system/ScList.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/action_runtime/**",
+        "frontend/apps/web/src/app/runtime/actionView*",
+        "frontend/apps/web/src/app/runtime/businessListQueryRuntime.ts",
+        "frontend/apps/web/src/app/runtime/collectionViewRuntime.ts",
+        "frontend/apps/web/src/app/runtime/listPreferenceProjection.ts",
+        "frontend/apps/web/src/app/presentation/collection*",
+        "frontend/apps/web/src/app/presentation/standardListComposition.ts"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
       "id": "scene-primitive-contract-internal",
       "description": "Internal Primitive Port, Provider and Scene adapter conformance has no product-page consumer; it requires contract/static verification but does not invalidate list-surface runtime evidence.",
       "paths": [
@@ -555,8 +625,7 @@
         "frontend/**"
       ],
       "suites": [
-        "frontend_contract",
-        "list_surface_structure"
+        "frontend_contract"
       ]
     },
     {
@@ -661,9 +730,7 @@
         "addons/smart_construction_*/**"
       ],
       "suites": [
-        "backend_contract",
-        "list_surface_structure",
-        "relation_roundtrip"
+        "backend_contract"
       ]
     },
     {

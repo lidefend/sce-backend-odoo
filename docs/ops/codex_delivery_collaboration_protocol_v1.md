@@ -132,22 +132,25 @@ skip 或 expected failure 不能伪装成必需断言已通过。当前 quaranti
 
 1. 收敛已知缺陷，完成适用层验证与批次复核；冻结前运行既有生成证据准备入口
    `make ci.delivery.freeze.prepare`，审查生成差异后提交 clean 候选。
-2. **普通 PR 采用统一增量分工。** GitHub 与 Gitee 均完成定向本地验证、独立
+2. **按阶段选择证据，不按日历时间制造失效。** 代码绑定的 acceptance evidence 以声明的
+   suite 输入指纹、证据字节和受管环境身份判断复用；自然时间经过本身不是失效条件。只有部署
+   环境身份变化或明确的环境新鲜度要求，才在 deployment stage 重新取证。
+3. **普通 PR 采用统一增量分工。** GitHub 与 Gitee 均完成定向本地验证、独立
    复核、公开范围检查和必要原始证据归档，再通过对应受管入口发布。完整本地 Quick
    仅用于显式审计/基线重建；远端当前候选必需检查继续承担集成门禁。
    入口是否需要确认及精确参数，以白名单和工具校验为准。
-3. 独立复核必须绑定冻结身份与实际 diff，处理阻断发现；作者自检不替代独立复核。对未改动
+4. 独立复核必须绑定冻结身份与实际 diff，处理阻断发现；作者自检不替代独立复核。对未改动
    输入复用既有结果，基线/HEAD 漂移后重算受影响范围并取得当前身份所需的复核/门禁。
-4. 必需远端检查为 `public_guard`、`merge_policy_gate`、`professional_quality_gate`、
+5. 必需远端检查为 `public_guard`、`merge_policy_gate`、`professional_quality_gate`、
    `frontend_release_gate`。核对当前 PR 源 SHA、目标 main、检查完整性与真实结论；旧 SHA、
    pending、缺失或目标漂移不能合并。只有可信风险分类的显式 skip 可以按现有车道接受。
-5. 通过受保护 Make 合并入口集成，GitHub 使用 `make pr.merge.preflight` / `make pr.merge`
+6. 通过受保护 Make 合并入口集成，GitHub 使用 `make pr.merge.preflight` / `make pr.merge`
    并绑定 `PR` 与 `EXPECTED_HEAD`；不直接推 main、不强推、不伪造状态、不关闭保护。
    在已有授权范围内连续推进，不重复请求例行许可；新权限或破坏性越界按实际要求处理。
-6. 合并后回读 PR 状态、合并提交、实时 main，经 `make main.sync` 同步；核对 clean 状态与
+7. 合并后回读 PR 状态、合并提交、实时 main，经 `make main.sync` 同步；核对 clean 状态与
    候选树/集成差异。squash 同树可记录映射承接证据；树不同必须分析/验证实际差异，不能只
    因 PR 标记 merged 宣称原证据适用。主线漂移与冲突修复均形成新候选，按变化失效与复验。
-7. 保存最终 CI/复核/合并身份及归档回执。明确报告批次、主线、部署、用户验收四个状态。
+8. 保存最终 CI/复核/合并身份及归档回执。明确报告批次、主线、部署、用户验收四个状态。
    合并不部署，测试基线成立不代表全部产品验收。回归时先停止扩大交付，保留失败证据，按
    所有者层修复或通过受保护 PR revert；数据库变更另按已验证恢复方案处理，不能假设代码
    revert 会恢复数据，也不能改写共享主线历史。
