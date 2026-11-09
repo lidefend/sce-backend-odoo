@@ -34,6 +34,8 @@
     "make/frontend.mk",
     "scripts/dev/frontend_static_build.sh",
     "scripts/ops/daily_runtime_build_identity.py",
+    "scripts/ops/daily_candidate_bundle_sync.py",
+    "scripts/ops/test_daily_candidate_bundle_sync.py",
     "scripts/ops/test_daily_runtime_build_identity.py",
     "scripts/ops/test_daily_runtime_database_duty.py",
     "scripts/ops/daily_runtime_frontend_build_align.py",

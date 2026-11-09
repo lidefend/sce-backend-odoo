@@ -105,9 +105,22 @@ with lock_path.open("a+b") as lock:
         # Unknown, staged, deleted, renamed, or merely similar files remain a
         # fail-closed stop; no runtime-only work is discarded.
         preseeded_paths = []
+        preserved_receipt_paths = []
+        candidate_ignore = git("show", expected_sha + ":.gitignore", check=False)
+        ignores_deploy_receipt = (
+            candidate_ignore.returncode == 0
+            and "/.deployed.json" in candidate_ignore.stdout.splitlines()
+        )
         status_entries = git("status", "--porcelain", "-z").stdout.split("\0")
         for entry in (item for item in status_entries if item):
             status, path = entry[:2], entry[3:]
+            if status == "??" and path == ".deployed.json" and ignores_deploy_receipt:
+                # The current deployment receipt is runtime evidence, not source.
+                # Preserve it across checkout; every other untracked path still
+                # fails closed, as does this path when the candidate does not
+                # declare it ignored.
+                preserved_receipt_paths.append(path)
+                continue
             if status != " M" or not path:
                 raise SystemExit("[daily.runtime.candidate.bundle_sync] BLOCKED remote worktree contains non-preseed changes")
             candidate_blob = git("rev-parse", expected_sha + ":" + path, check=False)
@@ -142,6 +155,7 @@ with lock_path.open("a+b") as lock:
             "runtime_branch": "detached",
             "evidence_ref": evidence_ref,
             "preseeded_paths": sorted(preseeded_paths),
+            "preserved_receipt_paths": sorted(preserved_receipt_paths),
             "origin_main_mutated": False,
         }, sort_keys=True))
     finally:
