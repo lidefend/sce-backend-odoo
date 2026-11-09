@@ -874,6 +874,14 @@ verify.frontend.split_usage.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_split_usage_guard
 	@python3 scripts/verify/frontend_split_usage_guard.py
 
+.PHONY: verify.frontend.rich_text.guard verify.frontend.rich_text.browser
+verify.frontend.rich_text.guard: guard.prod.forbid verify.frontend.rich_text.browser
+	@python3 -m unittest scripts.verify.test_frontend_rich_text_guard
+	@python3 scripts/verify/frontend_rich_text_guard.py
+
+verify.frontend.rich_text.browser: guard.prod.forbid
+	@node frontend/apps/web/scripts/rich_text_component_browser_test.mjs
+
 .PHONY: verify.frontend.standard_list_scroll_contract.guard
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py

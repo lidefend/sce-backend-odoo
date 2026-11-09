@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M5-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "f3a41dc5cf29a63603927f52f6f4e1ab25c53f69",
-  "status": "active",
+  "baseline_sha": "886868511098fdb37e1983c8b5e842c7d80b9d78",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M5-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m5_rich_text_20261110.md",
   "scope": [
@@ -11,6 +11,8 @@
     ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M5-20261110.yaml",
     ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M5-20261110/run.json",
     "docs/ops/iterations/frontend_systemic_m5_rich_text_20261110.md",
+    "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+    "frontend/apps/web/scripts/standard_form_composition_adoption_test.ts",
     "frontend/apps/web/src/",
     "scripts/verify/",
     "make/frontend.mk"
@@ -49,6 +51,24 @@
       ],
       "kind": "offline"
     },
+    "rich_text": {
+      "target": "verify.frontend.rich_text.guard",
+      "inputs": [
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/test_frontend_rich_text_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "rich_text_browser": {
+      "target": "verify.frontend.rich_text.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "kind": "runtime"
+    },
     "incremental_planner": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
@@ -77,5 +97,37 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Inspect all four v-html consumers and their sanitization policies before editing source."
+  "next_exact_step": "Commit the M5 candidate, rerun the clean-HEAD iteration, then verify affected 1440/390 pages.",
+  "validation": {
+    "rich_text_guard": {
+      "status": "passed",
+      "command": "make verify.frontend.rich_text.guard",
+      "tests": 4,
+      "owner_directives": 1,
+      "consumers": 5
+    },
+    "rich_text_browser": {
+      "status": "passed",
+      "command": "make verify.frontend.rich_text.browser",
+      "checks": 10,
+      "browser": "147.0.7727.15",
+      "console_errors": 0
+    },
+    "standard_form_composition": {
+      "status": "passed",
+      "command": "make verify.frontend.standard_form_composition.unit",
+      "cases": 124
+    },
+    "overview_rich_text": {
+      "status": "passed",
+      "command": "make verify.frontend.overview_rich_text.unit"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 15,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T202811Z-4184563-108146546/receipt.json",
+      "identity": "dirty:886868511098fdb37e1983c8b5e842c7d80b9d78"
+    }
+  }
 }

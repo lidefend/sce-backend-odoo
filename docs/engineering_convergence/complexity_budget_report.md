@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5158`
+- Scanned files: `5162`
 - Files requiring split plan: `76`
 - Files above warning threshold: `148`
 
@@ -60,7 +60,7 @@ Generated from repository source files. This report is informational during the 
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
-| 1789 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1783 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1727 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
@@ -78,8 +78,8 @@ Generated from repository source files. This report is informational during the 
 | 1568 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
+| 1544 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1536 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
@@ -294,7 +294,7 @@ Generated from repository source files. This report is informational during the 
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
-| 1789 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1783 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1727 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
@@ -314,8 +314,8 @@ Generated from repository source files. This report is informational during the 
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
+| 1544 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1536 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |

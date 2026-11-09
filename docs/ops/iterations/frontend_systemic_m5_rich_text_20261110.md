@@ -31,8 +31,23 @@ element identity and wrapping behavior of each consumer.
 
 ## Validation
 
-Pending.
+- Raw `v-html` directives: 4 → 1, with the single retained directive in
+  `components/content/ScRichText.vue`.
+- Rich-text consumer wrappers: 5 calls across 4 former consumers.
+- `make verify.frontend.rich_text.guard`: PASS, 4 tests.
+- `make verify.frontend.rich_text.browser`: PASS, 10 checks; scripts, event
+  attributes and `javascript:` links were removed, while safe HTTPS links and
+  restricted tables were retained.
+- `make verify.frontend.standard_form_composition.unit`: PASS, 124 cases.
+- `make verify.frontend.overview_rich_text.unit`: PASS.
+- `make ci.local.iteration`: PASS, 15 targets.
+- Receipt:
+  `.runtime/frontend-dev-validation/executions/20261109T202811Z-4184563-108146546/receipt.json`.
+
+The two sanitizers now share one link-protocol helper. Absolute safe links are
+validated before origin-dependent relative resolution, preventing valid HTTPS
+links from being dropped in a host with no usable origin.
 
 ## Result
 
-Planned.
+Pending commit, clean-HEAD iteration and affected 1440/390 page review.

@@ -13,13 +13,12 @@
     <template v-if="field.readonly">
       <slot v-if="hasReadonlyOverride" name="readonly" :field="field" />
       <template v-else>
-        <!-- eslint-disable vue/no-v-html -- readonlyHtml 已由 sanitizeReadonlyHtml 净化 -->
-        <div
+        <ScRichText
           v-if="field.type === 'html'"
           class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
-          v-html="readonlyHtml"
+          policy="readonly"
+          :content="field.value"
         />
-        <!-- eslint-enable vue/no-v-html -->
         <div
           v-else-if="taskActionFor(props.field)"
           role="button"
@@ -125,9 +124,9 @@ import ScInput from '../design-system/ScInput.vue';
 import ScNumberInput from '../design-system/ScNumberInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScTextarea from '../design-system/ScTextarea.vue';
+import ScRichText from '../content/ScRichText.vue';
 import RestrictedHtmlEditor from '../editor/RestrictedHtmlEditor.vue';
 import { formatDisplayValue } from '../../utils/display';
-import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   ScTaskActionResolverKey,
@@ -181,7 +180,6 @@ const readonlyText = computed(() => formatDisplayValue(
   { ...(props.field.descriptor || {}), type: normalizedType.value || props.field.descriptor?.type },
   { emptyText: resolveReadonlyEmptyText(props.field) },
 ));
-const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
 const readonlyDateTimeValue = computed(() => {
   const value = normalizedReadonlyValue.value;
   return value === null || typeof value === 'undefined' ? '' : String(value);

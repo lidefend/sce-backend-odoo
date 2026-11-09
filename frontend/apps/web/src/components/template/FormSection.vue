@@ -78,13 +78,12 @@
           :aria-label="detailFactField(item).many2oneOpenLabel || `打开${detailFactField(item).label}`"
           @click="emitFieldChange(detailFactField(item), detailFactField(item).many2oneOpenToken)"
         ><span class="readonly-relation-label">{{ readonlyText(detailFactField(item)) }}</span></ScButton>
-        <!-- eslint-disable vue/no-v-html -- readonlyHtml 经 sanitizeReadonlyHtml 净化 -->
-        <div
+        <ScRichText
           v-else-if="detailFactField(item).type === 'html'"
           class="readonly-value readonly-value--html"
-          v-html="readonlyHtml(detailFactField(item))"
+          policy="readonly"
+          :content="detailFactField(item).value"
         />
-        <!-- eslint-enable vue/no-v-html -->
         <div
           v-else-if="taskActionFor(detailFactField(item))"
           role="button"
@@ -283,13 +282,12 @@
                    呈现，而不是把对象值交给可编辑兜底控件。 -->
               <template v-else-if="field.readonly || isJsonField(field)">
                 <slot name="readonly" :field="field">
-                  <!-- eslint-disable vue/no-v-html -- readonlyHtml 经 sanitizeReadonlyHtml 净化 -->
-                  <div
+                  <ScRichText
                     v-if="field.type === 'html'"
                     class="readonly-value readonly-value--html"
-                    v-html="readonlyHtml(field)"
+                    policy="readonly"
+                    :content="field.value"
                   />
-                  <!-- eslint-enable vue/no-v-html -->
                   <div
                     v-else-if="taskActionFor(field)"
                     role="button"
@@ -434,6 +432,7 @@ import { useOptionalStandardFormComposition } from '../../pages/contractForm/sta
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import { resolveStandardDetailFactLayout, partitionStandardDetailFields } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
+import ScRichText from '../content/ScRichText.vue';
 import ScPopover from '../design-system/ScPopover.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -458,7 +457,6 @@ import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand, requireDeclare
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
-import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import { formatMonetaryDisplayValue, monetaryInputStep } from '../../app/presentation/businessValuePresentation';
 import type {
   FormSectionFieldAction,
@@ -989,10 +987,6 @@ function taskActionLabel(field: FormSectionFieldSchema): string {
 function taskActionRun(field: FormSectionFieldSchema) {
   const action = taskActionFor(field);
   if (action) void action.run();
-}
-
-function readonlyHtml(field: FormSectionFieldSchema) {
-  return sanitizeReadonlyHtml(field.value);
 }
 
 /**

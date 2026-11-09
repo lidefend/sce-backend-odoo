@@ -270,6 +270,14 @@ RULES = (
         "verify.frontend.split_usage.guard",
     )),
     Rule((
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/test_frontend_rich_text_guard.py",
+    ), (
+        "verify.frontend.rich_text.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",

@@ -1,3 +1,5 @@
+import { safeHtmlLinkTarget } from './safeHtmlLinkTarget';
+
 /**
  * 受限富文本（restricted_html canonical）只读渲染净化助手。
  *
@@ -19,18 +21,6 @@ const ALLOWED_ATTRIBUTES: Record<string, Set<string>> = {
   td: new Set(['colspan', 'rowspan']),
   th: new Set(['colspan', 'rowspan']),
 };
-
-function safeLinkTarget(raw: string): string {
-  const value = String(raw || '').trim();
-  if (!value) return '';
-  if (value.startsWith('/') || value.startsWith('#')) return value;
-  try {
-    const parsed = new URL(value, window.location.origin);
-    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? value : '';
-  } catch {
-    return '';
-  }
-}
 
 export function sanitizeRestrictedHtml(raw: unknown): string {
   if (typeof document === 'undefined') return '';
@@ -58,7 +48,7 @@ export function sanitizeRestrictedHtml(raw: unknown): string {
     });
     Array.from(element.attributes).forEach((attribute) => element.removeAttribute(attribute.name));
     if (tag === 'a') {
-      const href = safeLinkTarget(
+      const href = safeHtmlLinkTarget(
         kept.find(([name]) => name.toLowerCase() === 'href')?.[1] || '',
       );
       if (href) {
