@@ -611,7 +611,14 @@ function presentAction(
   const disabledModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'disabled')
     ? action.modifiers?.disabled
     : action.modifiers?.readonly;
-  const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
+  const explicitBusinessStateDenial = explicitAuthority
+    && status?.visible === true
+    && status?.disabled === true
+    && action.authorizationAllowed !== false
+    && typeof action.businessAvailable === 'boolean'
+    && Boolean(text(action.reasonCode));
+  const definitionInvisible = !explicitBusinessStateDenial
+    && evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
   const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
   // A state-derived button status is recomputed from the declared visibility
   // modifier against live form values; every other status stays authoritative.

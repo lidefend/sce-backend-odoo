@@ -3777,6 +3777,35 @@ assert.equal(businessDenied?.actionRef.authorizationAllowed, true,
   'business unavailability must not be rewritten as actor denial');
 assert.equal(businessDenied?.reasonCode, 'ACTION_NOT_BUSINESS_AVAILABLE', 'the business denial must be named');
 
+const explainedStateDeniedSnapshot = declaredSnapshot({
+  authorizationAllowed: true,
+  businessAvailable: false,
+  allowed: false,
+  enabled: false,
+  disabled: true,
+  reasonCode: 'STATE_NOT_APPROVED',
+  reasonMessage: '付款申请必须处于已批准状态。',
+  visible: { attrs: { invisible: { kind: 'static', value: true } } },
+});
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].visible = true;
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].disabled = true;
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonCode = 'STATE_NOT_APPROVED';
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonMessage = '付款申请必须处于已批准状态。';
+const explainedStateDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(explainedStateDeniedSnapshot)), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(
+  explainedStateDenied?.visible,
+  true,
+  'an explicit authorized business-state denial must remain visible despite the source modifier',
+);
+assert.equal(explainedStateDenied?.enabled, false, 'the explained business-state denial must remain disabled');
+assert.equal(
+  explainedStateDenied?.reasonMessage,
+  '付款申请必须处于已批准状态。',
+  'the explained business-state denial must keep its user-facing reason',
+);
+
 const actorDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: false }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
