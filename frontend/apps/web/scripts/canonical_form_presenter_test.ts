@@ -3785,12 +3785,17 @@ const explainedStateDeniedSnapshot = declaredSnapshot({
   disabled: true,
   reasonCode: 'STATE_NOT_APPROVED',
   reasonMessage: '付款申请必须处于已批准状态。',
-  visible: { attrs: { invisible: { kind: 'static', value: true } } },
+  visible: {
+    attrs: {
+      invisible: { kind: 'field_compare', field: 'state', operator: '!=', value: 'approved' },
+    },
+  },
 });
 explainedStateDeniedSnapshot.statusContract.buttonStatus[0].visible = true;
 explainedStateDeniedSnapshot.statusContract.buttonStatus[0].disabled = true;
 explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonCode = 'STATE_NOT_APPROVED';
 explainedStateDeniedSnapshot.statusContract.buttonStatus[0].reasonMessage = '付款申请必须处于已批准状态。';
+explainedStateDeniedSnapshot.statusContract.buttonStatus[0].visibilityExplanation = 'business_state';
 const explainedStateDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(explainedStateDeniedSnapshot)), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
@@ -3806,6 +3811,26 @@ assert.equal(
   'the explained business-state denial must keep its user-facing reason',
 );
 
+const unprovenStateDeniedSnapshot = structuredClone(explainedStateDeniedSnapshot);
+delete unprovenStateDeniedSnapshot.statusContract.buttonStatus[0].visibilityExplanation;
+const unprovenStateDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(unprovenStateDeniedSnapshot)), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(
+  unprovenStateDenied,
+  undefined,
+  'a business reason without an explicit visibility explanation must not override the native modifier',
+);
+
+const invalidVisibilityExplanationSnapshot = structuredClone(explainedStateDeniedSnapshot);
+(invalidVisibilityExplanationSnapshot.statusContract.buttonStatus[0] as unknown as Record<string, unknown>)
+  .visibilityExplanation = 'native_modifier';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidVisibilityExplanationSnapshot),
+  /visibilityExplanation must equal business_state/,
+  'visibility explanation must use the declared contract vocabulary',
+);
+
 const actorDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: false }))), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
@@ -3816,7 +3841,7 @@ const declaredAllowed = presentContractV2Form(
 ).actionBar.find((action) => action.key === 'action_submit');
 assert.equal(declaredAllowed?.enabled, true, 'a declared allow must not block the action');
 
-console.log('[canonical_form_presenter] declared action authority cases PASS count=10');
+console.log('[canonical_form_presenter] declared action authority cases PASS count=13');
 
 // The ContractFormPage presenter carries the same declared authority, and must not
 // drop it while re-projecting the rule row it consumes.

@@ -2153,7 +2153,10 @@ function decodeButtonStatus(raw: unknown, path: string, issues: DecodeIssue[]): 
     issues.push({ path, message: 'must be an object' });
     return null;
   }
-  rejectUnknownKeys(raw, ['btnId', 'backendIdentity', 'visible', 'disabled', 'reasonCode', 'reasonMessage'], path, issues);
+  rejectUnknownKeys(raw, [
+    'btnId', 'backendIdentity', 'visible', 'disabled', 'reasonCode', 'reasonMessage',
+    'visibilityExplanation',
+  ], path, issues);
   const btnId = asString(raw.btnId);
   if (!btnId) {
     issues.push({ path: `${path}.btnId`, message: 'is required' });
@@ -2161,6 +2164,10 @@ function decodeButtonStatus(raw: unknown, path: string, issues: DecodeIssue[]): 
   }
   const reasonMessage = optionalStringField(raw, 'reasonMessage', path, issues);
   if (reasonMessage && !optionalString(raw, 'reasonCode')) issues.push({ path: `${path}.reasonMessage`, message: 'requires its declared reasonCode' });
+  const visibilityExplanation = optionalStringField(raw, 'visibilityExplanation', path, issues);
+  if (visibilityExplanation && visibilityExplanation !== 'business_state') {
+    issues.push({ path: `${path}.visibilityExplanation`, message: 'must equal business_state' });
+  }
   return {
     ...(reasonMessage !== undefined ? { reasonMessage } : {}),
     btnId,
@@ -2170,6 +2177,7 @@ function decodeButtonStatus(raw: unknown, path: string, issues: DecodeIssue[]): 
     ...(optionalString(raw, 'reasonCode')
       ? { reasonCode: optionalString(raw, 'reasonCode') }
       : {}),
+    ...(visibilityExplanation === 'business_state' ? { visibilityExplanation } : {}),
   };
 }
 

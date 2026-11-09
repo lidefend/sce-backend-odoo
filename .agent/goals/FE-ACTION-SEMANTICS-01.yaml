@@ -38,6 +38,7 @@ goal:
     - visible, authorizationAllowed, businessAvailable, enabled, disabled, reasonCode and reasonMessage have one frozen meaning
     - unauthorized actions are hidden rather than represented as visible denial
     - authorized state-ineligible actions follow the declared visible-disabled-reason rule where applicable
+    - business-state explanation overrides only a single dynamic native hide; composite or static hides remain fail-closed
     - data completeness and dynamic validation are not indiscriminately converted to disabled
     - busy/pending is frontend transient state and does not redefine business availability
     - execute_button revalidates ACL, business state, identity, concurrency and data consistency
@@ -57,6 +58,6 @@ goal:
     migration is planned unless separately approved. Acceptance data is restored via
     the existing managed fixture entrypoint.
   next_exact_step: >
-    Commit updated evidence metadata, push the exact candidate through the
-    governed PR entrypoint, and obtain a fresh independent review plus new-HEAD
-    CI.
+    Complete focused and iteration validation for the F-01 contract proof,
+    commit the updated candidate, then obtain a fresh independent review plus
+    new-HEAD CI. Do not merge or deploy without a new review decision.

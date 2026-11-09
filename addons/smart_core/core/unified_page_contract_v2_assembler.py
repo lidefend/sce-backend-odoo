@@ -3731,6 +3731,23 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
     return None
 
 
+def _action_visibility_constraint_is_business_explainable(value: Any) -> bool:
+    """Whether one runtime business reason can explain the entire hide verdict.
+
+    A composite native modifier can contain conditions unrelated to the
+    producer's business-state reason. Overriding such a verdict would expose an
+    action whose native visibility contract still denies it. Only one dynamic
+    leaf condition may be promoted to a visible-disabled business explanation;
+    static hides and composite expressions remain authoritative.
+    """
+    if not isinstance(value, dict):
+        return False
+    kind = _text(value.get("kind"))
+    if kind == "not":
+        return _action_visibility_constraint_is_business_explainable(value.get("expr"))
+    return kind in {"value_truthy", "value_compare", "field_truthy", "field_compare"}
+
+
 def _action_permission_clause(row: dict[str, Any]) -> dict[str, Any]:
     aliases = {
         "requiredGroups": (
@@ -4327,6 +4344,7 @@ def _enforce_action_authorization_visibility(contract: dict[str, Any]) -> None:
         for status in matches:
             status["visible"] = False
             status["disabled"] = True
+            status.pop("visibilityExplanation", None)
             status["reasonCode"] = reason
             if _text(rule.get("reasonMessage")):
                 status["reasonMessage"] = rule["reasonMessage"]
@@ -4400,6 +4418,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status = {"btnId": btn_id, "visible": True, "disabled": False}
             statuses.append(status)
             status_by_btn_id[btn_id] = status
+        status.pop("visibilityExplanation", None)
         modifier_authoritative = (
             _text(row.get("sourceChannel")) == "native_form_header"
             and _text(_dict(row.get("button")).get("type")) == "object"
@@ -4426,10 +4445,12 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                     and isinstance(runtime_business.get("businessAvailable"), bool)
                     and runtime_business.get("authorizationAllowed") is not False
                     and bool(_text(runtime_business.get("reasonCode")))
+                    and _action_visibility_constraint_is_business_explainable(invisible)
                 )
                 if business_state_explained:
                     status["visible"] = True
                     status["disabled"] = True
+                    status["visibilityExplanation"] = "business_state"
                     status["reasonCode"] = runtime_business.get("reasonCode")
                     if _text(runtime_business.get("reasonMessage")):
                         status["reasonMessage"] = runtime_business["reasonMessage"]

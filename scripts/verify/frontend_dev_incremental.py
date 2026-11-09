@@ -526,6 +526,19 @@ RULES = (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+    ), (
+        "verify.frontend.canonical_form_presenter.unit",
+    )),
+    Rule((
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "addons/smart_core/core/contract_lifecycle.py",
+    ), (
+        "verify.backend.contract_lifecycle.authority",
+    )),
+    Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
     ), (
         "verify.execute_button.authority.unit",
@@ -596,6 +609,8 @@ RULES = (
     )),
     Rule((
         "scripts/verify/test_form_structure_authority_unification.py",
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
     ), (
         "verify.form_structure_authority_unification.unit",
     )),

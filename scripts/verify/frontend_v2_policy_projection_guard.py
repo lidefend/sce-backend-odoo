@@ -309,6 +309,7 @@ FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES = (
     "entry_semantic_surface",
 )
 FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES = ("container_tree", "native_form_slots", "task_sections")
+BUTTON_VISIBILITY_EXPLANATION_VALUES = ("business_state",)
 
 
 def _form_structure_schema_values(schema_payload: dict, field: str) -> list[str]:
@@ -329,6 +330,7 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Structure fact vocabulary (declared sets above), bound to the backend schema.
     *FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES,
     *FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES,
+    *BUTTON_VISIBILITY_EXPLANATION_VALUES,
     "FORM_STRUCTURE_SOURCES",
     "FORM_STRUCTURE_AUTHORITIES",
     # Published capability authorization state, bound to its producer below.
@@ -841,6 +843,25 @@ def main() -> int:
                     f"{_relative(STRICT_SCHEMA)}: structure fact value {token} is declared by the "
                     "backend schema but accepted by no strict decoder or strict type literal"
                 )
+    button_status_schema = (
+        ((schema_payload.get("$defs") or {}).get("buttonStatus") or {})
+        .get("properties") or {}
+    )
+    declared_visibility_explanations = (
+        (button_status_schema.get("visibilityExplanation") or {}).get("enum") or []
+    )
+    if declared_visibility_explanations != list(BUTTON_VISIBILITY_EXPLANATION_VALUES):
+        violations.append(
+            f"{_relative(BACKEND_SCHEMA)}: buttonStatus.visibilityExplanation enum must be "
+            f"{list(BUTTON_VISIBILITY_EXPLANATION_VALUES)}; "
+            f"declared={declared_visibility_explanations}"
+        )
+    for token in BUTTON_VISIBILITY_EXPLANATION_VALUES:
+        if token not in strict_schema_source or token not in strict_type_source:
+            violations.append(
+                f"{_relative(STRICT_SCHEMA)}: button visibility explanation {token} is declared by "
+                "the backend schema but accepted by no strict decoder and strict type literal"
+            )
     schema_top_level = set((schema_payload.get("properties") or {}).keys())
     schema_required = set(schema_payload.get("required") or [])
     strict_snapshot_fields = _strict_snapshot_fields(strict_type_source)

@@ -277,6 +277,38 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.workflow_action_semantics.guard"],
         )
 
+    def test_contract_visibility_proof_inputs_select_their_executors(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "frontend/apps/web/src/app/contracts/v2/schema.ts",
+                "frontend/apps/web/src/app/contracts/v2/types.ts",
+            ]),
+            [
+                "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+            ],
+        )
+        for path in (
+            "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+            "docs/architecture/unified_page_contract_v2/examples/form_project.json",
+            "addons/smart_core/core/contract_lifecycle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.backend.contract_lifecycle.authority"],
+                )
+        for path in (
+            "scripts/verify/frontend_v2_policy_projection_guard.py",
+            "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.form_structure_authority_unification.unit"],
+                )
+
     def test_backend_security_guard_selects_its_own_tests(self) -> None:
         for path in ("scripts/verify/github_actions_security_guard.py",
                      "scripts/verify/test_github_actions_security_guard.py"):

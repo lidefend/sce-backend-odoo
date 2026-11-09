@@ -538,6 +538,7 @@ export interface ContractV2ButtonStatus {
   disabled?: boolean;
   reasonCode?: string;
   reasonMessage?: string;
+  visibilityExplanation?: 'business_state';
 }
 
 export interface ContractV2ContainerStatus {

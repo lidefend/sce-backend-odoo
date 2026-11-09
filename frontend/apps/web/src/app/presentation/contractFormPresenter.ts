@@ -614,6 +614,7 @@ function presentAction(
   const explicitBusinessStateDenial = explicitAuthority
     && status?.visible === true
     && status?.disabled === true
+    && status?.visibilityExplanation === 'business_state'
     && action.authorizationAllowed !== false
     && typeof action.businessAvailable === 'boolean'
     && Boolean(text(action.reasonCode));

@@ -23,6 +23,7 @@ registry is introduced.
 | `disabled` | The projected action is intentionally non-executable | Contract producer / presenters |
 | `reasonCode` | Stable identity of the denial | Contract producer |
 | `reasonMessage` | User-facing explanation | Contract producer |
+| `visibilityExplanation` | Explicit proof that a business reason resolves the complete native hide verdict | Contract producer |
 | `allowed` | Compatibility execution permission; must not contradict authorization and business availability | Contract producer |
 
 Frontend `busy`, `pending`, focus and loading are transient interaction states.
@@ -157,9 +158,14 @@ business-action surface.
 3. An explicit authorization denial hides the action. A business-state or data
    completeness denial remains visible when the producer supplies an
    explanation value.
-4. A workflow catalog omission cannot grant an action, and a catalog `enabled`
+4. A business-state explanation may override a native hide only when the hide
+   verdict is one dynamic leaf condition. Static hides, composite `any`/`all`
+   expressions and unresolved dependencies remain hidden because one business
+   reason cannot prove that every native condition was explained. The producer
+   must mark an accepted override with `visibilityExplanation: "business_state"`.
+5. A workflow catalog omission cannot grant an action, and a catalog `enabled`
    value cannot override an explicit stricter denial.
-5. `execute_button` rechecks the full target even when the frontend action was
+6. `execute_button` rechecks the full target even when the frontend action was
    previously enabled.
 
 ## 9. Required test mapping
@@ -167,6 +173,7 @@ business-action surface.
 | Contract behavior | Automated evidence |
 | --- | --- |
 | Authorization hides; business denial remains visible | `test_unified_page_contract_v2_mobile_compact.py` |
+| Composite or static native hide is not overridden by one business reason | `test_unified_page_contract_v2_mobile_compact.py`, `canonical_form_presenter_test.ts` |
 | Business reason message reaches action and status | `test_unified_page_contract_v2_mobile_compact.py` |
 | Native guidance preserves authorization and narrows business availability | `test_unified_page_contract_v2_mobile_compact.py` |
 | Payment execution authorization / state / data split | `test_p1_payment_request_capability.py` |

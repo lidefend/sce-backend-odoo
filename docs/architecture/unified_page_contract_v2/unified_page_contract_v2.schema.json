@@ -2138,6 +2138,12 @@
         "reasonMessage": {
           "type": "string"
         },
+        "visibilityExplanation": {
+          "type": "string",
+          "enum": [
+            "business_state"
+          ]
+        },
         "backendIdentity": {
           "type": "string"
         }

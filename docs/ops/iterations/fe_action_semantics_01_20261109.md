@@ -93,6 +93,14 @@
 - 真实合同回执发现，动作按 backend identity 合并后 `buttonStatus` 只保留
   `reasonCode` 而丢失 `reasonMessage`；已在状态合并阶段沿用同一动作权威的
   用户原因。
+- 独立审查 F-01 发现业务状态原因可能覆盖复合原生 modifier 中未解释的隐藏
+  条件。修复后，只有单一动态隐藏叶节点可以由业务状态解释，并通过
+  `visibilityExplanation: "business_state"` 显式回传；静态隐藏、复合
+  `any`/`all` 和无法解析依赖继续 fail-closed。
+- 契约 schema、前端解码器和 presenter 同步消费该显式说明字段，禁止仅凭
+  `businessAvailable` 与 `reasonCode` 推断可以覆盖原生可见性。
+- 组装缓存身份升级为
+  `ui-contract-v2-business-state-visibility-proof-v36`，并重钉装配输入摘要。
 
 ## Producer 分类收口
 
@@ -106,6 +114,7 @@
 ## 门禁记录
 
 - `test_unified_page_contract_v2_mobile_compact.py`：141 tests PASS。
+- F-01 修复后：`test_unified_page_contract_v2_mobile_compact.py` 143 tests PASS。
 - `verify.unified_page_contract.v2.runtime`：23 + 139 tests PASS，runtime guard
   score=6。
 - `verify.unified_page_contract.v2.action`：PASS，actions=7。
@@ -114,6 +123,15 @@
 - `verify.execute_button.authority.unit`：37 tests PASS。
 - `verify.frontend.canonical_form_presenter.unit` 与
   `verify.frontend.contract_header_action.unit`：PASS。
+- F-01 修复后：`verify.frontend.canonical_form_presenter.unit` PASS（177 core
+  cases，declared authority 13 cases）；新增复合隐藏反向证据及非法说明枚举拒绝。
+- F-01 首轮 `ci.local.iteration` 在
+  `verify.form_structure_authority_unification.unit` 失败：正式 schema 词表守卫
+  尚未登记 `business_state`。修复方式不是放宽守卫，而是让守卫从 schema 枚举
+  派生该值，并要求 strict decoder 与 strict type 同时消费。
+- F-01 修复后 `ci.local.iteration`：PASS，实际执行 22 个目标，blocked /
+  not-run / unmapped 均为 0；receipt
+  `.runtime/frontend-dev-validation/executions/20261109T072632Z-3115896-21382285/receipt.json`。
 - `workflow_inventory_profile_method_guard`：补齐已声明方法后 PASS。
 - `ci.local.iteration`：PASS，实际执行 20 个目标；receipt
   `.runtime/frontend-dev-validation/executions/20261109T045112Z-2215379-628180713/receipt.json`。

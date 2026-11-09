@@ -5383,10 +5383,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertIs(rule["enabled"], False)
         self.assertIs(contract["statusContract"]["buttonStatus"][0]["visible"], True)
 
-    def test_runtime_business_state_denial_stays_visible_after_native_modifier(self):
-        contract = {
+    @staticmethod
+    def _runtime_business_visibility_contract(modifier):
+        return {
             "pageInfo": {"model": "test.document", "viewType": "form"},
-            "dataContract": {"mainData": {"id": 43, "state": "draft"}},
+            "dataContract": {"mainData": {
+                "id": 43,
+                "state": "draft",
+                "payment_allowed": False,
+            }},
             "actionContract": {"actionRuleList": [{
                 "actionId": "action.payment_execution",
                 "actionKey": "payment_execution",
@@ -5401,14 +5406,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     "native_locator": "/form[1]/header[1]/button[1]",
                     "authoritative": True,
                 },
-                "visible": {
-                    "attrs": {"invisible": {
-                        "kind": "field_compare",
-                        "field": "state",
-                        "operator": "!=",
-                        "value": "approved",
-                    }},
-                },
+                "visible": {"attrs": {"invisible": modifier}},
                 "authorizationAllowed": True,
                 "businessAvailable": False,
                 "entitlementEvaluated": True,
@@ -5421,18 +5419,64 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "statusContract": {"buttonStatus": [{
                 "btnId": "btn.payment_execution",
                 "backendIdentity": "button:object:action_create_payment_execution",
-                "visible": True,
+                "visible": False,
                 "disabled": True,
+                "reasonCode": "ACTION_NOT_VISIBLE_IN_STATE",
             }]},
         }
+
+    def test_runtime_business_state_denial_stays_visible_after_native_modifier(self):
+        contract = self._runtime_business_visibility_contract({
+            "kind": "field_compare",
+            "field": "state",
+            "operator": "!=",
+            "value": "approved",
+        })
 
         assembler.hydrate_final_action_modifier_status(contract)
 
         status = contract["statusContract"]["buttonStatus"][0]
         self.assertIs(status["visible"], True)
         self.assertIs(status["disabled"], True)
+        self.assertEqual(status["visibilityExplanation"], "business_state")
         self.assertEqual(status["reasonCode"], "PAYMENT_REQUEST_NOT_APPROVED")
         self.assertEqual(status["reasonMessage"], "付款申请必须处于已批准状态。")
+
+    def test_runtime_business_reason_cannot_explain_composite_native_hidden_condition(self):
+        contract = self._runtime_business_visibility_contract({
+            "kind": "any",
+            "exprs": [
+                {
+                    "kind": "field_compare",
+                    "field": "state",
+                    "operator": "!=",
+                    "value": "approved",
+                },
+                {
+                    "kind": "field_compare",
+                    "field": "payment_allowed",
+                    "operator": "==",
+                    "value": False,
+                },
+            ],
+        })
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertIs(status["visible"], False)
+        self.assertIs(status["disabled"], True)
+        self.assertNotIn("visibilityExplanation", status)
+        self.assertEqual(status["reasonCode"], "ACTION_NOT_VISIBLE_IN_STATE")
+
+    def test_runtime_business_reason_cannot_explain_static_native_hide(self):
+        contract = self._runtime_business_visibility_contract({"kind": "static", "value": True})
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertIs(status["visible"], False)
+        self.assertNotIn("visibilityExplanation", status)
 
     def test_action_reason_message_survives_backend_identity_merge(self):
         contract = {
