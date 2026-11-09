@@ -3,7 +3,7 @@
   "id": "FE-SYSTEMIC-CONVERGENCE-M2-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "71e9c70f43e16b85ec7f925c9a261894f4be4e50",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M2-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m2_cascade_20261110.md",
   "scope": [
@@ -46,6 +46,8 @@
       "inputs": [
         "frontend/apps/web/src/styles/",
         "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/packages/design-tokens/tokens/",
+        "frontend/packages/design-tokens/dist/web/",
         "scripts/verify/frontend_style_system_guard.py"
       ],
       "kind": "offline"
@@ -80,11 +82,24 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and run the 1440/390 browser regression on the exact zero-!important candidate.",
+  "next_exact_step": "M2 completed; start M3 inline-style convergence on the same long branch.",
   "validation": {
     "style_system": {
       "status": "passed",
-      "command": "make verify.frontend.style_system.guard"
+      "command": "make verify.frontend.style_system.guard",
+      "candidate_head": "9d616d608fa3630c9851128960ea304eefd55917"
+    },
+    "design_tokens": {
+      "status": "passed",
+      "command": "npm run verify && npm test",
+      "tests": 5,
+      "candidate_head": "9d616d608fa3630c9851128960ea304eefd55917"
+    },
+    "incremental_planner": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 103,
+      "candidate_head": "9d616d608fa3630c9851128960ea304eefd55917"
     },
     "navigation_shell": {
       "status": "passed",
@@ -113,7 +128,29 @@
       "status": "passed",
       "command": "make ci.local.iteration",
       "targets": 23,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T193111Z-3822641-522047199/receipt.json"
+      "candidate_head": "9d616d608fa3630c9851128960ea304eefd55917",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T193951Z-3887329-362612180/receipt.json"
+    },
+    "browser": {
+      "status": "passed",
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "candidate_head": "9d616d608fa3630c9851128960ea304eefd55917",
+      "viewports": [
+        "1440x960",
+        "390x844"
+      ],
+      "pages": [
+        "WorkspaceHome",
+        "MyWork",
+        "PaymentRequestForm"
+      ],
+      "route_viewport_checks": 6,
+      "mutation_count": 0,
+      "overflow": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/m2-browser-9d616d608/summary.json",
+      "summary_sha256": "9d98cfd24c2621227ffc65480df0429a9ed6ee3d0b110d7f50ed81af629b56f0"
     }
   }
 }

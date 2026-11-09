@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-CONVERGENCE-M2-20261110
   title: "自定义前端系统性收敛 M2 层叠与 !important 清理"
-  status: verification_pending
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: generic frontend cascade order and accessibility style split
   module: frontend/apps/web/src styles, shell, hierarchy, form and collection surfaces

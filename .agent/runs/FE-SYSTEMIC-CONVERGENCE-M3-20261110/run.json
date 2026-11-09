@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-CONVERGENCE-M3-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "9d616d608fa3630c9851128960ea304eefd55917",
+  "status": "active",
+  "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M3-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M3-20261110.yaml",
+    ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M3-20261110/run.json",
+    "docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md",
+    "docs/architecture/inline_style_allowlist.json",
+    "frontend/apps/web/src/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies; runtime evidence registered separately when used"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/styles/",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_patterns": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Classify all actual inline-style bindings and component style props before editing product source."
+}
