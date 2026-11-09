@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: DAILY-MAIN-RECEIPT-PRESERVE-20261110
+  title: preserve deployment receipt during daily main sync
+  status: active
+  formal_product_layer: P4
+  layer_target: daily runtime main bundle synchronization
+  module: main-mode source checkout receipt preservation
+  standard_vs_user_specific: platform delivery tooling
+  objective: >
+    Preserve the exact root .deployed.json receipt while a detached candidate is
+    normalized back to main and fast-forwarded, provided the target main
+    explicitly ignores that receipt; reject every other dirty file.
+  acceptance:
+    - A sole untracked root .deployed.json is preserved across checkout.
+    - The target main .gitignore must explicitly ignore the receipt.
+    - Any other dirty path still fails closed.
+    - Post-sync worktree cleanliness remains mandatory.
+  exclusions:
+    - product source and contracts
+    - deployment topology
+    - business data
