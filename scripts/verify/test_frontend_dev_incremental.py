@@ -580,6 +580,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_published_face_target_projection_routes_to_its_daily_guard(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/edition_release_snapshot_service.py",
+            "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.daily.published_face.target.unit"],
+                )
+        self.assertEqual(
+            select_targets(["make/guards.mk"]),
+            ["verify.guard.registry"],
+        )
+
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
             "scripts/dev/frontend_acceptance_runtime.sh",

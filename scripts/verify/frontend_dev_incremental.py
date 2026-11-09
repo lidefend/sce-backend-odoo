@@ -412,8 +412,15 @@ RULES = (
         "scripts/verify/registry.yaml",
         "scripts/verify/guard_registry_audit.py",
         "scripts/verify/test_guard_registry_audit.py",
+        "make/guards.mk",
     ), (
         "verify.guard.registry",
+    )),
+    Rule((
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    ), (
+        "verify.daily.published_face.target.unit",
     )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会

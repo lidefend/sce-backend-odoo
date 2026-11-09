@@ -111,6 +111,40 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
         self.assertEqual(check.get("status"), "pass")
         self.assertEqual(check.get("issue_count"), 0)
 
+    def test_action_menu_keeps_action_target_when_scene_association_exists(self):
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        pages = service._draft_pages_from_policy(
+            {
+                "product_key": "construction.standard",
+                "access_level": "public",
+                "menu_groups": [
+                    {
+                        "group_label": "\u884c\u653f\u4e2d\u5fc3",
+                        "menus": [
+                            {
+                                "page_key": "smart_construction_core.menu_sc_organization_department",
+                                "menu_key": "smart_construction_core.menu_sc_organization_department",
+                                "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
+                                "label": "\u90e8\u95e8\u7ba1\u7406",
+                                "route": "/a/802?menu_id=427",
+                                "menu_id": 427,
+                                "action_id": 802,
+                                "res_model": "hr.department",
+                                "target_scene_key": "enterprise.department",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(len(pages), 1)
+        self.assertEqual(pages[0].get("scene_key"), "")
+        self.assertEqual(pages[0].get("route"), "/a/802?menu_id=427")
+        check = service._target_integrity_check(pages)
+        self.assertFalse(check.get("blocking"))
+        self.assertEqual(check.get("issue_count"), 0)
+
 
     def test_declared_scene_entry_projects_scene_key(self):
         service = TARGET.EditionReleaseSnapshotService(env={})
