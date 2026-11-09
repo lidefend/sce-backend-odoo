@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M4-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "204baf9e6e2aa79204947af278d494e40ed6c1a5",
-  "status": "active",
+  "baseline_sha": "f3a41dc5cf29a63603927f52f6f4e1ab25c53f69",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M4-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m4_split_20261110.md",
   "scope": [
@@ -37,6 +37,15 @@
         "frontend/apps/web/src/styles/",
         "frontend/apps/web/src/layouts/AppShell.css",
         "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "split_usage": {
+      "target": "verify.frontend.split_usage.guard",
+      "inputs": [
+        "docs/architecture/split_usage_allowlist.json",
+        "scripts/verify/frontend_split_usage_guard.py",
+        "scripts/verify/test_frontend_split_usage_guard.py"
       ],
       "kind": "offline"
     },
@@ -78,5 +87,34 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Classify all 61 split sites before editing frontend source."
+  "next_exact_step": "M4 completed; begin M5 sanitized rich-text consolidation on the same long branch.",
+  "validation": {
+    "split_usage": {
+      "status": "passed",
+      "command": "make verify.frontend.split_usage.guard",
+      "tests": 6,
+      "files": 39,
+      "occurrences": 61,
+      "mechanisms": 19
+    },
+    "incremental_planner": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 103
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 4,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T200918Z-4078731-578951459/receipt.json",
+      "identity": "dirty:f3a41dc5cf29a63603927f52f6f4e1ab25c53f69"
+    },
+    "browser_reuse": {
+      "status": "passed",
+      "reason": "M4 changed only docs, Make wiring and verification scripts; frontend/apps/web/src inputs equal the M3 candidate.",
+      "source_candidate": "204baf9e6e2aa79204947af278d494e40ed6c1a5",
+      "summary": ".runtime/m3-browser-204baf9/summary.json",
+      "summary_sha256": "b111bb5c8dfd73d5481e5e037350c32d6ab730b3e2085ec78afdf79e3c0e34d5"
+    }
+  }
 }

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-CONVERGENCE-M4-20261110
   title: "自定义前端系统性收敛 M4 split 使用分类与语义收口"
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: generic frontend parsing and record-identity boundaries
   module: frontend/apps/web/src contract consumers, route parsers, formatters and relationship display

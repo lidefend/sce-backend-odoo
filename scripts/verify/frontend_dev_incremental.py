@@ -263,6 +263,13 @@ RULES = (
         "verify.frontend.style_system.guard",
     )),
     Rule((
+        "docs/architecture/split_usage_allowlist.json",
+        "scripts/verify/frontend_split_usage_guard.py",
+        "scripts/verify/test_frontend_split_usage_guard.py",
+    ), (
+        "verify.frontend.split_usage.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",

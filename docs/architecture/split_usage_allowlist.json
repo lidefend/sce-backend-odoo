@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "scope": "frontend/apps/web/src",
+  "mechanisms": {
+    "base64_data_uri": {
+      "owner": "frontend.files",
+      "reason": "Parses a data URI encoding boundary, not product identity."
+    },
+    "contract_error_protocol": {
+      "owner": "frontend.contract_runtime",
+      "reason": "Parses structured error or validation protocol tokens."
+    },
+    "contract_key_encoding": {
+      "owner": "frontend.contract_renderer",
+      "reason": "Parses a contract-declared CSV key encoding."
+    },
+    "contract_sort_and_view_tokens": {
+      "owner": "frontend.contract_consumers",
+      "reason": "Parses declared sort clauses or view-mode token lists."
+    },
+    "contract_token_list": {
+      "owner": "frontend.contract_consumers",
+      "reason": "Parses declared comma, semicolon or view-mode token lists."
+    },
+    "contract_window_pairs": {
+      "owner": "frontend.action_runtime",
+      "reason": "Parses declared group-window pair syntax."
+    },
+    "csv_config": {
+      "owner": "frontend.bootstrap",
+      "reason": "Parses build/runtime environment CSV configuration."
+    },
+    "declared_class_tokens": {
+      "owner": "frontend.native_form_renderer",
+      "reason": "Parses class tokens supplied by a declared native view node."
+    },
+    "locale_and_label_format": {
+      "owner": "frontend.presentation",
+      "reason": "Parses locale and display-label syntax."
+    },
+    "mime_type": {
+      "owner": "frontend.collaboration",
+      "reason": "Parses MIME type syntax for a display label."
+    },
+    "nested_route_query": {
+      "owner": "frontend.routing",
+      "reason": "Parses a nested query embedded in a scene route value."
+    },
+    "path_identifier": {
+      "owner": "frontend.routing",
+      "reason": "Parses dot- or slash-delimited technical identifiers."
+    },
+    "record_identity_contract_gap": {
+      "owner": "frontend.my_work",
+      "contract_defect": "CD-20261110-01",
+      "reason": "Temporarily removes a known displayed amount from a backend display string; structured record identity remains a contract gap."
+    },
+    "route_identifier": {
+      "owner": "frontend.activity",
+      "reason": "Parses stored activity route and cache identifiers."
+    },
+    "route_protocol": {
+      "owner": "frontend.routing",
+      "reason": "Parses URL path, query and hash protocol syntax."
+    },
+    "stable_identifier_tokens": {
+      "owner": "frontend.contract_runtime",
+      "reason": "Normalizes already-stable action identifiers without deriving business meaning."
+    },
+    "suggested_action_payload": {
+      "owner": "frontend.suggested_action",
+      "reason": "Parses the declared suggested-action payload grammar."
+    },
+    "temporal_format": {
+      "owner": "frontend.presentation",
+      "reason": "Extracts the date portion from an already formatted temporal value."
+    },
+    "whitespace_token_list": {
+      "owner": "frontend.presentation",
+      "reason": "Parses whitespace-delimited technical tokens or icon aliases."
+    }
+  },
+  "files": {
+    "frontend/apps/web/src/api/files.ts": {
+      "count": 1,
+      "mechanism": "base64_data_uri"
+    },
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadPreflightRuntime.ts": {
+      "count": 2,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts": {
+      "count": 1,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/app/activityPageRetention.ts": {
+      "count": 1,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/app/businessValidationError.ts": {
+      "count": 1,
+      "mechanism": "contract_error_protocol"
+    },
+    "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts": {
+      "count": 1,
+      "mechanism": "temporal_format"
+    },
+    "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts": {
+      "count": 1,
+      "mechanism": "record_identity_contract_gap"
+    },
+    "frontend/apps/web/src/app/resolvers/actionResolver.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/routeQuery.ts": {
+      "count": 6,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts": {
+      "count": 1,
+      "mechanism": "stable_identifier_tokens"
+    },
+    "frontend/apps/web/src/app/runtime/actionViewGroupWindowRuntime.ts": {
+      "count": 1,
+      "mechanism": "contract_window_pairs"
+    },
+    "frontend/apps/web/src/app/runtime/actionViewMetaRuntime.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/runtime/unifiedPageContractLitePilot.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/app/sceneMutationRuntime.ts": {
+      "count": 1,
+      "mechanism": "path_identifier"
+    },
+    "frontend/apps/web/src/app/suggested_action/parser.ts": {
+      "count": 4,
+      "mechanism": "suggested_action_payload"
+    },
+    "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts": {
+      "count": 1,
+      "mechanism": "path_identifier"
+    },
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": {
+      "count": 2,
+      "mechanism": "declared_class_tokens"
+    },
+    "frontend/apps/web/src/components/template/nativeTextPresentation.ts": {
+      "count": 1,
+      "mechanism": "whitespace_token_list"
+    },
+    "frontend/apps/web/src/components/template/weightedRelationDisplay.ts": {
+      "count": 1,
+      "mechanism": "contract_key_encoding"
+    },
+    "frontend/apps/web/src/config.ts": {
+      "count": 1,
+      "mechanism": "csv_config"
+    },
+    "frontend/apps/web/src/config/debug.ts": {
+      "count": 1,
+      "mechanism": "nested_route_query"
+    },
+    "frontend/apps/web/src/layouts/AppShell.vue": {
+      "count": 2,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/pages/ListPage.vue": {
+      "count": 3,
+      "mechanism": "contract_sort_and_view_tokens"
+    },
+    "frontend/apps/web/src/pages/contractForm/actionContract.ts": {
+      "count": 1,
+      "mechanism": "stable_identifier_tokens"
+    },
+    "frontend/apps/web/src/pages/contractForm/canonicalFormActionIcon.ts": {
+      "count": 1,
+      "mechanism": "whitespace_token_list"
+    },
+    "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts": {
+      "count": 1,
+      "mechanism": "mime_type"
+    },
+    "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts": {
+      "count": 1,
+      "mechanism": "contract_error_protocol"
+    },
+    "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/router/index.ts": {
+      "count": 1,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/stores/session.ts": {
+      "count": 2,
+      "mechanism": "route_identifier"
+    },
+    "frontend/apps/web/src/utils/display.ts": {
+      "count": 3,
+      "mechanism": "locale_and_label_format"
+    },
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/views/MenuConfigView.vue": {
+      "count": 1,
+      "mechanism": "path_identifier"
+    },
+    "frontend/apps/web/src/views/SceneContractBlockGridView.vue": {
+      "count": 1,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/views/SceneView.vue": {
+      "count": 2,
+      "mechanism": "route_protocol"
+    },
+    "frontend/apps/web/src/views/businessConfigSurface/formatters.ts": {
+      "count": 6,
+      "mechanism": "contract_token_list"
+    },
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigWorkbenchMeta.ts": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    }
+  }
+}

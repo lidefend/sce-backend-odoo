@@ -869,6 +869,11 @@ verify.frontend.style_system.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
 	@python3 scripts/verify/frontend_style_system_guard.py
 
+.PHONY: verify.frontend.split_usage.guard
+verify.frontend.split_usage.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_split_usage_guard
+	@python3 scripts/verify/frontend_split_usage_guard.py
+
 .PHONY: verify.frontend.standard_list_scroll_contract.guard
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py

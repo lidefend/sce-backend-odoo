@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5156`
+- Scanned files: `5158`
 - Files requiring split plan: `76`
 - Files above warning threshold: `148`
 
@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1529 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1536 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
@@ -315,7 +315,7 @@ Generated from repository source files. This report is informational during the 
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1529 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1536 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
