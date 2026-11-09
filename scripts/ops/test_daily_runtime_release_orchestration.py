@@ -286,6 +286,25 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
             with self.assertRaises(orchestration.ReleaseError):
                 orchestration.derive_digests(ROOT, arguments(), identity())
 
+    def test_derive_digests_uses_detached_candidate_as_main_plan_sha(self):
+        plan_report = ROOT / ".runtime" / "test-duty-plan-candidate.json"
+        plan_report.parent.mkdir(parents=True, exist_ok=True)
+        plan_report.write_text(
+            '{"declaration_digest":"' + "a" * 64 + '","entry_digest":"' + "b" * 64 + '"}'
+        )
+        run = mock.Mock(return_value=type(
+            "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+        )())
+        with mock.patch.object(orchestration, "DUTY_PLAN_REPORT", ".runtime/test-duty-plan-candidate.json"):
+            with mock.patch.object(orchestration.subprocess, "run", run):
+                orchestration.derive_digests(
+                    ROOT, arguments("main"), identity("main")
+                )
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["DAILY_RUNTIME_EXPECTED_SHA"], CANDIDATE)
+        self.assertNotEqual(environment["DAILY_RUNTIME_EXPECTED_SHA"], OLD)
+        plan_report.unlink()
+
     def test_resume_steps_skips_prefix_and_refuses_unknown_key(self):
         steps = orchestration.plan_steps(ROOT, arguments(), identity())
         resumed = orchestration.resume_steps(steps, "duty-refresh")

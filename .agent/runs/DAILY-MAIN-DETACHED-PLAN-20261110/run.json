@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-MAIN-DETACHED-PLAN-20261110",
+  "branch": "fix/daily-main-detached-plan-20261110",
+  "baseline_sha": "bbc1fabb65cfe2b5ac610e787d2863ef256a43d6",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-MAIN-DETACHED-PLAN-20261110.yaml",
+  "record": "docs/ops/iterations/daily_main_detached_plan_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-MAIN-DETACHED-PLAN-20261110.yaml",
+    ".agent/runs/DAILY-MAIN-DETACHED-PLAN-20261110/run.json",
+    "docs/ops/iterations/daily_main_detached_plan_20261110.md",
+    "scripts/ops/daily_runtime_release_orchestration.py",
+    "scripts/ops/test_daily_runtime_release_orchestration.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed daily release orchestration tests"
+  },
+  "checks": {
+    "release_orchestration": {
+      "target": "verify.daily.runtime.deployment_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Use candidate SHA for main-mode read-only plan when normalizing a detached daily candidate."
+}

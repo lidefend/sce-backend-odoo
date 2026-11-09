@@ -1,0 +1,21 @@
+schema_version: 1
+goal:
+  id: DAILY-MAIN-DETACHED-PLAN-20261110
+  title: daily main release from detached candidate
+  status: active
+  formal_product_layer: P4
+  layer_target: daily runtime release orchestration
+  module: duty-plan digest derivation
+  standard_vs_user_specific: platform delivery tooling
+  objective: >
+    Allow the governed main release to derive digests from the currently
+    deployed detached candidate before normalizing the daily runtime back to
+    main and fast-forwarding it to the merged main SHA.
+  acceptance:
+    - Main mode uses expected-candidate-sha for the read-only duty plan when present.
+    - Main mode without a candidate still uses expected-old-sha.
+    - Focused orchestration tests pass with non-zero assertions.
+  exclusions:
+    - product contracts and business data
+    - production release
+    - deployment topology changes
