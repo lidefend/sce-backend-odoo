@@ -102,8 +102,8 @@ Generated from repository source files. This report is informational during the 
 | 1416 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1416 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1411 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1398 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1391 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |

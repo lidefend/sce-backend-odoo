@@ -600,6 +600,13 @@ async function openMyWorkFromRoleHome(page) {
   await page.waitForURL((url) => url.pathname === '/my-work', { timeout: 45000 });
   await page.locator('.product-work').waitFor({ state: 'visible', timeout: 45000 });
 }
+async function returnToMyWorkInRetainedDocument(page) {
+  if (new URL(page.url()).pathname !== '/my-work') {
+    await page.goBack({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  }
+  await page.waitForURL((url) => url.pathname === '/my-work', { timeout: 45000 });
+  await page.locator('.product-work').waitFor({ state: 'visible', timeout: 45000 });
+}
 async function assertNoOverflow(page, label) {
   const size = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
   check(size.scroll <= size.client + 1, `${label}: overflow ${size.scroll}/${size.client}`);
@@ -1127,16 +1134,22 @@ async function main() {
           await navigateSpa(page, route, readySelector);
         }
         for (let i = 0; i < PERF_RUNS; i += 1) {
-          await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-          await page.waitForTimeout(2000);
-          const requestOffset = performanceRequests.length;
           if (name === 'my_work') {
+            await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.waitForTimeout(2000);
+            const requestOffset = performanceRequests.length;
             samples.push(await time(() => openMyWorkFromRoleHome(page)));
+            requestSamples.push(performanceRequests.slice(requestOffset));
           } else {
-            await openMyWorkFromRoleHome(page);
+            // The retained-detail assertion below is meaningful only while the
+            // warmed SPA document is still alive. A full page reload would
+            // correctly discard the in-memory contract cache and make the two
+            // checks contradict each other.
+            await returnToMyWorkInRetainedDocument(page);
+            const requestOffset = performanceRequests.length;
             samples.push(await time(() => navigateSpa(page, route, readySelector)));
+            requestSamples.push(performanceRequests.slice(requestOffset));
           }
-          requestSamples.push(performanceRequests.slice(requestOffset));
         }
         if (name.endsWith('_detail')) {
           const repeatedContractLoads = requestSamples.flat().filter((row) => row.startsWith('ui.contract.v2:'));
