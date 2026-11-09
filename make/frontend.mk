@@ -882,6 +882,13 @@ verify.frontend.rich_text.guard: guard.prod.forbid verify.frontend.rich_text.bro
 verify.frontend.rich_text.browser: guard.prod.forbid
 	@node frontend/apps/web/scripts/rich_text_component_browser_test.mjs
 
+.PHONY: verify.frontend.console.guard
+verify.frontend.console.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_console_guard
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/logger_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/logger-runtime-test.mjs >/dev/null
+	@node /tmp/logger-runtime-test.mjs
+	@python3 scripts/verify/frontend_console_guard.py
+
 .PHONY: verify.frontend.standard_list_scroll_contract.guard
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py

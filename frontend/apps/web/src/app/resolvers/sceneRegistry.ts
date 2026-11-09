@@ -1,4 +1,5 @@
 import { validateSceneRegistry } from './sceneRegistryCore';
+import { logger } from '../../utils/logger';
 
 export interface SceneTarget {
   intent?: string;
@@ -227,7 +228,7 @@ function buildSceneRegistry(source: Scene[]) {
   const nextErrors = validation.errors as Array<{ index: number; key?: string | null; route?: string | null; issues: string[] }>;
   if (nextErrors.length && import.meta.env.DEV) {
     // eslint-disable-next-line no-console
-    console.warn('[scene-registry] invalid scenes detected', nextErrors);
+    logger.warn('[scene-registry] invalid scenes detected', nextErrors);
   }
   errors = nextErrors;
   sceneRegistry = validation.validScenes as Scene[];

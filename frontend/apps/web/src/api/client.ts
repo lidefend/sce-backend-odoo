@@ -3,6 +3,7 @@ import { buildIdempotentIntentIdentity } from './intentRequestIdentity';
 import { useSessionStore } from '../stores/session';
 import { currentContextEpoch, currentContextSignal } from '../app/contextEpoch';
 import { redirectForExpiredSession } from '../app/sessionExpiredRecovery';
+import { logger } from '../utils/logger';
 
 type UnknownObject = Record<string, unknown>;
 
@@ -151,19 +152,19 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
 
   if (isAppInitRequest && debugIntent && appInitPayload) {
     console.group('[A2] system.init 网络诊断快照');
-    console.log('Request URL:', `${config.apiBaseUrl}${resolvedPath}`);
-    console.log('Request Headers:');
-    console.log('  Authorization:', headers.has('Authorization') ? '存在' : '不存在');
-    console.log('  entryBasePath:', config.entryBasePath);
-    console.log('Request Payload:');
-    console.log('  intent:', appInitPayload.intent);
-    console.log('  params.root_xmlid:', appInitPayload.params?.root_xmlid);
+    logger.debug('Request URL:', `${config.apiBaseUrl}${resolvedPath}`);
+    logger.debug('Request Headers:');
+    logger.debug('  Authorization:', headers.has('Authorization') ? '存在' : '不存在');
+    logger.debug('  entryBasePath:', config.entryBasePath);
+    logger.debug('Request Payload:');
+    logger.debug('  intent:', appInitPayload.intent);
+    logger.debug('  params.root_xmlid:', appInitPayload.params?.root_xmlid);
     console.groupEnd();
   }
 
   const requestedCreds = options.credentials;
   if (requestedCreds && requestedCreds !== 'omit' && import.meta.env.DEV) {
-    console.warn(`[SPA API] Forcing credentials=omit (requested: ${requestedCreds})`);
+    logger.warn(`[SPA API] Forcing credentials=omit (requested: ${requestedCreds})`);
   }
 
   let response: Response;
@@ -191,10 +192,10 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     try {
       const responseBody = (await responseClone.json()) as AppInitDiagnosticResponse;
       console.group('[A2] system.init 响应诊断快照');
-      console.log('Response Status:', response.status);
-      console.log('Response Headers:');
-      console.log('  Content-Type:', response.headers.get('Content-Type'));
-      console.log('Response Body (精简):');
+      logger.debug('Response Status:', response.status);
+      logger.debug('Response Headers:');
+      logger.debug('  Content-Type:', response.headers.get('Content-Type'));
+      logger.debug('Response Body (精简):');
 
       // 提取关键信息
       const navList = Array.isArray(responseBody.nav) ? responseBody.nav : null;
@@ -220,10 +221,10 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
           return user ? { id: user.id, name: user.name } : 'N/A';
         })(),
       };
-      console.log(JSON.stringify(diagnosticSnapshot, null, 2));
+      logger.debug(JSON.stringify(diagnosticSnapshot, null, 2));
       console.groupEnd();
     } catch (error) {
-      console.warn('[A2] 无法解析响应:', error);
+      logger.warn('[A2] 无法解析响应:', error);
     }
   }
 

@@ -278,6 +278,14 @@ RULES = (
         "verify.frontend.rich_text.guard",
     )),
     Rule((
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "frontend/apps/web/src/utils/logger.ts",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py",
+    ), (
+        "verify.frontend.console.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",

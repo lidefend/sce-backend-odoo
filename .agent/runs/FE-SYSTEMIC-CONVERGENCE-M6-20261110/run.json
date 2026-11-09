@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M6-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "fb16c8009f8acaad70ab3ac5210b6806e84abe2b",
-  "status": "active",
+  "baseline_sha": "45963a72d6e65d3a3418bfa2a8202a03fea94fee",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md",
   "scope": [
@@ -11,6 +11,7 @@
     ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml",
     ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M6-20261110/run.json",
     "docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md",
+    "frontend/apps/web/scripts/logger_runtime_test.ts",
     "frontend/apps/web/src/",
     "scripts/verify/",
     "make/frontend.mk"
@@ -49,6 +50,16 @@
       ],
       "kind": "offline"
     },
+    "console": {
+      "target": "verify.frontend.console.guard",
+      "inputs": [
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "frontend/apps/web/src/",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py"
+      ],
+      "kind": "offline"
+    },
     "incremental_planner": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
@@ -77,5 +88,27 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Inventory console call sites and monetary display paths before editing source."
+  "next_exact_step": "Commit the M6 candidate, rerun the clean-HEAD iteration, then verify affected 1440/390 pages.",
+  "validation": {
+    "console": {
+      "status": "passed",
+      "command": "make verify.frontend.console.guard",
+      "tests": 4,
+      "console_sites": 0,
+      "console_calls": 0,
+      "logger_runtime": "quiet, verbose and production policies passed"
+    },
+    "incremental_planner": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 103
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 19,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T204128Z-72251-418469068/receipt.json",
+      "identity": "dirty:45963a72d6e65d3a3418bfa2a8202a03fea94fee"
+    }
+  }
 }

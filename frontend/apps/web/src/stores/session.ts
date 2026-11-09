@@ -10,6 +10,7 @@ import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
 import type { Scene } from '../app/resolvers/sceneRegistry';
+import { logger } from '../utils/logger';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
 import { setActiveDb } from '../services/dbContext';
@@ -1376,9 +1377,9 @@ export const useSessionStore = defineStore('session', {
       // A1: 打印本次 system.init 的有效参数
       if (debugIntent) {
         console.group('[A1] system.init 请求诊断');
-        console.log('1. API Base URL:', config.apiBaseUrl);
-        console.log('2. Authorization 存在:', !!this.token);
-        console.log('3. 入口命名空间:', config.entryBasePath);
+        logger.debug('1. API Base URL:', config.apiBaseUrl);
+        logger.debug('2. Authorization 存在:', !!this.token);
+        logger.debug('3. 入口命名空间:', config.entryBasePath);
       }
 
       const requestParams = {
@@ -1394,7 +1395,7 @@ export const useSessionStore = defineStore('session', {
         },
       };
       if (debugIntent) {
-        console.log('4. Request params:', JSON.stringify(requestParams, null, 2));
+        logger.debug('4. Request params:', JSON.stringify(requestParams, null, 2));
         console.groupEnd();
       }
 
@@ -1423,36 +1424,36 @@ export const useSessionStore = defineStore('session', {
       // A1: 打印响应诊断信息
       if (debugIntent) {
         console.group('[A1] system.init 响应诊断');
-        console.log('1. Response keys:', Object.keys(result));
+        logger.debug('1. Response keys:', Object.keys(result));
 
         // 检查 meta 字段
         if (result.meta) {
-          console.log('2. Meta 字段:', result.meta);
-          console.log('   effective_db:', result.meta.effective_db);
-          console.log('   effective_root_xmlid:', result.meta.effective_root_xmlid);
+          logger.debug('2. Meta 字段:', result.meta);
+          logger.debug('   effective_db:', result.meta.effective_db);
+          logger.debug('   effective_root_xmlid:', result.meta.effective_root_xmlid);
         } else {
-          console.log('2. Meta 字段: 不存在');
+          logger.debug('2. Meta 字段: 不存在');
         }
 
         // 检查唯一导航契约
         if (result.navigation?.nav) {
-          console.log('3. navigation.nav 存在，类型:', typeof result.navigation.nav, '是否为数组:', Array.isArray(result.navigation.nav));
+          logger.debug('3. navigation.nav 存在，类型:', typeof result.navigation.nav, '是否为数组:', Array.isArray(result.navigation.nav));
           if (Array.isArray(result.navigation.nav) && result.navigation.nav.length > 0) {
-            console.log('   菜单数量:', result.navigation.nav.length);
-            console.log('   前3个菜单:');
+            logger.debug('   菜单数量:', result.navigation.nav.length);
+            logger.debug('   前3个菜单:');
             result.navigation.nav.slice(0, 3).forEach((item, index) => {
-              console.log(`     [${index}] name: "${item.name}", xmlid: "${item.xmlid || 'N/A'}", id: ${item.id || 'N/A'}`);
+              logger.debug(`     [${index}] name: "${item.name}", xmlid: "${item.xmlid || 'N/A'}", id: ${item.id || 'N/A'}`);
             });
           }
         } else {
-          console.log('3. navigation.nav: 不存在');
+          logger.debug('3. navigation.nav: 不存在');
         }
         console.groupEnd();
       }
 
       if (debugIntent) {
         // eslint-disable-next-line no-console
-        console.info('[debug] system.init result', result);
+        logger.info('[debug] system.init result', result);
       }
       this.user = result.user;
       this.featureFlags = (
@@ -1698,7 +1699,7 @@ export const useSessionStore = defineStore('session', {
       }
       this.scenarioSurface = parseScenarioSurface(navigation?.scenario_surface);
       if (debugIntent) {
-        console.info('[debug] system.init navigation:', {
+        logger.info('[debug] system.init navigation:', {
           type: typeof navigation?.nav,
           isArray: Array.isArray(navigation?.nav),
           length: Array.isArray(navigation?.nav) ? navigation.nav.length : 'N/A',
@@ -1712,10 +1713,10 @@ export const useSessionStore = defineStore('session', {
       }
       if (debugIntent) {
         // eslint-disable-next-line no-console
-        console.info('[debug] system.init nav length', nav.length);
+        logger.info('[debug] system.init nav length', nav.length);
         // 调试：打印第一个导航项的结构
         if (nav.length > 0) {
-          console.info('[debug] First nav item:', JSON.stringify(nav[0], null, 2));
+          logger.info('[debug] First nav item:', JSON.stringify(nav[0], null, 2));
         }
       }
       // 为导航项添加 key 属性

@@ -22,8 +22,19 @@ its existing six-decimal upper bound and empty-value behavior.
 
 ## Validation
 
-Pending.
+- Scattered `console.*` calls: 47 → 0.
+- Shared logger console sites: 0 (all output goes through an injectable sink).
+- Logger policy tests: quiet development, explicitly verbose development and
+  production builds passed.
+- `Intl.NumberFormat` display points: 5 → 5 in the single
+  `businessValuePresentation` module; `one2manyUtils.ts` no longer owns a
+  separate monetary/number display implementation.
+- `make verify.frontend.console.guard`: PASS, 4 tests.
+- `make verify.frontend.dev.incremental.unit`: 103 passed.
+- `make ci.local.iteration`: PASS, 19 targets.
+- Receipt:
+  `.runtime/frontend-dev-validation/executions/20261109T204128Z-72251-418469068/receipt.json`.
 
 ## Result
 
-Planned.
+Pending commit, clean-HEAD iteration and affected 1440/390 page review.
