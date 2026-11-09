@@ -12,6 +12,7 @@
     ".agent/runs/SCHEDULED-CI-RUNTIME-NAV-20261109/run.json",
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
     "scripts/release/frontend_release_evidence.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
     "scripts/verify/frontend_navigation_audit.mjs",
     "scripts/verify/frontend_navigation_audit.test.mjs",
     "scripts/verify/frontend_release_audit.py",
@@ -91,10 +92,37 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "playwright_vendor_coupling": {
+      "target": "verify.frontend.playwright_vendor_coupling.guard",
+      "inputs": [
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/playwright_vendor_coupling_guard.py",
+        "scripts/verify/test_playwright_vendor_coupling_guard.py",
+        "scripts/verify/baselines/playwright_vendor_coupling.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the clean candidate, verify acceptance classification, publish the PR and wait for current-head gates.",
+  "next_exact_step": "Freeze the candidate, commit it, run one clean-HEAD ci.local.quick, then update PR #852 and rerun the exact-head full release gate.",
   "source_failure": {
     "run": 42529817408,
     "workflow": "frontend_release_gate",
@@ -127,11 +155,32 @@
     },
     "ci_local_iteration": {
       "status": "passed",
-      "executed_targets": 4,
-      "log": ".runtime/scheduled-ci-runtime-nav-20261109/ci-local-iteration-r2.log",
-      "sha256": "bcb4e3a2cc97d4978cf54138b856bb9613603444a6700ea83ac71d51d34cb2ca",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T101019Z-4137321-673614276/receipt.json",
-      "receipt_sha256": "948d351821e23d332ca32db140cf839f1a9840945accbc2690203ebf8029983e"
+      "executed_targets": 5,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T102411Z-44422-838887709/receipt.json",
+      "receipt_sha256": "7a5be478e0ea1864ce78224a1f438f7520379532467a6137270365fed716ee88",
+      "required_targets": [
+        "verify.agent.ledger.unit",
+        "verify.frontend.evidence_bundle.unit",
+        "verify.frontend.navigation_policy.unit",
+        "verify.frontend.standard_preview.unit",
+        "verify.frontend.typecheck.strict"
+      ]
+    },
+    "playwright_vendor_coupling": {
+      "status": "passed",
+      "tests": 7,
+      "baseline_raised": false,
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/playwright-vendor-coupling-r2.log",
+      "sha256": "59175c039a339a556c6bd0e3e3b8e2e7b59b4127576fad945b56bde7b03c9abf"
+    },
+    "full_release_first_attempt": {
+      "status": "failed",
+      "run": 42599816709,
+      "head_sha": "b4666f97c35268719146ced542e2f76178cfe491",
+      "failure_owner": "validation_tool_defect",
+      "failure": "inline_geometry_assertion: scripts/verify/frontend_my_work_approval_browser.mjs 2 > baseline 0",
+      "log": ".runtime/scheduled-ci-runtime-nav-20261109/full-release-42599816709.wiLk4i/run.log",
+      "sha256": "d395ece61d28ad171c71f1fe819e28b70058a8912876ddc42c5e93dc52019bab"
     }
   }
 }

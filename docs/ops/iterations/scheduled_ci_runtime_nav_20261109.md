@@ -28,6 +28,10 @@ that becomes stale whenever the product evolves.
 - Runtime navigation is still required to be non-empty, structurally valid and
   duplicate-free.
 - Release audit and evidence bundle apply the same observation invariants.
+- The first full-lane rerun exposed a separate P4 probe defect:
+  `frontend_my_work_approval_browser.mjs` recorded transient button geometry,
+  exceeding the `playwright_vendor_coupling_guard` baseline of zero. The probe
+  now records the public action facts only; the guard baseline was not raised.
 - The runtime scene-aware expectation gate remains scheduled for
   `FE-NAV-CAPABILITY-RELEASE-01`.
 
@@ -41,10 +45,21 @@ Current candidate results:
 | Release navigation/release audit | PASS, 16 + 18 + 10 + 31 tests/scenarios |
 | Release evidence bundle | PASS, 10 tests |
 | Frontend incremental planner | PASS, 94 tests |
-| `ci.local.iteration` | PASS, 4/4 affected targets |
+| `ci.local.iteration` | PASS, 5/5 affected targets |
+| Playwright vendor coupling guard | PASS, baseline unchanged |
 
 The exact logs and hashes are indexed in the run JSON.
 
 The dynamic expected navigation projection remains outside this CI-fix batch.
 `FE-NAV-CAPABILITY-RELEASE-01` will replace observation-only validation with a
 runtime scene/product expectation and separate actual-vs-expected comparison.
+
+The initial manually dispatched full-lane run `42599816709` failed before runtime
+evidence generation on the probe geometry guard. That failure is classified as
+`validation_tool_defect`, not a navigation or product regression, and the exact
+head must be rerun after the probe fix is committed.
+
+The probe fix was then validated by the full affected incremental set:
+agent ledger, evidence bundle, navigation policy, standard preview and strict
+typecheck all passed. `playwright_vendor_coupling` passed with its baseline
+unchanged.

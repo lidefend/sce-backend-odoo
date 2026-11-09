@@ -9,7 +9,9 @@ goal:
   why_here: >
     Runtime navigation is generated from scene and product delivery state. The
     checked-in static 63/89 expectation is no longer an authoritative gate and
-    caused scheduled CI to fail after legitimate product evolution.
+    caused scheduled CI to fail after legitimate product evolution. The full
+    release lane also exposed a new probe-level inline geometry assertion that
+    belongs to the P4 browser verification tool.
   why_not_elsewhere: >
     Do not change product menus, ACL, role policy or runtime navigation to
     satisfy a stale declaration. Do not create the future dynamic navigation
@@ -31,6 +33,7 @@ goal:
     - actual navigation must be non-empty, structurally valid and duplicate-free
     - page identity, console, HTTP, accessibility and journey checks remain
     - release evidence validates observation invariants without static counts
+    - playwright probe coupling guard passes after removing transient geometry
     - affected unit and incremental gates pass
   rollback: Revert this batch; no database or deployed runtime state is changed.
-  next_exact_step: Commit the clean candidate, rerun acceptance classification, publish the PR and wait for current-head gates.
+  next_exact_step: Freeze the candidate, commit it, run one clean-HEAD ci.local.quick, then update PR #852 and rerun the exact-head full release gate.
