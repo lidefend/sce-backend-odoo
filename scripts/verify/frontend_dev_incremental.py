@@ -184,6 +184,17 @@ RULES = (
         "verify.frontend.runtime_identity.unit",
         "verify.frontend.standard_preview.unit",
     )),
+    Rule((
+        "addons/smart_core/utils/product_release.py",
+        "addons/smart_core/tests/test_runtime_release_identity.py",
+    ), (
+        "verify.runtime.release_identity.unit",
+    )),
+    Rule((
+        "scripts/dev/frontend_static_build.sh",
+    ), (
+        "verify.frontend.runtime_identity.unit",
+    )),
     # Renderer registration is one executable contract spanning the generated
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
