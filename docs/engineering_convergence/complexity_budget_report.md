@@ -75,15 +75,15 @@ Generated from repository source files. This report is informational during the 
 | 1587 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1568 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
-| 1557 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1512 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1518 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1026 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 682 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -310,16 +310,16 @@ Generated from repository source files. This report is informational during the 
 | 1587 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1568 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1557 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1512 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1518 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

@@ -13,6 +13,8 @@
 - Target: 0 declarations
 - `product-patterns.css`: keep product patterns, move global accessibility and
   reduced-motion foundations to `styles/accessibility.css`
+- The skip link consumes `pattern.overlay.skip_link_z_index`; the application
+  stylesheet no longer embeds a raw stacking value.
 
 ## Validation
 
@@ -21,6 +23,9 @@
 - Global accessibility/focus/reduced-motion rules moved to `styles/accessibility.css`
   (53 lines) and imported before product patterns.
 - `make verify.frontend.style_system.guard`: PASS.
+- Design Token package build: PASS.
+- Design Token verify: PASS.
+- Design Token unit tests: 5 passed.
 - `make verify.frontend.navigation_shell.unit`: PASS.
 - `make verify.frontend.professional_business_value.unit`: PASS.
 - `make verify.frontend.scene_component_bridge.guard`: PASS.

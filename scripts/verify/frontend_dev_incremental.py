@@ -44,6 +44,7 @@ WATCH_ROOTS = (
     "frontend/packages/ui/src",
     "frontend/packages/ui/package.json",
     "frontend/packages/ui/tsconfig.json",
+    "frontend/packages/design-tokens",
     "scripts/verify/frontend_",
     "scripts/ops/incremental_execution.py",
 )
@@ -176,6 +177,11 @@ RULES = (
         "frontend/packages/ui/package.json",
         "frontend/packages/ui/tsconfig.json",
     ), BASE_FRONTEND_TARGETS),
+    Rule((
+        "frontend/packages/design-tokens/",
+    ), (
+        "verify.frontend.style_system.guard",
+    )),
     Rule((
         "frontend/apps/web/vite.config.ts",
         "frontend/apps/web/src/env.d.ts",

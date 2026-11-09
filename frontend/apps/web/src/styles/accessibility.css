@@ -2,7 +2,7 @@
 
 .skip-link {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--sc-pattern-overlay-skip-link-z-index);
   inset: 8px auto auto 8px;
   transform: translateY(-160%);
   padding: 8px 12px;

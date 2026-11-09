@@ -26,6 +26,11 @@ goal:
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/split_plan_queue.md
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/packages/design-tokens/dist/shared/tokens.ts
+      - frontend/packages/design-tokens/dist/web/tokens.css
+      - frontend/packages/design-tokens/dist/web/tokens.dark.css
+      - frontend/packages/design-tokens/dist/web/tokens.light.css
+      - frontend/packages/design-tokens/tokens/pattern.json
       - scripts/verify/
       - frontend/apps/web/src/
     product_behavior: >
@@ -37,6 +42,7 @@ goal:
   acceptance:
     - "!important count in frontend/apps/web/src is zero"
     - product-patterns.css no longer owns global accessibility foundations
+    - accessibility skip-link stacking uses the Token v1 pattern layer
     - style-system, lint, strict typecheck and affected iteration gates pass
     - 1440/390 Golden Sample pages show no visual or interaction regression
   exclusions:
