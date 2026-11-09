@@ -111,7 +111,8 @@
 
 ### Clean candidate 增量门禁
 
-在 clean 代码/测试候选 `2a3969f5072b4554408148395b45161f3908f129` 上执行：
+在 S1 修复后的 clean 代码/测试候选
+`d328a72ed19d0b57b8839a73da750f22d09b4f3e` 上执行：
 
 ```text
 make ci.local.iteration
@@ -125,9 +126,9 @@ make ci.local.iteration
 - not-run：0
 - status：PASSED
 - receipt：
-  `.runtime/frontend-dev-validation/executions/20261108T235324Z-408548-225833322/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261109T004438Z-695696-567994980/receipt.json`
 - receipt SHA256：
-  `4fac67e8e251ade0dcf859b9a365ac049e59388abf82a865d12cc34f86f2b78e`
+  `176506ae3242deb6b170018251f0ebdc6afc9733ab43fb6d9a5caab41c0188fe`
 
 当前 main 的 delivery evidence manifest 中，`list_surface_structure` 的来源仍不是
 本分支 head 的祖先，因此该 runtime suite 明确记为 `verification_pending`。
@@ -137,19 +138,34 @@ make ci.local.iteration
 
 ### R2：Independent review 与 list-surface 证据裁定
 
-固定产品/测试候选：`2a3969f5072b4554408148395b45161f3908f129`。
+初始固定产品/测试候选：`2a3969f5072b4554408148395b45161f3908f129`。
 
 Independent review first returned `REQUEST_CHANGES` S1：Contract V2 collection
 column projection dropped `componentKey`, so real List/Kanban did not reach the
 shared duration path. The repair now preserves `componentKey` from the actual
 `resolveListColumnOptions` producer and adds a producer-to-List/Kanban test.
 
+S1 修复候选：`d328a72ed19d0b57b8839a73da750f22d09b4f3e`。
+
+修复后定向验证：
+
+- `verify.frontend.contract_shape_projection.unit`：12 cases PASS；
+- 真实列投影 `duration_hours` 同时驱动 List/Kanban 的
+  `1 小时 30 分钟`；
+- business semantics、professional business value Chromium、collection view
+  semantics：PASS；
+- lint、strict typecheck、production build：PASS；
+- clean candidate `ci.local.iteration`：9/9 required targets PASS。
+
 List Surface 输入对账：
 
 - manifest 当前 `input_sha256`：
   `7e3563f0e2b10337eb2f3e7d18efe47b2286b88c3e929d63ec814a47920bd34d`
 - 本批修改后的 suite input fingerprint：
-  `96e943aa56dd35b91636a26e2688fbd79b9bc8907a9200b4d5ab19b7b4e373cf`
+  S1 修复后的 `d328a72ed` 对应
+  `96e943aa56dd35b91636a26e2688fbd79b9bc8907a9200b4d5ab19b7b4e373cf`。
+- 追加 S1 metadata 后的当前 suite input fingerprint：
+  `7338b5a8cd8adec53f46262b70fb2effc405445659810d4b0c56a346b893cdc3`。
 - fingerprint 改变，因此不得把旧 runtime PASS 直接复用于本候选。
 - manifest 原绑定 `0ef405468` 经过 squash 后不在本分支祖先链，工具以
   `not an ancestor` fail-closed，身份行为正确。
@@ -179,6 +195,6 @@ runtime suite 保持 `verification_pending`，不写成 PASS。
 ### 状态
 
 - 批次产品实现与本地定向验证：完成。
-- 独立第二审查：pending。
+- 独立第二审查：第一轮 REQUEST_CHANGES，S1 修复后等待新 HEAD 复审。
 - list-surface 运行证据：verification_pending。
 - PR、合并、部署：未执行。
