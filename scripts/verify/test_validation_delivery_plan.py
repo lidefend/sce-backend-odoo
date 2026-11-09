@@ -35,7 +35,7 @@ class EvidencePlanTests(unittest.TestCase):
         self.assertEqual(states['one']['status'], 'affected')
         validate.assert_not_called()
 
-    def test_tampered_or_expired_evidence_is_not_reusable(self):
+    def test_tampered_evidence_is_not_reusable(self):
         with patch.object(delivery.binding, 'suite_owns_path', return_value=False), \
              patch.object(delivery.binding, 'validate_suite_record', side_effect=delivery.binding.BindingError('tampered')):
             states = delivery.evidence_states(self.registry, self.plan, {'suites': {'one': {}}}, [])

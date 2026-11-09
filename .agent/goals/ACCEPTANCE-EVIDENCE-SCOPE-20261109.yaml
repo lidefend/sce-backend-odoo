@@ -1,0 +1,51 @@
+goal:
+  id: ACCEPTANCE-EVIDENCE-SCOPE-20261109
+  title: acceptance_evidence_follows_contract_consumers_not_broad_paths_or_wall_clock
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target:
+    - acceptance_evolution_binding
+    - merge_preflight_evidence_scope
+    - evidence_reuse_policy
+  module:
+    - AGENTS.md
+    - config/acceptance/evolution_binding.v1.json
+    - scripts/verify/acceptance_evolution_binding_guard.py
+    - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - scripts/ops/validation_delivery_plan.py
+    - scripts/verify/test_validation_delivery_plan.py
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_frontend_dev_incremental.py
+    - docs/ops/codex_delivery_collaboration_protocol_v1.md
+    - docs/acceptance/acceptance_evolution_binding_v1.md
+    - docs/ops/iterations/acceptance_evidence_scope_convergence_20261109.md
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+  objective: >-
+    Make acceptance runtime evidence conditional on changed contract semantics
+    or changed contract consumers, narrow list/relation evidence to their real
+    UI consumers, and reuse unchanged evidence without a wall-clock expiry.
+  acceptance:
+    - >-
+      Ordinary frontend runtime and construction product changes select their
+      contract lanes without automatically requiring list or relation browser
+      evidence.
+    - >-
+      List-surface and relation-roundtrip suites are selected only by their
+      actual consumers, probes, configuration, or explicit acceptance inputs.
+    - >-
+      Deployment-only runtime suites remain deferred from merge preflight.
+    - >-
+      Unchanged evidence remains reusable while its suite input fingerprint and
+      evidence bytes match; elapsed calendar time alone never invalidates it.
+    - >-
+      make verify.acceptance.evolution.binding and
+      make verify.validation.delivery.unit and
+      make verify.frontend.dev.incremental.unit pass with non-zero tests.
+  exclusions:
+    - no product code, contract schema, ACL, database or runtime deployment changes
+    - no removal of exact-head, input-fingerprint, evidence-byte or PR identity checks
+    - no reuse of evidence whose declared inputs changed
+  rollback: >-
+    Revert the P4 commit; no product data, runtime service or deployed artifact
+    is affected.

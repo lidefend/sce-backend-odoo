@@ -52,6 +52,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.acceptance.evolution.binding"],
                 )
 
+    def test_delivery_plan_inputs_select_the_delivery_unit(self) -> None:
+        for path in (
+            "scripts/ops/validation_delivery_plan.py",
+            "scripts/verify/test_validation_delivery_plan.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.validation.delivery.unit"],
+                )
+
     def test_component_takeover_inputs_select_their_inventory_lock(self) -> None:
         for path in (
             "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",

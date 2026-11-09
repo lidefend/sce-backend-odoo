@@ -245,6 +245,14 @@ class TestGlobAndPlan(unittest.TestCase):
         with self.assertRaises(guard.BindingError):
             guard.plan_for_stage(self.registry, plan, "skip")
 
+    def test_wall_clock_is_not_an_evidence_policy_key(self):
+        self.assertNotIn("evidence_max_age_hours", self.registry["policy"])
+        self.assertTrue(self.registry["policy"]["evidence_carry_forward"]["enabled"])
+        self.assertEqual(
+            self.registry["policy"]["evidence_carry_forward"]["mode"],
+            "suite_input_fingerprint",
+        )
+
     def test_runtime_suite_inputs_are_target_scoped_not_repository_wide(self):
         self.assertEqual(guard.GLOBAL_SUITE_INPUTS, ())
         for suite_id in ("frontend_presentation", "list_surface_structure", "relation_roundtrip"):
@@ -302,13 +310,13 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertNotIn("relation_roundtrip", plan["required_suites"])
 
     def test_capability_contract_rule_does_not_shadow_other_construction_files(self):
-        """Other smart_construction_core files keep the full construction rule."""
+        """Other smart_construction_core files keep backend contract coverage."""
         handler = "addons/smart_construction_core/handlers/project_initiation_enter.py"
         plan = guard.build_plan(self.registry, [handler], "base", HEAD)
         self.assertEqual(plan["matched_rules"][handler], "construction-product-runtime")
-        self.assertIn("backend_contract", plan["required_suites"])
-        self.assertIn("list_surface_structure", plan["required_suites"])
-        self.assertIn("relation_roundtrip", plan["required_suites"])
+        self.assertEqual(plan["required_suites"], ["backend_contract"])
+        self.assertNotIn("list_surface_structure", plan["required_suites"])
+        self.assertNotIn("relation_roundtrip", plan["required_suites"])
 
     def test_scene_fact_changes_select_backend_without_unrelated_browser_suites(self):
         paths = [
@@ -326,8 +334,6 @@ class TestGlobAndPlan(unittest.TestCase):
     def test_scene_change_cannot_mask_mixed_business_or_browser_change(self):
         scene = "addons/smart_construction_core/models/support/product_scenario.py"
         for other, required in (
-            ("addons/smart_construction_core/models/core/project.py", {"list_surface_structure", "relation_roundtrip"}),
-            ("addons/smart_construction_scene/services/scene_contract.py", {"list_surface_structure", "relation_roundtrip"}),
             ("frontend/apps/web/src/views/ActionView.vue", {"list_surface_structure"}),
             ("scripts/verify/record_relation_roundtrip_acceptance.js", {"relation_roundtrip"}),
         ):
@@ -351,9 +357,6 @@ class TestGlobAndPlan(unittest.TestCase):
     def test_native_publication_does_not_mask_other_runtime_changes(self):
         catalog = "addons/smart_construction_core/models/support/product_policy_sync.py"
         for other, required in (
-            ("addons/smart_construction_core/models/core/project.py", {"list_surface_structure", "relation_roundtrip"}),
-            ("addons/smart_construction_core/services/new_service.py", {"list_surface_structure", "relation_roundtrip"}),
-            ("addons/smart_construction_scene/services/scene_contract.py", {"list_surface_structure", "relation_roundtrip"}),
             ("frontend/apps/web/src/views/ActionView.vue", {"list_surface_structure"}),
             ("scripts/verify/record_relation_roundtrip_acceptance.js", {"relation_roundtrip"}),
         ):
@@ -408,14 +411,11 @@ class TestGlobAndPlan(unittest.TestCase):
         with patch.object(guard, "_git", side_effect=[before, OTHER, after_other]):
             plan = guard.build_plan(self.registry, [path], "base", HEAD)
         self.assertEqual(plan["matched_rules"][path], "construction-product-runtime")
-        self.assertIn("list_surface_structure", plan["required_suites"])
-        self.assertIn("relation_roundtrip", plan["required_suites"])
+        self.assertEqual(plan["required_suites"], ["backend_contract"])
 
     def test_approval_policy_initialization_does_not_mask_other_construction_files(self):
         path = "addons/smart_construction_core/data/approval_policy_seed.xml"
         for other, required in (
-            ("addons/smart_construction_core/models/core/project.py", {"list_surface_structure", "relation_roundtrip"}),
-            ("addons/smart_construction_core/services/new_service.py", {"list_surface_structure", "relation_roundtrip"}),
             ("frontend/apps/web/src/views/ActionView.vue", {"list_surface_structure"}),
             ("scripts/verify/record_relation_roundtrip_acceptance.js", {"relation_roundtrip"}),
         ):
@@ -463,18 +463,16 @@ class TestGlobAndPlan(unittest.TestCase):
     def test_manifest_conditional_plan_falls_back_on_runtime_or_missing_input(self):
         path = "addons/smart_construction_core/__manifest__.py"
         before = "{'version': '1', 'depends': ['base']}"
-        for after, only_version in ((before.replace("'1'", "'2'"), True),
-                                    (before.replace('base', 'web'), False)):
+        for after in (before.replace("'1'", "'2'"), before.replace('base', 'web')):
             with patch.object(guard, '_git', side_effect=[before, OTHER, after]):
                 plan = guard.build_plan(self.registry, [path], "base", HEAD)
-            self.assertEqual('list_surface_structure' not in plan['required_suites'], only_version)
-            self.assertEqual('relation_roundtrip' not in plan['required_suites'], only_version)
+            self.assertEqual(plan['required_suites'], ['backend_contract'])
+            self.assertEqual(plan['required_evidence_suites'], [])
         with patch.object(guard, '_git', side_effect=guard.BindingError('missing base')):
             plan = guard.build_plan(self.registry, [path], "base", HEAD)
-        self.assertIn('relation_roundtrip', plan['required_suites'])
-        # Fingerprint invalidation remains conservative: path-only analysis
-        # cannot prove that a manifest delta contains only a version change.
-        self.assertTrue(guard.suite_owns_path(self.registry, 'list_surface_structure', path))
+        self.assertEqual(plan['required_suites'], ['backend_contract'])
+        self.assertFalse(guard.suite_owns_path(self.registry, 'list_surface_structure', path))
+        self.assertFalse(guard.suite_owns_path(self.registry, 'relation_roundtrip', path))
 
     def test_manifest_local_plan_reads_uncommitted_dependencies(self):
         path = "addons/smart_construction_core/__manifest__.py"
@@ -482,7 +480,7 @@ class TestGlobAndPlan(unittest.TestCase):
         with patch.object(guard, '_git', side_effect=[before, HEAD]), \
                 patch.object(Path, 'read_text', return_value=before.replace('base', 'web')):
             plan = guard.build_plan(self.registry, [path], 'base', HEAD)
-        self.assertIn('relation_roundtrip', plan['required_suites'])
+        self.assertEqual(plan['required_suites'], ['backend_contract'])
 
     def test_plan_keeps_docs_only_changes_out_of_runtime_evidence(self):
         plan = guard.build_plan(self.registry, ["docs/ops/readme.md"], "base", HEAD)
@@ -513,10 +511,8 @@ class TestGlobAndPlan(unittest.TestCase):
         runtime_path = "frontend/apps/web/src/api/businessConfig.ts"
         plan = guard.build_plan(self.registry, [runtime_path], "base", HEAD)
         self.assertEqual(plan["matched_rules"][runtime_path], "frontend-runtime")
-        self.assertEqual(
-            plan["required_suites"],
-            ["frontend_contract", "list_surface_structure"],
-        )
+        self.assertEqual(plan["required_suites"], ["frontend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
 
     def test_frontend_test_tool_changes_do_not_require_runtime_evidence(self):
         for path in (
@@ -530,23 +526,38 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertEqual(plan["required_suites"], ["frontend_contract"], path)
             self.assertEqual(plan["required_evidence_suites"], [], path)
 
-    def test_frontend_runtime_changes_still_require_runtime_evidence(self):
+    def test_frontend_runtime_only_requires_runtime_evidence_for_real_consumers(self):
+        generic = "frontend/apps/web/src/api/businessConfig.ts"
+        plan = guard.build_plan(self.registry, [generic], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][generic], "frontend-runtime")
+        self.assertEqual(plan["required_suites"], ["frontend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
+        relation = "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue"
+        plan = guard.build_plan(self.registry, [relation], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][relation], "frontend-relation-consumer")
+        self.assertEqual(plan["required_evidence_suites"], ["relation_roundtrip"])
+
+        list_consumer = "frontend/apps/web/src/components/product-list/ProductListSurface.vue"
+        plan = guard.build_plan(self.registry, [list_consumer], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][list_consumer], "frontend-list-surface-consumer")
+        self.assertEqual(plan["required_evidence_suites"], ["list_surface_structure"])
+
         for path in (
-            "frontend/apps/web/src/api/businessConfig.ts",
-            "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+            "frontend/apps/web/src/pages/ListPage.vue",
+            "frontend/apps/web/src/pages/ListPage.css",
         ):
             plan = guard.build_plan(self.registry, [path], "base", HEAD)
-            self.assertEqual(plan["matched_rules"][path], "frontend-runtime", path)
-            self.assertEqual(
-                plan["required_suites"],
-                ["frontend_contract", "list_surface_structure"],
-                path,
-            )
-            self.assertEqual(
-                plan["required_evidence_suites"],
-                ["list_surface_structure"],
-                path,
-            )
+            self.assertEqual(plan["matched_rules"][path], "frontend-list-surface-consumer")
+            self.assertEqual(plan["required_evidence_suites"], ["list_surface_structure"])
+
+        for path in (
+            "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
+            "frontend/apps/web/src/pages/contractForm/professionalRelationLifecycleModel.ts",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["matched_rules"][path], "frontend-relation-consumer")
+            self.assertEqual(plan["required_evidence_suites"], ["relation_roundtrip"])
 
     def test_frontend_test_tool_changes_keep_static_contract_requirement(self):
         plan = guard.build_plan(
@@ -560,7 +571,7 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(merge["required_evidence_suites"], [])
         self.assertNotIn("frontend_contract", merge["required_evidence_suites"])
 
-    def test_frontend_build_and_acceptance_scripts_still_require_runtime_evidence(self):
+    def test_frontend_build_and_acceptance_scripts_use_contract_lane_only(self):
         for path in (
             "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
             "frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs",
@@ -568,16 +579,8 @@ class TestGlobAndPlan(unittest.TestCase):
         ):
             plan = guard.build_plan(self.registry, [path], "base", HEAD)
             self.assertEqual(plan["matched_rules"][path], "frontend-runtime", path)
-            self.assertEqual(
-                plan["required_suites"],
-                ["frontend_contract", "list_surface_structure"],
-                path,
-            )
-            self.assertEqual(
-                plan["required_evidence_suites"],
-                ["list_surface_structure"],
-                path,
-            )
+            self.assertEqual(plan["required_suites"], ["frontend_contract"], path)
+            self.assertEqual(plan["required_evidence_suites"], [], path)
 
     def test_frontend_acceptance_schema_changes_do_not_require_runtime_evidence(self):
         for path in (
@@ -612,7 +615,7 @@ class TestGlobAndPlan(unittest.TestCase):
         ):
             plan = guard.build_plan(self.registry, [path], "base", HEAD)
             self.assertEqual(plan["status"], "PASS", path)
-            self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-config", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-product-runtime-config", path)
             self.assertEqual(
                 plan["required_suites"],
                 ["frontend_contract", "list_surface_structure"],
@@ -624,7 +627,7 @@ class TestGlobAndPlan(unittest.TestCase):
                 path,
             )
 
-    def test_mixed_schema_and_runtime_frontend_keeps_list_surface_evidence(self):
+    def test_mixed_schema_and_generic_frontend_does_not_require_list_surface(self):
         plan = guard.build_plan(
             self.registry,
             [
@@ -635,9 +638,9 @@ class TestGlobAndPlan(unittest.TestCase):
             HEAD,
         )
         self.assertEqual(plan["status"], "PASS")
-        self.assertIn("list_surface_structure", plan["required_evidence_suites"])
+        self.assertEqual(plan["required_evidence_suites"], [])
 
-    def test_unknown_frontend_config_path_fails_closed_to_list_surface(self):
+    def test_unknown_frontend_config_path_stays_in_contract_lane(self):
         plan = guard.build_plan(
             self.registry,
             ["config/frontend/new_unclassified_acceptance_config.json"],
@@ -649,7 +652,7 @@ class TestGlobAndPlan(unittest.TestCase):
             plan["matched_rules"]["config/frontend/new_unclassified_acceptance_config.json"],
             "frontend-acceptance-config",
         )
-        self.assertIn("list_surface_structure", plan["required_evidence_suites"])
+        self.assertEqual(plan["required_evidence_suites"], [])
 
     def test_presentation_lane_is_wired_into_the_frontend_quick_gate(self):
         makefile = (ROOT / "make" / "frontend.mk").read_text(encoding="utf-8")
@@ -716,15 +719,28 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(guard.plan_for_stage(self.registry, plan, 'merge')['required_evidence_suites'], [])
         self.assertIn('path_namespace_identity',
                       guard.plan_for_stage(self.registry, plan, 'deployment')['required_evidence_suites'])
-        for sibling in ('scripts/dev/frontend_acceptance_up.sh',
-                        'scripts/dev/frontend_acceptance_operation_entry.sh',
-                        'scripts/verify/frontend_acceptance_login_probe.py',
-                        'frontend/apps/web/src/views/ActionView.vue'):
+        for sibling in (
+            'scripts/dev/frontend_acceptance_up.sh',
+            'scripts/dev/frontend_acceptance_operation_entry.sh',
+            'scripts/verify/frontend_acceptance_login_probe.py',
+        ):
             with self.subTest(sibling=sibling):
                 mixed = guard.build_plan(self.registry, [path, sibling], 'base', HEAD)
-                self.assertIn('list_surface_structure',
-                              guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'])
+                self.assertEqual(
+                    guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'],
+                    [],
+                )
                 self.assertNotEqual(mixed['matched_rules'][sibling], 'frontend-acceptance-carrier-lifecycle')
+        mixed = guard.build_plan(
+            self.registry,
+            [path, 'frontend/apps/web/src/views/ActionView.vue'],
+            'base',
+            HEAD,
+        )
+        self.assertIn(
+            'list_surface_structure',
+            guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'],
+        )
 
     def test_orm_runner_requires_backend_but_not_browser_evidence(self):
         for path in ('scripts/test/frontend_acceptance_fixture_orm.sh',
@@ -736,7 +752,7 @@ class TestGlobAndPlan(unittest.TestCase):
         for path in ('scripts/dev/frontend_acceptance_operation_entry.sh',
                      'scripts/test/frontend_acceptance_other.py'):
             plan = guard.build_plan(self.registry, [path], 'base', HEAD)
-            self.assertIn('list_surface_structure', plan['required_evidence_suites'])
+            self.assertEqual(plan['required_evidence_suites'], ['path_namespace_identity'])
 
     def test_snapshot_producers_keep_backend_and_deployment_checks(self):
         for path in ("scripts/test/frontend_acceptance_release_snapshot.py",
@@ -746,10 +762,9 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertEqual(guard.plan_for_stage(self.registry, plan, "merge")["required_evidence_suites"], [])
             self.assertIn("daily_runtime_entry", guard.plan_for_stage(self.registry, plan, "deployment")["required_evidence_suites"])
             mixed = guard.build_plan(self.registry, [path, "scripts/dev/frontend_acceptance_operation_entry.sh"], "base", HEAD)
-            self.assertIn("list_surface_structure", mixed["required_evidence_suites"])
             self.assertIn("path_namespace_identity", mixed["required_evidence_suites"])
 
-    def test_frontend_acceptance_runtime_entries_still_require_list_surface(self):
+    def test_frontend_acceptance_runtime_entries_do_not_require_list_surface(self):
         plan = guard.build_plan(
             self.registry,
             ["scripts/dev/frontend_acceptance_up.sh"],
@@ -758,7 +773,7 @@ class TestGlobAndPlan(unittest.TestCase):
         )
         self.assertEqual(plan["matched_rules"]["scripts/dev/frontend_acceptance_up.sh"],
                          "isolated-acceptance-entry-identity")
-        self.assertIn("list_surface_structure", plan["required_suites"])
+        self.assertNotIn("list_surface_structure", plan["required_suites"])
 
     def test_acceptance_fixture_and_carrier_runtime_skip_runtime_evidence(self):
         for path in (
@@ -1130,14 +1145,14 @@ class TestManifest(unittest.TestCase):
             with self.assertRaises(guard.BindingError):
                 guard.validate_manifest(self.registry, self.plan, manifest, HEAD)
 
-    def test_stale_manifest_fails(self):
+    def test_old_manifest_remains_reusable_when_inputs_match(self):
         with tempfile.TemporaryDirectory() as raw:
             manifest = self._manifest(Path(raw))
             payload = json.loads(manifest.read_text(encoding="utf-8"))
             payload["recorded_at"] = "2000-01-01T00:00:00Z"
             manifest.write_text(json.dumps(payload), encoding="utf-8")
-            with self.assertRaises(guard.BindingError):
-                guard.validate_manifest(self.registry, self.plan, manifest, HEAD)
+            result = guard.validate_manifest(self.registry, self.plan, manifest, HEAD)
+            self.assertEqual(result["status"], "PASS")
 
     def test_future_manifest_fails(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -1271,31 +1286,47 @@ class TestCarryForwardPolicy(unittest.TestCase):
 
     def test_offline_scene_tests_and_planner_bookkeeping_preserve_browser_inputs(self):
         registry = json.loads(json.dumps(self.registry))
-        suites = ('list_surface_structure', 'relation_roundtrip')
-        for suite in suites:
+        suite_paths = {
+            'list_surface_structure': 'frontend/apps/web/src/views/ActionView.vue',
+            'relation_roundtrip': 'frontend/apps/web/src/components/design-system/ScRelationField.vue',
+        }
+        for suite in suite_paths:
             registry['suites'][suite]['make_inputs'] = []
         test_path = 'addons/smart_construction_scene/tests/test_tenant_scene_activation.py'
-        runtime_path = 'addons/smart_construction_scene/services/tenant_scene_activation.py'
         self._write(test_path, 'old test')
-        self._write(runtime_path, 'old runtime')
+        for path in suite_paths.values():
+            self._write(path, 'old runtime')
         self._write('config/acceptance/evolution_binding.v1.json', json.dumps(registry))
         base = self._commit('browser inputs')
-        before = {s: guard.suite_input_sha256(registry, s, base) for s in suites}
+        before = {
+            suite: guard.suite_input_sha256(registry, suite, base)
+            for suite in suite_paths
+        }
         self._write(test_path, 'corrected isolated test input')
         self._write('config/acceptance/evolution_binding.v1.json', json.dumps(registry, indent=4))
         head = self._commit('offline tests and planner formatting')
         plan = guard.build_plan(registry, [test_path], base, head)
         self.assertEqual(['backend_contract'], plan['required_suites'])
-        for suite in suites:
+        for suite in suite_paths:
             self.assertEqual(before[suite], guard.suite_input_sha256(registry, suite, head))
-        self._write(runtime_path, 'changed runtime')
-        scene = self._commit('scene enablement change')
-        for suite in suites:
-            self.assertEqual(before[suite], guard.suite_input_sha256(registry, suite, scene))
-        self._write('addons/smart_construction_core/models/core/project.py', 'changed relation fields')
-        runtime = self._commit('actual relation product change')
-        for suite in suites:
-            self.assertNotEqual(before[suite], guard.suite_input_sha256(registry, suite, runtime))
+
+        self._write(suite_paths['list_surface_structure'], 'changed list consumer')
+        list_head = self._commit('actual list consumer change')
+        self.assertNotEqual(
+            before['list_surface_structure'],
+            guard.suite_input_sha256(registry, 'list_surface_structure', list_head),
+        )
+        self.assertEqual(
+            before['relation_roundtrip'],
+            guard.suite_input_sha256(registry, 'relation_roundtrip', list_head),
+        )
+
+        self._write(suite_paths['relation_roundtrip'], 'changed relation consumer')
+        relation_head = self._commit('actual relation consumer change')
+        self.assertNotEqual(
+            before['relation_roundtrip'],
+            guard.suite_input_sha256(registry, 'relation_roundtrip', relation_head),
+        )
         registry['suites']['list_surface_structure']['evidence']['min_counts']['records_total'] += 1
         self.assertNotEqual(before['list_surface_structure'],
                             guard.suite_input_sha256(registry, 'list_surface_structure', head))

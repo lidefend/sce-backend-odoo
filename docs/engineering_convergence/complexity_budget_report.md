@@ -5,8 +5,8 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `5148`
-- Files requiring split plan: `73`
-- Files above warning threshold: `151`
+- Files requiring split plan: `74`
+- Files above warning threshold: `150`
 
 ## Split Plan Required
 
@@ -80,6 +80,7 @@ Generated from repository source files. This report is informational during the 
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
+| 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1026 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 682 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
@@ -92,7 +93,6 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1493 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
@@ -106,10 +106,10 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1361 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1350 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1347 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1353 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
@@ -119,7 +119,7 @@ Generated from repository source files. This report is informational during the 
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
-| 1281 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
+| 1278 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
@@ -316,8 +316,8 @@ Generated from repository source files. This report is informational during the 
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
+| 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1493 | warning | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
