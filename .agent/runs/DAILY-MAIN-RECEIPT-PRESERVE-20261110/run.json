@@ -10,9 +10,11 @@
     ".agent/active-runs.json",
     ".agent/goals/DAILY-MAIN-RECEIPT-PRESERVE-20261110.yaml",
     ".agent/runs/DAILY-MAIN-RECEIPT-PRESERVE-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "docs/ops/iterations/daily_main_receipt_preserve_20261110.md",
     "scripts/ops/daily_runtime_bundle_sync.py",
-    "scripts/ops/test_daily_runtime_bundle_sync.py"
+    "scripts/ops/test_daily_runtime_bundle_sync.py",
+    "scripts/verify/frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
