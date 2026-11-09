@@ -50,4 +50,11 @@ links from being dropped in a host with no usable origin.
 
 ## Result
 
-Pending commit, clean-HEAD iteration and affected 1440/390 page review.
+Completed on candidate `fb16c8009f8acaad70ab3ac5210b6806e84abe2b`.
+The exact clean iteration passed 16 affected targets. WorkspaceHome, MyWork and
+PaymentRequestForm passed at 1440x960 and 390x844 with zero overflow, zero
+Console/HTTP errors and `mutationCount=0`.
+
+Browser summary:
+`.runtime/m5-browser-fb16c800/summary.json`, SHA-256
+`c7d40cf66bb832bd59c792fc250906b2673eb68e46a5be848a12b0e75fbfbdbd`.
