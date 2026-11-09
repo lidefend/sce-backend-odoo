@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "id": "FE-POLISH-B1-20261109",
+  "branch": "fix/fe-polish-b1-20261109",
+  "baseline_sha": "c4e2061fa284c6402b0c49e38c056d90080e29db",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-POLISH-B1-20261109.yaml",
+  "record": "docs/ops/iterations/fe_polish_b1_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-POLISH-B1-20261109.yaml",
+    ".agent/runs/FE-POLISH-B1-20261109/run.json",
+    "docs/ops/iterations/fe_polish_b1_20261109.md",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/layouts/AppShell.css",
+    "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies; no database, service or deployment mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "my_work_guard": {
+      "target": "verify.frontend.my_work_approval.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "scripts/verify/frontend_my_work_approval_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate, publish the batch PR through the governed flow, then verify required checks on that exact head.",
+  "validation": {
+    "my_work_approval_guard": {
+      "status": "passed",
+      "command": "python3 scripts/verify/frontend_my_work_approval_guard.py",
+      "result": "[OK] FE-B05 authoritative work/form/approval guard"
+    },
+    "agent_ledger": {
+      "status": "passed",
+      "target": "verify.agent.ledger.unit",
+      "tests": 18,
+      "result": "goals=265 runs=249 pinned_residuals=2 open_run_allowlist=2"
+    },
+    "typecheck_strict": {
+      "status": "passed",
+      "command": "pnpm run typecheck:strict"
+    },
+    "eslint": {
+      "status": "passed",
+      "command": "npx eslint AppShell.vue MyWorkApprovalWorkspace.vue WorkspaceHome.vue",
+      "exit": 0
+    }
+  }
+}

@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: FE-POLISH-B1-20261109
+  title: FE-POLISH-B1 外壳与卡片信息层级收口
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Product shell footer order, work card title readability, role-home fact de-duplication, mobile topbar label
+  module: AppShell, MyWorkApprovalWorkspace, WorkspaceHome
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    All four findings are presentation defects inside existing P0 page patterns and the
+    product shell. No contract, ACL, permission or business semantic changes are needed.
+  why_not_elsewhere: >
+    These are not industry model rules, customer preferences or low-code configuration;
+    the contract already declares every fact shown. The defects are CSS box ordering,
+    a single-line clamp, one duplicated money presentation and a clipped profile label.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-POLISH-B1-20261109.yaml
+      - .agent/runs/FE-POLISH-B1-20261109/run.json
+      - docs/ops/iterations/fe_polish_b1_20261109.md
+      - frontend/apps/web/src/layouts/AppShell.vue
+      - frontend/apps/web/src/layouts/AppShell.css
+      - frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue
+      - frontend/apps/web/src/components/role-home/WorkspaceHome.vue
+    product_behavior: >
+      The shell footer stays below the routed page body, the work card title keeps the
+      record number readable on a second line, the role-home task card no longer repeats
+      the amount already shown by its money chip, and the narrow topbar no longer clips
+      the interface-style label.
+  objective: >
+    Close the four verifiable presentation defects reported by the owner demo review in
+    one independently acceptable batch, without touching contract structure.
+  acceptance:
+    - the content footer renders after the routed page body at 1440 and 390 widths
+    - the work card title wraps to two lines so the record code is not clipped
+    - the role-home task card does not repeat a money fact already shown by its chip
+    - the style profile label is not clipped on a 390 wide topbar
+    - targeted guard, strict typecheck and lint pass

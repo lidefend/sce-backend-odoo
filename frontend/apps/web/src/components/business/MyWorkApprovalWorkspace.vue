@@ -291,7 +291,7 @@ async function confirmAction() {
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .business-type { white-space: nowrap; }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
-.work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; white-space: normal; }
 .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 .work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
 .work-card dl.work-card__summary { grid-area: summary; grid-template-columns: minmax(0, 1fr); }

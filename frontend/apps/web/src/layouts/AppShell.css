@@ -436,8 +436,13 @@
  * and offsets the caption by one 24px margin step. Mirror those values through the
  * SC token authority; the caption keeps the official muted tone / 20px line box /
  * centred alignment. */
+.scene-style-trigger__label { white-space: nowrap; }
+
 .shell-content-footer {
   flex: 0 0 auto;
+  /* The routed page frame declares `order: 2` inside this flex column, so a footer
+   * left at the default order 0 paints above the page body. Keep the caption last. */
+  order: 3;
   margin-bottom: var(--sc-space-lg);
   padding: 0;
   color: var(--sc-semantic-text-secondary);
@@ -1174,4 +1179,10 @@
   .router-host {
     padding-top: 0;
   }
+}
+
+/* Narrow topbars keep the style-picker caret; the profile name stays available
+ * through the button's title/aria-label instead of being clipped mid-word. */
+@media (max-width: 760px) {
+  .scene-style-trigger__label { display: none; }
 }

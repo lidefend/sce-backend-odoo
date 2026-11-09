@@ -21,8 +21,8 @@
                 <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
               </div>
               <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
-              <dl v-if="task.facts.length" class="role-home-surface__task-facts">
-                <div v-for="fact in task.facts" :key="fact.key">
+              <dl v-if="taskFacts(task).length" class="role-home-surface__task-facts">
+                <div v-for="fact in taskFacts(task)" :key="fact.key">
                   <dt>{{ fact.label }}</dt>
                   <dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" /><template v-else>{{ formatFact(fact) }}</template></dd>
                 </div>
@@ -165,6 +165,10 @@ import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPre
 import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 
 const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
+
+/** The heading chip already presents the amount; keep the fact list from repeating it. */
+const taskFacts = (task: { facts: ProductMyWorkFact[]; amount?: ProductMyWorkFact }) =>
+  task.amount ? task.facts.filter((fact) => fact.display_role !== 'money') : task.facts;
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 
