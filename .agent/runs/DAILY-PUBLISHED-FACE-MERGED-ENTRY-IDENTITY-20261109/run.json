@@ -13,6 +13,7 @@
     "addons/smart_core/delivery/menu_service.py",
     "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/daily_published_face_merged_entry_identity_20261109.md",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
