@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-CONVERGENCE-M7-20261110
   title: "自定义前端系统性收敛 M7 390/1440 中心旅程对等"
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: responsive parity and representative business journey continuity
   module: frontend shell, workspaces, collections, forms, overlays and navigation
@@ -35,6 +35,8 @@ goal:
     - proven parity defects are fixed within the shared P0 layer
     - unaffected journey evidence is reused by input identity
     - targeted tests and iteration pass non-zero
+  finding:
+    - "P1 navigation authority leak observed outside responsive scope; separate owner action required"
   exclusions:
     - contract_v2_change
     - acl_or_permission_change

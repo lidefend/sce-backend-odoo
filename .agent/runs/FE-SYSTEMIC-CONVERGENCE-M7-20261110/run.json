@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-SYSTEMIC-CONVERGENCE-M7-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
-  "baseline_sha": "f78a26322cebea01147d778569480b51a76a44dc",
-  "status": "active",
+  "baseline_sha": "6f2e52a34d7d2112d9d1ffe6925c4ecc33eecf0e",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M7-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m7_parity_20261110.md",
   "scope": [
@@ -76,6 +76,45 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Select ten executable center journeys from existing governed routes and run a read-only 1440/390 parity pass."
+  "blockers": [
+    "P1 navigation authority leak remains outside M7 scope: demo_role_pm receives reimbursement and advance-fund actions despite a disjoint capability closure."
+  ],
+  "next_exact_step": "M7 completed for responsive parity; register a separate P1 navigation-authority batch and proceed to M8 gate closure.",
+  "validation": {
+    "negative_closures": {
+      "status": "passed",
+      "command": "make verify.frontend.business_entry.negative_closures",
+      "candidates": 4,
+      "eligible": 2,
+      "summary": ".runtime/m7-matrix/negative_closures.json",
+      "summary_sha256": "09398ae01c7622a09b94325786962b6c4a870c3f682a60029163627edf95a97c"
+    },
+    "matrix_1440": {
+      "status": "passed_with_authority_gap",
+      "command": "make verify.frontend.business_entry.matrix.browser",
+      "viewport": "1440x900",
+      "entries": 10,
+      "problems": 1,
+      "console_errors": 0,
+      "summary": ".runtime/m7-matrix-1440-v3/summary.json",
+      "summary_sha256": "39931efcf42daab59156d8c85918d3dad042d9ff473a3716c2ea88f22e5708a0"
+    },
+    "matrix_390": {
+      "status": "passed_with_authority_gap",
+      "command": "make verify.frontend.business_entry.matrix.browser",
+      "viewport": "390x844",
+      "entries": 10,
+      "problems": 1,
+      "console_errors": 0,
+      "summary": ".runtime/m7-matrix-390-v3/summary.json",
+      "summary_sha256": "80224f9116de05ecacd778f91ea16c760232c1509a5d5aa11c3a3473a5fd1c3c"
+    },
+    "security_finding": {
+      "status": "failed",
+      "owner": "P1 navigation authority",
+      "evidence": ".runtime/m7-matrix-1440-v2/summary.json",
+      "evidence_sha256": "18941d7b0ffcfa039f048b3578de1f09ff675a0813f21ccc31a58cc595dc911c",
+      "detail": "demo_role_pm received reimbursement and advance-fund actions despite a disjoint capability closure"
+    }
+  }
 }

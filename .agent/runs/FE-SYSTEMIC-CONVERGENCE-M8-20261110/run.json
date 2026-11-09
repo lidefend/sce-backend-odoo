@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-CONVERGENCE-M8-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "6f2e52a34d7d2112d9d1ffe6925c4ecc33eecf0e",
+  "status": "active",
+  "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M8-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_m8_gates_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M8-20261110.yaml",
+    ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M8-20261110/run.json",
+    "docs/architecture/",
+    "docs/ops/iterations/frontend_systemic_m8_gates_20261110.md",
+    "frontend/apps/web/src/",
+    "scripts/verify/",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies and static source"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "systemic_gates": {
+      "target": "verify.frontend.systemic.convergence.guard",
+      "inputs": [
+        "docs/architecture/",
+        "frontend/apps/web/src/",
+        "scripts/verify/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Add the remaining nowrap/!important gate and umbrella target, then run all five gates."
+}

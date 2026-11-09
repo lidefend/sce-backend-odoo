@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M8-20261110
+  title: "自定义前端系统性收敛 M8 静态门禁闭环"
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend systemic convergence static gate registry
+  module: frontend verification targets, allowlists and ownership manifests
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Gate registration and allowlist enforcement are verification tooling concerns.
+    They must not change product behavior or business contracts.
+  why_not_elsewhere: >
+    A frontend or backend product change cannot prove that future source changes
+    remain inside the reviewed ownership model.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M8-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M8-20261110/run.json
+      - docs/ops/iterations/frontend_systemic_m8_gates_20261110.md
+      - docs/architecture/
+      - frontend/apps/web/src/
+      - scripts/verify/
+      - make/frontend.mk
+    product_behavior: >
+      Existing product behavior is unchanged; future drift in the five reviewed
+      static categories fails before it reaches browser validation.
+  objective: >
+    Close the M1-M8 program with five executable static ownership gates and one
+    umbrella verification entry.
+  acceptance:
+    - nowrap ownership and zero !important have a dedicated non-zero gate
+    - inline style, naked v-html and split ownership gates are wired together
+    - the umbrella gate fails if any member fails
+    - gate allowlists and policy counts are validated
+    - clean candidate iteration and all gate targets pass
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M8 commits; no persistent data or service state is involved.
