@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-POLISH-B1-20261109",
   "branch": "fix/fe-polish-b1-20261109",
-  "baseline_sha": "c4e2061fa284c6402b0c49e38c056d90080e29db",
+  "baseline_sha": "758a01e4df63a5ec0cb43c00cd02b463d01962b3",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-POLISH-B1-20261109.yaml",
   "record": "docs/ops/iterations/fe_polish_b1_20261109.md",
@@ -146,7 +146,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the evidence-only closeout and publish the clean exact head through the governed PR flow.",
+  "next_exact_step": "Push the clean published-branch synchronization commit and verify PR #856 on its new exact head.",
   "validation": {
     "my_work_approval_guard": {
       "status": "passed",
