@@ -44,6 +44,6 @@ goal:
     references; reverting the audit-copy commit restores the prior message with no
     data migration. No persistent runtime state is changed by validation.
   next_exact_step: >
-    Publish the PR-ledger synchronization commit, read back PR #851 and the
-    remote branch at the final exact HEAD, then wait for all current-HEAD
-    required workflows. Do not merge or deploy.
+    Publish the rebased PR #851 candidate, update its body to remove the
+    superseded payment-only classifier, read back the final exact HEAD, and
+    wait for current-HEAD workflows. Keep the PR open and unmerged.

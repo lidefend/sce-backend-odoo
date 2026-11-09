@@ -90,7 +90,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and publish the PR-ledger synchronization, read back PR #851 at the final exact HEAD, and wait for current-HEAD required workflows.",
+  "next_exact_step": "Publish the rebased PR #851 candidate and body, read back the final exact HEAD, and wait for current-HEAD workflows while keeping the PR unmerged.",
   "validation_plan": {
     "changed_layers": [
       "P0 capability governance documentation",
@@ -108,30 +108,43 @@
     }
   },
   "supplemental_validation": {
-    "status": "invalidated_by_pr850_rebase",
-    "note": "The earlier supplement was bound to the pre-rebase head and old evidence policy; rerun after the integration commit.",
+    "status": "passed_after_pr850_rebase",
     "automatic_approval_message": {
       "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1PaymentRequestCapability.test_automatic_approval_message_matches_effective_no_approval_rule",
       "status": "passed",
       "test_count": 1,
-      "log": ".runtime/closed-pr-salvage-20261109/payment-auto-approval-copy.log",
-      "log_sha256": "6495af7b9aa2bd759224463780dd201f9516a8b481dca59df3ac2aade4e1f66e",
+      "log": ".runtime/closed-pr-salvage-20261109/payment-auto-approval-copy-post850.log",
+      "log_sha256": "a9d513fed448ab41ac53d0385fee11a1be829b75e778a4d64fdcc61a30a0e823",
       "environment": "sc-local-dev / sc_dev_demo",
       "coverage": "real route from _route_submitted_approval into automatic _complete_payment_approval and chatter assertion"
     },
     "ci_local_iteration": {
       "command": "make ci.local.iteration",
       "status": "passed",
-      "log": ".runtime/closed-pr-salvage-20261109/ci-local-iteration-recorded.log",
-      "log_sha256": "6bda02efcb23d25b0fefd2f15600abf1cfc0bcb22f3a5e914238c40f0b06e66b",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261109T090536Z-3709075-596433559/receipt.json",
-      "receipt_sha256": "342c5592c1162ed2b0eebcb6b073da3680a1cbcbee2d4a8f37c0eb36fff0b052",
-      "executed_targets": 5,
+      "log": ".runtime/closed-pr-salvage-20261109/ci-local-iteration-post850.log",
+      "log_sha256": "0b722d0dc6b23da1277b1892e36d33a8fa18129a9d3fd34102664367de198cce",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T092807Z-3872695-244143135/receipt.json",
+      "receipt_sha256": "6ace32f59e8c14a24e32a9cfd9a064158c15ee74f9890dc224c377f9837c0994",
+      "executed_targets": 4,
       "all_required_targets_passed": true
+    },
+    "acceptance_policy": {
+      "command": "make verify.acceptance.evolution.binding",
+      "status": "passed",
+      "test_count": 71,
+      "log": ".runtime/closed-pr-salvage-20261109/acceptance-evolution-post850.log",
+      "log_sha256": "474263f4e37235f6316dbbcf909e8e5feca0e14d3d527411da475b14c05b9a6a"
+    },
+    "docs_links": {
+      "command": "make verify.docs.links",
+      "status": "passed",
+      "test_count": 337,
+      "log": ".runtime/closed-pr-salvage-20261109/docs-links-post850.log",
+      "log_sha256": "cc34a1aaa0e22877b27f1155060fff242800a1cc234c7a30a1d761e2b2b3f6fd"
     }
   },
   "ledger_sync": {
-    "state": "pr_created_metadata_sync_pending",
+    "state": "rebased_on_merged_pr850_pending_publication",
     "registered_checks": 6,
     "reusable_checks": 6,
     "goal_status": "verification_pending",
@@ -141,9 +154,11 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/851",
       "state": "open",
       "creation_head": "21b4e2f0c9ec7ece153dc7d6d10a464b70628066",
+      "integration_base": "346c194e765808727584466d69ab0d2b0605b7b8",
+      "rebased_head": "1f61ce390b1cd9fdcc7c8139d7fabdcfe93b6be8",
       "metadata_sync_commit_follows": true
     },
-    "remote_ci": "not_run",
+    "remote_ci": "pending_current_head",
     "merge": "not_performed",
     "deployment": "not_performed"
   }
