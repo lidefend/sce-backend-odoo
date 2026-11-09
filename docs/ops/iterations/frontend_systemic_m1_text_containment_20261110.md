@@ -51,21 +51,22 @@ the colon.
 - `make verify.frontend.page_pattern_reference_parity.unit`: 28 tests PASS.
 - `make ci.local.iteration`: PASS, 12 required targets, receipt
   `.runtime/frontend-dev-validation/executions/20261109T185916Z-3665478-377874651/receipt.json`.
-- Candidate build and browser carrier: product code `30ab6a8922bfab2757f0a871bf644adc443d8b8e`.
-- Browser summary: `.runtime/m1-browser-30ab6a892/summary.json`, SHA256
-  `87b215f1d3b2b97f8a84d78024520edb786b19dcf3131ea72d8952321aba3993`.
+- Candidate build and browser carrier: product code `0217fb40035055e5e08cd30392af84a0116feb53`.
+- Browser summary: `.runtime/m1-browser-0217fb400/summary.json`, SHA256
+  `b13a578cc0916d86eb8196e77d2b84e3e38d53898a0b21df75cd487cdb040bce`.
 
 ### Golden Sample evidence
 
 | Page | 1440 | 390 | SHA256 |
 | --- | --- | --- | --- |
-| WorkspaceHome | `desktop-workspace-home.png` | `mobile-workspace-home.png` | desktop `49f02606…`, mobile `4a761572…` |
-| My Work | `desktop-my-work.png` | `mobile-my-work.png` | desktop `afc174f6…`, mobile `d47b2b42…` |
-| Payment Request form | `desktop-contract-form.png` | `mobile-contract-form.png` | desktop `b99003ca…`, mobile `bdfc1679…` |
+| WorkspaceHome | `desktop-workspace-home.png` | `mobile-workspace-home.png` | desktop `76d1e133…`, mobile `4a761572…` |
+| My Work | `desktop-my-work.png` | `mobile-my-work.png` | desktop `0653edfa…`, mobile `6434d8d4…` |
+| Payment Request form | `desktop-contract-form.png` | `mobile-contract-form.png` | desktop `49335fe0…`, mobile `bdfc1679…` |
 
 Browser assertions for all six page/viewport combinations:
 
 - visible truncated elements without title/aria fallback: `0`
+- published app labels/topbar contexts without fallback: `0`
 - clipped money values: `0`
 - Console errors: `0`
 - unexpected HTTP errors: `0`

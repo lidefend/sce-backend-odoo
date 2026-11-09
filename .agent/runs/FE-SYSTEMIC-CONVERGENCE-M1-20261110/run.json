@@ -110,14 +110,14 @@
     },
     "browser": {
       "status": "passed",
-      "candidate_head": "30ab6a8922bfab2757f0a871bf644adc443d8b8e",
+      "candidate_head": "0217fb40035055e5e08cd30392af84a0116feb53",
       "viewports": ["1440x960", "390x844"],
       "pages": ["WorkspaceHome", "MyWork", "PaymentRequestForm"],
       "truncation_without_fallback": 0,
       "console_errors": 0,
       "http_errors": 0,
-      "summary": ".runtime/m1-browser-30ab6a892/summary.json",
-      "summary_sha256": "87b215f1d3b2b97f8a84d78024520edb786b19dcf3131ea72d8952321aba3993"
+      "summary": ".runtime/m1-browser-0217fb400/summary.json",
+      "summary_sha256": "b13a578cc0916d86eb8196e77d2b84e3e38d53898a0b21df75cd487cdb040bce"
     }
   }
 }
