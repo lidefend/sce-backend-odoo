@@ -33,3 +33,28 @@
   files are 10, matching the M1 ceiling.
 - Record identity/money protection: implemented in the affected list, home, relation, form and
   analysis surfaces; retained single-line identity/navigation labels have title or aria fallbacks.
+- `make verify.frontend.lint.src`: 0 errors (3 existing component warnings).
+- `make verify.frontend.typecheck.strict`: PASS.
+- `make verify.frontend.style_system.guard`: PASS.
+- `make verify.frontend.page_pattern_reference_parity.unit`: 28 tests PASS.
+- `make ci.local.iteration`: PASS, 11 required targets, receipt
+  `.runtime/frontend-dev-validation/executions/20261109T185125Z-3625351-380095538/receipt.json`.
+- Candidate build and browser carrier: product code `30ab6a8922bfab2757f0a871bf644adc443d8b8e`.
+- Browser summary: `.runtime/m1-browser-30ab6a892/summary.json`, SHA256
+  `87b215f1d3b2b97f8a84d78024520edb786b19dcf3131ea72d8952321aba3993`.
+
+### Golden Sample evidence
+
+| Page | 1440 | 390 | SHA256 |
+| --- | --- | --- | --- |
+| WorkspaceHome | `desktop-workspace-home.png` | `mobile-workspace-home.png` | desktop `49f02606…`, mobile `4a761572…` |
+| My Work | `desktop-my-work.png` | `mobile-my-work.png` | desktop `afc174f6…`, mobile `d47b2b42…` |
+| Payment Request form | `desktop-contract-form.png` | `mobile-contract-form.png` | desktop `b99003ca…`, mobile `bdfc1679…` |
+
+Browser assertions for all six page/viewport combinations:
+
+- visible truncated elements without title/aria fallback: `0`
+- clipped money values: `0`
+- Console errors: `0`
+- unexpected HTTP errors: `0`
+- My Work card identity `scrollHeight <= clientHeight` for all rendered cards

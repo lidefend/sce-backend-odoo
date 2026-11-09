@@ -3,7 +3,7 @@
   "id": "FE-SYSTEMIC-CONVERGENCE-M1-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "71e9c70f43e16b85ec7f925c9a261894f4be4e50",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M1-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_m1_text_containment_20261110.md",
   "scope": [
@@ -78,5 +78,43 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Classify all 131 nowrap declarations, implement the information-bearing rules and add the reviewed allowlist."
+  "next_exact_step": "Commit the M1 evidence closeout and publish the clean exact head for independent review.",
+  "validation": {
+    "lint": {
+      "status": "passed",
+      "command": "make verify.frontend.lint.src",
+      "errors": 0,
+      "warnings": 3
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "make verify.frontend.typecheck.strict"
+    },
+    "style_system": {
+      "status": "passed",
+      "command": "make verify.frontend.style_system.guard"
+    },
+    "page_patterns": {
+      "status": "passed",
+      "command": "make verify.frontend.page_pattern_reference_parity.unit",
+      "tests": 28
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 11,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T185125Z-3625351-380095538/receipt.json"
+    },
+    "browser": {
+      "status": "passed",
+      "candidate_head": "30ab6a8922bfab2757f0a871bf644adc443d8b8e",
+      "viewports": ["1440x960", "390x844"],
+      "pages": ["WorkspaceHome", "MyWork", "PaymentRequestForm"],
+      "truncation_without_fallback": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/m1-browser-30ab6a892/summary.json",
+      "summary_sha256": "87b215f1d3b2b97f8a84d78024520edb786b19dcf3131ea72d8952321aba3993"
+    }
+  }
 }
