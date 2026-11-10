@@ -78,7 +78,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Proceed to FE-03 with the current-bound payment and My Work evidence retained; separately retain the direct payment business-list entry and same-record kanban branches as runtime-unverified.",
+  "next_exact_step": "Close FE-04/FE-05 using the current-bound payment, My Work and relation evidence; retain hierarchical and same-record kanban runtime branches as environment-blocked/unverified.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
@@ -171,6 +171,15 @@
         "path": ".runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json",
         "sha256": "2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000"
       }
+    },
+    "fe03_static_and_runtime": {
+      "status": "partially_passed",
+      "ordinary_collection": "PASS: current list surface 18/18",
+      "readonly_edit_forms": "PASS: current payment detail and My Work/approved detail",
+      "action_entry_keyboard": "PASS for represented My Work/form actions and 390 keyboard path",
+      "hierarchical_worksheet_static": "PASS: 24 tests + 15 interaction cases + 10 load-stage cases",
+      "hierarchical_runtime": "blocked: acceptance frontend port 5175 belongs to another worktree; login probe returned 401",
+      "environment_conflict": "preserved; no process from the other worktree was stopped"
     }
   }
 }

@@ -107,6 +107,22 @@ The guard was aligned to the canonical CSS declaration and a focused
 content-box sabotage test was added. No product component, width rule or
 interaction behavior changed.
 
+## FE-03 page hierarchy and action entry
+
+| Surface | Result | Evidence |
+| --- | --- | --- |
+| Ordinary collection | fulfilled | Current list matrix 18/18 across 1440/1024/768/521/520/390; row identity and responsive components pass static locks |
+| Readonly form | fulfilled | Current approved payment detail keeps identity/status/amount; page identity and financial workspace presentation pass |
+| Edit form | fulfilled | Current payment detail collection edit/save/readback and My Work submit path pass |
+| Action entry | fulfilled for represented pages | Header/body/My Work actions pass; native action guard has 15 cases and row action identity 16 cases |
+| 390 action/accessibility | fulfilled | My Work keyboard path, confirmation focus, 390 wrap and no-overflow checks pass |
+| Hierarchical worksheet | runtime unverified | 24 policy tests, 15 keyboard interaction cases and 10 load-stage cases PASS; full browser lane was blocked by a foreign process owning acceptance port 5175, not by a product assertion |
+
+The full delivery-hardening lane was not claimed as a pass. Its login probe
+returned 401 because the acceptance frontend port belongs to another worktree;
+the process was preserved and the standard acceptance preview on 5180 remained
+available. No product code was changed in response.
+
 ## Status
 
 - Coverage reconciliation: completed.
@@ -114,6 +130,8 @@ interaction behavior changed.
   same-record kanban branches remain unverified. Payment detail
   edit/save/readback, My Work submission/approval, same-record amount readout,
   role isolation and My Work/relation return are current-bound and PASS.
+- FE-03: ordinary/readonly/edit/action/mobile surfaces have current or static
+  evidence; hierarchical runtime remains blocked by the external port owner.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.
