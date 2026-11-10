@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "id": "FE-RUNTIME-DEBUG-OPTIN-20261110",
+  "branch": "fix/frontend-runtime-debug-flag-20261110",
+  "baseline_sha": "ca032b92dd1131485313b9299b5e799c67f1d525",
+  "status": "active",
+  "goal": ".agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_runtime_debug_optin_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml",
+    ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
+    ".agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json",
+    ".agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/frontend_runtime_debug_optin_20261110.md",
+    "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
+    "frontend/apps/web/scripts/logger_runtime_test.ts",
+    "frontend/apps/web/src/utils/logger.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and exact-head GitHub checks"
+  },
+  "checks": {
+    "console_guard": {
+      "target": "verify.frontend.console.guard",
+      "inputs": [
+        "frontend/apps/web/src/utils/logger.ts",
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "pr_push": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "scripts/ops/git_safe_push.sh",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the researched logger correction, run clean iteration, publish the follow-up PR, and require exact-head checks before merge.",
+  "validation": {
+    "focused_logger": {
+      "status": "passed",
+      "command": "make verify.frontend.console.guard",
+      "tests": 7,
+      "runtime_cases": [
+        "dev quiet",
+        "dev verbose",
+        "production quiet",
+        "DEV=false + DEBUG_INTENT=1",
+        "DEV=false + ?debug=1"
+      ]
+    },
+    "strict_typecheck": {
+      "status": "passed",
+      "command": "make verify.frontend.typecheck.strict"
+    },
+    "lint": {
+      "status": "passed",
+      "command": "make verify.frontend.lint.src",
+      "errors": 0,
+      "warnings": 4
+    }
+  }
+}

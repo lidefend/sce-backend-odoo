@@ -123,6 +123,6 @@
     "codex/nav-01-sidebar-canonical-closeout": ".agent/runs/NAV-01-CLOSEOUT/run.json",
     "fix/fe-polish-b1-20261109": ".agent/runs/FE-POLISH-B1-20261109/run.json",
     "fix/fe-iteration-efficiency-20261109": ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",
-    "feature/fe-systemic-convergence-m1-20261110": ".agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json"
+    "fix/frontend-runtime-debug-flag-20261110": ".agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json"
   }
 }

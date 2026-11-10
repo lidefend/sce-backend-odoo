@@ -44,6 +44,31 @@ calls.length = 0;
 runtimeDebug.debug('runtime-debug');
 runtimeDebug.info('runtime-info');
 assert.deepEqual(calls, ['debug:runtime-debug', 'info:runtime-info']);
+
+const productionRuntimeDebug = createLogger({ DEV: false, VITE_DEBUG_LOGS: '' }, sink);
+calls.length = 0;
+productionRuntimeDebug.debug('production-runtime-debug');
+productionRuntimeDebug.info('production-runtime-info');
+productionRuntimeDebug.warn('production-runtime-warn');
+productionRuntimeDebug.error('production-runtime-error');
+assert.deepEqual(calls, [
+  'debug:production-runtime-debug',
+  'info:production-runtime-info',
+  'error:production-runtime-error',
+]);
+
+Object.defineProperty(globalThis, 'window', {
+  configurable: true,
+  value: {
+    localStorage: { getItem: (_key: string) => null },
+    location: { search: '?debug=1' },
+  },
+});
+const productionUrlDebug = createLogger({ DEV: false, VITE_DEBUG_LOGS: '' }, sink);
+calls.length = 0;
+productionUrlDebug.debug('production-url-debug');
+productionUrlDebug.info('production-url-info');
+assert.deepEqual(calls, ['debug:production-url-debug', 'info:production-url-info']);
 Reflect.deleteProperty(globalThis, 'window');
 
-console.log('[logger-runtime] PASS quiet, verbose and production policies');
+console.log('[logger-runtime] PASS quiet, verbose, production and runtime opt-in policies');
