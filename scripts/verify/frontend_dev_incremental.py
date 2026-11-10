@@ -1238,6 +1238,90 @@ def _git_paths(root: Path, *args: str) -> list[str]:
     return [value.decode("utf-8") for value in result.stdout.split(b"\0") if value]
 
 
+def _paths_since(root: Path, revision: str) -> list[str]:
+    paths = set(
+        _git_paths(
+            root,
+            "diff",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            f"{revision}..HEAD",
+        )
+    )
+    paths.update(_git_paths(root, "diff", "--no-renames", "--name-only", "-z"))
+    paths.update(_git_paths(root, "diff", "--no-renames", "--cached", "--name-only", "-z"))
+    paths.update(_git_paths(root, "ls-files", "--others", "--exclude-standard", "-z"))
+    return sorted(paths)
+
+
+def resumable_receipt_results(
+    root: Path,
+    paths: list[str],
+    targets: list[str],
+) -> tuple[Path | None, str, dict[str, dict]]:
+    """Carry verified target prefixes from a clean interrupted execution.
+
+    An interrupted aggregate receipt can contain many completed targets before
+    the operator stops the current target. Those target logs remain useful when
+    the source head is still an ancestor and the target set is identical. The
+    caller removes targets affected by commits or dirty paths since that head.
+    """
+    execution_root = root / ".runtime/frontend-dev-validation/executions"
+    if not execution_root.is_dir():
+        return None, "", {}
+    receipts = sorted(
+        execution_root.glob("*/receipt.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    expected_paths = sorted(set(paths))
+    expected_targets = sorted(set(targets))
+    for receipt_path in receipts:
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            head = str(receipt.get("identity", {}).get("head", ""))
+            if (
+                receipt.get("status") != "interrupted"
+                or not receipt.get("identity", {}).get("worktreeClean")
+                or len(head) != 40
+                or sorted(receipt.get("changedPaths", [])) != expected_paths
+                or sorted(receipt.get("requiredTargets", [])) != expected_targets
+            ):
+                continue
+            subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", head, "HEAD"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            results: dict[str, dict] = {}
+            for row in receipt.get("targetResults", []):
+                target = row.get("target")
+                if target not in expected_targets or target in results:
+                    continue
+                if row.get("status") != "passed" or row.get("returncode") != 0:
+                    continue
+                log = Path(str(row.get("log", "")))
+                if not log.is_absolute():
+                    log = root / log
+                if (
+                    not log.is_file()
+                    or not log.resolve().is_relative_to(root.resolve())
+                    or hashlib.sha256(log.read_bytes()).hexdigest() != row.get("logSha256")
+                ):
+                    continue
+                carried = dict(row)
+                carried["reusedFrom"] = _json_path(receipt_path, root)
+                carried["reuseReason"] = "verified target prefix from interrupted execution"
+                results[target] = carried
+            if results:
+                return receipt_path, head, results
+        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+            continue
+    return None, "", {}
+
+
 def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> list[str]:
     merge_base = subprocess.run(
         ["git", "-C", str(root), "merge-base", "HEAD", base_ref],
@@ -1572,6 +1656,18 @@ def execute_targets(
         return 0
 
     source_receipt = incremental_verified_receipt(root, paths, targets, identity)
+    resume_receipt, resume_head, carried_results = (
+        resumable_receipt_results(root, paths, targets)
+        if source_receipt is None and identity.get("worktreeClean")
+        else (None, "", {})
+    )
+    if resume_receipt is not None:
+        invalidated = set(select_targets(_paths_since(root, resume_head)))
+        carried_results = {
+            target: row
+            for target, row in carried_results.items()
+            if target not in invalidated
+        }
     receipt_directory = _execution_directory(root, receipt_dir)
     if source_receipt is not None:
         payload.update(
@@ -1603,11 +1699,19 @@ def execute_targets(
 
     print(
         f"[frontend.dev.incremental] EXECUTE paths={len(paths)} "
-        f"targets={','.join(targets)}",
+        f"targets={','.join(target for target in targets if target not in carried_results)}"
+        + (
+            f" resumed={len(carried_results)} source={_json_path(resume_receipt, root)}"
+            if resume_receipt is not None
+            else ""
+        ),
         flush=True,
     )
     write_state(status="running", paths=paths, targets=targets, returncode=None)
     for target in targets:
+        if target in carried_results:
+            payload["targetResults"].append(carried_results[target])
+            continue
         log_path = receipt_directory / f"{target}.log"
         result = _run_make_target(target, root, log_path)
         result["log"] = _json_path(log_path, root)
@@ -1627,8 +1731,11 @@ def execute_targets(
     payload["notRunTargets"] = [target for target in targets if target not in executed]
     payload["testsRun"] = bool(payload["targetResults"])
     payload["verificationPassed"] = payload["status"] == "passed"
-    payload["executedTargetCount"] = len(payload["targetResults"])
-    payload["reused"] = False
+    payload["executedTargetCount"] = len(payload["targetResults"]) - len(carried_results)
+    payload["reusedTargetCount"] = len(carried_results)
+    if resume_receipt is not None:
+        payload["sourceReceipt"] = _json_path(resume_receipt, root)
+    payload["reused"] = bool(carried_results)
     receipt = _write_receipt(receipt_directory, payload)
     returncode = {
         "passed": 0,

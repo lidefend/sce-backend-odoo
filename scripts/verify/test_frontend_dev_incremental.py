@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import io
-import re
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -1716,6 +1717,133 @@ class IncrementalExecutionIdentityTest(unittest.TestCase):
         subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "source"], check=True)
         after = current_identity(self.root, (self.authority,))
         self.assertNotEqual(reuse_identity(before), reuse_identity(after))
+
+
+class InterruptedExecutionResumeTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        subprocess.run(["git", "init", "-q", "-b", "main", str(self.root)], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.name", "Codex Test"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.email", "codex@example.invalid"],
+            check=True,
+        )
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.parent.mkdir(parents=True)
+        source.write_text("<template />\n", encoding="utf-8")
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.parent.mkdir(parents=True)
+        safe_sync.write_text("VERSION = 1\n", encoding="utf-8")
+        self.root.joinpath(".gitignore").write_text(".runtime/\n", encoding="utf-8")
+        binaries = self.root / "frontend/apps/web/node_modules/.bin"
+        binaries.mkdir(parents=True)
+        for tool in ("eslint", "vue-tsc"):
+            binary = binaries / tool
+            binary.write_text("#!/bin/sh\n", encoding="utf-8")
+            binary.chmod(0o755)
+        self.root.joinpath("Makefile").write_text(
+            "verify.frontend.lint.src:\n"
+            "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.typecheck.strict:\n"
+            "\t@printf 'typecheck executed\\n'\n"
+            "verify.workspace.branch.sync-main:\n"
+            "\t@printf 'sync check executed\\n'\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "base"], check=True)
+        self.state_patch = mock.patch(
+            "scripts.verify.frontend_dev_incremental.write_state"
+        )
+        self.state_patch.start()
+        self.addCleanup(self.state_patch.stop)
+        self.paths = [
+            "frontend/apps/web/src/NewSurface.vue",
+            "scripts/ops/safe_branch_sync_main.py",
+        ]
+
+    def _execute(self, directory: str, *, interrupted: bool) -> dict:
+        calls = []
+
+        def run_target(target: str, root: Path, log_path: Path) -> dict:
+            calls.append(target)
+            status = (
+                "interrupted"
+                if interrupted and target == "verify.workspace.branch.sync-main"
+                else "passed"
+            )
+            log_path.write_text(f"{target}:{status}\n", encoding="utf-8")
+            return {
+                "target": target,
+                "command": ["make", "--no-print-directory", target],
+                "status": status,
+                "returncode": 0 if status == "passed" else 130,
+                "durationSeconds": 0.1,
+                "log": str(log_path),
+                "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+            }
+
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            side_effect=run_target,
+        ):
+            code = execute_targets(
+                self.paths,
+                root=self.root,
+                registered_targets={
+                    "verify.frontend.lint.src",
+                    "verify.frontend.typecheck.strict",
+                    "verify.workspace.branch.sync-main",
+                },
+                receipt_dir=self.root
+                / ".runtime/frontend-dev-validation/executions"
+                / directory,
+                worktree_identity=current_identity(self.root),
+            )
+        receipt = json.loads(
+            (
+                self.root
+                / ".runtime/frontend-dev-validation/executions"
+                / directory
+                / "receipt.json"
+            ).read_text(encoding="utf-8")
+        )
+        receipt["_code"] = code
+        receipt["_calls"] = calls
+        return receipt
+
+    def test_interrupted_prefix_is_resumed_and_changed_target_is_rechecked(self) -> None:
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+        self.assertEqual(first["status"], "interrupted")
+
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "tool"], check=True)
+
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["status"], "passed")
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["executedTargetCount"], 1)
+        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(
+            second["sourceReceipt"],
+            ".runtime/frontend-dev-validation/executions/first/receipt.json",
+        )
+        self.assertTrue(
+            all(
+                row.get("reusedFrom") == second["sourceReceipt"]
+                for row in second["targetResults"]
+                if row["target"] != "verify.workspace.branch.sync-main"
+            )
+        )
 
 
 class RunScopedPlannerTest(unittest.TestCase):
