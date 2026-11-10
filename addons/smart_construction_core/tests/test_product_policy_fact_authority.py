@@ -66,6 +66,15 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'preview')
         self.assertEqual(len(self.policy.menu_groups[0]['menus']), 1)
 
+    def test_menu_policy_capability_is_entry_alias_not_business_capability(self):
+        self._maintain()
+        capability = self.policy._capabilities_from_user_confirmed_menu_groups(
+            self.policy.menu_groups
+        )[0]
+        self.assertEqual(capability['identity_kind'], 'entry_compatibility_alias')
+        self.assertFalse(capability['business_capability'])
+        self.assertEqual(capability['qualification_authority'], 'published_product_release')
+
     def test_invalid_group_does_not_mutate_policy(self):
         before = deepcopy(self.policy.menu_groups)
         with self.assertRaises(ValidationError):

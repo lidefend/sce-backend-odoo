@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "BE-U05C-REVIEW-REMEDIATION-20261110",
+  "branch": "codex/be-u05-page-declaration-authority-20261110",
+  "baseline_sha": "8a35c7718b1a39318f89a22587405359c264d225",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U05C-REVIEW-REMEDIATION-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u05c_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U05C-REVIEW-REMEDIATION-20261110.yaml",
+    ".agent/runs/BE-U05C-REVIEW-REMEDIATION-20261110/run.json",
+    "addons/smart_core/delivery/capability_service.py",
+    "addons/smart_construction_core/core_extension_capability_rows.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/backend_authority_closure_be_u05c_20261110.md",
+    "scripts/verify/test_capability_identity_boundary.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed review findings and exact disposable ORM checks"
+  },
+  "checks": {
+    "identity_unit": {
+      "target": "verify.capability.identity_boundary.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ]
+    },
+    "partner_final_contract_orm": {
+      "target": "verify.page.finalize.authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "make/guards.mk"
+      ]
+    },
+    "project_final_contract_orm": {
+      "target": "verify.page.project_finalize.authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "make/guards.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Repeat the read-only U01-U05 review against the remediation commit."
+}

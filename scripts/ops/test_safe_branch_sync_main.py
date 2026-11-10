@@ -381,6 +381,235 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(result.metadata_conflicts, (syncer.ACTIVE_RUNS_INDEX_PATH,))
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
+    def test_extended_sync_preserves_reviewed_semantic_union_path(self) -> None:
+        path = syncer.SEMANTIC_UNION_CONFLICT_PATH
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        base_text = "const approval = 'base';\n"
+        upstream_text = "\n".join([
+            "const approvedForm = 'approved';",
+            "const approvedAmountField = 'amount';",
+            "const cross_page_readout = 'cross-page';",
+            "const approvedDetailBody = 'detail';",
+            "",
+        ])
+        union_text = "\n".join([
+            "const approvedForm = 'approved';",
+            "const approvedAmountField = 'amount';",
+            "const cross_page_readout = 'cross-page';",
+            "const approvedDetailBody = 'detail';",
+            "const rejectSafetyDialog = 'safety';",
+            "const action_approval_reject = 'reject';",
+            "check(action_params?.reason === 'reason');",
+            "",
+        ])
+
+        git(self.root, "switch", "main")
+        target.write_text(base_text, encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add semantic union subject")
+        semantic_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "-c", "feature/semantic-union", semantic_base)
+        target.write_text(union_text, encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "prepare reviewed semantic union")
+        semantic_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        target.write_text(upstream_text, encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "advance upstream readback assertions")
+        semantic_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "feature/semantic-union")
+
+        plan = syncer.SyncPlan(
+            root=self.root,
+            branch="feature/semantic-union",
+            head=semantic_head,
+            old_base=semantic_base,
+            new_main=semantic_main,
+            commit_count=1,
+            paths=syncer.commit_paths(self.root, semantic_base, semantic_head),
+            recovery_bundle=self.temp_path("semantic-recovery.bundle"),
+            extended_history=True,
+        )
+        result = syncer.sync(plan)
+
+        self.assertEqual(result.semantic_conflicts, (path,))
+        self.assertEqual(target.read_text(encoding="utf-8"), union_text)
+        self.assertEqual(
+            git(self.root, "diff", "--name-only", f"{semantic_main}..{result.head}")
+            .stdout.splitlines(),
+            [path],
+        )
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+        without_detail = union_text.replace(
+            "const approvedDetailBody = 'detail';\n",
+            "",
+        )
+        with self.assertRaisesRegex(
+            syncer.SyncError, "does not preserve main delta"
+        ):
+            syncer.verify_semantic_union_preserves_main(
+                plan, path, without_detail
+            )
+        retained_deletion = union_text + base_text
+        with self.assertRaisesRegex(syncer.SyncError, "retained-main-deletion"):
+            syncer.verify_semantic_union_preserves_main(
+                plan, path, retained_deletion
+            )
+
+    def test_semantic_union_markers_fail_closed(self) -> None:
+        path = syncer.SEMANTIC_UNION_CONFLICT_PATH
+        with self.assertRaisesRegex(syncer.SyncError, "missing upstream"):
+            syncer.verify_semantic_union_text(
+                path,
+                "const rejectSafetyDialog = 1;\n"
+                "const action_approval_reject = 2;\n"
+                "check(action_params?.reason);\n",
+            )
+        with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
+            syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
+
+    def test_extended_sync_unions_exact_personal_data_exemptions(self) -> None:
+        path = syncer.PERSONAL_DATA_FALSE_POSITIVES_PATH
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        base_entry = {
+            "rule_id": "PD003",
+            "path": "tests/base.py",
+            "blob_id": "1" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "base",
+        }
+        topic_entry = {
+            "rule_id": "PD003",
+            "path": "tests/topic.py",
+            "blob_id": "2" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "topic",
+        }
+        main_entry = {
+            "rule_id": "PD003",
+            "path": "tests/main.py",
+            "blob_id": "3" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "main",
+        }
+        duplicate_reason = {**main_entry, "reason": "topic duplicate wording"}
+
+        def registry(entries):
+            return json.dumps(
+                {"schema_version": 1, "entries": entries},
+                indent=2,
+            ) + "\n"
+
+        git(self.root, "switch", "main")
+        target.write_text(registry([base_entry]), encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add personal data registry")
+        registry_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "-c", "feature/personal-data-union", registry_base)
+        target.write_text(
+            registry([base_entry, duplicate_reason, topic_entry]),
+            encoding="utf-8",
+        )
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "register topic exemption")
+        registry_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        target.write_text(registry([base_entry, main_entry]), encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "register main exemption")
+        registry_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "feature/personal-data-union")
+
+        plan = syncer.SyncPlan(
+            root=self.root,
+            branch="feature/personal-data-union",
+            head=registry_head,
+            old_base=registry_base,
+            new_main=registry_main,
+            commit_count=1,
+            paths=(path,),
+            recovery_bundle=self.temp_path("personal-data-recovery.bundle"),
+            extended_history=True,
+        )
+        result = syncer.sync(plan)
+
+        merged = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(result.metadata_conflicts, (path,))
+        self.assertEqual(
+            [entry["blob_id"] for entry in merged["entries"]],
+            ["1" * 40, "3" * 40, "2" * 40],
+        )
+        self.assertEqual(
+            next(
+                entry["reason"]
+                for entry in merged["entries"]
+                if entry["blob_id"] == "3" * 40
+            ),
+            "main",
+        )
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_additive_merge_equivalence_requires_identical_added_lines(self) -> None:
+        path = syncer.ADDITIVE_MERGE_EQUIVALENCE_PATHS[0]
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        git(self.root, "switch", "main")
+        target.write_text("base\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add additive subject")
+        additive_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "-c", "feature/additive-topic", additive_base)
+        target.write_text("base\nlocal-one\nlocal-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add local rules")
+        additive_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        target.write_text("base\nmain-one\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add main rule")
+        additive_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "-c", "feature/additive-merged", additive_main)
+        target.write_text("base\nmain-one\nlocal-one\nlocal-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "merged additive rules")
+        additive_merged = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        self.assertTrue(
+            syncer.additive_merge_equivalent(
+                self.root,
+                additive_base,
+                additive_head,
+                additive_main,
+                additive_merged,
+                path,
+            )
+        )
+        target.write_text("base\nmain-one\nlocal-one\nchanged-local-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "change local rule")
+        changed_merged = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        self.assertFalse(
+            syncer.additive_merge_equivalent(
+                self.root,
+                additive_base,
+                additive_head,
+                additive_main,
+                changed_merged,
+                path,
+            )
+        )
+
     def test_main_equivalent_path_becomes_empty_without_losing_responsibility(self) -> None:
         (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
         git(self.root, "add", "equivalent.txt")
@@ -544,7 +773,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
     def test_squash_dependency_patch_drift_restores_original_head(self) -> None:
         args = self.squash_dependency()
         plan = self.plan(**args)
-        with mock.patch.object(syncer, "patch_id", side_effect=["before", "after"]):
+        with mock.patch.object(syncer, "path_patch_id", side_effect=["before", "after"]):
             with self.assertRaisesRegex(syncer.SyncError, "patch identity changed.*restored"):
                 syncer.sync(plan)
         self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
@@ -858,7 +1087,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
 
     def test_post_sync_verification_failure_restores_original_head(self) -> None:
         plan = self.plan()
-        with mock.patch.object(syncer, "patch_id", side_effect=("before", "after")):
+        with mock.patch.object(syncer, "path_patch_id", side_effect=("before", "after")):
             with self.assertRaisesRegex(syncer.SyncError, "original HEAD restored"):
                 syncer.sync(plan)
         self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
@@ -889,7 +1118,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
     def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
-        self.assertEqual(syncer.run_rebase(self.plan()), (False, (), ()))
+        self.assertEqual(syncer.run_rebase(self.plan()), (False, (), (), ()))
         git(self.root, "reset", "--hard", self.head)
         (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
         git(self.root, "add", "base.txt")

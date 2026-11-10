@@ -15,6 +15,14 @@ class PermissionCheckHandler(BaseIntentHandler):
     SOURCE_KIND = "odoo_native_permission_projection"
     SOURCE_AUTHORITIES = ("sc.entitlement", "sc.capability", "res.groups")
     NO_BUSINESS_FACT_AUTHORITY = True
+    AUTHORIZATION_SCOPE = "product_availability_only"
+    DOES_NOT_AUTHORIZE = (
+        "entry_visibility",
+        "record_access",
+        "field_write",
+        "business_execution",
+        "administration_operation",
+    )
 
     @classmethod
     def source_authority_contract(cls) -> dict:
@@ -33,6 +41,15 @@ class PermissionCheckHandler(BaseIntentHandler):
             "source_kind": self.SOURCE_KIND,
             "source_authorities": list(self.SOURCE_AUTHORITIES),
             "source_authority": self.source_authority_contract(),
+        }
+
+    def _availability_data(self, allow: bool, **extra):
+        return {
+            "allow": bool(allow),
+            "authorization_scope": self.AUTHORIZATION_SCOPE,
+            "projection_only": True,
+            "does_not_authorize": list(self.DOES_NOT_AUTHORIZE),
+            **extra,
         }
 
     def _find_capability(self, cap_key):
@@ -62,7 +79,7 @@ class PermissionCheckHandler(BaseIntentHandler):
         except Exception:
             Entitlement = None
         if not Entitlement:
-            data = {"allow": True}
+            data = self._availability_data(True)
             if required_flag:
                 data.update({
                     "reason": "ENTITLEMENT_UNAVAILABLE",
@@ -89,11 +106,11 @@ class PermissionCheckHandler(BaseIntentHandler):
                 allow,
             )
             if not allow:
-                data = {
-                    "allow": False,
-                    "reason": "FEATURE_DISABLED",
-                    "details": {"required_flag": required_flag, "capability_key": cap.key if cap else cap_key},
-                }
+                data = self._availability_data(
+                    False,
+                    reason="FEATURE_DISABLED",
+                    details={"required_flag": required_flag, "capability_key": cap.key if cap else cap_key},
+                )
                 if debug:
                     data["debug"] = {
                         "flags": flags,
@@ -107,15 +124,15 @@ class PermissionCheckHandler(BaseIntentHandler):
         if debug:
             return {
                 "ok": True,
-                "data": {
-                    "allow": True,
-                    "debug": {
+                "data": self._availability_data(
+                    True,
+                    debug={
                         "flags": flags,
                         "required_flag": required_flag,
                         "cap_found": bool(cap),
                         "db": self.env.cr.dbname,
                     },
-                },
+                ),
                 "meta": self._meta(),
             }
-        return {"ok": True, "data": {"allow": True}, "meta": self._meta()}
+        return {"ok": True, "data": self._availability_data(True), "meta": self._meta()}

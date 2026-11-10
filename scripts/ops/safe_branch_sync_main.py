@@ -13,6 +13,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -27,6 +28,23 @@ MAX_RESPONSIBILITY_COMMITS = 12
 MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
 ACTIVE_RUNS_INDEX_PATH = ".agent/active-runs.json"
+PERSONAL_DATA_FALSE_POSITIVES_PATH = "scripts/ci/personal_data_false_positives.json"
+SEMANTIC_UNION_CONFLICT_PATH = (
+    "scripts/verify/frontend_my_work_approval_browser.mjs"
+)
+ADDITIVE_MERGE_EQUIVALENCE_PATHS = (
+    "scripts/verify/frontend_dev_incremental.py",
+)
+SEMANTIC_UNION_REQUIRED_MARKERS = (
+    (
+        "upstream approval-detail readback",
+        ("const approvedForm", "approvedAmountField", "cross_page_readout"),
+    ),
+    (
+        "U06 approval-page decision flow",
+        ("rejectSafetyDialog", "action_approval_reject", "action_params?.reason"),
+    ),
+)
 GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -44,8 +62,9 @@ GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
 )
-# The original refresh entry and its producer implementation must come from
-# exact main. In particular, governance registries are inputs, never outputs.
+# Generator and governance source changes may come from the candidate only
+# after they have passed the responsibility path/patch checks above. The
+# refresh itself is still restricted to the exact generated-output allowlist.
 GENERATOR_SOURCE_PATHS = (
     "Makefile", "make", "scripts/ci", "scripts/audit", "scripts/contract",
     "scripts/verify/test_coverage_registry_audit.py",
@@ -89,6 +108,7 @@ class SyncResult:
     main_equivalent_paths: tuple[str, ...] = ()
     generated_commit: str | None = None
     generated_evidence_replay_paths: tuple[str, ...] = ()
+    semantic_conflicts: tuple[str, ...] = ()
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -284,6 +304,54 @@ def patch_id(root: Path, left: str, right: str, *, exclude: tuple[str, ...] = ()
     if result.returncode or not result.stdout.strip():
         raise SyncError("unable to calculate responsibility patch identity")
     return result.stdout.split()[0]
+
+
+def path_patch_id(root: Path, left: str, right: str, path: str) -> str:
+    diff = run(root, "diff", "--binary", left, right, "--", path).stdout
+    result = subprocess.run(
+        ["git", "patch-id", "--stable"],
+        cwd=root,
+        env=sanitized_environment(),
+        input=diff,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.returncode or not result.stdout.strip():
+        raise SyncError(f"unable to calculate responsibility patch identity: {path}")
+    return result.stdout.split()[0]
+
+
+def additive_merge_equivalent(
+    root: Path, old_base: str, old_head: str, new_base: str, new_head: str, path: str
+) -> bool:
+    """Prove an explicitly reviewed additive merge preserved every added line."""
+    if path not in ADDITIVE_MERGE_EQUIVALENCE_PATHS:
+        return False
+    counts: list[tuple[int, int]] = []
+    for left, right in ((old_base, old_head), (new_base, new_head)):
+        rows = git_output(root, "diff", "--numstat", left, right, "--", path).splitlines()
+        if len(rows) != 1:
+            return False
+        fields = rows[0].split("\t", 2)
+        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+            return False
+        counts.append((int(fields[0]), int(fields[1])))
+    old_add, old_delete = counts[0]
+    new_add, new_delete = counts[1]
+    if old_add <= 0 or old_delete or new_delete or old_add != new_add:
+        return False
+
+    def added_lines(left: str, right: str) -> list[str]:
+        diff = run(root, "diff", "--unified=0", left, right, "--", path).stdout
+        return [
+            line[1:]
+            for line in diff.splitlines()
+            if line.startswith("+") and not line.startswith("+++ ")
+        ]
+
+    return added_lines(old_base, old_head) == added_lines(new_base, new_head)
 
 
 def recovery_path(root: Path, branch: str, head: str) -> Path:
@@ -495,6 +563,88 @@ def resolve_generated_evidence_conflicts(
     return resolved
 
 
+def verify_semantic_union_text(path: str, text: str) -> None:
+    """Require both reviewed behaviours before preserving the prepared file."""
+    if "<<<<<<<" in text or ">>>>>>>" in text:
+        raise SyncError(f"semantic union source still contains conflict markers: {path}")
+    for label, markers in SEMANTIC_UNION_REQUIRED_MARKERS:
+        missing = [marker for marker in markers if marker not in text]
+        if missing:
+            raise SyncError(
+                f"semantic union source for {path} is missing {label}: "
+                + ", ".join(missing)
+            )
+
+
+def verify_semantic_union_preserves_main(
+    plan: SyncPlan, path: str, text: str
+) -> None:
+    """Require the reviewed union to retain main's line-level delta."""
+    base = Counter(
+        text_at_revision(plan.root, plan.replay_base, path).splitlines()
+    )
+    main = Counter(
+        text_at_revision(plan.root, plan.new_main, path).splitlines()
+    )
+    current = Counter(text.splitlines())
+    missing_added = [
+        line
+        for line, count in main.items()
+        if count > base.get(line, 0) and current.get(line, 0) < count
+    ]
+    retained_deleted = [
+        line
+        for line, count in base.items()
+        if main.get(line, 0) < count and current.get(line, 0) > main.get(line, 0)
+    ]
+    if missing_added or retained_deleted:
+        details = [
+            *(
+                f"missing-main-addition={line!r}"
+                for line in sorted(missing_added)
+            ),
+            *(
+                f"retained-main-deletion={line!r}"
+                for line in sorted(retained_deleted)
+            ),
+        ]
+        raise SyncError(
+            f"semantic union source for {path} does not preserve main delta: "
+            + "; ".join(details[:8])
+        )
+
+
+def resolve_semantic_union_conflict(
+    plan: SyncPlan, conflicts: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Preserve one pre-reviewed path whose competing hunks form a semantic union.
+
+    The topic head is already the reviewed union of the upstream readback
+    assertions and the U06 approval-page execution journey.  Replaying its
+    final form at the first collision is deterministic; later topic commits for
+    the same path may become empty because their aggregate content is already
+    present.  Aggregate path and patch identity still prove that no stable
+    responsibility disappeared, and the journey must be rerun after the sync.
+    """
+    resolved = tuple(
+        path for path in conflicts if path == SEMANTIC_UNION_CONFLICT_PATH
+    )
+    if not resolved:
+        return ()
+    if not plan.extended_history:
+        raise SyncError("semantic union conflicts require the extended frozen sync")
+    text = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
+    verify_semantic_union_text(SEMANTIC_UNION_CONFLICT_PATH, text)
+    verify_semantic_union_preserves_main(
+        plan, SEMANTIC_UNION_CONFLICT_PATH, text
+    )
+    target = generated_output_path(plan.root, SEMANTIC_UNION_CONFLICT_PATH)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text, encoding="utf-8")
+    run(plan.root, "add", "--", SEMANTIC_UNION_CONFLICT_PATH)
+    return resolved
+
+
 def merge_active_runs_index(plan: SyncPlan) -> None:
     """Three-way merge the branch-to-run index without inventing entries."""
     try:
@@ -549,10 +699,105 @@ def verify_active_runs_resolution(plan: SyncPlan) -> None:
         raise SyncError("active-runs index merge changed during sync")
 
 
-def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] | None:
+def personal_data_false_positives_union(plan: SyncPlan) -> dict:
+    """Union exact scan exemptions without accepting conflicting metadata."""
+    try:
+        revisions = [
+            json.loads(text_at_revision(plan.root, revision, PERSONAL_DATA_FALSE_POSITIVES_PATH))
+            for revision in (plan.replay_base, plan.new_main, plan.head)
+        ]
+    except (ValueError, TypeError) as exc:
+        raise SyncError("personal-data false-positive registry is not valid JSON") from exc
+    merged: dict[tuple[str, str, str, str], dict] = {}
+    for revision, payload in zip(
+        ("base", "main", "topic"), revisions, strict=True
+    ):
+        entries = payload.get("entries") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+            raise SyncError(
+                f"personal-data false-positive {revision} schema_version must be 1"
+            )
+        if not isinstance(entries, list):
+            raise SyncError(
+                f"personal-data false-positive {revision} entries must be a list"
+            )
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise SyncError(
+                    f"personal-data false-positive {revision} entries must be objects"
+                )
+            key = tuple(
+                str(entry.get(field) or "").strip()
+                for field in ("rule_id", "path", "blob_id", "classification")
+            )
+            if not all(key):
+                raise SyncError(
+                    "personal-data false-positive entries require rule_id, path, "
+                    "blob_id and classification"
+                )
+            current = merged.get(key)
+            if current is not None and current != entry:
+                changed_fields = {
+                    field
+                    for field in set(current) | set(entry)
+                    if current.get(field) != entry.get(field)
+                }
+                if (
+                    revision == "topic"
+                    and changed_fields == {"reason"}
+                    and current.get("reason")
+                    and entry.get("reason")
+                ):
+                    # Exact blob identity makes the reason explanatory metadata;
+                    # retain main's reviewed wording on a concurrent registration.
+                    continue
+                raise SyncError(
+                    "personal-data false-positive metadata conflicts for exact key: "
+                    + ":".join(key)
+                )
+            merged[key] = entry
+    return {
+        "schema_version": 1,
+        "entries": [merged[key] for key in sorted(merged)],
+    }
+
+
+def merge_personal_data_false_positives(plan: SyncPlan) -> None:
+    target = plan.root / PERSONAL_DATA_FALSE_POSITIVES_PATH
+    target.write_text(
+        json.dumps(
+            personal_data_false_positives_union(plan),
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    run(plan.root, "add", "--", PERSONAL_DATA_FALSE_POSITIVES_PATH)
+
+
+def verify_personal_data_false_positives_resolution(plan: SyncPlan) -> None:
+    try:
+        current = json.loads(
+            (plan.root / PERSONAL_DATA_FALSE_POSITIVES_PATH).read_text(
+                encoding="utf-8"
+            )
+        )
+    except (ValueError, TypeError) as exc:
+        raise SyncError(
+            "personal-data false-positive registry is not valid JSON"
+        ) from exc
+    if current != personal_data_false_positives_union(plan):
+        raise SyncError("personal-data false-positive registry merge changed during sync")
+
+
+def run_rebase(
+    plan: SyncPlan,
+) -> tuple[bool, tuple[str, ...], tuple[str, ...], tuple[str, ...]] | None:
     append_only_log_resolved = False
     generated_evidence_conflicts: set[str] = set()
     metadata_conflicts: set[str] = set()
+    semantic_conflicts: set[str] = set()
     result = run(plan.root, "rebase", "--onto", plan.new_main, plan.replay_base, check=False)
     while result.returncode:
         conflicts = tuple(
@@ -566,6 +811,9 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] 
         allowed = {APPEND_ONLY_CONFLICT_PATH, ACTIVE_RUNS_INDEX_PATH}
         if plan.extended_history or plan.regenerate_evidence:
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
+        if plan.extended_history:
+            allowed.add(SEMANTIC_UNION_CONFLICT_PATH)
+            allowed.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         if not conflicts or any(path not in allowed for path in conflicts):
             diagnostic = plan.recovery_bundle.with_suffix(".conflict.json")
             diagnostic.parent.mkdir(parents=True, exist_ok=True)
@@ -583,11 +831,22 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] 
         generated_evidence_conflicts.update(
             resolve_generated_evidence_conflicts(plan, conflicts)
         )
+        semantic_conflicts.update(
+            resolve_semantic_union_conflict(plan, conflicts)
+        )
         if ACTIVE_RUNS_INDEX_PATH in conflicts:
             merge_active_runs_index(plan)
             metadata_conflicts.add(ACTIVE_RUNS_INDEX_PATH)
+        if PERSONAL_DATA_FALSE_POSITIVES_PATH in conflicts:
+            merge_personal_data_false_positives(plan)
+            metadata_conflicts.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
-    return append_only_log_resolved, tuple(sorted(generated_evidence_conflicts)), tuple(sorted(metadata_conflicts))
+    return (
+        append_only_log_resolved,
+        tuple(sorted(generated_evidence_conflicts)),
+        tuple(sorted(metadata_conflicts)),
+        tuple(sorted(semantic_conflicts)),
+    )
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:
@@ -642,8 +901,20 @@ def cleanup_new_untracked(root: Path, original: set[str]) -> None:
 def regenerate_reports(plan: SyncPlan) -> str | None:
     for path in GENERATED_EVIDENCE_CONFLICT_PATHS:
         generated_output_path(plan.root, path)
-    if git_output(plan.root, "diff", plan.new_main, "--", *GENERATOR_SOURCE_PATHS):
-        raise SyncError("generated rebuild requires unchanged main producer sources and Make recipes")
+    generator_changes = tuple(
+        path
+        for path in commit_paths(plan.root, plan.new_main, git_output(plan.root, "rev-parse", "HEAD"))
+        if any(
+            path == source or path.startswith(source.rstrip("/") + "/")
+            for source in GENERATOR_SOURCE_PATHS
+        )
+    )
+    unexpected_generator_changes = sorted(set(generator_changes) - set(plan.paths))
+    if unexpected_generator_changes:
+        raise SyncError(
+            "generated rebuild found unowned producer changes: "
+            + ", ".join(unexpected_generator_changes[:8])
+        )
     before = git_output(plan.root, "rev-parse", "HEAD")
     log = plan.recovery_bundle.with_suffix(".generation.log")
     environment = sanitized_environment()
@@ -696,7 +967,12 @@ def sync(plan: SyncPlan) -> SyncResult:
     if rebase_result is None:
         abort_rebase_and_restore(plan)
         raise SyncError("rebase conflict; aborted and restored original HEAD")
-    append_only_log_resolved, generated_evidence_conflicts, metadata_conflicts = rebase_result
+    (
+        append_only_log_resolved,
+        generated_evidence_conflicts,
+        metadata_conflicts,
+        semantic_conflicts,
+    ) = rebase_result
     try:
         new_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
@@ -708,7 +984,12 @@ def sync(plan: SyncPlan) -> SyncResult:
         # derived diffs; all other responsibility paths keep exact comparison.
         rebuild_paths = set(GENERATED_EVIDENCE_CONFLICT_PATHS) if plan.regenerate_evidence else set()
         generated_replay_paths = tuple(sorted((set(plan.paths) | set(new_paths)) & rebuild_paths))
-        excluded_paths = tuple(sorted({*generated_evidence_conflicts, *metadata_conflicts, *rebuild_paths}))
+        excluded_paths = tuple(sorted({
+            *generated_evidence_conflicts,
+            *metadata_conflicts,
+            *semantic_conflicts,
+            *rebuild_paths,
+        }))
         old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
         new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
         extra_paths = sorted(set(new_stable_paths) - set(old_stable_paths))
@@ -736,6 +1017,7 @@ def sync(plan: SyncPlan) -> SyncResult:
                         *generated_evidence_conflicts,
                         *rebuild_paths,
                         *metadata_conflicts,
+                        *semantic_conflicts,
                         *main_equivalent_paths,
                     }
                 )
@@ -746,7 +1028,19 @@ def sync(plan: SyncPlan) -> SyncResult:
         if append_only_log_resolved:
             verify_append_only_log_resolution(plan)
         if metadata_conflicts:
-            verify_active_runs_resolution(plan)
+            if ACTIVE_RUNS_INDEX_PATH in metadata_conflicts:
+                verify_active_runs_resolution(plan)
+            if PERSONAL_DATA_FALSE_POSITIVES_PATH in metadata_conflicts:
+                verify_personal_data_false_positives_resolution(plan)
+        for path in semantic_conflicts:
+            if not path_equals_revision(plan.root, new_head, plan.head, path):
+                raise SyncError(
+                    f"semantic union path changed during sync: {path}"
+                )
+            verify_semantic_union_text(
+                path,
+                text_at_revision(plan.root, new_head, path),
+            )
         patch_excludes = tuple(
             sorted(
                 {
@@ -761,10 +1055,27 @@ def sync(plan: SyncPlan) -> SyncResult:
             for path in old_stable_paths
             if path not in patch_excludes and path not in set(main_equivalent_paths)
         )
-        if stable_identity_paths and patch_id(
-            plan.root, plan.replay_base, plan.head, exclude=patch_excludes
-        ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
-            raise SyncError("responsibility patch identity changed after sync")
+        changed_patch_ids = []
+        for path in stable_identity_paths:
+            old_patch = path_patch_id(plan.root, plan.replay_base, plan.head, path)
+            new_patch = path_patch_id(plan.root, plan.new_main, new_head, path)
+            if (
+                old_patch != new_patch
+                and not additive_merge_equivalent(
+                    plan.root,
+                    plan.replay_base,
+                    plan.head,
+                    plan.new_main,
+                    new_head,
+                    path,
+                )
+            ):
+                changed_patch_ids.append(path)
+        if changed_patch_ids:
+            raise SyncError(
+                "responsibility patch identity changed after sync: "
+                + ", ".join(changed_patch_ids[:8])
+            )
         generated_commit = regenerate_reports(plan) if plan.regenerate_evidence else None
         new_head = git_output(plan.root, "rev-parse", "HEAD")
     except Exception as exc:
@@ -773,8 +1084,15 @@ def sync(plan: SyncPlan) -> SyncResult:
         if isinstance(exc, SyncError):
             raise SyncError(f"{exc}; original HEAD restored") from exc
         raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
-    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths,
-                      generated_commit, generated_replay_paths)
+    return SyncResult(
+        new_head,
+        generated_evidence_conflicts,
+        metadata_conflicts,
+        main_equivalent_paths,
+        generated_commit,
+        generated_replay_paths,
+        semantic_conflicts,
+    )
 
 
 def main() -> int:
@@ -823,6 +1141,7 @@ def main() -> int:
         print(f"[workspace.branch.sync-main] DENY {exc}", file=sys.stderr)
         return 2
     invalidated = ",".join(result.generated_evidence_conflicts) or "none"
+    semantic = ",".join(result.semantic_conflicts) or "none"
     next_validation = ("exact-new-head-Quick-and-affected-acceptance" if plan.extended_history
                        else "current-head-risk-selected-validation")
     print(
@@ -830,6 +1149,7 @@ def main() -> int:
         f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
         f"common_base={plan.old_base} replay_base={plan.replay_base} "
         f"generated_evidence_invalidated={invalidated} "
+        f"semantic_conflicts_preserved={semantic} "
         f"generated_commit={result.generated_commit or 'none'} "
         f"generated_evidence_replay_paths={','.join(result.generated_evidence_replay_paths) or 'none'} "
         f"candidate_evidence=false next={next_validation}"

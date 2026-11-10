@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "BE-U05-PAGE-DECLARATION-AUTHORITY-20261110",
+  "branch": "codex/be-u05-page-declaration-authority-20261110",
+  "baseline_sha": "11986acb3d3b4ee677149f05c28d6dbe63c245a5",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U05-PAGE-DECLARATION-AUTHORITY-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u05_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U05-PAGE-DECLARATION-AUTHORITY-20261110.yaml",
+    ".agent/runs/BE-U05-PAGE-DECLARATION-AUTHORITY-20261110/run.json",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/backend_authority_closure_map_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/backend_authority_closure_be_u05_20261110.md",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed source baseline and one disposable ORM tag; no persistent data access"
+  },
+  "layer": {
+    "formal_product_layer": "P1",
+    "supporting_layers": [
+      "P0"
+    ],
+    "layer_target": "published partner form declaration",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "construction industry standard",
+    "why_here": "The partner page difference is an industry-standard declaration consumed by P0 orchestration.",
+    "why_not_elsewhere": "Finalize mutation and frontend hiding would both create a second page authority.",
+    "blast_radius": "One published contract, one finalize branch and its focused test."
+  },
+  "checks": {
+    "page_declaration_orm": {
+      "target": "verify.page.finalize.authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/dev/local_test_runner.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open the BE-U05 continuation for project form fallback topology and responsibility-group mutations."
+}

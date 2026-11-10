@@ -131,6 +131,7 @@ from . import test_business_data_ownership_gate
 from . import test_system_permission_separation
 
 from . import test_approval_scope_authority
+from . import test_approval_contract_closure
 from . import test_group_authority_reconciliation
 from . import test_system_permission_http
 

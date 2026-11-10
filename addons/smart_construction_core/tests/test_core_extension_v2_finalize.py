@@ -8,7 +8,10 @@ from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_construction_core import core_extension
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES
+from odoo.addons.smart_core.core.form_structure_authority import resolve_form_structure_governance
 from odoo.addons.smart_core.utils import contract_governance
+from odoo.addons.smart_core.utils.contract_governance import apply_native_authority_domain_overrides
 
 
 @tagged("core_extension_v2_finalize")
@@ -24,6 +27,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             ]
             constraints[attribute] = tuple(values)
         return constraints
+
+    def _ensure_project_fixture(self):
+        project = self.env["project.project"].search([], limit=1)
+        if project:
+            return project
+        return self.env["project.project"].create({
+            "name": "Contract authority fixture project",
+        })
 
     def test_project_maintenance_form_uses_authoritative_business_sections(self):
         # Exercise the default project.form selection used by native consumers
@@ -292,29 +303,53 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         direct_groups = arch.xpath("//form/sheet/group[@data-sc-anchor]")
         self.assertEqual(
             [group.get("string") for group in direct_groups],
-            ["基本信息", "计划与责任", "责任矩阵", "项目说明", "协作资料", "系统追溯"],
-        )
-        self.assertEqual(
-            direct_groups[0].xpath(".//field/@name"),
             [
-                "name", "project_code", "partner_id", "project_type_id", "project_category_id",
-                "operation_strategy", "location", "owner_contact", "contract_no",
-                "company_id", "phase_key",
+                "办理前检查", "项目身份", "业务主体与项目属性", "联系信息与合同关联",
+                "项目安排日期", "计划开竣工日期", "责任信息", "责任矩阵",
+                "项目说明", "协作资料", "系统追溯",
+            ],
+        )
+        groups = {
+            group.get("data-sc-anchor"): group
+            for group in direct_groups
+        }
+        self.assertEqual(
+            groups["project-identity"].xpath(".//field/@name"),
+            [
+                "name", "phase_key",
             ],
         )
         self.assertEqual(
-            direct_groups[1].xpath(".//field/@name"),
+            groups["project-entity"].xpath(".//field/@name"),
             [
-                "initiation_date", "date_start", "date", "start_date", "end_date",
-                "user_id", "manager_id", "cost_manager_id", "doc_manager_id",
+                "partner_id", "project_type_id", "project_category_id",
+                "operation_strategy", "company_id",
             ],
         )
-        date_range = direct_groups[1].xpath("./field[@name='date_start']")
+        self.assertEqual(
+            groups["project-contact"].xpath(".//field/@name"),
+            ["location", "owner_contact", "contract_no"],
+        )
+        self.assertEqual(
+            groups["project-arrangement"].xpath(".//field/@name"),
+            ["initiation_date", "date_start", "date"],
+        )
+        self.assertEqual(
+            groups["project-schedule"].xpath(".//field/@name"),
+            ["start_date", "end_date"],
+        )
+        self.assertEqual(
+            groups["project-responsible"].xpath(".//field/@name"),
+            ["manager_id", "cost_manager_id", "doc_manager_id"],
+        )
+        date_range = groups["project-arrangement"].xpath("./field[@name='date_start']")
         self.assertEqual(len(date_range), 1)
         self.assertEqual(date_range[0].get("string"), "项目周期")
         self.assertEqual(date_range[0].get("widget"), "daterange")
         self.assertIn("end_date_field", date_range[0].get("options") or "")
-        responsibility = direct_groups[2].xpath("./field[@name='responsibility_ids']")
+        responsibility = groups["project-responsibility-matrix"].xpath(
+            "./field[@name='responsibility_ids']"
+        )
         self.assertEqual(len(responsibility), 1)
         self.assertEqual(responsibility[0].get("nolabel"), "1")
         self.assertEqual(responsibility[0].xpath("./tree/@editable"), ["bottom"])
@@ -323,16 +358,19 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             ["role_key", "user_id", "note"],
         )
         self.assertEqual(
-            direct_groups[3].get("data-sc-navigation-role"), "subordinate"
+            {
+                anchor for anchor in (
+                    "project-description", "project-collaboration", "project-system-trace",
+                )
+                if groups[anchor].get("data-sc-navigation-role") == "subordinate"
+            },
+            {"project-description", "project-collaboration", "project-system-trace"},
         )
+        self.assertEqual(groups["project-system-trace"].get("data-sc-collapsible"), "1")
         self.assertEqual(
-            direct_groups[4].get("data-sc-navigation-role"), "subordinate"
+            groups["project-system-trace"].get("data-sc-collapsed-by-default"),
+            "1",
         )
-        self.assertEqual(
-            direct_groups[5].get("data-sc-navigation-role"), "subordinate"
-        )
-        self.assertEqual(direct_groups[5].get("data-sc-collapsible"), "1")
-        self.assertEqual(direct_groups[5].get("data-sc-collapsed-by-default"), "1")
 
         excluded_cross_business_fields = {
             "task_ids", "tender_bid_ids", "wbs_ids", "boq_line_ids", "work_ids",
@@ -394,8 +432,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             )
             self.assertTrue(fields, field_name)
 
-        project = self.env["project.project"].search([], limit=1)
-        self.assertTrue(project, "the dashboard contract check requires an existing project")
+        project = self._ensure_project_fixture()
         menu = self.env.ref("smart_construction_core.menu_sc_project_kanban")
         handler = UiContractV2Handler(
             self.env,
@@ -500,8 +537,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         for attribute in ("create", "edit", "delete", "duplicate"):
             self.assertNotIn(arch.get(attribute), ("0", "false", "False"), attribute)
 
-        project = self.env["project.project"].search([], limit=1)
-        self.assertTrue(project, "the ledger entry check requires an existing project")
+        project = self._ensure_project_fixture()
         menu = self.env.ref("smart_construction_core.menu_sc_project_project")
         handler = UiContractV2Handler(
             self.env,
@@ -556,10 +592,9 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         constraint_mismatches = []
         carried_scopes = {
-            "partner_id": "project-basic",
-            "user_id": "project-plan-responsibility",
-            "date_start": "project-plan-responsibility",
-            "date": "project-plan-responsibility",
+            "partner_id": "project-entity",
+            "date_start": "project-arrangement",
+            "date": "project-arrangement",
             "tag_ids": "project-collaboration",
             "description": "project-description",
         }
@@ -606,18 +641,18 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(fields_meta["responsibility_ids"]["relation"], "project.responsibility")
 
         project_type = ledger_arch.xpath(
-            "//group[@data-sc-anchor='project-basic']//field[@name='project_type_id']"
+            "//group[@data-sc-anchor='project-entity']//field[@name='project_type_id']"
         )[0]
         self.assertIn("project_type", str(fields_meta["project_type_id"].get("domain")))
         self.assertIsNotNone(project_type)
         self.assertTrue(
             ledger_arch.xpath(
-                "//group[@data-sc-anchor='project-basic']//field[@name='project_category_id' and @invisible='1']"
+                "//group[@data-sc-anchor='project-entity']//field[@name='project_category_id' and @invisible='1']"
             )
         )
         self.assertTrue(
             ledger_arch.xpath(
-                "//group[@data-sc-anchor='project-basic']//field[@name='operation_strategy']"
+                "//group[@data-sc-anchor='project-entity']//field[@name='operation_strategy']"
             )
         )
 
@@ -748,7 +783,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIsNone(projected)
         self.assertIn("field.user_id", {row["widgetId"] for row in contract["statusContract"]["widgetStatus"]})
 
-    def test_project_form_finalize_keeps_native_membership_and_adds_responsibility_group_once(self):
+    def test_project_form_finalize_does_not_redefine_page_structure(self):
         contract = self._base_project_contract()
         source = {"model": "project.project", "view_type": "form", "render_profile": "edit"}
 
@@ -757,64 +792,47 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             contract,
             {"source_contract": source, "view_type": "form"},
         )
-        projected_again = core_extension.smart_core_finalize_unified_page_contract_v2(
-            self.env,
-            deepcopy(projected),
-            {"source_contract": source, "view_type": "form"},
-        ) or projected
 
         self.assertIsInstance(projected, dict)
-        field_nodes = self._field_nodes(projected["layoutContract"]["containerTree"], include_widget_list=False)
-        widget_nodes = self._field_nodes(projected["layoutContract"]["containerTree"], include_widget_list=True)
-        field_names = [row.get("name") or str(row.get("widgetId") or "").replace("field.", "") for row in field_nodes]
-        widget_names = [row.get("fieldCode") for row in widget_nodes if row.get("fieldCode")]
-        widget_status_ids = {row["widgetId"] for row in projected["statusContract"]["widgetStatus"]}
-
-        self.assertIn("user_id", field_names)
-        self.assertIn("field.user_id", widget_status_ids)
-        self.assertEqual(field_names.count("responsibility_ids"), 1)
-        self.assertEqual(field_names.count("collaborator_ids"), 1)
-        self.assertIn("responsibility_ids", widget_names)
-        self.assertIn("collaborator_ids", widget_names)
-        self.assertTrue(all("field_info" not in row for row in field_nodes))
-        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.relation.table"]["version"], "1.0")
-        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.relation.many2many"]["version"], "1.0")
-        widget_component_keys = {
-            row.get("fieldCode"): row.get("componentKey")
-            for row in widget_nodes
-            if row.get("fieldCode") in {"responsibility_ids", "collaborator_ids"}
-        }
-        self.assertEqual(widget_component_keys["responsibility_ids"], "sc.relation.table")
-        self.assertEqual(widget_component_keys["collaborator_ids"], "sc.relation.many2many")
-        self.assertIn(
-            "sc_project_responsibility_collaboration",
-            {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
+        self.assertEqual(projected["layoutContract"], contract["layoutContract"])
+        self.assertEqual(projected["statusContract"], contract["statusContract"])
+        self.assertEqual(
+            {row["widgetId"] for row in contract["statusContract"]["widgetStatus"]},
+            {"field.user_id", "field.partner_id"},
         )
-
-        second_field_nodes = self._field_nodes(projected_again["layoutContract"]["containerTree"], include_widget_list=False)
-        second_field_names = [
-            row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
-            for row in second_field_nodes
-        ]
-        second_status_ids = {row["widgetId"] for row in projected_again["statusContract"]["widgetStatus"]}
-        self.assertIn("user_id", second_field_names)
-        self.assertIn("field.user_id", second_status_ids)
-        self.assertEqual(second_field_names.count("responsibility_ids"), 1)
-        self.assertEqual(second_field_names.count("collaborator_ids"), 1)
+        native_data = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {
+                "user_id": {"type": "many2one", "string": "Project Manager"},
+                "partner_id": {"type": "many2one", "string": "Customer"},
+            },
+            "views": {"form": {"layout": [{"type": "field", "name": "user_id"}]}},
+        }
+        apply_native_authority_domain_overrides(native_data, "user")
+        self.assertEqual(native_data["fields"]["user_id"]["string"], "Project Manager")
+        self.assertNotEqual(native_data["fields"]["partner_id"]["string"], "业主单位")
+        self.assertFalse(any(
+            _field.get("name") == "responsibility_ids"
+            for _field in native_data["views"]["form"]["layout"]
+        ))
 
     def test_project_create_profile_does_not_add_collaborators(self):
+        contract = self._base_project_contract()
         projected = core_extension.smart_core_finalize_unified_page_contract_v2(
             self.env,
-            self._base_project_contract(),
+            contract,
             {"source_contract": {"model": "project.project", "view_type": "form", "render_profile": "create"}},
         )
 
-        field_names = [
+        result = projected or contract
+        self.assertEqual(result["layoutContract"], contract["layoutContract"])
+        self.assertEqual(result["statusContract"], contract["statusContract"])
+        field_names = {
             row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
-            for row in self._field_nodes(projected["layoutContract"]["containerTree"], include_widget_list=False)
-        ]
-
-        self.assertIn("responsibility_ids", field_names)
+            for row in self._field_nodes(result["layoutContract"]["containerTree"], include_widget_list=False)
+        }
+        self.assertNotIn("responsibility_ids", field_names)
         self.assertNotIn("collaborator_ids", field_names)
 
     def test_explicit_project_form_view_keeps_native_field_membership(self):
@@ -834,18 +852,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
 
-        self.assertIsInstance(projected, dict)
+        result = projected or contract
+        self.assertEqual(result["layoutContract"], contract["layoutContract"])
+        self.assertEqual(result["statusContract"], contract["statusContract"])
         field_names = {
             row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
-            for row in self._field_nodes(projected["layoutContract"]["containerTree"], include_widget_list=False)
+            for row in self._field_nodes(result["layoutContract"]["containerTree"], include_widget_list=False)
         }
-        self.assertIn("user_id", field_names)
-        self.assertNotIn("responsibility_ids", field_names)
-        self.assertNotIn("collaborator_ids", field_names)
-        self.assertIn(
-            "root",
-            {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
-        )
+        self.assertEqual(field_names, {"user_id", "partner_id", "manager_id"})
 
     def test_non_project_contract_is_unchanged_without_workflow_record(self):
         contract = self._base_project_contract()
@@ -856,6 +870,115 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             {"source_contract": {"model": "res.partner", "view_type": "tree"}, "view_type": "tree"},
         )
 
+        self.assertIsNone(projected)
+
+    def test_partner_field_hiding_is_a_published_page_declaration(self):
+        def final_partner_visible_fields():
+            action = self.env.ref("base.action_partner_form", raise_if_not_found=False)
+            view = self.env.ref("base.view_partner_form")
+            result = UiContractV2Handler(
+                self.env,
+                su_env=self.env["ir.model"].sudo().env,
+            ).handle({
+                "op": "model",
+                "model": "res.partner",
+                "action_id": action.id if action else 0,
+                "view_id": view.id,
+                "view_type": "form",
+                "render_profile": "edit",
+                "accepted_contract_versions": ["2.2.x"],
+                "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
+            })
+            result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(result.get("ok", True), result.get("error"))
+            nodes = self._field_nodes(
+                ((result.get("data") or {}).get("layoutContract") or {}).get("containerTree") or []
+            )
+            return {
+                row.get("fieldCode") or row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
+                for row in nodes
+                if (row.get("componentConfig") or {}).get("surfaceRole") != "hidden"
+            }
+
+        baseline_visible = final_partner_visible_fields()
+        self.assertNotIn("country_id", baseline_visible)
+        self.assertNotIn("user_id", baseline_visible)
+        self.assertIn("category_id", baseline_visible)
+
+        configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
+            "res.partner",
+            view_type="form",
+            action_id=None,
+            view_id=None,
+            role_key="",
+        )
+        governance = resolve_form_structure_governance({}, configs, view_type="form")
+        self.assertIn("country_id", governance["hidden_field_names"])
+        self.assertIn("user_id", governance["hidden_field_names"])
+
+        native_data = {
+            "model": "res.partner",
+            "view_type": "form",
+            "fields": {"country_id": {"type": "many2one", "string": "Country"}},
+            "views": {"form": {"layout": [{"type": "field", "name": "country_id"}]}},
+        }
+        apply_native_authority_domain_overrides(native_data, "user")
+        self.assertNotEqual(native_data["fields"]["country_id"].get("surface_role"), "hidden")
+        self.assertNotEqual(
+            native_data["views"]["form"]["layout"][0].get("componentConfig", {}).get("surfaceRole"),
+            "hidden",
+        )
+
+        partner_action = self.env.ref("base.action_partner_form", raise_if_not_found=False)
+        partner_view = self.env.ref("base.view_partner_form")
+        variant = self.env["ui.business.config.contract"].sudo().create({
+            "name": "partner_native_form_variant_test",
+            "model": "res.partner",
+            "view_type": "form",
+            "action_id": partner_action.id if partner_action else False,
+            "view_id": partner_view.id,
+            "priority": 900,
+            "company_id": False,
+            "active": True,
+            "status": "published",
+            "version_no": 1,
+            "contract_json": {
+                "view_orchestration": {
+                    "context": {
+                        "source": "smart_construction_core.product_release",
+                        "source_status": "product_release",
+                    },
+                    "views": {
+                        "form": {
+                            "composition_mode": "native_semantic_surface",
+                            "fields": [
+                                {"name": "category_id", "visible": False},
+                            ],
+                        },
+                    },
+                },
+            },
+        })
+        variant_configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
+            "res.partner",
+            view_type="form",
+            action_id=partner_action.id if partner_action else None,
+            view_id=partner_view.id,
+            role_key="",
+        )
+        variant_governance = resolve_form_structure_governance({}, variant_configs, view_type="form")
+        self.assertIn("category_id", variant_governance["hidden_field_names"])
+        variant_visible = final_partner_visible_fields()
+        self.assertNotIn("category_id", variant_visible)
+        variant.unlink()
+        restored_visible = final_partner_visible_fields()
+        self.assertIn("category_id", restored_visible)
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            self._base_project_contract(),
+            {"source_contract": {"model": "res.partner", "view_type": "form"}},
+        )
         self.assertIsNone(projected)
 
     def test_payment_settlement_lines_use_explicit_professional_component_contract(self):

@@ -30,6 +30,7 @@ export function useFormActionRuntime(params: {
   ensureSavedBeforeRecordAction: () => Promise<boolean>;
   errorMessage: Ref<string>;
   executeSceneMutation: (input: SceneMutationInput) => Promise<unknown>;
+  executeRecordButton?: typeof executeButton;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown, owner?: ActionFeedbackOwner) => Promise<ActionResponseNavigationResult>;
   recordId: () => number | null;
@@ -42,6 +43,8 @@ export function useFormActionRuntime(params: {
   submissionFeedback: Ref<SubmissionFeedback>;
   validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
+  const executeRecordButton = params.executeRecordButton ?? executeButton;
+
   async function runAction(action: ContractAction) {
     if (!action.enabled) return;
     if (params.validateSubmissionRequirements?.(action) === false) return;
@@ -136,9 +139,11 @@ export function useFormActionRuntime(params: {
     }
     if (plan.kind === 'record_button') {
       if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;
+      const actionParams = await params.collectActionParams(action);
+      if (actionParams === null || (owner && !owner.owns())) return;
       params.busyKind.value = 'action';
       try {
-        const response = await executeButton({
+        const response = await executeRecordButton({
           model: plan.model,
           res_id: plan.recordId,
           button: {
@@ -150,6 +155,7 @@ export function useFormActionRuntime(params: {
             server_action_id: plan.serverActionId || undefined,
             xml_id: plan.serverActionXmlId || undefined,
           },
+          action_params: Object.keys(actionParams).length ? actionParams : undefined,
           context: plan.context,
           meta: {
             menu_id: Number(params.routeMenuId() || 0) || undefined,
@@ -161,8 +167,8 @@ export function useFormActionRuntime(params: {
         if (owner && !owner.owns()) return;
         const result = response?.result;
         const navigation = await params.navigateActionResponseResult(result, owner);
-      if (navigation === 'invalidated') return;
-      if (navigation) {
+        if (navigation === 'invalidated') return;
+        if (navigation) {
           if (plan.refreshPolicy) {
             await params.applyProjectionRefreshPolicy(plan.refreshPolicy);
           }

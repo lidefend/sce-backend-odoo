@@ -326,5 +326,16 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "结算材料租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
         </record>
+        <record id="business_config_contract_partner_native_form_v1" model="ui.business.config.contract">
+            <field name="name">partner_native_form_v1</field>
+            <field name="model">res.partner</field>
+            <field name="view_type">form</field>
+            <field name="priority">800</field>
+            <field name="company_id" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="status">published</field>
+            <field name="version_no">1</field>
+            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release", "fact_authority": "res.partner"}, "views": {"form": {"composition_mode": "native_semantic_surface", "fields": [{"name": "country_id", "visible": False}, {"name": "user_id", "visible": False}]}}}}'/>
+        </record>
     </data>
 </odoo>

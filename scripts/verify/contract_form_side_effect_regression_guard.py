@@ -203,7 +203,9 @@ def main() -> int:
             "params.busyKind.value = 'action';",
             "await params.executeSceneMutation({",
             "if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;",
-            "const response = await executeButton({",
+            "const actionParams = await params.collectActionParams(action);",
+            "const response = await executeRecordButton({",
+            "action_params: Object.keys(actionParams).length ? actionParams : undefined,",
             "applyFormRuntimeStatusEvent(params, {",
             "params.busyKind.value = null;",
         ]:

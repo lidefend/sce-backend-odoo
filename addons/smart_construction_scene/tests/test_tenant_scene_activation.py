@@ -65,6 +65,10 @@ route_authority = _load(
     "odoo.addons.smart_core.delivery.runtime_route_authority",
     SCENE_DIR.parent / "smart_core/delivery/runtime_route_authority.py",
 )
+backend_contract_boundaries = _load(
+    "odoo.addons.smart_core.utils.backend_contract_boundaries",
+    SCENE_DIR.parent / "smart_core/utils/backend_contract_boundaries.py",
+)
 
 
 class ContextEnv:
@@ -228,7 +232,11 @@ class TestActualPublicationConsumers(unittest.TestCase):
         platform.user_is_tenant_config_admin = lambda user: False
         exceptions = types.ModuleType('odoo.exceptions')
         exceptions.AccessError = type('AccessError', (Exception,), {})
-        with patch.dict(sys.modules, {platform.__name__: platform, exceptions.__name__: exceptions}):
+        with patch.dict(sys.modules, {
+            platform.__name__: platform,
+            backend_contract_boundaries.__name__: backend_contract_boundaries,
+            exceptions.__name__: exceptions,
+        }):
             policy = _load('activation_request_authorization',
                            SCENE_DIR.parent / 'smart_core/security/intent_authorization.py')
             operation = _load('odoo.addons.smart_core.core.intent_operation_policy',

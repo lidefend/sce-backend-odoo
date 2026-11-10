@@ -57,6 +57,7 @@ class ProductSystemParameterPublishHandler(BaseIntentHandler):
     VERSION = "1.0.0"
     ETAG_ENABLED = False
     REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
+    TENANT_CONFIG_ADMIN_ALLOWED = True
 
     @staticmethod
     def source_authority_contract() -> dict:
@@ -128,6 +129,7 @@ class ProductSystemParameterRollbackHandler(BaseIntentHandler):
     VERSION = "1.0.0"
     ETAG_ENABLED = False
     REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
+    TENANT_CONFIG_ADMIN_ALLOWED = True
 
     @staticmethod
     def source_authority_contract() -> dict:

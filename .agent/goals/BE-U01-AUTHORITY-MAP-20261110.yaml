@@ -1,0 +1,70 @@
+schema_version: 1
+goal:
+  id: BE-U01-AUTHORITY-MAP-20261110
+  title: backend_fact_capability_delivery_and_authorization_authority_map
+  status: completed
+  formal_product_layer: P4
+  supporting_layers:
+    - P0
+    - P1
+  layer_target:
+    - backend_authority_closure_map
+    - source_bound_authority_guard
+  module:
+    - docs/architecture
+    - scripts/verify
+    - make
+    - .agent
+  baseline:
+    branch: codex/be-u01-authority-map-20261110
+    full_sha: 1ad805b621de6ced0a497c5a5f6e10bec358896d
+    source: owner_fixed_mainline
+  objective: >-
+    固定普通查询、真实审批和平台职责三条后端点到点样本，写明每项事实由谁维护、
+    谁发布、谁启用、谁过滤、谁生成契约、谁执行以及谁只读消费。把结论落成机器可读
+    权威映射，并验证每个源码锚点真实存在、每项事实只有一处维护、投影不授予权限、
+    执行入口保留服务端重验。
+  product_boundary:
+    standard_vs_user_specific: platform_and_construction_standard_verification_mechanism
+    why_here: >-
+      BE-U01 本身是后端职责事实的可审计映射和 P4 防回退机制；它引用 P0 平台路由、
+      平台身份与契约，以及 P1 行业业务和审批事实，但不改变这些运行语义。
+    why_not_elsewhere:
+      - no_frontend_behavior_or_inference
+      - no_new_capability_platform_scene_engine_or_approval_engine
+      - no_database_acl_record_rule_or_business_method_change
+      - no_release_or_deployment_claim
+    blast_radius:
+      - authority map and source-anchor guard
+      - incremental routing for the new guard and its test
+      - verification make wiring
+      - agent run metadata and batch record
+  constraints:
+    - source_refs_must_resolve_to_current_repository_files_and_symbols
+    - one_fact_has_one_maintained_authority_per_sample
+    - projection_and_projection_only_aliases_must_not_authorize
+    - execution_stages_must_declare_server_side_rechecks
+    - known_crossings_must_name_their_follow_up_card
+    - no_static_mapping_is_runtime_or_database_acceptance
+  exclusions:
+    - BE_U02_authorization_semantics_changes
+    - BE_U03_capability_catalog_changes
+    - BE_U04_publication_and_enablement_changes
+    - BE_U05_page_and_action_producer_changes
+    - BE_U06_approval_browser_journey
+    - frontend_changes
+    - database_or_runtime_writes
+  acceptance:
+    - all_three_required_samples_and_stage_chains_are_present
+    - every_reference_resolves_in_source
+    - every_required_fact_has_exactly_one_maintainer
+    - all_projections_are_projection_only_and_authorize_nothing
+    - all_execution_stages_declare_rechecks
+    - verify.backend.authority_closure.unit_passes_with_non_zero_tests
+  rollback: >-
+    Revert the BE-U01 commit. It changes no business data, ACL, route, contract,
+    module schema or deployed artifact.
+  next_exact_step: >-
+    Open BE-U02 from source gaps BE-U01-G02 and BE-U01-G03: separate subscription
+    availability from execution authorization and scope tenant-configuration
+    administrator bypass to declared configuration intents only.

@@ -574,6 +574,7 @@ export interface ExecuteButtonRequest {
     server_action_id?: number;
     xml_id?: string;
   };
+  action_params?: Record<string, unknown>;
   context?: Record<string, unknown>;
   meta?: Record<string, unknown> & { relation_origin?: RelationActionOrigin; work_item_origin?: { source: string; id: number } };
 }

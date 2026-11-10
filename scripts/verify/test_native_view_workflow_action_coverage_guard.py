@@ -286,12 +286,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
 
     def test_unavailable_actions_keep_meaning_without_becoming_execution_grants(self):
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
-        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_declared_actions")
-        method.decorator_list = []
+        methods = [
+            next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name)
+            for name in ("_declared_actions", "_action_input_contract")
+        ]
+        for method in methods:
+            method.decorator_list = []
         assignment = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "ACTIONS" for t in n.targets))
         namespace = {}
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, method], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, *methods], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
         service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
+        service._action_input_contract = lambda current_profile, key: namespace["_action_input_contract"](service, current_profile, key)
         profile = load_profiles()["project.project"]
         declarations = namespace["_declared_actions"](service, profile)
         meanings = {row["method"]: row["action_semantics"]["purpose"] for row in declarations}
@@ -394,11 +399,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
     def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None, approval_required=False):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
-        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
-        method.decorator_list = []
+        methods = [
+            next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name)
+            for name in ("_available_actions", "_action_input_contract")
+        ]
+        for method in methods:
+            method.decorator_list = []
         assignment = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "ACTIONS" for t in n.targets))
         namespace = {}
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, method], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, *methods], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
         values = dict(record_fields or {})
         def matches(domain):
             return all(values.get(field) == value if operator == '=' else values.get(field) not in value
@@ -410,6 +419,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             ACTIONS=namespace["ACTIONS"],
             _handles_without_approval=lambda record, approval_phase: not approval_required,
         )
+        service._action_input_contract = lambda current_profile, key: namespace["_action_input_contract"](service, current_profile, key)
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, evidence_gate or [])
 
     def test_general_contract_signing_binds_the_existing_business_method(self):

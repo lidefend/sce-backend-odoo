@@ -9,6 +9,7 @@ export async function executeButton(params: ExecuteButtonRequest) {
       model: params.model,
       res_id: params.res_id,
       button: params.button,
+      action_params: params.action_params,
     },
     context: params.context ?? {},
     meta: params.meta ?? {},

@@ -187,9 +187,25 @@ class ScWorkflowContractService(models.AbstractModel):
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "action_approval_decision",
-                "reject": "reject_tier",
+                "reject": "action_approval_reject",
                 "complete": "action_done",
                 "cancel": "action_cancel",
+            },
+            "action_inputs": {
+                "reject": {
+                    "required_params": ["reason"],
+                    "requires_reason": True,
+                    "presentation": {
+                        "requires_reason": True,
+                        "reason_input": {
+                            "title": "驳回付款申请",
+                            "label": "拒绝原因",
+                            "help": "请说明拒绝原因，提交后会写入正式审批记录。",
+                            "submit_label": "确认驳回",
+                            "cancel_label": "取消",
+                        },
+                    },
+                },
             },
         },
         "sc.settlement.order": {
@@ -1282,8 +1298,35 @@ class ScWorkflowContractService(models.AbstractModel):
                     "key": key,
                     "method": method,
                     "action_semantics": dict(semantics),
+                    **self._action_input_contract(profile, key),
                 })
         return actions
+
+    @api.model
+    def _action_input_contract(self, profile, key):
+        raw = (profile.get("action_inputs") or {}).get(key) or {}
+        required_params = [
+            str(item or "").strip()
+            for item in (raw.get("required_params") or [])
+            if str(item or "").strip()
+        ]
+        presentation = dict(raw.get("presentation") or {})
+        requires_reason = (
+            raw.get("requires_reason") is True
+            or presentation.get("requires_reason") is True
+            or "reason" in required_params
+        )
+        if requires_reason and "reason" not in required_params:
+            required_params.append("reason")
+            presentation["requires_reason"] = True
+        contract = {}
+        if required_params:
+            contract["required_params"] = required_params
+        if requires_reason:
+            contract["requires_reason"] = True
+        if presentation:
+            contract["presentation"] = presentation
+        return contract
 
     @api.model
     def _statusbar_projection(self, business_phase, approval_phase):
@@ -1392,6 +1435,13 @@ class ScWorkflowContractService(models.AbstractModel):
             advisories = [row for row in evidence_gate if row.get("blocking") is False
                           and key in (row.get("actionKeys") or []) and row.get("message")]
             enabled = not blockers
+            input_contract = self._action_input_contract(profile, key)
+            presentation = dict(input_contract.pop("presentation", {}) or {})
+            if advisories:
+                presentation.update({
+                    "requires_confirmation": True,
+                    "warning_message": "\n".join(row["message"] for row in advisories),
+                })
             actions.append(
                 {
                     "key": key,
@@ -1401,8 +1451,8 @@ class ScWorkflowContractService(models.AbstractModel):
                     **({"action_semantics": dict(spec["action_semantics"])} if spec.get("action_semantics") else {}),
                     "method": method,
                     "enabled": enabled,
-                    **({"presentation": {"requires_confirmation": True,
-                                          "warning_message": "\n".join(row["message"] for row in advisories)}} if advisories else {}),
+                    **input_contract,
+                    **({"presentation": presentation} if presentation else {}),
                     "reason_code": blockers[0].get("reasonCode") if blockers else "",
                     "blocked_message": blockers[0].get("message") if blockers else "",
                     "target": {

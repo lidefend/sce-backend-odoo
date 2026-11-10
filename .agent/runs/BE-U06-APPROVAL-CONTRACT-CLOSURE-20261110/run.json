@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "id": "BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110",
+  "branch": "codex/be-u05-page-declaration-authority-20261110",
+  "baseline_sha": "2a0f86ab59993b4008bdb6d0d0ad68bd0f48b0c4",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u06_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110.yaml",
+    ".agent/runs/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110/run.json",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "addons/smart_construction_core/services/financial_workspace_contract.py",
+    "addons/smart_construction_core/services/review_work_item_service.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "addons/smart_construction_core/views/core/payment_request_views.xml",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "docs/ops/iterations/backend_authority_closure_be_u06_20261110.md",
+    "frontend/apps/web/scripts/approval_contract_closure_test.ts",
+    "frontend/apps/web/src/api/executeButton.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/packages/schema/src/index.ts",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/verify/contract_form_side_effect_regression_guard.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/test/frontend_productization_fixture.sh",
+    "scripts/verify/test_general_contract_review_authority.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "make/runtime_ops.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered disposable local.test sc_test profile"
+  },
+  "cumulative_delivery": {
+    "batch": "BE-CLOSE-01",
+    "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+    "candidate_head": "5cf3b42c3c838b6e28651245c5c46d4a5ca98f19",
+    "product_acceptance_head": "5cf3b42c3c838b6e28651245c5c46d4a5ca98f19",
+    "tooling_remediation_head": "07a2b03e5c9da6c5500b917bb3d47d7d4c84368a",
+    "commit_count": 38,
+    "changed_file_count": 113,
+    "independent_review": {
+      "result": "PENDING_FINAL_REREVIEW",
+      "head": "07a2b03e5c9da6c5500b917bb3d47d7d4c84368a",
+      "blocking_findings": []
+    },
+    "runtime_evidence": {
+      "product_sha": "5cf3b42c3c838b6e28651245c5c46d4a5ca98f19",
+      "browser_report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "browser_report_sha256": "b26f89c4720b80c835e978a55e0239c023872202146389458ed4736596086d5b",
+      "candidate_runtime_diff": "none: browser report binds the exact current candidate",
+      "runtime_inputs_equal": true,
+      "addons_tree": "56a8a84ecb90884b7fad490fb58ba665856eba5e",
+      "frontend_tree": "3285fabf65697b100796c4fac8a475f5ae1b106c"
+    },
+    "publication": {
+      "selected_remote": "origin",
+      "target_main": "fb5f5c82fe7404939cd697ea99e1f2ba237b0310",
+      "target_is_ancestor": true,
+      "main_only_commits": 0,
+      "candidate_only_commits": 32,
+      "merge_tree_conflicts": [
+        ".agent/active-runs.json",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/verify/frontend_my_work_approval_browser.mjs"
+      ],
+      "preview_writes": 0,
+      "branch_exists": false,
+      "pr_required": true,
+      "remote_checks": "not_run_no_pr",
+      "pushed": false,
+      "pr_created": false,
+      "merged": false,
+      "deployed": false
+    }
+  },
+  "checks": {
+    "approval_contract_closure_orm": {
+      "target": "verify.approval.contract_closure.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110/approval_contract_orm_readback.json"
+      },
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/work_item_action_authority.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/views/core/general_contract_views.xml",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "make/guards.mk"
+      ]
+    },
+    "approval_contract_frontend_unit": {
+      "target": "verify.frontend.approval_contract.closure.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/approval_contract_closure_test.ts",
+        "frontend/apps/web/src/api/executeButton.ts",
+        "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormActionExecutor.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/package.json",
+        "frontend/package.json",
+        "make/frontend.mk"
+      ]
+    },
+    "unified_page_contract_v2_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ]
+    },
+    "unified_page_contract_v2_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ]
+    },
+    "unified_page_contract_v2_action": {
+      "target": "verify.unified_page_contract.v2.action",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+      ]
+    },
+    "unified_page_contract_v2_status": {
+      "target": "verify.unified_page_contract.v2.status",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+      ]
+    },
+    "review_authority_unit": {
+      "target": "verify.general_contract.review_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "make/role_authority.mk",
+        "scripts/verify/test_general_contract_review_authority.py"
+      ]
+    },
+    "execute_button_authority_unit": {
+      "target": "verify.execute_button.authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "make/codex.mk"
+      ]
+    },
+    "frontend_dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py"
+      ]
+    },
+    "agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py"
+      ]
+    },
+    "frontend_lint_src": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/schema/src",
+        "frontend/packages/ui/src",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/design-tokens",
+        "make/frontend.mk",
+        "scripts/verify/frontend_style_system_guard.py"
+      ]
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "kind": "offline",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "scripts/verify/registry.yaml"
+      ]
+    },
+    "standard_preview_unit": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/test/frontend_productization_fixture.sh",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py"
+      ]
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/contracts/v2",
+        "frontend/apps/web/src/app/presentation",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/packages/schema/src",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/scripts/native_action_notification_test.ts",
+        "frontend/apps/web/src/app/contracts/v2",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/packages/schema/src",
+        "make/frontend.mk"
+      ]
+    },
+    "my_work_approval_browser": {
+      "target": "verify.frontend.my_work_approval.browser",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/my-work-approval/report.json"
+      },
+      "inputs": [
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/services/financial_workspace_contract.py",
+        "addons/smart_construction_core/services/payment_request_work_item_service.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+        "addons/smart_construction_acceptance_fixture",
+        "frontend/apps/web/src/app",
+        "frontend/apps/web/src/components",
+        "frontend/apps/web/src/pages",
+        "frontend/packages/schema/src",
+        "make/dev.mk",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the final evidence record, run ci.delivery.freeze.prepare, obtain read-only approval of S1/S2 remediation, then stop before push or PR creation."
+}

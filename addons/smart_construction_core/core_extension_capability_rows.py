@@ -4,6 +4,23 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 
+ENTRY_ALIAS_PREFIXES = ("construction.menu.", "catalog.menu.")
+IDENTITY_BUSINESS = "business_capability"
+IDENTITY_ENTRY_ALIAS = "entry_compatibility_alias"
+IDENTITY_UNCLASSIFIED = "unclassified_capability"
+
+
+def normalized_identity(key: str, source: dict[str, Any]) -> tuple[str, bool]:
+    identity_kind = str(source.get("identity_kind") or "").strip()
+    if key.startswith(ENTRY_ALIAS_PREFIXES):
+        return IDENTITY_ENTRY_ALIAS, False
+    if identity_kind == IDENTITY_BUSINESS:
+        return IDENTITY_BUSINESS, source.get("business_capability") is True
+    if identity_kind == IDENTITY_ENTRY_ALIAS:
+        return IDENTITY_ENTRY_ALIAS, False
+    return IDENTITY_UNCLASSIFIED, False
+
+
 def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(row, dict):
         return None
@@ -24,8 +41,17 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
     group_icon = str(row.get("group_icon") or "").strip()
     ui_label = str(row.get("ui_label") or identity_name).strip()
     ui_hint = str(row.get("ui_hint") or "").strip()
+    identity_kind, business_capability = normalized_identity(key, row)
     return {
         "key": key,
+        "identity_kind": identity_kind,
+        "business_capability": business_capability,
+        "identity_contract_version": str(
+            row.get("identity_contract_version") or "capability.identity.v1"
+        ).strip(),
+        "definition_authority": str(row.get("definition_authority") or "").strip(),
+        "qualification_authority": str(row.get("qualification_authority") or "").strip(),
+        "provider_authority": str(row.get("provider_authority") or "").strip(),
         "name": identity_name,
         "domain": domain,
         "type": "entry",
@@ -56,6 +82,8 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
             "domain": domain,
             "type": "entry",
             "version": "v1",
+            "identity_kind": identity_kind,
+            "business_capability": business_capability,
         },
         "ownership": {
             "owner_module": "smart_core",

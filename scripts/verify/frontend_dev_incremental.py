@@ -64,6 +64,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.professional_component_registry.unit": "esbuild",
     "verify.frontend.runtime_identity.unit": "esbuild",
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
+    "verify.frontend.approval_contract.closure.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
     "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
@@ -549,6 +550,85 @@ RULES = (
         "verify.guard.registry",
     )),
     Rule((
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py",
+    ), (
+        "verify.backend.authority_closure.unit",
+    )),
+    Rule((
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/core/base_handler.py",
+        "addons/smart_core/tests/test_base_handler_type_error.py",
+        "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+    ), (
+        "verify.intent_group.authorization.unit",
+    )),
+    Rule((
+        "addons/smart_core/handlers/permission_check.py",
+        "addons/smart_core/tests/test_permission_check_debug_boundary.py",
+    ), (
+        "verify.permission_check.availability.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/handlers/my_work_complete.py",
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/handlers/payment_request_execute.py",
+        "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "addons/smart_construction_core/handlers/risk_action_execute.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    ), (
+        "verify.payment.authorization_boundary.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+        "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    ), (
+        "verify.product_system_parameter_catalog",
+    )),
+    Rule((
+        "scripts/verify/test_capability_identity_boundary.py",
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+    ), (
+        "verify.capability.identity_boundary.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    ), (
+        "verify.capability.identity_boundary.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    ), (
+        "verify.product.menu.contract_v1.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/models/support/scene_orchestration.py",
+        "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+    ), (
+        "verify.scene.publication_authority.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+    ), (
+        "verify.page.finalize.authority.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    ), (
+        "verify.page.finalize.authority.orm",
+        "verify.page.project_finalize.authority.orm",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (
@@ -573,6 +653,12 @@ RULES = (
     ), (
         "verify.frontend.dev.incremental.unit",
         "verify.agent.resume.unit",
+    )),
+    Rule((
+        "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/test_safe_branch_sync_main.py",
+    ), (
+        "verify.workspace.branch.sync-main",
     )),
     Rule((
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
@@ -604,10 +690,12 @@ RULES = (
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
         "scripts/verify/frontend_my_work_approval_runtime.py",
         "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
         "scripts/verify/test_frontend_release_local_entry.py",
         "scripts/verify/test_frontend_standard_preview.py",
     ), (
@@ -742,6 +830,36 @@ RULES = (
         "verify.frontend.contract_header_action.unit",
     )),
     Rule((
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "scripts/verify/test_general_contract_review_authority.py",
+    ), (
+        "verify.general_contract.review_authority.unit",
+        "verify.approval.contract_closure.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+    ), (
+        "verify.approval.contract_closure.orm",
+        "verify.unified_page_contract.v2.assembler",
+        "verify.unified_page_contract.v2.action",
+        "verify.unified_page_contract.v2.status",
+        "verify.unified_page_contract.v2.runtime",
+    )),
+    Rule((
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/scripts/approval_contract_closure_test.ts",
+        "frontend/apps/web/src/api/executeButton.ts",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+        "frontend/packages/schema/src/index.ts",
+    ), (
+        "verify.frontend.approval_contract.closure.unit",
+        "verify.frontend.contract_header_action.unit",
+        "verify.frontend.canonical_form_presenter.unit",
+    )),
+    Rule((
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
         "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
     ), (
@@ -782,8 +900,10 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "addons/smart_core/handlers/execute_button.py",
     ), (
         "verify.execute_button.authority.unit",
+        "verify.approval.contract_closure.orm",
     )),
     Rule((
         "scripts/audit/workflow_state_inventory.py",
@@ -1133,6 +1253,90 @@ def _git_paths(root: Path, *args: str) -> list[str]:
     return [value.decode("utf-8") for value in result.stdout.split(b"\0") if value]
 
 
+def _paths_since(root: Path, revision: str) -> list[str]:
+    paths = set(
+        _git_paths(
+            root,
+            "diff",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            f"{revision}..HEAD",
+        )
+    )
+    paths.update(_git_paths(root, "diff", "--no-renames", "--name-only", "-z"))
+    paths.update(_git_paths(root, "diff", "--no-renames", "--cached", "--name-only", "-z"))
+    paths.update(_git_paths(root, "ls-files", "--others", "--exclude-standard", "-z"))
+    return sorted(paths)
+
+
+def resumable_receipt_results(
+    root: Path,
+    paths: list[str],
+    targets: list[str],
+) -> tuple[Path | None, str, dict[str, dict]]:
+    """Carry verified target prefixes from a clean interrupted execution.
+
+    An interrupted aggregate receipt can contain many completed targets before
+    the operator stops the current target. Those target logs remain useful when
+    the source head is still an ancestor and the target set is identical. The
+    caller removes targets affected by commits or dirty paths since that head.
+    """
+    execution_root = root / ".runtime/frontend-dev-validation/executions"
+    if not execution_root.is_dir():
+        return None, "", {}
+    receipts = sorted(
+        execution_root.glob("*/receipt.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    expected_paths = sorted(set(paths))
+    expected_targets = sorted(set(targets))
+    for receipt_path in receipts:
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            head = str(receipt.get("identity", {}).get("head", ""))
+            if (
+                receipt.get("status") != "interrupted"
+                or not receipt.get("identity", {}).get("worktreeClean")
+                or len(head) != 40
+                or sorted(receipt.get("changedPaths", [])) != expected_paths
+                or sorted(receipt.get("requiredTargets", [])) != expected_targets
+            ):
+                continue
+            subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", head, "HEAD"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            results: dict[str, dict] = {}
+            for row in receipt.get("targetResults", []):
+                target = row.get("target")
+                if target not in expected_targets or target in results:
+                    continue
+                if row.get("status") != "passed" or row.get("returncode") != 0:
+                    continue
+                log = Path(str(row.get("log", "")))
+                if not log.is_absolute():
+                    log = root / log
+                if (
+                    not log.is_file()
+                    or not log.resolve().is_relative_to(root.resolve())
+                    or hashlib.sha256(log.read_bytes()).hexdigest() != row.get("logSha256")
+                ):
+                    continue
+                carried = dict(row)
+                carried["reusedFrom"] = _json_path(receipt_path, root)
+                carried["reuseReason"] = "verified target prefix from interrupted execution"
+                results[target] = carried
+            if results:
+                return receipt_path, head, results
+        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+            continue
+    return None, "", {}
+
+
 def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> list[str]:
     merge_base = subprocess.run(
         ["git", "-C", str(root), "merge-base", "HEAD", base_ref],
@@ -1467,6 +1671,18 @@ def execute_targets(
         return 0
 
     source_receipt = incremental_verified_receipt(root, paths, targets, identity)
+    resume_receipt, resume_head, carried_results = (
+        resumable_receipt_results(root, paths, targets)
+        if source_receipt is None and identity.get("worktreeClean")
+        else (None, "", {})
+    )
+    if resume_receipt is not None:
+        invalidated = set(select_targets(_paths_since(root, resume_head)))
+        carried_results = {
+            target: row
+            for target, row in carried_results.items()
+            if target not in invalidated
+        }
     receipt_directory = _execution_directory(root, receipt_dir)
     if source_receipt is not None:
         payload.update(
@@ -1498,11 +1714,19 @@ def execute_targets(
 
     print(
         f"[frontend.dev.incremental] EXECUTE paths={len(paths)} "
-        f"targets={','.join(targets)}",
+        f"targets={','.join(target for target in targets if target not in carried_results)}"
+        + (
+            f" resumed={len(carried_results)} source={_json_path(resume_receipt, root)}"
+            if resume_receipt is not None
+            else ""
+        ),
         flush=True,
     )
     write_state(status="running", paths=paths, targets=targets, returncode=None)
     for target in targets:
+        if target in carried_results:
+            payload["targetResults"].append(carried_results[target])
+            continue
         log_path = receipt_directory / f"{target}.log"
         result = _run_make_target(target, root, log_path)
         result["log"] = _json_path(log_path, root)
@@ -1522,8 +1746,11 @@ def execute_targets(
     payload["notRunTargets"] = [target for target in targets if target not in executed]
     payload["testsRun"] = bool(payload["targetResults"])
     payload["verificationPassed"] = payload["status"] == "passed"
-    payload["executedTargetCount"] = len(payload["targetResults"])
-    payload["reused"] = False
+    payload["executedTargetCount"] = len(payload["targetResults"]) - len(carried_results)
+    payload["reusedTargetCount"] = len(carried_results)
+    if resume_receipt is not None:
+        payload["sourceReceipt"] = _json_path(resume_receipt, root)
+    payload["reused"] = bool(carried_results)
     receipt = _write_receipt(receipt_directory, payload)
     returncode = {
         "passed": 0,

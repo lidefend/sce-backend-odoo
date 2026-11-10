@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: BE-U05C-REVIEW-REMEDIATION-20261110
+  title: close_independent_review_identity_and_page_evidence_findings
+  status: completed
+  formal_product_layer: P0
+  supporting_layers:
+    - P1
+  layer_target:
+    - capability_identity_fail_closed
+    - final_page_declaration_evidence
+  module:
+    - smart_core
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u05-page-declaration-authority-20261110
+    full_sha: 8a35c7718b1a39318f89a22587405359c264d225
+    source: independent_read_only_review_request_changes
+  objective: >-
+    修复独立复审的两个 S1：缺失或未知能力身份不得默认 business_capability；
+    partner 与 project 页面验收必须证明真实 UiContractV2Handler 最终契约随声明变化，
+    而不是只检查 resolver 或 finalize 中间结果。
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_construction_standard
+    why_here: >-
+      身份 fail-closed 属于 P0 交付投影；page declaration 最终结果属于 P0 编排消费，
+      其行业声明由 P1 提供。
+    why_not_elsewhere:
+      - no_frontend_inference
+      - no_runtime_database_migration
+      - no_action_execution_change
+      - no_new_capability_engine
+  constraints:
+    - menu_prefixes_always_alias
+    - unknown_identity_never_implies_business_capability
+    - business_requires_explicit_identity_kind_and_true_flag
+    - final_contract_evidence_runs_through_ui_contract_v2
+    - exact_orm_non_zero
+  exclusions:
+    - full_browser_matrix
+    - production_deployment
+    - remote_publication
+  rollback: Revert the remediation commit; no schema or external state changes.
+  next_exact_step: Repeat the read-only U01-U05 review against the remediation commit.

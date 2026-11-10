@@ -62,6 +62,9 @@ class TestPermissionCheckDebugBoundary(unittest.TestCase):
         result = handler.handle({}, {})
 
         self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["authorization_scope"], "product_availability_only")
+        self.assertTrue(result["data"]["projection_only"])
+        self.assertIn("business_execution", result["data"]["does_not_authorize"])
         self.assertNotIn("debug", result["data"])
 
     def test_string_true_debug_includes_debug_payload(self):

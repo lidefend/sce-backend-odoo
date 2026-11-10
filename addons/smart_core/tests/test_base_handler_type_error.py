@@ -181,7 +181,16 @@ class TestBaseHandlerTypeError(unittest.TestCase):
             INTENT_TYPE = "read.denied"
             REQUIRED_GROUPS = ["missing.group"]
             ALIASES = []
-        registry.HANDLER_REGISTRY = {"read.allowed": Allowed, "read.denied": Denied}
+        class ConfigAllowed(self.base.BaseIntentHandler):
+            INTENT_TYPE = "ui.business_config.contract.save"
+            REQUIRED_GROUPS = ["missing.group"]
+            def handle(self):
+                return True
+        registry.HANDLER_REGISTRY = {
+            "read.allowed": Allowed,
+            "read.denied": Denied,
+            "ui.business_config.contract.save": ConfigAllowed,
+        }
         name = "odoo.addons.smart_core.core.intent_surface_builder"
         spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().parents[1] / "core/intent_surface_builder.py")
         module = importlib.util.module_from_spec(spec)
@@ -201,8 +210,10 @@ class TestBaseHandlerTypeError(unittest.TestCase):
                 policy.authorize_intent(_FakeEnv(), "read.denied", {})
         with patch.object(policy, "user_is_tenant_config_admin", return_value=True):
             visible, _ = module.IntentSurfaceBuilder().collect(_FakeEnv(), _FakeEnv.user)
-            self.assertEqual(visible, ["read.allowed", "read.denied"])
-            self.assertTrue(Denied(env=_FakeEnv()).run())
+            self.assertEqual(visible, ["read.allowed", "ui.business_config.contract.save"])
+            with self.assertRaisesRegex(Exception, "PERMISSION_DENIED"):
+                Denied(env=_FakeEnv()).run()
+            self.assertTrue(ConfigAllowed(env=_FakeEnv()).run())
 
     def test_missing_write_declaration_remains_denied(self):
         class Handler(self.base.BaseIntentHandler):
