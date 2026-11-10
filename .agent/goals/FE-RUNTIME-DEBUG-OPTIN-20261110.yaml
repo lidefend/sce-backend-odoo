@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RUNTIME-DEBUG-OPTIN-20261110
   title: "Runtime debug opt-in across non-development frontend builds"
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: generic frontend runtime diagnostic logging
   module: frontend/apps/web/src/utils/logger.ts

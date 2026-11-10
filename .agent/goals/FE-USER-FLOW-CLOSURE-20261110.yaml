@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: FE-USER-FLOW-CLOSURE-20261110
+  title: "FE-01 to FE-05 user behavior closure"
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: frontend user behavior coverage, recovery and continuity
+  module: frontend/apps/web
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    This batch validates whether the existing contract-driven frontend primitives
+    are actually consumed by production pages and whether users can complete,
+    recover, return and continue real business tasks. Product defects belong to
+    the generic frontend consumption layer.
+  why_not_elsewhere: >
+    Missing backend state, authorization or contract declarations must remain in
+    their owning P0/P1/P2/P3 carriers. The frontend must not infer business facts,
+    and this batch must not create a parallel component, renderer or state system.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml
+      - .agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml
+      - .agent/runs/FE-USER-FLOW-CLOSURE-20261110/run.json
+      - .agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/ops/iterations/frontend_user_flow_closure_20261110.md
+      - frontend/apps/web/
+      - scripts/verify/
+    business_scope:
+      - payment request representative journey first
+      - existing FE-01 through FE-05 closure objectives
+  objective: >
+    Establish one exact-main baseline after PR #862/#863, reconcile existing
+    public-capability evidence, then close only evidenced frontend defects across
+    state/readout consistency, action hierarchy, safe handling failure recovery,
+    and return/continuation behavior.
+  acceptance:
+    - main baseline and prior integration records are reconciled
+    - coverage gap table maps declaration, shared interpretation, consumer and behavior
+    - existing evidence is reused when its declared inputs remain valid
+    - payment request journey is audited before product changes
+    - confirmed frontend defects receive focused behavioral tests
+    - backend contract/configuration gaps are transferred rather than patched in frontend
+    - FE-01 through FE-05 end with explicit closed, differential, defect, gap or unverified verdicts
+  exclusions:
+    - new_business_feature
+    - new_component_platform
+    - renderer_protocol_expansion
+    - css_or_guard_count_as_success_metric
+    - backend_contract_inference_in_frontend
+    - deployment
+  rollback: >
+    Revert the coverage-record or confirmed frontend fix commit. Runtime evidence
+    remains outside tracked source and no business data migration is involved.

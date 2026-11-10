@@ -32,8 +32,17 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
         self.assertTrue(any("destroy-on-close" in error for error in errors))
 
     def test_dialog_cannot_escape_the_phone_viewport(self):
-        errors = validate(self.altered("dialog", "calc(100vw - 2 * var(--sc-product-page-gutter))", "100vw"))
+        values = dict(self.sources)
+        values["dialog"] = values["dialog"].replace(
+            "calc(100vw - 2 * var(--sc-product-page-gutter))",
+            "100vw",
+        )
+        errors = validate(values)
         self.assertTrue(any("100vw" in error for error in errors))
+
+    def test_dialog_must_keep_border_box_geometry(self):
+        errors = validate(self.altered("dialog", "box-sizing: border-box", "box-sizing: content-box"))
+        self.assertTrue(any("box-sizing: border-box" in error for error in errors))
 
     def test_action_view_cannot_restore_private_dialog(self):
         values = self.altered("action_view", "<ScDialog", '<div class="business-category-picker-backdrop" role="dialog"')

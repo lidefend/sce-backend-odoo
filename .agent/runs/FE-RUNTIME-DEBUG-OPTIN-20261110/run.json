@@ -3,7 +3,7 @@
   "id": "FE-RUNTIME-DEBUG-OPTIN-20261110",
   "branch": "fix/frontend-runtime-debug-flag-20261110",
   "baseline_sha": "ca032b92dd1131485313b9299b5e799c67f1d525",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml",
   "record": "docs/ops/iterations/frontend_runtime_debug_optin_20261110.md",
   "scope": [
@@ -54,7 +54,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the researched logger correction, run clean iteration, publish the follow-up PR, and require exact-head checks before merge.",
+  "next_exact_step": "Merged as PR #863 at e56cd8d17fb5d08a62ff0dd2695f2aed06696a11; runtime debug opt-in S2 closed.",
   "validation": {
     "focused_logger": {
       "status": "passed",

@@ -114,6 +114,24 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.professional_workflow.unit", targets)
                 self.assertNotIn("verify.frontend.native_form_action_presentation.browser", targets)
 
+    def test_overlay_lifecycle_inputs_select_the_shared_primitive_guard(self) -> None:
+        for path in (
+            "frontend/apps/web/src/components/design-system/ScDialog.vue",
+            "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+            "frontend/apps/web/src/composables/useModalLifecycle.ts",
+            "frontend/apps/web/src/views/ActionView.vue",
+            "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+            "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+            "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+            "scripts/verify/frontend_overlay_lifecycle_guard.py",
+            "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.overlay_lifecycle.unit",
+                    select_targets([path]),
+                )
+
     def test_professional_workflow_unit_executes_interaction_browser(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
         block = source.split("verify.frontend.professional_workflow.unit:", 1)[1].split(

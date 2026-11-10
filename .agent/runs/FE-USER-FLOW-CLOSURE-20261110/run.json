@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "FE-USER-FLOW-CLOSURE-20261110",
+  "branch": "feature/fe-user-flow-closure-20261110",
+  "baseline_sha": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+  "status": "active",
+  "goal": ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
+    ".agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml",
+    ".agent/runs/FE-USER-FLOW-CLOSURE-20261110/run.json",
+    ".agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
+    "frontend/apps/web/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository evidence and governed Make targets; runtime evidence considered only after source coverage is reconciled"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "systemic_static": {
+      "target": "verify.frontend.systemic.convergence.static",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "scripts/verify/frontend_text_containment_guard.py",
+        "scripts/verify/frontend_inline_style_guard.py",
+        "scripts/verify/frontend_split_usage_guard.py",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/frontend_systemic_convergence_gate_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/ops/acceptance_evolution_record.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "overlay_lifecycle": {
+      "target": "verify.frontend.overlay_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/composables/useModalLifecycle.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze the reconciled coverage/tooling batch, then run the payment-request representative journey against the exact committed frontend and backend identity.",
+  "validation": {
+    "baseline_reconciliation": {
+      "status": "passed",
+      "main_head": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+      "pr_862_merge": "ca032b92dd1131485313b9299b5e799c67f1d525",
+      "pr_863_merge": "e56cd8d17fb5d08a62ff0dd2695f2aed06696a11"
+    },
+    "coverage_reconciliation": {
+      "status": "passed",
+      "payment_request_entry": {
+        "menu_id": 559,
+        "action_id": 880,
+        "observed_rows_at_previous_candidate": 20
+      },
+      "shared_static_checks": [
+        "verify.frontend.collection_view_semantics.unit",
+        "verify.frontend.professional_business_value.unit",
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.contract_form_save_failure_recovery.unit",
+        "verify.frontend.native_form_action_presentation.unit",
+        "verify.frontend.collection_row_action_identity.unit",
+        "verify.frontend.page_identity",
+        "verify.frontend.overlay_lifecycle.unit"
+      ],
+      "current_runtime_gaps": [
+        "payment request list/edit/save-submit/readback/return on current main",
+        "payment request My Work return",
+        "payment request relation return",
+        "payment request keyboard and failure recovery on current main"
+      ]
+    },
+    "overlay_guard_repair": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "guard expected the removed inline-style spelling boxSizing instead of the shared CSS box-sizing declaration",
+      "tests": 13,
+      "runtime_checks": 27,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261110T041732Z-2587292-920360288/receipt.json"
+    }
+  }
+}

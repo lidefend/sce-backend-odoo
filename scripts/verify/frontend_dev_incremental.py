@@ -246,6 +246,19 @@ RULES = (
         "verify.frontend.navigation_shell.unit",
     )),
     Rule((
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/composables/useModalLifecycle.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+    ), (
+        "verify.frontend.overlay_lifecycle.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_professional_business_value_guard.py",
         "scripts/verify/test_frontend_professional_business_value_guard.py",
     ), (
