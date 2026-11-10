@@ -287,6 +287,9 @@ RULES = (
     )),
     Rule((
         "frontend/apps/web/src/components/content/ScRichText.vue",
+        "frontend/apps/web/src/utils/safeHtmlLinkTarget.ts",
+        "frontend/apps/web/src/utils/sanitizeReadonlyHtml.ts",
+        "frontend/apps/web/src/utils/sanitizeRestrictedHtml.ts",
         "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
         "scripts/verify/frontend_rich_text_guard.py",
         "scripts/verify/test_frontend_rich_text_guard.py",

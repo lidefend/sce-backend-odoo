@@ -59,6 +59,13 @@ class FrontendInlineStyleGuardTest(unittest.TestCase):
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["files"], ["frontend/apps/web/src/template.html"])
 
+    def test_v_bind_style_forms_are_detected(self) -> None:
+        root = self.make_root(
+            {"Probe.vue": '<template><div v-bind:style="layout" /><Panel v-bind:layout-style="layout" /></template>'},
+            ["Probe.vue"],
+        )
+        self.assertEqual(guard.inspect(root)["errors"], [])
+
     def test_literal_static_style_fails_even_when_registered(self) -> None:
         root = self.make_root(
             {"Probe.vue": '<template><div style="color: red" /></template>'},

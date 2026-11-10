@@ -126,6 +126,37 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             },
         }]
         self.assertEqual(service._filter_native_action_groups(native_nodes), [])
+        denied_parents = [{
+            'menu_id': 501,
+            'name': 'Expense',
+            'menu_xmlid': 'test.expense',
+            'action_id': 601,
+            'action_type': 'ir.actions.act_window',
+            'model': 'res.partner',
+            'action_xmlid': 'test.action_expense',
+            'route': '/a/601',
+            'children': [{
+                'menu_id': 502,
+                'name': 'Allowed child',
+                'menu_xmlid': 'test.allowed_child',
+                'children': [],
+            }],
+        }]
+        filtered_parent = service._filter_native_action_groups(denied_parents)
+        self.assertEqual(len(filtered_parent), 1)
+        self.assertEqual(filtered_parent[0]['children'][0]['menu_id'], 502)
+        for key in ('action_id', 'action_type', 'action_xmlid', 'model', 'route'):
+            self.assertNotIn(key, filtered_parent[0])
+        with patch.object(menu_service, 'can_discover_platform_capabilities', return_value=False):
+            self.assertFalse(service._policy_menu_user_authorized(
+                {
+                    'menu_id': 501,
+                    'menu_xmlid': 'test.expense',
+                    'action_id': 601,
+                    'action_xmlid': 'test.action_expense',
+                },
+                {'ids': {501}, 'xmlids': {'test.expense'}, 'scenes': set(), 'routes': set()},
+            ))
         self.assertIsNone(service._route_entry_from_menu(
             row, route_kind='PRIMARY_NAV', source='native',
             action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},

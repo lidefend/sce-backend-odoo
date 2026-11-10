@@ -242,11 +242,35 @@ class MenuService:
             out = dict(node)
             out["children"] = children
             if not allowed:
-                out["action_id"] = None
-                out["route"] = ""
+                for key in (
+                    "action",
+                    "action_id",
+                    "actionId",
+                    "action_raw",
+                    "action_type",
+                    "action_xmlid",
+                    "active_match",
+                    "entry_target",
+                    "model",
+                    "native_action_id",
+                    "native_model",
+                    "native_view_mode",
+                    "res_model",
+                    "route",
+                    "scene_key",
+                    "sceneKey",
+                    "target",
+                    "view_modes",
+                ):
+                    out.pop(key, None)
                 out["meta"] = {
                     key: value for key, value in meta.items()
-                    if key not in {"action_id", "action_xmlid", "action_model", "route"}
+                    if key not in {
+                        "action", "action_id", "actionId", "action_model", "action_raw",
+                        "action_type", "action_xmlid", "active_match", "entry_target", "model",
+                        "native_action_id", "native_model", "native_view_mode", "res_model",
+                        "route", "scene_key", "sceneKey", "target", "view_modes",
+                    }
                 }
             return out
 
@@ -1805,6 +1829,23 @@ class MenuService:
         # Use the actual platform capability group, never a supplied role label.
         # Runtime action and data checks remain independent and are not granted
         # by this navigation-only decision.
+        action_xmlid = str(menu.get("action_xmlid") or "").strip()
+        action_id = self._positive_int(menu.get("action_id"))
+        action = None
+        if self.env is not None and hasattr(self.env, "ref") and (action_xmlid or action_id):
+            action = self.env.ref(action_xmlid, raise_if_not_found=False) if action_xmlid else None
+            if not action and action_id:
+                try:
+                    action = self.env["ir.actions.actions"].sudo().browse(action_id).exists()
+                except (KeyError, TypeError):
+                    action = None
+            if action:
+                action_groups = getattr(action.sudo(), "groups_id", None)
+                user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
+                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                    return False
+            elif action_xmlid:
+                return False
         if self.env is not None and can_discover_platform_capabilities(self.env.user):
             return True
         menu_xmlid = str(menu.get("menu_xmlid") or "").strip()

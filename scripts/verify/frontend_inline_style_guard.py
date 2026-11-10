@@ -13,9 +13,9 @@ WEB_SRC = ROOT / "frontend/apps/web/src"
 ALLOWLIST = ROOT / "docs/architecture/inline_style_allowlist.json"
 
 STATIC_STYLE_RE = re.compile(r"(?<![-:\w])style\s*=")
-DYNAMIC_STYLE_RE = re.compile(r"(?<![-:\w]):style\s*=")
+DYNAMIC_STYLE_RE = re.compile(r"(?:(?<![-:\w]):|v-bind:)style\s*=")
 STYLE_PROP_RE = re.compile(
-    r"(?<![-:\w]):(?:layout|body|header|overlay|dialog)-style\s*="
+    r"(?:(?<![-:\w]):|v-bind:)(?:layout|body|header|overlay|dialog)-style\s*="
 )
 SCRIPT_STYLE_RE = re.compile(
     r"\bstyle\s*:\s*(?:\{|[A-Za-z_$][\w$]*(?:\s*\([^)]*\))?)"

@@ -51,6 +51,14 @@ class FrontendConsoleGuardTest(unittest.TestCase):
         errors = guard.inspect(root)["errors"]
         self.assertTrue(any("outside shared logger" in error for error in errors))
 
+    def test_optional_and_computed_console_calls_are_detected(self) -> None:
+        root = self.make_root({
+            guard.ALLOWED: self.LOGGER,
+            "frontend/apps/web/src/Probe.ts": "console?.warn('noise'); console['error']('noise');\n",
+        })
+        errors = guard.inspect(root)["errors"]
+        self.assertTrue(any("outside shared logger" in error for error in errors))
+
     def test_missing_debug_gate_fails(self) -> None:
         root = self.make_root({guard.ALLOWED: self.LOGGER.replace("VITE_DEBUG_LOGS", "UNUSED")})
         errors = guard.inspect(root)["errors"]
