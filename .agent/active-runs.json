@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/scheduled-ci-authenticated-probe-20261110": ".agent/runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/run.json",
     "fix/daily-main-receipt-preserve-20261110": ".agent/runs/DAILY-MAIN-RECEIPT-PRESERVE-20261110/run.json",
     "fix/daily-main-detached-plan-20261110": ".agent/runs/DAILY-MAIN-DETACHED-PLAN-20261110/run.json",
     "fix/b2-build-identity-20261109": ".agent/runs/B2-BUILD-IDENTITY-20261109/run.json",

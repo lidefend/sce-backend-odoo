@@ -1,0 +1,21 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-AUTHENTICATED-PROBE-20261110
+  title: scheduled CI authenticated probe transport recovery
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: shared frontend authenticated intent probe
+  module: frontend verification transport
+  standard_vs_user_specific: platform verification tooling
+  objective: >
+    Make the authenticated probe tolerate one bounded transport failure without
+    weakening HTTP, principal, entry-routing or response-contract assertions.
+  acceptance:
+    - A transport failure is retried once within a fixed timeout.
+    - A successful retry returns the normal response body.
+    - Repeated transport failure remains fail-closed and reports only a safe code.
+    - Existing request identity and database-routing guards remain unchanged.
+  exclusions:
+    - frontend product behavior
+    - backend contracts
+    - credentials or deployment

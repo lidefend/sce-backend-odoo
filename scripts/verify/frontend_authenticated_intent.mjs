@@ -21,6 +21,22 @@ export function assertEntryRequest(url, headers, payload) {
   }
 }
 
+export function safeTransportCode(error) {
+  for (const candidate of [error?.cause?.code, error?.code]) {
+    const code = String(candidate || '').trim().toUpperCase();
+    if (/^(?:E[A-Z0-9_]{2,63}|UND_ERR_[A-Z0-9_]+|ERR_[A-Z0-9_]+)$/.test(code)) {
+      return code.slice(0, 64);
+    }
+  }
+  for (const candidate of [error?.cause?.name, error?.name]) {
+    const name = String(candidate || '').trim();
+    if (/^(?:Error|TypeError|RangeError|AbortError|TimeoutError|APIError)$/.test(name)) {
+      return name;
+    }
+  }
+  return 'unknown';
+}
+
 export async function bindAuthenticatedIntent(response, expectedPrincipal) {
   const body = await response.json();
   const data = successfulIntentData(response.status(), body, 'system.init');
@@ -42,13 +58,21 @@ export async function bindAuthenticatedIntent(response, expectedPrincipal) {
     const data = { ...original, intent, params };
     assertEntryRequest(url, headers, data);
     let replay;
-    try {
-      replay = await context.request.post(url, {
-        headers, data,
-      });
-    } catch {
-      // Playwright transport errors can include request headers in their log.
-      throw new Error(`${intent}: authenticated probe transport failed`);
+    let transportCode = 'unknown';
+    const maxAttempts = intent === 'system.init' ? 2 : 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      try {
+        replay = await context.request.post(url, {
+          headers, data, timeout: 30000,
+        });
+        break;
+      } catch (error) {
+        transportCode = safeTransportCode(error);
+        if (attempt + 1 < maxAttempts) await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+    if (!replay) {
+      throw new Error(`${intent}: authenticated probe transport failed (${transportCode})`);
     }
     const result = await replay.json();
     const payload = successfulIntentData(replay.status(), result, intent);

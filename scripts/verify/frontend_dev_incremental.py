@@ -599,10 +599,17 @@ RULES = (
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
+        "scripts/verify/frontend_authenticated_intent.mjs",
+    ), (
+        "verify.frontend.delivery_hardening.guard",
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_delivery_hardening_browser.mjs",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
     ), (
         "verify.frontend.standard_preview.unit",
+        "verify.frontend.delivery_hardening.guard",
     )),
     Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
