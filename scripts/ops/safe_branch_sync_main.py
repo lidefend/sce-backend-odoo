@@ -61,8 +61,9 @@ GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
 )
-# The original refresh entry and its producer implementation must come from
-# exact main. In particular, governance registries are inputs, never outputs.
+# Generator and governance source changes may come from the candidate only
+# after they have passed the responsibility path/patch checks above. The
+# refresh itself is still restricted to the exact generated-output allowlist.
 GENERATOR_SOURCE_PATHS = (
     "Makefile", "make", "scripts/ci", "scripts/audit", "scripts/contract",
     "scripts/verify/test_coverage_registry_audit.py",
@@ -858,8 +859,20 @@ def cleanup_new_untracked(root: Path, original: set[str]) -> None:
 def regenerate_reports(plan: SyncPlan) -> str | None:
     for path in GENERATED_EVIDENCE_CONFLICT_PATHS:
         generated_output_path(plan.root, path)
-    if git_output(plan.root, "diff", plan.new_main, "--", *GENERATOR_SOURCE_PATHS):
-        raise SyncError("generated rebuild requires unchanged main producer sources and Make recipes")
+    generator_changes = tuple(
+        path
+        for path in commit_paths(plan.root, plan.new_main, git_output(plan.root, "rev-parse", "HEAD"))
+        if any(
+            path == source or path.startswith(source.rstrip("/") + "/")
+            for source in GENERATOR_SOURCE_PATHS
+        )
+    )
+    unexpected_generator_changes = sorted(set(generator_changes) - set(plan.paths))
+    if unexpected_generator_changes:
+        raise SyncError(
+            "generated rebuild found unowned producer changes: "
+            + ", ".join(unexpected_generator_changes[:8])
+        )
     before = git_output(plan.root, "rev-parse", "HEAD")
     log = plan.recovery_bundle.with_suffix(".generation.log")
     environment = sanitized_environment()
