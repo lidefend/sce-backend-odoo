@@ -862,13 +862,22 @@
     {
       "id": "BE-U01-G05",
       "owner_card": "BE-U05",
-      "status": "open",
-      "summary": "行业 finalize 后置钩子仍可直接改变最终页面；页面声明、编排和最终投影尚未完全收口到同一位置。",
+      "status": "partially_closed",
+      "summary": "res.partner 的字段隐藏已迁移到发布态 sparse field policy，finalize 不再修改该页面；项目表单 fallback 的拓扑修剪与职责区追加仍需继续迁移。",
       "refs": [
         {
           "path": "addons/smart_construction_core/core_extension.py",
-          "kind": "python_symbol",
-          "value": "smart_core_finalize_unified_page_contract_v2"
+          "kind": "python_symbol_excludes",
+          "value": "smart_core_finalize_unified_page_contract_v2",
+          "forbidden_tokens": [
+            "_sc_hide_v2_widget_field(out, \"country_id\")",
+            "_sc_hide_v2_widget_field(out, \"user_id\")"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+          "kind": "xml_record",
+          "value": "business_config_contract_partner_native_form_v1"
         }
       ]
     }

@@ -8,6 +8,7 @@ from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_construction_core import core_extension
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+from odoo.addons.smart_core.core.form_structure_authority import resolve_form_structure_governance
 from odoo.addons.smart_core.utils import contract_governance
 
 
@@ -856,6 +857,25 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             {"source_contract": {"model": "res.partner", "view_type": "tree"}, "view_type": "tree"},
         )
 
+        self.assertIsNone(projected)
+
+    def test_partner_field_hiding_is_a_published_page_declaration(self):
+        configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
+            "res.partner",
+            view_type="form",
+            action_id=None,
+            view_id=None,
+            role_key="",
+        )
+        governance = resolve_form_structure_governance({}, configs, view_type="form")
+        self.assertIn("country_id", governance["hidden_field_names"])
+        self.assertIn("user_id", governance["hidden_field_names"])
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            self._base_project_contract(),
+            {"source_contract": {"model": "res.partner", "view_type": "form"}},
+        )
         self.assertIsNone(projected)
 
     def test_payment_settlement_lines_use_explicit_professional_component_contract(self):

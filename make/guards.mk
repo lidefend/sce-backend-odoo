@@ -90,6 +90,10 @@ verify.capability.identity_boundary.orm: guard.prod.forbid
 verify.scene.publication_authority.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=scene_publish_usage_backend
 
+.PHONY: verify.page.finalize.authority.orm
+verify.page.finalize.authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_partner_field_hiding_is_a_published_page_declaration
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

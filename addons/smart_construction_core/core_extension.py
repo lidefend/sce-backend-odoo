@@ -657,11 +657,6 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         model=model,
         view_type=view_type,
     )
-    # res.partner 表单：隐藏国家/地区字段（由省/州级联 domain 自动确定）
-    # 隐藏销售员字段（产品面不展示，由后台逻辑维护）
-    if model == "res.partner" and view_type == "form":
-        _sc_hide_v2_widget_field(out, "country_id")
-        _sc_hide_v2_widget_field(out, "user_id")
     if model != "project.project" or view_type != "form":
         return out if out != contract else None
     # An action-bound form view is the structural authority.  Project-wide

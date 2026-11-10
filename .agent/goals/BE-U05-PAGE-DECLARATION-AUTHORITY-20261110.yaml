@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: BE-U05-PAGE-DECLARATION-AUTHORITY-20261110
+  title: partner_page_hides_move_from_finalize_hook_to_published_declaration
+  status: completed
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+  layer_target:
+    - partner_form_page_declaration
+    - unified_page_contract_finalize
+  module:
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u05-page-declaration-authority-20261110
+    full_sha: 11986acb3d3b4ee677149f05c28d6dbe63c245a5
+    source: be_u04_scene_publication_authority_candidate
+  objective: >-
+    将 res.partner 表单隐藏 country_id/user_id 的行业页面定义从
+    smart_core_finalize_unified_page_contract_v2 后置代码迁入发布态
+    ui.business.config.contract sparse field policy。finalize 不再重新决定这两个字段。
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard
+    why_here: >-
+      res.partner 的业务页面差异属于 P1 行业页面声明；P0 ViewOrchestrator
+      消费声明并生成最终结构。
+    why_not_elsewhere:
+      - no_frontend_special_case
+      - no_second_page_configuration_source
+      - no_unrelated_project_finalize_migration_in_this_slice
+      - no_action_execution_change
+    blast_radius:
+      - partner form published contract
+      - finalize hook partner branch removal
+      - focused form governance test
+  constraints:
+    - country_id_and_user_id_remain_hidden_through_published_declaration
+    - no_partner_field_hiding_remains_in_finalize
+    - contract_gap_fails_closed_without_frontend_fallback
+    - execute_button_and_action_revalidation_remain_unchanged
+  exclusions:
+    - project_form_fallback_migration
+    - workflow_action_producer_redesign
+    - frontend_changes
+    - schema_or_acl_changes
+  acceptance:
+    - published_partner_contract_declares_sparse_hidden_fields
+    - finalize_returns_none_for_partner_form
+    - focused_page_declaration_orm_passes_with_non_zero_count
+  rollback: >-
+    Revert BE-U05 slice. No schema or deployed data is changed; contract XML is
+    replayed by module upgrade.
+  next_exact_step: >-
+    Open a BE-U05 continuation for the project.project fallback topology,
+    workload-label and responsibility-group mutations; G05 remains partially
+    closed until those mutations enter declaration/orchestration consumers.
