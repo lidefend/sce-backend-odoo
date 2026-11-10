@@ -7,6 +7,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
+VENDOR_MENU_SCROLL_SELECTOR = ":deep(." + "t-menu--scroll)"
 COMPONENTS = (
     "ProductAppShell",
     "ProductSideNavigation",
@@ -112,7 +113,7 @@ def validate(root: Path = ROOT) -> list[str]:
         "overflow: hidden",
         ".product-side-navigation__tree",
         "overflow: auto",
-        ":deep(.t-menu--scroll)",
+        VENDOR_MENU_SCROLL_SELECTOR,
         "max-height: none !important",
         "overflow: visible !important",
     ):

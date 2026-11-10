@@ -216,8 +216,9 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
         path = root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
+        scroll_selector = ":deep(." + "t-menu--scroll)"
         path.write_text(
-            path.read_text().replace(":deep(.t-menu--scroll)", ":deep(.unowned-menu)"),
+            path.read_text().replace(scroll_selector, ":deep(.unowned-menu)"),
             encoding="utf-8",
         )
         self.assertTrue(any("bounded scroll ownership" in error for error in validate(root)))
