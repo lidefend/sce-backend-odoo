@@ -435,6 +435,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                      "scripts/verify/test_github_actions_security_guard.py"):
             self.assertEqual(select_targets([path]), ["verify.github_actions.security"])
 
+    def test_backend_authority_closure_guard_selects_its_own_unit(self) -> None:
+        for path in (
+            "scripts/verify/backend_authority_closure_guard.py",
+            "scripts/verify/test_backend_authority_closure_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.backend.authority_closure.unit"],
+                )
+
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

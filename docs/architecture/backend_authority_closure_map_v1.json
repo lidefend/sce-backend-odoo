@@ -1,0 +1,766 @@
+{
+  "schema": "backend.authority_closure_map.v1",
+  "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+  "scope": "source_mapping_only_no_runtime_or_database_acceptance",
+  "samples": [
+    {
+      "id": "query.daily_contract",
+      "profile": "query",
+      "description": "日常合同：原生菜单与窗口动作进入当前用户已发布、已启用路由，再由 Odoo 权限读取业务记录。",
+      "required_facts": [
+        "native_entry_identity",
+        "business_record_fact",
+        "menu_capability_alias",
+        "product_delivery_scope",
+        "tenant_enablement_scope"
+      ],
+      "stages": [
+        {
+          "role": "entry_fact",
+          "owner": "P1 原生菜单、窗口动作与业务模型",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/views/menu_product_contract_wave1.xml",
+              "kind": "xml_record",
+              "value": "menu_sc_p1_daily_contract"
+            },
+            {
+              "path": "addons/smart_construction_core/views/core/general_contract_views.xml",
+              "kind": "xml_record",
+              "value": "action_sc_general_contract"
+            },
+            {
+              "path": "addons/smart_construction_core/models/core/general_contract.py",
+              "kind": "model",
+              "value": "sc.general.contract"
+            }
+          ],
+          "maintains": [
+            "native_entry_identity"
+          ],
+          "consumes": [],
+          "authorizes": [],
+          "does_not_grant": [
+            "product_publication",
+            "tenant_enablement",
+            "record_access",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "business_fact",
+          "owner": "P1 sc.general.contract 业务模型",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/models/core/general_contract.py",
+              "kind": "python_symbol",
+              "value": "ScGeneralContract"
+            },
+            {
+              "path": "addons/smart_construction_core/models/core/general_contract.py",
+              "kind": "python_symbol",
+              "value": "ScGeneralContract.action_on_tier_approved"
+            }
+          ],
+          "maintains": [
+            "business_record_fact"
+          ],
+          "consumes": [],
+          "authorizes": [],
+          "does_not_grant": [
+            "product_publication",
+            "route_visibility",
+            "platform_administration"
+          ]
+        },
+        {
+          "role": "capability_alias",
+          "owner": "P1 菜单派生的兼容入口身份",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/services/product_menu_source.py",
+              "kind": "python_symbol_tokens",
+              "value": "_menu_row",
+              "tokens": [
+                "capability_key = \"construction.menu.%s\""
+              ]
+            },
+            {
+              "path": "addons/smart_construction_core/services/product_menu_source.py",
+              "kind": "python_symbol",
+              "value": "_capability_from_menu"
+            },
+            {
+              "path": "addons/smart_construction_core/data/product_menu_source.json",
+              "kind": "json_value",
+              "value": "smart_construction_core.menu_sc_p1_daily_contract"
+            }
+          ],
+          "maintains": [
+            "menu_capability_alias"
+          ],
+          "consumes": [
+            "native_entry_identity"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "business_capability_qualification",
+            "product_publication",
+            "record_access",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "publication",
+          "owner": "P0 产品策略与有效发布快照",
+          "refs": [
+            {
+              "path": "addons/smart_core/delivery/product_policy_service.py",
+              "kind": "python_symbol",
+              "value": "ProductPolicyService._load_published_policy"
+            },
+            {
+              "path": "addons/smart_core/models/release_management.py",
+              "kind": "model",
+              "value": "sc.edition.release.snapshot"
+            }
+          ],
+          "maintains": [
+            "product_delivery_scope"
+          ],
+          "consumes": [
+            "native_entry_identity"
+          ],
+          "authorizes": [
+            "delivery_eligibility_only"
+          ],
+          "does_not_grant": [
+            "tenant_enablement",
+            "user_route_visibility",
+            "record_access",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "enablement",
+          "owner": "P1 企业场景启用",
+          "refs": [
+            {
+              "path": "addons/smart_construction_scene/services/tenant_scene_activation.py",
+              "kind": "python_symbol",
+              "value": "read_tenant_enablement"
+            },
+            {
+              "path": "addons/smart_construction_scene/services/business_scene_enablement.py",
+              "kind": "python_symbol",
+              "value": "filter_business_authority"
+            }
+          ],
+          "maintains": [
+            "tenant_enablement_scope"
+          ],
+          "consumes": [
+            "product_delivery_scope"
+          ],
+          "authorizes": [
+            "tenant_adoption_only"
+          ],
+          "does_not_grant": [
+            "product_publication",
+            "user_route_visibility",
+            "record_access",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "runtime_filter",
+          "owner": "P0 当前用户路由权威",
+          "refs": [
+            {
+              "path": "addons/smart_core/delivery/runtime_route_authority.py",
+              "kind": "python_symbol",
+              "value": "published_route_authority"
+            },
+            {
+              "path": "addons/smart_core/delivery/runtime_route_authority.py",
+              "kind": "python_symbol",
+              "value": "menu_publication_decision"
+            },
+            {
+              "path": "addons/smart_construction_scene/models/product_policy.py",
+              "kind": "python_symbol",
+              "value": "ScProductPolicy._apply_company_route_scope"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "product_delivery_scope",
+            "tenant_enablement_scope"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "record_access",
+            "field_write",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "page_projection",
+          "owner": "P0 统一页面契约",
+          "refs": [
+            {
+              "path": "addons/smart_core/handlers/ui_contract_v2.py",
+              "kind": "python_symbol",
+              "value": "UiContractV2Handler"
+            },
+            {
+              "path": "addons/smart_core/core/form_structure_authority.py",
+              "kind": "python_symbol",
+              "value": "resolve_form_structure_governance"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "native_entry_identity",
+            "product_delivery_scope",
+            "tenant_enablement_scope"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "record_access",
+            "field_write",
+            "business_execution"
+          ]
+        },
+        {
+          "role": "execution",
+          "owner": "P0 intent 权限门与 Odoo ORM",
+          "refs": [
+            {
+              "path": "addons/smart_core/security/intent_permission.py",
+              "kind": "python_symbol",
+              "value": "check_intent_permission"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "native_entry_identity",
+            "business_record_fact"
+          ],
+          "authorizes": [
+            "native_acl_scoped_record_read"
+          ],
+          "execution_rechecks": [
+            "check_intent_permission: current model ACL",
+            "check_intent_permission: current record rules",
+            "check_intent_permission: current published menu authority",
+            "odoo.orm: record read"
+          ],
+          "does_not_grant": [
+            "business_execution",
+            "field_write",
+            "platform_administration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "approval.payment_request",
+      "profile": "approval",
+      "description": "付款申请：真实 tier.review 任务决定来源授权，审批页面只投影，业务方法在执行时重验审批人与状态。",
+      "required_facts": [
+        "review_assignment_and_status",
+        "payment_request_approval_state"
+      ],
+      "stages": [
+        {
+          "role": "task_fact",
+          "owner": "OCA tier.review",
+          "refs": [
+            {
+              "path": "addons_external/oca_server_ux/base_tier_validation/models/tier_review.py",
+              "kind": "model",
+              "value": "tier.review"
+            },
+            {
+              "path": "addons_external/oca_server_ux/base_tier_validation/models/tier_review.py",
+              "kind": "python_symbol",
+              "value": "TierReview._can_review_value"
+            }
+          ],
+          "maintains": [
+            "review_assignment_and_status"
+          ],
+          "consumes": [
+            "payment_request_approval_state"
+          ],
+          "authorizes": [],
+          "does_not_grant": [
+            "page_visibility",
+            "business_write",
+            "approval_decision"
+          ]
+        },
+        {
+          "role": "task_authorization",
+          "owner": "P1 审批来源授权",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/services/review_work_item_service.py",
+              "kind": "python_symbol",
+              "value": "authorize_review_origin"
+            },
+            {
+              "path": "addons/smart_construction_core/services/review_work_item_service.py",
+              "kind": "python_symbol",
+              "value": "CurrentWorkItemService.build"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "review_assignment_and_status",
+            "payment_request_approval_state"
+          ],
+          "authorizes": [
+            "review_origin_projection_access"
+          ],
+          "execution_rechecks": [
+            "authorize_review_origin: task model and record association",
+            "authorize_review_origin: current reviewer identity",
+            "authorize_review_origin: task status and can_review",
+            "authorize_review_origin: record ACL, record rules, company and business scope"
+          ],
+          "does_not_grant": [
+            "general_business_edit",
+            "approval_decision",
+            "menu_independent_business_execution"
+          ]
+        },
+        {
+          "role": "page_projection",
+          "owner": "P0 统一页面契约",
+          "refs": [
+            {
+              "path": "addons/smart_core/handlers/ui_contract_v2.py",
+              "kind": "python_symbol",
+              "value": "UiContractV2Handler"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "review_assignment_and_status",
+            "payment_request_approval_state"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "record_access",
+            "approval_decision",
+            "business_write"
+          ]
+        },
+        {
+          "role": "execution_handler",
+          "owner": "P1 付款审批 intent handler",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequestApproveHandler"
+            },
+            {
+              "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequestApproveHandler.ACTION_METHOD"
+            },
+            {
+              "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
+              "kind": "python_symbol",
+              "value": "_BasePaymentApprovalHandler.handle"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "review_assignment_and_status",
+            "payment_request_approval_state"
+          ],
+          "authorizes": [
+            "approval_command_candidate"
+          ],
+          "execution_rechecks": [
+            "handler: required execution groups",
+            "handler: current company/project business scope",
+            "handler: idempotency and audit identity"
+          ],
+          "does_not_grant": [
+            "direct_state_write",
+            "approval_without_current_review",
+            "general_business_edit"
+          ]
+        },
+        {
+          "role": "business_transition",
+          "owner": "P1 payment.request 与 sc.approval.policy",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/models/core/payment_request.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequest.action_approval_decision"
+            },
+            {
+              "path": "addons/smart_construction_core/models/core/payment_request.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequest._assert_finance_approve_access"
+            },
+            {
+              "path": "addons/smart_construction_core/models/support/approval_policy.py",
+              "kind": "python_symbol",
+              "value": "ScApprovalPolicy._approve_submission_review"
+            },
+            {
+              "path": "addons/smart_construction_core/models/core/payment_request.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequest.action_on_tier_approved"
+            }
+          ],
+          "maintains": [
+            "payment_request_approval_state"
+          ],
+          "consumes": [
+            "review_assignment_and_status"
+          ],
+          "authorizes": [
+            "validated_review_chain_transition"
+          ],
+          "execution_rechecks": [
+            "PaymentRequest.action_approval_decision: finance approval access",
+            "PaymentRequest.action_approval_decision: document state and review existence",
+            "PaymentRequest.action_approval_decision: current user is can_review",
+            "ScApprovalPolicy._approve_submission_review: existing chain remains actionable",
+            "PaymentRequest.action_on_tier_approved: full chain is validated"
+          ],
+          "does_not_grant": [
+            "arbitrary_field_write",
+            "approval_of_unassigned_record",
+            "configuration_admin_business_authority"
+          ]
+        },
+        {
+          "role": "result_readback",
+          "owner": "P1 当前工作项与权威单据状态",
+          "refs": [
+            {
+              "path": "addons/smart_construction_core/services/review_work_item_service.py",
+              "kind": "python_symbol",
+              "value": "CurrentWorkItemService.build"
+            },
+            {
+              "path": "addons/smart_construction_core/models/core/payment_request.py",
+              "kind": "python_symbol",
+              "value": "PaymentRequest.action_on_tier_approved"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "review_assignment_and_status",
+            "payment_request_approval_state"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "approval_decision",
+            "business_write"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "platform.duty",
+      "profile": "platform",
+      "description": "平台职责：namespace/audience 与三重平台控制身份共同决定管理职责，不自动获得租户业务数据范围。",
+      "required_facts": [
+        "namespace_audience_binding",
+        "platform_duty_catalog"
+      ],
+      "stages": [
+        {
+          "role": "namespace",
+          "owner": "P0 namespace 与 audience",
+          "refs": [
+            {
+              "path": "addons/smart_core/security/namespace_resolver.py",
+              "kind": "python_symbol",
+              "value": "verify_entry_headers"
+            },
+            {
+              "path": "addons/smart_core/security/namespace_resolver.py",
+              "kind": "python_symbol",
+              "value": "resolve_entry"
+            }
+          ],
+          "maintains": [
+            "namespace_audience_binding"
+          ],
+          "consumes": [],
+          "authorizes": [
+            "namespace_audience_boundary"
+          ],
+          "does_not_grant": [
+            "platform_administrator_identity",
+            "tenant_business_access"
+          ]
+        },
+        {
+          "role": "identity",
+          "owner": "P0 平台控制身份",
+          "refs": [
+            {
+              "path": "addons/smart_core/security/platform_admin.py",
+              "kind": "python_symbol",
+              "value": "platform_control_scope"
+            },
+            {
+              "path": "addons/smart_core/security/platform_admin.py",
+              "kind": "python_symbol",
+              "value": "user_is_platform_control_admin"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "namespace_audience_binding"
+          ],
+          "authorizes": [
+            "platform_control_identity"
+          ],
+          "execution_rechecks": [
+            "platform_control_scope: current group",
+            "platform_control_scope: declared platform-control instance",
+            "platform_control_scope: trusted platform-admin audience"
+          ],
+          "does_not_grant": [
+            "tenant_configuration_admin",
+            "tenant_business_access"
+          ]
+        },
+        {
+          "role": "duty_catalog",
+          "owner": "P0 声明式平台职责目录",
+          "refs": [
+            {
+              "path": "addons/smart_core/core/platform_duty_contract.py",
+              "kind": "python_symbol",
+              "value": "PLATFORM_DUTIES"
+            },
+            {
+              "path": "addons/smart_core/core/platform_duty_contract.py",
+              "kind": "python_symbol",
+              "value": "build_platform_duty_route_authority_entries"
+            }
+          ],
+          "maintains": [
+            "platform_duty_catalog"
+          ],
+          "consumes": [],
+          "authorizes": [],
+          "does_not_grant": [
+            "tenant_business_access"
+          ]
+        },
+        {
+          "role": "duty_projection",
+          "owner": "P0 平台职责投影",
+          "refs": [
+            {
+              "path": "addons/smart_core/core/platform_duty_contract.py",
+              "kind": "python_symbol",
+              "value": "build_platform_duty_surface"
+            },
+            {
+              "path": "addons/smart_core/controllers/platform_duty_controller.py",
+              "kind": "python_symbol",
+              "value": "PlatformDutyController.platform_duty"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "namespace_audience_binding",
+            "platform_duty_catalog"
+          ],
+          "authorizes": [],
+          "projection_only": true,
+          "does_not_grant": [
+            "platform_control_identity",
+            "tenant_business_access",
+            "business_record_write"
+          ]
+        },
+        {
+          "role": "operation_execution",
+          "owner": "P0 平台控制命令",
+          "refs": [
+            {
+              "path": "addons/smart_core/controllers/platform_ops_controller.py",
+              "kind": "python_symbol",
+              "value": "_platform_env"
+            },
+            {
+              "path": "addons/smart_core/security/platform_admin.py",
+              "kind": "python_symbol",
+              "value": "user_is_platform_control_admin"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "namespace_audience_binding",
+            "platform_duty_catalog"
+          ],
+          "authorizes": [
+            "platform_control_operation_candidate"
+          ],
+          "execution_rechecks": [
+            "_platform_env: current platform-control identity for every request",
+            "platform operation model: native ACL and record rules"
+          ],
+          "does_not_grant": [
+            "tenant_business_access",
+            "tenant_business_write"
+          ]
+        },
+        {
+          "role": "tenant_business_boundary",
+          "owner": "P0 租户业务数据边界",
+          "refs": [
+            {
+              "path": "addons/smart_core/security/platform_admin.py",
+              "kind": "python_symbol",
+              "value": "has_customer_business_data_scope"
+            },
+            {
+              "path": "addons/smart_core/security/intent_permission.py",
+              "kind": "python_symbol",
+              "value": "check_intent_permission"
+            }
+          ],
+          "maintains": [],
+          "consumes": [
+            "namespace_audience_binding"
+          ],
+          "authorizes": [],
+          "projection_only": false,
+          "execution_rechecks": [
+            "tenant business path: current model ACL",
+            "tenant business path: current record rules",
+            "tenant business path: current company and business scope"
+          ],
+          "does_not_grant": [
+            "tenant_business_access_from_platform_identity",
+            "tenant_business_access_from_configuration_identity"
+          ]
+        }
+      ]
+    }
+  ],
+  "known_gaps": [
+    {
+      "id": "BE-U01-G01",
+      "owner_card": "BE-U03",
+      "status": "open",
+      "summary": "菜单 XMLID 派生键仍承担入口身份与 capability_key 双重角色，不能据键存在证明独立业务能力或成熟资格。",
+      "refs": [
+        {
+          "path": "addons/smart_construction_core/services/product_menu_source.py",
+          "kind": "python_symbol_tokens",
+          "value": "_menu_row",
+          "tokens": [
+            "capability_key = \"construction.menu.%s\""
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/services/product_menu_source.py",
+          "kind": "python_symbol",
+          "value": "_capability_from_menu"
+        }
+      ]
+    },
+    {
+      "id": "BE-U01-G02",
+      "owner_card": "BE-U02",
+      "status": "open",
+      "summary": "permission.check 主要返回订阅/功能开关结果；allow=true 不是模型、记录、动作或审批执行授权。",
+      "refs": [
+        {
+          "path": "addons/smart_core/handlers/permission_check.py",
+          "kind": "python_symbol_tokens",
+          "value": "PermissionCheckHandler.handle",
+          "tokens": [
+            "data = {\"allow\": True}",
+            "required_flag"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BE-U01-G03",
+      "owner_card": "BE-U02",
+      "status": "open",
+      "summary": "租户配置管理员在通用 intent 组门禁和付款审批处理器中仍可绕过功能组门槛；需限定为配置职责或移除业务命令捷径。",
+      "refs": [
+        {
+          "path": "addons/smart_core/security/intent_authorization.py",
+          "kind": "python_symbol_tokens",
+          "value": "user_has_required_groups",
+          "tokens": [
+            "user_is_tenant_config_admin(user)",
+            "return True"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
+          "kind": "python_symbol_tokens",
+          "value": "_BasePaymentApprovalHandler._assert_required_groups",
+          "tokens": [
+            "user_is_tenant_config_admin(user)",
+            "return"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BE-U01-G04",
+      "owner_card": "BE-U04",
+      "status": "open",
+      "summary": "场景发布构建仍把发布者当前可见卡片作为版本内容的输入，发布事实与用户投影尚未分离。",
+      "refs": [
+        {
+          "path": "addons/smart_construction_core/models/support/scene_orchestration.py",
+          "kind": "python_symbol_tokens",
+          "value": "ScScene.action_publish",
+          "tokens": [
+            "_build_version_payload(scene.env.user)"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/models/support/scene_orchestration.py",
+          "kind": "python_symbol",
+          "value": "ScScene._build_version_payload"
+        }
+      ]
+    },
+    {
+      "id": "BE-U01-G05",
+      "owner_card": "BE-U05",
+      "status": "open",
+      "summary": "行业 finalize 后置钩子仍可直接改变最终页面；页面声明、编排和最终投影尚未完全收口到同一位置。",
+      "refs": [
+        {
+          "path": "addons/smart_construction_core/core_extension.py",
+          "kind": "python_symbol",
+          "value": "smart_core_finalize_unified_page_contract_v2"
+        }
+      ]
+    }
+  ]
+}

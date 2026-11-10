@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "BE-U01-AUTHORITY-MAP-20261110",
+  "branch": "codex/be-u01-authority-map-20261110",
+  "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U01-AUTHORITY-MAP-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u01_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U01-AUTHORITY-MAP-20261110.yaml",
+    ".agent/runs/BE-U01-AUTHORITY-MAP-20261110/run.json",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/backend_authority_closure_map_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/backend_authority_closure_be_u01_20261110.md",
+    "make/guards.mk",
+    "make/ci.mk",
+    "scripts/verify/backend_authority_closure_guard.py",
+    "scripts/verify/test_backend_authority_closure_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed source SHA and registered offline Make entry; no database or service access"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "supporting_layers": [
+      "P0",
+      "P1"
+    ],
+    "layer_target": "backend authority closure mapping and source-anchor guard",
+    "module": "repository verification and architecture declarations",
+    "standard_vs_user_specific": "platform and construction standard",
+    "why_here": "BE-U01 freezes responsibility and source authority rather than changing runtime behavior.",
+    "why_not_elsewhere": "Frontend, database state, ACL and business methods are outside this mapping batch.",
+    "blast_radius": "Three declared backend samples, their source references, one guard target and agent bookkeeping."
+  },
+  "checks": {
+    "authority_closure": {
+      "target": "verify.backend.authority_closure.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/backend_authority_closure_map_v1.json",
+        "docs/architecture/backend_authority_closure_map_v1.md",
+        "make/guards.mk",
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/scene_orchestration.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/handlers/permission_check.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/models/release_management.py",
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/security/namespace_resolver.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons_external/oca_server_ux/base_tier_validation/models/tier_review.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open BE-U02 from source gaps BE-U01-G02 and BE-U01-G03 with a new registered run."
+}

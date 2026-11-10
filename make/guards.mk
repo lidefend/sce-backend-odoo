@@ -56,6 +56,12 @@ guard.codex.fast.upgrade:
 	  exit 2; \
 	fi
 
+.PHONY: verify.backend.authority_closure.unit
+verify.backend.authority_closure.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/backend_authority_closure_guard.py scripts/verify/test_backend_authority_closure_guard.py
+	@python3 -m unittest scripts.verify.test_backend_authority_closure_guard
+	@python3 scripts/verify/backend_authority_closure_guard.py
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

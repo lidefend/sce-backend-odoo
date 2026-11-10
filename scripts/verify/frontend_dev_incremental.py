@@ -549,6 +549,12 @@ RULES = (
         "verify.guard.registry",
     )),
     Rule((
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py",
+    ), (
+        "verify.backend.authority_closure.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (
