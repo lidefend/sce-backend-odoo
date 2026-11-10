@@ -535,7 +535,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json"
             ]),
-            ["verify.product.menu.contract_v1.guard"],
+            [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.product.menu.contract_v1.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
         )
 
     def test_scene_publication_paths_select_their_owning_check(self) -> None:

@@ -4,7 +4,7 @@ Status: active
 
 - Formal Product Layer: P4
 - Layer Target: exact-head GitHub Actions full frontend release dispatch
-- Baseline: `main@fb5f5c82fe7404939cd697ea99e1f2ba237b0310`
+- Baseline: `main@5897cb3c3cf23be94cc935741fcf11840e31f54f`
 - Failure owner: validation tooling
 - Excluded: product code, contracts, ACL, performance budgets, business data and deployment
 
@@ -38,6 +38,13 @@ The remaining control-plane gap was that there was no governed Make target for
 dispatching `frontend_release_gate.yml` on an exact remote main SHA and reading
 back the newly created run. Ad hoc `gh workflow run` would bypass the
 repository's remote-write authority.
+
+The candidate was rebased by merge onto `main@5897cb3c3`, which includes the
+backend authority and approval-contract closure lane. The merge exposed one
+P4-only routing conflict: the product menu contract is consumed by both its
+specific contract guard and the role-surface/navigation projection guards.
+The integrated selector must require that union, not replace one owning check
+with another.
 
 ## Repair rule
 

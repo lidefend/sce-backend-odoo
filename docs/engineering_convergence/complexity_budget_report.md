@@ -52,8 +52,8 @@ Generated from repository source files. This report is informational during the 
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1931 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1925 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1882 | Python source | `scripts/verify/frontend_dev_incremental.py` |
@@ -286,8 +286,8 @@ Generated from repository source files. This report is informational during the 
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1931 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1925 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1882 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |

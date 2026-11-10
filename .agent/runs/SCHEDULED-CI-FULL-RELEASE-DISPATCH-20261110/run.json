@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110",
   "branch": "fix/scheduled-ci-full-release-dispatch-20261110",
-  "baseline_sha": "fb5f5c82fe7404939cd697ea99e1f2ba237b0310",
+  "baseline_sha": "5897cb3c3cf23be94cc935741fcf11840e31f54f",
   "status": "active",
   "goal": ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
   "record": "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
@@ -150,5 +150,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the role-contract repair, publish it, and dispatch the full frontend release lane on the exact repaired head."
+  "next_exact_step": "Upgrade the governed local development profile on the merged candidate and verify that group_sc_role_operation_user resolves as operation_user with the declared contract navigation."
 }
