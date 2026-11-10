@@ -37,12 +37,12 @@
 | 通用执行边界 | `verify.execute_button.authority.unit` 37/37 PASS。待办来源仍只授权当前任务、当前审批人及明确决定方法。 |
 | 前端契约消费 | `verify.frontend.approval_contract.closure.unit` 12 cases PASS。空/取消 reason 请求数为 0；填写 reason 后只发一次 `execute_button`，并携带同一动作身份及 `action_params.reason`。 |
 | V2 契约 | assembler/action/status/runtime、schema 与 lifecycle 目标均 PASS；最终动作规则支持声明输入，schema digest 与示例一致。 |
-| 增量门禁 | `make ci.local.iteration` 26/26 个映射目标零退出，零未映射路径；包含 ORM、类型、lint、契约和验收工具检查。 |
+| 增量门禁 | `make ci.local.iteration` 27/27 个映射目标零退出，零未映射路径；包含 ORM、类型、lint、契约和验收工具检查。 |
 
 关键原始证据：
 
-- `.runtime/test-baseline/1794312451447788721/odoo.log`（最终 26 目标增量聚合中的 ORM）
-- `.runtime/frontend-dev-validation/executions/20261110T120723Z-2000622-309478344/receipt.json`
+- `.runtime/test-baseline/1794315441716950134/odoo.log`（最终 27 目标增量聚合中的 ORM）
+- `.runtime/frontend-dev-validation/executions/20261110T125713Z-2307750-553156593/receipt.json`
 - `.runtime/final-acceptance/my-work-approval/report.json`
 
 ## Browser Journey
