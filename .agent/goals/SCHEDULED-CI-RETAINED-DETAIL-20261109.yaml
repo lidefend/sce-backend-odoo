@@ -1,0 +1,19 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-RETAINED-DETAIL-20261109
+  status: active
+  formal_product_layer: P4
+  objective: >
+    Repair the full frontend release performance probe so its retained-detail
+    assertion measures repeated SPA navigation inside one warmed document,
+    rather than reloading the application and then requiring its in-memory
+    contract cache to survive.
+  acceptance:
+    - The my-work scenario still starts from the rendered role-home action after a cold page load.
+    - Detail scenarios return to the retained My Work route without a full page reload.
+    - The delivery-hardening guard and release entry tests pass with non-zero assertions.
+    - A new full frontend release gate run on the final exact head succeeds.
+  exclusions:
+    - frontend product behavior changes
+    - role, ACL, menu or contract changes
+    - database or deployment changes
