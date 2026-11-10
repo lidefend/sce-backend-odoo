@@ -644,6 +644,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
+            "scripts/dev/frontend_standard_preview.py",
             "scripts/dev/frontend_acceptance_runtime.sh",
             "scripts/dev/frontend_acceptance_up.sh",
             "scripts/verify/frontend_menu_navigation_diagnostic.py",
@@ -651,6 +652,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/verify/frontend_my_work_approval_runtime.py",
             "scripts/verify/frontend_my_work_approval_runtime_ids.py",
             "scripts/verify/test_frontend_release_local_entry.py",
+            "scripts/verify/test_frontend_standard_preview.py",
         ):
             with self.subTest(path=path):
                 self.assertIn("verify.frontend.standard_preview.unit", select_targets([path]))

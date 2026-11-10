@@ -118,6 +118,9 @@ acceptance correctly rejected it as a non-ancestor. The preview builder now
 rebinds the bundle receipt to current HEAD only after proving the old-base diff
 hash still matches, then revalidates dist/index/entry hashes atomically. The
 standard preview suite now has 132 passing tests including history replay.
+The incremental planner now also routes the preview builder and its unit test to
+`verify.frontend.standard_preview.unit`; its combined planner/preview suite
+passes 216 tests.
 
 ## FE-03 page hierarchy and action entry
 
@@ -175,7 +178,8 @@ No second frontend business state machine was introduced.
 - Confirmed frontend product defects in this batch: 0.
 - Fixed validation evidence defects: stale overlay geometry marker; missing
   same-record My Work/detail amount assertion; rebase-safe preview receipt
-  identity. The final My Work report is rebound to exact source `6618f3dba`.
+  identity; missing incremental routing for the preview builder and its test.
+  The final My Work report is rebound to exact source `6618f3dba`.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.

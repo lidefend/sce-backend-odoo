@@ -128,6 +128,13 @@
       "tests": 132,
       "behavior": "reuse the bundle only when the old-base-to-current input hash matches, then atomically rebind the receipt to current HEAD"
     },
+    "incremental_preview_routing_repair": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "the incremental planner did not route the standard preview builder and its test to their owning unit target",
+      "command": "python3 -m unittest scripts.verify.test_frontend_dev_incremental scripts.verify.test_frontend_standard_preview",
+      "tests": 216
+    },
     "payment_request_detail_runtime": {
       "status": "passed",
       "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
@@ -216,7 +223,8 @@
       "fixed_validation_tool_defects": [
         "overlay lifecycle stale boxSizing marker",
         "My Work browser lacked same-record cross-page readout assertion",
-        "preview receipt retained a pre-rebase base SHA after history replay"
+        "preview receipt retained a pre-rebase base SHA after history replay",
+        "incremental planner omitted the preview builder and preview unit test from standard-preview routing"
       ],
       "pending_backend_contract_items": [
         "CD-20261110-01 structured My Work record identity",
