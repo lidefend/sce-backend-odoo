@@ -91,6 +91,16 @@
         "scripts/verify/test_frontend_acceptance_login_probe.py"
       ]
     },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ]
+    },
     "incremental_routing": {
       "target": "verify.frontend.dev.incremental.unit",
       "kind": "offline",
@@ -163,6 +173,16 @@
         "addons/smart_construction_core/services/capability_registry.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
       ]
     },
     "navigation_publication": {

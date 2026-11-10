@@ -73,6 +73,8 @@
 - `verify.frontend.acceptance_login_probe.unit`：新增有界认证就绪重试测试。
 - `ci.local.iteration`：9 个必需 target 全部执行并退出 0；capability ORM、认证探针、
   incremental routing 与 lane coverage 均通过。
+- `verify.baseline.iteration.execution.policy`：19 tests PASS。
+- `verify.frontend.standard_preview.unit`：174 tests/assertions PASS。
 
 ### 已修复的验证前置
 
