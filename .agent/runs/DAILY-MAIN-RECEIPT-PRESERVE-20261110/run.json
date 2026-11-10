@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-MAIN-RECEIPT-PRESERVE-20261110",
+  "branch": "fix/daily-main-receipt-preserve-20261110",
+  "baseline_sha": "bdb2d770876eb1603b6ea32bf9d958aa2100a205",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-MAIN-RECEIPT-PRESERVE-20261110.yaml",
+  "record": "docs/ops/iterations/daily_main_receipt_preserve_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-MAIN-RECEIPT-PRESERVE-20261110.yaml",
+    ".agent/runs/DAILY-MAIN-RECEIPT-PRESERVE-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/daily_main_receipt_preserve_20261110.md",
+    "scripts/ops/daily_runtime_bundle_sync.py",
+    "scripts/ops/test_daily_runtime_bundle_sync.py",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing daily main bundle-sync tests"
+  },
+  "checks": {
+    "bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Preserve only the ignored root deployment receipt across main-mode checkout."
+}

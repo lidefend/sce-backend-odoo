@@ -741,7 +741,7 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build daily.runtime.main.release daily.runtime.candidate.release verify.daily.runtime.release_orchestration.unit
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build daily.runtime.build_identity.record verify.daily.runtime.build_identity verify.daily.runtime.build_identity.unit verify.daily.runtime.deployment_identity.unit daily.runtime.main.release daily.runtime.candidate.release verify.daily.runtime.release_orchestration.unit
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
@@ -808,6 +808,7 @@ daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.sour
 		--expected-sha "$(DAILY_RUNTIME_SOURCE_REVISION_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--duty "$(DAILY_RUNTIME_DUTY)" \
+		--deployment-environment "$(DAILY_RUNTIME_DEPLOY_ENV)" \
 		--base-url "$(DAILY_RUNTIME_SOURCE_REVISION_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
 
@@ -842,6 +843,11 @@ DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB ?= $(shell python3 -c 'import jso
 # Batch C: the served identity is published under the demo namespace prefix,
 # not at the bare /api path, which is refused with NS_NAMESPACE_REQUIRED.
 DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_entry.v1.json"))["public_entry"]["demo_path"])')
+DAILY_RUNTIME_DEPLOY_ENV ?= daily
+DAILY_RUNTIME_BUILD_IDENTITY_RECEIPT_ROOT ?= .runtime/final-acceptance/daily-deployed/$(DAILY_RUNTIME_DEPLOY_ENV)
+DAILY_RUNTIME_BUILD_IDENTITY_RECEIPT ?=
+DAILY_RUNTIME_BUILD_IDENTITY_REPORT ?= .runtime/final-acceptance/daily-deployed/build-identity-verification.json
+DAILY_RUNTIME_BUILD_IDENTITY_OPERATOR ?= $(shell id -un)
 
 verify.daily.runtime.frontend.build: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_frontend_build_align.py scripts/ops/test_daily_runtime_frontend_build_align.py
@@ -858,8 +864,30 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 		--base-url "$(DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL)" \
 		--platform-admin-database "$(DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB)" \
 		--entry-prefix "$(DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX)" \
+		--deployment-environment "$(DAILY_RUNTIME_DEPLOY_ENV)" \
 		--receipt "$(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)" \
 		--report "$(DAILY_RUNTIME_FRONTEND_BUILD_REPORT)"
+
+verify.daily.runtime.build_identity.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_build_identity.py scripts/ops/test_daily_runtime_build_identity.py
+	@python3 scripts/ops/test_daily_runtime_build_identity.py
+
+verify.daily.runtime.build_identity: guard.prod.forbid verify.daily.runtime.build_identity.unit
+	@python3 scripts/ops/daily_runtime_build_identity.py verify \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--deployment-environment "$(DAILY_RUNTIME_DEPLOY_ENV)" \
+		--receipt "$(DAILY_RUNTIME_BUILD_IDENTITY_RECEIPT)" \
+		--report "$(DAILY_RUNTIME_BUILD_IDENTITY_REPORT)"
+
+daily.runtime.build_identity.record: guard.prod.forbid verify.daily.runtime.build_identity.unit
+	@test "$${CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD:-}" = "RECORD_EXACT_DAILY_RUNTIME_BUILD_IDENTITY" || { echo "exact daily runtime build-identity receipt confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_build_identity.py record \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--deployment-environment "$(DAILY_RUNTIME_DEPLOY_ENV)" \
+		--receipt-root "$(DAILY_RUNTIME_BUILD_IDENTITY_RECEIPT_ROOT)" \
+		--operator "$(DAILY_RUNTIME_BUILD_IDENTITY_OPERATOR)"
 
 # The daily runtime has no outgoing-mail sender declared, so product transitions
 # that notify a reviewer fail inside mail.mail._send and roll the whole business
@@ -1527,9 +1555,23 @@ DAILY_RUNTIME_RELEASE_ARGS = \
 	--published-face-login "$(DAILY_RUNTIME_RELEASE_PUBLISHED_FACE_LOGIN)" \
 	--report-root "$(DAILY_RUNTIME_RELEASE_REPORT_ROOT)"
 
-verify.daily.runtime.release_orchestration.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/daily_runtime_release_orchestration.py scripts/ops/test_daily_runtime_release_orchestration.py
-	@python3 -m unittest scripts.ops.test_daily_runtime_release_orchestration
+verify.daily.runtime.deployment_identity.unit: guard.prod.forbid verify.platform.runtime_identity.unit
+	@python3 -m py_compile \
+		scripts/ops/daily_runtime_release_orchestration.py \
+		scripts/ops/test_daily_runtime_release_orchestration.py \
+		scripts/ops/daily_runtime_build_identity.py \
+		scripts/ops/test_daily_runtime_build_identity.py \
+		scripts/ops/daily_runtime_frontend_build_align.py \
+		scripts/ops/test_daily_runtime_frontend_build_align.py \
+		scripts/ops/daily_runtime_source_revision_align.py \
+		scripts/ops/test_daily_runtime_source_revision_align.py
+	@python3 -m unittest \
+		scripts.ops.test_daily_runtime_release_orchestration \
+		scripts.ops.test_daily_runtime_build_identity \
+		scripts.ops.test_daily_runtime_frontend_build_align \
+		scripts.ops.test_daily_runtime_source_revision_align
+
+verify.daily.runtime.release_orchestration.unit: verify.daily.runtime.deployment_identity.unit
 
 .PHONY: verify.quick.input_scope.unit
 verify.quick.input_scope.unit: guard.prod.forbid

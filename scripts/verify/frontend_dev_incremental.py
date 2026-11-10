@@ -61,6 +61,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.lint.src": "eslint",
     "verify.frontend.typecheck.strict": "vue-tsc",
     "verify.frontend.professional_component_registry.unit": "esbuild",
+    "verify.frontend.runtime_identity.unit": "esbuild",
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
     "verify.frontend.contract_reason_dialog.browser": "node",
@@ -96,6 +97,11 @@ RULES = (
         ".agent/",
     ), (
         "verify.agent.ledger.unit",
+    )),
+    Rule((
+        ".gitignore",
+    ), (
+        "verify.pr.push.unit",
     )),
     Rule((
         "config/acceptance/evolution_binding.v1.json",
@@ -170,6 +176,31 @@ RULES = (
         "frontend/packages/ui/package.json",
         "frontend/packages/ui/tsconfig.json",
     ), BASE_FRONTEND_TARGETS),
+    Rule((
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/src/env.d.ts",
+        "frontend/apps/web/src/app/runtime/buildIdentity.ts",
+        "frontend/apps/web/scripts/build_identity_test.ts",
+        "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+    ), (
+        "verify.frontend.runtime_identity.unit",
+        "verify.frontend.primitive_adapter.unit",
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "addons/smart_core/utils/product_release.py",
+        "addons/smart_core/tests/test_runtime_release_identity.py",
+    ), (
+        "verify.platform.runtime_identity.unit",
+    )),
+    Rule((
+        "scripts/dev/frontend_static_build.sh",
+    ), (
+        "verify.frontend.runtime_identity.unit",
+    )),
     # Renderer registration is one executable contract spanning the generated
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
@@ -778,12 +809,34 @@ RULES = (
     ), (
         "verify.daily.runtime.published_face.converge",
     )),
-    # `daily_runtime_frontend_build_align` deliberately has no route here: its
-    # only non-zero behaviour lock is `verify.daily.runtime.frontend.build`, a
-    # candidate-only lane the development inner loop must never select. Adding a
-    # route to it would make the planner raise "selected a candidate-only
-    # target"; leaving the path unmapped is what tells the operator a hand-picked
-    # candidate L2 is required.
+    # Build identity spans the deployment build alignment, source-revision
+    # declaration, receipt/verifier and their orchestration. Route the whole
+    # set to its offline behavior lock; the live candidate target remains a
+    # separate deployment step.
+    Rule((
+        "scripts/ops/daily_runtime_build_identity.py",
+        "scripts/ops/test_daily_runtime_build_identity.py",
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+    ), (
+        "verify.daily.runtime.deployment_identity.unit",
+    )),
+    Rule((
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+    ), (
+        "verify.daily.runtime.candidate.bundle_sync",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+    ), (
+        "verify.daily.runtime.main.bundle_sync",
+    )),
     # The duty entry's own suite is the behavior lock of the phase machinery the
     # declaration drives; its test file was unmapped while the entry itself was
     # claimed by the identity rule, so a test-only edit selected nothing.

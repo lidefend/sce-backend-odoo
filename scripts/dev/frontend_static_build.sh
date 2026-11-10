@@ -13,6 +13,10 @@ fi
 _pre_DB_NAME="${DB_NAME:-}"
 _pre_VITE_APP_ENV="${VITE_APP_ENV:-}"
 _pre_FRONTEND_DIST_DIR="${FRONTEND_DIST_DIR:-}"
+_pre_SC_SOURCE_REVISION="${SC_SOURCE_REVISION:-}"
+_pre_SC_DEPLOY_ENV="${SC_DEPLOY_ENV:-}"
+_pre_SC_BUILD_TIME="${SC_BUILD_TIME:-}"
+_pre_SC_PRODUCT_VERSION="${SC_PRODUCT_VERSION:-}"
 
 set -a
 # shellcheck disable=SC1090
@@ -22,6 +26,12 @@ set +a
 [[ -n "${_pre_DB_NAME}" ]] && DB_NAME="${_pre_DB_NAME}"
 [[ -n "${_pre_VITE_APP_ENV}" ]] && VITE_APP_ENV="${_pre_VITE_APP_ENV}"
 [[ -n "${_pre_FRONTEND_DIST_DIR}" ]] && FRONTEND_DIST_DIR="${_pre_FRONTEND_DIST_DIR}"
+[[ -n "${_pre_SC_SOURCE_REVISION}" ]] && SC_SOURCE_REVISION="${_pre_SC_SOURCE_REVISION}"
+[[ -n "${_pre_SC_DEPLOY_ENV}" ]] && SC_DEPLOY_ENV="${_pre_SC_DEPLOY_ENV}"
+[[ -n "${_pre_SC_BUILD_TIME}" ]] && SC_BUILD_TIME="${_pre_SC_BUILD_TIME}"
+[[ -n "${_pre_SC_PRODUCT_VERSION}" ]] && SC_PRODUCT_VERSION="${_pre_SC_PRODUCT_VERSION}"
+
+export SC_SOURCE_REVISION SC_DEPLOY_ENV SC_BUILD_TIME SC_PRODUCT_VERSION
 
 : "${DB_NAME:?DB_NAME is required for frontend static build}"
 

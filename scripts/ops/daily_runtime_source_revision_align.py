@@ -41,11 +41,12 @@ REMOTE_ALIGN = r'''
 import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
 
-expected_sha, duty_key, base_url, remote_root = sys.argv[1:5]
+expected_sha, duty_key, base_url, remote_root, deployment_env = sys.argv[1:6]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 duty_name = re.compile(r"^[a-z0-9_]+$")
+deployment_environment = re.compile(r"^[a-z][a-z0-9_-]*$")
 tag = "[daily.runtime.source_revision.align]"
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
@@ -53,11 +54,14 @@ if not full_sha.fullmatch(expected_sha):
     raise SystemExit(tag + " BLOCKED invalid deployed revision")
 if not duty_name.fullmatch(duty_key):
     raise SystemExit(tag + " BLOCKED invalid duty")
+if not deployment_environment.fullmatch(deployment_env):
+    raise SystemExit(tag + " BLOCKED invalid deployment environment")
 
 lock_path = Path("/run/lock/sc_daily-runtime-source-revision-align.lock")
 lock_path.parent.mkdir(parents=True, exist_ok=True)
 
-KEY = "SC_SOURCE_REVISION"
+SOURCE_KEY = "SC_SOURCE_REVISION"
+DEPLOY_ENV_KEY = "SC_DEPLOY_ENV"
 DECLARATION = root / "config" / "ops" / "daily_runtime_database_duties.v1.json"
 
 sys.path.insert(0, str(root / "scripts" / "ops"))
@@ -139,12 +143,22 @@ with lock_path.open("a+b") as lock:
         raise SystemExit(tag + " BLOCKED missing duty env file %s" % env_path)
 
     rows = env_path.read_text(encoding="utf-8").splitlines()
-    key_rows = [i for i, row in enumerate(rows) if row.startswith(KEY + "=")]
-    if len(key_rows) != 1:
-        raise SystemExit(tag + " BLOCKED duty env file must declare exactly one " + KEY)
-    current = rows[key_rows[0]].split("=", 1)[1].strip()
 
-    changed = current != expected_sha
+    def rows_for(key):
+        return [i for i, row in enumerate(rows) if row.startswith(key + "=")]
+
+    source_rows = rows_for(SOURCE_KEY)
+    if len(source_rows) != 1:
+        raise SystemExit(tag + " BLOCKED duty env file must declare exactly one " + SOURCE_KEY)
+    deploy_rows = rows_for(DEPLOY_ENV_KEY)
+    if len(deploy_rows) > 1:
+        raise SystemExit(tag + " BLOCKED duty env file must declare at most one " + DEPLOY_ENV_KEY)
+    current = rows[source_rows[0]].split("=", 1)[1].strip()
+    current_environment = (
+        rows[deploy_rows[0]].split("=", 1)[1].strip() if deploy_rows else ""
+    )
+
+    changed = current != expected_sha or current_environment != deployment_env
     backup_path = ""
     restarted = False
     rolled_back = False
@@ -155,12 +169,18 @@ with lock_path.open("a+b") as lock:
     if changed:
         backup_path = str(env_path) + ".bak"
         shutil.copy2(env_path, backup_path)
-        rows[key_rows[0]] = KEY + "=" + expected_sha
+        rows[source_rows[0]] = SOURCE_KEY + "=" + expected_sha
+        deploy_target = DEPLOY_ENV_KEY + "=" + deployment_env
+        if deploy_rows:
+            rows[deploy_rows[0]] = deploy_target
+        else:
+            rows.append(deploy_target)
         env_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
         os.chmod(env_path, 0o600)
-        verified = any(
-            row == KEY + "=" + expected_sha
-            for row in env_path.read_text(encoding="utf-8").splitlines()
+        written_rows = env_path.read_text(encoding="utf-8").splitlines()
+        verified = (
+            written_rows.count(SOURCE_KEY + "=" + expected_sha) == 1
+            and written_rows.count(DEPLOY_ENV_KEY + "=" + deployment_env) == 1
         )
         if not verified:
             shutil.copy2(backup_path, env_path)
@@ -176,11 +196,19 @@ with lock_path.open("a+b") as lock:
     served = None
     while time.time() < deadline:
         served = readback()
-        if served and served.get("git_sha") == expected_sha:
+        if (
+            served
+            and served.get("git_sha") == expected_sha
+            and served.get("environment") == deployment_env
+        ):
             break
         time.sleep(6)
 
-    ok = bool(served and served.get("git_sha") == expected_sha)
+    ok = bool(
+        served
+        and served.get("git_sha") == expected_sha
+        and served.get("environment") == deployment_env
+    )
     if not ok and changed:
         shutil.copy2(backup_path, env_path)
         restart(duty, env_path)
@@ -194,6 +222,8 @@ with lock_path.open("a+b") as lock:
         "compose_project": project,
         "container": container,
         "previous_revision": current,
+        "previous_environment": current_environment,
+        "deployment_environment": deployment_env,
         "env_file": str(env_path),
         "env_written": changed,
         "backup_path": backup_path,
@@ -207,7 +237,12 @@ with lock_path.open("a+b") as lock:
 '''
 
 
-def remote_command(expected_sha: str, duty: str, base_url: str) -> str:
+def remote_command(
+    expected_sha: str,
+    duty: str,
+    base_url: str,
+    deployment_environment: str,
+) -> str:
     return " ".join(
         shlex.quote(item)
         for item in (
@@ -218,11 +253,17 @@ def remote_command(expected_sha: str, duty: str, base_url: str) -> str:
             duty,
             base_url,
             REMOTE_ROOT,
+            deployment_environment,
         )
     )
 
 
-def preflight(expected_sha: str, ssh_host: str, duty: str) -> None:
+def preflight(
+    expected_sha: str,
+    ssh_host: str,
+    duty: str,
+    deployment_environment: str = "daily",
+) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN") != CONFIRMATION:
         raise AlignError("exact daily runtime source-revision alignment confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
@@ -231,6 +272,8 @@ def preflight(expected_sha: str, ssh_host: str, duty: str) -> None:
         raise AlignError("ssh host must be a configured host alias")
     if not DUTY.fullmatch(duty or ""):
         raise AlignError("duty must be one declared duty key")
+    if not re.fullmatch(r"^[a-z][a-z0-9_-]*$", deployment_environment or ""):
+        raise AlignError("deployment environment is invalid")
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[bytes]:
@@ -244,8 +287,9 @@ def align(
     ssh_host: str,
     duty: str,
     base_url: str,
+    deployment_environment: str = "daily",
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host, duty)
+    preflight(expected_sha, ssh_host, duty, deployment_environment)
     command = [
         "ssh",
         "-o",
@@ -257,7 +301,7 @@ def align(
         "-o",
         "ServerAliveCountMax=4",
         ssh_host,
-        remote_command(expected_sha, duty, base_url),
+        remote_command(expected_sha, duty, base_url, deployment_environment),
     ]
     result = run(command)
     if result.returncode:
@@ -276,10 +320,12 @@ def align(
         or evidence.get("expected_sha") != expected_sha
         or evidence.get("head") != expected_sha
         or evidence.get("duty") != duty
+        or evidence.get("deployment_environment") != deployment_environment
         or evidence.get("remote_root") != REMOTE_ROOT
         or evidence.get("rolled_back") is not False
         or not isinstance(served, dict)
         or served.get("git_sha") != expected_sha
+        or served.get("environment") != deployment_environment
     ):
         raise AlignError("remote source-revision alignment evidence differs")
     return evidence
@@ -291,6 +337,7 @@ def main() -> int:
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--duty", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:18081")
+    parser.add_argument("--deployment-environment", default="daily")
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
     try:
@@ -299,6 +346,7 @@ def main() -> int:
             args.ssh_host,
             args.duty,
             args.base_url,
+            args.deployment_environment,
         )
     except AlignError as exc:
         raise SystemExit(f"[daily.runtime.source_revision.align] BLOCKED: {exc}") from exc

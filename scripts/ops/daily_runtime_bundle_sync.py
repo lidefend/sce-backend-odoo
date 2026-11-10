@@ -51,6 +51,21 @@ def git(*args, check=True):
         raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED git " + args[0] + ": " + result.stderr.strip()[:600])
     return result
 
+pending_deploy_receipt = [False]
+
+def require_clean_worktree(context):
+    """Allow only the exact runtime receipt until the target ignore rule is proven."""
+    rows = [row for row in git("status", "--porcelain").stdout.splitlines() if row]
+    if not rows:
+        return
+    if rows == ["?? .deployed.json"]:
+        pending_deploy_receipt[0] = True
+        return
+    raise SystemExit(
+        "[daily.runtime.main.bundle_sync] BLOCKED remote worktree is not clean during "
+        + context
+    )
+
 with lock_path.open("a+b") as lock:
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -68,8 +83,7 @@ with lock_path.open("a+b") as lock:
         # Every identity below must match exactly and the worktree must be clean;
         # the recorded candidate ref proves the detached HEAD is an accepted
         # daily candidate rather than an arbitrary commit.
-        if git("status", "--porcelain").stdout.strip():
-            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote worktree is not clean")
+        require_clean_worktree("candidate normalization")
         if git("rev-parse", "refs/heads/main", check=False).stdout.strip() != expected_old_sha:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote main ref differs from the expected old SHA")
         if git("rev-parse", "refs/remotes/origin/main", check=False).stdout.strip() != expected_old_sha:
@@ -90,8 +104,7 @@ with lock_path.open("a+b") as lock:
         raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote branch or old SHA differs")
     if upstream_name != "origin/main" or upstream_sha != expected_old_sha:
         raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote upstream identity differs")
-    if git("status", "--porcelain").stdout.strip():
-        raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote worktree is not clean")
+    require_clean_worktree("main pre-sync")
 
     bundle_path = None
     try:
@@ -120,6 +133,16 @@ with lock_path.open("a+b") as lock:
         git("fetch", str(bundle_path), "refs/remotes/origin/main")
         if git("rev-parse", "FETCH_HEAD").stdout.strip() != expected_sha:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED fetched bundle SHA differs")
+        if pending_deploy_receipt[0]:
+            target_ignore = git("show", expected_sha + ":.gitignore", check=False)
+            if (
+                target_ignore.returncode
+                or "/.deployed.json" not in target_ignore.stdout.splitlines()
+            ):
+                raise SystemExit(
+                    "[daily.runtime.main.bundle_sync] BLOCKED target main does not ignore "
+                    "the pending deployment receipt"
+                )
         if git("merge-base", "--is-ancestor", expected_old_sha, expected_sha, check=False).returncode:
             raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED candidate is not a fast-forward descendant")
 
@@ -139,6 +162,7 @@ with lock_path.open("a+b") as lock:
             "source_sha": expected_sha,
             "bundle_sha256": expected_bundle_sha,
             "normalized_from_candidate": normalized_from_candidate,
+            "preserved_deploy_receipt": pending_deploy_receipt[0],
             "remote_root": str(root),
             "upstream": "origin/main",
         }, sort_keys=True))
