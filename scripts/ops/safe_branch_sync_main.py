@@ -27,6 +27,7 @@ MAX_RESPONSIBILITY_COMMITS = 12
 MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
 ACTIVE_RUNS_INDEX_PATH = ".agent/active-runs.json"
+PERSONAL_DATA_FALSE_POSITIVES_PATH = "scripts/ci/personal_data_false_positives.json"
 SEMANTIC_UNION_CONFLICT_PATH = (
     "scripts/verify/frontend_my_work_approval_browser.mjs"
 )
@@ -604,6 +605,84 @@ def verify_active_runs_resolution(plan: SyncPlan) -> None:
         raise SyncError("active-runs index merge changed during sync")
 
 
+def personal_data_false_positives_union(plan: SyncPlan) -> dict:
+    """Union exact scan exemptions without accepting conflicting metadata."""
+    try:
+        revisions = [
+            json.loads(text_at_revision(plan.root, revision, PERSONAL_DATA_FALSE_POSITIVES_PATH))
+            for revision in (plan.replay_base, plan.new_main, plan.head)
+        ]
+    except (ValueError, TypeError) as exc:
+        raise SyncError("personal-data false-positive registry is not valid JSON") from exc
+    merged: dict[tuple[str, str, str, str], dict] = {}
+    for revision, payload in zip(
+        ("base", "main", "topic"), revisions, strict=True
+    ):
+        entries = payload.get("entries") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+            raise SyncError(
+                f"personal-data false-positive {revision} schema_version must be 1"
+            )
+        if not isinstance(entries, list):
+            raise SyncError(
+                f"personal-data false-positive {revision} entries must be a list"
+            )
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise SyncError(
+                    f"personal-data false-positive {revision} entries must be objects"
+                )
+            key = tuple(
+                str(entry.get(field) or "").strip()
+                for field in ("rule_id", "path", "blob_id", "classification")
+            )
+            if not all(key):
+                raise SyncError(
+                    "personal-data false-positive entries require rule_id, path, "
+                    "blob_id and classification"
+                )
+            current = merged.get(key)
+            if current is not None and current != entry:
+                raise SyncError(
+                    "personal-data false-positive metadata conflicts for exact key: "
+                    + ":".join(key)
+                )
+            merged[key] = entry
+    return {
+        "schema_version": 1,
+        "entries": [merged[key] for key in sorted(merged)],
+    }
+
+
+def merge_personal_data_false_positives(plan: SyncPlan) -> None:
+    target = plan.root / PERSONAL_DATA_FALSE_POSITIVES_PATH
+    target.write_text(
+        json.dumps(
+            personal_data_false_positives_union(plan),
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    run(plan.root, "add", "--", PERSONAL_DATA_FALSE_POSITIVES_PATH)
+
+
+def verify_personal_data_false_positives_resolution(plan: SyncPlan) -> None:
+    try:
+        current = json.loads(
+            (plan.root / PERSONAL_DATA_FALSE_POSITIVES_PATH).read_text(
+                encoding="utf-8"
+            )
+        )
+    except (ValueError, TypeError) as exc:
+        raise SyncError(
+            "personal-data false-positive registry is not valid JSON"
+        ) from exc
+    if current != personal_data_false_positives_union(plan):
+        raise SyncError("personal-data false-positive registry merge changed during sync")
+
+
 def run_rebase(
     plan: SyncPlan,
 ) -> tuple[bool, tuple[str, ...], tuple[str, ...], tuple[str, ...]] | None:
@@ -626,6 +705,7 @@ def run_rebase(
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
         if plan.extended_history:
             allowed.add(SEMANTIC_UNION_CONFLICT_PATH)
+            allowed.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         if not conflicts or any(path not in allowed for path in conflicts):
             diagnostic = plan.recovery_bundle.with_suffix(".conflict.json")
             diagnostic.parent.mkdir(parents=True, exist_ok=True)
@@ -649,6 +729,9 @@ def run_rebase(
         if ACTIVE_RUNS_INDEX_PATH in conflicts:
             merge_active_runs_index(plan)
             metadata_conflicts.add(ACTIVE_RUNS_INDEX_PATH)
+        if PERSONAL_DATA_FALSE_POSITIVES_PATH in conflicts:
+            merge_personal_data_false_positives(plan)
+            metadata_conflicts.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
     return (
         append_only_log_resolved,
@@ -825,7 +908,10 @@ def sync(plan: SyncPlan) -> SyncResult:
         if append_only_log_resolved:
             verify_append_only_log_resolution(plan)
         if metadata_conflicts:
-            verify_active_runs_resolution(plan)
+            if ACTIVE_RUNS_INDEX_PATH in metadata_conflicts:
+                verify_active_runs_resolution(plan)
+            if PERSONAL_DATA_FALSE_POSITIVES_PATH in metadata_conflicts:
+                verify_personal_data_false_positives_resolution(plan)
         for path in semantic_conflicts:
             if not path_equals_revision(plan.root, new_head, plan.head, path):
                 raise SyncError(

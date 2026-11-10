@@ -456,6 +456,79 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
             syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
 
+    def test_extended_sync_unions_exact_personal_data_exemptions(self) -> None:
+        path = syncer.PERSONAL_DATA_FALSE_POSITIVES_PATH
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        base_entry = {
+            "rule_id": "PD003",
+            "path": "tests/base.py",
+            "blob_id": "1" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "base",
+        }
+        topic_entry = {
+            "rule_id": "PD003",
+            "path": "tests/topic.py",
+            "blob_id": "2" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "topic",
+        }
+        main_entry = {
+            "rule_id": "PD003",
+            "path": "tests/main.py",
+            "blob_id": "3" * 40,
+            "classification": "BANK_ACCOUNT_PATTERN",
+            "reason": "main",
+        }
+
+        def registry(entries):
+            return json.dumps(
+                {"schema_version": 1, "entries": entries},
+                indent=2,
+            ) + "\n"
+
+        git(self.root, "switch", "main")
+        target.write_text(registry([base_entry]), encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add personal data registry")
+        registry_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "-c", "feature/personal-data-union", registry_base)
+        target.write_text(registry([base_entry, topic_entry]), encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "register topic exemption")
+        registry_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        target.write_text(registry([base_entry, main_entry]), encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "register main exemption")
+        registry_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "feature/personal-data-union")
+
+        plan = syncer.SyncPlan(
+            root=self.root,
+            branch="feature/personal-data-union",
+            head=registry_head,
+            old_base=registry_base,
+            new_main=registry_main,
+            commit_count=1,
+            paths=(path,),
+            recovery_bundle=self.temp_path("personal-data-recovery.bundle"),
+            extended_history=True,
+        )
+        result = syncer.sync(plan)
+
+        merged = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(result.metadata_conflicts, (path,))
+        self.assertEqual(
+            [entry["blob_id"] for entry in merged["entries"]],
+            ["1" * 40, "3" * 40, "2" * 40],
+        )
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
     def test_main_equivalent_path_becomes_empty_without_losing_responsibility(self) -> None:
         (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
         git(self.root, "add", "equivalent.txt")
