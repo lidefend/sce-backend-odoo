@@ -54,6 +54,49 @@
     "kind": "offline",
     "authority": "registered disposable local.test sc_test profile"
   },
+  "cumulative_delivery": {
+    "batch": "BE-CLOSE-01",
+    "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+    "candidate_head": "94acf7ce6974546ba9415b579e6701dfaaec075d",
+    "commit_count": 30,
+    "changed_file_count": 107,
+    "independent_review": {
+      "result": "APPROVE",
+      "head": "2fb80a110b8dcf55a21a8e7e1c921a46a62bb266",
+      "blocking_findings": []
+    },
+    "runtime_evidence": {
+      "product_sha": "078d3ed6ae84fa417131c44560d214e40090a7c6",
+      "browser_report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "browser_report_sha256": "e4084b79adc1c7d4e7840d67fc79ecbd349218474ca0d48eeda1732fe1fe0c44",
+      "candidate_runtime_diff": "docs/ops/iterations/backend_authority_closure_be_u06_20261110.md and scripts/verify/frontend_my_work_approval_browser.mjs",
+      "runtime_inputs_equal": true,
+      "addons_tree": "68d5f9e2405d8ea05c5f63fb3f82235d59a6c030",
+      "frontend_tree": "3285fabf65697b100796c4fac8a475f5ae1b106c"
+    },
+    "publication": {
+      "selected_remote": "origin",
+      "target_main": "fb5f5c82fe7404939cd697ea99e1f2ba237b0310",
+      "target_is_ancestor": false,
+      "main_only_commits": 2,
+      "candidate_only_commits": 29,
+      "merge_tree_conflicts": [
+        ".agent/active-runs.json",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "scripts/verify/frontend_my_work_approval_browser.mjs"
+      ],
+      "preview_writes": 0,
+      "branch_exists": false,
+      "pr_required": true,
+      "remote_checks": "not_run_no_pr",
+      "pushed": false,
+      "pr_created": false,
+      "merged": false,
+      "deployed": false
+    }
+  },
   "checks": {
     "approval_contract_closure_orm": {
       "target": "verify.approval.contract_closure.orm",
@@ -328,6 +371,9 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Freeze the completed U06 record and run the independent read-only appendix review."
+  "blockers": [
+    "GitHub origin/main advanced by two commits; the 30-commit unpublished candidate requires explicit owner authorization for workspace.branch.sync-main.extended.",
+    "The approval browser journey has both upstream detail-readback assertions and U06 page-execution assertions on the same hunks; semantic conflict resolution must be authorized and the resulting journey rerun."
+  ],
+  "next_exact_step": "Obtain repository-owner authorization for the exact 30-commit extended GitHub-main sync and semantic resolution of the approval browser collision, then run make workspace.branch.sync-main.extended and affected/current-head validation before any push."
 }

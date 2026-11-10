@@ -79,3 +79,110 @@
 - 执行时重新加载契约并重验任务、记录、权限和状态；旧页面不构成执行授权。
 - 前端只负责收集声明输入、展示状态和调用执行，没有新增付款或审批业务判断。
 - U06 增量已具备冻结和独立只读复审条件。
+
+## BE-CLOSE-01 Cumulative Delivery And PR Preparation
+
+状态：U01—U06 本地实施范围关闭，候选已冻结并完成本地独立复审。GitHub 目标主线在候选
+设计基线之后前进了两个提交，当前分支尚未同步，因此 PR 集成准备保持
+`verification_pending`；尚未推送、创建 PR、取得远端 CI 或部署。
+
+### Candidate And Commit Inventory
+
+- 设计基线：`1ad805b621de6ced0a497c5a5f6e10bec358896d`
+- 当前候选：`94acf7ce6974546ba9415b579e6701dfaaec075d`
+- 提交数：30
+- 变更文件：107（31 新增、76 修改）
+- 审查结论：本地独立复审 `APPROVE`，无 S0/S1/S2
+
+| 切片 | 提交 |
+| --- | --- |
+| U01 权威映射 | `6bba76043ffdee0474a0f91f3390634c6b792180` |
+| U02 授权边界 | `017a395cc55ce91f73cec87d539feec95cb98ad7` |
+| U03 能力与入口身份 | `53e949fa0a8dc1c1504ca0bab52bd770b8bbd401` |
+| U04 发布与用户投影分离 | `11986acb3d3b4ee677149f05c28d6dbe63c245a5` |
+| U05 partner 页面声明 | `f1b9c5997a298d6a8a160c519831167c644ba644` |
+| U05B project finalize 迁移 | `8a35c7718b1a39318f89a22587405359c264d225` |
+| U05C 两项复审 S1 整改 | `54dbbc1e9ae5864030ea9dfd8cd2b4409ef7f6cd` |
+| U06 审批契约与办理闭环 | `f78e3956a`、`bff019bbc`、`375e8551a`、`aee7d6432`、`3f81e67ea`、`a6315c12f`、`a7bb927d6`、`a3001d6f2`、`b074044a9`、`995939bad`、`a2b5a86a8`、`40ad974c8`、`17351a68b`、`ed04063a8`、`9d9da7383`、`cd08cca11`、`ffe91a818`、`4adf8b874`、`4e3b66f2c`、`1eab2fd57`、`078d3ed6a`、`2fb80a110`、`94acf7ce6` |
+
+### Closed Findings And Product Changes
+
+| 范围 | 收口结果 |
+| --- | --- |
+| 两项 U05 复审 S1 | 未知/遗留能力行不再默认成为业务能力；页面声明对照经真实 `UiContractV2Handler` 最终契约验证。关闭提交为 `54dbbc1e9`。 |
+| 授权边界 | 配置管理员只在显式配置 intent 保留职责；普通业务、付款和审批命令仍要求对应业务组、任务来源、ACL、记录规则和业务范围。 |
+| 能力身份 | `business_capability` 与菜单派生 `entry_compatibility_alias` 分离；旧键保留，但不再证明能力资格。 |
+| 发布与启用 | 场景版本冻结产品定义，运行请求按当前用户重新投影；企业启用只收紧交付范围，不授予业务权限。 |
+| 页面声明 | partner sparse field policy 和 project 原生页面退出目标 finalize 结构覆盖；兼容路径保留并明确范围。 |
+| 审批输入与执行 | 同一动作身份贯穿最终 V2 契约、前端输入收集、`execute_button` 参数重验和唯一业务方法；付款通过／驳回闭环已验证。 |
+
+### Verification Scope
+
+| 验证层 | 结果 |
+| --- | --- |
+| 静态／单元 | U01—U05 既有定向守卫、能力身份、授权、页面声明和前端运行时检查均由原批次记录承接；U06 新增审批前端契约 12 cases、执行边界 37/37。 |
+| ORM | U05 partner/project 最终契约用例通过；U06 付款与日常合同真实 `tier.review` 审批 3/3 通过。 |
+| 浏览器 | 付款审批 J07/J08、页面通过、reason 驳回、任务／单据回读、返回工作列表、公司隔离、项目成员隔离和 1440×900／1280×800／390×844 通过。 |
+| 独立复审 | U01—U05 累计复审承接此前结论；U06 最终增量本地独立复审为 `APPROVE`。 |
+| 远端 | 未推送、无 PR、无远端 CI、无合并或部署。 |
+
+### Runtime Evidence Carry-Forward
+
+浏览器报告实际绑定后端产品、前端构建基线和测试脚本
+`078d3ed6ae84fa417131c44560d214e40090a7c6`。当前候选 `94acf7ce6` 相对它的差异是
+本文件和上游详情回读断言合并；产品运行时输入未变：
+
+```text
+git diff --name-only 078d3ed6a..94acf7ce6
+docs/ops/iterations/backend_authority_closure_be_u06_20261110.md
+scripts/verify/frontend_my_work_approval_browser.mjs
+
+git diff --quiet 078d3ed6a..94acf7ce6 -- \
+  addons frontend make contracts config docs/architecture
+runtime_inputs_equal=yes
+
+addons tree:   68d5f9e2405d8ea05c5f63fb3f82235d59a6c030 (both)
+frontend tree: 3285fabf65697b100796c4fac8a475f5ae1b106c (both)
+```
+
+`078d3ed6a` 的产品行为证据仍可承接；新增的上游详情金额断言尚未在当前候选重跑，待 GitHub
+主线同步后与受影响审批旅程一起验证。该差异不触发后端重建、发布快照刷新或夹具全量重置。
+
+### Target Main And Publication Preparation
+
+用户明确目标为 GitHub：
+
+- 实时目标：`origin/main = fb5f5c82fe7404939cd697ea99e1f2ba237b0310`
+- 设计基线 `1ad805b62` 同时是当前候选与目标 main 的合并基点
+- 候选相对目标：29 个独有提交；目标相对候选：2 个独有提交
+- 只读 `git merge-tree --write-tree origin/main HEAD` 返回冲突
+- 冲突路径：`.agent/active-runs.json`、覆盖率注册表、复杂度预算、拆分队列、审批浏览器脚本
+- 前四类属于 run 合并与可再生成证据；审批浏览器脚本同时承载上游详情金额回读和 U06 页面办理，需要语义合并后重验
+- 当前未纳入的 GitHub 主线提交为 `d014af2e8`、`fb5f5c82f`，其改动包含能力加载性能、前端用户流程及浏览器消费检查
+
+目标同步必须使用 `workspace.branch.sync-main.extended`。当前候选有 30 个本地提交，超过
+普通入口的 12 提交上限，因此需要仓库所有者对该精确提交数和受影响冲突处置作出明确授权；
+不得裸 merge/rebase，也不得把旧候选的浏览器结果直接标成同步后结果。
+
+Gitee 的 `main=2fb35361342399cc6404dbde066e346ece91213d` 仅作为补充观察，不是本次
+GitHub PR 目标。基于 Gitee 旧 refs 生成的公开扫描结果不用于 GitHub 发布判断。
+
+发布前只读检查：
+
+- `make verify.pr.push.unit`：18 个 push 隔离场景 PASS
+- `make ci.delivery.freeze.prepare`：PASS，无生成差异
+
+`public_guard`、`merge_policy_gate`、`professional_quality_gate` 和
+`frontend_release_gate` 尚未运行，因为尚无远端 PR；它们是 PR 集成门禁，不由本地
+`APPROVE` 替代。
+
+### Preserved Limits And Rollback
+
+- 非付款审批只完成 ORM／契约闭环，未做独立浏览器旅程。
+- 多级审批中间态未做浏览器验证，不能表述为全部审批流程已交付。
+- `construction.menu.*`／`catalog.menu.*` 旧键、数据库能力目录迁移、非原生兼容路径和
+  无调用方包装函数继续由既有台账管理，不在本卡扩大清理。
+- 代码回退只回退对应模块、契约 schema 与前端消费提交；不回滚审批业务数据、审计记录、
+  发布版本或企业启用数据。数据库迁移和发布内容如需回退，按各自恢复入口另办。
+
+外部边界：当前保持未推送、未创建 PR、未合并、未部署。
