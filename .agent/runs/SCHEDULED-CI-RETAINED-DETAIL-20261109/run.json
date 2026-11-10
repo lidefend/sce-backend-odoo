@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "SCHEDULED-CI-RETAINED-DETAIL-20261109",
   "branch": "fix/scheduled-ci-retained-detail-20261109",
-  "baseline_sha": "ed3525193bc9a7fd6731cdbbd427cbf867f57bfd",
+  "baseline_sha": "71e9c70f43e16b85ec7f925c9a261894f4be4e50",
   "status": "verification_pending",
   "goal": ".agent/goals/SCHEDULED-CI-RETAINED-DETAIL-20261109.yaml",
   "record": "docs/ops/iterations/scheduled_ci_retained_detail_20261109.md",
