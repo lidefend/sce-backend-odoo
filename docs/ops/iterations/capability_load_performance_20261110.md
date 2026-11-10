@@ -95,6 +95,9 @@
   这是认证就绪窗口，不是凭据错误。修复为只对 unknown/空错误码的 401 做最多 10 次、
   0.5 秒间隔的有界重试；结构化拒绝立即失败，并改走既有
   `acceptance.runtime.login_probe` 受管入口。
+- 性能探针此前在 fixture/snapshot 之前解析记录 ID，浏览器实际打开时 fixture 已完成
+  重建，造成旧 ID 404。修复为 backend/frontend 启动完成后、浏览器采样前重新解析
+  runtime targets，确保 URL 身份来自当前数据库状态。
 
 原始日志：
 
