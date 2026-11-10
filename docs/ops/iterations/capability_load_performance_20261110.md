@@ -71,6 +71,8 @@
 - `TestQueryCapabilityNativeAcl.test_company_route_scope_context_is_reused_within_process_bucket`：PASS。
 - `TestQueryCapabilityNativeAcl.test_registry_timing_hook_reaches_startup_provider`：PASS。
 - `verify.frontend.acceptance_login_probe.unit`：新增有界认证就绪重试测试。
+- `ci.local.iteration`：9 个必需 target 全部执行并退出 0；capability ORM、认证探针、
+  incremental routing 与 lane coverage 均通过。
 
 ### 已修复的验证前置
 
@@ -135,6 +137,7 @@
 - `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/capability-provider-guard.log`
 - `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/navigation-publication.log`
 - `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/capability-registry-orm.log`
+- `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/ci-local-iteration-final2.log`
 
 ## 回退
 
