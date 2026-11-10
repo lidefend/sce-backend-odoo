@@ -156,6 +156,22 @@ class MyWorkPerformanceNavigationTest(unittest.TestCase):
         self.assertNotIn("navigateSpa(page, '/my-work'", performance)
         self.assertIn("openMyWorkFromRoleHome(page)", performance)
 
+    def test_retained_detail_timing_stays_in_the_warmed_spa_document(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("async function returnToMyWorkInRetainedDocument(page)", source)
+        performance = source.split("let performanceRole = FINANCE_LOGIN;", 1)[1].split(
+            "const formSamples = [];", 1
+        )[0]
+        sample_loop = performance.split("for (let i = 0; i < PERF_RUNS; i += 1) {", 1)[1].split(
+            "if (name.endsWith('_detail'))", 1
+        )[0]
+        my_work_branch, detail_branch = sample_loop.split("} else {", 1)
+        self.assertIn("page.goto", my_work_branch)
+        self.assertNotIn("page.goto", detail_branch)
+        self.assertIn("returnToMyWorkInRetainedDocument(page)", detail_branch)
+
 
 class MissingRecordResponseTest(unittest.TestCase):
     def test_only_matching_contract_record_absence_is_expected(self):

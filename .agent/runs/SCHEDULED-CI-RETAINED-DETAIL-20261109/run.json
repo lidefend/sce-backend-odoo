@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-RETAINED-DETAIL-20261109",
+  "branch": "fix/scheduled-ci-retained-detail-20261109",
+  "baseline_sha": "71e9c70f43e16b85ec7f925c9a261894f4be4e50",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-RETAINED-DETAIL-20261109.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_retained_detail_20261109.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-RETAINED-DETAIL-20261109.yaml",
+    ".agent/runs/SCHEDULED-CI-RETAINED-DETAIL-20261109/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/scheduled_ci_retained_detail_20261109.md",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and exact failed full-lane evidence; no database or browser write"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "full frontend release performance probe",
+    "module": "frontend delivery hardening verification",
+    "standard_vs_user_specific": "platform delivery verification standard",
+    "why_here": "The probe owns navigation setup and request observation; the product routes and contract cache already behave as designed.",
+    "why_not_elsewhere": "Changing frontend routing or backend contracts to satisfy a self-contradictory probe would weaken product behavior and mask the measurement error.",
+    "blast_radius": "Performance request sampling for detail scenarios only; product runtime, assertions, routes, ACLs and acceptance fixtures remain unchanged.",
+    "exclusions": [
+      "frontend product behavior",
+      "business data",
+      "database schema",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py"
+      ]
+    },
+    "release_local_entry": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and merge the P4 repair through the protected PR flow, then dispatch a new full frontend release gate on the resulting exact main SHA."
+}
