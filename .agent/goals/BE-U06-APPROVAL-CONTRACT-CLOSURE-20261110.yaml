@@ -30,8 +30,10 @@ goal:
     - make/frontend.mk
     - make/guards.mk
     - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/frontend_my_work_approval_browser.mjs
     - scripts/verify/test_general_contract_review_authority.py
     - scripts/verify/test_frontend_dev_incremental.py
+    - scripts/verify/test_frontend_release_local_entry.py
   baseline:
     branch: codex/be-u05-page-declaration-authority-20261110
     full_sha: 54dbbc1e9ae5864030ea9dfd8cd2b4409ef7f6cd
@@ -56,6 +58,7 @@ goal:
       - focused approval contract ORM regression
       - focused frontend approval-contract consumption regression
       - focused review-origin method-boundary regression
+      - governed My Work approval page browser journey
       - narrow payment-review decision-method authorization
       - registered make verification entry
       - U06 run and batch record

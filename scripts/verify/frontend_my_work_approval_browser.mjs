@@ -14,6 +14,7 @@ const EXPECTED_SHA = String(process.env.SC_ACCEPTANCE_EXPECTED_SHA || '').trim()
 const PREVIEW_BASE_SHA = String(process.env.SC_ACCEPTANCE_PREVIEW_BASE_SHA || '').trim();
 const PREVIEW_ENTRY = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY || '').trim();
 const PREVIEW_ENTRY_SHA256 = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY_SHA256 || '').trim();
+const SCRIPT_SHA = String(process.env.SC_ACCEPTANCE_TEST_SCRIPT_SHA || '').trim();
 const APPROVAL_REVIEWER_LOGIN = String(process.env.FRONTEND_APPROVAL_REVIEWER_LOGIN || 'fixture_role_finance_reviewer').trim();
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -45,7 +46,7 @@ function captureRuntime(page) {
     if (!response.url().includes('/api/v1/')) return;
     let intent = ''; let body = ''; let request = {};
     try { request = JSON.parse(response.request().postData() || '{}'); intent = request?.intent || ''; } catch {}
-    if (response.status() < 400 && !['execute_button', 'payment.request.submit', 'payment.request.approve', 'payment.request.reject'].includes(intent)) return;
+    if (response.status() < 400 && !['execute_button', 'payment.request.submit', 'payment.request.execute', 'payment.request.approve', 'payment.request.reject'].includes(intent)) return;
     try { body = (await response.text()).slice(0, 24000); } catch {}
     state.responses.push({ intent, status: response.status(), url: response.url(), request, body });
   });
@@ -190,6 +191,7 @@ async function main() {
       preview_base_sha: PREVIEW_BASE_SHA,
       preview_entry: PREVIEW_ENTRY,
       preview_entry_sha256: PREVIEW_ENTRY_SHA256,
+      test_script_sha: SCRIPT_SHA,
       approval_reviewer_login: APPROVAL_REVIEWER_LOGIN,
     },
     j07: {}, j08: {}, responsive: [], failure_paths: {}, isolation: {},
@@ -198,6 +200,15 @@ async function main() {
   let runtime;
   try {
     page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+    async function capture(stage) {
+      const screenshot = path.join(OUTPUT_DIR, `approval-page-${stage}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      report.approval_page_captures = [...(report.approval_page_captures || []), {
+        stage,
+        url: page.url(),
+        screenshot,
+      }];
+    }
     runtime = captureRuntime(page);
     const releasedNavigation = captureReleasedNavigation(page);
     const runtimeVersionResponse = await page.request.get(`${BASE_URL}/api/runtime-version`);
@@ -268,17 +279,39 @@ async function main() {
     const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
     await approvalCard.waitFor({ timeout: 45000 });
     check(Boolean(TARGETS.approval.amount_display), 'approval target money display is required');
-    const approvalCardText = await approvalCard.innerText();
-    check(approvalCardText.includes(TARGETS.approval.amount_display), 'approval work item lost the authoritative money value');
-    await approvalCard.getByRole('button', { name: '审批' }).click();
+    check((await approvalCard.innerText()).includes(TARGETS.approval.amount_display), 'approval work item lost the authoritative money value');
+    await approvalCard.getByRole('button', { name: '打开详情' }).click();
+    await waitForCanonicalForm(page, TARGETS.approval);
+    const approvalForm = canonicalForm(page, TARGETS.approval);
+    const approvalPageSummary = await approvalForm.innerText();
+    check(approvalPageSummary.includes('FE-JOURNEY-APPROVAL-001'), 'approval page lost the work item identity');
+    check(approvalPageSummary.includes(TARGETS.approval.amount_display), 'approval page lost the authoritative money value');
+    const approvalButtons = page.getByRole('button', { name: /^(审批|审批通过)$/, exact: true });
+    check(await approvalButtons.count() === 1, 'approval page must expose exactly one current approve action');
+    const approvalExecuted = page.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/intent')) return false;
+      try {
+        const payload = JSON.parse(response.request().postData() || '{}');
+        return ['payment.request.execute', 'execute_button'].includes(payload?.intent)
+          && Number(payload?.params?.id || payload?.params?.res_id || 0) === Number(TARGETS.approval.record_id);
+      } catch {
+        return false;
+      }
+    }, { timeout: 45000 });
+    await approvalButtons.click();
     const approvalDialog = page.getByRole('dialog');
-    const approvalSummary = await approvalDialog.innerText();
-    check(approvalSummary.includes('FE-JOURNEY-APPROVAL-001'), 'approval summary lost the work item identity');
-    check(approvalSummary.includes(TARGETS.approval.amount_display), 'approval summary lost the authoritative money value');
-    await approvalDialog.getByRole('button', { name: '确认审批' }).click();
-    await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
-    await page.waitForFunction(() => !(document.body.innerText || '').includes('FE-JOURNEY-APPROVAL-001'), null, { timeout: 45000 });
-    check(!(await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 approved item remained in todo');
+    if (await approvalDialog.count()) {
+      await approvalDialog.getByRole('button', { name: /^(确认审批|确认审批通过|确认)$/ }).click();
+    }
+    const approvalResponse = await approvalExecuted;
+    const approvalPayload = await approvalResponse.json();
+    check(approvalResponse.ok() && approvalPayload?.ok, 'approval page action was rejected');
+    await waitForWorkflowState(page, 'approved');
+    await capture('approval-result');
+    await openMyWork(page);
+    const approvedTodo = page.locator('.work-section[data-section-key="todo"] .work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' });
+    await approvedTodo.waitFor({ state: 'detached', timeout: 45000 });
+    check(await approvedTodo.count() === 0, 'J08 approved item remained in todo');
     await page.waitForFunction((expected) => Number(document.querySelector('.count-card[data-section-key="todo"] strong')?.textContent || -1) === expected, reviewerTodoBefore - 1, { timeout: 15000 });
     const reviewerTodoAfter = await sectionCount(page, 'todo');
     check(reviewerTodoAfter === reviewerTodoBefore - 1, 'J08 approval did not update the visible worklist count');
@@ -289,14 +322,12 @@ async function main() {
     await page.goto(`${BASE_URL}${route(TARGETS.approval)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const approvedForm = await waitForCanonicalForm(page, TARGETS.approval);
     await waitForWorkflowState(page, 'approved');
-    const approvedDetailBody = await page.locator('body').innerText();
-    check(approvedDetailBody.includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
+    check((await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
     const approvedAmountField = approvedForm.locator('[data-field-name="amount"]:visible');
     check(await approvedAmountField.count() === 1, 'J08 detail amount field identity is not unique');
-    const approvedAmountText = await approvedAmountField.innerText();
     check(
-      approvedAmountText.includes(TARGETS.approval.amount_display),
-      `J08 canonical amount field lost the My Work amount: ${approvedAmountText}`,
+      (await approvedAmountField.innerText()).includes(TARGETS.approval.amount_display),
+      'J08 canonical amount field lost the My Work amount',
     );
     const approvedWorkflowBars = page.locator('[data-professional-workflow-component="action-bar"]:visible');
     await approvedWorkflowBars.first().waitFor({ timeout: 15000 });
@@ -324,9 +355,10 @@ async function main() {
       fixture: 'FE-JOURNEY-APPROVAL-001',
       reviewer_login: APPROVAL_REVIEWER_LOGIN,
       reviewer_availability: 'PASS',
-      reviewer_approval: 'PASS',
-      approval_summary: 'PASS',
-      approval_feedback: 'PASS_VISIBLE_WORKLIST_STATE_UPDATE',
+      reviewer_approval: 'PASS_FROM_APPROVAL_PAGE',
+      approval_page_summary: 'PASS',
+      approval_result_readback: 'PASS_APPROVED',
+      approval_feedback: 'PASS_RETURNED_TO_UPDATED_WORKLIST',
       pending_inline_feedback: 'NOT_OBSERVED',
       cross_page_readout: {
         status: 'PASS',
@@ -350,16 +382,70 @@ async function main() {
     await openMyWork(page);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const rejectCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-REJECT-001' });
-    await rejectCard.getByRole('button', { name: '驳回' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: '确认驳回' }).click();
-    await page.getByRole('alert').filter({ hasText: '拒绝原因' }).waitFor({ timeout: 10000 });
-    check(await rejectCard.count() === 1, 'reject without reason changed work item');
-    await page.getByRole('dialog').getByLabel('拒绝原因').fill('验收拒绝原因');
-    const rejectDialog = page.getByRole('dialog');
-    await rejectDialog.getByRole('button', { name: '确认驳回' }).click();
+    await rejectCard.getByRole('button', { name: '打开详情' }).click();
+    await waitForCanonicalForm(page, TARGETS.reject);
+    let rejectButton = page.getByRole('button', { name: /^(审批驳回|驳回)$/, exact: true });
+    if (!await rejectButton.count()) {
+      await page.getByRole('button', { name: '更多操作', exact: true }).click();
+      rejectButton = page.getByText('审批驳回', { exact: true }).filter({ visible: true });
+      await rejectButton.waitFor({ state: 'visible', timeout: 5000 });
+    }
+    check(await rejectButton.count() === 1, 'approval page must expose exactly one current reject action');
+    let rejectRequestCount = 0;
+    const observeRejectRequest = (request) => {
+      if (!request.url().includes('/api/v1/intent')) return;
+      try {
+        const payload = JSON.parse(request.postData() || '{}');
+        if (['payment.request.execute', 'execute_button'].includes(payload?.intent)
+          && Number(payload?.params?.id || payload?.params?.res_id || 0) === Number(TARGETS.reject.record_id)) {
+          rejectRequestCount += 1;
+        }
+      } catch {}
+    };
+    page.on('request', observeRejectRequest);
+    await rejectButton.click();
+    const rejectSafetyDialog = page.locator('[data-dialog-purpose="intent-confirmation"][data-state="open"]');
+    await rejectSafetyDialog.waitFor({ state: 'visible', timeout: 10000 });
+    await rejectSafetyDialog.getByRole('button', { name: /^确认(?:审批)?驳回$/ }).click();
+    await rejectSafetyDialog.waitFor({ state: 'hidden', timeout: 10000 });
+    const rejectDialog = page.locator('.contract-reason-dialog');
+    await rejectDialog.waitFor({ state: 'visible', timeout: 10000 });
+    const rejectReason = rejectDialog.getByLabel('拒绝原因');
+    const rejectSubmit = rejectDialog.getByRole('button', { name: '确认驳回' });
+    await rejectReason.waitFor({ state: 'visible', timeout: 10000 });
+    check(await rejectSubmit.isDisabled(), 'empty decision reason must leave submit disabled');
+    check(await canonicalForm(page, TARGETS.reject).isVisible(), 'reject without reason left the approval page');
+    await page.waitForTimeout(300);
+    check(rejectRequestCount === 0, 'reject must not issue execute_button before a valid reason');
+    await rejectReason.fill('验收拒绝原因');
+    check(await rejectSubmit.isEnabled(), 'a valid decision reason must enable submit');
+    const rejectExecuted = page.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/intent')) return false;
+      try {
+        const payload = JSON.parse(response.request().postData() || '{}');
+        return ['payment.request.execute', 'execute_button'].includes(payload?.intent)
+          && Number(payload?.params?.id || payload?.params?.res_id || 0) === Number(TARGETS.reject.record_id);
+      } catch {
+        return false;
+      }
+    }, { timeout: 45000 });
+    await rejectSubmit.click();
+    const rejectResponse = await rejectExecuted;
+    const rejectPayload = await rejectResponse.json();
+    const rejectRequestPayload = JSON.parse(rejectResponse.request().postData() || '{}');
+    check(rejectResponse.ok() && rejectPayload?.ok, 'reject page action was rejected after a valid reason');
+    check(rejectRequestPayload?.params?.button?.name === 'action_approval_reject', 'reject used a different action identity');
+    check(rejectRequestPayload?.params?.action_params?.reason === '验收拒绝原因', 'reject reason was not carried by the execute_button contract request');
     await rejectDialog.waitFor({ state: 'hidden', timeout: 45000 });
-    await page.waitForFunction(() => !(document.body.innerText || '').includes('FE-JOURNEY-REJECT-001'), null, { timeout: 45000 });
-    report.failure_paths.reject_reason = 'PASS_DATA_UNCHANGED_BEFORE_VALID_REASON';
+    await waitForWorkflowState(page, 'rejected');
+    await capture('reject-result');
+    await openMyWork(page);
+    const rejectedTodo = page.locator('.work-section[data-section-key="todo"] .work-card[data-record-id="' + Number(TARGETS.reject.record_id) + '"]').filter({ hasText: 'FE-JOURNEY-REJECT-001' });
+    await rejectedTodo.waitFor({ timeout: 45000 });
+    check(await rejectedTodo.getAttribute('data-work-item-state') === 'rejected', 'rejected payment work item did not expose the authoritative rejected state');
+    check(await page.locator('.work-section[data-section-key="todo"] .work-card[data-record-id="' + Number(TARGETS.reject.record_id) + '"][data-work-item-state="pending"]').count() === 0, 'completed approval task remained pending');
+    page.off('request', observeRejectRequest);
+    report.failure_paths.reject_reason = 'PASS_PAGE_DATA_UNCHANGED_BEFORE_VALID_REASON_AND_CARRIED_TO_EXECUTION';
     await logout(page);
 
     await login(page, 'fixture_role_project_a_member');

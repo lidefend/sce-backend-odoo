@@ -23,8 +23,10 @@
     "make/frontend.mk",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
     "scripts/verify/test_general_contract_review_authority.py",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_release_local_entry.py"
   ],
   "environment": {
     "kind": "offline",
@@ -180,6 +182,22 @@
         "scripts/verify/guard_registry_audit.py",
         "scripts/verify/test_guard_registry_audit.py",
         "scripts/verify/registry.yaml"
+      ]
+    },
+    "standard_preview_unit": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py"
       ]
     },
     "canonical_form_presenter": {
