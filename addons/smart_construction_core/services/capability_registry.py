@@ -210,14 +210,31 @@ def _is_group_member(user, group_xmlid: str) -> bool:
         return False
 
 
-def _published_query_pair(user, action_id):
+def _published_query_pairs_by_action_id(user) -> dict[int, tuple[int, int]]:
+    if not user:
+        return {}
     from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, iter_published_pairs
     principal_env = user.with_user(user).env
-    return next((pair for pair in iter_published_pairs(published_route_authority(principal_env))
-                 if pair[1] == action_id), None)
+    pairs_by_action_id = {}
+    for pair in iter_published_pairs(published_route_authority(principal_env)):
+        action_id = int(pair[1] or 0)
+        if action_id > 0:
+            pairs_by_action_id.setdefault(action_id, pair)
+    return pairs_by_action_id
 
 
-def _capability_access(defn: dict[str, Any], role_codes: set[str], user) -> tuple[bool, bool, str, str]:
+def _published_query_pair(user, action_id, pairs_by_action_id=None):
+    if pairs_by_action_id is not None:
+        return pairs_by_action_id.get(int(action_id or 0))
+    return _published_query_pairs_by_action_id(user).get(int(action_id or 0))
+
+
+def _capability_access(
+    defn: dict[str, Any],
+    role_codes: set[str],
+    user,
+    published_pairs_by_action_id=None,
+) -> tuple[bool, bool, str, str]:
     required_roles = [str(x).strip() for x in (defn.get("required_roles") or []) if str(x).strip()]
     required_groups = [str(x).strip() for x in (defn.get("required_groups") or []) if str(x).strip()]
 
@@ -233,7 +250,7 @@ def _capability_access(defn: dict[str, Any], role_codes: set[str], user) -> tupl
         group_allowed = user._is_admin() or not action.groups_id or bool(action.groups_id & user.groups_id)
         model = user.env[action.res_model].with_user(user)
         allowed = bool(group_allowed and model.check_access_rights("read", raise_exception=False))
-        if allowed and not _published_query_pair(user, action.id):
+        if allowed and not _published_query_pair(user, action.id, published_pairs_by_action_id):
             return True, False, "NAVIGATION_AUTHORITY_DENIED", _("该入口未在当前账号的导航权限中发布")
         return True, allowed, "" if allowed else "PERMISSION_DENIED", "" if allowed else _("没有该查询入口的访问权限")
 
@@ -278,6 +295,8 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
     stage_ts = _mark("resolve_role_codes_for_user", stage_ts)
     definitions = capability_definitions()
     stage_ts = _mark("capability_definitions", stage_ts)
+    published_pairs_by_action_id = _published_query_pairs_by_action_id(user)
+    stage_ts = _mark("published_route_authority", stage_ts)
 
     out: list[dict[str, Any]] = []
     access_state_total_ms = 0
@@ -287,7 +306,12 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
         if not bool(defn.get("visible", True)):
             continue
         iter_ts = time.perf_counter()
-        visible, allowed, reason_code, reason = _capability_access(defn, role_codes, user)
+        visible, allowed, reason_code, reason = _capability_access(
+            defn,
+            role_codes,
+            user,
+            published_pairs_by_action_id,
+        )
         cap_state, cap_state_reason = _capability_state(defn, allowed)
         access_state_total_ms += int((time.perf_counter() - iter_ts) * 1000)
         if not visible:
@@ -306,7 +330,7 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
             action = env.ref(defn["access_action"]).with_user(user)
             # The exact native action used by authorization owns navigation too.
             # Keep its context/domain on the server; /a loads the native action.
-            pair = _published_query_pair(user, action.id)
+            pair = _published_query_pair(user, action.id, published_pairs_by_action_id)
             entry_target = {"target_mode": "action", "action_id": action.id,
                             "model": action.res_model}
             if pair:

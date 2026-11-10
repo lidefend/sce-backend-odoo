@@ -664,6 +664,12 @@ RULES = (
     # contract action projector; keep the producer and its consumer test in one
     # executable routing unit instead of leaving a backend-only path unmapped.
     Rule((
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
         "addons/smart_construction_core/services/financial_workspace_contract.py",

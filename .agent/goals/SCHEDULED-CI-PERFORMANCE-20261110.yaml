@@ -1,0 +1,23 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-PERFORMANCE-20261110
+  title: scheduled CI capability projection performance recovery
+  status: verification_pending
+  formal_product_layer: P1
+  layer_target: construction capability registry startup projection
+  module: smart_construction_core capability registry
+  standard_vs_user_specific: construction product standard
+  objective: >
+    Resolve published navigation authority once per capability projection instead
+    of once per action-bound capability and per consumer, preserving the exact
+    same native action, ACL, role, company and navigation decisions.
+  acceptance:
+    - Capability visibility and entry targets remain identical to the prior service.
+    - Published route authority is resolved once per list projection.
+    - Targeted ORM/query-capability tests, static guards and local iteration pass.
+    - The post-merge full frontend release lane is read back on the exact main SHA.
+  exclusions:
+    - budget threshold changes
+    - ACL or navigation semantic changes
+    - business data changes
+    - deployment

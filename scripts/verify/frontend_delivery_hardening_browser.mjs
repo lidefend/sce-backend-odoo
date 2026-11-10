@@ -481,6 +481,21 @@ async function relationCandidateCountAfterQuiet(page, state, model, quietMs = 30
   }
   throw new Error(`relation candidate requests did not become quiet model=${model} timeout_ms=${timeoutMs}`);
 }
+async function waitForIntentQuiet(page, requests, quietMs = 500, timeoutMs = 5000) {
+  let count = requests.length;
+  let stableSince = Date.now();
+  const deadline = stableSince + timeoutMs;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(50);
+    const current = requests.length;
+    if (current !== count) {
+      count = current;
+      stableSince = Date.now();
+    }
+    if (Date.now() - stableSince >= quietMs) return;
+  }
+  throw new Error(`intent requests did not become quiet timeout_ms=${timeoutMs}`);
+}
 async function gotoLogin(page) {
   try {
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -1127,6 +1142,7 @@ async function main() {
         const requestSamples = [];
         await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
         await page.waitForTimeout(2000);
+        await waitForIntentQuiet(page, performanceRequests);
         if (name === 'my_work') {
           await openMyWorkFromRoleHome(page);
         } else {
@@ -1137,6 +1153,7 @@ async function main() {
           if (name === 'my_work') {
             await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
             await page.waitForTimeout(2000);
+            await waitForIntentQuiet(page, performanceRequests);
             const requestOffset = performanceRequests.length;
             samples.push(await time(() => openMyWorkFromRoleHome(page)));
             requestSamples.push(performanceRequests.slice(requestOffset));

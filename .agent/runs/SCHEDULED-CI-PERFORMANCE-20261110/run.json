@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-PERFORMANCE-20261110",
+  "branch": "fix/scheduled-ci-performance-20261110",
+  "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-PERFORMANCE-20261110.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_performance_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-PERFORMANCE-20261110.yaml",
+    ".agent/runs/SCHEDULED-CI-PERFORMANCE-20261110/run.json",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "docs/ops/iterations/scheduled_ci_performance_20261110.md",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source, registered local Make entries and exact failed full-lane performance evidence; no budget relaxation"
+  },
+  "layer": {
+    "formal_product_layer": "P1",
+    "layer_target": "construction capability registry startup projection",
+    "module": "smart_construction_core capability registry",
+    "standard_vs_user_specific": "construction product standard",
+    "why_here": "The capability registry owns startup capability authorization and the published native-action binding used by system.init and the capability catalog.",
+    "why_not_elsewhere": "Changing frontend ordering, budgets or navigation policy would hide a repeated backend authority calculation and weaken the user-experience contract.",
+    "blast_radius": "Capability list, system.init capability payload and capability catalog timing; authorization and entry-target semantics remain unchanged.",
+    "exclusions": [
+      "budget threshold changes",
+      "ACL or navigation semantic changes",
+      "business data",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "capability_guard": {
+      "target": "verify.capability.provider.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/capability_registry.py",
+        "scripts/verify/capability_provider_guard.py",
+        "scripts/verify/baselines/capability_provider_guard.json"
+      ]
+    },
+    "capability_registry_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py"
+      ]
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean candidate through the protected PR flow, require exact-head checks, merge, then dispatch the full frontend release lane on the resulting main SHA."
+}
