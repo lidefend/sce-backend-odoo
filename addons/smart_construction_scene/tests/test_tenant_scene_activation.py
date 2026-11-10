@@ -1073,7 +1073,13 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             def _apply_company_route_scope(self, authority):
                 return authority
         with patch.object(odoo_mod, "api", types.SimpleNamespace(model=lambda fn: fn), create=True), \
-             patch.object(odoo_mod, "models", types.SimpleNamespace(Model=Parent), create=True):
+             patch.object(odoo_mod, "models", types.SimpleNamespace(Model=Parent), create=True), \
+             patch.object(
+                 odoo_mod,
+                 "tools",
+                 types.SimpleNamespace(ormcache=lambda *args, **kwargs: lambda fn: fn),
+                 create=True,
+             ):
             module = _load("nav01_business_policy_model", SCENE_DIR / "models/product_policy.py")
         fixture = self
         states = {1: {"business.v1:project.management": True}, 2: {}}

@@ -371,6 +371,56 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.contract.architecture.suite"],
         )
         for path in (
+            "addons/smart_construction_core/__init__.py",
+            "addons/smart_construction_core/core_extension.py",
+            "addons/smart_construction_core/services/capability_registry.py",
+            "addons/smart_construction_scene/services/capability_scene_targets.py",
+            "addons/smart_core/core/capability_provider.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.daily.permission_truth.capability.orm"],
+                )
+        for path in (
+            "addons/smart_construction_scene/models/product_policy.py",
+            "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.daily.permission_truth.capability.orm",
+                        "verify.navigation.publication_consumers.unit",
+                    ],
+                )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/models/support/product_scenario.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+            ]),
+            ["verify.scene.company_route_scope_cache.orm"],
+        )
+        for path in (
+            "scripts/verify/frontend_acceptance_login_probe.py",
+            "scripts/verify/test_frontend_acceptance_login_probe.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.acceptance_login_probe.unit"],
+                )
+        self.assertEqual(
+            select_targets(["scripts/ci/personal_data_false_positives.json"]),
+            ["verify.repository.clean_history"],
+        )
+        for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",
         ):

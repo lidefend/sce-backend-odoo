@@ -124,6 +124,7 @@
     "codex/nav-01-sidebar-canonical-closeout": ".agent/runs/NAV-01-CLOSEOUT/run.json",
     "fix/fe-polish-b1-20261109": ".agent/runs/FE-POLISH-B1-20261109/run.json",
     "fix/fe-iteration-efficiency-20261109": ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",
+    "fix/capability-load-performance-20261110": ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
     "feature/fe-user-flow-closure-20261110": ".agent/runs/FE-USER-FLOW-CLOSURE-20261110/run.json"
   }
 }

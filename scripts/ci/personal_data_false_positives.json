@@ -567,6 +567,13 @@
       "blob_id": "535c1cae1690f1973c62a12c4a34eb5c0ac6dcd8",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_fixture_values_unchanged_from_reviewed_af6700_after_explicit_native_entry_grant_test_setup"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "578ab14089ea852ce60f7fa96da3f27eec3f4b96",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_historical_permission_fixture_blob_unchanged_by_capability_performance_batch"
     }
   ]
 }

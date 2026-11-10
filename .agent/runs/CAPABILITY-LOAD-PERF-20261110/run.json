@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "id": "CAPABILITY-LOAD-PERF-20261110",
+  "branch": "fix/capability-load-performance-20261110",
+  "baseline_sha": "d014af2e8309f8b4d5dfa55a94967474ad83941f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
+  "record": "docs/ops/iterations/capability_load_performance_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
+    ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/capability_load_performance_20261110.md",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/__init__.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "make/dev.mk",
+    "make/runtime_ops.mk",
+    "scripts/verify/frontend_acceptance_login_probe.py",
+    "scripts/verify/test_frontend_acceptance_login_probe.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "main@d014af2 failed release evidence plus registered local unit and ORM entries; no budget relaxation"
+  },
+  "layer": {
+    "formal_product_layer": "P0 + P1 + P4",
+    "layer_target": "capability startup projection and request-scoped reuse",
+    "module": "smart_core capability provider; smart_construction_core capability registry; smart_construction_scene target/scope projection",
+    "standard_vs_user_specific": "platform mechanism and construction product standard",
+    "why_here": "The provider owns hook transport and timing, while the P1 registry and scene projection own capability authorization and entry-target derivation.",
+    "why_not_elsewhere": "Frontend caching or budget changes would hide repeated backend authority/projection work and weaken the governing performance evidence; the P4 probe may only wait for backend auth readiness and must not relax credential rejection.",
+    "blast_radius": "system.init capability loading only; published route sets, ACL decisions, navigation identities and target payload semantics must remain byte-equivalent.",
+    "exclusions": [
+      "frontend product code",
+      "performance budget changes",
+      "ACL/navigation/contract semantic changes",
+      "full release lane",
+      "deploy"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "capability_guard": {
+      "target": "verify.capability.provider.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "scripts/verify/capability_provider_guard.py",
+        "scripts/verify/baselines/capability_provider_guard.json"
+      ]
+    },
+    "auth_probe_tool": {
+      "target": "verify.frontend.acceptance_login_probe.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_acceptance_login_probe.py",
+        "scripts/verify/test_frontend_acceptance_login_probe.py"
+      ]
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/guards.mk"
+      ]
+    },
+    "repository_clean_history": {
+      "target": "verify.repository.clean_history",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "config/security/secret_scan_false_positives.v1.json",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ci/test_personal_data_scan.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/parallel_scan.py",
+        "scripts/ci/trusted_scan_group.py",
+        "scripts/verify/repository_clean_history_guard.py"
+      ]
+    },
+    "capability_registry_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/capability-registry-orm-retry2.log"
+      },
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "scene_company_route_scope_cache_orm": {
+      "target": "verify.scene.company_route_scope_cache.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/scene-company-route-scope-cache-target.log"
+      },
+      "inputs": [
+        "make/dev.mk",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/tests/__init__.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/profiles/scene_registry_content.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py"
+      ]
+    },
+    "performance_probe": {
+      "target": "verify.frontend.delivery_hardening.release.performance_probe",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-env-readback.log"
+      },
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/frontend_acceptance_login_probe.py",
+        "scripts/verify/test_frontend_acceptance_login_probe.py",
+        "config/frontend/release_performance_budgets_v1.json",
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    },
+    "navigation_publication": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Targeted capability and performance checks passed; keep the full release lane and publication paused pending explicit closure."
+}
