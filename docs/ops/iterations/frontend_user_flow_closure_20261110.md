@@ -36,7 +36,7 @@ any frontend defect is fixed. Verdicts are limited to:
 
 | Capability | Contract declaration | Shared interpretation | Public consumer | Production entry | User behavior evidence | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| Object and readout | `contracts/domain/payment-request.yaml`; runtime V2 field/status contract | `businessValuePresentation.ts`, `fieldSemantics.ts` | `listCellPresentation.ts`, `collectionKanbanPresentation.ts`, `FieldValue.vue`, `ProfessionalBusinessValueControl.vue` | 付款申请 list action 880 / menu 559; record detail/form routes | 24-case value matrix and 8 counterexamples PASS; current My Work shows authoritative amount and identity; current list surface proves shared readout across states/viewports; same-record list/detail/kanban comparison not separately captured | already fulfilled for shared interpretation; residual runtime evidence gap is limited to an explicit same-record cross-page capture |
+| Object and readout | `contracts/domain/payment-request.yaml`; runtime V2 field/status contract | `businessValuePresentation.ts`, `fieldSemantics.ts` | `listCellPresentation.ts`, `collectionKanbanPresentation.ts`, `FieldValue.vue`, `ProfessionalBusinessValueControl.vue` | 付款申请 list action 880 / menu 559; record detail/form routes | 24-case value matrix and 8 counterexamples PASS; current `FE-JOURNEY-APPROVAL-001` retains identity and `¥20.00` from the My Work card through the approval summary to the approved detail without divergence | already fulfilled for the selected record across My Work collection/action summary/detail; business-list and kanban renderer branches remain runtime-unverified |
 | Form controls | action/page contract + native modifiers; `payment.request` domain state/capabilities | `canonicalFormRenderer.ts`, `formSection.mapper.ts` | `FormSection`, professional base/business/relation/detail controls | 付款申请 edit form action 881 / menu 560 | current `FE-DELIVERY-HARDENING-001` introduced two settlement lines, inline-edited 200→150, persisted/read back 150, then restored 0 rows / 20.00; 177 canonical presenter and save-recovery cases PASS | already fulfilled |
 | Actions and feedback | `payment.request.available_actions` -> `payment.request.execute`; workflow contract status/action facts | `useRecordActionPresentation.ts`, `professionalWorkflowModel.ts` | `CanonicalActionBar.vue`, `ProductPageHeader.vue`, `ScPopover`, `ScDropdown` | form header/body/overflow and My Work 提交/批准 actions | current My Work J07 submitted `FE-JOURNEY-PAYMENT-001`; J08 reviewer approved `FE-JOURNEY-APPROVAL-001`; missing reject reason left data unchanged; 390/1440 responsive and project-member isolation PASS | already fulfilled |
 | Pages and collections | action/page contract, collection/list profile, field roles | `listCellPresentation.ts`, `collectionViewRuntime` | `ListPage`, `CollectionPattern`, table/card/mobile-row components | 付款申请 list action 880 / menu 559 | current generic list matrix is 18/18 PASS at six viewports; current payment-specific browser begins at its declared record rather than traversing the list, while M7 payment-list observation is from earlier `f78a263` | runtime unverified for the current payment list-entry branch |
@@ -80,7 +80,7 @@ The managed acceptance runtime served revision
 | Evidence | Result | Artifact |
 | --- | --- | --- |
 | Payment request detail collection | PASS: two settlement lines, inline edit 200→150, authoritative readback 150, restored to 0 rows / amount 20.00, 0 problems | `.runtime/final-acceptance/payment-request/7895f97569e1/report.json`, SHA-256 `101d8d4ecf82becd1b9b94c4f08d746c74f4755a3709234be9789f7c3baee3b0` |
-| My Work payment handling | PASS: J07 submit and return, J08 approval, role worklist update, reject-without-reason safety, company A/B/A isolation, project-member isolation; 1440/1280/390 PASS | `.runtime/final-acceptance/my-work-approval/report.json`, SHA-256 `e829aa5700baf312f54aa895707cb02a308b9e14f701871c75bd46ca2aa35fa6` |
+| My Work payment handling | PASS: J07 submit and return, J08 approval, same `FE-JOURNEY-APPROVAL-001` identity and `¥20.00` readout on work card, approval summary and approved detail, role worklist update, reject-without-reason safety, company A/B/A isolation, project-member isolation; 1440/1280/390 PASS | `.runtime/final-acceptance/my-work-approval/report.json`, SHA-256 `3f53f7e59c2a512216bd97a20b73ccfead1f64725b3eb859543f17a7cb4a43c8` |
 | Page presentation | PASS: one governed target, 0 mutations, 0 errors | `.runtime/final-acceptance/frontend-presentation/header.json`, SHA-256 `4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699` |
 | List structure | PASS: full 18-state matrix, 0 failures | `.runtime/final-acceptance/list-surface-structure.json`, SHA-256 `196d712b6eb0ff6688744a5262abe0e273e4ef69eca9ce65da33884fb9e079b9` |
 | Relation roundtrip | PASS: 13 declared entries, 3 opened, 0 blocking differences, 0 denied requests, 0 console errors | `.runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json`, SHA-256 `2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000` |
@@ -106,8 +106,9 @@ interaction behavior changed.
 ## Status
 
 - Coverage reconciliation: completed.
-- Current runtime gap: the payment-list entry/return branch is explicitly
-  unverified. Payment detail edit/save/readback, My Work submission/approval,
+- Current runtime gap: the direct payment business-list entry/return and
+  same-record kanban branches remain unverified. Payment detail
+  edit/save/readback, My Work submission/approval, same-record amount readout,
   role isolation and My Work/relation return are current-bound and PASS.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.

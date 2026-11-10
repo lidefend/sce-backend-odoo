@@ -78,7 +78,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Close or explicitly retain the payment-list entry/return evidence gap, then perform the FE-01/FE-02 same-record cross-page readout comparison.",
+  "next_exact_step": "Proceed to FE-03 with the current-bound payment and My Work evidence retained; separately retain the direct payment business-list entry and same-record kanban branches as runtime-unverified.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
@@ -141,7 +141,18 @@
       "failure_paths": "reject without reason left data unchanged",
       "responsive": [1440, 1280, 390],
       "report": ".runtime/final-acceptance/my-work-approval/report.json",
-      "report_sha256": "e829aa5700baf312f54aa895707cb02a308b9e14f701871c75bd46ca2aa35fa6"
+      "report_sha256": "3f53f7e59c2a512216bd97a20b73ccfead1f64725b3eb859543f17a7cb4a43c8",
+      "cross_page_readout": {
+        "status": "passed",
+        "identity": "FE-JOURNEY-APPROVAL-001",
+        "amount": "¥20.00",
+        "surfaces": [
+          "My Work work card",
+          "approval dialog summary",
+          "approved payment detail"
+        ],
+        "workflow_state": "approved"
+      }
     },
     "current_runtime_suites": {
       "status": "passed",
