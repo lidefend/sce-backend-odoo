@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 212,
+    "odoo_tags": 213,
     "gated": 5,
-    "on_demand": 58,
-    "unwired": 149,
-    "odoo_tag_declarations": 436,
+    "on_demand": 63,
+    "unwired": 145,
+    "odoo_tag_declarations": 437,
     "gated_declarations": 101,
-    "uncovered_declarations": 335,
+    "uncovered_declarations": 336,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -645,6 +645,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "approval_contract_closure",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.approval.contract_closure.orm :: approval_contract_closure"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "approval_policy_feedback",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -750,14 +764,16 @@
     },
     {
       "group": "capability_registry",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.capability.identity_boundary.orm :: /TestCapabilityRegistryService (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -1663,14 +1679,16 @@
     },
     {
       "group": "payment_domain_permission_isolation",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.payment.authorization_boundary.orm :: payment_domain_permission_isolation"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -1876,14 +1894,16 @@
     },
     {
       "group": "product_policy_fact_authority",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.capability.identity_boundary.orm :: /TestProductPolicyFactAuthority (class selection)"
+      ],
       "disposition": "class-selected"
     },
     {
@@ -2328,14 +2348,16 @@
     },
     {
       "group": "scene_publish_usage_backend",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.scene.publication_authority.orm :: scene_publish_usage_backend"
+      ],
       "disposition": "wire-pending"
     },
     {
