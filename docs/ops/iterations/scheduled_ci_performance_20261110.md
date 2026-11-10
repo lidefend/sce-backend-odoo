@@ -58,3 +58,8 @@ changes remain bound to the same action authority.
 
 The generated complexity and split-plan reports refresh only the changed line
 counts for the capability registry and its test.
+
+The capability-registry routing rule makes
+`verify.daily.permission_truth.capability.orm` a referenced target instead of a
+dead surface, so its stale zero-reference disposition is removed from the
+verification-lane register.

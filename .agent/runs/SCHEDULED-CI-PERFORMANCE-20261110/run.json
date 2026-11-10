@@ -15,6 +15,7 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/scheduled_ci_performance_20261110.md",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
