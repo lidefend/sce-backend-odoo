@@ -698,6 +698,11 @@ RULES = (
     ), (
         "verify.frontend.acceptance_login_probe.unit",
     )),
+    Rule((
+        "scripts/ci/personal_data_false_positives.json",
+    ), (
+        "verify.repository.clean_history",
+    )),
     # The payment action contract's reason presentation is consumed by the
     # contract action projector; keep the producer and its consumer test in one
     # executable routing unit instead of leaving a backend-only path unmapped.

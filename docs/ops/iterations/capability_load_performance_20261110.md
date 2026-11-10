@@ -121,6 +121,7 @@
   capability provider/registry/scene target -> capability ORM；
   product policy/场景测试 -> capability ORM + navigation publication；
   登录探针 -> 本批次认证就绪单测。
+  个人数据误报 registry -> `verify.repository.clean_history`。
 - `verify.daily.permission_truth.capability.orm` 原为零引用 disposition；接入 run 和
   planner 后该 disposition 已 stale，已通过 lane coverage 受管入口移除。
 - 首次 `ci.local.quick.full` 的 7/8 分片通过；最后安全分片命中本批未修改的

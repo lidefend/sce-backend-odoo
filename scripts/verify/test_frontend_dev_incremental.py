@@ -403,6 +403,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.frontend.acceptance_login_probe.unit"],
                 )
+        self.assertEqual(
+            select_targets(["scripts/ci/personal_data_false_positives.json"]),
+            ["verify.repository.clean_history"],
+        )
         for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",
