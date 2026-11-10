@@ -31,6 +31,9 @@ PERSONAL_DATA_FALSE_POSITIVES_PATH = "scripts/ci/personal_data_false_positives.j
 SEMANTIC_UNION_CONFLICT_PATH = (
     "scripts/verify/frontend_my_work_approval_browser.mjs"
 )
+ADDITIVE_MERGE_EQUIVALENCE_PATHS = (
+    "scripts/verify/frontend_dev_incremental.py",
+)
 SEMANTIC_UNION_REQUIRED_MARKERS = (
     (
         "upstream approval-detail readback",
@@ -299,6 +302,54 @@ def patch_id(root: Path, left: str, right: str, *, exclude: tuple[str, ...] = ()
     if result.returncode or not result.stdout.strip():
         raise SyncError("unable to calculate responsibility patch identity")
     return result.stdout.split()[0]
+
+
+def path_patch_id(root: Path, left: str, right: str, path: str) -> str:
+    diff = run(root, "diff", "--binary", left, right, "--", path).stdout
+    result = subprocess.run(
+        ["git", "patch-id", "--stable"],
+        cwd=root,
+        env=sanitized_environment(),
+        input=diff,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.returncode or not result.stdout.strip():
+        raise SyncError(f"unable to calculate responsibility patch identity: {path}")
+    return result.stdout.split()[0]
+
+
+def additive_merge_equivalent(
+    root: Path, old_base: str, old_head: str, new_base: str, new_head: str, path: str
+) -> bool:
+    """Prove an explicitly reviewed additive merge preserved every added line."""
+    if path not in ADDITIVE_MERGE_EQUIVALENCE_PATHS:
+        return False
+    counts: list[tuple[int, int]] = []
+    for left, right in ((old_base, old_head), (new_base, new_head)):
+        rows = git_output(root, "diff", "--numstat", left, right, "--", path).splitlines()
+        if len(rows) != 1:
+            return False
+        fields = rows[0].split("\t", 2)
+        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+            return False
+        counts.append((int(fields[0]), int(fields[1])))
+    old_add, old_delete = counts[0]
+    new_add, new_delete = counts[1]
+    if old_add <= 0 or old_delete or new_delete or old_add != new_add:
+        return False
+
+    def added_lines(left: str, right: str) -> list[str]:
+        diff = run(root, "diff", "--unified=0", left, right, "--", path).stdout
+        return [
+            line[1:]
+            for line in diff.splitlines()
+            if line.startswith("+") and not line.startswith("+++ ")
+        ]
+
+    return added_lines(old_base, old_head) == added_lines(new_base, new_head)
 
 
 def recovery_path(root: Path, branch: str, head: str) -> Path:
@@ -949,10 +1000,27 @@ def sync(plan: SyncPlan) -> SyncResult:
             for path in old_stable_paths
             if path not in patch_excludes and path not in set(main_equivalent_paths)
         )
-        if stable_identity_paths and patch_id(
-            plan.root, plan.replay_base, plan.head, exclude=patch_excludes
-        ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
-            raise SyncError("responsibility patch identity changed after sync")
+        changed_patch_ids = []
+        for path in stable_identity_paths:
+            old_patch = path_patch_id(plan.root, plan.replay_base, plan.head, path)
+            new_patch = path_patch_id(plan.root, plan.new_main, new_head, path)
+            if (
+                old_patch != new_patch
+                and not additive_merge_equivalent(
+                    plan.root,
+                    plan.replay_base,
+                    plan.head,
+                    plan.new_main,
+                    new_head,
+                    path,
+                )
+            ):
+                changed_patch_ids.append(path)
+        if changed_patch_ids:
+            raise SyncError(
+                "responsibility patch identity changed after sync: "
+                + ", ".join(changed_patch_ids[:8])
+            )
         generated_commit = regenerate_reports(plan) if plan.regenerate_evidence else None
         new_head = git_output(plan.root, "rev-parse", "HEAD")
     except Exception as exc:

@@ -541,6 +541,58 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         )
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
+    def test_additive_merge_equivalence_requires_identical_added_lines(self) -> None:
+        path = syncer.ADDITIVE_MERGE_EQUIVALENCE_PATHS[0]
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        git(self.root, "switch", "main")
+        target.write_text("base\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add additive subject")
+        additive_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "-c", "feature/additive-topic", additive_base)
+        target.write_text("base\nlocal-one\nlocal-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add local rules")
+        additive_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        target.write_text("base\nmain-one\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "add main rule")
+        additive_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "-c", "feature/additive-merged", additive_main)
+        target.write_text("base\nmain-one\nlocal-one\nlocal-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "merged additive rules")
+        additive_merged = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        self.assertTrue(
+            syncer.additive_merge_equivalent(
+                self.root,
+                additive_base,
+                additive_head,
+                additive_main,
+                additive_merged,
+                path,
+            )
+        )
+        target.write_text("base\nmain-one\nlocal-one\nchanged-local-two\n", encoding="utf-8")
+        git(self.root, "add", path)
+        git(self.root, "commit", "-m", "change local rule")
+        changed_merged = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        self.assertFalse(
+            syncer.additive_merge_equivalent(
+                self.root,
+                additive_base,
+                additive_head,
+                additive_main,
+                changed_merged,
+                path,
+            )
+        )
+
     def test_main_equivalent_path_becomes_empty_without_losing_responsibility(self) -> None:
         (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
         git(self.root, "add", "equivalent.txt")
@@ -704,7 +756,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
     def test_squash_dependency_patch_drift_restores_original_head(self) -> None:
         args = self.squash_dependency()
         plan = self.plan(**args)
-        with mock.patch.object(syncer, "patch_id", side_effect=["before", "after"]):
+        with mock.patch.object(syncer, "path_patch_id", side_effect=["before", "after"]):
             with self.assertRaisesRegex(syncer.SyncError, "patch identity changed.*restored"):
                 syncer.sync(plan)
         self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
@@ -1018,7 +1070,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
 
     def test_post_sync_verification_failure_restores_original_head(self) -> None:
         plan = self.plan()
-        with mock.patch.object(syncer, "patch_id", side_effect=("before", "after")):
+        with mock.patch.object(syncer, "path_patch_id", side_effect=("before", "after")):
             with self.assertRaisesRegex(syncer.SyncError, "original HEAD restored"):
                 syncer.sync(plan)
         self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
