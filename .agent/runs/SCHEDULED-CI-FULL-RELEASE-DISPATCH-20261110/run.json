@@ -14,6 +14,7 @@
   "docs/architecture/text_containment_allowlist.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+  "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
     "addons/smart_construction_core/core_extension_policy_maps.py",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
