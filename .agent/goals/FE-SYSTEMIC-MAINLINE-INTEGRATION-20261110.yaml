@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110
   title: "Frontend systemic convergence mainline integration and review closure"
-  status: active
+  status: completed
   formal_product_layer: P4 ops delivery tool
   layer_target: exact-candidate publication, review, CI and protected merge
   module: frontend systemic convergence branch and navigation authority fix

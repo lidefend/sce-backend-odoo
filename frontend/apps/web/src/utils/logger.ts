@@ -20,10 +20,10 @@ export function createLogger(
     .includes(String(env.VITE_DEBUG_LOGS || '').trim().toLowerCase());
   return Object.freeze({
     debug(message: string, ...args: LogArgs) {
-      if (dev && (debugConfigured || runtimeDebugRequested())) sink.debug(message, ...args);
+      if ((dev && debugConfigured) || runtimeDebugRequested()) sink.debug(message, ...args);
     },
     info(message: string, ...args: LogArgs) {
-      if (dev && (debugConfigured || runtimeDebugRequested())) sink.info(message, ...args);
+      if ((dev && debugConfigured) || runtimeDebugRequested()) sink.info(message, ...args);
     },
     warn(message: string, ...args: LogArgs) {
       if (dev) sink.warn(message, ...args);
