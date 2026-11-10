@@ -83,7 +83,31 @@
 ### 未运行
 
 - 完整发布长链：按要求暂停。
-- 登录/公司切换性能复测：ORM 已通过，等待下一步聚焦性能探针。
+
+### 聚焦性能结果
+
+`verify.frontend.delivery_hardening.release.performance_probe` 在
+`9bec117463ebe88c45b5a8ed5d122b87ec4a5aab` 上 PASS：
+
+| 场景 | 中位数 | P95 | 预算中位数 | 结果 |
+| --- | ---: | ---: | ---: | --- |
+| 登录到可交互 | 2780 ms | 3129 ms | 3000 ms | PASS |
+| My Work | 565 ms | 1129 ms | 1200 ms | PASS |
+| 付款详情 | 463 ms | 574 ms | 1200 ms | PASS |
+| 结算详情 | 400 ms | 438 ms | 1200 ms | PASS |
+| 实付详情 | 314 ms | 356 ms | 1200 ms | PASS |
+| 新建表单 | 1447 ms | 1657 ms | 1600 ms | PASS |
+| 公司切换 | 1401 ms | 1539 ms | 2000 ms | PASS |
+
+登录启动剖面中，`load_capabilities_for_user` 已从 `10.7–11.0 s` 降至 `21 ms`；
+其中 published route authority 为 `3 ms`，能力循环访问/状态判定为 `4 ms`。
+
+原始证据：
+
+- `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-probe-clean-9bec11746.log`
+- `artifacts/frontend-delivery-hardening/performance.json`
+- `artifacts/frontend-delivery-hardening/performance.json` SHA-256:
+  `be5b888311f4e854cdbc9227100b41809c8c0b2180c756fc6ea919aefacfce6d`
 
 ### 验证工具问题
 

@@ -108,7 +108,7 @@
       "target": "verify.frontend.delivery_hardening.release.performance_probe",
       "kind": "runtime",
       "readback": {
-        "artifact": "artifacts/frontend-delivery-hardening/performance.json"
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-env-readback.log"
       },
       "inputs": [
         "make/runtime_ops.mk",
