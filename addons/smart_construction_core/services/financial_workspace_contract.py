@@ -593,11 +593,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         if not action_key:
             continue
         declared_method = str(row.get("method") or "").strip()
-        methods = list(dict.fromkeys(
-            method
-            for method in [declared_method, *method_aliases.get(action_key, [])]
-            if method
-        ))
+        methods = [declared_method] if declared_method else list(method_aliases.get(action_key, []))
         for method in filter(None, methods):
             label = str(row.get("label") or action_key)
             business_available = bool(row.get("business_available"))

@@ -452,10 +452,10 @@ class TestApprovalContractClosure(BusinessTransactionCase):
         )
         self.assertFalse(
             any(
-                (row.get("button") or {}).get("name") == "reject_tier"
+                (row.get("button") or {}).get("name") in {"reject_tier", "action_on_tier_rejected"}
                 for row in (payment_data.get("actionContract") or {}).get("actionRuleList", [])
             ),
-            "the runtime business-action projection must not republish the legacy reject method",
+            "the runtime business-action projection must publish exactly one reject method",
         )
         reject = actions["action_approval_reject"]
         self.assertEqual(reject.get("required_params"), ["reason"], reject)
