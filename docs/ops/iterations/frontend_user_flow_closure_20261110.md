@@ -89,7 +89,7 @@ database `sc_frontend_acceptance`.
 | Evidence | Result | Artifact |
 | --- | --- | --- |
 | Payment request detail collection | PASS: two settlement lines, inline edit 200→150, authoritative readback 150, restored to 0 rows / amount 20.00, 0 problems | `.runtime/final-acceptance/payment-request/7895f97569e1/report.json`, SHA-256 `101d8d4ecf82becd1b9b94c4f08d746c74f4755a3709234be9789f7c3baee3b0` |
-| My Work payment handling | PASS: J07 submit and return, J08 approval, same `FE-JOURNEY-APPROVAL-001` identity and `¥20.00` readout on work card, approval summary and approved detail, role worklist update, reject-without-reason safety, company A/B/A isolation, project-member isolation; 1440/1280/390 PASS | `.runtime/final-acceptance/my-work-approval/report.json`, SHA-256 `3f53f7e59c2a512216bd97a20b73ccfead1f64725b3eb859543f17a7cb4a43c8` |
+| My Work payment handling | PASS at exact source `6618f3dba6efb2dfe82a25bf90f7bfb4764a77b3`: J07 submit and return, J08 approval, same `FE-JOURNEY-APPROVAL-001` identity and `¥20.00` readout on work card, approval summary and exactly one canonical payment detail amount field, role worklist update, reject-without-reason safety, company A/B/A isolation, project-member isolation; 1440/1280/390 PASS | `.runtime/final-acceptance/my-work-approval/report.json`, SHA-256 `1e35e43ab5a3d90fc65b92ab5342198ee94ff955954da81ccb83de39e2c73ba1` |
 | Page presentation | PASS: one governed target, 0 mutations, 0 errors | `.runtime/final-acceptance/frontend-presentation/header.json`, SHA-256 `4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699` |
 | List structure | PASS: full 18-state matrix, 0 failures | `.runtime/final-acceptance/list-surface-structure.json`, SHA-256 `196d712b6eb0ff6688744a5262abe0e273e4ef69eca9ce65da33884fb9e079b9` |
 | Relation roundtrip | PASS: 13 declared entries, 3 opened, 0 blocking differences, 0 denied requests, 0 console errors | `.runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json`, SHA-256 `2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000` |
@@ -123,7 +123,7 @@ standard preview suite now has 132 passing tests including history replay.
 
 | Surface | Result | Evidence |
 | --- | --- | --- |
-| Ordinary collection | fulfilled | Current list matrix 18/18 across 1440/1024/768/521/520/390; row identity and responsive components pass static locks |
+| Ordinary collection | fulfilled | Accepted list matrix 18/18 across 1440/1024/768/521/520/390 at source `7895f9756`; row identity and responsive components pass static locks |
 | Readonly form | fulfilled | Current approved payment detail keeps identity/status/amount; page identity and financial workspace presentation pass |
 | Edit form | fulfilled | Current payment detail collection edit/save/readback and My Work submit path pass |
 | Action entry | fulfilled for represented pages | Header/body/My Work actions pass; native action guard has 15 cases and row action identity 16 cases |
@@ -175,7 +175,7 @@ No second frontend business state machine was introduced.
 - Confirmed frontend product defects in this batch: 0.
 - Fixed validation evidence defects: stale overlay geometry marker; missing
   same-record My Work/detail amount assertion; rebase-safe preview receipt
-  identity.
+  identity. The final My Work report is rebound to exact source `6618f3dba`.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.

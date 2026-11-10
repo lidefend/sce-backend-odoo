@@ -3,7 +3,7 @@
   "id": "FE-USER-FLOW-CLOSURE-20261110",
   "branch": "feature/fe-user-flow-closure-20261110",
   "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
   "record": "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
   "scope": [
@@ -145,13 +145,13 @@
     },
     "payment_request_my_work_runtime": {
       "status": "passed",
-      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "head": "6618f3dba6efb2dfe82a25bf90f7bfb4764a77b3",
       "j07": "submit, detail return, company A/B/A",
       "j08": "approval and authoritative worklist update",
       "failure_paths": "reject without reason left data unchanged",
       "responsive": [1440, 1280, 390],
       "report": ".runtime/final-acceptance/my-work-approval/report.json",
-      "report_sha256": "3f53f7e59c2a512216bd97a20b73ccfead1f64725b3eb859543f17a7cb4a43c8",
+      "report_sha256": "1e35e43ab5a3d90fc65b92ab5342198ee94ff955954da81ccb83de39e2c73ba1",
       "cross_page_readout": {
         "status": "passed",
         "identity": "FE-JOURNEY-APPROVAL-001",
@@ -161,12 +161,14 @@
           "approval dialog summary",
           "approved payment detail"
         ],
+        "canonical_amount_field": "exactly one visible payment.request amount field",
         "workflow_state": "approved"
       }
     },
-    "current_runtime_suites": {
+    "prior_accepted_runtime_suites": {
       "status": "passed",
       "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "reuse_basis": "Accepted source-bound suite evidence is retained as prior evidence because the later source changes are validation-tool and evidence-binding changes; it is not represented as a rerun at the current My Work head.",
       "frontend_presentation": {
         "path": ".runtime/final-acceptance/frontend-presentation/header.json",
         "sha256": "4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699"
@@ -213,7 +215,8 @@
       "confirmed_frontend_product_defects": 0,
       "fixed_validation_tool_defects": [
         "overlay lifecycle stale boxSizing marker",
-        "My Work browser lacked same-record cross-page readout assertion"
+        "My Work browser lacked same-record cross-page readout assertion",
+        "preview receipt retained a pre-rebase base SHA after history replay"
       ],
       "pending_backend_contract_items": [
         "CD-20261110-01 structured My Work record identity",
