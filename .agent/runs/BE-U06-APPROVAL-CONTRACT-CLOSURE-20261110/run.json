@@ -65,11 +65,13 @@
     "batch": "BE-CLOSE-01",
     "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
     "candidate_head": "5cf3b42c3c838b6e28651245c5c46d4a5ca98f19",
-    "commit_count": 32,
+    "product_acceptance_head": "5cf3b42c3c838b6e28651245c5c46d4a5ca98f19",
+    "tooling_remediation_head": "07a2b03e5c9da6c5500b917bb3d47d7d4c84368a",
+    "commit_count": 38,
     "changed_file_count": 113,
     "independent_review": {
-      "result": "PENDING_S1_S2_REREVIEW",
-      "head": "ecbd2a537d3b1e94c193cd7ed8a6bf12ef7397d0",
+      "result": "PENDING_FINAL_REREVIEW",
+      "head": "07a2b03e5c9da6c5500b917bb3d47d7d4c84368a",
       "blocking_findings": []
     },
     "runtime_evidence": {
@@ -380,5 +382,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the clean 34/34 receipt and semantic-union fix, run ci.delivery.freeze.prepare, request read-only re-review of S1/S2, then stop before push or PR creation."
+  "next_exact_step": "Commit the final evidence record, run ci.delivery.freeze.prepare, obtain read-only approval of S1/S2 remediation, then stop before push or PR creation."
 }

@@ -265,3 +265,16 @@ baseline rebuild。前端 release 产物和 standard preview 身份均重新绑�
 该回执绑定 clean 候选和当前 runtime tree；S2 修改仅属于 P4 同步/验证工具，不改变
 `addons`、`frontend`、产品契约或审批执行链，因此 `5cf3b42c3` 上取得并在
 `e4e1bd2ef` 文档提交后承接的审批浏览器报告仍有效。
+
+后续复审进一步发现校验函数曾被重复定义。提交 `07a2b03e5` 已删除旧短校验函数，只保留
+同时检查“主线新增行未丢失”和“主线删除行未复活”的实现，并新增删除分支反例。该提交后再次执行
+`verify.workspace.branch.sync-main`，51/51 PASS。另一份 clean 34/34 回执
+`.runtime/frontend-dev-validation/executions/20261110T171441Z-363244-182236110/receipt.json`
+绑定 `62192ba65606c0e304b1dba0061ddb2e6e88379f`，随后 `07a2b03e5` 仅清理重复定义，
+未改变任何产品输入。
+
+因此最终证据关系明确为：
+
+- 产品验收身份：`5cf3b42c3c838b6e28651245c5c46d4a5ca98f19`
+- P4 收口身份：`07a2b03e5c9da6c5500b917bb3d47d7d4c84368a`
+- 后续文档提交只记录上述身份，不改变产品、契约、前端或数据库。
