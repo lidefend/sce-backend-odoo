@@ -1,78 +1,38 @@
 version: 1
 entries:
-- group: product_policy_fact_authority
-  kind: odoo_tag
-  status: unwired
-  owner: construction-product
-  dispose: class-selected
-  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
-  selection:
-    module: smart_construction_core
-    tag: sc_gate
-    file: test_product_policy_fact_authority.py
-    class: TestProductPolicyFactAuthority
-  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate,
-    consumed by the default module-qualified backend suite when smart_construction_core is
-    selected. A source-bound regression checks the co-tag, import and actual workflow shell
-    consumer. This is wiring evidence, not proof of current ORM execution or managed fixture coverage.
-  review_by: '2026-12-31'
-- group: scenario_direct_initialization
-  kind: odoo_tag
-  status: unwired
-  owner: construction-product
-  dispose: class-selected
-  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
-  selection:
-    module: smart_construction_core
-    tag: sc_gate
-    file: test_scenario_direct_entry_initialization.py
-    class: TestScenarioDirectInitialization
-  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate,
-    consumed by the default module-qualified backend suite when smart_construction_core is
-    selected. A source-bound regression checks the co-tag, import and actual workflow shell
-    consumer. This does not claim that registration runs a fresh-install or upgrade acceptance.
-  review_by: '2026-12-31'
 - group: acceptance_business_scene_lifecycle
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:acceptance.frontend.fixture_orm :: acceptance_business_scene_lifecycle'
-  reason: Selected by the managed fixture ORM lane. Candidate frontend CI publishes exact-head
-    method identities; backend changed-test coverage verifies the platform artifact before accepting
-    them. Wiring is not proof of a successful current execution.
-- group: acceptance_scenario_navigation_maintenance
-  kind: odoo_tag
-  status: on-demand
-  owner: construction-product
-  dispose: class-selected
-  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_scenario_navigation_maintenance'
-  reason: Navigation inputs require the managed maintenance methods in the backend execution plan.
-    Missing same-head managed evidence stays pending and blocks coverage, even if module smoke passes.
+  reason: Selected by the managed fixture ORM lane. Candidate frontend CI publishes exact-head method
+    identities; backend changed-test coverage verifies the platform artifact before accepting them. Wiring
+    is not proof of a successful current execution.
 - group: acceptance_fixture_data_space
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_data_space'
-  reason: Explicitly selected on the managed fixture carrier; current runtime execution remains
-    separately evidenced and cannot be inferred from this registry entry.
+  reason: Explicitly selected on the managed fixture carrier; current runtime execution remains separately
+    evidenced and cannot be inferred from this registry entry.
 - group: acceptance_fixture_execution_freeze
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_execution_freeze'
-  reason: Selected on the managed acceptance profile/database with nonzero summary enforcement.
-    Candidate frontend CI archives method identities, without granting ordinary ORM history reuse.
+  reason: Selected on the managed acceptance profile/database with nonzero summary enforcement. Candidate
+    frontend CI archives method identities, without granting ordinary ORM history reuse.
 - group: acceptance_fixture_gate
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_gate'
-  reason: Explicitly selected with the managed fixture tests; generic sc_gate module coverage
-    remains additive and does not stand in for the dedicated managed methods.
+  reason: Explicitly selected with the managed fixture tests; generic sc_gate module coverage remains
+    additive and does not stand in for the dedicated managed methods.
 - group: acceptance_nav_identity
   kind: odoo_tag
   status: unwired
@@ -81,6 +41,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: acceptance_scenario_navigation_maintenance
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_scenario_navigation_maintenance'
+  reason: Navigation inputs require the managed maintenance methods in the backend execution plan. Missing
+    same-head managed evidence stays pending and blocks coverage, even if module smoke passes.
 - group: acl_gate
   kind: odoo_tag
   status: unwired
@@ -138,6 +106,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: approval_contract_closure
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.approval.contract_closure.orm :: approval_contract_closure'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: approval_policy_feedback
   kind: odoo_tag
   status: on-demand
@@ -984,6 +960,22 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: product_policy_fact_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
+  selection:
+    module: smart_construction_core
+    tag: sc_gate
+    file: test_product_policy_fact_authority.py
+    class: TestProductPolicyFactAuthority
+  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate, consumed by
+    the default module-qualified backend suite when smart_construction_core is selected. A source-bound
+    regression checks the co-tag, import and actual workflow shell consumer. This is wiring evidence,
+    not proof of current ORM execution or managed fixture coverage.
+  review_by: '2026-12-31'
 - group: product_reports
   kind: odoo_tag
   status: unwired
@@ -1264,6 +1256,22 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scenario_direct_initialization
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: '.github/workflows/backend_test_suite.yml :: sc_gate/${module}'
+  selection:
+    module: smart_construction_core
+    tag: sc_gate
+    file: test_scenario_direct_entry_initialization.py
+    class: TestScenarioDirectInitialization
+  reason: The custom tag is not selected literally. Its imported ORM class carries sc_gate, consumed by
+    the default module-qualified backend suite when smart_construction_core is selected. A source-bound
+    regression checks the co-tag, import and actual workflow shell consumer. This does not claim that
+    registration runs a fresh-install or upgrade acceptance.
   review_by: '2026-12-31'
 - group: scene_delivery_policy
   kind: odoo_tag
