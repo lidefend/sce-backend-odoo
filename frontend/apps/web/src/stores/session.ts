@@ -1376,7 +1376,6 @@ export const useSessionStore = defineStore('session', {
 
       // A1: 打印本次 system.init 的有效参数
       if (debugIntent) {
-        console.group('[A1] system.init 请求诊断');
         logger.debug('1. API Base URL:', config.apiBaseUrl);
         logger.debug('2. Authorization 存在:', !!this.token);
         logger.debug('3. 入口命名空间:', config.entryBasePath);
@@ -1396,7 +1395,6 @@ export const useSessionStore = defineStore('session', {
       };
       if (debugIntent) {
         logger.debug('4. Request params:', JSON.stringify(requestParams, null, 2));
-        console.groupEnd();
       }
 
       let result: AppInitResponse;
@@ -1423,7 +1421,6 @@ export const useSessionStore = defineStore('session', {
       if (!isCurrentContextEpoch(requestEpoch)) return;
       // A1: 打印响应诊断信息
       if (debugIntent) {
-        console.group('[A1] system.init 响应诊断');
         logger.debug('1. Response keys:', Object.keys(result));
 
         // 检查 meta 字段
@@ -1448,7 +1445,6 @@ export const useSessionStore = defineStore('session', {
         } else {
           logger.debug('3. navigation.nav: 不存在');
         }
-        console.groupEnd();
       }
 
       if (debugIntent) {

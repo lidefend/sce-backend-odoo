@@ -9,7 +9,14 @@ from scripts.verify import frontend_text_containment_guard as guard
 
 
 class FrontendTextContainmentGuardTest(unittest.TestCase):
-    def make_root(self, *, important: bool = False, bad_fallback: bool = False, wrong_clamp: bool = False) -> Path:
+    def make_root(
+        self,
+        *,
+        important: bool = False,
+        governed_important: bool = False,
+        bad_fallback: bool = False,
+        wrong_clamp: bool = False,
+    ) -> Path:
         root = Path(tempfile.mkdtemp())
         web = root / "frontend/apps/web/src"
         files = {
@@ -20,6 +27,12 @@ class FrontendTextContainmentGuardTest(unittest.TestCase):
         }
         if important:
             files["frontend/apps/web/src/components/Structural.css"] += ".bad{color:red !important}"
+        if governed_important:
+            files["frontend/apps/web/src/styles/accessibility.css"] = (
+                "@media (prefers-reduced-motion: reduce) {"
+                "*{animation-duration:0.01ms !important;animation-iteration-count:1 !important;"
+                "transition-duration:0.01ms !important;scroll-behavior:auto !important;}"
+            )
         if wrong_clamp:
             files[guard.MY_WORK] = ".work-card h3{-webkit-line-clamp: 2;}"
         for relative, content in files.items():
@@ -29,7 +42,12 @@ class FrontendTextContainmentGuardTest(unittest.TestCase):
         allowlist = root / "docs/architecture/text_containment_allowlist.json"
         allowlist.parent.mkdir(parents=True)
         owner = "frontend/apps/web/src/components/Missing.vue" if bad_fallback else "frontend/apps/web/src/components/Info.vue"
-        allowlist.write_text(json.dumps({
+        policy = {
+            "importantOverrides": [{
+                "file": "frontend/apps/web/src/styles/accessibility.css",
+                "max": 4,
+                "reason": "governed reduced-motion floor",
+            }],
             "structuralOverlapExceptions": [{
                 "file": "frontend/apps/web/src/components/Structural.css",
                 "reason": "structural",
@@ -43,7 +61,8 @@ class FrontendTextContainmentGuardTest(unittest.TestCase):
                 "businessTitleMaxLines": 2,
                 "recordIdentityTemporaryMaxLines": 4,
             },
-        }), encoding="utf-8")
+        }
+        allowlist.write_text(json.dumps(policy), encoding="utf-8")
         return root
 
     def test_registered_overlap_and_zero_important_pass(self) -> None:
@@ -53,6 +72,11 @@ class FrontendTextContainmentGuardTest(unittest.TestCase):
     def test_important_fails(self) -> None:
         errors = guard.inspect(self.make_root(important=True))["errors"]
         self.assertTrue(any("!important" in error for error in errors))
+
+    def test_governed_reduced_motion_important_passes(self) -> None:
+        result = guard.inspect(self.make_root(governed_important=True))
+        self.assertEqual(result["errors"], [])
+        self.assertEqual(result["important"], 4)
 
     def test_missing_fallback_owner_fails(self) -> None:
         errors = guard.inspect(self.make_root(bad_fallback=True))["errors"]

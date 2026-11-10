@@ -13,7 +13,7 @@
 | Batch | Outcome |
 | --- | --- |
 | M1 | Information-bearing `nowrap`: 46 files / 131 declarations → 38 / 94; ellipsis overlap 27 → 12; 10 information owners retained |
-| M2 | `!important`: 41 → 0; accessibility foundations split into a shared layer |
+| M2 | `!important`: 41 → 4 governed reduced-motion declarations; accessibility foundations split into a shared layer |
 | M3 | Raw inline-style audit 32 / 98 → 26 / 91; fixed visual styling moved to classes; 28 mechanism files registered |
 | M4 | 61 split sites classified across 39 files and 19 mechanisms; record identity exception bound to `CD-20261110-01` |
 | M5 | Naked `v-html`: 4 → 1 reviewed `ScRichText` owner; readonly/restricted sanitizers retained |
@@ -56,9 +56,14 @@
 - The current metadata HEAD `8c9a9ddc8ea0cedc29253254e7686c6df2d0e56e`
   differs from reviewed product/runtime candidate
   `915644ab3c00e8cfafc94646079d90f599251c67` only in governance records.
-- Local independent review found no S0-S2 product finding. Remote required
-  checks and review-thread status remain pending until the governed PR exists;
-  this record does not substitute those exact-head gates for local evidence.
+- The subsequent exact-head review of PR #862 found six P2/P3 issues: three
+  responsive/cascade regressions, ineffective global reduced motion, a missing
+  native-navigation `action_type` path and an incomplete console gate. The R2
+  candidate closes them with focused tests and a governed reduced-motion
+  exception.
+- PR #862 currently binds remote checks to the pre-R2 head. Exact-head remote
+  checks, review-thread status and merge remain pending on the repaired SHA;
+  this record does not substitute those gates for local evidence.
 
 ## Status
 

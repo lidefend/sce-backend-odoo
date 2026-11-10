@@ -217,7 +217,13 @@ class MenuService:
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 action_id = 0
-            action_model = str(node.get("action_model") or meta.get("action_model") or "").strip()
+            action_model = str(
+                node.get("action_model")
+                or node.get("action_type")
+                or meta.get("action_model")
+                or meta.get("action_type")
+                or ""
+            ).strip()
             action = None
             if action_id and action_model and self.env is not None and action_model in self.env:
                 action = self.env[action_model].sudo().browse(action_id).exists()

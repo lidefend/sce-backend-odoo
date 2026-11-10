@@ -111,6 +111,21 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         nodes = menu_service.MenuService._menu_fact_tree_as_native([fact])
         self.assertEqual(nodes[0]['action_model'], 'ir.actions.act_window')
         self.assertEqual(service._filter_native_action_groups(nodes), [])
+        native_nodes = [{
+            'menu_id': 501,
+            'name': 'Expense',
+            'menu_xmlid': 'test.expense',
+            'action_id': 601,
+            'action_type': 'ir.actions.act_window',
+            'children': [],
+            'meta': {
+                'menu_id': 501,
+                'menu_xmlid': 'test.expense',
+                'action_id': 601,
+                'action_type': 'ir.actions.act_window',
+            },
+        }]
+        self.assertEqual(service._filter_native_action_groups(native_nodes), [])
         self.assertIsNone(service._route_entry_from_menu(
             row, route_kind='PRIMARY_NAV', source='native',
             action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
@@ -125,6 +140,9 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         filtered = service._filter_native_action_groups(nodes)
         self.assertEqual(len(filtered), 1)
         self.assertEqual(filtered[0]['action_id'], 601)
+        filtered_native = service._filter_native_action_groups(native_nodes)
+        self.assertEqual(len(filtered_native), 1)
+        self.assertEqual(filtered_native[0]['action_id'], 601)
         self.assertIsNotNone(service._route_entry_from_menu(
             row, route_kind='PRIMARY_NAV', source='native',
             action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},

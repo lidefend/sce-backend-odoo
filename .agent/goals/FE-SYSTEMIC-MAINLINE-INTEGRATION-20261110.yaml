@@ -1,36 +1,47 @@
 schema_version: 1
 goal:
   id: FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110
-  title: "Frontend systemic convergence mainline integration"
+  title: "Frontend systemic convergence mainline integration and review closure"
   status: active
   formal_product_layer: P4 ops delivery tool
   layer_target: exact-candidate publication, review, CI and protected merge
   module: frontend systemic convergence branch and navigation authority fix
   standard_vs_user_specific: platform_engineering_standard
   why_here: >
-    This batch changes no product behavior. It freezes, publishes and integrates
-    the already accepted local candidate through repository delivery controls.
+    This batch freezes, reviews, publishes and integrates the systemic-convergence
+    candidate. Review-owned corrections remain inside the same frontend and
+    navigation-authority result and do not broaden the product objective.
   why_not_elsewhere: >
-    Product code changes must not be introduced during publication; any finding
-    returns to its owning P0/P1 batch before this integration can continue.
+    New product findings return to the owning P0/P1 area and are corrected on this
+    branch before integration. They must not be hidden in publication metadata or
+    papered over by weakening guards.
   blast_radius:
     paths:
       - .agent/active-runs.json
       - .agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml
       - .agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json
+      - addons/smart_core/delivery/menu_service.py
+      - addons/smart_core/tests/
       - docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md
+      - docs/ops/iterations/frontend_systemic_m2_cascade_20261110.md
+      - docs/ops/iterations/frontend_systemic_m8_gates_20261110.md
+      - frontend/apps/web/src/
+      - scripts/verify/
   objective: >
     Publish branch feature/fe-systemic-convergence-m1-20261110 through the governed
-    GitHub PR lane, obtain exact-head required checks and independent review, then
-    merge only if every merge prerequisite remains bound to the same candidate.
+    GitHub PR lane, close exact-head independent-review findings inside the owning
+    layers, obtain exact-head required checks and independent review, then merge
+    only if every merge prerequisite remains bound to the same candidate.
   acceptance:
     - exact clean candidate is independently reviewed
+    - every exact-head review finding is either corrected with focused tests or
+      explicitly rejected with evidence
     - governed PR is created against current main
     - required exact-head workflows pass without inherited SHA evidence
     - unresolved review threads are zero
     - protected merge is performed only after the final identity recheck
   exclusions:
-    - product_code_change
+    - unrelated_product_redesign
     - contract_or_acl_change
     - database_or_fixture_write
     - deployment

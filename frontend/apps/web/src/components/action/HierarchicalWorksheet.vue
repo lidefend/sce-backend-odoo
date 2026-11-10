@@ -331,7 +331,9 @@ const visibleLeafCount = computed(() => {
   return count || (keyword.value || selectedNavigationNode.value ? 0 : recordCount.value);
 });
 const activeTabFields = computed(() => detailTabs.value.find((tab) => tab.key === activeTab.value)?.fields || []);
-const layoutStyle = computed(() => ({ gridTemplateColumns: `${navigationWidth.value}px 1px minmax(0, 1fr)` }));
+const layoutStyle = computed(() => ({
+  '--sc-worksheet-navigation-width': `${navigationWidth.value}px`,
+}));
 const mainStyle = computed(() => ({ gridTemplateRows: `minmax(320px, 1fr) 1px ${detailHeight.value}px` }));
 const tableContentWidth = computed(() => `${columns.value.reduce((sum, column) => sum + Number(column.width || 120), 0)}px`);
 const worksheetTableData = computed(() => visibleRows.value as unknown as Array<Record<string, unknown>>);
@@ -737,7 +739,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .worksheet { display: grid; min-width: 0; color: var(--sc-app-text-primary); }
 .worksheet-head { min-height: var(--sc-product-toolbar-height); border: 0; border-radius: var(--sc-component-toolbar-radius) var(--sc-component-toolbar-radius) 0 0; background: var(--sc-app-panel); box-shadow: none; }
-.worksheet-layout { display: grid; height: calc(100vh - 170px); min-height: 600px; overflow: hidden; border: 0; border-radius: 0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel); background: var(--sc-app-panel); }
+.worksheet-layout { display: grid; grid-template-columns: var(--sc-worksheet-navigation-width) 1px minmax(0, 1fr); height: calc(100vh - 170px); min-height: 600px; overflow: hidden; border: 0; border-radius: 0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel); background: var(--sc-app-panel); }
 .worksheet-navigation { min-width: 0; overflow: auto; padding: var(--sc-space-sm); }
 .worksheet-navigation h3 { margin: 0 0 var(--sc-space-xs); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-body); }
 .navigation-all { width: 100%; min-height: var(--sc-touch-target-min); padding: var(--sc-space-xs); text-align: left; }

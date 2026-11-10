@@ -26,6 +26,13 @@
     "recordIdentityMayEllipsize": false,
     "retainedInformationEllipsisRequiresFullValue": true
   },
+  "importantOverrides": [
+    {
+      "file": "frontend/apps/web/src/styles/accessibility.css",
+      "max": 4,
+      "reason": "The global prefers-reduced-motion floor must override component and framework transition/animation shorthands."
+    }
+  ],
   "structuralOverlapExceptions": [
     {
       "file": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",

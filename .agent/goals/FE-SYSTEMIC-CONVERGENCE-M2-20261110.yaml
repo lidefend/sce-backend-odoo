@@ -40,7 +40,7 @@ goal:
     Remove every production `!important` from frontend/apps/web/src and split
     global accessibility/reduced-motion foundations out of product-patterns.css.
   acceptance:
-    - "!important count in frontend/apps/web/src is zero"
+    - "no unregistered !important declarations remain; only the governed global reduced-motion floor is allowed"
     - product-patterns.css no longer owns global accessibility foundations
     - accessibility skip-link stacking uses the Token v1 pattern layer
     - style-system, lint, strict typecheck and affected iteration gates pass

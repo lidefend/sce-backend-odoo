@@ -11,7 +11,7 @@
 
 | Gate | Authority | Target |
 | --- | --- | --- |
-| Information `nowrap` and zero `!important` | `text_containment_allowlist.json` | `verify.frontend.text_containment.guard` |
+| Information `nowrap` and governed `!important` | `text_containment_allowlist.json` | `verify.frontend.text_containment.guard` |
 | Inline style ownership | `inline_style_allowlist.json` | `verify.frontend.inline_style.guard` |
 | Semantic split ownership | `split_usage_allowlist.json` | `verify.frontend.split_usage.guard` |
 | Sanitized rich text | `ScRichText` single owner | `verify.frontend.rich_text.guard` |
@@ -23,7 +23,8 @@ The umbrella target is `verify.frontend.systemic.convergence.guard`.
 
 - `make verify.frontend.systemic.convergence.guard`: PASS.
 - Text containment: 39 files with `nowrap`; 12 structural/information
-  overlap files; 10 information ownership entries; `!important=0`.
+  overlap files; 10 information ownership entries; `!important=4` in the
+  governed reduced-motion floor and zero unregistered declarations.
 - Inline styles: 28 registered mechanism files / 9 mechanisms.
 - Semantic split: 39 files / 61 occurrences / 19 mechanisms.
 - Rich text: one `v-html` owner, five consumer calls, 10 browser checks.

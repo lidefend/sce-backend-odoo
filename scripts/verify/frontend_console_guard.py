@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = "frontend/apps/web/src/utils/logger.ts"
-CONSOLE_RE = re.compile(r"\bconsole\.(?:debug|info|warn|error)\s*\(")
+CONSOLE_RE = re.compile(r"\bconsole\.\w+\s*\(")
 
 
 def inspect(root: Path = ROOT) -> dict:

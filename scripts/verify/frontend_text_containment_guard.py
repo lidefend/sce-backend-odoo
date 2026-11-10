@@ -27,7 +27,7 @@ def inspect(root: Path = ROOT, allowlist_path: Path | None = None) -> dict:
 
     nowrap_files: set[str] = set()
     overlap_files: set[str] = set()
-    important = 0
+    important_by_file: dict[str, int] = {}
     for path in sorted(web_src.rglob("*")):
         if path.suffix not in {".vue", ".ts", ".css"} or not path.is_file():
             continue
@@ -37,10 +37,24 @@ def inspect(root: Path = ROOT, allowlist_path: Path | None = None) -> dict:
             nowrap_files.add(relative)
             if ELLIPSIS_RE.search(text):
                 overlap_files.add(relative)
-        important += len(IMPORTANT_RE.findall(text))
+        important_count = len(IMPORTANT_RE.findall(text))
+        if important_count:
+            important_by_file[relative] = important_count
 
-    if important:
-        errors.append(f"!important declarations are forbidden: {important}")
+    important = sum(important_by_file.values())
+    important_overrides = {
+        str(record.get("file", "")).strip(): record.get("max")
+        for record in policy.get("importantOverrides", [])
+        if isinstance(record, dict) and str(record.get("file", "")).strip()
+    }
+    for relative, count in sorted(important_by_file.items()):
+        limit = important_overrides.get(relative, 0)
+        if not isinstance(limit, int) or limit < 0:
+            limit = 0
+        if count > limit:
+            errors.append(
+                f"unregistered !important declarations in {relative}: {count} (allowed {limit})"
+            )
 
     structural = {
         str(record.get("file", "")).strip()

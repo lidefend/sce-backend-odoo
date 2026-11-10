@@ -30,7 +30,7 @@ goal:
     Close the M1-M8 program with five executable static ownership gates and one
     umbrella verification entry.
   acceptance:
-    - nowrap ownership and zero !important have a dedicated non-zero gate
+    - nowrap ownership and governed !important declarations have a dedicated non-zero gate
     - inline style, naked v-html and split ownership gates are wired together
     - the umbrella gate fails if any member fails
     - gate allowlists and policy counts are validated

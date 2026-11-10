@@ -42,17 +42,6 @@
   overflow: hidden;
 }
 
-.workspace-activity-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 10px 6px;
-  border-right: 1px solid var(--sc-semantic-border-default);
-  background: color-mix(in srgb, var(--sc-navigation-bg) 90%, var(--sc-app-subtle-bg));
-}
-
 .workspace-activity-brand {
   width: 32px;
   height: 32px;

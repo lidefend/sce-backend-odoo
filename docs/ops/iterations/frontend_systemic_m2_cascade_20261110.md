@@ -18,7 +18,8 @@
 
 ## Validation
 
-- `!important`: 41 → 0.
+- `!important`: 41 → 4 governed declarations in the global reduced-motion floor;
+  all other frontend cascade overrides are zero.
 - `product-patterns.css`: 512 lines → 455 lines.
 - Global accessibility/focus/reduced-motion rules moved to `styles/accessibility.css`
   (53 lines) and imported before product patterns.
@@ -44,4 +45,5 @@
 
 The guards that previously required `!important` in navigation, visually-hidden
 and form-host rules now assert the same behavior without requiring cascade
-priority hacks.
+priority hacks. Reduced motion remains an explicit governed exception because a
+universal accessibility floor must override framework transition shorthands.

@@ -151,7 +151,6 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
   }
 
   if (isAppInitRequest && debugIntent && appInitPayload) {
-    console.group('[A2] system.init 网络诊断快照');
     logger.debug('Request URL:', `${config.apiBaseUrl}${resolvedPath}`);
     logger.debug('Request Headers:');
     logger.debug('  Authorization:', headers.has('Authorization') ? '存在' : '不存在');
@@ -159,7 +158,6 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     logger.debug('Request Payload:');
     logger.debug('  intent:', appInitPayload.intent);
     logger.debug('  params.root_xmlid:', appInitPayload.params?.root_xmlid);
-    console.groupEnd();
   }
 
   const requestedCreds = options.credentials;
@@ -191,7 +189,6 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     const responseClone = response.clone();
     try {
       const responseBody = (await responseClone.json()) as AppInitDiagnosticResponse;
-      console.group('[A2] system.init 响应诊断快照');
       logger.debug('Response Status:', response.status);
       logger.debug('Response Headers:');
       logger.debug('  Content-Type:', response.headers.get('Content-Type'));
@@ -222,7 +219,6 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
         })(),
       };
       logger.debug(JSON.stringify(diagnosticSnapshot, null, 2));
-      console.groupEnd();
     } catch (error) {
       logger.warn('[A2] 无法解析响应:', error);
     }

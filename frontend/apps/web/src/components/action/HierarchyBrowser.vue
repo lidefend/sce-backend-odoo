@@ -183,8 +183,14 @@ const actions = computed<SurfaceAction[]>(() => (Array.isArray(props.config.acti
 const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : [])
   .map(normalizeHierarchyCommand)
   .filter(hierarchyCommandHasExecutableAuthority));
-const columnGridStyle = computed(() => ({ gridTemplateColumns: `${leftWidth.value}px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(360px, 1fr) calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) ${rightWidth.value}px` }));
-const layoutGridStyle = computed(() => ({ ...columnGridStyle.value, height: `${workspaceHeight.value}px` }));
+const columnGridStyle = computed(() => ({
+  '--sc-hierarchy-left-width': `${leftWidth.value}px`,
+  '--sc-hierarchy-right-width': `${rightWidth.value}px`,
+}));
+const layoutGridStyle = computed(() => ({
+  ...columnGridStyle.value,
+  '--sc-hierarchy-workspace-height': `${workspaceHeight.value}px`,
+}));
 const pageSize = computed(() => listConfig.value.pageSize);
 const currentTitle = computed(() => selectedNode.value ? [selectedNode.value.code, selectedNode.value.label].filter(Boolean).join(' ') : labels.value.all);
 const hierarchyTableColumns = computed(() => listConfig.value.columns.map((column) => ({
@@ -324,6 +330,14 @@ onBeforeUnmount(() => { window.removeEventListener('pointermove', onResizeMove);
   box-shadow: none;
 }
 .hierarchy-head :deep(.product-list-header__tools) { min-height: var(--sc-product-toolbar-height); }
+.hierarchy-head :deep(.product-list-header__tools--aligned) {
+  grid-template-columns:
+    var(--sc-hierarchy-left-width)
+    calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px)
+    minmax(360px, 1fr)
+    calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px)
+    var(--sc-hierarchy-right-width);
+}
 
 .hierarchy-head h2,
 .list-context h3,
@@ -344,6 +358,13 @@ onBeforeUnmount(() => { window.removeEventListener('pointermove', onResizeMove);
 .hierarchy-layout {
   display: grid;
   gap: 0;
+  grid-template-columns:
+    var(--sc-hierarchy-left-width)
+    calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px)
+    minmax(360px, 1fr)
+    calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px)
+    var(--sc-hierarchy-right-width);
+  height: var(--sc-hierarchy-workspace-height);
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--sc-app-border);
