@@ -11,6 +11,7 @@
     ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
     ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",
     "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
     "addons/smart_construction_core/core_extension_policy_maps.py",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
