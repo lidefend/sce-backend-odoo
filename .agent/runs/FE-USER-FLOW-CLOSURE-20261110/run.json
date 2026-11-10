@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-USER-FLOW-CLOSURE-20261110",
   "branch": "feature/fe-user-flow-closure-20261110",
-  "baseline_sha": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+  "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
   "status": "active",
   "goal": ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
   "record": "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
@@ -78,11 +78,12 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage adjudication is complete; retain the two environment-bound runtime branches and publish this audit/tooling candidate for independent review without product-code expansion.",
+  "next_exact_step": "Run clean validation on the rebased head dc2f66e2, update the exact-head PR record, and obtain independent review without product-code expansion.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
-      "main_head": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+      "main_head": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+      "pre_sync_main": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
       "pr_862_merge": "ca032b92dd1131485313b9299b5e799c67f1d525",
       "pr_863_merge": "e56cd8d17fb5d08a62ff0dd2695f2aed06696a11"
     },

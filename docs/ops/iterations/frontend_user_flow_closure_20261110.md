@@ -1,7 +1,8 @@
 # Frontend user behavior closure
 
 - Branch: `feature/fe-user-flow-closure-20261110`
-- Baseline main: `ddb008826174b8c387bdd0c6a70faf9022586c6b`
+- Initial baseline main: `ddb008826174b8c387bdd0c6a70faf9022586c6b`
+- Rebased baseline main: `1ad805b621de6ced0a497c5a5f6e10bec358896d`
 - Plan: existing FE-01 through FE-05
 - Formal product layer: P0 generic frontend contract consumption
 
@@ -45,12 +46,15 @@ any frontend defect is fixed. Verdicts are limited to:
 
 ## Evidence identity decisions
 
-- Current source baseline is main `ddb008826174b8c387bdd0c6a70faf9022586c6b`.
+- Current source baseline is main `1ad805b621de6ced0a497c5a5f6e10bec358896d`.
 - `.runtime/acceptance-evolution/evidence.v1.json` binds
   `frontend_presentation`, `list_surface_structure` and `relation_roundtrip`
   to `0943095f1f443c50efde735fa8c3ec7c142a54a5`. The governed binding carried
   them to `b05a87d47` only because their declared suite inputs were unchanged.
   They are not a payment-request end-to-end journey by themselves.
+- The later main sync only adds a logger test assertion and governance records;
+  it does not change the shared production frontend tree used by the accepted
+  runtime evidence.
 - `.runtime/m7-matrix-1440-v3/summary.json` and its 390 counterpart are bound to
   `f78a26322cebea01147d778569480b51a76a44dc`; both have `ok=false` because one
   authority negative case lacks an eligible denied-role candidate. The payment
