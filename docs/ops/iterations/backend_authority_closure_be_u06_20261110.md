@@ -37,11 +37,12 @@
 | 通用执行边界 | `verify.execute_button.authority.unit` 37/37 PASS。待办来源仍只授权当前任务、当前审批人及明确决定方法。 |
 | 前端契约消费 | `verify.frontend.approval_contract.closure.unit` 12 cases PASS。空/取消 reason 请求数为 0；填写 reason 后只发一次 `execute_button`，并携带同一动作身份及 `action_params.reason`。 |
 | V2 契约 | assembler/action/status/runtime、schema 与 lifecycle 目标均 PASS；最终动作规则支持声明输入，schema digest 与示例一致。 |
-| 增量门禁 | `make ci.local.iteration` 27/27 个映射目标零退出，零未映射路径；包含 ORM、类型、lint、契约和验收工具检查。 |
+| 增量门禁 | clean HEAD `4e3b66f2c` 上 `make ci.local.iteration` 27/27 个映射目标零退出，零未映射路径。最终 `financial_workspace_contract` 单动作收敛后，按影响面重跑审批 ORM 3/3 与 contract-header 143 checks/cases，均通过。 |
 
 关键原始证据：
 
-- `.runtime/test-baseline/1794315441716950134/odoo.log`（最终 27 目标增量聚合中的 ORM）
+- `.runtime/test-baseline/1794315937128907744/odoo.log`（最终单动作收敛 ORM）
+- `.runtime/test-baseline/1794315441716950134/odoo.log`（27 目标增量聚合中的 ORM）
 - `.runtime/frontend-dev-validation/executions/20261110T125713Z-2307750-553156593/receipt.json`
 - `.runtime/final-acceptance/my-work-approval/report.json`
 
@@ -51,12 +52,12 @@
 
 | 身份 | SHA / 路径 |
 | --- | --- |
-| 实际后端产品 | `cd08cca11b677b3dda5a3cb3fc98e25b7b1c6552` |
-| 当前测试脚本 | `ffe91a818270c57bae569d2913857a3468b4e49f` |
-| 前端构建基线 | `40ad974c8c8791a3d045aaa5e1fa9d29d883e526` |
-| preview entry | `/assets/index-DB_m0-mN.js` |
-| preview entry SHA-256 | `b7ee25350da2bf6d2f7a0a076c331addf9b5f330155e9ae26d587fde269f190f` |
-| report SHA-256 | `3ce863af4bc45353760d815561dbbfcae691f3797888dc2cc78f47d601a782ff` |
+| 实际后端产品 | `078d3ed6ae84fa417131c44560d214e40090a7c6` |
+| 当前测试脚本 | `078d3ed6ae84fa417131c44560d214e40090a7c6` |
+| 前端构建基线 | `078d3ed6ae84fa417131c44560d214e40090a7c6` |
+| preview entry | `/assets/index-CqEtIObJ.js` |
+| preview entry SHA-256 | `7fc59d9d367ad2799d92a4f3fb7e94f163fa0b41d9991408b871c62cd2657e73` |
+| report SHA-256 | `e4084b79adc1c7d4e7840d67fc79ecbd349218474ca0d48eeda1732fe1fe0c44` |
 
 实际用户旅程：
 
