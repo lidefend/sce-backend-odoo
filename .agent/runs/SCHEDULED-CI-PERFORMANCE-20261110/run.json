@@ -12,6 +12,8 @@
     ".agent/runs/SCHEDULED-CI-PERFORMANCE-20261110/run.json",
     "addons/smart_construction_core/services/capability_registry.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/scheduled_ci_performance_20261110.md",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "scripts/verify/frontend_dev_incremental.py",

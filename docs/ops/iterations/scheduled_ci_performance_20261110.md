@@ -55,3 +55,6 @@ SPA transition. It does not remove requests or extend scenario budgets.
 The local ORM fixture now codifies the post-PR #862 rule: a read capability
 without a published role surface remains denied, while native action/model
 changes remain bound to the same action authority.
+
+The generated complexity and split-plan reports refresh only the changed line
+counts for the capability registry and its test.
