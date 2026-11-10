@@ -352,6 +352,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["scripts/verify/contract_form_runtime_state_protocol_guard.py"]),
             ["verify.contract.architecture.suite"],
         )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
+            ["verify.daily.permission_truth.capability.orm"],
+        )
         for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",
             "scripts/verify/test_frontend_v2_policy_projection_guard.py",

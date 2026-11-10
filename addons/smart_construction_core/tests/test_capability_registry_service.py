@@ -147,7 +147,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
                 [self.env.ref(group).id for group in groups])],
         })
 
-    def test_read_principal_sees_project_entry_without_pm_role_or_write_grant(self):
+    def test_read_capability_without_published_role_remains_denied(self):
         user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
         model = self.env['project.project'].with_user(user)
         self.assertTrue(model.check_access_rights('read', raise_exception=False))
@@ -155,7 +155,8 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         roles = capability_registry._resolve_role_codes_for_user(user)
         self.assertNotIn('pm', roles)
         decision = capability_registry.capability_authorization_for_user(user, 'project.list.open')
-        self.assertEqual(decision['state'], 'allow')
+        self.assertEqual(decision['state'], 'deny')
+        self.assertEqual(decision['reason_code'], 'NAVIGATION_AUTHORITY_DENIED')
         rows = capability_registry.list_capabilities_for_user(user.with_user(user).env, user)
         self.assertIn('project.list.open', {row['key'] for row in rows})
         self.assertFalse(model.check_access_rights('write', raise_exception=False))
@@ -277,8 +278,8 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         }
         with patch.object(
             capability_registry,
-            '_published_query_pair',
-            side_effect=lambda _user, action_id: published_pairs.get(action_id),
+            '_published_query_pairs_by_action_id',
+            return_value=published_pairs,
         ):
             rows = {
                 row['key']: row
@@ -302,13 +303,17 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         self.assertEqual(rows['contract.expense.track']['state'], 'READY')
 
     def test_action_model_change_is_not_hidden_by_copied_model_binding(self):
-        user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
+        from unittest.mock import patch
+
+        user = self._actor(['smart_construction_core.group_sc_role_project_manager'])
         action = self.env.ref('smart_construction_core.action_sc_project_list')
-        self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'allow')
-        # Transactional test change is rolled back by TransactionCase.
-        action.res_model = 'ir.config_parameter'
-        self.assertFalse(self.env['ir.config_parameter'].with_user(user).check_access_rights('read', raise_exception=False))
-        self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'deny')
+        published = {action.id: (1, action.id)}
+        with patch.object(capability_registry, '_published_query_pairs_by_action_id', return_value=published):
+            self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'allow')
+            # Transactional test change is rolled back by TransactionCase.
+            action.res_model = 'ir.config_parameter'
+            self.assertFalse(self.env['ir.config_parameter'].with_user(user).check_access_rights('read', raise_exception=False))
+            self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'deny')
 
     def test_native_action_group_change_is_honored_without_role_inference(self):
         user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
@@ -357,6 +362,36 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
             project = next(row for row in rows if row['key'] == 'project.list.open')
             self.assertNotIn('route', project['default_payload'])
 
+    def test_capability_list_resolves_published_route_authority_once(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+
+        user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
+        env = user.with_user(user).env
+        with patch.object(
+            runtime_route_authority,
+            'published_route_authority',
+            wraps=runtime_route_authority.published_route_authority,
+        ) as authority:
+            rows = capability_registry.list_capabilities_for_user(env, user)
+        self.assertTrue(rows)
+        self.assertEqual(authority.call_count, 1)
+
+    def test_cached_published_query_pairs_match_legacy_first_match(self):
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            iter_published_pairs,
+            published_route_authority,
+        )
+
+        user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
+        authority = published_route_authority(user.with_user(user).env)
+        published_pairs = list(iter_published_pairs(authority))
+        cached_pairs = capability_registry._published_query_pairs_by_action_id(user)
+        for _menu_id, action_id in published_pairs:
+            if action_id <= 0:
+                continue
+            legacy = next((pair for pair in published_pairs if pair[1] == action_id), None)
+            self.assertEqual(cached_pairs.get(action_id), legacy)
 
 @tagged("post_install", "-at_install", "formal_role_hint")
 class TestFormalRoleHint(TransactionCase):
