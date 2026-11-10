@@ -121,6 +121,10 @@
   登录探针 -> 本批次认证就绪单测。
 - `verify.daily.permission_truth.capability.orm` 原为零引用 disposition；接入 run 和
   planner 后该 disposition 已 stale，已通过 lane coverage 受管入口移除。
+- 首次 `ci.local.quick.full` 的 7/8 分片通过；最后安全分片命中本批未修改的
+  `test_payment_domain_permission_isolation.py` 历史 synthetic blob
+  `578ab14089ea852ce60f7fa96da3f27eec3f4b96`。仅以精确 path/blob/PD003 登记为
+  `BANK_ACCOUNT_PATTERN` 合成测试误报，不扩目录、规则或主数据。
 - clean commit 的性能探针在生产构建后立即发起 HTTP 登录，遇到一次无结构
   `401 {"code":"unknown","error_code":"unknown"}`；数秒后单独重放为 HTTP 200。
   这是认证就绪窗口，不是凭据错误。修复为只对 unknown/空错误码的 401 做最多 10 次、

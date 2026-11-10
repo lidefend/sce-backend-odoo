@@ -26,7 +26,8 @@
     "scripts/verify/test_frontend_acceptance_login_probe.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "scripts/audit/verification_lane_dispositions.json"
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "offline",
@@ -109,6 +110,21 @@
         "scripts/audit/verification_lane_exemptions.json",
         "scripts/audit/test_verification_lane_coverage.py",
         "make/guards.mk"
+      ]
+    },
+    "repository_clean_history": {
+      "target": "verify.repository.clean_history",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "config/security/secret_scan_false_positives.v1.json",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ci/test_personal_data_scan.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/parallel_scan.py",
+        "scripts/ci/trusted_scan_group.py",
+        "scripts/verify/repository_clean_history_guard.py"
       ]
     },
     "capability_registry_orm": {
