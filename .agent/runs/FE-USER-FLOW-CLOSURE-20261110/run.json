@@ -104,7 +104,7 @@
         "verify.frontend.page_identity",
         "verify.frontend.overlay_lifecycle.unit"
       ],
-      "current_runtime_gaps": [
+      "initial_runtime_gaps": [
         "payment request list/edit/save-submit/readback/return on current main",
         "payment request My Work return",
         "payment request relation return",

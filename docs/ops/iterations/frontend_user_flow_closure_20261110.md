@@ -11,9 +11,10 @@
 - PR #862 merged at `ca032b92dd1131485313b9299b5e799c67f1d525`.
 - PR #863 closed the post-merge runtime logger S2 at
   `e56cd8d17fb5d08a62ff0dd2695f2aed06696a11`.
-- The branch starts from current main
-  `ddb008826174b8c387bdd0c6a70faf9022586c6b`; no old HEAD evidence is treated as
-  current without checking its declared inputs.
+- The branch initially started from
+  `ddb008826174b8c387bdd0c6a70faf9022586c6b` and was then governed-rebased to
+  current main `1ad805b621de6ced0a497c5a5f6e10bec358896d`. No old HEAD evidence
+  is treated as current without checking its declared inputs.
 
 ## Scope order
 
