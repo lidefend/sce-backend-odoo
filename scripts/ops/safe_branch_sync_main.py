@@ -643,6 +643,20 @@ def personal_data_false_positives_union(plan: SyncPlan) -> dict:
                 )
             current = merged.get(key)
             if current is not None and current != entry:
+                changed_fields = {
+                    field
+                    for field in set(current) | set(entry)
+                    if current.get(field) != entry.get(field)
+                }
+                if (
+                    revision == "topic"
+                    and changed_fields == {"reason"}
+                    and current.get("reason")
+                    and entry.get("reason")
+                ):
+                    # Exact blob identity makes the reason explanatory metadata;
+                    # retain main's reviewed wording on a concurrent registration.
+                    continue
                 raise SyncError(
                     "personal-data false-positive metadata conflicts for exact key: "
                     + ":".join(key)

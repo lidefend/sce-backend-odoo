@@ -481,6 +481,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "classification": "BANK_ACCOUNT_PATTERN",
             "reason": "main",
         }
+        duplicate_reason = {**main_entry, "reason": "topic duplicate wording"}
 
         def registry(entries):
             return json.dumps(
@@ -495,7 +496,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         registry_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
         git(self.root, "push", "origin", "HEAD:main")
         git(self.root, "switch", "-c", "feature/personal-data-union", registry_base)
-        target.write_text(registry([base_entry, topic_entry]), encoding="utf-8")
+        target.write_text(
+            registry([base_entry, duplicate_reason, topic_entry]),
+            encoding="utf-8",
+        )
         git(self.root, "add", path)
         git(self.root, "commit", "-m", "register topic exemption")
         registry_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
@@ -526,6 +530,14 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(
             [entry["blob_id"] for entry in merged["entries"]],
             ["1" * 40, "3" * 40, "2" * 40],
+        )
+        self.assertEqual(
+            next(
+                entry["reason"]
+                for entry in merged["entries"]
+                if entry["blob_id"] == "3" * 40
+            ),
+            "main",
         )
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
