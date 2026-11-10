@@ -153,8 +153,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
-| 1092 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
+| 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
