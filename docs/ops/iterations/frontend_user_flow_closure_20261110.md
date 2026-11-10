@@ -73,9 +73,13 @@ any frontend defect is fixed. Verdicts are limited to:
 
 ## Current-bound runtime evidence
 
-The managed acceptance runtime served revision
-`7895f97569e1b9f74ecd2ee50eec9c386b647640` and database
-`sc_frontend_acceptance`.
+The shared production frontend tree was built at
+`7895f97569e1b9f74ecd2ee50eec9c386b647640`. The payment detail run served
+that revision. After the My Work browser assertions changed in test-only commit
+`60e6bbc749b6d3bd25bbc3af728d6f3e7dd5eb41`, the backend served the new commit
+while the preview reported `preview_base_sha=7895f9756` and an unchanged entry
+digest, proving that no production frontend source changed. All evidence used
+database `sc_frontend_acceptance`.
 
 | Evidence | Result | Artifact |
 | --- | --- | --- |
