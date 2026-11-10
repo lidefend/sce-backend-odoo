@@ -45,6 +45,145 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_action_group_intersection_filters_native_nav_and_route(self):
+        class GroupSet:
+            def __init__(self, ids):
+                self.ids = set(ids)
+
+            def __and__(self, other):
+                return GroupSet(self.ids & set(other.ids))
+
+            def __bool__(self):
+                return bool(self.ids)
+
+        class Action:
+            id = 601
+            name = 'Expense'
+            _name = 'ir.actions.act_window'
+            active = True
+            res_model = 'res.partner'
+            view_mode = 'tree,form'
+            groups_id = GroupSet({7})
+            view_id = None
+            domain = '[]'
+            context = "{}"
+
+            def sudo(self):
+                return self
+
+        class Model:
+            def sudo(self):
+                return self
+
+            def browse(self, _value):
+                return self
+
+            def exists(self):
+                return Action()
+
+            def check_access_rights(self, _operation, raise_exception=False):
+                return True
+
+        action_record = Action()
+
+        class Env(dict):
+            user = None
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return action_record if xmlid == 'test.action_expense' else None
+
+        service = menu_service.MenuService(Env({
+            'ir.actions.act_window': Model(),
+            'res.partner': Model(),
+        }))
+        service.env.user = types.SimpleNamespace(groups_id=GroupSet({8}))
+        row = {
+            'menu_id': 501, 'action_id': 601, 'action_exists': True,
+            'action_model': 'ir.actions.act_window',
+            'menu_xmlid': 'test.expense', 'name': 'Expense',
+        }
+        fact = {
+            'menu_id': 501, 'name': 'Expense', 'menu_xmlid': 'test.expense',
+            'action_id': 601, 'action_model': 'ir.actions.act_window',
+            'action_meta': {'res_model': 'res.partner', 'view_mode': 'tree,form'},
+            'children': [],
+        }
+        nodes = menu_service.MenuService._menu_fact_tree_as_native([fact])
+        self.assertEqual(nodes[0]['action_model'], 'ir.actions.act_window')
+        self.assertEqual(service._filter_native_action_groups(nodes), [])
+        native_nodes = [{
+            'menu_id': 501,
+            'name': 'Expense',
+            'menu_xmlid': 'test.expense',
+            'action_id': 601,
+            'action_type': 'ir.actions.act_window',
+            'children': [],
+            'meta': {
+                'menu_id': 501,
+                'menu_xmlid': 'test.expense',
+                'action_id': 601,
+                'action_type': 'ir.actions.act_window',
+            },
+        }]
+        self.assertEqual(service._filter_native_action_groups(native_nodes), [])
+        denied_parents = [{
+            'menu_id': 501,
+            'name': 'Expense',
+            'menu_xmlid': 'test.expense',
+            'action_id': 601,
+            'action_type': 'ir.actions.act_window',
+            'model': 'res.partner',
+            'action_xmlid': 'test.action_expense',
+            'route': '/a/601',
+            'children': [{
+                'menu_id': 502,
+                'name': 'Allowed child',
+                'menu_xmlid': 'test.allowed_child',
+                'children': [],
+            }],
+        }]
+        filtered_parent = service._filter_native_action_groups(denied_parents)
+        self.assertEqual(len(filtered_parent), 1)
+        self.assertEqual(filtered_parent[0]['children'][0]['menu_id'], 502)
+        for key in ('action_id', 'action_type', 'action_xmlid', 'model', 'route'):
+            self.assertNotIn(key, filtered_parent[0])
+        with patch.object(menu_service, 'can_discover_platform_capabilities', return_value=False):
+            self.assertFalse(service._policy_menu_user_authorized(
+                {
+                    'menu_id': 501,
+                    'menu_xmlid': 'test.expense',
+                    'action_id': 601,
+                    'action_xmlid': 'test.action_expense',
+                },
+                {'ids': {501}, 'xmlids': {'test.expense'}, 'scenes': set(), 'routes': set()},
+            ))
+        self.assertIsNone(service._route_entry_from_menu(
+            row, route_kind='PRIMARY_NAV', source='native',
+            action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
+        ))
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense',
+            'action_xmlid': 'test.action_expense',
+            'allowed_operation': 'read',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+
+        service.env.user.groups_id = GroupSet({7})
+        filtered = service._filter_native_action_groups(nodes)
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0]['action_id'], 601)
+        filtered_native = service._filter_native_action_groups(native_nodes)
+        self.assertEqual(len(filtered_native), 1)
+        self.assertEqual(filtered_native[0]['action_id'], 601)
+        self.assertIsNotNone(service._route_entry_from_menu(
+            row, route_kind='PRIMARY_NAV', source='native',
+            action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
+        ))
+        self.assertIsNotNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense',
+            'action_xmlid': 'test.action_expense',
+            'allowed_operation': 'read',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+
     def test_native_configuration_scope_survives_route_publication(self):
         action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
         model = types.SimpleNamespace(sudo=lambda: model, browse=lambda value: model, exists=lambda: action)

@@ -195,6 +195,11 @@ assert.deepEqual(schemaSelectionColumns[0], {
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
 assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
 assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.5');
+const integerColumn = { name: 'count', label: '数量', ttype: 'integer', required: false };
+assert.equal(one2manyColumnDisplayValue(integerColumn, 2.7), '2');
+assert.equal(one2manyColumnDisplayValue(integerColumn, -2.7), '-2');
+assert.equal(one2manyColumnDisplayValue(integerColumn, null), '');
+assert.equal(one2manyColumnDisplayValue(integerColumn, false), '');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
 const readableDatetime = one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00');

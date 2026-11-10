@@ -53,6 +53,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .collection-group-header * {
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.01ms;
   }
 }

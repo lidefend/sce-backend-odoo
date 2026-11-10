@@ -324,6 +324,7 @@ export const tokenVariants = {
     "pattern.collection.toolbar_height": "52px",
     "pattern.overlay.dialog_padding": 16,
     "pattern.overlay.shadow": "0 14px 28px rgba(15, 23, 42, 0.16)",
+    "pattern.overlay.skip_link_z_index": 1200,
     "platform.density.touch_target_min": 32
   },
   "dark": {
@@ -651,6 +652,7 @@ export const tokenVariants = {
     "pattern.collection.toolbar_height": "52px",
     "pattern.overlay.dialog_padding": 16,
     "pattern.overlay.shadow": "0 18px 44px rgba(0, 0, 0, 0.34)",
+    "pattern.overlay.skip_link_z_index": 1200,
     "platform.density.touch_target_min": 32
   },
   "mobile_light": {
@@ -978,6 +980,7 @@ export const tokenVariants = {
     "pattern.collection.toolbar_height": "52px",
     "pattern.overlay.dialog_padding": 16,
     "pattern.overlay.shadow": "0 14px 28px rgba(15, 23, 42, 0.16)",
+    "pattern.overlay.skip_link_z_index": 1200,
     "platform.density.touch_target_min": 44
   },
   "mini_light": {
@@ -1305,6 +1308,7 @@ export const tokenVariants = {
     "pattern.collection.toolbar_height": "52px",
     "pattern.overlay.dialog_padding": 16,
     "pattern.overlay.shadow": "0 14px 28px rgba(15, 23, 42, 0.16)",
+    "pattern.overlay.skip_link_z_index": 1200,
     "platform.density.touch_target_min": 40
   }
 } as const;

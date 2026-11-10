@@ -3,7 +3,7 @@
     <ScButton class="tree-node" appearance="tree-item" variant="ghost" size="small" :class="{ active: selectedKey === node.key }" @click="$emit('select', node)">
       <span v-if="node.children.length" class="tree-arrow" @click.stop="$emit('toggle', node)"><ScIcon :name="expandedKeys.has(node.key) ? 'chevron-down' : 'chevron-right'" :size="14" /></span>
       <span v-else class="tree-arrow" />
-      <strong v-if="node.code">{{ node.code }}</strong><span>{{ node.label }}</span>
+      <strong v-if="node.code">{{ node.code }}</strong><span :title="node.label">{{ node.label }}</span>
     </ScButton>
     <div v-if="node.children.length && expandedKeys.has(node.key)" class="tree-children">
       <HierarchyTreeNode v-for="child in node.children" :key="child.key" :node="child" :selected-key="selectedKey" :expanded-keys="expandedKeys" :empty-children-label="emptyChildrenLabel" @select="$emit('select', $event)" @toggle="$emit('toggle', $event)" />
@@ -28,7 +28,7 @@ defineEmits<{ select: [node: TreeNode]; toggle: [node: TreeNode] }>();
   padding: var(--sc-space-xs);
   text-align: left;
 }
-.tree-node span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-node span:last-child { display: -webkit-box; min-width: 0; overflow: hidden; overflow-wrap: anywhere; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .tree-arrow { flex: 0 0 var(--sc-space-sm); width: var(--sc-space-sm); }
 .tree-children { padding-left: var(--sc-space-md); }
 </style>

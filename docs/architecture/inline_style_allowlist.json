@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "scope": "frontend/apps/web/src",
+  "mechanisms": {
+    "component_style_api": {
+      "owner": "frontend.design_system",
+      "reason": "A component intentionally forwards a caller-owned style value through a named primitive API."
+    },
+    "contract_grid_span": {
+      "owner": "frontend.contract_renderer",
+      "reason": "The contract declares a form-grid span that must be applied as a CSS custom property."
+    },
+    "contract_section_order": {
+      "owner": "frontend.page_contract",
+      "reason": "The contract page projection supplies only the section order consumed by pageContract.sectionStyle or the action-view section runtime."
+    },
+    "contract_visual_color": {
+      "owner": "frontend.professional_fields",
+      "reason": "A declared relation option color selects an existing semantic color variable at runtime."
+    },
+    "data_visualization_width": {
+      "owner": "frontend.analysis",
+      "reason": "The rendered bar width is the measured data value and cannot be represented by a static class."
+    },
+    "declared_form_layout": {
+      "owner": "frontend.native_form_renderer",
+      "reason": "A declared native form node supplies grid placement or structural dimensions consumed by the renderer."
+    },
+    "declarative_column_geometry": {
+      "owner": "frontend.collection",
+      "reason": "Declared or resized collection columns supply runtime width and aggregate geometry."
+    },
+    "render_tree_indentation": {
+      "owner": "frontend.hierarchy_renderer",
+      "reason": "Tree depth determines the dynamic indentation of a rendered row."
+    },
+    "resizable_workspace_geometry": {
+      "owner": "frontend.hierarchy_renderer",
+      "reason": "User-resizable navigation, detail and split panes require runtime grid dimensions."
+    }
+  },
+  "files": {
+    "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue": [
+      "render_tree_indentation",
+      "resizable_workspace_geometry"
+    ],
+    "frontend/apps/web/src/components/action/HierarchyBrowser.vue": [
+      "resizable_workspace_geometry"
+    ],
+    "frontend/apps/web/src/components/action/HierarchyPlanner.vue": [
+      "render_tree_indentation"
+    ],
+    "frontend/apps/web/src/components/design-system/ScIconButton.vue": [
+      "component_style_api"
+    ],
+    "frontend/apps/web/src/components/design-system/ScPopover.vue": [
+      "component_style_api"
+    ],
+    "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.vue": [
+      "declarative_column_geometry"
+    ],
+    "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue": [
+      "declarative_column_geometry"
+    ],
+    "frontend/apps/web/src/components/product-list/ProductListHeader.vue": [
+      "declarative_column_geometry"
+    ],
+    "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue": [
+      "contract_visual_color"
+    ],
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": [
+      "declared_form_layout"
+    ],
+    "frontend/apps/web/src/pages/AnalysisPage.vue": [
+      "data_visualization_width"
+    ],
+    "frontend/apps/web/src/pages/ContractFormPage.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/pages/ListPage.vue": [
+      "declarative_column_geometry"
+    ],
+    "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": [
+      "contract_grid_span"
+    ],
+    "frontend/apps/web/src/views/AccountActivationView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/ActionView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/LoginView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/MenuView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/MyWorkView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/PasswordRecoveryView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/PlaceholderView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/SceneContractBlockGridView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/SceneHealthView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/ScenePackagesView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/SceneView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/UsageAnalyticsView.vue": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/businessConfigSurface/template.html": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/menuConfig/template.html": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/WorkbenchView.vue": [
+      "contract_section_order"
+    ]
+  }
+}

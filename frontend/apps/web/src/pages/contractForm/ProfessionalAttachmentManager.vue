@@ -37,7 +37,7 @@
       <li v-for="item in pending" :key="item.key" class="native-chatter-attachment-item native-pending-attachment-item">
         <ScIcon class="native-chatter-attachment-icon" name="file-text" :size="20" />
         <div class="native-chatter-attachment-content">
-          <span class="native-chatter-attachment-name">{{ item.name }}</span>
+          <span class="native-chatter-attachment-name" :title="item.name">{{ item.name }}</span>
           <div class="native-chatter-attachment-meta">
             <span class="native-chatter-attachment-type">待上传</span>
             <span class="native-chatter-attachment-size">{{ formatFileSize(item.size) }}</span>

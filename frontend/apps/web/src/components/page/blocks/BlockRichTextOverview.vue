@@ -18,17 +18,15 @@
         </ScButton>
       </template>
 
-      <!-- 只读态：内容为服务端净化后的受限 HTML（读取直渲染，净化权威在后端） -->
-      <!-- eslint-disable vue/no-v-html -- 内容先经 sanitizeRestrictedHtml 净化，后端另有净化权威 -->
-      <div
+      <ScRichText
         v-if="phase === 'idle' || phase === 'saved'"
         class="block-rich-text-overview__content"
         data-state="readonly"
-        v-html="renderedContent"
-      ></div>
-      <!-- eslint-enable vue/no-v-html -->
+        policy="restricted"
+        :content="view.content"
+      />
       <p
-        v-if="(phase === 'idle' || phase === 'saved') && !renderedContent"
+        v-if="(phase === 'idle' || phase === 'saved') && !hasContent"
         class="block-rich-text-overview__hint"
         data-empty
       >
@@ -114,8 +112,8 @@ import ScCard from '../../design-system/ScCard.vue';
 import { computed, ref } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
+import ScRichText from '../../content/ScRichText.vue';
 import RestrictedHtmlEditor from '../../editor/RestrictedHtmlEditor.vue';
-import { sanitizeRestrictedHtml } from '../../../utils/sanitizeRestrictedHtml';
 import {
   buildOverviewRichTextPatchIdempotencyKey,
   fetchOverviewRichTextBlock,
@@ -165,8 +163,7 @@ const view = ref<OverviewRichTextBlockView>(
   projectOverviewRichTextBlockData(props.dataset),
 );
 
-/** 只读渲染内容：服务端净化权威 + 渲染前纵深收敛（ADR-006 决策 3） */
-const renderedContent = computed(() => sanitizeRestrictedHtml(view.value.content));
+const hasContent = computed(() => String(view.value.content ?? '').trim().length > 0);
 const titleFallback = GENERIC_TITLE_FALLBACK;
 const emptyMessage = computed(() => {
   const source = (props.dataset && typeof props.dataset === 'object' ? props.dataset : {}) as Record<string, unknown>;

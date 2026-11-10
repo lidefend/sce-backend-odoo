@@ -5,12 +5,12 @@
     <span v-else-if="text === declaration?.empty_text">{{ text }}</span>
     <ScPopover
       v-else trigger="click" placement="bottom-left"
-      :overlay-style="{ maxWidth: '100vw', whiteSpace: 'normal', overflowWrap: 'anywhere' }">
+      overlay-class-name="native-weighted-display__overlay">
       <span data-native-weighted-full-value>{{ text }}</span>
       <template #trigger>
         <ScButton
           type="button" appearance="structured-content" variant="ghost" size="small"
-          class="native-weighted-trigger" :aria-label="`查看完整内容：${text}`">{{ text }}</ScButton>
+          class="native-weighted-trigger" :title="text" :aria-label="`查看完整内容：${text}`">{{ text }}</ScButton>
       </template>
     </ScPopover>
   </span>
@@ -51,12 +51,19 @@ onBeforeUnmount(() => { generation += 1; });
 <style scoped>
 .native-weighted-display { display: block; min-width: 0; max-width: 100%; }
 .native-weighted-display :deep(.native-weighted-trigger) {
-  display: block; width: 100%; min-width: 0; max-width: 100%; padding: 0;
+  display: -webkit-box; width: 100%; min-width: 0; max-width: 100%; padding: 0;
   cursor: pointer;
   overflow: hidden; font: inherit; line-height: inherit; text-align: left;
-  text-overflow: ellipsis; white-space: nowrap;
+  overflow-wrap: anywhere; white-space: normal;
+  -webkit-box-orient: vertical; -webkit-line-clamp: 2;
 }
 .native-weighted-display :deep(.native-weighted-trigger .sc-btn__content) {
-  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: -webkit-box; overflow: hidden; overflow-wrap: anywhere;
+  white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+:global(.native-weighted-display__overlay) {
+  max-width: 100vw;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 </style>

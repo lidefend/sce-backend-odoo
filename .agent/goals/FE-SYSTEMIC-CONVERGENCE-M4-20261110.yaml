@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M4-20261110
+  title: "自定义前端系统性收敛 M4 split 使用分类与语义收口"
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: generic frontend parsing and record-identity boundaries
+  module: frontend/apps/web/src contract consumers, route parsers, formatters and relationship display
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    String parsing is shared rendering mechanics, except where a split is being
+    used to infer business identity. That semantic boundary belongs to the P0
+    contract-consumption layer and must be explicit and fail-closed.
+  why_not_elsewhere: >
+    No backend business meaning is being changed. Moving identity inference into
+    page-specific code or silently preserving heuristic record segmentation would
+    create a second product semantics authority.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M4-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M4-20261110/run.json
+      - docs/ops/iterations/frontend_systemic_m4_split_20261110.md
+      - docs/architecture/split_usage_allowlist.json
+      - frontend/apps/web/src/
+      - scripts/verify/
+      - make/frontend.mk
+    product_behavior: >
+      Technical string formats remain stable, repeated parsing moves to shared
+      utilities, and record identity is no longer inferred from a heuristic
+      delimiter without a registered contract defect.
+  objective: >
+    Audit all 61 `.split(` sites across 39 files, classify each as technical
+    protocol syntax, declared contract parsing, or semantic identity inference,
+    and retain only owned uses.
+  acceptance:
+    - every split site has an allowlisted mechanism owner
+    - semantic identity split is registered as CD-20261110-01 unless a declared identity carrier exists
+    - repeated technical parsers have one shared utility owner
+    - unregistered split sites are zero
+    - targeted tests, iteration and golden-sample browser review pass non-zero
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M4 commits; no persistent data or service state is involved.

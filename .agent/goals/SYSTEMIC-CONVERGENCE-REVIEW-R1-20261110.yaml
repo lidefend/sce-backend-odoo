@@ -1,0 +1,46 @@
+schema_version: 1
+goal:
+  id: SYSTEMIC-CONVERGENCE-REVIEW-R1-20261110
+  title: "Close independent review blockers before mainline integration"
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared numeric presentation and released navigation action authorization
+  module: one2many presentation, menu fact projection and action-spec route publication
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Both findings are generic platform behavior: one preserves a numeric business
+    fact and the other completes action-group authorization across every navigation
+    publication path.
+  why_not_elsewhere: >
+    Page-specific integer formatting and industry-specific role exceptions would
+    preserve inconsistent behavior and leave other business modules exposed.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/SYSTEMIC-CONVERGENCE-REVIEW-R1-20261110.yaml
+      - .agent/runs/SYSTEMIC-CONVERGENCE-REVIEW-R1-20261110/run.json
+      - .agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/ops/iterations/systemic_convergence_review_r1_20261110.md
+      - addons/smart_core/delivery/menu_service.py
+      - addons/smart_core/tests/
+      - frontend/apps/web/src/pages/contractForm/one2manyUtils.ts
+      - frontend/apps/web/scripts/
+  objective: >
+    Preserve integer truncation, make native action filtering consume real projected
+    action identity, and apply action-group intersection to action-spec routes.
+  acceptance:
+    - one2many integer behavior matches old truncation for positive and negative values
+    - native menu projection carries action_model and the filter test uses it
+    - action-spec publication checks action groups with allow/deny tests
+    - frontend and navigation targeted tests pass non-zero
+    - clean runtime authorization matrix still has zero leaks and zero uncovered entries
+  exclusions:
+    - database_or_fixture_write
+    - acl_broadening
+    - deployment
+  rollback: Revert the R1 commit and retain the previous candidate for re-review.

@@ -1,4 +1,5 @@
 import { intentRequest } from './intents';
+import { logger } from '../utils/logger';
 
 export async function trackTelemetryEvent(eventType: string, extra: Record<string, unknown> = {}) {
   const normalizedType = String(eventType || '').trim();
@@ -14,7 +15,7 @@ export async function trackTelemetryEvent(eventType: string, extra: Record<strin
     // Telemetry is best-effort only and must never block product flows.
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
-      console.warn('[telemetry.track] ignored:', err);
+      logger.warn('[telemetry.track] ignored:', err);
     }
   }
 }

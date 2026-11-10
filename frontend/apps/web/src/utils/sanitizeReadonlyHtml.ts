@@ -1,20 +1,10 @@
+import { safeHtmlLinkTarget } from './safeHtmlLinkTarget';
+
 const ALLOWED_TAGS = new Set([
   'a', 'b', 'blockquote', 'br', 'code', 'em', 'i', 'li', 'ol', 'p', 'pre', 'strong', 'u', 'ul',
 ]);
 
 const DROP_WITH_CONTENT_TAGS = new Set(['iframe', 'object', 'script', 'style', 'svg']);
-
-function safeLinkTarget(raw: string): string {
-  const value = String(raw || '').trim();
-  if (!value) return '';
-  if (value.startsWith('/') || value.startsWith('#')) return value;
-  try {
-    const parsed = new URL(value, window.location.origin);
-    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? value : '';
-  } catch {
-    return '';
-  }
-}
 
 /**
  * Render an Odoo Html field without allowing executable markup into the app shell.
@@ -45,7 +35,7 @@ export function sanitizeReadonlyHtml(raw: unknown): string {
     const originalHref = tag === 'a' ? element.getAttribute('href') || '' : '';
     Array.from(element.attributes).forEach((attribute) => element.removeAttribute(attribute.name));
     if (tag === 'a') {
-      const href = safeLinkTarget(originalHref);
+      const href = safeHtmlLinkTarget(originalHref);
       if (href) {
         element.setAttribute('href', href);
         element.setAttribute('rel', 'noopener noreferrer');

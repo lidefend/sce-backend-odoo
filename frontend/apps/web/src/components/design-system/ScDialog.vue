@@ -2,8 +2,8 @@
   <TDesignDialog
     :visible="open" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
-    :confirm-loading="busy" :dialog-style="{ width: `min(${size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-dialog-width)'}, calc(100vw - 2 * var(--sc-product-page-gutter)))`, maxWidth: '100vw', boxSizing: 'border-box' }"
-    :dialog-class-name="['sc-dialog', panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">
+    :confirm-loading="busy"
+    :dialog-class-name="['sc-dialog', `sc-dialog--${size}`, panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">
     <section
       ref="surface" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
       data-semantic-component="ScDialog" data-semantic-primitive="ScDialog" data-semantic-driver="tdesign-dialog" data-semantic-layer="primitive"
@@ -40,6 +40,14 @@ const descriptionId = `${titleId}-description`;
 const dialogZIndex = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sc-component-dialog-z-index'), 10) || 2500;
 </script>
 <style scoped>
+:global(.sc-dialog) {
+  width: min(var(--sc-component-dialog-width), calc(100vw - 2 * var(--sc-product-page-gutter)));
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+:global(.sc-dialog--wide) {
+  width: min(var(--sc-component-dialog-wide-width), calc(100vw - 2 * var(--sc-product-page-gutter)));
+}
 .sc-design-dialog__header{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-product-space-2);margin-bottom:var(--sc-product-space-3);padding-bottom:var(--sc-product-space-3);border-bottom:1px solid var(--sc-app-border)}
 .sc-design-dialog__heading{min-width:0}.sc-design-dialog__heading h2{margin:0;font:var(--sc-font-title-medium)}.sc-design-dialog__heading p{margin:var(--sc-product-space-1) 0 0;color:var(--sc-app-text-secondary);font:var(--sc-font-body-small)}
 .sc-design-dialog__header-actions{display:flex;align-items:center;gap:var(--sc-product-space-2)}.sc-design-dialog__actions{justify-content:flex-end;margin-top:var(--sc-product-space-3);padding-top:var(--sc-product-space-3);border-top:1px solid var(--sc-app-border)}

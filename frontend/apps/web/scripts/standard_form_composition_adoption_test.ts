@@ -425,7 +425,8 @@ for (const required of [
   ':control-id="fieldControlId(detailFactField(item))"',
   'businessValuePlaceholderText(detailFactField(item))',
   '@update:value="emitFieldChange(detailFactField(item), $event)"',
-  'many2oneOpenToken', 'taskActionRun(detailFactField(item))', 'readonlyHtml(detailFactField(item))',
+  'many2oneOpenToken', 'taskActionRun(detailFactField(item))',
+  'policy="readonly"', ':content="detailFactField(item).value"',
   'name="readonly"', ':data-field-name=', ':data-field-key=', ':data-field-type=', ':data-component-renderer=',
   'layout="horizontal"', 'item-layout="horizontal"',
 ]) check(factsTemplate.includes(required), true, `descriptions preserves ${required}`);

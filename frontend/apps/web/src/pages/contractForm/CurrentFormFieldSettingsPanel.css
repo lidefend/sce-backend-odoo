@@ -274,14 +274,17 @@
 }
 
 .contract-form-field-search-item em {
+  display: -webkit-box;
   min-width: 0;
   max-width: 92px;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--sc-app-text-secondary);
   font-size: 11px;
   font-style: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .contract-form-field-navigator {
@@ -342,10 +345,13 @@
 }
 
 .contract-form-field-nav-item span {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .contract-form-field-nav-item em {
@@ -878,13 +884,16 @@
 }
 
 .contract-field-governance-audit {
+  display: -webkit-box;
   flex: 1 1 280px;
   min-width: 0;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .contract-field-governance-audit--warning {

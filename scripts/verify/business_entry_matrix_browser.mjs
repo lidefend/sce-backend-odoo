@@ -60,6 +60,7 @@ const KEYS_FILTER = (process.env.SC_ENTRY_MATRIX_KEYS || '').split(',').map((s) 
 const SKIP_PASSED = process.env.SC_ENTRY_MATRIX_INCLUDE_PASSED === '1';
 const WRITE_CONFIRM = process.env.SC_ENTRY_WRITE_CONFIRM || '';
 const WRITE_CONFIRM_TOKEN = 'DRIVE_DAILY_SC_DEMO_ENTRY_MATRIX';
+const VIEWPORT = parseViewport(process.env.SC_ENTRY_MATRIX_VIEWPORT);
 const OUT_DIR = process.env.SC_ACCEPTANCE_OUTPUT_DIR
   || path.join('artifacts', 'frontend-business-entry-matrix', String(Date.now()));
 // The observation is persisted per entry, not once at the end. A single expired
@@ -83,6 +84,13 @@ let browser;
 
 function fail(message) { problems.push(message); }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function parseViewport(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const matched = text.match(/^([1-9]\d{2,4})x([1-9]\d{2,4})$/);
+  if (!matched) throw new Error('SC_ENTRY_MATRIX_VIEWPORT must use WIDTHxHEIGHT');
+  return { width: Number(matched[1]), height: Number(matched[2]) };
+}
 
 function loadExposureRegistry() {
   const body = JSON.parse(fs.readFileSync(EXPOSURE_REGISTRY_PATH, 'utf8'));
@@ -257,7 +265,15 @@ const PRESENTATIONS = {
     surfaceSelector: '[data-semantic-component="ListPage"][data-list-status]',
     stateAttribute: 'data-list-status',
     emptySurfaceSelector: '[data-semantic-component="ScEmptyState"][data-state="empty"]',
-    recordSelector: 'button[data-semantic-cell-kind="primary"]:visible',
+    recordSelector: [
+      'button[data-semantic-cell-kind="primary"]:visible',
+      '[data-semantic-component="CollectionMobileRecordRow"]:visible',
+    ].join(', '),
+    recordOpenSelector: [
+      'button[data-semantic-cell-kind="primary"]:visible',
+      '[data-semantic-component="CollectionMobileRecordRow"] button[data-semantic-action="open-record"]:visible',
+    ].join(', '),
+    recordTextSelector: '.collection-mobile-record-row__identity',
     expectsRecords: true,
   },
   kanban: {
@@ -524,7 +540,7 @@ async function waitForModelContract(state, sinceIndex, model, timeout = 20000) {
 async function openFirstRecord(page, state, presentation) {
   const spec = presentationSpec(presentation);
   if (!spec.recordSelector) return null;
-  const node = page.locator(spec.recordSelector).first();
+  const node = page.locator(spec.recordOpenSelector || spec.recordSelector).first();
   if (!(await node.count())) return null;
   const since = state.contracts.length;
   const gesture = spec.recordOpenGesture || 'click';
@@ -818,6 +834,7 @@ function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessi
     acting: { login: state.actorLogin, company_id: sessionCompany, role_xmlids: state.roleXmlids },
     observation_binding: EXECUTION_BINDING,
     completeness,
+    viewport: VIEWPORT,
     selection: {
       domain: DOMAIN_FILTER || null,
       keys: KEYS_FILTER,
@@ -914,7 +931,10 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 async function deniedRoleNavigation(deniedRole) {
-  const context = await browser.newContext({ locale: 'zh-CN' });
+  const context = await browser.newContext({
+    locale: 'zh-CN',
+    ...(VIEWPORT ? { viewport: VIEWPORT } : {}),
+  });
   const page = await context.newPage();
   const state = { user: null, nav: null, contracts: [] };
   attachCapture(page, state);
@@ -979,7 +999,10 @@ async function main() {
   }
 
   browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({ locale: 'zh-CN' });
+  const context = await browser.newContext({
+    locale: 'zh-CN',
+    ...(VIEWPORT ? { viewport: VIEWPORT } : {}),
+  });
   const page = await context.newPage();
   const state = {
     user: null, nav: null, contracts: [], roleXmlids: null,

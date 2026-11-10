@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M1-20261110
+  title: 自定义前端系统性收敛 M1 信息截断规则
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: generic frontend information containment and title fallback
+  module: frontend/apps/web/src shared shell, work, list, form, relation and configuration surfaces
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Truncation and title fallback are generic presentation behavior shared across
+    contract-driven pages. They belong to the P0 frontend renderer and design
+    system, not to construction business contracts or customer configuration.
+  why_not_elsewhere: >
+    No field meaning, permission, workflow or record identity is being invented.
+    Missing structured record identity remains a registered contract gap. Adding
+    model-specific rules or backend fallbacks would create a second semantic authority.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M1-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M1-20261110/run.json
+      - docs/ops/iterations/frontend_systemic_m1_text_containment_20261110.md
+      - docs/architecture/text_containment_allowlist.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/
+    product_behavior: >
+      Record identity and money values remain readable; business titles use at
+      most two lines; retained information-bearing ellipsis has a title or
+      accessible full value.
+  objective: >
+    Reduce information-bearing nowrap use from the confirmed 46-file baseline
+    while retaining structural nowrap and proving golden-sample behavior at 1440
+    and 390.
+  acceptance:
+    - information-bearing nowrap files are at most 10 and every retained use is allowlisted
+    - record identity and money values are never ellipsized
+    - business titles clamp to at most two lines
+    - every retained information-bearing ellipsis has title or accessible fallback
+    - contract form, payment request and project ledger/my work pass 1440/390 review
+    - targeted guards, lint, strict typecheck and ci.local.iteration pass non-zero
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert the M1 topic commits; no persistent data or service state is involved.

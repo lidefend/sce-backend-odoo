@@ -801,6 +801,26 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         targets = select_targets(["frontend/packages/ui/src/kits/tdesign/theme.css"])
         self.assertIn("verify.frontend.primitive_adapter.unit", targets)
 
+    def test_design_token_change_recommends_style_system_guard(self) -> None:
+        for path in (
+            "frontend/packages/design-tokens/tokens/pattern.json",
+            "frontend/packages/design-tokens/dist/web/tokens.light.css",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.style_system.guard"],
+                )
+
+    def test_rich_text_sanitizer_inputs_select_the_browser_guard(self) -> None:
+        for path in (
+            "frontend/apps/web/src/utils/safeHtmlLinkTarget.ts",
+            "frontend/apps/web/src/utils/sanitizeReadonlyHtml.ts",
+            "frontend/apps/web/src/utils/sanitizeRestrictedHtml.ts",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.rich_text.guard", select_targets([path]))
+
     def test_unmapped_frontend_change_fails_safe_to_typecheck(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/new-area/NewSurface.vue"]),

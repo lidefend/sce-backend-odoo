@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-CONVERGENCE-M5-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "886868511098fdb37e1983c8b5e842c7d80b9d78",
+  "status": "completed",
+  "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M5-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_m5_rich_text_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M5-20261110.yaml",
+    ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M5-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/frontend_systemic_m5_rich_text_20261110.md",
+    "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+    "frontend/apps/web/scripts/standard_form_composition_adoption_test.ts",
+    "frontend/apps/web/src/",
+    "scripts/verify/",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies; runtime evidence registered separately when used"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/styles/",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_patterns": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "rich_text": {
+      "target": "verify.frontend.rich_text.guard",
+      "inputs": [
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/test_frontend_rich_text_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "rich_text_browser": {
+      "target": "verify.frontend.rich_text.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "kind": "runtime"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "M5 completed; begin M6 logger and monetary-expression convergence.",
+  "validation": {
+    "rich_text_guard": {
+      "status": "passed",
+      "command": "make verify.frontend.rich_text.guard",
+      "tests": 4,
+      "owner_directives": 1,
+      "consumers": 5
+    },
+    "rich_text_browser": {
+      "status": "passed",
+      "command": "make verify.frontend.rich_text.browser",
+      "checks": 10,
+      "browser": "147.0.7727.15",
+      "console_errors": 0
+    },
+    "standard_form_composition": {
+      "status": "passed",
+      "command": "make verify.frontend.standard_form_composition.unit",
+      "cases": 124
+    },
+    "overview_rich_text": {
+      "status": "passed",
+      "command": "make verify.frontend.overview_rich_text.unit"
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 15,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T202811Z-4184563-108146546/receipt.json",
+      "identity": "dirty:886868511098fdb37e1983c8b5e842c7d80b9d78"
+    },
+    "clean_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 16,
+      "candidate_head": "fb16c8009f8acaad70ab3ac5210b6806e84abe2b",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T203213Z-18318-22021321/receipt.json"
+    },
+    "browser": {
+      "status": "passed",
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "candidate_head": "fb16c8009f8acaad70ab3ac5210b6806e84abe2b",
+      "route_viewport_checks": 6,
+      "mutation_count": 0,
+      "overflow": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/m5-browser-fb16c800/summary.json",
+      "summary_sha256": "c7d40cf66bb832bd59c792fc250906b2673eb68e46a5be848a12b0e75fbfbdbd"
+    }
+  }
+}

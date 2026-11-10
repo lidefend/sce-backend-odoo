@@ -42,6 +42,6 @@ withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error'|'success';dens
   color: var(--sc-app-info-text);
 }
 @media (prefers-reduced-motion: reduce) {
-  .sc-inline-state :deep(*) { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .sc-inline-state :deep(*) { animation-duration: 0.01ms; animation-iteration-count: 1; transition-duration: 0.01ms; }
 }
 </style>

@@ -131,6 +131,18 @@ export function formatMonetaryDisplayValue(
   return currencyLabel ? `${formatted} ${currencyLabel}` : formatted;
 }
 
+export function formatDecimalDisplayValue(
+  value: unknown,
+  maximumFractionDigits = 6,
+  emptyText = FIELD_VALUE_EMPTY_TEXT,
+  locale = 'zh-CN',
+): string {
+  if (value === null || value === undefined || value === false || value === '') return emptyText;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return emptyText;
+  return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(numeric);
+}
+
 export function formatBusinessPercentage(value: unknown, emptyText = FIELD_VALUE_EMPTY_TEXT): string {
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;

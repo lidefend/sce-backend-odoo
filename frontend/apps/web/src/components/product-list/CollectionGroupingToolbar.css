@@ -7,4 +7,4 @@
 .group-sample-limit { font: var(--sc-font-mark-small); display: inline-flex; align-items: center; gap: var(--sc-space-2xs); color: var(--sc-app-text-secondary);   }
 .group-sample-limit-select { min-height: 32px; }
 @media (max-width: 760px) { .grouped-toolbar, .grouped-toolbar-actions { align-items: stretch; } .grouped-toolbar-actions { width: 100%; } .grouped-sort-btn, .group-sample-limit-select { min-height: 44px; } }
-@media (prefers-reduced-motion: reduce) { .grouped-toolbar * { transition-duration: 0.01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .grouped-toolbar * { transition-duration: 0.01ms; } }

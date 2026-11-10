@@ -10,37 +10,10 @@
   --sc-lowcode-panel-gap: var(--sc-product-panel-gap);
   --sc-lowcode-panel-radius: var(--sc-product-panel-radius);
 }
-
 .sc-page {
   background: var(--sc-app-bg);
   color: var(--sc-app-text-primary);
 }
-
-.skip-link {
-  position: fixed;
-  z-index: 10000;
-  inset: 8px auto auto 8px;
-  transform: translateY(-160%);
-  padding: 8px 12px;
-  border-radius: var(--sc-product-radius-control);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-}
-
-.skip-link:focus { transform: translateY(0); }
-
-:is(a, button, input, select, textarea, [tabindex]):focus-visible:not(
-  :where(
-    [data-focus-ring-owner='component'],
-    [data-focus-ring-owner='component'] *
-  )
-) {
-  outline: 2px solid var(--sc-semantic-surface-interactive);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-}
-
-[aria-busy="true"] { cursor: progress; }
 
 .router-host {
   display: flex;
@@ -445,23 +418,6 @@
 .sc-lowcode-panel-gap {
   gap: var(--sc-product-panel-gap);
 }
-.sc-visually-hidden {
-  position: absolute !important;
-  /* Static absolute positions inside scrollers can enlarge the document. */
-  top: 0 !important;
-  left: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  clip-path: inset(50%) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-
 /* List query-bar search control renders as one seamless unit (TDesign
  * InputAdornment shape). The outline search button previously kept its own
  * full 8px radius and left border, so it read as a separate box next to the
@@ -469,8 +425,8 @@
  * list surface: the submit button drops its left radius/border and joins the
  * input's right edge. */
 [data-product-page-mode='list'] .collection-search-control .toolbar-search-submit {
-  border-radius: 0 8px 8px 0 !important;
-  border-left-width: 0 !important;
+  border-radius: 0 8px 8px 0;
+  border-left-width: 0;
   height: var(--sc-component-input-form-height, 36px);
 }
 
@@ -493,20 +449,4 @@
   color: var(--sc-app-text-primary);
   line-height: var(--sc-product-line-body);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
-}
-
-
-/* Global reduced-motion fallback.
- * Honors the OS "reduce motion" preference across every product surface.
- * Component-local reduced-motion rules (e.g. collection controls) remain as
- * targeted refinements layered on top of this global floor. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }

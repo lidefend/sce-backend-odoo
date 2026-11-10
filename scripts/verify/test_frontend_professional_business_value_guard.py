@@ -66,12 +66,12 @@ class ProfessionalBusinessValueGuardTests(unittest.TestCase):
 
         def read_text(path):
             value = (self._root() / path).read_text(encoding="utf-8")
-            if path.endswith("styles/product-patterns.css"):
-                return value.replace("clip-path: inset(50%) !important;", "")
+            if path.endswith("styles/accessibility.css"):
+                return value.replace("clip-path: inset(50%);", "")
             return value
 
         failures = validate(read_text)
-        self.assertTrue(any("clip-path: inset(50%) !important" in item for item in failures), failures)
+        self.assertTrue(any("clip-path: inset(50%)" in item for item in failures), failures)
 
     def test_dropped_accessible_name_fails(self):
         """Removing the label carrier silences the screen reader instead of fixing the layout."""

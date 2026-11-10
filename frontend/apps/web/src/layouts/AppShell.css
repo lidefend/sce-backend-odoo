@@ -31,7 +31,7 @@
 
 /* BOSS-aligned shell: a single quiet navigation column keeps attention on data. */
 .workspace-activity-rail {
-  display: none !important;
+  display: none;
 }
 
 .workspace-sidebar-panel {
@@ -40,17 +40,6 @@
 
 .shell :deep(.sidebar--scroll) {
   overflow: hidden;
-}
-
-.workspace-activity-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 10px 6px;
-  border-right: 1px solid var(--sc-semantic-border-default);
-  background: color-mix(in srgb, var(--sc-navigation-bg) 90%, var(--sc-app-subtle-bg));
 }
 
 .workspace-activity-brand {
@@ -964,7 +953,7 @@
   }
 
   .workspace-activity-rail {
-    display: none !important;
+    display: none;
     padding: 12px 6px;
     border-right-color: var(--sc-app-border);
     background: var(--sc-navigation-bg);

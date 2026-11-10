@@ -1,4 +1,5 @@
 import { useSessionStore } from '../stores/session';
+import { logger } from '../utils/logger';
 
 const EXTENSION_NOISE_PATTERNS = [
   'chrome-extension://',
@@ -29,7 +30,7 @@ function installExtensionNoiseGuard() {
     }
     event.preventDefault();
     // eslint-disable-next-line no-console
-    console.info('[noise-guard] ignored browser extension error', { filename, message });
+    logger.info('[noise-guard] ignored browser extension error', { filename, message });
   });
   window.addEventListener('unhandledrejection', (event) => {
     const reason = (event as PromiseRejectionEvent).reason;
@@ -39,7 +40,7 @@ function installExtensionNoiseGuard() {
     }
     event.preventDefault();
     // eslint-disable-next-line no-console
-    console.info('[noise-guard] ignored browser extension rejection', { message });
+    logger.info('[noise-guard] ignored browser extension rejection', { message });
   });
 }
 

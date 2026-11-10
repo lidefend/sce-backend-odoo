@@ -11,6 +11,7 @@ import {
   type BusinessFieldError,
 } from '../../app/businessValidationError';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
+import { formatDecimalDisplayValue } from '../../app/presentation/businessValuePresentation';
 import { fieldType, fromDatetimeInputValue, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
@@ -892,13 +893,13 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(parsed);
   }
-  if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
+  if (ttype === 'integer') {
+    if (value === null || value === undefined || value === false || value === '') return '';
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '';
-    return new Intl.NumberFormat('zh-CN', {
-      maximumFractionDigits: ttype === 'integer' ? 0 : 6,
-    }).format(ttype === 'integer' ? Math.trunc(numeric) : numeric);
+    return formatDecimalDisplayValue(Math.trunc(numeric), 0, '', 'zh-CN');
   }
+  if (ttype === 'float' || ttype === 'monetary') return formatDecimalDisplayValue(value, 6, '', 'zh-CN');
   if (ttype === 'boolean') return value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT;
   if (ttype === 'selection') {
     const option = (column.selection || []).find(([key]) => String(key) === String(value));

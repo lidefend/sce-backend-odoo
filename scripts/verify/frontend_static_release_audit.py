@@ -12,6 +12,7 @@ OUTPUT = ROOT / "artifacts/frontend-release-audit/static.json"
 PNPM = ["scripts/dev/pnpm_exec.sh", "-C"]
 COMMANDS = {
     "style_system": ["make", "--no-print-directory", "verify.frontend.style_system.guard"],
+    "systemic_convergence": ["make", "--no-print-directory", "verify.frontend.systemic.convergence.static"],
     "shared_semantic_boundary": ["make", "--no-print-directory", "verify.frontend.shared_surface_semantic_boundary.guard"],
     "delivery_hardening": ["make", "--no-print-directory", "verify.frontend.delivery_hardening.guard"],
     "release_navigation_policy": [

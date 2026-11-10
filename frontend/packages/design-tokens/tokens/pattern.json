@@ -32,6 +32,7 @@
   },
   "overlay": {
     "dialog_padding": "{component.dialog.padding}",
-    "shadow": "{semantic.shadow.popover}"
+    "shadow": "{semantic.shadow.popover}",
+    "skip_link_z_index": "{z_index.toast}"
   }
 }

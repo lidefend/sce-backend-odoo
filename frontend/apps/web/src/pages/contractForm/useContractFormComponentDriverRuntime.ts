@@ -3,6 +3,7 @@ import { SCENE_UI_KITS, type SceneUiKitId } from '@sc/ui/form';
 import { getUserViewPreference, setUserViewPreference } from '../../api/preferences';
 import { resolveContractFormComponentDriverDecision } from '../../app/renderers/sceneComponentDriverPolicy';
 import { recordSceneComponentDriverEvent } from '../../app/renderers/sceneComponentDriverTelemetry';
+import { logger } from '../../utils/logger';
 export { resolveCanonicalFormRenderState } from './canonicalFormRenderState';
 
 export type ContractFormComponentDriverRuntimeOptions = {
@@ -62,7 +63,7 @@ export function useContractFormComponentDriverRuntime(options: ContractFormCompo
         userKit.value = '';
         loadedPreferenceKey = '';
       }
-      console.warn('[contract-form-driver] failed to load preference', error);
+      logger.warn('[contract-form-driver] failed to load preference', error);
     }
   }
 
@@ -79,7 +80,7 @@ export function useContractFormComponentDriverRuntime(options: ContractFormCompo
       });
     } catch (error) {
       userKit.value = '';
-      console.warn('[contract-form-driver] failed to save preference', error);
+      logger.warn('[contract-form-driver] failed to save preference', error);
     }
   }
 

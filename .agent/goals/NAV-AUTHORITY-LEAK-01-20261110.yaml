@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: NAV-AUTHORITY-LEAK-01-20261110
+  title: "P1 navigation authority leak for expense actions"
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: released navigation action-group intersection
+  module: smart_core menu/nav projection with construction P1 regression data
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The missing predicate is generic: every action-backed navigation node must
+    intersect the requesting user's action groups before release.
+  why_not_elsewhere: >
+    Construction-specific filtering would duplicate authorization for this pair,
+    leave other modules vulnerable, and force the frontend to hide backend data.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/NAV-AUTHORITY-LEAK-01-20261110.yaml
+      - .agent/runs/NAV-AUTHORITY-LEAK-01-20261110/run.json
+      - addons/smart_construction_core/
+      - addons/smart_core/
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/architecture/
+      - docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md
+      - docs/ops/iterations/nav_authority_leak_01_20261110.md
+      - scripts/verify/
+    product_behavior: >
+      A role receives an action only when its capability closure intersects the
+      action's declared authority groups, while legitimately authorized finance
+      and config-admin roles continue to receive the same entries.
+  objective: >
+    Find and fix why demo_role_pm receives reimbursement and advance-fund actions
+    despite a disjoint capability closure, then prove positive and negative
+    navigation outcomes without changing business ACLs or data.
+  acceptance:
+    - backend producer and reason for the leak are identified
+    - the fix lives at the declared P1 navigation owner
+    - authorized roles retain both entries
+    - denied role receives neither action
+    - targeted Odoo tests and released-navigation browser readback pass
+  exclusions:
+    - frontend cosmetic change
+    - payment or expense business data write
+    - ACL broadening
+    - deployment
+  rollback: Revert the P1 navigation projection fix and its tests.

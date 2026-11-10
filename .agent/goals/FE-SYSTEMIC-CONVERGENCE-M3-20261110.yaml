@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M3-20261110
+  title: "自定义前端系统性收敛 M3 内联样式分类与收敛"
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: generic frontend inline-style ownership and rendering mechanics
+  module: frontend/apps/web/src shared pages, renderers and design-system adapters
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Inline layout and presentation ownership is shared rendering behavior. A
+    single P0 classification must distinguish contract-driven geometry from
+    static styling debt and component pass-through mechanics.
+  why_not_elsewhere: >
+    No business fact, permission or contract value is being changed. Page-local
+    exceptions or model-specific rules would recreate the scattered styling
+    authority this batch is meant to remove.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M3-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M3-20261110/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/ops/iterations/frontend_systemic_m3_inline_style_20261110.md
+      - docs/architecture/inline_style_allowlist.json
+      - make/frontend.mk
+      - frontend/apps/web/src/
+      - scripts/verify/
+    product_behavior: >
+      Contract-driven geometry remains intact while static visual styling moves
+      to semantic classes and every retained dynamic style has one registered
+      mechanism owner.
+  objective: >
+    Replace the ambiguous raw `style=` count with three exact categories,
+    eliminate unowned static/duplicated inline styling, and register every
+    retained dynamic rendering mechanic.
+  acceptance:
+    - literal static inline style attributes are zero
+    - every retained dynamic style binding has a mechanism owner and rationale
+    - unregistered inline-style sites are zero
+    - style-system, lint, strict typecheck and affected iteration gates pass non-zero
+    - golden-sample pages remain stable at 1440/390
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M3 commits; no persistent data or service state is involved.

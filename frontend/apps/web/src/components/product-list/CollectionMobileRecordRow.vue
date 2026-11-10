@@ -50,7 +50,7 @@
           class="collection-mobile-record-row__relation-tags"
           data-semantic-cell-kind="relation-tags"
         >
-          <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag">{{ item.label }}</b>
+          <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag" :title="item.label">{{ item.label }}</b>
         </span>
         <b v-else :title="fact.value">{{ fact.value }}</b>
       </span>

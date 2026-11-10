@@ -443,7 +443,14 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScSelect must not place aria-required on the Select wrapper")
 
     card_text = (design / "ScCard.vue").read_text(encoding="utf-8") if (design / "ScCard.vue").is_file() else ""
-    if ':body-class-name="bodyClassName"' not in card_text or "bodyClassName?: string" not in card_text:
+    body_class_extension = (
+        ':body-class-name="bodyClassName"' in card_text
+        or (
+            ':body-class-name="cardBodyClassName"' in card_text
+            and "props.bodyClassName" in card_text
+        )
+    )
+    if not body_class_extension or "bodyClassName?: string" not in card_text:
         errors.append("ScCard must expose the official public bodyClassName extension point")
 
     inline_state_text = (design / "ScInlineState.vue").read_text(encoding="utf-8") if (design / "ScInlineState.vue").is_file() else ""

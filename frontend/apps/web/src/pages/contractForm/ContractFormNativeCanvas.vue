@@ -20,7 +20,7 @@
     <header v-if="designerMode" class="contract-form-canvas-head">
       <div>
         <strong>表单画布</strong>
-        <span>{{ selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性' }}</span>
+        <span :title="selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性'">{{ selectedFieldRowLabel ? `正在编辑：${selectedFieldRowLabel}` : '点选字段后在右侧调整属性' }}</span>
       </div>
       <em>{{ rootColumns }} 栏布局</em>
     </header>
@@ -99,13 +99,12 @@
       <template #readonly="{ field }">
         <div class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
           <span v-if="isEmptyValue(field.value, field.type)">{{ resolveReadonlyEmptyText(field) }}</span>
-          <!-- eslint-disable vue/no-v-html -- 值先经 sanitizeReadonlyHtml 净化 -->
-          <div
+          <ScRichText
             v-else-if="field.type === 'html'"
             class="form-readonly-html"
-            v-html="sanitizeReadonlyHtml(field.value)"
+            policy="readonly"
+            :content="field.value"
           />
-          <!-- eslint-enable vue/no-v-html -->
           <FieldValue
             v-else
             :value="field.value"
@@ -134,6 +133,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue';
 import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScRichText from '../../components/content/ScRichText.vue';
 import FieldValue from '../../components/FieldValue.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
@@ -145,7 +145,6 @@ import type {
   FormSectionFieldSchema,
 } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
-import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import { resolveReadonlyEmptyText } from '../../components/professional-fields/professionalBaseFieldModel';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "ae8d5dc68b71abe5a1414fee79ba858b30d32492",
+  "status": "active",
+  "goal": ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
+  "scope": [
+    ".agent/",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/tests/",
+    "docs/",
+    "frontend/apps/web/",
+    "frontend/packages/design-tokens/",
+    ".github/workflows/",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "managed GitHub origin and exact PR head checks"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "pr_push": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "scripts/ops/git_safe_push.sh",
+        "scripts/verify/test_pr_publish_preflight.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "R3 review findings are closed on exact HEAD 19cd7caafed9c76bb36d30d5ebabda3193081d3d; publish and require exact-head remote checks before merge.",
+  "validation": {
+    "r3_product_candidate": {
+      "head": "19cd7caafed9c76bb36d30d5ebabda3193081d3d",
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 23,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261110T015626Z-1599378-183419579/receipt.json"
+    },
+    "navigation_delivery": {
+      "status": "passed",
+      "command": "make verify.backend.navigation_delivery.unit",
+      "tests": [51, 10, 3]
+    },
+    "systemic_guards": {
+      "status": "passed",
+      "command": "make verify.frontend.systemic.convergence.static",
+      "static_guards": 5
+    },
+    "frontend_build": {
+      "status": "passed",
+      "command": "make verify.frontend.build ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev"
+    }
+  }
+}

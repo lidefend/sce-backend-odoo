@@ -216,10 +216,13 @@ h1 {
 
 .delivery-readiness-item span,
 .delivery-readiness-item em {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .delivery-readiness-item span {
@@ -408,6 +411,7 @@ h1 {
 }
 
 .page-picker-head em {
+  display: -webkit-box;
   max-width: 128px;
   overflow: hidden;
   border: 1px solid var(--sc-app-border);
@@ -418,8 +422,10 @@ h1 {
   font-size: 11px;
   font-style: normal;
   line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selected-page-overview {
@@ -523,14 +529,14 @@ h1 {
 .scan-row-main strong {
   color: var(--sc-app-text-primary);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .scan-row-main span {
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .scan-row-meta,
@@ -1564,8 +1570,8 @@ h1 {
 .preference-list span {
   max-width: 220px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 @media (max-width: 1200px) {

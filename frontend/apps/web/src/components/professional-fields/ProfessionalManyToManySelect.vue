@@ -44,7 +44,7 @@
       <template #option="{ option }">
         <div class="m2m-option" :class="{ 'm2m-option-create': option.isCreate }">
           <span v-if="option.color !== undefined" class="m2m-option-swatch" :style="tagColorStyle(option.color)" />
-          <span class="m2m-option-label">{{ option.label }}</span>
+          <span class="m2m-option-label" :title="option.label">{{ option.label }}</span>
           <span v-if="option.isCreate" class="m2m-option-hint">回车创建</span>
         </div>
       </template>
@@ -281,10 +281,13 @@ watch(
 }
 
 .m2m-option-label {
+  display: -webkit-box;
   flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .m2m-option-create {

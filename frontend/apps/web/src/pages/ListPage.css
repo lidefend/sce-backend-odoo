@@ -558,10 +558,9 @@ tbody td {
 
 .column-long-text {
   max-width: 180px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .column-name-text {
@@ -571,12 +570,14 @@ tbody td {
 .column-long-text > *,
 .column-long-text .primary,
 .column-long-text .secondary {
+  display: -webkit-box;
   min-width: 0;
   max-width: 100%;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .column-numeric {
@@ -695,14 +696,23 @@ tbody td {
 
 .table tbody .column-layout-identity .primary,
 .table tbody .column-layout-relation > div {
-  display: block;
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.table tbody .column-layout-text > div,
+.table tbody .column-layout-text > div {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .table tbody .column-layout-date > div,
 .table tbody .column-layout-money > div,
 .table tbody .column-layout-status > div {
@@ -713,7 +723,12 @@ tbody td {
 
 .table tbody td.column-layout-identity,
 .table tbody td.column-layout-relation,
-.table tbody td.column-layout-text,
+.table tbody td.column-layout-text {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .table tbody td.column-layout-status {
   overflow: hidden;
   text-overflow: ellipsis;

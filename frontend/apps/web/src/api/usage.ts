@@ -1,6 +1,7 @@
 import { intentRequest } from './intents';
 import type { ContractReasonCode, ContractReasonCount } from './contractTypes';
 import { trackTelemetryEvent } from './telemetry';
+import { logger } from '../utils/logger';
 
 const PRODUCT_USAGE_EVENT_TYPES = new Set<string>(['scene_open', 'capability_open']);
 
@@ -23,7 +24,7 @@ export async function trackUsageEvent(eventType: string, extra: Record<string, u
     // Usage analytics is non-critical in delivery mode; ignore to keep UX stable.
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
-      console.warn('[usage.track] ignored:', err);
+      logger.warn('[usage.track] ignored:', err);
     }
   }
 }

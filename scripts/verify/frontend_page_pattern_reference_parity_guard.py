@@ -18,8 +18,8 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/components/design-system/ScCard.vue": (
         "| 'fact' |",
-        "fact: { padding: '0' }",
         "[data-appearance='fact']",
+        ":deep(.sc-card__body--fact) { padding: 0; }",
         "| 'task-section' |",
         "[data-appearance='task-section']",
     ),

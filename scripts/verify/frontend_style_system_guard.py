@@ -299,6 +299,10 @@ def main() -> int:
     if token_system_main() != 0:
         errors.append("Token v1 authority guard failed")
 
+    from frontend_inline_style_guard import main as inline_style_main
+    if inline_style_main() != 0:
+        errors.append("frontend inline-style ownership guard failed")
+
     if errors:
         return _fail(errors)
 

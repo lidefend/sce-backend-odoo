@@ -2,6 +2,7 @@ import { apiRequestRaw, ApiError } from './client';
 import type { IntentEnvelope } from '@sc/schema';
 import { useSessionStore } from '../stores/session';
 import { parseIntentEnvelope, type IntentEnvelopeError } from './envelope';
+import { logger } from '../utils/logger';
 
 export interface IntentPayload {
   intent: string;
@@ -155,7 +156,7 @@ export async function intentRequest<T>(payload: IntentPayload, options: { signal
       throwEnvelopeError(effectivePayload, envelopeTrace, parsed.error);
     }
     // eslint-disable-next-line no-console
-    console.info(`[trace] intent=${effectivePayload.intent} status=ok trace=${envelopeTrace}`);
+    logger.info(`[trace] intent=${effectivePayload.intent} status=ok trace=${envelopeTrace}`);
     return parsed.data;
   } catch (err) {
     const errorTrace = err instanceof ApiError ? err.traceId || traceId : traceId;
@@ -168,7 +169,7 @@ export async function intentRequest<T>(payload: IntentPayload, options: { signal
     // eslint-disable-next-line no-console
     if (!effectivePayload.silentErrors) {
       // eslint-disable-next-line no-console
-      console.warn(`[trace] intent=${effectivePayload.intent} status=error trace=${errorTrace}`);
+      logger.warn(`[trace] intent=${effectivePayload.intent} status=error trace=${errorTrace}`);
     }
     throw err;
   }

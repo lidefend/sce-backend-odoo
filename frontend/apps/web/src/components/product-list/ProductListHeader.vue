@@ -10,7 +10,11 @@
   >
     <ScActionBar
       class="product-list-header__tools"
-      :class="{ 'product-list-header__tools--aligned': alignedLayout, 'product-list-header__tools--collection': collectionLayout }"
+      :class="{
+        'product-list-header__tools--aligned': alignedLayout,
+        'product-list-header__tools--collection': collectionLayout,
+        'product-list-header__tools--planner': plannerLayout,
+      }"
       :style="layoutStyle"
       label="列表操作"
     >
@@ -87,6 +91,7 @@ defineProps<{
   searchPlaceholder: string;
   collectionLayout?: boolean;
   alignedLayout?: boolean;
+  plannerLayout?: boolean;
   layoutStyle?: StyleValue;
 }>();
 
@@ -160,6 +165,9 @@ defineEmits<{
 }
 .product-list-header__tools--aligned {
   grid-template-areas: 'leading divider-left search divider-right actions';
+}
+.product-list-header__tools--planner {
+  grid-template-columns: minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content;
 }
 .product-list-header__tools--aligned .product-list-header__leading { grid-area: leading; min-width: 0; }
 .product-list-header__tools--aligned .product-list-header__search { grid-area: search; min-width: 0; }

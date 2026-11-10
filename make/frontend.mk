@@ -866,7 +866,46 @@ verify.frontend.my_work_approval.guard: guard.prod.forbid
 
 .PHONY: verify.frontend.style_system.guard
 verify.frontend.style_system.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
 	@python3 scripts/verify/frontend_style_system_guard.py
+
+.PHONY: verify.frontend.text_containment.guard verify.frontend.inline_style.guard
+verify.frontend.text_containment.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_text_containment_guard
+	@python3 scripts/verify/frontend_text_containment_guard.py
+
+verify.frontend.inline_style.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
+	@python3 scripts/verify/frontend_inline_style_guard.py
+
+.PHONY: verify.frontend.systemic.convergence.guard verify.frontend.systemic.convergence.static
+verify.frontend.systemic.convergence.static: guard.prod.forbid verify.frontend.text_containment.guard verify.frontend.inline_style.guard verify.frontend.split_usage.guard verify.frontend.rich_text.static verify.frontend.console.guard
+	@python3 -m unittest scripts.verify.test_frontend_systemic_convergence_gate_guard
+	@python3 scripts/verify/frontend_systemic_convergence_gate_guard.py
+
+verify.frontend.systemic.convergence.guard: guard.prod.forbid verify.frontend.systemic.convergence.static verify.frontend.rich_text.browser
+
+.PHONY: verify.frontend.split_usage.guard
+verify.frontend.split_usage.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_split_usage_guard
+	@python3 scripts/verify/frontend_split_usage_guard.py
+
+.PHONY: verify.frontend.rich_text.guard verify.frontend.rich_text.static verify.frontend.rich_text.browser
+verify.frontend.rich_text.guard: guard.prod.forbid verify.frontend.rich_text.static verify.frontend.rich_text.browser
+
+verify.frontend.rich_text.static: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_rich_text_guard
+	@python3 scripts/verify/frontend_rich_text_guard.py
+
+verify.frontend.rich_text.browser: guard.prod.forbid
+	@node frontend/apps/web/scripts/rich_text_component_browser_test.mjs
+
+.PHONY: verify.frontend.console.guard
+verify.frontend.console.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_console_guard
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/logger_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/logger-runtime-test.mjs >/dev/null
+	@node /tmp/logger-runtime-test.mjs
+	@python3 scripts/verify/frontend_console_guard.py
 
 .PHONY: verify.frontend.standard_list_scroll_contract.guard
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid

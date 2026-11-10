@@ -325,7 +325,7 @@ require(
 )
 require(
     "var(--sc-semantic-surface-interactive)" in form_host
-    and "var(--sc-semantic-text-on-interactive) !important" in form_host,
+    and "var(--sc-semantic-text-on-interactive)" in form_host,
     "primary action does not consume the registered interactive contrast tokens",
 )
 require("normalizeActionSemantics" in action_executor and "?.executor === 'record.save'" in action_executor and "!actionRef.actionSemanticsInvalid" in action_executor, "canonical persistence intent is not bridged to the unified save executor")

@@ -44,6 +44,7 @@ WATCH_ROOTS = (
     "frontend/packages/ui/src",
     "frontend/packages/ui/package.json",
     "frontend/packages/ui/tsconfig.json",
+    "frontend/packages/design-tokens",
     "scripts/verify/frontend_",
     "scripts/ops/incremental_execution.py",
 )
@@ -147,12 +148,14 @@ RULES = (
     Rule((
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
     ), (
         "verify.ci.workflow.contract",
         "verify.github_actions.security",
     )),
     Rule((
         "make/ci.mk",
+        "scripts/verify/frontend_static_release_audit.py",
     ), (
         "verify.ci.workflow.contract",
     )),
@@ -176,6 +179,11 @@ RULES = (
         "frontend/packages/ui/package.json",
         "frontend/packages/ui/tsconfig.json",
     ), BASE_FRONTEND_TARGETS),
+    Rule((
+        "frontend/packages/design-tokens/",
+    ), (
+        "verify.frontend.style_system.guard",
+    )),
     Rule((
         "frontend/apps/web/vite.config.ts",
         "frontend/apps/web/src/env.d.ts",
@@ -230,6 +238,78 @@ RULES = (
         "scripts/verify/test_frontend_professional_detail_collection_guard.py",
     ), (
         "verify.frontend.professional_detail_collection.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+    ), (
+        "verify.frontend.navigation_shell.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py",
+    ), (
+        "verify.frontend.professional_business_value.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+    ), (
+        "verify.frontend.scene_component_bridge.guard",
+    )),
+    Rule((
+        "docs/architecture/inline_style_allowlist.json",
+        "scripts/verify/frontend_inline_style_guard.py",
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/test_frontend_inline_style_guard.py",
+    ), (
+        "verify.frontend.style_system.guard",
+    )),
+    Rule((
+        "docs/architecture/text_containment_allowlist.json",
+        "scripts/verify/frontend_text_containment_guard.py",
+        "scripts/verify/test_frontend_text_containment_guard.py",
+    ), (
+        "verify.frontend.text_containment.guard",
+    )),
+    Rule((
+        "docs/architecture/frontend_systemic_convergence_gates.json",
+        "scripts/verify/frontend_systemic_convergence_gate_guard.py",
+        "scripts/verify/test_frontend_systemic_convergence_gate_guard.py",
+    ), (
+        "verify.frontend.systemic.convergence.guard",
+    )),
+    Rule((
+        "docs/architecture/split_usage_allowlist.json",
+        "scripts/verify/frontend_split_usage_guard.py",
+        "scripts/verify/test_frontend_split_usage_guard.py",
+    ), (
+        "verify.frontend.split_usage.guard",
+    )),
+    Rule((
+        "frontend/apps/web/src/components/content/ScRichText.vue",
+        "frontend/apps/web/src/utils/safeHtmlLinkTarget.ts",
+        "frontend/apps/web/src/utils/sanitizeReadonlyHtml.ts",
+        "frontend/apps/web/src/utils/sanitizeRestrictedHtml.ts",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/test_frontend_rich_text_guard.py",
+    ), (
+        "verify.frontend.rich_text.guard",
+    )),
+    Rule((
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "frontend/apps/web/src/utils/logger.ts",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py",
+    ), (
+        "verify.frontend.console.guard",
     )),
     Rule((
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
@@ -542,7 +622,10 @@ RULES = (
         "verify.frontend.collection_action_toolbar.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
-    Rule(("scripts/verify/frontend_page_pattern_reference_parity_guard.py",), (
+    Rule((
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+    ), (
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
     # The business-entry matrix shares one pure model, one scope adapter and one

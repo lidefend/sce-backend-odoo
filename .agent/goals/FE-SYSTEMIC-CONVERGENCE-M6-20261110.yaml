@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: FE-SYSTEMIC-CONVERGENCE-M6-20261110
+  title: "自定义前端系统性收敛 M6 生产观测与金额表达统一"
+  status: completed
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared frontend diagnostics and monetary presentation
+  module: frontend API, session, action runtime, logger and one2many monetary formatter
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Logging policy and monetary formatting are generic frontend mechanisms used
+    across every contract-driven page and must not be reimplemented per module.
+  why_not_elsewhere: >
+    No backend logging, contract value or business precision is changing.
+    Page-specific console calls and duplicate monetary formatters would preserve
+    the split observation and presentation authority.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml
+      - .agent/runs/FE-SYSTEMIC-CONVERGENCE-M6-20261110/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/e2e_journey_matrix.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md
+      - frontend/apps/web/scripts/
+      - frontend/apps/web/src/
+      - scripts/verify/
+      - make/frontend.mk
+    product_behavior: >
+      Production builds stop emitting verbose console noise while explicit error
+      reporting remains, and monetary display keeps existing precision through
+      the shared business-value formatter.
+  objective: >
+    Replace scattered console output with one controlled logger and route the
+    remaining one2many monetary display path through the shared monetary formatter.
+  acceptance:
+    - console call count outside the logger is zero
+    - logger debug/info are opt-in and production-silent
+    - monetary formatting has one display authority while preserving current precision
+    - affected tests, iteration and 1440/390 browser review pass
+  exclusions:
+    - contract_v2_change
+    - acl_or_permission_change
+    - backend_business_logic
+    - database_or_runtime_write
+    - deployment
+  rollback: Revert M6 commits; no persistent data or service state is involved.

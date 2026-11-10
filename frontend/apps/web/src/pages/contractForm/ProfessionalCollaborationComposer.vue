@@ -35,7 +35,7 @@
         <ScIcon class="native-chatter-reply-icon" name="reply" :size="18" />
         <div class="native-chatter-reply-content">
           <span class="native-chatter-reply-author">回复 {{ replyTarget.author }}</span>
-          <span class="native-chatter-reply-body">{{ replyTarget.body }}</span>
+          <span class="native-chatter-reply-body" :title="replyTarget.body">{{ replyTarget.body }}</span>
         </div>
       </div>
       <label v-if="userSearchEnabled" class="native-chatter-field">

@@ -6,6 +6,7 @@ import { resolveActionSurfaceRenderer } from '../renderers/actionSurfaceRenderer
 import { resolveSceneComponentDriverDecision } from '../renderers/sceneComponentDriverPolicy';
 import { recordSceneComponentDriverEvent } from '../renderers/sceneComponentDriverTelemetry';
 import { resolveSceneReadonlyCollectionBridge } from '../renderers/sceneReadonlyCollectionBridge';
+import { logger } from '../../utils/logger';
 
 type Dict = Record<string, unknown>;
 
@@ -101,7 +102,7 @@ export function useActionViewSceneComponentDriverRuntime(
       if (seq === preferenceLoadSeq) userKit.value = String(result.preference?.kit || '').trim();
     } catch (err) {
       if (seq === preferenceLoadSeq) userKit.value = '';
-      console.warn('[scene-driver] failed to load preference', err);
+      logger.warn('[scene-driver] failed to load preference', err);
     }
   }
 
@@ -119,7 +120,7 @@ export function useActionViewSceneComponentDriverRuntime(
       });
     } catch (err) {
       userKit.value = '';
-      console.warn('[scene-driver] failed to save preference', err);
+      logger.warn('[scene-driver] failed to save preference', err);
     }
   }
 

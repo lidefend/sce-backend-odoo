@@ -153,9 +153,9 @@
           :class="{ 'delivery-readiness-item--pending': item.status !== 'ready' }"
           @click="$emit('runDeliveryReadinessAction', item)"
         >
-          <span>{{ item.label }}</span>
-          <strong>{{ deliveryReadinessItemStatusText(item) }}</strong>
-          <em>{{ deliveryReadinessItemMetaText(item) }}</em>
+          <span :title="item.label">{{ item.label }}</span>
+          <strong :title="deliveryReadinessItemStatusText(item)">{{ deliveryReadinessItemStatusText(item) }}</strong>
+          <em :title="deliveryReadinessItemMetaText(item)">{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
       <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />

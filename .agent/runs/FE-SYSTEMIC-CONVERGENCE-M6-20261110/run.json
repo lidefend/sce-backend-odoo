@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "id": "FE-SYSTEMIC-CONVERGENCE-M6-20261110",
+  "branch": "feature/fe-systemic-convergence-m1-20261110",
+  "baseline_sha": "45963a72d6e65d3a3418bfa2a8202a03fea94fee",
+  "status": "completed",
+  "goal": ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-SYSTEMIC-CONVERGENCE-M6-20261110.yaml",
+    ".agent/runs/FE-SYSTEMIC-CONVERGENCE-M6-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/frontend_systemic_m6_log_money_20261110.md",
+    "frontend/apps/web/scripts/logger_runtime_test.ts",
+    "frontend/apps/web/src/",
+    "scripts/verify/",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend dependencies; runtime evidence registered separately when used"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/styles/",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_patterns": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "console": {
+      "target": "verify.frontend.console.guard",
+      "inputs": [
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "frontend/apps/web/src/",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "M6 completed; begin M7 390/1440 center-journey parity verification.",
+  "validation": {
+    "console": {
+      "status": "passed",
+      "command": "make verify.frontend.console.guard",
+      "tests": 4,
+      "console_sites": 0,
+      "console_calls": 0,
+      "logger_runtime": "quiet, verbose and production policies passed"
+    },
+    "incremental_planner": {
+      "status": "passed",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "tests": 103
+    },
+    "iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 19,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T204128Z-72251-418469068/receipt.json",
+      "identity": "dirty:45963a72d6e65d3a3418bfa2a8202a03fea94fee"
+    },
+    "clean_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 20,
+      "candidate_head": "f78a26322cebea01147d778569480b51a76a44dc",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261109T204436Z-93058-805021234/receipt.json"
+    },
+    "browser": {
+      "status": "passed",
+      "command": "make local.dev.candidate.frontend.visual-smoke",
+      "candidate_head": "f78a26322cebea01147d778569480b51a76a44dc",
+      "route_viewport_checks": 6,
+      "mutation_count": 0,
+      "overflow": 0,
+      "console_errors": 0,
+      "http_errors": 0,
+      "summary": ".runtime/m6-browser-f78a263/summary.json",
+      "summary_sha256": "8db26fe20dd4721c785a9e2b29225149eedf379f902fed2ddc2eba7fc6e8c303"
+    }
+  }
+}

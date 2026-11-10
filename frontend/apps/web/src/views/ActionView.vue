@@ -784,6 +784,7 @@ import { collectColumnSelections } from '../app/presentation/collectionStatusPre
 import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVisibility';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../utils/fieldSemantics.ts';
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
+import { logger } from '../utils/logger';
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
@@ -2912,7 +2913,7 @@ const {
     listRecordsRaw: listActionViewRecordsRaw,
     currentErrorMessage: () => error.value?.message || '',
     warn: (message: string, payload: Record<string, unknown>) => {
-      console.warn(message, payload);
+      logger.warn(message, payload);
     },
     advancedFieldsRef: advancedFields,
     kanbanFieldsRef: kanbanFields,
@@ -3207,7 +3208,7 @@ async function persistListColumnPreference(errorMessage: string): Promise<void> 
     if (owner.isCurrent() && saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('error');
     }
-    console.warn(errorMessage, err);
+    logger.warn(errorMessage, err);
   }
 }
 
@@ -3237,7 +3238,7 @@ async function handleToggleRecordFavorite(row: Record<string, unknown>, field: s
     });
   } catch (err) {
     row[field] = previousValue;
-    console.warn('[list-field-mutation] failed to save field state', err);
+    logger.warn('[list-field-mutation] failed to save field state', err);
   }
 }
 
@@ -3380,7 +3381,7 @@ onBeforeUnmount(() => {
 onErrorCaptured((err) => {
   const message = err instanceof Error ? err.message : String(err || 'unknown render error');
   renderErrorMessage.value = `ActionView render error: ${message}`;
-  console.error('[ActionView] render failed', err);
+  logger.error('[ActionView] render failed', err);
   return false;
 });
 
@@ -3570,17 +3571,17 @@ function refreshForRecordContextChange(): void {
 }
 
 .empty-next-title {
-  color: var(--sc-app-text-primary) !important;
+  color: var(--sc-app-text-primary);
   font-weight: 700;
 }
 
 .empty-next-hint {
-  color: var(--sc-app-text-secondary) !important;
+  color: var(--sc-app-text-secondary);
 }
 
 .empty-next-reason {
-  color: var(--sc-semantic-text-muted) !important;
-  font-size: 12px !important;
+  color: var(--sc-semantic-text-muted);
+  font-size: 12px;
 }
 
 .contract-label {

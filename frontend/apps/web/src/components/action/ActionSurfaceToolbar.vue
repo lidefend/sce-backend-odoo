@@ -41,7 +41,7 @@
           :disabled="loading"
           @click="$emit('clear-filter')"
         >
-          <span>{{ activeFilterChip.label }}</span>
+          <span :title="activeFilterChip.label">{{ activeFilterChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
         <ScButton
@@ -55,7 +55,7 @@
           :disabled="loading"
           @click="$emit('clear-saved-filter')"
         >
-          <span>{{ activeSavedFilterChip.label }}</span>
+          <span :title="activeSavedFilterChip.label">{{ activeSavedFilterChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
         <ScButton
@@ -69,7 +69,7 @@
           :disabled="loading"
           @click="$emit('clear-custom-filter')"
         >
-          <span>{{ activeCustomFilterLabel }}</span>
+          <span :title="activeCustomFilterLabel">{{ activeCustomFilterLabel }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
         <ScButton
@@ -83,7 +83,7 @@
           :disabled="loading"
           @click="$emit('clear-group')"
         >
-          <span>{{ activeGroupChip.label }}</span>
+          <span :title="activeGroupChip.label">{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
         <ScInputGroup class="collection-search-control">

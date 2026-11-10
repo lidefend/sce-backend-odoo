@@ -26,7 +26,7 @@
     />
     <div v-else class="analysis-chart" role="img" :aria-label="title" :data-graph-type="model.graphType">
       <article v-for="row in graphRows" :key="row.key" class="analysis-bar-row">
-        <p class="analysis-bar-label">{{ row.label }}</p>
+        <p class="analysis-bar-label" :title="row.label">{{ row.label }}</p>
         <div class="analysis-bar-track"><span class="analysis-bar-fill" :style="{ width: `${row.percent}%` }" /></div>
         <p class="analysis-bar-value">{{ row.value }}</p>
       </article>
@@ -72,7 +72,7 @@ const graphRows = computed(() => {
 .analysis-chart { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--sc-border-secondary); border-radius: 10px; background: var(--sc-bg-container); }
 .analysis-bar-row { display: grid; grid-template-columns: minmax(120px, 220px) minmax(120px, 1fr) minmax(72px, auto); gap: 12px; align-items: center; }
 .analysis-bar-label, .analysis-bar-value { margin: 0; font-size: 13px; }
-.analysis-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analysis-bar-label { display: -webkit-box; min-width: 0; overflow: hidden; overflow-wrap: anywhere; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .analysis-bar-value { text-align: right; font-variant-numeric: tabular-nums; }
 .analysis-bar-track { height: 12px; overflow: hidden; border-radius: 999px; background: var(--sc-bg-secondary); }
 .analysis-bar-fill { display: block; height: 100%; border-radius: inherit; background: var(--sc-semantic-surface-interactive); }
