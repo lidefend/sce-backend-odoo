@@ -27,6 +27,19 @@ MAX_RESPONSIBILITY_COMMITS = 12
 MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
 ACTIVE_RUNS_INDEX_PATH = ".agent/active-runs.json"
+SEMANTIC_UNION_CONFLICT_PATH = (
+    "scripts/verify/frontend_my_work_approval_browser.mjs"
+)
+SEMANTIC_UNION_REQUIRED_MARKERS = (
+    (
+        "upstream approval-detail readback",
+        ("const approvedForm", "approvedAmountField", "cross_page_readout"),
+    ),
+    (
+        "U06 approval-page decision flow",
+        ("rejectSafetyDialog", "action_approval_reject", "action_params.reason"),
+    ),
+)
 GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -89,6 +102,7 @@ class SyncResult:
     main_equivalent_paths: tuple[str, ...] = ()
     generated_commit: str | None = None
     generated_evidence_replay_paths: tuple[str, ...] = ()
+    semantic_conflicts: tuple[str, ...] = ()
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -495,6 +509,47 @@ def resolve_generated_evidence_conflicts(
     return resolved
 
 
+def verify_semantic_union_text(path: str, text: str) -> None:
+    """Require both reviewed behaviours before preserving the prepared file."""
+    if "<<<<<<<" in text or ">>>>>>>" in text:
+        raise SyncError(f"semantic union source still contains conflict markers: {path}")
+    for label, markers in SEMANTIC_UNION_REQUIRED_MARKERS:
+        missing = [marker for marker in markers if marker not in text]
+        if missing:
+            raise SyncError(
+                f"semantic union source for {path} is missing {label}: "
+                + ", ".join(missing)
+            )
+
+
+def resolve_semantic_union_conflict(
+    plan: SyncPlan, conflicts: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Preserve one pre-reviewed path whose competing hunks form a semantic union.
+
+    The topic head is already the reviewed union of the upstream readback
+    assertions and the U06 approval-page execution journey.  Replaying its
+    final form at the first collision is deterministic; later topic commits for
+    the same path may become empty because their aggregate content is already
+    present.  Aggregate path and patch identity still prove that no stable
+    responsibility disappeared, and the journey must be rerun after the sync.
+    """
+    resolved = tuple(
+        path for path in conflicts if path == SEMANTIC_UNION_CONFLICT_PATH
+    )
+    if not resolved:
+        return ()
+    if not plan.extended_history:
+        raise SyncError("semantic union conflicts require the extended frozen sync")
+    text = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
+    verify_semantic_union_text(SEMANTIC_UNION_CONFLICT_PATH, text)
+    target = generated_output_path(plan.root, SEMANTIC_UNION_CONFLICT_PATH)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text, encoding="utf-8")
+    run(plan.root, "add", "--", SEMANTIC_UNION_CONFLICT_PATH)
+    return resolved
+
+
 def merge_active_runs_index(plan: SyncPlan) -> None:
     """Three-way merge the branch-to-run index without inventing entries."""
     try:
@@ -549,10 +604,13 @@ def verify_active_runs_resolution(plan: SyncPlan) -> None:
         raise SyncError("active-runs index merge changed during sync")
 
 
-def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] | None:
+def run_rebase(
+    plan: SyncPlan,
+) -> tuple[bool, tuple[str, ...], tuple[str, ...], tuple[str, ...]] | None:
     append_only_log_resolved = False
     generated_evidence_conflicts: set[str] = set()
     metadata_conflicts: set[str] = set()
+    semantic_conflicts: set[str] = set()
     result = run(plan.root, "rebase", "--onto", plan.new_main, plan.replay_base, check=False)
     while result.returncode:
         conflicts = tuple(
@@ -566,6 +624,8 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] 
         allowed = {APPEND_ONLY_CONFLICT_PATH, ACTIVE_RUNS_INDEX_PATH}
         if plan.extended_history or plan.regenerate_evidence:
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
+        if plan.extended_history:
+            allowed.add(SEMANTIC_UNION_CONFLICT_PATH)
         if not conflicts or any(path not in allowed for path in conflicts):
             diagnostic = plan.recovery_bundle.with_suffix(".conflict.json")
             diagnostic.parent.mkdir(parents=True, exist_ok=True)
@@ -583,11 +643,19 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] 
         generated_evidence_conflicts.update(
             resolve_generated_evidence_conflicts(plan, conflicts)
         )
+        semantic_conflicts.update(
+            resolve_semantic_union_conflict(plan, conflicts)
+        )
         if ACTIVE_RUNS_INDEX_PATH in conflicts:
             merge_active_runs_index(plan)
             metadata_conflicts.add(ACTIVE_RUNS_INDEX_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
-    return append_only_log_resolved, tuple(sorted(generated_evidence_conflicts)), tuple(sorted(metadata_conflicts))
+    return (
+        append_only_log_resolved,
+        tuple(sorted(generated_evidence_conflicts)),
+        tuple(sorted(metadata_conflicts)),
+        tuple(sorted(semantic_conflicts)),
+    )
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:
@@ -696,7 +764,12 @@ def sync(plan: SyncPlan) -> SyncResult:
     if rebase_result is None:
         abort_rebase_and_restore(plan)
         raise SyncError("rebase conflict; aborted and restored original HEAD")
-    append_only_log_resolved, generated_evidence_conflicts, metadata_conflicts = rebase_result
+    (
+        append_only_log_resolved,
+        generated_evidence_conflicts,
+        metadata_conflicts,
+        semantic_conflicts,
+    ) = rebase_result
     try:
         new_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
@@ -708,7 +781,12 @@ def sync(plan: SyncPlan) -> SyncResult:
         # derived diffs; all other responsibility paths keep exact comparison.
         rebuild_paths = set(GENERATED_EVIDENCE_CONFLICT_PATHS) if plan.regenerate_evidence else set()
         generated_replay_paths = tuple(sorted((set(plan.paths) | set(new_paths)) & rebuild_paths))
-        excluded_paths = tuple(sorted({*generated_evidence_conflicts, *metadata_conflicts, *rebuild_paths}))
+        excluded_paths = tuple(sorted({
+            *generated_evidence_conflicts,
+            *metadata_conflicts,
+            *semantic_conflicts,
+            *rebuild_paths,
+        }))
         old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
         new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
         extra_paths = sorted(set(new_stable_paths) - set(old_stable_paths))
@@ -736,6 +814,7 @@ def sync(plan: SyncPlan) -> SyncResult:
                         *generated_evidence_conflicts,
                         *rebuild_paths,
                         *metadata_conflicts,
+                        *semantic_conflicts,
                         *main_equivalent_paths,
                     }
                 )
@@ -747,6 +826,15 @@ def sync(plan: SyncPlan) -> SyncResult:
             verify_append_only_log_resolution(plan)
         if metadata_conflicts:
             verify_active_runs_resolution(plan)
+        for path in semantic_conflicts:
+            if not path_equals_revision(plan.root, new_head, plan.head, path):
+                raise SyncError(
+                    f"semantic union path changed during sync: {path}"
+                )
+            verify_semantic_union_text(
+                path,
+                text_at_revision(plan.root, new_head, path),
+            )
         patch_excludes = tuple(
             sorted(
                 {
@@ -773,8 +861,15 @@ def sync(plan: SyncPlan) -> SyncResult:
         if isinstance(exc, SyncError):
             raise SyncError(f"{exc}; original HEAD restored") from exc
         raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
-    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths,
-                      generated_commit, generated_replay_paths)
+    return SyncResult(
+        new_head,
+        generated_evidence_conflicts,
+        metadata_conflicts,
+        main_equivalent_paths,
+        generated_commit,
+        generated_replay_paths,
+        semantic_conflicts,
+    )
 
 
 def main() -> int:
@@ -823,6 +918,7 @@ def main() -> int:
         print(f"[workspace.branch.sync-main] DENY {exc}", file=sys.stderr)
         return 2
     invalidated = ",".join(result.generated_evidence_conflicts) or "none"
+    semantic = ",".join(result.semantic_conflicts) or "none"
     next_validation = ("exact-new-head-Quick-and-affected-acceptance" if plan.extended_history
                        else "current-head-risk-selected-validation")
     print(
@@ -830,6 +926,7 @@ def main() -> int:
         f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
         f"common_base={plan.old_base} replay_base={plan.replay_base} "
         f"generated_evidence_invalidated={invalidated} "
+        f"semantic_conflicts_preserved={semantic} "
         f"generated_commit={result.generated_commit or 'none'} "
         f"generated_evidence_replay_paths={','.join(result.generated_evidence_replay_paths) or 'none'} "
         f"candidate_evidence=false next={next_validation}"
