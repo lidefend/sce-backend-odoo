@@ -7,65 +7,74 @@
 `UiContractV2Handler` 页面契约，再由 `ExecuteButtonHandler` 使用交付动作身份执行并在
 服务端重验。
 
-本批次不改前端、模型 ACL、记录规则、审批引擎或发布数据。模型级 Odoo ACL 只作为既有前提，
-验收重点是原生视图、动作与当前权限加工成契约，以及执行时对最新任务事实的重验。
+模型级 Odoo ACL、记录规则和业务状态机继续由所属模型负责。本批次只收口这些既有事实
+如何进入能力/页面契约、如何被前端消费，以及执行入口如何重验当前事实。
 
 ## Samples
 
-| 样本 | 角色 | 要证明的链 |
+| 样本 | 角色 | 已证明的链 |
 | --- | --- | --- |
-| 付款申请审批（主样本） | 财务审核人 | 审批策略创建真实任务 → 当前待办 → 最终页面 → 两个审批动作 → 任务来源执行 → 付款申请与任务回读 → 过期动作拒绝 |
-| 日常合同审批（非付款对照） | 财务审批人只有单据读权限，不具备普通业务写权限 | 同一任务来源可执行明确审批方法，且不顺带取得合同普通写权限；结束后待办消失 |
+| 付款申请审批（主样本） | 财务审核人 | 真实任务 → 待办 → 最终页面 → 通过/拒绝动作 → reason 输入 → 服务端执行 → 任务与业务状态回读 → 工作列表返回 |
+| 日常合同审批（非付款对照） | 财务审批人只有单据读权限 | 同一任务来源执行明确审批方法，不顺带取得合同普通写权限；完成后任务来源消失 |
 
-## Confirmed Differences And Minimal Corrections
+## Integrated Corrections
 
-1. 付款申请最终页面交付的通过动作是 `action_approval_decision`，而
-   `authorize_review_origin()` 原先只接受 `validate_tier/reject_tier`。结果是页面可见、
-   任务也分配给当前用户，但工作项来源执行会先被来源授权拒绝。
+| 缺口 | 所属层 | 收口结果 |
+| --- | --- | --- |
+| `record_button` 未收集、未发送契约声明的动作输入 | P0 `smart_core` + 通用前端运行时 | 前端先收集 `required_params`，后端只接受最终动作规则声明的参数；缺参或夹带未声明参数在执行前拒绝 |
+| 工作流动作输入在 V2 投影中丢失 | P0 `unified_page_contract_v2_assembler` | `required_params`、`requires_reason`、`reason_input` 与同一动作身份完成投影，原生 presentation 权威保持 |
+| 付款驳回视图仍调用无 reason 参数的 `reject_tier` | P1 `smart_construction_core` | 原生按钮改为现有 `action_approval_reject(reason)`，待办来源授权同步该身份 |
+| 财务工作区重新发布 `reject_tier` 旧方法 | P1 业务动作投影 | 业务动作声明的 method 优先；旧别名仅兼容，付款最终契约不再出现 `reject_tier` |
+| V2 schema 未声明动作输入字段 | P0 正式契约 schema | 正式 schema、示例摘要与运行时 schema 摘要同源绑定 |
 
-   修复只增加 `payment.request` 的两个已声明决定方法
-   `action_approval_decision/reject_tier`；其他模型仍保持
-   `validate_tier/reject_tier`，任意 `action_cancel/action_signed` 等业务方法继续拒绝。
+没有新增权限引擎、审批状态机、页面路由或前端业务特判。
 
-2. 前端 `buildContractFormActions()` 读取动作 `required_params/requires_reason`
-   时，归一化中间对象没有复制这两个声明字段，导致只靠 `required_params` 声明原因输入
-   的契约可能丢失输入要求。修复在归一化时保留原声明，不增加模型或审批特判。
+## Contract And Execution Evidence
 
-## Verification
-
-| 层 | 事实 |
+| 层 | 结果 |
 | --- | --- |
-| 后端契约／ORM | `verify.approval.contract_closure.orm`：2/2 PASS；付款主样本和日常合同对照均从真实审批策略生成 `tier.review`，最终契约由 `UiContractV2Handler` 输出，`ExecuteButtonHandler` 使用契约行的完整动作身份执行，并同时回读任务与业务状态。旧页面动作在任务完成后再次执行返回 403。 |
-| 授权方法边界 | `verify.general_contract.review_authority.unit`：17/17 PASS；包含付款决定方法被接受、任意业务方法被拒绝的检查。 |
-| 前端契约消费 | `verify.frontend.approval_contract.closure.unit`：10 cases PASS；只渲染交付的两个决定动作，保留 reason 必填要求，缺少原因不执行，忙态禁用，任务完成后两个动作消失。 |
-| 前端回归 | `verify.frontend.canonical_form_presenter.unit`：253 个具名 cases 及无计数子检查 PASS；`verify.frontend.contract_header_action.unit`：143 checks/cases PASS，并包含真实浏览器 reason dialog、结果通知和单次提交链。 |
-| 增量子门 | `make ci.local.iteration` PASS；执行 15 个必需目标，零未映射路径。前端 lint 为 0 error，严格类型检查通过。 |
+| 后端 ORM | `verify.approval.contract_closure.orm` 3/3 PASS。真实审批任务、最终 V2 契约和 `ExecuteButtonHandler` 使用同一动作身份；缺 reason 与未声明参数在副作用前返回 400；合法 reason 执行后任务和单据均为 `rejected`；旧动作重放返回 403。 |
+| 通用执行边界 | `verify.execute_button.authority.unit` 37/37 PASS。待办来源仍只授权当前任务、当前审批人及明确决定方法。 |
+| 前端契约消费 | `verify.frontend.approval_contract.closure.unit` 12 cases PASS。空/取消 reason 请求数为 0；填写 reason 后只发一次 `execute_button`，并携带同一动作身份及 `action_params.reason`。 |
+| V2 契约 | assembler/action/status/runtime、schema 与 lifecycle 目标均 PASS；最终动作规则支持声明输入，schema digest 与示例一致。 |
+| 增量门禁 | `make ci.local.iteration` 26/26 个映射目标零退出，零未映射路径；包含 ORM、类型、lint、契约和验收工具检查。 |
 
-原始日志：
+关键原始证据：
 
-- `.runtime/test-baseline/1794304682197884470/odoo.log`
-- `.runtime/be-u06-approval-contract-frontend-second.log`
-- `.runtime/be-u06-canonical-form-presenter.log`
-- `.runtime/be-u06-contract-header-action.log`
-- `.runtime/frontend-dev-validation/executions/20261110T095754Z-781786-617504500/receipt.json`
+- `.runtime/test-baseline/1794312451447788721/odoo.log`（最终 26 目标增量聚合中的 ORM）
+- `.runtime/frontend-dev-validation/executions/20261110T120723Z-2000622-309478344/receipt.json`
+- `.runtime/final-acceptance/my-work-approval/report.json`
 
-## Browser Status
+## Browser Journey
 
-首次调用 `verify.frontend.my_work_approval.browser` 时，受管入口在浏览器启动前拒绝：
-候选仍有未提交变化，且既存 acceptance backend 仍绑定旧基线
-`54dbbc1e9ae5864030ea9dfd8cd2b4409ef7f6cd`。这是预期的冻结/环境前提，不是产品失败，
-也没有产生浏览器请求或业务写入。
+最终报告绑定：
 
-该入口要求 clean 精确 HEAD，并把 acceptance backend 重建到同一 SHA。因此浏览器闭环保持
-`not_run`，必须在 U06 实现提交后通过受管 Make 入口重建并执行。预期覆盖：
-真实待办 → 审批摘要 → 决定 → 结果反馈 → 回读；缺原因驳回；未授权隔离；
-1440×900 与 390×844。
+| 身份 | SHA / 路径 |
+| --- | --- |
+| 实际后端产品 | `cd08cca11b677b3dda5a3cb3fc98e25b7b1c6552` |
+| 当前测试脚本 | `ffe91a818270c57bae569d2913857a3468b4e49f` |
+| 前端构建基线 | `40ad974c8c8791a3d045aaa5e1fa9d29d883e526` |
+| preview entry | `/assets/index-DB_m0-mN.js` |
+| preview entry SHA-256 | `b7ee25350da2bf6d2f7a0a076c331addf9b5f330155e9ae26d587fde269f190f` |
+| report SHA-256 | `3ce863af4bc45353760d815561dbbfcae691f3797888dc2cc78f47d601a782ff` |
+
+实际用户旅程：
+
+- J07 待办计数、详情往返、提交、公司 A/B/A 隔离：PASS；`todo_before=6`、`initiated_before=7`。
+- J08 从真实待办打开审批页，页面显示事项身份和后端金额；从审批页执行通过；`tier.review` 与付款申请回读批准；待办从 8 降至 7。
+- 拒绝路径先经过后端声明的安全确认，再打开 reason dialog；空 reason 时请求数为 0；填写后请求使用 `action_approval_reject` 并携带 `action_params.reason`；服务端回读 `rejected`，同记录不再处于 `pending` 审批状态。
+- 项目成员无法看到付款事实，直接访问审批记录进入拒绝页。
+- 1440×900、1280×800、390×844 均无水平溢出。
+
+未覆盖：
+
+- 非付款对照已完成 ORM 契约与执行闭环，但本轮没有为它增加第二个浏览器页面旅程。
+- 付款审批以单一审批级别样本验证；多级审批的中间状态仍由既有流程测试覆盖，不在本批次伪称已做浏览器验收。
+- 本结果为候选批次验收，不代表推送、合并、部署或目标生产环境产品交付。
 
 ## Exit
 
-- 最终契约只从真实 `UiContractV2Handler` 结果取证，不直接检查中间 resolver。
-- 审批动作必须使用契约行中的 `actionId`、`backendIdentity`、`sourceWidgetId` 和
-  `button.name`，不能由测试伪造动作权限。
-- 执行后同时回读 `tier.review` 和业务单据状态。
-- 已完成任务不能继续使用旧页面动作执行；服务端必须重新拒绝。
-- 当前批次仅完成源码、ORM 和前端契约消费验证；浏览器办理闭环仍未完成，不宣称部署或产品交付完成。
+- 审批页面、动作、reason 输入和执行目标来自同一最终契约。
+- 执行时重新加载契约并重验任务、记录、权限和状态；旧页面不构成执行授权。
+- 前端只负责收集声明输入、展示状态和调用执行，没有新增付款或审批业务判断。
+- U06 增量已具备冻结和独立只读复审条件。
