@@ -36,12 +36,12 @@ any frontend defect is fixed. Verdicts are limited to:
 
 | Capability | Contract declaration | Shared interpretation | Public consumer | Production entry | User behavior evidence | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| Object and readout | `contracts/domain/payment-request.yaml`; runtime V2 field/status contract | `businessValuePresentation.ts`, `fieldSemantics.ts` | `listCellPresentation.ts`, `collectionKanbanPresentation.ts`, `FieldValue.vue`, `ProfessionalBusinessValueControl.vue` | 付款申请 list action 880 / menu 559; record detail/form routes | 24-case value matrix and 8 counterexamples PASS; current list runtime shows 20 rows at 1440/390; same record across list/detail/kanban not yet current-bound | already fulfilled for shared interpretation; runtime unverified for same-record cross-page comparison |
-| Form controls | action/page contract + native modifiers; `payment.request` domain state/capabilities | `canonicalFormRenderer.ts`, `formSection.mapper.ts` | `FormSection`, professional base/business/relation/detail controls | 付款申请 create/edit form action 880 | 177 canonical presenter cases, save-failure recovery and relation authority tests PASS; current payment-request save/submit journey not yet current-bound | already fulfilled for shared control projection; runtime unverified for payment-request handling |
-| Actions and feedback | `payment.request.available_actions` -> `payment.request.execute`; workflow contract status/action facts | `useRecordActionPresentation.ts`, `professionalWorkflowModel.ts` | `CanonicalActionBar.vue`, `ProductPageHeader.vue`, `ScPopover`, `ScDropdown` | form header, body actions and overflow; payment request observed `save_draft/submit/cancel` | native-action guard 15 tests, row-action identity 16 cases, disabled-reason browser evidence from prior merge; current payment request execution/failure recovery not current-bound | already fulfilled for shared action presentation; runtime unverified for complete handling loop |
-| Pages and collections | action/page contract, collection/list profile, field roles | `listCellPresentation.ts`, `collectionViewRuntime` | `ListPage`, `CollectionPattern`, table/card/mobile-row components | 付款申请 list action 880 / menu 559 | 18-state list-surface matrix PASS for normal/batch/empty at six viewports; M7 observed payment list with 20 rows but is bound to earlier `f78a263` and has one separate authority-coverage problem | already fulfilled for shared collection behavior; payment-specific current runtime unverified |
-| Navigation and continuity | return identity/target declarations; route authority | `useCollectionViewContextRuntime.ts`, `returnTo` query contract, action origins | `ActionView.vue` consumes collection page/scroll/anchor/focus restore; relation fields consume return contract | list row -> record/form; relation field -> related record; My Work -> payment request | collection semantics covers row identity and context; relation roundtrip restores path/title/status/tabs/actions with 0 errors; payment-list and My Work return chains not current-bound | already fulfilled for shared mechanisms; runtime unverified for the two payment continuation branches |
-| Content and accessibility | field/help/rich-text declarations; dialog/overlay contract | `ScRichText`, shared overlay lifecycle, page identity and focus primitives | `ScRichText`, `ScDialog`, `ScDrawer`, shared focus/restore hooks | payment form help, rich content, dialogs and mobile keyboard path | rich-text and page-identity guards PASS; overlay runtime 27 checks PASS; current guard found one stale marker and was corrected without changing product behavior | already fulfilled; the one reconciliation finding was a validation-tool defect |
+| Object and readout | `contracts/domain/payment-request.yaml`; runtime V2 field/status contract | `businessValuePresentation.ts`, `fieldSemantics.ts` | `listCellPresentation.ts`, `collectionKanbanPresentation.ts`, `FieldValue.vue`, `ProfessionalBusinessValueControl.vue` | 付款申请 list action 880 / menu 559; record detail/form routes | 24-case value matrix and 8 counterexamples PASS; current My Work shows authoritative amount and identity; current list surface proves shared readout across states/viewports; same-record list/detail/kanban comparison not separately captured | already fulfilled for shared interpretation; residual runtime evidence gap is limited to an explicit same-record cross-page capture |
+| Form controls | action/page contract + native modifiers; `payment.request` domain state/capabilities | `canonicalFormRenderer.ts`, `formSection.mapper.ts` | `FormSection`, professional base/business/relation/detail controls | 付款申请 edit form action 881 / menu 560 | current `FE-DELIVERY-HARDENING-001` introduced two settlement lines, inline-edited 200→150, persisted/read back 150, then restored 0 rows / 20.00; 177 canonical presenter and save-recovery cases PASS | already fulfilled |
+| Actions and feedback | `payment.request.available_actions` -> `payment.request.execute`; workflow contract status/action facts | `useRecordActionPresentation.ts`, `professionalWorkflowModel.ts` | `CanonicalActionBar.vue`, `ProductPageHeader.vue`, `ScPopover`, `ScDropdown` | form header/body/overflow and My Work 提交/批准 actions | current My Work J07 submitted `FE-JOURNEY-PAYMENT-001`; J08 reviewer approved `FE-JOURNEY-APPROVAL-001`; missing reject reason left data unchanged; 390/1440 responsive and project-member isolation PASS | already fulfilled |
+| Pages and collections | action/page contract, collection/list profile, field roles | `listCellPresentation.ts`, `collectionViewRuntime` | `ListPage`, `CollectionPattern`, table/card/mobile-row components | 付款申请 list action 880 / menu 559 | current generic list matrix is 18/18 PASS at six viewports; current payment-specific browser begins at its declared record rather than traversing the list, while M7 payment-list observation is from earlier `f78a263` | runtime unverified for the current payment list-entry branch |
+| Navigation and continuity | return identity/target declarations; route authority | `useCollectionViewContextRuntime.ts`, return query contract, action origins | `ActionView.vue` collection restoration; My Work detail return; relation return contract | My Work -> payment request -> My Work; relation field -> target -> source | current My Work J07 returns from payment detail and continues acting; current relation roundtrip restores path/title/status/tabs/actions with 0 denied/console errors; direct payment-list return remains in the unverified list-entry branch | already fulfilled for My Work and relation continuity; current payment-list return remains runtime unverified |
+| Content and accessibility | field/help/rich-text declarations; dialog/overlay contract | `ScRichText`, shared overlay lifecycle, page identity and focus primitives | `ScRichText`, `ScDialog`, `ScDrawer`, shared focus/restore hooks | payment form help, rich content, dialogs and mobile keyboard path | rich-text and page-identity guards PASS; overlay runtime 27 checks PASS; current My Work confirmation focus and 390 keyboard/overflow checks PASS; the one guard failure was a stale validation marker, not product behavior | already fulfilled |
 
 ## Evidence identity decisions
 
@@ -71,6 +71,23 @@ any frontend defect is fixed. Verdicts are limited to:
 - `make verify.frontend.overlay_lifecycle.unit`: repaired validation drift then
   PASS, including the new `box-sizing: border-box` sabotage case.
 
+## Current-bound runtime evidence
+
+The managed acceptance runtime served revision
+`7895f97569e1b9f74ecd2ee50eec9c386b647640` and database
+`sc_frontend_acceptance`.
+
+| Evidence | Result | Artifact |
+| --- | --- | --- |
+| Payment request detail collection | PASS: two settlement lines, inline edit 200→150, authoritative readback 150, restored to 0 rows / amount 20.00, 0 problems | `.runtime/final-acceptance/payment-request/7895f97569e1/report.json`, SHA-256 `101d8d4ecf82becd1b9b94c4f08d746c74f4755a3709234be9789f7c3baee3b0` |
+| My Work payment handling | PASS: J07 submit and return, J08 approval, role worklist update, reject-without-reason safety, company A/B/A isolation, project-member isolation; 1440/1280/390 PASS | `.runtime/final-acceptance/my-work-approval/report.json`, SHA-256 `e829aa5700baf312f54aa895707cb02a308b9e14f701871c75bd46ca2aa35fa6` |
+| Page presentation | PASS: one governed target, 0 mutations, 0 errors | `.runtime/final-acceptance/frontend-presentation/header.json`, SHA-256 `4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699` |
+| List structure | PASS: full 18-state matrix, 0 failures | `.runtime/final-acceptance/list-surface-structure.json`, SHA-256 `196d712b6eb0ff6688744a5262abe0e273e4ef69eca9ce65da33884fb9e079b9` |
+| Relation roundtrip | PASS: 13 declared entries, 3 opened, 0 blocking differences, 0 denied requests, 0 console errors | `.runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json`, SHA-256 `2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000` |
+
+The acceptance-evolution manifest was re-recorded at the same head for
+`frontend_presentation`, `list_surface_structure` and `relation_roundtrip`.
+
 ## First reconciliation finding
 
 `verify.frontend.overlay_lifecycle.unit` exposed a validation-tool drift rather
@@ -89,8 +106,9 @@ interaction behavior changed.
 ## Status
 
 - Coverage reconciliation: completed.
-- Current runtime gap: payment request end-to-end and return branches are
-  explicitly unverified on the current main identity.
+- Current runtime gap: the payment-list entry/return branch is explicitly
+  unverified. Payment detail edit/save/readback, My Work submission/approval,
+  role isolation and My Work/relation return are current-bound and PASS.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.

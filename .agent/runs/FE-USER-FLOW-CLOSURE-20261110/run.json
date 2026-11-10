@@ -78,7 +78,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze the reconciled coverage/tooling batch, then run the payment-request representative journey against the exact committed frontend and backend identity.",
+  "next_exact_step": "Close or explicitly retain the payment-list entry/return evidence gap, then perform the FE-01/FE-02 same-record cross-page readout comparison.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
@@ -117,6 +117,49 @@
       "tests": 13,
       "runtime_checks": 27,
       "receipt": ".runtime/frontend-dev-validation/executions/20261110T041732Z-2587292-920360288/receipt.json"
+    },
+    "payment_request_detail_runtime": {
+      "status": "passed",
+      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "database": "sc_frontend_acceptance",
+      "record": "FE-DELIVERY-HARDENING-001",
+      "observations": {
+        "declared_lines": 2,
+        "inline_edit": "200->150",
+        "persisted_readback": "150",
+        "restored_rows": 0,
+        "restored_amount": "20.00"
+      },
+      "report": ".runtime/final-acceptance/payment-request/7895f97569e1/report.json",
+      "report_sha256": "101d8d4ecf82becd1b9b94c4f08d746c74f4755a3709234be9789f7c3baee3b0"
+    },
+    "payment_request_my_work_runtime": {
+      "status": "passed",
+      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "j07": "submit, detail return, company A/B/A",
+      "j08": "approval and authoritative worklist update",
+      "failure_paths": "reject without reason left data unchanged",
+      "responsive": [1440, 1280, 390],
+      "report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "report_sha256": "e829aa5700baf312f54aa895707cb02a308b9e14f701871c75bd46ca2aa35fa6"
+    },
+    "current_runtime_suites": {
+      "status": "passed",
+      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "frontend_presentation": {
+        "path": ".runtime/final-acceptance/frontend-presentation/header.json",
+        "sha256": "4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699"
+      },
+      "list_surface_structure": {
+        "path": ".runtime/final-acceptance/list-surface-structure.json",
+        "sha256": "196d712b6eb0ff6688744a5262abe0e273e4ef69eca9ce65da33884fb9e079b9",
+        "rows": 18,
+        "failures": 0
+      },
+      "relation_roundtrip": {
+        "path": ".runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json",
+        "sha256": "2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000"
+      }
     }
   }
 }
