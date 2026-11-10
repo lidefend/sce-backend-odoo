@@ -31,10 +31,13 @@ credentials.
 ## Implementation
 
 - The authenticated replay uses a fixed 30-second request timeout.
-- A transport exception waits 250 milliseconds and retries once.
+- A `system.init` transport exception waits 250 milliseconds and retries once.
+- Every other intent remains single-attempt so the probe cannot replay a
+  potential side effect.
 - Repeated failure emits only a whitelisted transport code or error class.
 - The incremental-worktree planner routes the shared probe and its behavior
-  lock to `verify.frontend.delivery_hardening.guard`.
+  lock to both `verify.frontend.delivery_hardening.guard` and
+  `verify.frontend.standard_preview.unit`.
 - Generated complexity and split-plan reports refresh only the line counts of
   the two changed incremental-routing files.
 

@@ -59,7 +59,8 @@ export async function bindAuthenticatedIntent(response, expectedPrincipal) {
     assertEntryRequest(url, headers, data);
     let replay;
     let transportCode = 'unknown';
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    const maxAttempts = intent === 'system.init' ? 2 : 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       try {
         replay = await context.request.post(url, {
           headers, data, timeout: 30000,
@@ -67,7 +68,7 @@ export async function bindAuthenticatedIntent(response, expectedPrincipal) {
         break;
       } catch (error) {
         transportCode = safeTransportCode(error);
-        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 250));
+        if (attempt + 1 < maxAttempts) await new Promise(resolve => setTimeout(resolve, 250));
       }
     }
     if (!replay) {

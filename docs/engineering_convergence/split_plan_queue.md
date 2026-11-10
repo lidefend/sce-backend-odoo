@@ -77,8 +77,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1652 | DevOps owner | `scripts/release/release_publication.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1631 | DevOps owner | `scripts/verify/test_frontend_standard_preview.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1618 | DevOps owner | `scripts/ops/registry_audit_environment.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1584 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1584 | DevOps owner | `scripts/verify/test_frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1587 | DevOps owner | `scripts/verify/test_frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1585 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1573 | Construction backend owner | `addons/smart_construction_core/models/core/settlement_order.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1573 | Frontend owner | `frontend/apps/web/src/layouts/AppShell.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1566 | Architecture owner | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |

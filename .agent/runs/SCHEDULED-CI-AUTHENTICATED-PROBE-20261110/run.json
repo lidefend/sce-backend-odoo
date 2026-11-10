@@ -86,6 +86,7 @@
       "kind": "offline",
       "inputs": [
         "make/runtime_ops.mk",
+        "scripts/verify/frontend_authenticated_intent.mjs",
         "scripts/verify/frontend_delivery_hardening_browser.mjs",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_release_local_entry.py"

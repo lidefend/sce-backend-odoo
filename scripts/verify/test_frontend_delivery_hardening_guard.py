@@ -61,6 +61,14 @@ const recovered=await request({request:{post:async()=>{
 }}},'system.init',{});
 assert.equal(retryCalls,2);
 assert.equal(recovered.status,200);
+let nonStartupCalls=0;
+await assert.rejects(request({request:{post:async()=>{
+ nonStartupCalls+=1;
+ throw Object.assign(new Error('Bearer secret'),{code:'ECONNRESET'});
+}}},'payment.request.available_actions',{}),
+ error=>/^payment\.request\.available_actions: authenticated probe transport failed \(ECONNRESET\)$/
+   .test(error.message) && !error.message.includes('secret'));
+assert.equal(nonStartupCalls,1);
 const next = await bindAuthenticatedIntent(response(8),8);
 await next({request:{post:async()=>response(8)}},'system.init',{});
 // The shared login binder must observe fast responses emitted by the click,

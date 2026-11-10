@@ -331,7 +331,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
         self.assertEqual(
             select_targets(["scripts/verify/frontend_authenticated_intent.mjs"]),
-            ["verify.frontend.delivery_hardening.guard"],
+            [
+                "verify.frontend.delivery_hardening.guard",
+                "verify.frontend.standard_preview.unit",
+            ],
         )
         for path in (
             "scripts/verify/frontend_delivery_hardening_browser.mjs",
