@@ -46,6 +46,19 @@ specific contract guard and the role-surface/navigation projection guards.
 The integrated selector must require that union, not replace one owning check
 with another.
 
+Runtime verification after upgrade exposed a second P1 defect: the new
+`operation_user` role resolved correctly from the real group, but did not bind
+the existing native entry group `group_sc_entry_p06`. The daily-contract menu
+was rebound to that entry group, so the role still had no visible native route.
+The repair adds only `group_sc_entry_p06` to `group_sc_role_operation_user`;
+it adds no ACL, capability group or menu record.
+
+On the governed `local.dev` profile, the real operation user now resolves only
+as `operation_user`, sees `menu_sc_p1_daily_contract` natively, and receives the
+same menu/action pair in runtime release navigation. The container runtime also
+had to be recreated through `local.dev.up` because its source bind mount pointed
+at the separate acceptance worktree; the database volume was preserved.
+
 ## Repair rule
 
 Add one P4 dispatch target that:

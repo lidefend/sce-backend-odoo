@@ -18,6 +18,8 @@
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
     "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "make/ci.mk",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
@@ -150,5 +152,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Upgrade the governed local development profile on the merged candidate and verify that group_sc_role_operation_user resolves as operation_user with the declared contract navigation."
+  "next_exact_step": "Commit the operation-user entry-group binding, publish the clean candidate, and dispatch the full frontend release lane on that exact head."
 }
