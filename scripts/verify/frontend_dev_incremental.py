@@ -675,6 +675,29 @@ RULES = (
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",
     )),
+    Rule((
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "addons/smart_core/core/capability_provider.py",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "scripts/verify/frontend_acceptance_login_probe.py",
+        "scripts/verify/test_frontend_acceptance_login_probe.py",
+    ), (
+        "verify.frontend.acceptance_login_probe.unit",
+    )),
     # The payment action contract's reason presentation is consumed by the
     # contract action projector; keep the producer and its consumer test in one
     # executable routing unit instead of leaving a backend-only path unmapped.

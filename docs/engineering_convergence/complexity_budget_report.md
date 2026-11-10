@@ -72,9 +72,9 @@ Generated from repository source files. This report is informational during the 
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1645 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1640 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1623 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1607 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1600 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1572 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
@@ -307,9 +307,9 @@ Generated from repository source files. This report is informational during the 
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1645 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1640 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1623 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1607 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1600 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1572 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |

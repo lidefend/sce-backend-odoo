@@ -5,7 +5,7 @@
 - 基线：`main@d014af2e8309f8b4d5dfa55a94967474ad83941f`
 - 分支：`fix/capability-load-performance-20261110`
 - 层级：P0 平台机制 + P1 能力投影消费
-- 状态：`active`
+- 状态：`verification_pending`
 
 ## 目标
 
@@ -87,33 +87,36 @@
 ### 聚焦性能结果
 
 `verify.frontend.delivery_hardening.release.performance_probe` 在
-`9bec117463ebe88c45b5a8ed5d122b87ec4a5aab` 上 PASS：
+`b121f66de6ec20e7cea11301b03789e3323f04aa` 上 PASS：
 
 | 场景 | 中位数 | P95 | 预算中位数 | 结果 |
 | --- | ---: | ---: | ---: | --- |
-| 登录到可交互 | 2780 ms | 3129 ms | 3000 ms | PASS |
-| My Work | 565 ms | 1129 ms | 1200 ms | PASS |
-| 付款详情 | 463 ms | 574 ms | 1200 ms | PASS |
-| 结算详情 | 400 ms | 438 ms | 1200 ms | PASS |
-| 实付详情 | 314 ms | 356 ms | 1200 ms | PASS |
-| 新建表单 | 1447 ms | 1657 ms | 1600 ms | PASS |
-| 公司切换 | 1401 ms | 1539 ms | 2000 ms | PASS |
+| 登录到可交互 | 2051 ms | 2234 ms | 3000 ms | PASS |
+| My Work | 440 ms | 486 ms | 1200 ms | PASS |
+| 付款详情 | 373 ms | 402 ms | 1200 ms | PASS |
+| 结算详情 | 326 ms | 343 ms | 1200 ms | PASS |
+| 实付详情 | 251 ms | 309 ms | 1200 ms | PASS |
+| 新建表单 | 1218 ms | 1328 ms | 1600 ms | PASS |
+| 公司切换 | 1457 ms | 1576 ms | 2000 ms | PASS |
 
-登录启动剖面中，`load_capabilities_for_user` 已从 `10.7–11.0 s` 降至 `21 ms`；
-其中 published route authority 为 `3 ms`，能力循环访问/状态判定为 `4 ms`。
+登录启动剖面中，`load_capabilities_for_user` 已从 `10.7–11.0 s` 降至 `15 ms`；
+其中 published route authority 为 `2 ms`，能力循环访问/状态判定为 `1 ms`。
 
 原始证据：
 
-- `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-probe-clean-9bec11746.log`
+- `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-probe-clean-b121f66de.log`
+- `.runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/performance-env-readback.log`
 - `artifacts/frontend-delivery-hardening/performance.json`
 - `artifacts/frontend-delivery-hardening/performance.json` SHA-256:
-  `be5b888311f4e854cdbc9227100b41809c8c0b2180c756fc6ea919aefacfce6d`
+  `abb078ea83591515b92165f02135b52a184da8fe610ac952f7c59821f2963e62`
 
 ### 验证工具问题
 
 - `make ci.local.iteration` 在路由阶段阻断，原因是 8 个 backend capability 路径未被
-  frontend incremental planner 映射。分类为 `validation_tool_defect`；本批次改用 run
-  中已登记的 capability/navigation 定向入口，未为此扩大产品范围。
+  frontend incremental planner 映射。已补最小 P4 映射：
+  capability provider/registry/scene target -> capability ORM；
+  product policy/场景测试 -> capability ORM + navigation publication；
+  登录探针 -> 本批次认证就绪单测。
 - clean commit 的性能探针在生产构建后立即发起 HTTP 登录，遇到一次无结构
   `401 {"code":"unknown","error_code":"unknown"}`；数秒后单独重放为 HTTP 200。
   这是认证就绪窗口，不是凭据错误。修复为只对 unknown/空错误码的 401 做最多 10 次、

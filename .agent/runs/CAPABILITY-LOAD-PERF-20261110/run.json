@@ -3,7 +3,7 @@
   "id": "CAPABILITY-LOAD-PERF-20261110",
   "branch": "fix/capability-load-performance-20261110",
   "baseline_sha": "d014af2e8309f8b4d5dfa55a94967474ad83941f",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
   "record": "docs/ops/iterations/capability_load_performance_20261110.md",
   "scope": [
@@ -23,7 +23,9 @@
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "make/runtime_ops.mk",
     "scripts/verify/frontend_acceptance_login_probe.py",
-    "scripts/verify/test_frontend_acceptance_login_probe.py"
+    "scripts/verify/test_frontend_acceptance_login_probe.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
@@ -87,6 +89,15 @@
         "scripts/verify/test_frontend_acceptance_login_probe.py"
       ]
     },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
     "capability_registry_orm": {
       "target": "verify.daily.permission_truth.capability.orm",
       "kind": "runtime",
@@ -136,5 +147,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the focused delivery-hardening performance probe and compare login, My Work and company switch against the unchanged governed budgets."
+  "next_exact_step": "Targeted capability and performance checks passed; keep the full release lane and publication paused pending explicit closure."
 }
