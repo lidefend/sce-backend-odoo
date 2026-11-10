@@ -123,6 +123,29 @@ returned 401 because the acceptance frontend port belongs to another worktree;
 the process was preserved and the standard acceptance preview on 5180 remained
 available. No product code was changed in response.
 
+## FE-04 handling and failure recovery
+
+| Scenario | Result | Evidence |
+| --- | --- | --- |
+| Edit and save | fulfilled | Current payment detail collection: 200→150, persisted, re-read and restored |
+| Submit | fulfilled | Current My Work flow moved the draft to submit and reloaded authoritative state |
+| Approve | fulfilled | Current reviewer action moved the item, refreshed count and exposed approved state |
+| Invalid reject | fulfilled | Missing reason left business data unchanged |
+| Request in progress / duplicate submit | static PASS | Save recovery/single-flight lifecycle tests pass; no second business mutation observed in current My Work run |
+| Network / conflict / expired session | not currently run | Existing delivery-hardening J09 lane is complete but was blocked by another worktree owning port 5175; not a product failure |
+
+No second frontend business state machine was introduced.
+
+## FE-05 return and continuation
+
+| Path | Result |
+| --- | --- |
+| My Work → payment detail → My Work | PASS: current browser returns to the worklist and continues approval/company actions |
+| Relation field → target → source | PASS: path, title, statusbar, tabs and actions restored; no denied requests or console errors |
+| Company/role context | PASS: A/B/A and project-member isolation |
+| Direct payment business list → detail → list | runtime unverified |
+| Same-record payment kanban → detail → kanban | runtime unverified |
+
 ## Status
 
 - Coverage reconciliation: completed.
@@ -132,6 +155,14 @@ available. No product code was changed in response.
   role isolation and My Work/relation return are current-bound and PASS.
 - FE-03: ordinary/readonly/edit/action/mobile surfaces have current or static
   evidence; hierarchical runtime remains blocked by the external port owner.
+- FE-04: normal handling, save/readback, submit/approval/reject safety are
+  current-bound; network/409 recovery remains covered statically but not by the
+  current full browser lane.
+- FE-05: My Work and relation continuity are current-bound; direct business-list
+  and kanban continuity remain explicitly unverified.
+- Confirmed frontend product defects in this batch: 0.
+- Fixed validation evidence defects: stale overlay geometry marker; missing
+  same-record My Work/detail amount assertion.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.

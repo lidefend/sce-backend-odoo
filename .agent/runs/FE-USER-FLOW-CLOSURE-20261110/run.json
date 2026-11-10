@@ -78,7 +78,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Close FE-04/FE-05 using the current-bound payment, My Work and relation evidence; retain hierarchical and same-record kanban runtime branches as environment-blocked/unverified.",
+  "next_exact_step": "Stage adjudication is complete; retain the two environment-bound runtime branches and publish this audit/tooling candidate for independent review without product-code expansion.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
@@ -180,6 +180,40 @@
       "hierarchical_worksheet_static": "PASS: 24 tests + 15 interaction cases + 10 load-stage cases",
       "hierarchical_runtime": "blocked: acceptance frontend port 5175 belongs to another worktree; login probe returned 401",
       "environment_conflict": "preserved; no process from the other worktree was stopped"
+    },
+    "fe04_handling_recovery": {
+      "status": "passed_with_runtime_boundary",
+      "save_edit_readback": "PASS: payment.request.line 200->150 persisted and restored",
+      "submit": "PASS: draft payment request moved to submit and reloaded authoritatively",
+      "approval": "PASS: reviewer approval changed state and worklist visibility",
+      "reject_without_reason": "PASS: data remained unchanged",
+      "single_flight_and_retry_static": "PASS: contract form save failure recovery tests",
+      "current_network_409_runtime": "not_run: complete delivery-hardening lane blocked by foreign port owner"
+    },
+    "fe05_continuity": {
+      "status": "passed_with_runtime_boundary",
+      "my_work_detail_return": "PASS",
+      "relation_roundtrip": "PASS on current production frontend tree",
+      "company_role_isolation": "PASS",
+      "direct_payment_business_list_return": "runtime unverified",
+      "same_record_kanban_return": "runtime unverified"
+    },
+    "stage_conclusion": {
+      "status": "audit_complete_with_declared_gaps",
+      "confirmed_frontend_product_defects": 0,
+      "fixed_validation_tool_defects": [
+        "overlay lifecycle stale boxSizing marker",
+        "My Work browser lacked same-record cross-page readout assertion"
+      ],
+      "pending_backend_contract_items": [
+        "CD-20261110-01 structured My Work record identity",
+        "公司&项目扣款 denied-role acceptance candidate"
+      ],
+      "runtime_unverified": [
+        "direct payment business-list entry and return",
+        "same-record kanban renderer comparison",
+        "hierarchical worksheet browser lane"
+      ]
     }
   }
 }
