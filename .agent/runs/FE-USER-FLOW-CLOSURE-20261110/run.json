@@ -16,6 +16,7 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
     "frontend/apps/web/",
+    "scripts/dev/frontend_standard_preview.py",
     "scripts/verify/"
   ],
   "environment": {
@@ -118,6 +119,14 @@
       "tests": 13,
       "runtime_checks": 27,
       "receipt": ".runtime/frontend-dev-validation/executions/20261110T041732Z-2587292-920360288/receipt.json"
+    },
+    "preview_identity_rebind": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "unchanged frontend bytes retained a pre-rebase base SHA after history replay",
+      "command": "make verify.frontend.standard_preview.unit",
+      "tests": 132,
+      "behavior": "reuse the bundle only when the old-base-to-current input hash matches, then atomically rebind the receipt to current HEAD"
     },
     "payment_request_detail_runtime": {
       "status": "passed",

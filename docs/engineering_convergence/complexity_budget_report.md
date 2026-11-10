@@ -71,7 +71,7 @@ Generated from repository source files. This report is informational during the 
 | 1672 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
-| 1631 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1645 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1605 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1598 | Python source | `scripts/verify/frontend_dev_incremental.py` |
@@ -306,7 +306,7 @@ Generated from repository source files. This report is informational during the 
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
-| 1631 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1645 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1605 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1598 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |

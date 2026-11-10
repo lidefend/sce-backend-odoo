@@ -27,6 +27,7 @@ goal:
       - docs/engineering_convergence/split_plan_queue.md
       - docs/ops/iterations/frontend_user_flow_closure_20261110.md
       - frontend/apps/web/
+      - scripts/dev/frontend_standard_preview.py
       - scripts/verify/
     business_scope:
       - payment request representative journey first

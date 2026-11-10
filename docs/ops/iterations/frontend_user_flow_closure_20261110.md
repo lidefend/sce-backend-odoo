@@ -112,6 +112,13 @@ The guard was aligned to the canonical CSS declaration and a focused
 content-box sabotage test was added. No product component, width rule or
 interaction behavior changed.
 
+History replay exposed a second validation-tool defect: the preview bundle had
+identical frontend bytes but retained its pre-rebase base SHA, so governed
+acceptance correctly rejected it as a non-ancestor. The preview builder now
+rebinds the bundle receipt to current HEAD only after proving the old-base diff
+hash still matches, then revalidates dist/index/entry hashes atomically. The
+standard preview suite now has 132 passing tests including history replay.
+
 ## FE-03 page hierarchy and action entry
 
 | Surface | Result | Evidence |
@@ -167,7 +174,8 @@ No second frontend business state machine was introduced.
   and kanban continuity remain explicitly unverified.
 - Confirmed frontend product defects in this batch: 0.
 - Fixed validation evidence defects: stale overlay geometry marker; missing
-  same-record My Work/detail amount assertion.
+  same-record My Work/detail amount assertion; rebase-safe preview receipt
+  identity.
 - First code change: overlay lifecycle validation drift only; no product UI
   change was required.
 - Mainline integration: current main is the implementation baseline.
