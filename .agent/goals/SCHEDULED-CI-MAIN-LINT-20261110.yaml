@@ -1,0 +1,24 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-MAIN-LINT-20261110
+  title: scheduled CI main lint recovery
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: frontend logger runtime verification mock
+  module: frontend verification tests
+  standard_vs_user_specific: platform verification tooling
+  objective: >
+    Remove the unused mock parameter that blocks the authoritative frontend
+    release audit, then verify the exact main candidate through current local
+    and remote gates.
+  acceptance:
+    - Lint succeeds on the exact candidate.
+    - Logger console guard and strict typecheck remain non-zero and passing.
+    - The authoritative full frontend release lane is dispatched on the
+      resulting exact main SHA and its outcome is read back truthfully.
+  exclusions:
+    - logger product behavior
+    - contracts
+    - ACL
+    - business data
+    - deployment

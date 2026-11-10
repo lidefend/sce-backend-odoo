@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-MAIN-LINT-20261110",
+  "branch": "fix/scheduled-ci-main-lint-20261110",
+  "baseline_sha": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-MAIN-LINT-20261110.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_main_lint_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-MAIN-LINT-20261110.yaml",
+    ".agent/runs/SCHEDULED-CI-MAIN-LINT-20261110/run.json",
+    "docs/ops/iterations/scheduled_ci_main_lint_20261110.md",
+    "frontend/apps/web/scripts/logger_runtime_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source, registered local Make entries and exact failed full-lane evidence; no runtime write, credential or deployment authority"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "frontend logger runtime verification mock",
+    "module": "frontend verification tests",
+    "standard_vs_user_specific": "platform verification standard",
+    "why_here": "The failure is an unused parameter in the test mock, after typecheck, build and all product assertions passed.",
+    "why_not_elsewhere": "Changing logger product behavior or weakening lint would misclassify a verification-tool defect and alter the tested surface.",
+    "blast_radius": "Only the test mock signature changes; logger runtime behavior and all assertions remain unchanged.",
+    "exclusions": [
+      "logger product behavior",
+      "contracts",
+      "ACL",
+      "business data",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "console_guard": {
+      "target": "verify.frontend.console.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "frontend/apps/web/src/utils/logger.ts",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/test_frontend_console_guard.py"
+      ]
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/scripts/logger_runtime_test.ts",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean P4 candidate through the protected PR flow, require exact-head checks, merge, then dispatch a full frontend release lane on the resulting exact main SHA."
+}

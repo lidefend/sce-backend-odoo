@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/scheduled-ci-main-lint-20261110": ".agent/runs/SCHEDULED-CI-MAIN-LINT-20261110/run.json",
     "fix/scheduled-ci-authenticated-probe-20261110": ".agent/runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/run.json",
     "fix/daily-main-receipt-preserve-20261110": ".agent/runs/DAILY-MAIN-RECEIPT-PRESERVE-20261110/run.json",
     "fix/daily-main-detached-plan-20261110": ".agent/runs/DAILY-MAIN-DETACHED-PLAN-20261110/run.json",
