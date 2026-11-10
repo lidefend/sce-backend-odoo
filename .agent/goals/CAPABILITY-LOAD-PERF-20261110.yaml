@@ -28,6 +28,7 @@ goal:
       - scripts/verify/test_frontend_acceptance_login_probe.py
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/audit/verification_lane_dispositions.json
     product_behavior: >
       system.init 对外字段、ACL、发布集合、导航身份和场景目标保持不变；仅减少同一启动
       请求内对同一权威事实的重复解析，并把已有阶段耗时透传到启动剖面。
@@ -41,6 +42,7 @@ goal:
     - startup timing hook 返回非空阶段耗时且不改变能力行内容
     - acceptance HTTP 登录探针只对无结构 401 做有界就绪重试，结构化拒绝立即失败
     - backend capability 路径在执行计划中映射到非零 capability ORM/navigation 目标
+    - 已接线 capability ORM 的过期零引用 disposition 被删除
     - capability provider guard、定向静态测试和真实 ORM 测试非零通过
     - 不在本批次执行完整长链、PR 发布、合并或部署
   exclusions:

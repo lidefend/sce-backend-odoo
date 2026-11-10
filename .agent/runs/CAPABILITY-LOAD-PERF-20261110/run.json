@@ -25,7 +25,8 @@
     "scripts/verify/frontend_acceptance_login_probe.py",
     "scripts/verify/test_frontend_acceptance_login_probe.py",
     "scripts/verify/frontend_dev_incremental.py",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
     "kind": "offline",
@@ -96,6 +97,18 @@
         "make/frontend.mk",
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/guards.mk"
       ]
     },
     "capability_registry_orm": {
