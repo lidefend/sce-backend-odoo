@@ -10,6 +10,7 @@
     ".agent/active-runs.json",
     ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
     ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/capability_load_performance_20261110.md",
@@ -21,7 +22,10 @@
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
     "addons/smart_construction_scene/models/product_policy.py",
     "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/__init__.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "make/dev.mk",
     "make/runtime_ops.mk",
     "scripts/verify/frontend_acceptance_login_probe.py",
     "scripts/verify/test_frontend_acceptance_login_probe.py",
@@ -47,7 +51,7 @@
       "performance budget changes",
       "ACL/navigation/contract semantic changes",
       "full release lane",
-      "push, merge or deploy"
+      "deploy"
     ]
   },
   "checks": {
@@ -154,6 +158,23 @@
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "scene_company_route_scope_cache_orm": {
+      "target": "verify.scene.company_route_scope_cache.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/scene-company-route-scope-cache-target.log"
+      },
+      "inputs": [
+        "make/dev.mk",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/tests/__init__.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/profiles/scene_registry_content.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py"
       ]
     },
     "performance_probe": {

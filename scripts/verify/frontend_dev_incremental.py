@@ -693,6 +693,12 @@ RULES = (
         "verify.daily.permission_truth.capability.orm",
     )),
     Rule((
+        "addons/smart_construction_scene/tests/__init__.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    ), (
+        "verify.scene.company_route_scope_cache.orm",
+    )),
+    Rule((
         "addons/smart_construction_core/models/support/product_scenario.py",
     ), (
         "verify.daily.permission_truth.capability.orm",

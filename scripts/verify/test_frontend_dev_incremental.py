@@ -401,6 +401,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.navigation.publication_consumers.unit",
             ],
         )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+            ]),
+            ["verify.scene.company_route_scope_cache.orm"],
+        )
         for path in (
             "scripts/verify/frontend_acceptance_login_probe.py",
             "scripts/verify/test_frontend_acceptance_login_probe.py",

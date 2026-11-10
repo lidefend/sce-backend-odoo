@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 211,
+    "odoo_tags": 212,
     "gated": 5,
-    "on_demand": 57,
+    "on_demand": 58,
     "unwired": 149,
-    "odoo_tag_declarations": 434,
-    "gated_declarations": 100,
-    "uncovered_declarations": 334,
+    "odoo_tag_declarations": 436,
+    "gated_declarations": 101,
+    "uncovered_declarations": 335,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -95,7 +95,7 @@
       "group": "sc_smoke",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 27,
+      "declarations": 28,
       "files": [
         "addons/smart_construction_core/tests/test_api_data_batch_contract_backend.py",
         "addons/smart_construction_core/tests/test_api_data_write_unlink_idempotency_backend.py",
@@ -121,6 +121,7 @@
         "addons/smart_construction_core/tests/test_smoke_registry.py",
         "addons/smart_construction_core/tests/test_smoke_security.py",
         "addons/smart_construction_core/tests/test_smoke_validator.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
         "addons/smart_construction_seed/tests/test_seed_tax_defaults.py",
         "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/tests/test_usage_backend.py"
@@ -840,6 +841,19 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "company_route_scope_cache",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.scene.company_route_scope_cache.orm :: company_route_scope_cache"
+      ]
     },
     {
       "group": "conditioned_processing_feedback",

@@ -147,6 +147,11 @@ local.dev.test: guard.prod.forbid local.dev.ready local.dev.demo_credentials.pre
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
 
+.PHONY: verify.scene.company_route_scope_cache.orm
+verify.scene.company_route_scope_cache.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_scene TEST_TAGS=company_route_scope_cache
+
 .PHONY: verify.company_project_refund.feedback.orm verify.company_project_refund.feedback.http verify.company_project_refund.feedback.http.evidence verify.company_project_refund.feedback.restore
 verify.company_project_refund.feedback.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.dev.test \
