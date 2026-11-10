@@ -455,6 +455,11 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             syncer.verify_semantic_union_preserves_main(
                 plan, path, without_detail
             )
+        retained_deletion = union_text + base_text
+        with self.assertRaisesRegex(syncer.SyncError, "retained-main-deletion"):
+            syncer.verify_semantic_union_preserves_main(
+                plan, path, retained_deletion
+            )
 
     def test_semantic_union_markers_fail_closed(self) -> None:
         path = syncer.SEMANTIC_UNION_CONFLICT_PATH
@@ -467,14 +472,6 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             )
         with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
             syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
-        self.assertEqual(
-            syncer.missing_added_lines(
-                "base\nold\n",
-                "base\nnew\nmain-only\n",
-                "base\nnew\ntopic-only\n",
-            ),
-            ["main-only"],
-        )
 
     def test_extended_sync_unions_exact_personal_data_exemptions(self) -> None:
         path = syncer.PERSONAL_DATA_FALSE_POSITIVES_PATH

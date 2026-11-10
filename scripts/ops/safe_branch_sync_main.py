@@ -8,7 +8,6 @@ before replaying the branch's responsibility commits on an exact origin/main.
 from __future__ import annotations
 
 import argparse
-import difflib
 import json
 import os
 import re
@@ -575,35 +574,6 @@ def verify_semantic_union_text(path: str, text: str) -> None:
                 f"semantic union source for {path} is missing {label}: "
                 + ", ".join(missing)
             )
-
-
-def missing_added_lines(base: str, main: str, head: str) -> list[str]:
-    """Return main-side added lines that the reviewed union failed to contain."""
-    required = [
-        line[2:]
-        for line in difflib.ndiff(base.splitlines(), main.splitlines())
-        if line.startswith("+ ")
-    ]
-    available = head.splitlines()
-    missing = []
-    for line in required:
-        try:
-            available.remove(line)
-        except ValueError:
-            missing.append(line)
-    return missing
-
-
-def verify_semantic_union_preserves_main(plan: SyncPlan) -> None:
-    base = text_at_revision(plan.root, plan.replay_base, SEMANTIC_UNION_CONFLICT_PATH)
-    main = text_at_revision(plan.root, plan.new_main, SEMANTIC_UNION_CONFLICT_PATH)
-    head = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
-    missing = missing_added_lines(base, main, head)
-    if missing:
-        raise SyncError(
-            "semantic union source does not preserve main-side added lines: "
-            + "; ".join(missing[:5])
-        )
 
 
 def verify_semantic_union_preserves_main(
