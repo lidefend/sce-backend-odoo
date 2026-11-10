@@ -693,6 +693,21 @@ RULES = (
         "verify.daily.permission_truth.capability.orm",
     )),
     Rule((
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    ), (
+        "verify.role_surface.landing.contract.unit",
+        "verify.frontend.role_surface_exposure_declaration.guard",
+        "verify.frontend.navigation_policy.unit",
+        "verify.workflow_action_semantics.guard",
+    )),
+    Rule((
         "addons/smart_construction_scene/tests/__init__.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
     ), (

@@ -407,6 +407,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             ["verify.scene.company_route_scope_cache.orm"],
         )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/data/product_menu_source.json",
+            ]),
+            [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
+        )
         for path in (
             "scripts/verify/frontend_acceptance_login_probe.py",
             "scripts/verify/test_frontend_acceptance_login_probe.py",

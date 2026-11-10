@@ -20,6 +20,8 @@
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "make/ci.mk",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256"
   ],
@@ -51,6 +53,16 @@
         "make/ci.mk",
         ".github/workflows/frontend_release_gate.yml",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+      ]
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
       ]
     },
     "role_surface_contract": {
@@ -91,6 +103,15 @@
       "inputs": [
         "addons/smart_construction_core/data/product_menu_source.json",
         "scripts/verify/workflow_action_semantics_completeness_guard.py"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "agent_ledger": {
