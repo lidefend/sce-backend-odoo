@@ -144,6 +144,7 @@ class MenuService:
             menu_id = fact.get("menu_id")
             menu_xmlid = str(fact.get("menu_xmlid") or "").strip()
             action_id = fact.get("action_id")
+            action_model = str(fact.get("action_model") or "").strip()
             action_meta = fact.get("action_meta") if isinstance(fact.get("action_meta"), dict) else {}
             model = str(action_meta.get("res_model") or "").strip()
             view_modes = [
@@ -156,6 +157,7 @@ class MenuService:
                 "menu_id": menu_id,
                 "menu_xmlid": menu_xmlid,
                 "action_id": action_id,
+                "action_model": action_model,
                 "model": model,
                 "view_modes": view_modes,
                 "route": route,
@@ -168,6 +170,7 @@ class MenuService:
                 "menu_xmlid": menu_xmlid,
                 "xmlid": menu_xmlid,
                 "action_id": action_id,
+                "action_model": action_model,
                 "model": model,
                 "view_modes": view_modes,
                 "route": route,
@@ -183,7 +186,7 @@ class MenuService:
             not surface.get("exposure_policy_declared")
             or self.env is None
         ):
-            return native_nav
+            return self._filter_native_action_groups(native_nav)
         # Capability discovery does not turn a delivered menu projection into
         # complete ACL evidence, including for system administrators.
         # The role policy must intersect the actual request user's Odoo menu
@@ -446,6 +449,9 @@ class MenuService:
         action_xmlid = str(row.get("action_xmlid") or "").strip()
         action = self.env.ref(action_xmlid, raise_if_not_found=False) if action_xmlid else None
         if not action or str(getattr(action, "_name", "") or "") != "ir.actions.act_window":
+            return None
+        action_groups = getattr(action, "groups_id", None)
+        if action_groups and not bool(action_groups & self.env.user.groups_id):
             return None
         allowed_operation = str(row.get("allowed_operation") or "read").strip().lower() or "read"
         if not self._action_is_runtime_allowed(action, allowed_operation):

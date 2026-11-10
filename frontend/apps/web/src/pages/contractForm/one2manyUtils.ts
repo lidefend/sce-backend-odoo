@@ -893,7 +893,12 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(parsed);
   }
-  if (ttype === 'integer') return formatDecimalDisplayValue(value, 0, '', 'zh-CN');
+  if (ttype === 'integer') {
+    if (value === null || value === undefined || value === false || value === '') return '';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    return formatDecimalDisplayValue(Math.trunc(numeric), 0, '', 'zh-CN');
+  }
   if (ttype === 'float' || ttype === 'monetary') return formatDecimalDisplayValue(value, 6, '', 'zh-CN');
   if (ttype === 'boolean') return value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT;
   if (ttype === 'selection') {

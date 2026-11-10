@@ -64,6 +64,9 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             res_model = 'res.partner'
             view_mode = 'tree,form'
             groups_id = GroupSet({7})
+            view_id = None
+            domain = '[]'
+            context = "{}"
 
             def sudo(self):
                 return self
@@ -81,8 +84,13 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             def check_access_rights(self, _operation, raise_exception=False):
                 return True
 
+        action_record = Action()
+
         class Env(dict):
             user = None
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return action_record if xmlid == 'test.action_expense' else None
 
         service = menu_service.MenuService(Env({
             'ir.actions.act_window': Model(),
@@ -94,18 +102,24 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             'action_model': 'ir.actions.act_window',
             'menu_xmlid': 'test.expense', 'name': 'Expense',
         }
-        nodes = [{
-            'menu_id': 501, 'menu_xmlid': 'test.expense', 'label': 'Expense',
+        fact = {
+            'menu_id': 501, 'name': 'Expense', 'menu_xmlid': 'test.expense',
             'action_id': 601, 'action_model': 'ir.actions.act_window',
-            'route': '/a/601?menu_id=501', 'meta': {
-                'action_id': 601, 'action_xmlid': 'test.action_expense', 'route': '/a/601?menu_id=501',
-            }, 'children': [],
-        }]
+            'action_meta': {'res_model': 'res.partner', 'view_mode': 'tree,form'},
+            'children': [],
+        }
+        nodes = menu_service.MenuService._menu_fact_tree_as_native([fact])
+        self.assertEqual(nodes[0]['action_model'], 'ir.actions.act_window')
         self.assertEqual(service._filter_native_action_groups(nodes), [])
         self.assertIsNone(service._route_entry_from_menu(
             row, route_kind='PRIMARY_NAV', source='native',
             action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
         ))
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense',
+            'action_xmlid': 'test.action_expense',
+            'allowed_operation': 'read',
+        }, route_kind='CONTEXTUAL_ROUTE'))
 
         service.env.user.groups_id = GroupSet({7})
         filtered = service._filter_native_action_groups(nodes)
@@ -115,6 +129,11 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             row, route_kind='PRIMARY_NAV', source='native',
             action_xmlids={('ir.actions.act_window', 601): 'test.action_expense'},
         ))
+        self.assertIsNotNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense',
+            'action_xmlid': 'test.action_expense',
+            'allowed_operation': 'read',
+        }, route_kind='CONTEXTUAL_ROUTE'))
 
     def test_native_configuration_scope_survives_route_publication(self):
         action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
