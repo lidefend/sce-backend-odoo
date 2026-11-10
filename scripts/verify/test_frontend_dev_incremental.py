@@ -300,7 +300,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
             ]),
-            ["verify.execute_button.authority.unit"],
+            ["verify.approval.contract_closure.orm", "verify.execute_button.authority.unit"],
         )
         self.assertEqual(
             select_targets(["scripts/audit/workflow_state_inventory.py"]),

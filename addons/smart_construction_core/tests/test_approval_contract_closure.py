@@ -175,21 +175,24 @@ class TestApprovalContractClosure(BusinessTransactionCase):
             and statuses[0].get("disabled") is False
         )
 
-    def _execute_contract_action(self, env, record, row, review):
+    def _execute_contract_action(self, env, record, row, review, action_params=None):
         button = {
             **(row.get("button") or {}),
             "action_id": row["actionId"],
             "backend_identity": row["backendIdentity"],
             "source_widget_id": row["sourceWidgetId"],
         }
+        request_params = {
+            "model": record._name,
+            "res_id": record.id,
+            "button": button,
+        }
+        if action_params is not None:
+            request_params["action_params"] = action_params
         result = ExecuteButtonHandler(
             env,
             payload={
-                "params": {
-                    "model": record._name,
-                    "res_id": record.id,
-                    "button": button,
-                },
+                "params": request_params,
                 "meta": {
                     "work_item_origin": {
                         "source": "tier.review",
@@ -200,12 +203,13 @@ class TestApprovalContractClosure(BusinessTransactionCase):
         ).handle()
         return self._envelope(result)
 
-    def _current_item(self, env, model, record_id):
+    def _current_review_item(self, env, model, record_id, review_id):
         workspace = CurrentWorkItemService(env).build()
         needle = "%s:%s" % (model, record_id)
         for section in workspace.get("sections") or []:
             for item in section.get("items") or []:
-                if item.get("key") == needle:
+                origin = (item.get("target") or {}).get("work_item_origin") or {}
+                if item.get("key") == needle and origin.get("source") == "tier.review" and origin.get("id") == review_id:
                     return item
         return None
 
@@ -302,7 +306,7 @@ class TestApprovalContractClosure(BusinessTransactionCase):
             ),
             {"allowed": True, "record_access_mode": "read"},
         )
-        current = self._current_item(reviewer_env, contract._name, contract.id)
+        current = self._current_review_item(reviewer_env, contract._name, contract.id, review.id)
         self.assertTrue(current, "assigned approval must be a current work item")
         self.assertEqual(current["target"]["work_item_origin"], origin)
         self.assertEqual(
@@ -333,7 +337,7 @@ class TestApprovalContractClosure(BusinessTransactionCase):
         self.assertEqual(review.status, "approved")
         self.assertEqual(contract.validation_status, "validated")
         self.assertEqual(contract.state, "confirmed")
-        self.assertIsNone(self._current_item(reviewer_env, contract._name, contract.id))
+        self.assertIsNone(self._current_review_item(reviewer_env, contract._name, contract.id, review.id))
         self.assertFalse(
             authorize_review_origin(
                 reviewer_env,
@@ -387,7 +391,7 @@ class TestApprovalContractClosure(BusinessTransactionCase):
             payment_data,
             {
                 "action_approval_decision": "approve",
-                "reject_tier": "reject",
+                "action_approval_reject": "reject",
             },
         )
 
@@ -420,6 +424,84 @@ class TestApprovalContractClosure(BusinessTransactionCase):
             payment.with_user(self.reviewer),
             actions["action_approval_decision"],
             review,
+        )
+        self.assertFalse(stale.get("ok"), stale)
+        self.assertEqual(int(stale.get("code") or 0), 403)
+
+    def test_payment_reject_consumes_the_declared_reason_before_and_at_execution(self):
+        payment, review = self._payment_request_with_review()
+        reviewer_env = payment.with_user(self.reviewer).env
+        origin = {"source": "tier.review", "id": review.id}
+        self.assertTrue(
+            authorize_review_origin(
+                reviewer_env,
+                origin,
+                model=payment._name,
+                record_id=payment.id,
+                method_name="action_approval_reject",
+            )
+        )
+
+        payment_data = self._final_contract(reviewer_env, payment._name, payment.id)
+        actions = self._assert_decision_rows(
+            payment_data,
+            {
+                "action_approval_decision": "approve",
+                "action_approval_reject": "reject",
+            },
+        )
+        reject = actions["action_approval_reject"]
+        self.assertEqual(reject.get("required_params"), ["reason"], reject)
+        self.assertIs(reject.get("requires_reason"), True, reject)
+
+        missing = self._execute_contract_action(reviewer_env, payment.with_user(self.reviewer), reject, review)
+        self.assertFalse(missing.get("ok"), missing)
+        self.assertEqual(int(missing.get("code") or 0), 400)
+        review.invalidate_recordset()
+        payment.invalidate_recordset()
+        self.assertEqual(review.status, "pending")
+        self.assertEqual(payment.state, "submit")
+        self.assertFalse(payment.reject_reason)
+
+        undeclared = self._execute_contract_action(
+            reviewer_env,
+            payment.with_user(self.reviewer),
+            reject,
+            review,
+            action_params={"reason": "Synthetic rejection", "write_all_fields": True},
+        )
+        self.assertFalse(undeclared.get("ok"), undeclared)
+        self.assertEqual(int(undeclared.get("code") or 0), 400)
+        review.invalidate_recordset()
+        payment.invalidate_recordset()
+        self.assertEqual(review.status, "pending")
+        self.assertEqual(payment.state, "submit")
+        self.assertFalse(payment.reject_reason)
+
+        result = self._execute_contract_action(
+            reviewer_env,
+            payment.with_user(self.reviewer),
+            reject,
+            review,
+            action_params={"reason": "Synthetic rejection"},
+        )
+        self.assertTrue(result.get("ok"), result)
+        self.assertEqual((result.get("data") or {}).get("result", {}).get("reason_code"), "OK")
+
+        review.invalidate_recordset()
+        payment.invalidate_recordset()
+        self.assertEqual(review.status, "rejected")
+        self.assertEqual(payment.validation_status, "rejected")
+        self.assertEqual(payment.state, "rejected")
+        self.assertEqual(payment.reject_reason, "Synthetic rejection")
+        self.assertIsNone(self._current_review_item(reviewer_env, payment._name, payment.id, review.id))
+
+        stale = self._execute_contract_action(
+            reviewer_env,
+            payment.with_user(self.reviewer),
+            reject,
+            review,
+            action_params={"reason": "Replay must not execute"},
         )
         self.assertFalse(stale.get("ok"), stale)
         self.assertEqual(int(stale.get("code") or 0), 403)

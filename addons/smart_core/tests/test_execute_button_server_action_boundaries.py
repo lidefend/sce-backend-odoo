@@ -836,10 +836,22 @@ class ReviewWorkItemOriginTest(unittest.TestCase):
     def setUp(self):
         import ast
         path = Path(__file__).resolve().parents[2] / 'smart_construction_core/services/review_work_item_service.py'
-        function = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'authorize_review_origin')
+        module = ast.parse(path.read_text())
+        declarations = [
+            node for node in module.body
+            if (
+                isinstance(node, ast.FunctionDef) and node.name == 'authorize_review_origin'
+            ) or (
+                isinstance(node, ast.Assign)
+                and any(
+                    isinstance(target, ast.Name) and target.id in {'_REVIEW_DECISION_METHODS', '_DEFAULT_REVIEW_DECISION_METHODS'}
+                    for target in node.targets
+                )
+            )
+        ]
         self.scope_allowed = True
         namespace = {'record_in_business_scope': lambda *a: (self.scope_allowed, {})}
-        exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+        exec(compile(ast.Module(body=declarations, type_ignores=[]), str(path), 'exec'), namespace)
         self.authorize = namespace['authorize_review_origin']
         self.review = types.SimpleNamespace(id=3, model='x.record', res_id=7, status='pending', reviewer_ids=types.SimpleNamespace(ids=[34]))
         self.review.exists = lambda: self.review

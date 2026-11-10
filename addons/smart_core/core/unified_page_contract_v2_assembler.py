@@ -3558,11 +3558,20 @@ def project_workflow_action_semantics(contract: dict[str, Any]) -> dict[str, Any
     """
     workflow = _dict(contract.get("workflowContract"))
     declared: dict[str, dict[str, Any]] = {}
+    declared_inputs: dict[str, dict[str, Any]] = {}
     ambiguous: set[str] = set()
     for row in _list(workflow.get("availableActions")) + _list(workflow.get("actions")):
         if not isinstance(row, dict):
             continue
         method = _text(row.get("method") or row.get("method_name"))
+        input_contract = _declared_action_input_contract(row)
+        if method and input_contract:
+            current_input = declared_inputs.get(method)
+            declared_inputs[method] = (
+                input_contract
+                if current_input is None
+                else _merge_declared_action_inputs(current_input, input_contract)
+            )
         semantics = declared_action_semantics(
             row.get("action_semantics") or row.get("actionSemantics")
         )
@@ -3573,7 +3582,7 @@ def project_workflow_action_semantics(contract: dict[str, Any]) -> dict[str, Any
             declared[method] = semantics
         elif declared_action_meaning(current) != declared_action_meaning(semantics):
             ambiguous.add(method)
-    if not declared and not ambiguous:
+    if not declared and not ambiguous and not declared_inputs:
         return contract
     action_contract = _dict(contract.get("actionContract"))
     rules = _list(action_contract.get("actionRuleList"))
@@ -3594,16 +3603,84 @@ def project_workflow_action_semantics(contract: dict[str, Any]) -> dict[str, Any
             continue
         if method in ambiguous:
             rule["actionSemantics"] = {"conflict": True}
+            input_contract = declared_inputs.get(method)
+            if input_contract:
+                _bind_declared_action_input_contract(rule, input_contract)
             continue
         semantics = declared.get(method)
-        if not semantics:
-            continue
-        declared_meaning = declared_action_meaning(semantics)
-        if existing is None:
-            rule["actionSemantics"] = deepcopy(semantics)
-        elif _dict(existing).get("conflict") is not True and declared_action_meaning(existing) != declared_meaning:
-            rule["actionSemantics"] = {"conflict": True}
+        if semantics:
+            declared_meaning = declared_action_meaning(semantics)
+            if existing is None:
+                rule["actionSemantics"] = deepcopy(semantics)
+            elif _dict(existing).get("conflict") is not True and declared_action_meaning(existing) != declared_meaning:
+                rule["actionSemantics"] = {"conflict": True}
+        input_contract = declared_inputs.get(method)
+        if input_contract:
+            _bind_declared_action_input_contract(rule, input_contract)
     return contract
+
+
+def _declared_action_input_contract(row: dict[str, Any]) -> dict[str, Any]:
+    required_params = [
+        _text(item)
+        for item in _list(row.get("required_params") or row.get("requiredParams"))
+        if _text(item)
+    ]
+    presentation = _dict(row.get("presentation"))
+    requires_reason = (
+        row.get("requires_reason") is True
+        or row.get("requiresReason") is True
+        or presentation.get("requires_reason") is True
+        or presentation.get("requiresReason") is True
+        or "reason" in required_params
+    )
+    if requires_reason and "reason" not in required_params:
+        required_params.append("reason")
+    reason_input = _dict(presentation.get("reason_input") or presentation.get("reasonInput"))
+    if not required_params and not requires_reason and not reason_input:
+        return {}
+    return {
+        "required_params": sorted(set(required_params)),
+        "requires_reason": requires_reason,
+        **({"reason_input": deepcopy(reason_input)} if reason_input else {}),
+    }
+
+
+def _merge_declared_action_inputs(current: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
+    current_input = _dict(current.get("reason_input"))
+    incoming_input = _dict(incoming.get("reason_input"))
+    reason_input = (
+        deepcopy(current_input)
+        if current_input and current_input == incoming_input
+        else {}
+    )
+    required_params = sorted(set(_list(current.get("required_params"))) | set(_list(incoming.get("required_params"))))
+    if current.get("requires_reason") is True or incoming.get("requires_reason") is True:
+        if "reason" not in required_params:
+            required_params.append("reason")
+        required_params = sorted(set(required_params))
+    return {
+        "required_params": required_params,
+        "requires_reason": current.get("requires_reason") is True or incoming.get("requires_reason") is True,
+        **({"reason_input": reason_input} if reason_input else {}),
+    }
+
+
+def _bind_declared_action_input_contract(rule: dict[str, Any], declaration: dict[str, Any]) -> None:
+    required_params = sorted(
+        set(_list(rule.get("required_params")) or _list(rule.get("requiredParams")))
+        | set(_list(declaration.get("required_params")))
+    )
+    if required_params:
+        rule["required_params"] = required_params
+    if declaration.get("requires_reason") is True:
+        rule["requires_reason"] = True
+        presentation = deepcopy(_dict(rule.get("presentation")))
+        presentation["requires_reason"] = True
+        reason_input = _dict(declaration.get("reason_input"))
+        if reason_input:
+            presentation["reason_input"] = deepcopy(reason_input)
+        rule["presentation"] = presentation
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:

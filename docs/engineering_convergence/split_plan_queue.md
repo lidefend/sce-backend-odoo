@@ -85,7 +85,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1538 | DevOps owner | `scripts/ops/agent_dispatch_inbox.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1527 | DevOps owner | `scripts/ops/dev_acceptance_release_probe.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1524 | DevOps owner | `scripts/verify/test_acceptance_evolution_binding_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1042 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
+| P2 | 1026 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 682 | DevOps owner | `.github/workflows/backend_test_suite.yml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 599 | DevOps owner | `scripts/audit/smoke_role_matrix.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 551 | DevOps owner | `scripts/ops/audit_project_actions.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |

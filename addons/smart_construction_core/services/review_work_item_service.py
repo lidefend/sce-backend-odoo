@@ -6,7 +6,7 @@ from odoo.addons.smart_core.core.project_context import record_in_business_scope
 from .payment_request_work_item_service import PaymentRequestWorkItemService
 
 _REVIEW_DECISION_METHODS = {
-    "payment.request": frozenset({"action_approval_decision", "reject_tier"}),
+    "payment.request": frozenset({"action_approval_decision", "action_approval_reject"}),
 }
 _DEFAULT_REVIEW_DECISION_METHODS = frozenset({"validate_tier", "reject_tier"})
 

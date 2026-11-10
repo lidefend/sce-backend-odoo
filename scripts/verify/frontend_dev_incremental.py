@@ -684,10 +684,12 @@ RULES = (
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
         "scripts/verify/frontend_my_work_approval_runtime.py",
         "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
         "scripts/verify/test_frontend_release_local_entry.py",
         "scripts/verify/test_frontend_standard_preview.py",
     ), (
@@ -816,8 +818,21 @@ RULES = (
         "verify.approval.contract_closure.orm",
     )),
     Rule((
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+    ), (
+        "verify.approval.contract_closure.orm",
+        "verify.unified_page_contract.v2.assembler",
+        "verify.unified_page_contract.v2.action",
+        "verify.unified_page_contract.v2.status",
+        "verify.unified_page_contract.v2.runtime",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
         "frontend/apps/web/scripts/approval_contract_closure_test.ts",
+        "frontend/apps/web/src/api/executeButton.ts",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+        "frontend/packages/schema/src/index.ts",
     ), (
         "verify.frontend.approval_contract.closure.unit",
         "verify.frontend.contract_header_action.unit",
@@ -864,8 +879,10 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "addons/smart_core/handlers/execute_button.py",
     ), (
         "verify.execute_button.authority.unit",
+        "verify.approval.contract_closure.orm",
     )),
     Rule((
         "scripts/audit/workflow_state_inventory.py",
