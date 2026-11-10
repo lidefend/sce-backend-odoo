@@ -11,6 +11,7 @@
     ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
     ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",
     "config/frontend/role_surface_exposure_declarations_v1.json",
+  "docs/architecture/text_containment_allowlist.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",

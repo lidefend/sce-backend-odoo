@@ -31,6 +31,16 @@
       "file": "frontend/apps/web/src/styles/accessibility.css",
       "max": 4,
       "reason": "The global prefers-reduced-motion floor must override component and framework transition/animation shorthands."
+    },
+    {
+      "file": "frontend/apps/web/src/components/MenuTree.vue",
+      "max": 2,
+      "reason": "The focusable navigation tree owns scrolling; these declarations override TDesign's nested menu scroll and height."
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+      "max": 2,
+      "reason": "The vendor menu child must delegate its scroll and height to the labelled focusable navigation host."
     }
   ],
   "structuralOverlapExceptions": [
