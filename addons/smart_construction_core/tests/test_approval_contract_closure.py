@@ -450,6 +450,13 @@ class TestApprovalContractClosure(BusinessTransactionCase):
                 "action_approval_reject": "reject",
             },
         )
+        self.assertFalse(
+            any(
+                (row.get("button") or {}).get("name") == "reject_tier"
+                for row in (payment_data.get("actionContract") or {}).get("actionRuleList", [])
+            ),
+            "the runtime business-action projection must not republish the legacy reject method",
+        )
         reject = actions["action_approval_reject"]
         self.assertEqual(reject.get("required_params"), ["reason"], reject)
         self.assertIs(reject.get("requires_reason"), True, reject)

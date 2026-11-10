@@ -582,7 +582,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
     method_aliases = {
         "submit": ["action_submit"],
         "approve": ["action_approve", "action_set_approved", "validate_tier"],
-        "reject": ["reject_tier", "action_on_tier_rejected"],
+        "reject": ["action_approval_reject", "action_on_tier_rejected"],
         "done": ["action_done"],
     }
     actions = []
@@ -592,9 +592,12 @@ def build_financial_form_business_actions(env, model_name, record_id):
         action_key = str(row.get("key") or "").strip()
         if not action_key:
             continue
-        methods = method_aliases.get(action_key, [str(row.get("method") or "").strip()])
-        if action_key == "approve" and str(row.get("method") or "").strip() == "action_approval_decision":
-            methods = ["action_approval_decision", *methods]
+        declared_method = str(row.get("method") or "").strip()
+        methods = list(dict.fromkeys(
+            method
+            for method in [declared_method, *method_aliases.get(action_key, [])]
+            if method
+        ))
         for method in filter(None, methods):
             label = str(row.get("label") or action_key)
             business_available = bool(row.get("business_available"))
