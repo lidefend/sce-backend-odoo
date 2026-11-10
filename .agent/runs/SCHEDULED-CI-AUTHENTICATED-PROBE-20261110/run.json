@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "SCHEDULED-CI-AUTHENTICATED-PROBE-20261110",
   "branch": "fix/scheduled-ci-authenticated-probe-20261110",
-  "baseline_sha": "ca032b92dd1131485313b9299b5e799c67f1d525",
+  "baseline_sha": "e56cd8d17fb5d08a62ff0dd2695f2aed06696a11",
   "status": "verification_pending",
   "goal": ".agent/goals/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110.yaml",
   "record": "docs/ops/iterations/scheduled_ci_authenticated_probe_20261110.md",

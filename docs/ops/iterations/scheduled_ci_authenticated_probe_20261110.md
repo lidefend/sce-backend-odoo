@@ -4,7 +4,7 @@ Status: verification_pending
 
 - Formal Product Layer: P4
 - Layer Target: shared frontend authenticated intent probe
-- Baseline: `main@ca032b92dd1131485313b9299b5e799c67f1d525`
+- Baseline: `main@e56cd8d17fb5d08a62ff0dd2695f2aed06696a11`
 - Excluded: product behavior, backend contracts, credentials and deployment
 
 ## Failure
@@ -59,3 +59,14 @@ The clean implementation commit
 The original log paths are under
 `.runtime/agent-runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/`.
 Current exact-head PR checks and a fresh full-lane run remain mandatory.
+
+## Mainline synchronization
+
+While PR checks were running, main advanced through PR #863 to
+`e56cd8d17fb5d08a62ff0dd2695f2aed06696a11`. The governed published-branch entry
+appended that exact main with recovery bundle
+`published-sync-31a4b5a422f5614e9b22dfcb4d86b2347eec0929-e56cd8d17fb5d08a62ff0dd2695f2aed06696a11.bundle`
+(SHA-256
+`fbd2f5244511fbbe58ab7f921812d89ff5fa689836c888e0d530b85263932820`)
+and created merge commit `31ff5b0b565d67572935d89949f60b5fa9347e97`.
+The former checks no longer qualify because their target baseline changed.
