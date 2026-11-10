@@ -5,8 +5,8 @@
 - Repository: `sce-backend-odoo-acceptance-scope-20261109`
 - Branch: `feature/fe-systemic-convergence-m1-20261110`
 - Baseline: `71e9c70f43e16b85ec7f925c9a261894f4be4e50`
-- Latest verified product/runtime candidate: `0a7c37eca606bd4fd38c80028aa91e92f32c368d`
-- External state: local-only; no push, PR, merge or deployment in this closeout
+- Latest verified product candidate: `19cd7caafed9c76bb36d30d5ebabda3193081d3d`
+- External state: PR publication and merge are governed by the active integration run
 
 ## Outcomes
 
@@ -64,6 +64,10 @@
 - PR #862 currently binds remote checks to the pre-R2 head. Exact-head remote
   checks, review-thread status and merge remain pending on the repaired SHA;
   this record does not substitute those gates for local evidence.
+- R3 closed the subsequent exact-head findings: scoped `ScCard`/`ScPanel`
+  appearance styles, retained logger debug intent, enforced systemic gates in
+  local/release lanes, JS/HTML guard coverage, optional/computed console
+  detection and full target-field removal for denied navigation parents.
 
 ## Status
 

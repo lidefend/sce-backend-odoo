@@ -43,5 +43,28 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "R3 review fixes are locally validated; re-run an independent exact-head review at the new clean commit, then publish the PR and require exact-head remote checks before merge."
+  "next_exact_step": "R3 review findings are closed on exact HEAD 19cd7caafed9c76bb36d30d5ebabda3193081d3d; publish and require exact-head remote checks before merge.",
+  "validation": {
+    "r3_product_candidate": {
+      "head": "19cd7caafed9c76bb36d30d5ebabda3193081d3d",
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets": 23,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261110T015626Z-1599378-183419579/receipt.json"
+    },
+    "navigation_delivery": {
+      "status": "passed",
+      "command": "make verify.backend.navigation_delivery.unit",
+      "tests": [51, 10, 3]
+    },
+    "systemic_guards": {
+      "status": "passed",
+      "command": "make verify.frontend.systemic.convergence.static",
+      "static_guards": 5
+    },
+    "frontend_build": {
+      "status": "passed",
+      "command": "make verify.frontend.build ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev"
+    }
+  }
 }
