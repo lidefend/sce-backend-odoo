@@ -585,6 +585,31 @@ RULES = (
         "verify.product_system_parameter_catalog",
     )),
     Rule((
+        "scripts/verify/test_capability_identity_boundary.py",
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+    ), (
+        "verify.capability.identity_boundary.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    ), (
+        "verify.capability.identity_boundary.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    ), (
+        "verify.product.menu.contract_v1.guard",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (

@@ -460,6 +460,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.payment.authorization_boundary.orm"],
         )
 
+    def test_capability_identity_paths_select_their_owning_check(self) -> None:
+        for path in (
+            "scripts/verify/test_capability_identity_boundary.py",
+            "addons/smart_construction_core/services/capability_registry.py",
+            "addons/smart_construction_core/services/product_menu_source.py",
+            "addons/smart_core/delivery/capability_service.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.capability.identity_boundary.unit"],
+                )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/tests/test_capability_registry_service.py"]),
+            ["verify.capability.identity_boundary.orm"],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json"
+            ]),
+            ["verify.product.menu.contract_v1.guard"],
+        )
+
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

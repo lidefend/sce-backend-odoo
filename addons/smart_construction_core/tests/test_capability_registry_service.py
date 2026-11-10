@@ -30,6 +30,20 @@ class TestCapabilityRegistryService(TransactionCase):
         self.assertTrue(all(row.get("key") in definition_keys for row in rows))
         self.assertTrue(any((row.get("group_key") == "project_management") for row in rows))
 
+    def test_business_capability_identity_is_declared_by_registry(self):
+        definition = capability_registry.capability_definitions()[0]
+        self.assertEqual(definition["identity_kind"], "business_capability")
+        self.assertTrue(definition["business_capability"])
+        self.assertEqual(
+            definition["definition_authority"],
+            "smart_construction_core.services.capability_registry",
+        )
+        self.assertEqual(
+            definition["qualification_authority"],
+            "product_catalog_and_effective_release",
+        )
+        self.assertFalse(definition["key"].startswith(("construction.menu.", "catalog.menu.")))
+
     def test_capability_matrix_sections(self):
         user = self._project_actor()
         matrix = capability_registry.build_capability_matrix_for_user(user.with_user(user).env, user)

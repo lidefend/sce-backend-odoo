@@ -306,6 +306,11 @@ class ScProductPolicy(models.Model):
                 capabilities.append(
                     {
                         "capability_key": _text(menu.get("capability_key")) or "construction.menu.%s" % page_key.replace(".", "_"),
+                        "identity_kind": "entry_compatibility_alias",
+                        "business_capability": False,
+                        "identity_contract_version": "capability.identity.v1",
+                        "qualification_authority": "published_product_release",
+                        "provider_authority": "native_menu_action_entry",
                         "label": _text(menu.get("label") or menu.get("page_label")) or page_key,
                         "group_key": group_key,
                         "group_label": group_label,

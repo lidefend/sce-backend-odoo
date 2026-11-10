@@ -71,3 +71,17 @@ labor.plan.manage
 
 本阶段只能证明依赖身份引用闭合，不能证明组合能力已具备发布条件。组合能力
 不得因为依赖 key 能找到，就被误认为可发布；资格闭合必须等 CAP-01C 逐项评估。
+
+## 5. Identity Boundary（BE-U03）
+
+能力与入口使用同一份投影时，也必须保留不同身份：
+
+| 身份 | 维护权威 | 允许表达 | 不得表达 |
+| --- | --- | --- | --- |
+| `business_capability` | `smart_construction_core.services.capability_registry` | 稳定能力键、Provider、角色/组要求、能力状态、资格引用 | 从菜单存在性推导能力资格 |
+| `entry_compatibility_alias` | 原生菜单/动作或场景入口的产品策略投影 | `construction.menu.*`、`catalog.menu.*`、目标页面、发布阶段和入口展示 | 独立业务能力、Provider 完成度、执行授权 |
+
+`construction.menu.*` 与 `catalog.menu.*` 键继续兼容现有发布产物，但不得进入业务能力
+registry。菜单别名携带 `business_capability=false`，`qualification_authority` 指向有效
+产品发布，而不是菜单本身。最终数据库目录收敛与旧键迁移是后续独立工作，不能把本节的
+身份标注解释为迁移已经完成。

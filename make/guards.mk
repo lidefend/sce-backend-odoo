@@ -71,6 +71,21 @@ verify.permission_check.availability.unit: guard.prod.forbid
 verify.payment.authorization_boundary.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=payment_domain_permission_isolation
 
+.PHONY: verify.capability.identity_boundary.unit
+verify.capability.identity_boundary.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
+	  addons/smart_core/delivery/capability_service.py \
+	  addons/smart_core/delivery/product_policy_catalog_sync_service.py \
+	  addons/smart_construction_core/core_extension_capability_rows.py \
+	  addons/smart_construction_core/models/support/product_policy_sync.py \
+	  addons/smart_construction_core/services/capability_registry.py \
+	  addons/smart_construction_core/services/product_menu_source.py
+	@python3 -m unittest scripts.verify.test_capability_identity_boundary
+
+.PHONY: verify.capability.identity_boundary.orm
+verify.capability.identity_boundary.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

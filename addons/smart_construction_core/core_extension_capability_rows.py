@@ -26,6 +26,14 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
     ui_hint = str(row.get("ui_hint") or "").strip()
     return {
         "key": key,
+        "identity_kind": str(row.get("identity_kind") or "business_capability").strip(),
+        "business_capability": bool(row.get("business_capability", True)),
+        "identity_contract_version": str(
+            row.get("identity_contract_version") or "capability.identity.v1"
+        ).strip(),
+        "definition_authority": str(row.get("definition_authority") or "").strip(),
+        "qualification_authority": str(row.get("qualification_authority") or "").strip(),
+        "provider_authority": str(row.get("provider_authority") or "").strip(),
         "name": identity_name,
         "domain": domain,
         "type": "entry",
@@ -56,6 +64,8 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
             "domain": domain,
             "type": "entry",
             "version": "v1",
+            "identity_kind": str(row.get("identity_kind") or "business_capability").strip(),
+            "business_capability": bool(row.get("business_capability", True)),
         },
         "ownership": {
             "owner_module": "smart_core",

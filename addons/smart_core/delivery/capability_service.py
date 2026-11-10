@@ -40,6 +40,37 @@ class CapabilityService:
             runtime = runtime_index.get(key) or {}
             entry = build_delivery_capability_entry(row, runtime)
             if entry:
+                identity_kind = str(
+                    row.get("identity_kind")
+                    or runtime.get("identity_kind")
+                    or ("business_capability" if runtime else "entry_compatibility_alias")
+                ).strip()
+                entry["capability_identity"] = {
+                    "contract_version": str(
+                        row.get("identity_contract_version")
+                        or runtime.get("identity_contract_version")
+                        or "capability.identity.v1"
+                    ).strip(),
+                    "identity_kind": identity_kind,
+                    "business_capability": bool(
+                        row.get("business_capability", runtime.get("business_capability", identity_kind == "business_capability"))
+                    ),
+                    "definition_authority": str(
+                        row.get("definition_authority")
+                        or runtime.get("definition_authority")
+                        or "product_policy_entry_projection"
+                    ).strip(),
+                    "qualification_authority": str(
+                        row.get("qualification_authority")
+                        or runtime.get("qualification_authority")
+                        or "published_product_release"
+                    ).strip(),
+                    "provider_authority": str(
+                        row.get("provider_authority")
+                        or runtime.get("provider_authority")
+                        or "product_policy_entry_projection"
+                    ).strip(),
+                }
                 entry["source_authority"] = self.source_authority_contract()
                 entries.append(entry)
         return entries

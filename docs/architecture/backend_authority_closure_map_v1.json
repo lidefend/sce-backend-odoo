@@ -667,21 +667,55 @@
     {
       "id": "BE-U01-G01",
       "owner_card": "BE-U03",
-      "status": "open",
-      "summary": "菜单 XMLID 派生键仍承担入口身份与 capability_key 双重角色，不能据键存在证明独立业务能力或成熟资格。",
+      "status": "partially_closed",
+      "summary": "菜单 XMLID 派生键保留兼容入口身份，但已显式标记 entry_compatibility_alias/business_capability=false；业务能力 registry 声明独立身份、Provider 与资格权威，并拒绝菜单别名前缀。正式数据库目录与旧键迁移仍未完成。",
       "refs": [
         {
           "path": "addons/smart_construction_core/services/product_menu_source.py",
           "kind": "python_symbol_tokens",
           "value": "_menu_row",
           "tokens": [
-            "capability_key = \"construction.menu.%s\""
+            "capability_key = \"construction.menu.%s\"",
+            "\"identity_kind\": \"entry_compatibility_alias\"",
+            "\"business_capability\": False",
+            "\"qualification_authority\": \"published_product_release\""
           ]
         },
         {
           "path": "addons/smart_construction_core/services/product_menu_source.py",
           "kind": "python_symbol",
           "value": "_capability_from_menu"
+        },
+        {
+          "path": "addons/smart_construction_core/services/capability_registry.py",
+          "kind": "python_symbol_tokens",
+          "value": "_cap",
+          "tokens": [
+            "\"identity_kind\": \"business_capability\"",
+            "\"business_capability\": True",
+            "\"definition_authority\": \"smart_construction_core.services.capability_registry\"",
+            "\"qualification_authority\": \"product_catalog_and_effective_release\""
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/services/capability_registry.py",
+          "kind": "python_symbol_tokens",
+          "value": "lint_registry",
+          "tokens": [
+            "ENTRY_ALIAS_NOT_BUSINESS_CAPABILITY",
+            "construction.menu.",
+            "catalog.menu."
+          ]
+        },
+        {
+          "path": "addons/smart_core/delivery/capability_service.py",
+          "kind": "python_symbol_tokens",
+          "value": "CapabilityService.build_entries",
+          "tokens": [
+            "capability_identity",
+            "identity_kind",
+            "business_capability"
+          ]
         }
       ]
     },

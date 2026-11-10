@@ -345,6 +345,11 @@ class ProductPolicyCatalogSyncService:
             capability_rows.append(
                 {
                     "capability_key": capability_key,
+                    "identity_kind": "entry_compatibility_alias",
+                    "business_capability": False,
+                    "identity_contract_version": "capability.identity.v1",
+                    "qualification_authority": "published_product_release",
+                    "provider_authority": "native_menu_action_entry",
                     "label": label,
                     "group_key": group_key,
                     "group_label": _text(page.get("group_label")) or "业务目录",
