@@ -5,11 +5,17 @@ from odoo.exceptions import AccessError
 from odoo.addons.smart_core.core.project_context import record_in_business_scope
 from .payment_request_work_item_service import PaymentRequestWorkItemService
 
+_REVIEW_DECISION_METHODS = {
+    "payment.request": frozenset({"action_approval_decision", "reject_tier"}),
+}
+_DEFAULT_REVIEW_DECISION_METHODS = frozenset({"validate_tier", "reject_tier"})
+
 
 def authorize_review_origin(env, origin, *, model, record_id, method_name=None):
     if origin.get("source") != "tier.review":
         return None
-    if method_name not in (None, "validate_tier", "reject_tier"):
+    allowed_methods = _REVIEW_DECISION_METHODS.get(model, _DEFAULT_REVIEW_DECISION_METHODS)
+    if method_name is not None and method_name not in allowed_methods:
         return False
     review = env["tier.review"].sudo().browse(origin["id"]).exists()
     if not review or review.model != model or review.res_id != record_id:

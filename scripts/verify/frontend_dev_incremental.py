@@ -64,6 +64,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.professional_component_registry.unit": "esbuild",
     "verify.frontend.runtime_identity.unit": "esbuild",
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
+    "verify.frontend.approval_contract.closure.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
     "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
@@ -804,6 +805,23 @@ RULES = (
         "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
     ), (
         "verify.frontend.contract_header_action.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "scripts/verify/test_general_contract_review_authority.py",
+    ), (
+        "verify.general_contract.review_authority.unit",
+        "verify.approval.contract_closure.orm",
+    )),
+    Rule((
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/scripts/approval_contract_closure_test.ts",
+    ), (
+        "verify.frontend.approval_contract.closure.unit",
+        "verify.frontend.contract_header_action.unit",
+        "verify.frontend.canonical_form_presenter.unit",
     )),
     Rule((
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",

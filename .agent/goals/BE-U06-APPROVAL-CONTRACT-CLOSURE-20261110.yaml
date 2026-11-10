@@ -1,0 +1,96 @@
+schema_version: 1
+goal:
+  id: BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110
+  title: approval_task_view_action_permission_contract_closure
+  status: verification_pending
+  formal_product_layer: P0
+  supporting_layers:
+    - P1
+  layer_target:
+    - unified_page_contract_v2_action_projection
+    - work_item_origin_authorization
+    - approval_business_execution_recheck
+  module:
+    - smart_core
+    - smart_construction_core
+  owned_files:
+    - .agent/active-runs.json
+    - .agent/goals/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110.yaml
+    - .agent/runs/BE-U06-APPROVAL-CONTRACT-CLOSURE-20261110/run.json
+    - addons/smart_construction_core/services/review_work_item_service.py
+    - addons/smart_construction_core/tests/__init__.py
+    - addons/smart_construction_core/tests/test_approval_contract_closure.py
+    - docs/audit/test_coverage_registry/test_coverage_registry.json
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    - docs/ops/iterations/backend_authority_closure_be_u06_20261110.md
+    - frontend/apps/web/scripts/approval_contract_closure_test.ts
+    - frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts
+    - make/frontend.mk
+    - make/guards.mk
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_general_contract_review_authority.py
+    - scripts/verify/test_frontend_dev_incremental.py
+  baseline:
+    branch: codex/be-u05-page-declaration-authority-20261110
+    full_sha: 54dbbc1e9ae5864030ea9dfd8cd2b4409ef7f6cd
+    source: reviewed_be_u01_u05_candidate
+  objective: >-
+    用真实 tier.review 任务贯通审批待办、最终 UiContractV2 页面、允许的审批动作、
+    服务端来源重验、业务状态转换、权威回读和待办消失。以日常合同为主样本，
+    证明只有读权限的审批人可以通过真实任务来源执行明确审批动作；再以付款申请
+    为跨业务对照样本。验证重点是原生视图/动作/当前权限加工成最终契约，不证明
+    Odoo 模型 ACL 自身的实现。
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_construction_standard
+    why_here: >-
+      最终页面和动作契约由 P0 UiContractV2Handler/ExecuteButtonHandler 装配与重验；
+      真实审批任务、业务状态和回调由 P1 tier.review、审批策略及业务模型维护。
+    why_not_elsewhere:
+      - no_frontend_approval_special_case
+      - no_new_approval_engine_or_page_configuration_system
+      - no_duplicate_model_acl_or_record_rule_engine
+      - no_release_deployment_or_product_acceptance_claim
+    blast_radius:
+      - focused approval contract ORM regression
+      - focused frontend approval-contract consumption regression
+      - focused review-origin method-boundary regression
+      - narrow payment-review decision-method authorization
+      - registered make verification entry
+      - U06 run and batch record
+      - authority closure documentation references
+  constraints:
+    - use_real_tier_review_created_by_existing_approval_policy
+    - final_contract_must_come_from_ui_contract_v2_handler
+    - approval_action_must_come_from_delivered_contract_row
+    - declared_decision_required_params_must_survive_frontend_normalization
+    - execute_button_must_revalidate_current_task_and_current_contract
+    - operation_approval_must_not_grant_general_business_write
+    - payment_review_origin_accepts_only_declared_payment_decision_methods
+    - business_state_and_review_status_must_both_be_read_back
+    - completed_task_must_disappear_from_current_work_items
+    - generic_odoo_model_acl_behavior_is_not_the_primary_acceptance_target
+  exclusions:
+    - frontend_changes
+    - schema_or_migration_changes
+    - production_or_acceptance_database_mutation
+    - browser_journey
+    - publication_or_deployment
+    - broad_historical_approval_tag_import
+  acceptance:
+    - primary_general_contract_task_produces_separate_approve_and_reject_actions_in_final_contract
+    - payment_request_control_produces_its_declared_approve_and_reject_actions_in_final_contract
+    - payment_review_origin_accepts_action_approval_decision_but_not_arbitrary_business_methods
+    - work_item_route_and_contract_resolve_the_same_model_and_record
+    - stale_contract_action_is_denied_after_task_completion
+    - frontend_presents_only_delivered_decision_actions_and_collects_their_declared_reason
+    - approval_execution_updates_review_and_business_state_then_removes_current_task
+    - focused_orm_executes_with_non_zero_count
+    - focused_frontend_contract_consumer_test_executes_with_non_zero_cases
+  rollback: >-
+    Revert the BE-U06 verification commit. No schema, business data, ACL, route,
+    publication, frontend or deployed artifact is changed by the test itself.
+  next_exact_step: >-
+    Run the focused approval contract ORM entry and classify any failure before
+    changing product code.

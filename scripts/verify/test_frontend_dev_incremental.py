@@ -446,6 +446,27 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.backend.authority_closure.unit"],
                 )
 
+    def test_approval_contract_inputs_select_backend_and_frontend_owners(self) -> None:
+        self.assertEqual(
+            set(select_targets([
+                "addons/smart_construction_core/services/review_work_item_service.py",
+            ])),
+            {
+                "verify.general_contract.review_authority.unit",
+                "verify.approval.contract_closure.orm",
+            },
+        )
+        frontend_targets = set(select_targets([
+            "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        ]))
+        self.assertTrue({
+                "verify.frontend.approval_contract.closure.unit",
+                "verify.frontend.contract_header_action.unit",
+                "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+        } <= frontend_targets)
+
     def test_authorization_boundary_paths_select_their_owning_checks(self) -> None:
         self.assertEqual(
             select_targets(["addons/smart_core/security/intent_authorization.py"]),

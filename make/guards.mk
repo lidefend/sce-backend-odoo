@@ -98,6 +98,10 @@ verify.page.finalize.authority.orm: guard.prod.forbid
 verify.page.project_finalize.authority.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_project_form_finalize_does_not_redefine_page_structure
 
+.PHONY: verify.approval.contract_closure.orm
+verify.approval.contract_closure.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=approval_contract_closure
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

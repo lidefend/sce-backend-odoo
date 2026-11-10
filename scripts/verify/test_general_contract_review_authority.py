@@ -15,9 +15,21 @@ class ReviewAuthorityTests(unittest.TestCase):
     def setUp(self):
         tree = ast.parse((CORE / "services/review_work_item_service.py").read_text())
         fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "authorize_review_origin")
+        constants = [
+            n for n in tree.body
+            if isinstance(n, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id in {"_REVIEW_DECISION_METHODS", "_DEFAULT_REVIEW_DECISION_METHODS"}
+                for target in n.targets
+            )
+        ]
         self.scope = Mock(return_value=(True, {}))
         ns = {"record_in_business_scope": self.scope}
-        exec(compile(ast.Module(body=[fn], type_ignores=[]), "review_authority", "exec"), ns)
+        exec(
+            compile(ast.Module(body=[*constants, fn], type_ignores=[]), "review_authority", "exec"),
+            ns,
+        )
         self.authorize = ns[fn.name]
         self.review = NS(id=690, model="sc.general.contract", res_id=6, status="pending", reviewer_ids=NS(ids=[13]))
         self.record = NS(_fields={"company_id": True, "review_ids": True}, company_id=1,
@@ -80,6 +92,32 @@ class ReviewAuthorityTests(unittest.TestCase):
 
     def test_business_methods_not_granted(self):
         self.assertFalse(self.call(method="action_signed"))
+
+    def test_payment_review_accepts_only_its_declared_decision_methods(self):
+        self.review.model = "payment.request"
+        self.record._fields = {"company_id": True, "review_ids": True, "project_id": True}
+        self.record.project_id = NS(company_id=1)
+        del self.record._sc_tier_review_record_access_mode
+        self.env["payment.request"] = self.env["sc.general.contract"]
+        self.assertEqual(
+            self.authorize(
+                self.env,
+                {"source": "tier.review", "id": 690},
+                model="payment.request",
+                record_id=6,
+                method_name="action_approval_decision",
+            ),
+            True,
+        )
+        self.assertFalse(
+            self.authorize(
+                self.env,
+                {"source": "tier.review", "id": 690},
+                model="payment.request",
+                record_id=6,
+                method_name="action_cancel",
+            )
+        )
 
     def test_acl_denial_not_bypassed(self):
         self.record.check_access_rights.side_effect = PermissionError("denied")

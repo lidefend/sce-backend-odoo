@@ -139,6 +139,8 @@ export function buildContractFormActions(params: {
           : Array.isArray(row.visible_profiles)
             ? row.visible_profiles
           : ['create', 'edit', 'readonly'],
+        required_params: row.required_params,
+        requires_reason: row.requires_reason,
         presentation: row.presentation,
         warning_message: parseMaybeJsonRecord(row.presentation).warning_message,
         action_safety: row.actionSafety ?? row.action_safety,
