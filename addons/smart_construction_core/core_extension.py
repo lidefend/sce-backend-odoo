@@ -1256,6 +1256,11 @@ def smart_core_list_capabilities_for_user(env, user):
     return get_capability_contributions(env, user)
 
 
+def smart_core_list_capabilities_for_user_with_timings(env, user):
+    """Expose capability projection stages to the startup provider."""
+    return get_capability_contributions_with_timings(env, user)
+
+
 def smart_core_capability_groups(env):
     """Compatibility hook consumed by smart_core capability provider."""
     return get_capability_group_contributions(env)

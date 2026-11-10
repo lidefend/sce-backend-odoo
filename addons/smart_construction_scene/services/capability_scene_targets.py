@@ -75,14 +75,21 @@ EXECUTION_SOURCE_SCENE_MAP: dict[str, str] = {
 }
 
 
-def _resolve_ref_id(env, xmlid: str) -> int | None:
+def _resolve_ref_id(
+    env,
+    xmlid: str,
+    cache: dict[str, int | None] | None = None,
+) -> int | None:
     value = str(xmlid or "").strip()
     if not value:
         return None
+    if cache is not None and value in cache:
+        return cache[value]
     rec = env.ref(value, raise_if_not_found=False)
-    if not rec:
-        return None
-    return int(rec.id)
+    resolved = int(rec.id) if rec else None
+    if cache is not None:
+        cache[value] = resolved
+    return resolved
 
 
 def _resolve_scene_map(env) -> dict[str, dict[str, Any]]:
@@ -235,6 +242,7 @@ def resolve_capability_entry_target_payload_with_timings(
     env,
     capability_key: str,
     explicit_target: dict[str, Any] | None = None,
+    ref_id_cache: dict[str, int | None] | None = None,
 ) -> Tuple[dict[str, Any], dict[str, int]]:
     timings_ms: dict[str, int] = {}
 
@@ -267,9 +275,9 @@ def resolve_capability_entry_target_payload_with_timings(
         menu_id = scene_target.get("menu_id")
         xmlid_ts = time.perf_counter()
         if action_xmlid and not action_id:
-            action_id = _resolve_ref_id(env, action_xmlid)
+            action_id = _resolve_ref_id(env, action_xmlid, ref_id_cache)
         if menu_xmlid and not menu_id:
-            menu_id = _resolve_ref_id(env, menu_xmlid)
+            menu_id = _resolve_ref_id(env, menu_xmlid, ref_id_cache)
         _mark("resolve_xmlids", xmlid_ts)
         if action_id:
             payload["action_id"] = int(action_id)

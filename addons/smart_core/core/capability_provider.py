@@ -111,16 +111,7 @@ def build_capability_groups(capabilities: List[dict]) -> List[dict]:
 def load_capabilities_for_user(env, user) -> List[dict]:
     extension_caps = call_extension_hook_first(env, "smart_core_list_capabilities_for_user", env, user)
     if isinstance(extension_caps, list):
-        source = source_authority_contract()
-        out: List[dict] = []
-        for item in extension_caps:
-            if not isinstance(item, dict):
-                continue
-            payload = dict(item)
-            if not isinstance(payload.get("source_authority"), dict):
-                payload["source_authority"] = source
-            out.append(payload)
-        return out
+        return _with_source_authority(extension_caps)
 
     try:
         extension_groups = call_extension_hook_first(env, "smart_core_capability_groups", env)
@@ -151,9 +142,43 @@ def load_capabilities_for_user(env, user) -> List[dict]:
     return out
 
 
+def _with_source_authority(capabilities: List[dict]) -> List[dict]:
+    source = source_authority_contract()
+    out: List[dict] = []
+    for item in capabilities:
+        if not isinstance(item, dict):
+            continue
+        payload = dict(item)
+        if not isinstance(payload.get("source_authority"), dict):
+            payload["source_authority"] = source
+        out.append(payload)
+    return out
+
+
 def load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dict[str, int]]:
     started_at = time.perf_counter()
+    extension_result = call_extension_hook_first(
+        env,
+        "smart_core_list_capabilities_for_user_with_timings",
+        env,
+        user,
+    )
+    if (
+        isinstance(extension_result, tuple)
+        and len(extension_result) == 2
+        and isinstance(extension_result[0], list)
+        and isinstance(extension_result[1], dict)
+    ):
+        timings = {
+            str(key): int(value)
+            for key, value in extension_result[1].items()
+            if isinstance(value, (int, float))
+        }
+        timings["load_capabilities_for_user_total"] = int(
+            (time.perf_counter() - started_at) * 1000
+        )
+        return _with_source_authority(extension_result[0]), timings
     capabilities = load_capabilities_for_user(env, user)
     return capabilities, {
-        "load_capabilities_for_user": int((time.perf_counter() - started_at) * 1000),
+        "load_capabilities_for_user_total": int((time.perf_counter() - started_at) * 1000),
     }

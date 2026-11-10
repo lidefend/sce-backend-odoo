@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "CAPABILITY-LOAD-PERF-20261110",
+  "branch": "fix/capability-load-performance-20261110",
+  "baseline_sha": "d014af2e8309f8b4d5dfa55a94967474ad83941f",
+  "status": "active",
+  "goal": ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
+  "record": "docs/ops/iterations/capability_load_performance_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
+    ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
+    "docs/ops/iterations/capability_load_performance_20261110.md",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "main@d014af2 failed release evidence plus registered local unit and ORM entries; no budget relaxation"
+  },
+  "layer": {
+    "formal_product_layer": "P0 + P1",
+    "layer_target": "capability startup projection and request-scoped reuse",
+    "module": "smart_core capability provider; smart_construction_core capability registry; smart_construction_scene target/scope projection",
+    "standard_vs_user_specific": "platform mechanism and construction product standard",
+    "why_here": "The provider owns hook transport and timing, while the P1 registry and scene projection own capability authorization and entry-target derivation.",
+    "why_not_elsewhere": "Frontend caching or budget changes would hide repeated backend authority/projection work and weaken the governing performance evidence.",
+    "blast_radius": "system.init capability loading only; published route sets, ACL decisions, navigation identities and target payload semantics must remain byte-equivalent.",
+    "exclusions": [
+      "frontend product code",
+      "performance budget changes",
+      "ACL/navigation/contract semantic changes",
+      "full release lane",
+      "push, merge or deploy"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "capability_guard": {
+      "target": "verify.capability.provider.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "scripts/verify/capability_provider_guard.py",
+        "scripts/verify/baselines/capability_provider_guard.json"
+      ]
+    },
+    "capability_registry_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/CAPABILITY-LOAD-PERF-20261110/capability-registry-orm-retry2.log"
+      },
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "performance_probe": {
+      "target": "verify.frontend.delivery_hardening.release.performance_probe",
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/frontend-delivery-hardening/performance.json"
+      },
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "config/frontend/release_performance_budgets_v1.json",
+        "addons/smart_core/core/capability_provider.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py"
+      ]
+    },
+    "navigation_publication": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "addons/smart_construction_scene/models/product_policy.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the focused delivery-hardening performance probe and compare login, My Work and company switch against the unchanged governed budgets."
+}

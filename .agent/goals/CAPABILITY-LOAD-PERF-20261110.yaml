@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-LOAD-PERF-20261110
+  title: 启动能力装载性能独立修复
+  status: active
+  formal_product_layer: P0 platform kernel product with P1 capability projection consumption
+  layer_target: capability startup provider timing transport and request-scoped projection reuse
+  module: smart_core; smart_construction_core; smart_construction_scene
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    发布路由权威、场景目标解析和公司路由作用域都是能力启动投影的通用解析步骤。
+    重复解析属于 platform/industry projection 机制，应在现有 P0/P1 服务内复用一次请求结果。
+  why_not_elsewhere: >
+    前端不拥有发布路由、ACL、公司作用域或 XMLID 解析权威；提高预算或在前端缓存会掩盖
+    product_defect。不得通过修改导航可见语义、放宽性能阈值或跳过门禁取得绿色结果。
+  blast_radius:
+    paths:
+      - addons/smart_core/core/capability_provider.py
+      - addons/smart_construction_core/__init__.py
+      - addons/smart_construction_core/core_extension.py
+      - addons/smart_construction_core/services/capability_registry.py
+      - addons/smart_construction_core/tests/test_capability_registry_service.py
+      - addons/smart_construction_scene/models/product_policy.py
+      - addons/smart_construction_scene/services/capability_scene_targets.py
+      - addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+    product_behavior: >
+      system.init 对外字段、ACL、发布集合、导航身份和场景目标保持不变；仅减少同一启动
+      请求内对同一权威事实的重复解析，并把已有阶段耗时透传到启动剖面。
+  objective: >
+    从最新 main 独立修复启动能力装载的重复解析，降低登录与公司切换延迟，同时保持
+    capability/target/auth/RLS 语义完全一致。
+  acceptance:
+    - 单次能力列表只解析一次 published route authority
+    - 场景 XMLID 在单次能力列表中按 xmlid 复用解析结果
+    - 公司路由作用域上下文按 db/user/company/group signature 复用且可失效
+    - startup timing hook 返回非空阶段耗时且不改变能力行内容
+    - capability provider guard、定向静态测试和真实 ORM 测试非零通过
+    - 不在本批次执行完整长链、PR 发布、合并或部署
+  exclusions:
+    - frontend_product_code
+    - performance_budget_change
+    - ACL_navigation_or_contract_semantic_change
+    - full_release_chain
+    - business_data_or_fixture_reset
+    - push_merge_or_deploy
+  rollback: >
+    Revert this P0/P1 performance-only branch through a protected PR. No persistent
+    configuration, business data, deployment or external state is changed.
