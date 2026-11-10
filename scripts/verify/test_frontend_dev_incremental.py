@@ -544,6 +544,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_operation_entry_paths_select_navigation_and_role_surface(self) -> None:
+        for path in (
+            "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+            "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.frontend.navigation_shell.unit",
+                        "verify.role_surface.landing.contract.unit",
+                    ],
+                )
+
     def test_scene_publication_paths_select_their_owning_check(self) -> None:
         for path in (
             "addons/smart_construction_core/models/support/scene_orchestration.py",
