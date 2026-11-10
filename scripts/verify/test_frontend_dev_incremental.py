@@ -483,6 +483,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.product.menu.contract_v1.guard"],
         )
 
+    def test_scene_publication_paths_select_their_owning_check(self) -> None:
+        for path in (
+            "addons/smart_construction_core/models/support/scene_orchestration.py",
+            "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.scene.publication_authority.orm"],
+                )
+
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

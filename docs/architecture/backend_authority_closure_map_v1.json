@@ -827,21 +827,35 @@
     {
       "id": "BE-U01-G04",
       "owner_card": "BE-U04",
-      "status": "open",
-      "summary": "场景发布构建仍把发布者当前可见卡片作为版本内容的输入，发布事实与用户投影尚未分离。",
+      "status": "closed",
+      "summary": "场景版本发布冻结全部 active/visible tile 的产品定义；用户 allowed/state/reason 只在已发布版本运行时按当前用户重新投影。",
       "refs": [
         {
           "path": "addons/smart_construction_core/models/support/scene_orchestration.py",
           "kind": "python_symbol_tokens",
           "value": "ScScene.action_publish",
           "tokens": [
-            "_build_version_payload(scene.env.user)"
+            "_build_version_payload()"
           ]
         },
         {
           "path": "addons/smart_construction_core/models/support/scene_orchestration.py",
-          "kind": "python_symbol",
-          "value": "ScScene._build_version_payload"
+          "kind": "python_symbol_tokens",
+          "value": "ScScene._build_version_payload",
+          "tokens": [
+            "to_definition_dict()",
+            "tiles.append"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/models/support/scene_orchestration.py",
+          "kind": "python_symbol_tokens",
+          "value": "ScSceneTile.to_definition_dict",
+          "tokens": [
+            "without user access verdicts",
+            "payload",
+            "role_scope"
+          ]
         }
       ]
     },

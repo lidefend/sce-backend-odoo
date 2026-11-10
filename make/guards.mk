@@ -86,6 +86,10 @@ verify.capability.identity_boundary.unit: guard.prod.forbid
 verify.capability.identity_boundary.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority
 
+.PHONY: verify.scene.publication_authority.orm
+verify.scene.publication_authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=scene_publish_usage_backend
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

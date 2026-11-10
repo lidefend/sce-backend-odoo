@@ -610,6 +610,12 @@ RULES = (
         "verify.product.menu.contract_v1.guard",
     )),
     Rule((
+        "addons/smart_construction_core/models/support/scene_orchestration.py",
+        "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+    ), (
+        "verify.scene.publication_authority.orm",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (

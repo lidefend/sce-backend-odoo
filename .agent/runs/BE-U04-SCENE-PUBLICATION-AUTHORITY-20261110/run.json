@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "BE-U04-SCENE-PUBLICATION-AUTHORITY-20261110",
+  "branch": "codex/be-u04-scene-publication-authority-20261110",
+  "baseline_sha": "53e949fa0a8dc1c1504ca0bab52bd770b8bbd401",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U04-SCENE-PUBLICATION-AUTHORITY-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u04_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U04-SCENE-PUBLICATION-AUTHORITY-20261110.yaml",
+    ".agent/runs/BE-U04-SCENE-PUBLICATION-AUTHORITY-20261110/run.json",
+    "addons/smart_construction_core/models/support/scene_orchestration.py",
+    "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/backend_authority_closure_map_v1.md",
+    "docs/architecture/scene_layer_responsibility_20261105.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/backend_authority_closure_be_u04_20261110.md",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed source baseline and registered disposable ORM test; no persistent data access"
+  },
+  "layer": {
+    "formal_product_layer": "P1",
+    "supporting_layers": [
+      "P0"
+    ],
+    "layer_target": "scene version publication and runtime projection",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "construction industry standard",
+    "why_here": "The scene version model owns what a published scene version contains.",
+    "why_not_elsewhere": "Frontend filtering or product policy data cannot restore a tile omitted from the frozen definition.",
+    "blast_radius": "Scene tile serialization, publish payload construction, runtime filtering and authority-map closure."
+  },
+  "checks": {
+    "scene_publication_orm": {
+      "target": "verify.scene.publication_authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/dev/local_test_runner.py",
+        "addons/smart_construction_core/models/support/scene_orchestration.py",
+        "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open BE-U05 from BE-U01-G05 with a new registered run."
+}
