@@ -10,7 +10,8 @@
 ## Baseline and Target
 
 - Baseline `!important`: 41 declarations across 13 files
-- Target: 0 declarations
+- Target: no ungoverned declarations; only the global reduced-motion floor is
+  permitted.
 - `product-patterns.css`: keep product patterns, move global accessibility and
   reduced-motion foundations to `styles/accessibility.css`
 - The skip link consumes `pattern.overlay.skip_link_z_index`; the application

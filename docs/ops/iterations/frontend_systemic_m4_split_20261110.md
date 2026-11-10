@@ -19,12 +19,12 @@ Canonical scan:
 
 ## Classification
 
-All 61 occurrences across 39 files are registered in
+All 62 occurrences across 40 files are registered in
 `docs/architecture/split_usage_allowlist.json`.
 
 | Mechanism | Occurrences | Files |
 | --- | ---: | ---: |
-| Declared token list | 16 | 10 |
+| Declared token list | 17 | 11 |
 | Route protocol | 14 | 7 |
 | Suggested-action payload | 4 | 1 |
 | Contract sort/view tokens | 3 | 1 |
@@ -47,7 +47,7 @@ split is allowed.
 
 - `make verify.frontend.split_usage.guard`: PASS.
 - Split guard unit tests: 6 passed.
-- Registered set: 39 files / 61 occurrences / 19 mechanisms.
+- Registered set: 40 files / 62 occurrences / 19 mechanisms.
 - `make verify.frontend.dev.incremental.unit`: 103 passed.
 - `make ci.local.iteration`: PASS, 4 targets.
 - Receipt:

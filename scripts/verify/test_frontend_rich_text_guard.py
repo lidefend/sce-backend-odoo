@@ -39,6 +39,12 @@ class FrontendRichTextGuardTest(unittest.TestCase):
         errors = guard.inspect(self.make_root(files))["errors"]
         self.assertTrue(any("naked v-html outside ScRichText" in error for error in errors))
 
+    def test_external_html_v_html_is_detected(self) -> None:
+        files = self.baseline_files()
+        files["frontend/apps/web/src/template.html"] = '<div v-html="html"></div>'
+        errors = guard.inspect(self.make_root(files))["errors"]
+        self.assertTrue(any("naked v-html outside ScRichText" in error for error in errors))
+
     def test_missing_policy_branch_fails(self) -> None:
         files = self.baseline_files()
         files[guard.OWNER] = self.OWNER.replace("sanitizeRestrictedHtml", "unusedSanitizer")

@@ -55,6 +55,15 @@ class FrontendSplitUsageGuardTest(unittest.TestCase):
         errors = guard.inspect(root)["errors"]
         self.assertTrue(any("unregistered split site" in error for error in errors))
 
+    def test_javascript_split_is_detected(self) -> None:
+        root = self.make_root(
+            {"route.js": "const x = value.split(',');\n"},
+            {"route.js": {"count": 1, "mechanism": "route_protocol"}},
+        )
+        result = guard.inspect(root)
+        self.assertEqual(result["errors"], [])
+        self.assertEqual(result["total"], 1)
+
     def test_count_drift_fails(self) -> None:
         root = self.make_root(
             {"route.ts": "a.split('?'); b.split('#');\n"},

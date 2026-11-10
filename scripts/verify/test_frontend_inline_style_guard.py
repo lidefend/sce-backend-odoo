@@ -50,6 +50,15 @@ class FrontendInlineStyleGuardTest(unittest.TestCase):
         errors = guard.inspect(root)["errors"]
         self.assertTrue(any("unregistered inline-style site" in error for error in errors))
 
+    def test_external_html_template_dynamic_style_is_detected(self) -> None:
+        root = self.make_root(
+            {"template.html": "<section :style=\"layout\" />"},
+            ["template.html"],
+        )
+        result = guard.inspect(root)
+        self.assertEqual(result["errors"], [])
+        self.assertEqual(result["files"], ["frontend/apps/web/src/template.html"])
+
     def test_literal_static_style_fails_even_when_registered(self) -> None:
         root = self.make_root(
             {"Probe.vue": '<template><div style="color: red" /></template>'},

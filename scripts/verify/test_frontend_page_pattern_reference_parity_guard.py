@@ -26,8 +26,8 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         values = self.source_map()
         target = "frontend/apps/web/src/components/design-system/ScCard.vue"
         values[target] = values[target].replace(
-            "[data-appearance='fact'] :deep(.t-card__body) { padding: 0; }",
-            "[data-appearance='fact'] :deep(.t-card__body) { padding: 16px; }",
+            ":deep(.sc-card__body--fact) { padding: 0; }",
+            ":deep(.sc-card__body--fact) { padding: 16px; }",
         )
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))

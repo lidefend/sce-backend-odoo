@@ -122,6 +122,12 @@
     "frontend/apps/web/src/views/UsageAnalyticsView.vue": [
       "contract_section_order"
     ],
+    "frontend/apps/web/src/views/businessConfigSurface/template.html": [
+      "contract_section_order"
+    ],
+    "frontend/apps/web/src/views/menuConfig/template.html": [
+      "contract_section_order"
+    ],
     "frontend/apps/web/src/views/WorkbenchView.vue": [
       "contract_section_order"
     ]

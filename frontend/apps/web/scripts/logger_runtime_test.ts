@@ -14,7 +14,7 @@ quiet.debug('quiet-debug');
 quiet.info('quiet-info');
 quiet.warn('quiet-warn');
 quiet.error('visible-error');
-assert.deepEqual(calls, ['error:visible-error']);
+assert.deepEqual(calls, ['warn:quiet-warn', 'error:visible-error']);
 
 const verbose = createLogger({ DEV: true, VITE_DEBUG_LOGS: 'true' }, sink);
 calls.length = 0;
@@ -31,5 +31,19 @@ production.info('prod-info');
 production.warn('prod-warn');
 production.error('prod-error');
 assert.deepEqual(calls, ['error:prod-error']);
+
+Object.defineProperty(globalThis, 'window', {
+  configurable: true,
+  value: {
+    localStorage: { getItem: (key: string) => key === 'DEBUG_INTENT' ? '1' : null },
+    location: { search: '' },
+  },
+});
+const runtimeDebug = createLogger({ DEV: true, VITE_DEBUG_LOGS: '' }, sink);
+calls.length = 0;
+runtimeDebug.debug('runtime-debug');
+runtimeDebug.info('runtime-info');
+assert.deepEqual(calls, ['debug:runtime-debug', 'info:runtime-info']);
+Reflect.deleteProperty(globalThis, 'window');
 
 console.log('[logger-runtime] PASS quiet, verbose and production policies');

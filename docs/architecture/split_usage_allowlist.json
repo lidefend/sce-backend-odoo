@@ -117,6 +117,10 @@
       "count": 1,
       "mechanism": "contract_token_list"
     },
+    "frontend/apps/web/src/app/resolvers/menuResolverCore.js": {
+      "count": 1,
+      "mechanism": "contract_token_list"
+    },
     "frontend/apps/web/src/app/routeQuery.ts": {
       "count": 6,
       "mechanism": "route_protocol"

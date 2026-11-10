@@ -14,8 +14,8 @@
 | --- | --- |
 | M1 | Information-bearing `nowrap`: 46 files / 131 declarations → 38 / 94; ellipsis overlap 27 → 12; 10 information owners retained |
 | M2 | `!important`: 41 → 4 governed reduced-motion declarations; accessibility foundations split into a shared layer |
-| M3 | Raw inline-style audit 32 / 98 → 26 / 91; fixed visual styling moved to classes; 28 mechanism files registered |
-| M4 | 61 split sites classified across 39 files and 19 mechanisms; record identity exception bound to `CD-20261110-01` |
+| M3 | Raw inline-style audit 32 / 98 → 30 / 95; fixed visual styling moved to classes; 30 mechanism files registered |
+| M4 | 62 split sites classified across 40 files and 19 mechanisms; record identity exception bound to `CD-20261110-01` |
 | M5 | Naked `v-html`: 4 → 1 reviewed `ScRichText` owner; readonly/restricted sanitizers retained |
 | M6 | Scattered console calls: 47 → 0; production logger policy proven; one2many monetary formatting delegated to shared presentation |
 | M7 | 10 center journeys passed at 1440×900 and 390×844 with zero per-entry errors; one authority coverage limit found |

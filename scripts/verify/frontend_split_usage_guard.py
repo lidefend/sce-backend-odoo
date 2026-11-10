@@ -48,7 +48,7 @@ def inspect(root: Path = ROOT, allowlist_path: Path | None = None) -> dict:
 
     discovered: dict[str, int] = {}
     for path in sorted(web_src.rglob("*")):
-        if path.suffix not in {".vue", ".ts"} or not path.is_file():
+        if path.suffix not in {".vue", ".ts", ".js", ".html"} or not path.is_file():
             continue
         count = len(SPLIT_RE.findall(path.read_text(encoding="utf-8", errors="ignore")))
         if count:

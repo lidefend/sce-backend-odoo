@@ -17,8 +17,8 @@ Current exact inventory:
 
 | Category | Files | Occurrences | Meaning |
 | --- | ---: | ---: | --- |
-| Vue `:style` bindings | 25 | 89 | Dynamic runtime style expressions |
-| Component styling props | 8 files, including 7 outside the `:style` set | 9 | Explicit `layout-style`, `body-style`, `overlay-style` or forwarded `style` API |
+| Dynamic `:style` bindings | 27 | 91 | Runtime style expressions in Vue and external HTML templates |
+| Component styling props | 2 | 2 | Explicit `layout-style` or `overlay-style` component APIs |
 | Literal static inline style attributes | 0 | 0 | No literal CSS text embedded in Vue templates |
 
 The M3 acceptance therefore uses ownership rather than a blended raw substring
@@ -32,9 +32,9 @@ All retained mechanisms are registered in
 
 | Mechanism | Files | Ownership |
 | --- | ---: | --- |
-| Contract section order | 15 | `frontend.page_contract` |
+| Contract section order | 17 | `frontend.page_contract` |
 | Resizable workspace geometry | 2 | `frontend.hierarchy_renderer` |
-| Render-tree indentation | 3 | `frontend.hierarchy_renderer` |
+| Render-tree indentation | 2 | `frontend.hierarchy_renderer` |
 | Declarative column geometry | 4 | `frontend.collection` |
 | Declared native form layout | 1 | `frontend.native_form_renderer` |
 | Contract grid span | 1 | `frontend.contract_renderer` |
@@ -55,8 +55,8 @@ Exact counts:
 
 | Metric | Before | After |
 | --- | ---: | ---: |
-| Raw `style=` substring files | 32 | 26 |
-| Raw `style=` substring occurrences | 98 | 91 |
+| Raw `style=` substring files | 32 | 30 |
+| Raw `style=` substring occurrences | 98 | 95 |
 | Literal static inline style attributes | 0 | 0 |
 | Registered mechanism owners | absent | 9 |
 | Unregistered template/script style sites | unaudited | 0 |
@@ -65,7 +65,7 @@ Exact counts:
 
 - Inline-style guard unit tests: 6 passed.
 - `make verify.frontend.style_system.guard`: PASS.
-- Registered inline-style mechanism files: 28.
+- Registered inline-style mechanism files: 30.
 - `make verify.frontend.dev.incremental.unit`: 103 passed.
 - `make verify.frontend.page_pattern_reference_parity.unit`: 16 passed.
 - `make ci.local.iteration`: PASS on the declared dirty scope, 13 targets.

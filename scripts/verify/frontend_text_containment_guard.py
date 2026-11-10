@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate information-containment ownership and zero cascade overrides."""
+"""Validate information-containment ownership and governed cascade overrides."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def inspect(root: Path = ROOT, allowlist_path: Path | None = None) -> dict:
     overlap_files: set[str] = set()
     important_by_file: dict[str, int] = {}
     for path in sorted(web_src.rglob("*")):
-        if path.suffix not in {".vue", ".ts", ".css"} or not path.is_file():
+        if path.suffix not in {".vue", ".ts", ".css", ".html"} or not path.is_file():
             continue
         relative = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8", errors="ignore")

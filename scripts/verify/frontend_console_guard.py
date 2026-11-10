@@ -17,7 +17,7 @@ def inspect(root: Path = ROOT) -> dict:
     errors: list[str] = []
     sites: dict[str, int] = {}
     for path in sorted(web_src.rglob("*")):
-        if path.suffix not in {".ts", ".vue"} or not path.is_file():
+        if path.suffix not in {".ts", ".vue", ".js", ".html"} or not path.is_file():
             continue
         count = len(CONSOLE_RE.findall(path.read_text(encoding="utf-8", errors="ignore")))
         if count:

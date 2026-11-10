@@ -37,8 +37,9 @@ def _template_text(text: str) -> str:
 
 def _uses_inline_style(path: Path) -> bool:
     text = path.read_text(encoding="utf-8", errors="ignore")
-    if path.suffix == ".vue" and any(
-        pattern.search(_template_text(text))
+    template_text = _template_text(text) if path.suffix == ".vue" else text
+    if path.suffix in {".vue", ".html"} and any(
+        pattern.search(template_text)
         for pattern in (DYNAMIC_STYLE_RE, STYLE_PROP_RE)
     ):
         return True
@@ -81,11 +82,12 @@ def inspect(root: Path = ROOT, allowlist_path: Path | None = None) -> dict:
 
     discovered: set[str] = set()
     for path in sorted(web_src.rglob("*")):
-        if path.suffix not in {".vue", ".ts"} or not path.is_file():
+        if path.suffix not in {".vue", ".ts", ".js", ".html"} or not path.is_file():
             continue
         relative = _relative(path, root)
-        if path.suffix == ".vue":
-            template = _template_text(path.read_text(encoding="utf-8", errors="ignore"))
+        if path.suffix in {".vue", ".html"}:
+            raw = path.read_text(encoding="utf-8", errors="ignore")
+            template = _template_text(raw) if path.suffix == ".vue" else raw
             if STATIC_STYLE_RE.search(template):
                 errors.append(f"literal static inline style is forbidden: {relative}")
         if _uses_inline_style(path):

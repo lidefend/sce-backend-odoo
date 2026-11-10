@@ -22,7 +22,9 @@ def inspect(root: Path = ROOT) -> dict:
     web_src = root / "frontend/apps/web/src"
     errors: list[str] = []
     directives: dict[str, int] = {}
-    for path in sorted(web_src.rglob("*.vue")):
+    for path in sorted(web_src.rglob("*")):
+        if path.suffix not in {".vue", ".html"} or not path.is_file():
+            continue
         count = len(V_HTML_RE.findall(path.read_text(encoding="utf-8", errors="ignore")))
         if count:
             directives[path.relative_to(root).as_posix()] = count

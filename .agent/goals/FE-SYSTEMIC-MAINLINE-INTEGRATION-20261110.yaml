@@ -27,6 +27,8 @@ goal:
       - docs/ops/iterations/frontend_systemic_m8_gates_20261110.md
       - frontend/apps/web/src/
       - scripts/verify/
+      - .github/workflows/
+      - make/
   objective: >
     Publish branch feature/fe-systemic-convergence-m1-20261110 through the governed
     GitHub PR lane, close exact-head independent-review findings inside the owning

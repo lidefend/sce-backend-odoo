@@ -13,6 +13,8 @@
     "docs/",
     "frontend/apps/web/",
     "frontend/packages/design-tokens/",
+    ".github/workflows/",
+    "make/ci.mk",
     "make/frontend.mk",
     "scripts/verify/"
   ],
@@ -41,5 +43,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Independent re-review found no S0-S2 findings in the R1 product candidate; run exact-head publication preflight on the current metadata HEAD, create the governed PR, and require exact-head remote checks before merge."
+  "next_exact_step": "R3 review fixes are locally validated; re-run an independent exact-head review at the new clean commit, then publish the PR and require exact-head remote checks before merge."
 }

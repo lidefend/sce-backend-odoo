@@ -148,12 +148,14 @@ RULES = (
     Rule((
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
     ), (
         "verify.ci.workflow.contract",
         "verify.github_actions.security",
     )),
     Rule((
         "make/ci.mk",
+        "scripts/verify/frontend_static_release_audit.py",
     ), (
         "verify.ci.workflow.contract",
     )),

@@ -25,11 +25,14 @@ The umbrella target is `verify.frontend.systemic.convergence.guard`.
 - Text containment: 39 files with `nowrap`; 12 structural/information
   overlap files; 10 information ownership entries; `!important=4` in the
   governed reduced-motion floor and zero unregistered declarations.
-- Inline styles: 28 registered mechanism files / 9 mechanisms.
-- Semantic split: 39 files / 61 occurrences / 19 mechanisms.
+- Inline styles: 30 registered mechanism files / 9 mechanisms.
+- Semantic split: 40 files / 62 occurrences / 19 mechanisms.
 - Rich text: one `v-html` owner, five consumer calls, 10 browser checks.
 - Console: zero scattered sites and zero direct console calls.
 - Gate registry: all five required gate IDs/targets/authorities match.
+- Enforcement: `verify.frontend.systemic.convergence.static` is a prerequisite
+  of `ci.local.iteration`, the standard `frontend_release_gate` step and the
+  static release audit; the full umbrella adds the rich-text browser check.
 - `make ci.local.iteration`: PASS, 5 targets.
 - Receipt:
   `.runtime/frontend-dev-validation/executions/20261109T213156Z-331231-324151435/receipt.json`.

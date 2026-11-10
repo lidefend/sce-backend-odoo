@@ -252,6 +252,12 @@ jobs:
           test "${unit_status}" -eq 0
           pnpm -C frontend/apps/web build
 
+      - name: Run systemic convergence static gates
+        if: steps.effective_lane.outputs.frontend_mode == 'standard'
+        run: |
+          set -euo pipefail
+          make verify.frontend.systemic.convergence.static
+
       - name: Fail closed on command or evidence identity
         if: always() && steps.effective_lane.outputs.frontend_mode == 'full'
         env:
