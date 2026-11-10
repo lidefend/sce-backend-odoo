@@ -10,6 +10,8 @@
     ".agent/active-runs.json",
     ".agent/goals/CAPABILITY-LOAD-PERF-20261110.yaml",
     ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/capability_load_performance_20261110.md",
     "addons/smart_core/core/capability_provider.py",
     "addons/smart_construction_core/__init__.py",

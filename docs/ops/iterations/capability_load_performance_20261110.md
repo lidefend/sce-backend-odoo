@@ -44,6 +44,11 @@
 - 业务数据、fixture、数据库和部署
 - 完整发布长链、PR、合并
 
+提交钩子按仓库规则刷新并由本批次承载的生成型 P4 证据：
+
+- `docs/engineering_convergence/complexity_budget_report.md`
+- `docs/engineering_convergence/split_plan_queue.md`
+
 ## 验证阶梯
 
 1. L0：分支、基线、dirty scope 与 run 注册。
