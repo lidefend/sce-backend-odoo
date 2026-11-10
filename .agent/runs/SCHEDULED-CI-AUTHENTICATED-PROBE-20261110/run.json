@@ -93,5 +93,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the registered checks on an isolated clean worktree, record their non-zero receipts, then publish the exact P4 candidate through the protected GitHub PR flow."
+  "next_exact_step": "Publish the clean P4 candidate through the protected GitHub PR flow, require all four checks on the exact PR head, merge through the protected entry, then dispatch one full frontend release gate on the resulting main SHA."
 }

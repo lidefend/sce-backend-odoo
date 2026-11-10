@@ -43,5 +43,16 @@ credentials.
 - `make verify.frontend.delivery_hardening.guard`: passed, 17 tests.
 - `make verify.frontend.dev.incremental.unit`: passed, 104 tests.
 
-These observations still require governed receipts on an isolated clean
-candidate, followed by exact-head PR checks and a fresh full-lane run.
+The clean implementation commit
+`06f74b2cea9ba6a0999824865586c4f05732974d` also produced governed receipts for:
+
+- `verify.agent.ledger.unit`: passed, 18 tests.
+- `verify.agent.resume.unit`: passed, 56 tests.
+- `verify.frontend.standard_preview.unit`: passed, 131 Python tests and 42 Node
+  assertions.
+- `ci.local.iteration`: passed with all five registered targets, generated
+  evidence preflight, page-contract bounds and trusted-scan scope resolution.
+
+The original log paths are under
+`.runtime/agent-runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/`.
+Current exact-head PR checks and a fresh full-lane run remain mandatory.
