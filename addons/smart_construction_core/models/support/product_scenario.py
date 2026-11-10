@@ -55,10 +55,23 @@ class ScProductScenario(models.Model):
             if not record.code or not record.code.strip() or record.code != record.code.strip():
                 raise ValidationError("Scenario code must be nonempty and have no surrounding whitespace.")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
     def write(self, vals):
         if "code" in vals and any(record.code != vals["code"] for record in self):
             raise ValidationError("Scenario code is a stable enablement identity; edit the name instead.")
-        return super().write(vals)
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
     @api.model
     def initialize_direct_entry_exemptions(self):
@@ -179,7 +192,10 @@ class IrUiMenu(models.Model):
             ("menu_id", "in", self.ids),
         ]):
             raise ValidationError("Remove the scenario binding before explicitly exempting an entry.")
-        return super().write(vals)
+        result = super().write(vals)
+        if {"sc_scenario_exempt", "sc_product_center_id", "parent_id"}.intersection(vals):
+            self.env.registry.clear_cache()
+        return result
 
     @api.constrains("sc_product_center_id", "parent_id")
     def _check_product_center(self):
@@ -212,12 +228,19 @@ class ScProductScenarioEntry(models.Model):
     def create(self, vals_list):
         records = super().create(vals_list)
         records.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        self.env.registry.clear_cache()
         return records
 
     def write(self, vals):
         result = super().write(vals)
         if "menu_id" in vals or "scenario_id" in vals:
             self.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
         return result
 
     @api.depends("menu_id")

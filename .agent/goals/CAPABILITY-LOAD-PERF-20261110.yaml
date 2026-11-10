@@ -19,6 +19,7 @@ goal:
       - addons/smart_construction_core/__init__.py
       - addons/smart_construction_core/core_extension.py
       - addons/smart_construction_core/services/capability_registry.py
+      - addons/smart_construction_core/models/support/product_scenario.py
       - addons/smart_construction_core/tests/test_capability_registry_service.py
       - addons/smart_construction_scene/models/product_policy.py
       - addons/smart_construction_scene/services/capability_scene_targets.py
@@ -40,6 +41,7 @@ goal:
     - 单次能力列表只解析一次 published route authority
     - 场景 XMLID 在单次能力列表中按 xmlid 复用解析结果
     - 公司路由作用域上下文按 db/user/company/group signature 复用且可失效
+    - 场景、场景入口和菜单豁免写入会失效公司路由作用域缓存
     - startup timing hook 返回非空阶段耗时且不改变能力行内容
     - acceptance HTTP 登录探针只对无结构 401 做有界就绪重试，结构化拒绝立即失败
     - backend capability 路径在执行计划中映射到非零 capability ORM/navigation 目标

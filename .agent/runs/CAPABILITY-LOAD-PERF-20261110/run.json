@@ -17,6 +17,7 @@
     "addons/smart_construction_core/__init__.py",
     "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
     "addons/smart_construction_scene/models/product_policy.py",
     "addons/smart_construction_scene/services/capability_scene_targets.py",
@@ -149,6 +150,7 @@
         "addons/smart_construction_core/__init__.py",
         "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py"
@@ -171,6 +173,7 @@
         "addons/smart_construction_core/__init__.py",
         "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py"
       ]
@@ -190,6 +193,7 @@
       "kind": "offline",
       "inputs": [
         "make/frontend.mk",
+        "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
       ]
