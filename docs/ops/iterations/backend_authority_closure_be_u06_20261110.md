@@ -186,3 +186,58 @@ GitHub PR 目标。基于 Gitee 旧 refs 生成的公开扫描结果不用于 Gi
   发布版本或企业启用数据。数据库迁移和发布内容如需回退，按各自恢复入口另办。
 
 外部边界：当前保持未推送、未创建 PR、未合并、未部署。
+
+## BE-CLOSE-01 GitHub Main Synchronization Result
+
+GitHub 主线同步已通过受管 `workspace.branch.sync-main.extended` 完成。同步前候选为
+`9cba692c0ec24038a11dda5763c1be0f857533ec`，预同步 Quick 回执有效；目标
+`origin/main=fb5f5c82fe7404939cd697ea99e1f2ba237b0310` 已通过 rebase 成为当前候选祖先。
+同步时生成了恢复 bundle：
+
+```text
+/home/lidefend/workspace/sce-backend-odoo/.git/codex-recovery/branch-sync/
+  codex-be-u05-page-declaration-authority-20261110-9cba692c0ec24038a11dda5763c1be0f857533ec.bundle
+```
+
+实际冲突处置保持精确语义：
+
+| 路径 | 处理 |
+| --- | --- |
+| `scripts/verify/frontend_my_work_approval_browser.mjs` | 保留上游 `approvedForm`／`approvedAmountField`／`cross_page_readout` 和 U06 页面审批、reject safety、`action_approval_reject`、`action_params.reason`；最终文件与预同步候选逐字节一致。 |
+| `.agent/active-runs.json` | 按分支键三方合并。 |
+| `scripts/ci/personal_data_false_positives.json` | 按精确 `(rule_id,path,blob_id,classification)` 并集；同一精确键仅 reason 文案并行时保留主线措辞。 |
+| 覆盖率、复杂度预算、拆分队列 | 使用主线版本完成历史重放，再由正式生成器重建。 |
+
+同步工具本身的原生 P4 收口提交包括：
+
+- `fdec0454a`、`787de12de`、`8ec36dcaf`、`9cba692c0`：审批脚本语义并集、精确扫描豁免并集、逐路径责任身份和受管生成器边界。
+- 同步后治理更正 `5cf3b42c3`：更新 rebase 后 run baseline／scope，登记主线新增测试组和验证目标，移除已完成上游 run 的索引项，并为 `frontend_dev_incremental` 的实际消费者补足新主线目标预期。
+- 生成提交 `0f1960897` 重新生成覆盖率、复杂度预算和拆分队列。
+
+### Post-Sync Verification
+
+| 验证层 | 当前精确结果 |
+| --- | --- |
+| 增量执行 | `make ci.local.iteration` PASS，执行 34/34 个映射目标，零未映射路径；receipt：`.runtime/frontend-dev-validation/executions/20261110T163329Z-87345-216479830/receipt.json`。 |
+| 审批 ORM | `verify.approval.contract_closure.orm` PASS 3/3。 |
+| 能力／场景 | `verify.daily.permission_truth.capability.orm` PASS 13/13；当前验收库已升级 `smart_core`、`smart_construction_core`，依赖链同时重新加载 `smart_construction_scene`。 |
+| 前端审批契约 | `verify.frontend.approval_contract.closure.unit` PASS 12 cases；执行边界 37/37；canonical presenter、contract header、incremental unit 111/111 均 PASS。 |
+| 浏览器 | `verify.frontend.my_work_approval.browser` PASS。付款通过、页面驳回 reason、任务／单据回读、工作列表更新、公司隔离、项目成员隔离及 1440×900／1280×800／390×844 均 PASS。 |
+| 当前运行身份 | 后端、前端、测试脚本和浏览器报告均为 `5cf3b42c3c838b6e28651245c5c46d4a5ca98f19`；数据库 `sc_frontend_acceptance`。 |
+| 浏览器报告 | `.runtime/final-acceptance/my-work-approval/report.json`，SHA-256 `b26f89c4720b80c835e978a55e0239c023872202146389458ed4736596086d5b`。 |
+
+验收旧后端由受管 `backend.acceptance.up` 按同步候选重建为不可变 Git artifact；既有验收库通过
+登记模块升级更新。因历史 rollback custody 容器仍被有意保留，未执行会删除这些恢复凭据的
+baseline rebuild。前端 release 产物和 standard preview 身份均重新绑定到当前候选。
+
+### Current Candidate And Integration Boundary
+
+- 设计基线：`1ad805b621de6ced0a497c5a5f6e10bec358896d`
+- 同步后候选：`5cf3b42c3c838b6e28651245c5c46d4a5ca98f19`
+- 相对 `origin/main`：32 个提交、113 个变更路径
+- `origin/main` 是当前候选祖先；`main_only_commits=0`
+- U01—U05 的原 `APPROVE` 仍作为历史承接；同步增量与 P4 收口尚待本卡结束后的只读独立复审
+- 远端分支仍不存在，无 PR、远端 CI、合并或部署
+
+外部边界仍为推送前停止。下一停点是 `ci.delivery.freeze.prepare` 和同步增量只读复审，不是继续
+增加产品功能。
