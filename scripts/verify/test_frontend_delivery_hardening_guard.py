@@ -45,8 +45,22 @@ for (const [status,body] of [[401,{}],[409,{}],[200,{ok:false}],[200,{error:{cod
  await assert.rejects(request({request:{post:async()=>response(7,status,body)}},'system.init',{}),/request rejected/);
 }
 await assert.rejects(request({request:{post:async()=>response(8)}},'system.init',{}),/principal mismatch/);
-await assert.rejects(request({request:{post:async()=>{throw new Error('Bearer secret');}}},'system.init',{}),
- error=>error.message==='system.init: authenticated probe transport failed');
+let failedTransportCalls=0;
+await assert.rejects(request({request:{post:async()=>{
+ failedTransportCalls+=1;
+ throw new Error('Bearer secret');
+}}},'system.init',{}),
+ error=>/^system\.init: authenticated probe transport failed \(Error\)$/.test(error.message)
+   && !error.message.includes('secret'));
+assert.equal(failedTransportCalls,2);
+let retryCalls=0;
+const recovered=await request({request:{post:async()=>{
+ retryCalls+=1;
+ if(retryCalls===1) throw Object.assign(new Error('Bearer secret'),{code:'ECONNRESET'});
+ return response();
+}}},'system.init',{});
+assert.equal(retryCalls,2);
+assert.equal(recovered.status,200);
 const next = await bindAuthenticatedIntent(response(8),8);
 await next({request:{post:async()=>response(8)}},'system.init',{});
 // The shared login binder must observe fast responses emitted by the click,

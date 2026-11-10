@@ -73,8 +73,8 @@ Generated from repository source files. This report is informational during the 
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1631 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1578 | Python source | `scripts/verify/frontend_dev_incremental.py` |
-| 1577 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1584 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1584 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
@@ -308,8 +308,8 @@ Generated from repository source files. This report is informational during the 
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1631 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1578 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
-| 1577 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 1584 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1584 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1566 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |

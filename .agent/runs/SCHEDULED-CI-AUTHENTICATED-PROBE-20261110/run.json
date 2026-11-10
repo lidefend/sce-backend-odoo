@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-AUTHENTICATED-PROBE-20261110",
+  "branch": "fix/scheduled-ci-authenticated-probe-20261110",
+  "baseline_sha": "ca032b92dd1131485313b9299b5e799c67f1d525",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_authenticated_probe_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110.yaml",
+    ".agent/runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/scheduled_ci_authenticated_probe_20261110.md",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source, registered local Make entries and exact failed full-lane evidence; no database, browser write, credential or deployment authority"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "shared frontend authenticated intent probe transport",
+    "module": "frontend delivery verification tooling",
+    "standard_vs_user_specific": "platform verification standard",
+    "why_here": "The probe owns authenticated replay transport and the failed lane stopped before product behavior could be evaluated.",
+    "why_not_elsewhere": "Changing product contracts, routing, ACLs or the frontend to satisfy an acceptance transport helper would cross the P4 boundary and weaken the evidence.",
+    "blast_radius": "Only authenticated replay can retry one transport failure; existing HTTP, principal, entry-routing, database-routing and response assertions remain unchanged.",
+    "exclusions": [
+      "frontend product behavior",
+      "backend contracts",
+      "business data",
+      "credentials",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "authenticated_probe": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_authenticated_intent.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the registered checks on an isolated clean worktree, record their non-zero receipts, then publish the exact P4 candidate through the protected GitHub PR flow."
+}
