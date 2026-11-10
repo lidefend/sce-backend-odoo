@@ -60,7 +60,7 @@ assert.deepEqual(calls, [
 Object.defineProperty(globalThis, 'window', {
   configurable: true,
   value: {
-    localStorage: { getItem: (_key: string) => null },
+    localStorage: { getItem: () => null },
     location: { search: '?debug=1' },
   },
 });
