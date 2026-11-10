@@ -56,6 +56,52 @@ guard.codex.fast.upgrade:
 	  exit 2; \
 	fi
 
+.PHONY: verify.backend.authority_closure.unit
+verify.backend.authority_closure.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/backend_authority_closure_guard.py scripts/verify/test_backend_authority_closure_guard.py
+	@python3 -m unittest scripts.verify.test_backend_authority_closure_guard
+	@python3 scripts/verify/backend_authority_closure_guard.py
+
+.PHONY: verify.permission_check.availability.unit
+verify.permission_check.availability.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/handlers/permission_check.py addons/smart_core/tests/test_permission_check_debug_boundary.py
+	@python3 addons/smart_core/tests/test_permission_check_debug_boundary.py
+
+.PHONY: verify.payment.authorization_boundary.orm
+verify.payment.authorization_boundary.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=payment_domain_permission_isolation
+
+.PHONY: verify.capability.identity_boundary.unit
+verify.capability.identity_boundary.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
+	  addons/smart_core/delivery/capability_service.py \
+	  addons/smart_core/delivery/product_policy_catalog_sync_service.py \
+	  addons/smart_construction_core/core_extension_capability_rows.py \
+	  addons/smart_construction_core/models/support/product_policy_sync.py \
+	  addons/smart_construction_core/services/capability_registry.py \
+	  addons/smart_construction_core/services/product_menu_source.py
+	@python3 -m unittest scripts.verify.test_capability_identity_boundary
+
+.PHONY: verify.capability.identity_boundary.orm
+verify.capability.identity_boundary.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority
+
+.PHONY: verify.scene.publication_authority.orm
+verify.scene.publication_authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=scene_publish_usage_backend
+
+.PHONY: verify.page.finalize.authority.orm
+verify.page.finalize.authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_partner_field_hiding_is_a_published_page_declaration
+
+.PHONY: verify.page.project_finalize.authority.orm
+verify.page.project_finalize.authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_project_form_finalize_does_not_redefine_page_structure
+
+.PHONY: verify.approval.contract_closure.orm
+verify.approval.contract_closure.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=approval_contract_closure
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

@@ -193,6 +193,11 @@ def _menu_row(center: str, label: str, menu_xmlid: str, action_xmlid: str, model
         "access_level": "public", "action_xmlid": action_xmlid,
         "business_entry_contract_version": "business_entry_disposition.v1",
         "capability_key": capability_key, "capability_maturity": maturity,
+        "identity_kind": "entry_compatibility_alias",
+        "business_capability": False,
+        "identity_contract_version": "capability.identity.v1",
+        "qualification_authority": "published_product_release",
+        "provider_authority": "native_menu_action_entry",
         "control_granularity": "user_visible_menu_page",
         "control_object": "P1 施工行业正式产品入口", "disposition_policy": "keep_list_form",
         "enabled": True, "entry_intent": "handling", "entry_intent_label": "办理",
@@ -223,6 +228,11 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
         "access_level": "public", "action_xmlid": "",
         "business_entry_contract_version": "business_entry_disposition.v1",
         "capability_key": capability_key, "capability_maturity": maturity,
+        "identity_kind": "entry_compatibility_alias",
+        "business_capability": False,
+        "identity_contract_version": "capability.identity.v1",
+        "qualification_authority": "published_product_release",
+        "provider_authority": "scene_entry_target",
         "control_granularity": "user_visible_menu_page",
         "control_object": "P1 施工行业正式产品入口", "disposition_policy": "scene_entry",
         "enabled": True, "entry_intent": "handling", "entry_intent_label": "办理",
@@ -242,7 +252,7 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
 
 
 def _capability_from_menu(row: dict) -> dict:
-    keys = ("access_level", "capability_key", "capability_maturity", "control_object", "disposition_policy", "enabled", "entry_intent", "entry_intent_label", "entry_target_policy", "group_key", "group_label", "integration_target", "label", "menu_xmlid", "product_domain", "product_domain_label", "product_key", "release_state", "res_model", "source_kind", "target_scene_key", "visible_menu_path")
+    keys = ("access_level", "capability_key", "capability_maturity", "identity_kind", "business_capability", "identity_contract_version", "qualification_authority", "provider_authority", "control_object", "disposition_policy", "enabled", "entry_intent", "entry_intent_label", "entry_target_policy", "group_key", "group_label", "integration_target", "label", "menu_xmlid", "product_domain", "product_domain_label", "product_key", "release_state", "res_model", "source_kind", "target_scene_key", "visible_menu_path")
     capability = {key: row[key] for key in keys if key in row}
     capability["entry_kind"] = "user_visible_menu_page"
     capability["target_page_key"] = row["page_key"]

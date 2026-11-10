@@ -22,9 +22,13 @@ export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA SC_ACCEPTANCE_FIXTURE_PASSWORD 
 # Only the isolated acceptance carrier owns automatic publication. Daily/demo
 # fixtures must consume an explicitly published catalog, never publish one.
 if [[ "$DB_NAME" == sc_frontend_acceptance ]]; then
-  SC_ACCEPTANCE_SOURCE_REVISION="$(git -C "$ROOT_DIR" rev-parse HEAD)" \
-    bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
-      < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+  if [[ "${SC_ACCEPTANCE_PRESERVE_RELEASE_SNAPSHOT:-}" == "1" ]]; then
+    echo "[acceptance.frontend.fixture] preserving verified product release snapshot"
+  else
+    SC_ACCEPTANCE_SOURCE_REVISION="$(git -C "$ROOT_DIR" rev-parse HEAD)" \
+      bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+        < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+  fi
 fi
 
 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'

@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: BE-U04-SCENE-PUBLICATION-AUTHORITY-20261110
+  title: scene_publication_freezes_definition_and_runtime_projects_user_access
+  status: completed
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+  layer_target:
+    - scene_version_publication
+    - runtime_scene_projection
+  module:
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u04-scene-publication-authority-20261110
+    full_sha: 53e949fa0a8dc1c1504ca0bab52bd770b8bbd401
+    source: be_u03_capability_entry_identity_candidate
+  objective: >-
+    场景版本发布只冻结产品定义，不读取发布者当前能力可见性，也不写入用户的
+    allowed/state/reason。用户授权在运行时基于已发布版本重新投影；企业启用和
+    产品发布继续分别收紧交付范围，撤销后下一请求重新计算。
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard
+    why_here: >-
+      sc.scene 与 sc.scene.version 是施工行业场景组合产品载体。发布内容与
+      用户运行投影的分离属于该载体自身职责。
+    why_not_elsewhere:
+      - no_frontend_visibility_filter
+      - no_capability_catalog_redesign
+      - no_product_policy_or_enterprise_enablement_merger
+      - no_acl_or_business_method_change
+    blast_radius:
+      - scene tile definition serialization
+      - scene version publish payload
+      - published scene runtime projection
+      - authority-map gap BE-U01-G04
+  constraints:
+    - publication_includes_all_active_visible_tiles
+    - publication_payload_contains_no_user_access_verdict
+    - runtime_filter_recomputes_capability_access_for_current_user
+    - product_release_state_and_enterprise_enablement_remain_separate
+    - revoked_access_or_enablement_is_not_satisfied_by_cached_page_state
+  exclusions:
+    - scene_definition_or_schema_fields
+    - product_policy_snapshot_changes
+    - enterprise_enablement_carrier_migration
+    - page_or_action_producer_changes
+    - frontend_changes
+    - deployment
+  acceptance:
+    - publisher_visibility_does_not_remove_tiles_from_frozen_version
+    - frozen_tiles_do_not_contain_user_access_fields
+    - published_scene_runtime_filters_the_same_definition_per_user
+    - focused_source_guard_and_targeted_orm_pass_with_non_zero_counts
+  rollback: >-
+    Revert the BE-U04 commit. Existing published version records and runtime data
+    are not rewritten; no schema or deployment change is involved.
+  next_exact_step: >-
+    Open BE-U05 from BE-U01-G05: relocate industry page redefinition from the
+    finalize hook into declaration/orchestration consumers while retaining
+    execution-time action revalidation.

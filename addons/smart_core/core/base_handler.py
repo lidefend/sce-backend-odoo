@@ -47,6 +47,10 @@ class BaseIntentHandler:
     ETAG_ENABLED: bool = False
     ALIASES = []              # 兼容别名
     REQUIRED_GROUPS = []      # 权限（可选）
+    # Configuration administrators keep configuration duty only. Known
+    # configuration intents opt in centrally; a handler may opt in explicitly,
+    # while generic business commands remain group-checked.
+    TENANT_CONFIG_ADMIN_ALLOWED = False
     # Machine callers are denied unless a concrete handler explicitly opts in.
     # Supported values are read, write, dynamic and deny. Dynamic handlers must
     # implement machine_access_for(params) from their own authoritative operation

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "BE-U03-CAPABILITY-ENTRY-IDENTITY-20261110",
+  "branch": "codex/be-u03-capability-entry-identity-20261110",
+  "baseline_sha": "017a395cc55ce91f73cec87d539feec95cb98ad7",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U03-CAPABILITY-ENTRY-IDENTITY-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u03_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U03-CAPABILITY-ENTRY-IDENTITY-20261110.yaml",
+    ".agent/runs/BE-U03-CAPABILITY-ENTRY-IDENTITY-20261110/run.json",
+    "addons/smart_core/delivery/capability_service.py",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+    "addons/smart_construction_core/core_extension_capability_rows.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/backend_authority_closure_map_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/backend_authority_closure_be_u03_20261110.md",
+    "docs/product/capability_provider_binding_v1.md",
+    "make/guards.mk",
+    "scripts/verify/backend_authority_closure_guard.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_capability_identity_boundary.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed source baseline and registered offline source-bound guard; no database or service access"
+  },
+  "layer": {
+    "formal_product_layer": "P0",
+    "supporting_layers": [
+      "P1"
+    ],
+    "layer_target": "capability identity and menu entry alias boundary",
+    "module": "smart_core and smart_construction_core",
+    "standard_vs_user_specific": "platform and construction standard",
+    "why_here": "Capability identity is a platform contract consumed by industry declarations and product delivery.",
+    "why_not_elsewhere": "The frontend, database data and release snapshot cannot decide whether a menu is a business capability.",
+    "blast_radius": "Capability registry metadata, menu-derived policy rows, delivery capability entries and authority-map guards."
+  },
+  "checks": {
+    "capability_identity": {
+      "target": "verify.capability.identity_boundary.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "make/guards.mk",
+        "scripts/verify/test_capability_identity_boundary.py"
+      ]
+    },
+    "authority_map": {
+      "target": "verify.backend.authority_closure.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/backend_authority_closure_map_v1.json",
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "make/guards.mk"
+      ]
+    },
+    "capability_identity_orm": {
+      "target": "verify.capability.identity_boundary.orm",
+      "kind": "runtime",
+      "inputs": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/dev/local_test_runner.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open BE-U04 from BE-U01-G04 with a new registered run."
+}

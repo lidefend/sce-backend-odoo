@@ -318,6 +318,16 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 method_name=str(method_name),
                 button_type=str(button_type),
             )
+            action_params, action_params_error = _read_action_params(params, authorized_rule)
+            if action_params_error:
+                return _failure_result(
+                    model=model,
+                    res_id=res_ids[0],
+                    reason_code=REASON_MISSING_PARAMS,
+                    message=action_params_error,
+                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                    status_code=400,
+                )
 
             normalized_button_type = _normalized_button_type(button_type)
             env_model = self.env[model]
@@ -427,7 +437,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=400,
                 )
 
-            result = method()
+            result = method(**action_params)
 
             payload = {
                 "type": "refresh",
@@ -752,6 +762,38 @@ def _read_ids(value: Any):
     if item <= 0:
         return [], "invalid"
     return [item], None
+
+
+def _read_action_params(params: dict, rule: dict):
+    raw = params.get("action_params", params.get("actionParams", {}))
+    if raw in (None, False):
+        raw = {}
+    if not isinstance(raw, dict):
+        return {}, "action_params 必须是对象"
+    declared = {
+        str(name or "").strip()
+        for name in (
+            list(rule.get("requiredParams") or [])
+            + list(rule.get("required_params") or [])
+        )
+        if str(name or "").strip()
+    }
+    presentation = rule.get("presentation") if isinstance(rule.get("presentation"), dict) else {}
+    if rule.get("requires_reason") is True or rule.get("requiresReason") is True or presentation.get("requires_reason") is True:
+        declared.add("reason")
+    supplied = {str(name) for name in raw}
+    undeclared = sorted(supplied - declared)
+    if undeclared:
+        return {}, "按钮请求包含未在契约声明中的参数: %s" % ", ".join(undeclared)
+    missing = sorted(
+        name for name in declared
+        if name not in raw or raw.get(name) is None or (
+            isinstance(raw.get(name), str) and not raw.get(name).strip()
+        )
+    )
+    if missing:
+        return {}, "按钮请求缺少契约要求的参数: %s" % ", ".join(missing)
+    return dict(raw), ""
 
 
 def _server_action_matches_model(action, model: str) -> bool:

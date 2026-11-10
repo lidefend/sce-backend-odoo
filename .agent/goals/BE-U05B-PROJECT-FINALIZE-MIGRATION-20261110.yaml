@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: BE-U05B-PROJECT-FINALIZE-MIGRATION-20261110
+  title: retire_project_fallback_page_mutation_from_finalize
+  status: completed
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+  layer_target:
+    - project_native_form_declaration
+    - unified_page_finalize
+  module:
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u05-page-declaration-authority-20261110
+    full_sha: f1b9c5997a298d6a8a160c519831167c644ba644
+    source: be_u05_partner_page_declaration_candidate
+  objective: >-
+    project.project 的原生表单已声明责任矩阵、项目负责人、项目经理和协作字段。
+    删除 finalize 对非显式项目表单的字段修剪、标签覆盖、组件注册扩展和职责区追加，
+    使最终页面只消费原生视图/发布声明与统一编排结果。
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard
+    why_here: >-
+      项目页面结构和字段标签属于 P1 原生视图声明；P0 页面编排消费声明并投影，
+      不应在 finalize 再次定义页面拓扑。
+    why_not_elsewhere:
+      - no_frontend_structure_special_case
+      - no_action_execution_change
+      - no_schema_or_acl_change
+      - no_unrelated_helper_module_cleanup
+    blast_radius:
+      - project form finalize behavior
+      - exact project finalize regression
+      - authority-map G05 closure
+  constraints:
+    - project_native_form_remains_the_structure_authority
+    - finalize_must_not_prune_relabel_reparent_or_append_project_fields
+    - explicit_and_fallback_project_forms_are_both_consumers_not_producers
+    - execute_button_revalidation_and_action_contract_remain_unchanged
+  exclusions:
+    - deleting_project_layout_helper_module
+    - project_view_redesign
+    - page_assembler_redesign
+    - frontend_changes
+    - runtime_deployment
+  acceptance:
+    - project_finalize_returns_no_mutation_for_selected_fallback_contract
+    - finalize_source_contains_no_project_layout_mutation_calls
+    - focused_orm_and_incremental_iteration_pass
+  rollback: >-
+    Revert the U05B commit. Native views and existing published declarations remain.
+  next_exact_step: >-
+    Freeze U01-U05 and perform independent read-only review before BE-U06.

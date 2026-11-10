@@ -1162,10 +1162,14 @@ verify.frontend.contract_header_action.unit: guard.prod.forbid verify.frontend.c
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
-.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.j13_required_value_semantics.unit
+.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.approval_contract.closure.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.j13_required_value_semantics.unit
 verify.frontend.canonical_form_presenter.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_form_presenter_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/canonical-form-presenter-test.mjs >/dev/null
 	@node /tmp/canonical-form-presenter-test.mjs
+
+verify.frontend.approval_contract.closure.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/approval_contract_closure_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/approval-contract-closure-test.mjs >/dev/null
+	@node /tmp/approval-contract-closure-test.mjs
 
 verify.frontend.hierarchy_command_authority.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchy_command_authority_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/hierarchy-command-authority-test.mjs >/dev/null

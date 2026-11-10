@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: BE-U03-CAPABILITY-ENTRY-IDENTITY-20261110
+  title: separate_business_capability_identity_from_menu_entry_aliases
+  status: completed
+  formal_product_layer: P0
+  supporting_layers:
+    - P1
+  layer_target:
+    - capability_identity_projection
+    - menu_entry_compatibility_alias
+    - product_policy_catalog_projection
+  module:
+    - smart_core
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u03-capability-entry-identity-20261110
+    full_sha: 017a395cc55ce91f73cec87d539feec95cb98ad7
+    source: be_u02_authorization_boundary_candidate
+  objective: >-
+    在不删除旧键和不新建第二套能力平台的前提下，显式区分业务能力身份与
+    用户可见菜单入口兼容别名。业务能力只由声明式 capability registry 提供
+    Provider 和资格语义；construction.menu.* 与 catalog.menu.* 只表达产品
+    入口，不能进入业务能力 registry，也不能仅凭菜单存在推导能力成熟或执行资格。
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_construction_standard
+    why_here: >-
+      身份语义属于 P0 能力目录/交付投影机制；菜单入口与施工能力清单由 P1
+      行业模块声明。产品发布仍由已有产品策略和有效快照负责。
+    why_not_elsewhere:
+      - no_frontend_identity_inference
+      - no_new_capability_engine_or_scene_engine
+      - no_database_catalog_migration_claim
+      - no_release_or_acl_widening
+    blast_radius:
+      - capability registry identity metadata and lint
+      - menu-derived product policy alias metadata
+      - delivery capability identity projection
+      - source-bound authority map gap BE-U01-G01
+  constraints:
+    - existing_capability_keys_and_menu_aliases_remain_compatible
+    - business_capability_identity_is_not_inferred_from_native_menu_presence
+    - menu_alias_rows_must_declare_business_capability_false
+    - business_registry_must_reject_construction_menu_and_catalog_menu_prefixes
+    - product_qualification_remains_with_existing_catalog_and_release_authority
+  exclusions:
+    - bulk_key_renaming
+    - database_catalog_data_migration
+    - scene_publication_redesign
+    - page_or_action_producer_changes
+    - frontend_changes
+    - deployment
+  acceptance:
+    - business_registry_rows_declare_business_capability_identity_and_provider_authority
+    - menu_derived_policy_rows_declare_entry_alias_identity_and_do_not_claim_business_capability
+    - delivery_projection_carries_the_identity_contract
+    - registry_lint_rejects_menu_alias_prefixes
+    - focused_source_bound_tests_pass_with_non_zero_counts
+  rollback: >-
+    Revert the BE-U03 commit. No schema, database data, ACL, release snapshot,
+    frontend or deployed artifact is changed.
+  next_exact_step: >-
+    Open BE-U04 from BE-U01-G04: separate scene publication content from the
+    publisher's current visibility while preserving explicit product publication,
+    enterprise enablement and revocation behavior.

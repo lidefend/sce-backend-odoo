@@ -2456,6 +2456,17 @@
         "presentation": {
           "type": "object"
         },
+        "required_params": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "requires_reason": {
+          "type": "boolean"
+        },
         "actionSafety": {
           "type": "object"
         },

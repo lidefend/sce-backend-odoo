@@ -75,9 +75,6 @@ from odoo.addons.smart_construction_core import core_extension_service_builders 
 from odoo.addons.smart_construction_core import core_extension_actor_roles as _actor_roles
 from odoo.addons.smart_construction_core import core_extension_relation_entry_policy as _relation_entry_policy
 from odoo.addons.smart_construction_core import core_extension_surface_bypass as _surface_bypass
-from odoo.addons.smart_core.handlers.ui_contract_v2_projection import (
-    normalize_post_projected_container_tree,
-)
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
     build_financial_form_business_actions,
     inject_financial_workspace_runtime,
@@ -608,7 +605,6 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         or (context or {}).get("view_type")
         or page_info.get("viewType")
     ).lower()
-    render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
     # Rendering is a frontend concern: the industry finalize hook must never
     # pass a framework component, per-client adapter or rendering fallback
@@ -657,38 +653,7 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         model=model,
         view_type=view_type,
     )
-    # res.partner 表单：隐藏国家/地区字段（由省/州级联 domain 自动确定）
-    # 隐藏销售员字段（产品面不展示，由后台逻辑维护）
-    if model == "res.partner" and view_type == "form":
-        _sc_hide_v2_widget_field(out, "country_id")
-        _sc_hide_v2_widget_field(out, "user_id")
-    if model != "project.project" or view_type != "form":
-        return out if out != contract else None
-    # An action-bound form view is the structural authority.  Project-wide
-    # convenience overlays may still serve generic model fallback requests,
-    # but must not remove or inject fields outside an explicitly selected
-    # native view.
-    if _sc_explicit_source_view_id(source, head, context):
-        layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
-        tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
-        tree = normalize_post_projected_container_tree(out, tree)
-        layout["containerTree"] = tree
-        out["layoutContract"] = layout
-        return out if out != contract else None
-    layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
-    tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
-    tree = _sc_prune_and_label_project_nodes(tree)
-    layout["containerTree"] = normalize_post_projected_container_tree(out, tree)
-    out["layoutContract"] = layout
-    status = out.get("statusContract") if isinstance(out.get("statusContract"), dict) else {}
-    if isinstance(status.get("widgetStatus"), list):
-        status["widgetStatus"] = [
-            row for row in status["widgetStatus"]
-            if isinstance(row, dict)
-        ]
-        out["statusContract"] = status
-    _sc_append_project_responsibility_group(out, include_collaborators=render_profile != "create")
-    return out
+    return out if out != contract else None
 
 
 def smart_core_normalize_projected_contract_data(env, data, context):

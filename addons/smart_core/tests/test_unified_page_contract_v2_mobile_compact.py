@@ -4916,6 +4916,46 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         })
         self.assertNotIn("actionSemantics", undeclared)
 
+    def test_declared_workflow_input_contract_binds_to_the_same_action_occurrence(self):
+        reason_input = {
+            "title": "驳回付款申请",
+            "label": "拒绝原因",
+            "help": "请说明拒绝原因。",
+            "submit_label": "确认驳回",
+            "cancel_label": "取消",
+        }
+        contract = self._semantics_contract(
+            [{
+                "key": "reject",
+                "method": "action_approval_reject",
+                "action_semantics": {
+                    "kind": "business", "purpose": "reject",
+                    "executor": "contract.action", "origin": "payment.request.available_actions",
+                },
+                "required_params": ["reason"],
+                "requires_reason": True,
+                "presentation": {
+                    "tier": "secondary",
+                    "semantic": "destructive",
+                    "requires_reason": True,
+                    "reason_input": reason_input,
+                },
+            }],
+            [{
+                **self._method_rule("action_approval_reject"),
+                "presentation": {"tier": "overflow"},
+            }],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        rule = contract["actionContract"]["actionRuleList"][0]
+        self.assertEqual(rule["required_params"], ["reason"])
+        self.assertIs(rule["requires_reason"], True)
+        self.assertEqual(rule["presentation"], {
+            "tier": "overflow",
+            "requires_reason": True,
+            "reason_input": reason_input,
+        }, "the invocation input contract must not replace native presentation authority")
+
     def test_undeclared_method_is_never_given_a_purpose_by_resemblance(self):
         contract = self._semantics_contract(
             [{

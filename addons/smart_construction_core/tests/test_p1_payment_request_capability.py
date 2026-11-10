@@ -1048,6 +1048,17 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
         self.assertTrue(request.review_ids)
         approver = request.with_user(reviewer)
         self.assertTrue(approver.can_review)
+        reject_actions = [
+            row
+            for row in build_financial_form_business_actions(
+                approver.env, "payment.request", request.id
+            )["actions"]
+            if row.get("key") == "payment_reject"
+        ]
+        self.assertEqual(len(reject_actions), 1, reject_actions)
+        reject_action = reject_actions[0]
+        self.assertEqual(reject_action["method"], "action_approval_reject")
+        self.assertEqual(reject_action["required_params"], ["reason"])
         with self.assertRaisesRegex(UserError, "审批驳回必须填写原因"):
             approver.action_approval_reject()
         self.assertEqual(request.state, "submit")

@@ -1142,6 +1142,7 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 verify.contract.architecture.suite: verify.construction.policy_maps.unit verify.native_advisory.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
 	verify.workspace.branch.sync-github.unit \
 	guard.prod.forbid \
+	verify.backend.authority_closure.unit \
 	verify.system.permission_role.assignment.unit \
 	verify.system.permission_role.runtime_probe.unit \
 	verify.system.permission.concurrency.unit \

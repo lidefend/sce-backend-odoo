@@ -501,14 +501,12 @@ class ScScene(models.Model):
             "source_authority": self.source_authority_contract(),
         }
 
-    def _build_version_payload(self, user=None):
+    def _build_version_payload(self):
+        """Freeze the product definition, never one publisher's access view."""
         self.ensure_one()
-        user = user or self.env.user
         tiles = []
         for tile in self.tile_ids.filtered(lambda t: t.active and t.visible):
-            if tile.capability_id and not tile.capability_id._user_visible(user):
-                continue
-            tiles.append(tile.to_public_dict(user))
+            tiles.append(tile.to_definition_dict())
         return {
             "code": self.code,
             "name": self.name,
@@ -676,7 +674,7 @@ class ScScene(models.Model):
                     _("Scene validation failed. Please fix issues before publish. (validation_id=%s)")
                     % validation.id
                 )
-            payload = scene._build_version_payload(scene.env.user)
+            payload = scene._build_version_payload()
             version_seq = scene.env["sc.scene.version"].search_count([("scene_id", "=", scene.id)]) + 1
             ver = scene.env["sc.scene.version"].create({
                 "scene_id": scene.id,
@@ -737,7 +735,7 @@ class ScSceneTile(models.Model):
             payload.update(override_payload)
         return payload
 
-    def to_public_dict(self, user):
+    def _resolved_public_payload(self):
         self.ensure_one()
         cap = self.capability_id
         payload = self._merge_payload(cap.default_payload or {}, self.payload_override or {})
@@ -749,7 +747,12 @@ class ScSceneTile(models.Model):
             menu_ref = self.env.ref(payload.get("menu_xmlid"), raise_if_not_found=False)
             if menu_ref:
                 payload["menu_id"] = menu_ref.id
-        access = cap._access_context(user)
+        return payload
+
+    def to_definition_dict(self):
+        """Return the product-owned tile definition without user access verdicts."""
+        self.ensure_one()
+        cap = self.capability_id
         return {
             "key": cap.key,
             "title": self.title or cap.ui_label or cap.name,
@@ -761,17 +764,26 @@ class ScSceneTile(models.Model):
             "span": self.span,
             "min_width": self.min_width,
             "intent": cap.intent or "",
-            "payload": payload,
+            "payload": self._resolved_public_payload(),
             "status": cap.status,
             "version": cap.version,
             "role_scope": cap._csv_items(cap.role_scope),
             "capability_scope": cap._csv_items(cap.capability_scope),
+        }
+
+    def to_public_dict(self, user):
+        self.ensure_one()
+        cap = self.capability_id
+        access = cap._access_context(user)
+        row = self.to_definition_dict()
+        row.update({
             "allowed": bool(access.get("allowed")),
             "user_visible": bool(access.get("visible")),
             "state": access.get("state"),
             "reason_code": access.get("reason_code"),
             "reason": access.get("reason"),
-        }
+        })
+        return row
 
 
 class ScSceneVersion(models.Model):

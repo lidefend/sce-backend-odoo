@@ -361,13 +361,13 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "已授权 demo 用户走查的手动入口；依赖 daily 运行身份与 EXECUTE_RECORDED_DEMO_JOURNEY 确认及恢复门禁，不能由无目标环境的 CI 自动调用。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "daily.demo.walkthrough.ui": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "已授权 demo 用户走查的手动入口；依赖 daily 运行身份与 EXECUTE_RECORDED_DEMO_JOURNEY 确认及恢复门禁，不能由无目标环境的 CI 自动调用。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "daily.personnel_views": {
       "disposition": "ops_runbook",
@@ -897,13 +897,13 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "仅对已识别归属草稿执行回读/清理的受管恢复入口；需要写租约、精确主体和恢复确认，不能由 CI 自动重放。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "local.dev.journal.role.identities": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "sc-local-dev 普通会计角色身份只读观察入口；依赖持久 demo 载体，不建立 CI 环境或声明自动测试覆盖。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "local.dev.restart": {
       "disposition": "history_probe_runbook",
@@ -2448,11 +2448,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.intent_group.authorization.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.intent_group.authorization.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
-    },
     "verify.legacy_attachment.frontend_browser.acceptance.host": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -2487,13 +2482,13 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.analysis 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.approval.feedback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.approval.feedback 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.capability.browser": {
       "disposition": "local_diagnostic",
@@ -2509,25 +2504,25 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.certificate 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.conditioned.feedback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.conditioned.feedback 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.cost.feedback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.cost.feedback 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.create_authority": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.create_authority 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.entry_identity.unit": {
       "disposition": "local_diagnostic",
@@ -2539,25 +2534,25 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.journal.draft 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.journal.role": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.journal.role 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.journal.save": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.journal.save 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.native_child.draft": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.native_child.draft 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.payment_request.floorplan.readonly": {
       "disposition": "history_probe_runbook",
@@ -2578,7 +2573,7 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.payroll 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.project_create_contract_action_scope": {
       "disposition": "history_probe_runbook",
@@ -2614,13 +2609,13 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.usability 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.workspace.feedback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "verify.local.dev.workspace.feedback 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
-      "review_by": "2026-11-10"
+      "review_by": "2026-12-31"
     },
     "verify.local.dev.write_lease.unit": {
       "disposition": "local_diagnostic",
@@ -3049,12 +3044,6 @@
       "reason": "product configuration capability manifest guard and service tests; product runbook entry",
       "review_by": "2026-12-31"
     },
-    "verify.product_system_parameter_catalog": {
-      "disposition": "product_tooling",
-      "owner": "construction-product",
-      "reason": "controlled system parameter catalog guard and service tests; product runbook entry",
-      "review_by": "2026-12-31"
-    },
     "verify.production.promotion.config.preflight": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -3389,11 +3378,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/workflow_state_unification_plan.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.workspace.branch.sync-main": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
     }
   },
   "scripts": {

@@ -46,6 +46,12 @@ def _cap(
 ) -> dict[str, Any]:
     return {
         "key": key,
+        "identity_kind": "business_capability",
+        "business_capability": True,
+        "identity_contract_version": "capability.identity.v1",
+        "definition_authority": "smart_construction_core.services.capability_registry",
+        "qualification_authority": "product_catalog_and_effective_release",
+        "provider_authority": "declared_capability_registry_provider",
         "label": label,
         "hint": hint,
         "group_key": group_key,
@@ -358,6 +364,21 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
                 timings_ms[f"payload.{key}"] = int(timings_ms.get(f"payload.{key}", 0) + int(value))
         item = {
             "key": capability_key,
+            "identity_kind": "business_capability",
+            "business_capability": True,
+            "identity_contract_version": str(defn.get("identity_contract_version") or "capability.identity.v1"),
+            "definition_authority": str(
+                defn.get("definition_authority")
+                or "smart_construction_core.services.capability_registry"
+            ),
+            "qualification_authority": str(
+                defn.get("qualification_authority")
+                or "product_catalog_and_effective_release"
+            ),
+            "provider_authority": str(
+                defn.get("provider_authority")
+                or "declared_capability_registry_provider"
+            ),
             "name": str(defn.get("label") or defn.get("key") or "").strip(),
             "ui_label": str(defn.get("label") or defn.get("key") or "").strip(),
             "ui_hint": str(defn.get("hint") or "").strip(),
@@ -442,6 +463,8 @@ def lint_registry(env=None) -> list[dict[str, Any]]:
         if not key:
             issues.append({"code": "KEY_MISSING", "detail": item})
             continue
+        if key.startswith(("construction.menu.", "catalog.menu.")):
+            issues.append({"code": "ENTRY_ALIAS_NOT_BUSINESS_CAPABILITY", "capability_key": key})
         if not CAPABILITY_KEY_REGEX.match(key):
             issues.append({"code": "KEY_FORMAT_INVALID", "capability_key": key})
         if key in seen:
@@ -512,6 +535,8 @@ def capability_authorization_for_user(user, capability_key: str) -> dict[str, An
         cap_state, cap_state_reason = _capability_state(definition, allowed)
     authorization: dict[str, Any] = {
         "capability": key,
+        "identity_kind": "business_capability",
+        "business_capability": True,
         "state": cap_state,
         "reason_code": reason_code or "",
         "reason": cap_state_reason or reason or "",

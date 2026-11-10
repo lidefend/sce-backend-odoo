@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import io
-import re
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -300,7 +301,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
             ]),
-            ["verify.execute_button.authority.unit"],
+            ["verify.approval.contract_closure.orm", "verify.execute_button.authority.unit"],
         )
         self.assertEqual(
             select_targets(["scripts/audit/workflow_state_inventory.py"]),
@@ -372,8 +373,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         for path in (
             "addons/smart_construction_core/__init__.py",
-            "addons/smart_construction_core/core_extension.py",
-            "addons/smart_construction_core/services/capability_registry.py",
             "addons/smart_construction_scene/services/capability_scene_targets.py",
             "addons/smart_core/core/capability_provider.py",
         ):
@@ -382,6 +381,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.daily.permission_truth.capability.orm"],
                 )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/core_extension.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.daily.permission_truth.capability.orm",
+            ],
+        )
         for path in (
             "addons/smart_construction_scene/models/product_policy.py",
             "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
@@ -434,6 +448,122 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in ("scripts/verify/github_actions_security_guard.py",
                      "scripts/verify/test_github_actions_security_guard.py"):
             self.assertEqual(select_targets([path]), ["verify.github_actions.security"])
+
+    def test_backend_authority_closure_guard_selects_its_own_unit(self) -> None:
+        for path in (
+            "scripts/verify/backend_authority_closure_guard.py",
+            "scripts/verify/test_backend_authority_closure_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.backend.authority_closure.unit"],
+                )
+
+    def test_approval_contract_inputs_select_backend_and_frontend_owners(self) -> None:
+        self.assertEqual(
+            set(select_targets([
+                "addons/smart_construction_core/services/review_work_item_service.py",
+            ])),
+            {
+                "verify.general_contract.review_authority.unit",
+                "verify.approval.contract_closure.orm",
+            },
+        )
+        frontend_targets = set(select_targets([
+            "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        ]))
+        self.assertTrue({
+                "verify.frontend.approval_contract.closure.unit",
+                "verify.frontend.contract_header_action.unit",
+                "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+        } <= frontend_targets)
+
+    def test_authorization_boundary_paths_select_their_owning_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/security/intent_authorization.py"]),
+            ["verify.intent_group.authorization.unit"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_core/handlers/permission_check.py"]),
+            ["verify.permission_check.availability.unit"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/handlers/payment_request_approval.py"]),
+            ["verify.payment.authorization_boundary.orm"],
+        )
+
+    def test_capability_identity_paths_select_their_owning_check(self) -> None:
+        for path in (
+            "scripts/verify/test_capability_identity_boundary.py",
+            "addons/smart_construction_core/services/product_menu_source.py",
+            "addons/smart_core/delivery/capability_service.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.capability.identity_boundary.unit"],
+                )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.daily.permission_truth.capability.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/tests/test_capability_registry_service.py"]),
+            [
+                "verify.capability.identity_boundary.orm",
+                "verify.daily.permission_truth.capability.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json"
+            ]),
+            ["verify.product.menu.contract_v1.guard"],
+        )
+
+    def test_scene_publication_paths_select_their_owning_check(self) -> None:
+        for path in (
+            "addons/smart_construction_core/models/support/scene_orchestration.py",
+            "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.scene.publication_authority.orm"],
+                )
+
+    def test_page_finalize_paths_select_their_owning_check(self) -> None:
+        for path in (
+            "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.page.finalize.authority.orm"],
+                )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/core_extension.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py"
+            ]),
+            [
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
 
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()
@@ -1587,6 +1717,133 @@ class IncrementalExecutionIdentityTest(unittest.TestCase):
         subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "source"], check=True)
         after = current_identity(self.root, (self.authority,))
         self.assertNotEqual(reuse_identity(before), reuse_identity(after))
+
+
+class InterruptedExecutionResumeTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        subprocess.run(["git", "init", "-q", "-b", "main", str(self.root)], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.name", "Codex Test"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.email", "codex@example.invalid"],
+            check=True,
+        )
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.parent.mkdir(parents=True)
+        source.write_text("<template />\n", encoding="utf-8")
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.parent.mkdir(parents=True)
+        safe_sync.write_text("VERSION = 1\n", encoding="utf-8")
+        self.root.joinpath(".gitignore").write_text(".runtime/\n", encoding="utf-8")
+        binaries = self.root / "frontend/apps/web/node_modules/.bin"
+        binaries.mkdir(parents=True)
+        for tool in ("eslint", "vue-tsc"):
+            binary = binaries / tool
+            binary.write_text("#!/bin/sh\n", encoding="utf-8")
+            binary.chmod(0o755)
+        self.root.joinpath("Makefile").write_text(
+            "verify.frontend.lint.src:\n"
+            "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.typecheck.strict:\n"
+            "\t@printf 'typecheck executed\\n'\n"
+            "verify.workspace.branch.sync-main:\n"
+            "\t@printf 'sync check executed\\n'\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "base"], check=True)
+        self.state_patch = mock.patch(
+            "scripts.verify.frontend_dev_incremental.write_state"
+        )
+        self.state_patch.start()
+        self.addCleanup(self.state_patch.stop)
+        self.paths = [
+            "frontend/apps/web/src/NewSurface.vue",
+            "scripts/ops/safe_branch_sync_main.py",
+        ]
+
+    def _execute(self, directory: str, *, interrupted: bool) -> dict:
+        calls = []
+
+        def run_target(target: str, root: Path, log_path: Path) -> dict:
+            calls.append(target)
+            status = (
+                "interrupted"
+                if interrupted and target == "verify.workspace.branch.sync-main"
+                else "passed"
+            )
+            log_path.write_text(f"{target}:{status}\n", encoding="utf-8")
+            return {
+                "target": target,
+                "command": ["make", "--no-print-directory", target],
+                "status": status,
+                "returncode": 0 if status == "passed" else 130,
+                "durationSeconds": 0.1,
+                "log": str(log_path),
+                "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+            }
+
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            side_effect=run_target,
+        ):
+            code = execute_targets(
+                self.paths,
+                root=self.root,
+                registered_targets={
+                    "verify.frontend.lint.src",
+                    "verify.frontend.typecheck.strict",
+                    "verify.workspace.branch.sync-main",
+                },
+                receipt_dir=self.root
+                / ".runtime/frontend-dev-validation/executions"
+                / directory,
+                worktree_identity=current_identity(self.root),
+            )
+        receipt = json.loads(
+            (
+                self.root
+                / ".runtime/frontend-dev-validation/executions"
+                / directory
+                / "receipt.json"
+            ).read_text(encoding="utf-8")
+        )
+        receipt["_code"] = code
+        receipt["_calls"] = calls
+        return receipt
+
+    def test_interrupted_prefix_is_resumed_and_changed_target_is_rechecked(self) -> None:
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+        self.assertEqual(first["status"], "interrupted")
+
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "tool"], check=True)
+
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["status"], "passed")
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["executedTargetCount"], 1)
+        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(
+            second["sourceReceipt"],
+            ".runtime/frontend-dev-validation/executions/first/receipt.json",
+        )
+        self.assertTrue(
+            all(
+                row.get("reusedFrom") == second["sourceReceipt"]
+                for row in second["targetResults"]
+                if row["target"] != "verify.workspace.branch.sync-main"
+            )
+        )
 
 
 class RunScopedPlannerTest(unittest.TestCase):

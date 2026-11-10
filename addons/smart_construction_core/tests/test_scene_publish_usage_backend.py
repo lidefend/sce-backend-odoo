@@ -47,3 +47,51 @@ class TestScenePublishUsageCounter(TransactionCase):
             before + 1,
             "publishing a scene must increment the scenes_published usage counter",
         )
+
+    def test_publish_freezes_all_definitions_and_runtime_filters_user_access(self):
+        restricted_group = self.env.ref("base.group_system")
+        open_capability = self.env["sc.capability"].create({
+            "key": "test.scene.open.%s" % uuid4().hex[:8],
+            "name": "Open tile",
+            "intent": "ui.contract",
+            "status": "ga",
+        })
+        restricted_capability = self.env["sc.capability"].create({
+            "key": "test.scene.restricted.%s" % uuid4().hex[:8],
+            "name": "Restricted tile",
+            "intent": "ui.contract",
+            "status": "ga",
+            "required_group_ids": [(6, 0, [restricted_group.id])],
+        })
+        scene = self.env["sc.scene"].create({
+            "name": "Publication definition %s" % uuid4().hex[:8],
+            "code": "PUBDEF%s" % uuid4().hex[:8].upper(),
+            "is_test": True,
+            "tile_ids": [
+                (0, 0, {"capability_id": open_capability.id, "title": "Open"}),
+                (0, 0, {"capability_id": restricted_capability.id, "title": "Restricted"}),
+            ],
+        })
+        limited_user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Limited scene reader",
+            "login": "scene-limited-%s@example.com" % uuid4().hex[:8],
+            "groups_id": [(6, 0, [
+                self.env.ref("smart_construction_core.group_sc_internal_user").id,
+            ])],
+        })
+
+        frozen_definition = scene.with_user(limited_user)._build_version_payload()
+        self.assertEqual(
+            {tile["key"] for tile in frozen_definition["tiles"]},
+            {open_capability.key, restricted_capability.key},
+        )
+        access_fields = {"allowed", "user_visible", "state", "reason_code", "reason"}
+        self.assertFalse(any(access_fields & set(tile) for tile in frozen_definition["tiles"]))
+
+        scene.action_publish()
+        self.assertEqual(
+            {tile["key"] for tile in scene.active_version_id.payload_json["tiles"]},
+            {open_capability.key, restricted_capability.key},
+        )
+        runtime = scene.to_public_dict(limited_user)
+        self.assertEqual({tile["key"] for tile in runtime["tiles"]}, {open_capability.key})
