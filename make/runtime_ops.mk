@@ -1412,8 +1412,8 @@ endif
 
 verify.frontend.my_work_approval.browser: guard.prod.forbid
 ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)
-	@$(MAKE) --no-print-directory acceptance.frontend.fixture
 	@$(MAKE) --no-print-directory acceptance.runtime.contract_receipt
+	@SC_ACCEPTANCE_PRESERVE_RELEASE_SNAPSHOT=1 $(MAKE) --no-print-directory acceptance.frontend.fixture
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-my-work-approval-browser
 else
 	@set -e; \

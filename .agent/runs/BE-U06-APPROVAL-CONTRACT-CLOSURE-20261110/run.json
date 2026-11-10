@@ -24,9 +24,12 @@
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/test/frontend_productization_fixture.sh",
     "scripts/verify/test_general_contract_review_authority.py",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "scripts/verify/test_frontend_release_local_entry.py"
+    "scripts/verify/test_frontend_release_local_entry.py",
+    "make/runtime_ops.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -192,6 +195,7 @@
         "scripts/dev/frontend_acceptance_operation_entry.sh",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_standard_preview.py",
+        "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
         "scripts/verify/frontend_my_work_approval_runtime.py",
         "scripts/verify/frontend_my_work_approval_runtime_ids.py",

@@ -373,6 +373,11 @@ load_profile
         )[1].split("\nelse", 1)[0]
         self.assertIn("acceptance.frontend.fixture", local_browser)
         self.assertIn("acceptance.runtime.contract_receipt", local_browser)
+        self.assertLess(
+            local_browser.index("acceptance.runtime.contract_receipt"),
+            local_browser.index("acceptance.frontend.fixture"),
+        )
+        self.assertIn("SC_ACCEPTANCE_PRESERVE_RELEASE_SNAPSHOT=1", local_browser)
         self.assertNotIn("$(RUN_ENV)", local_browser)
 
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
@@ -388,6 +393,8 @@ load_profile
             "frontend_my_work_approval_runtime_ids.py",
             "SC_ACCEPTANCE_EXPECTED_SHA",
             "SC_ACCEPTANCE_PREVIEW_BASE_SHA",
+            "SC_ACCEPTANCE_TEST_SCRIPT_SHA",
+            "validated_backend_product_revision",
             "frontend_my_work_approval_browser.mjs",
         ):
             self.assertIn(token, browser_operation)
@@ -406,6 +413,7 @@ load_profile
         self.assertIn("approval page lost the authoritative money value", browser)
         self.assertIn("PASS_FROM_APPROVAL_PAGE", browser)
         self.assertIn("PASS_PAGE_DATA_UNCHANGED_BEFORE_VALID_REASON", browser)
+        self.assertIn("test_script_sha: SCRIPT_SHA", browser)
         self.assertIn("pending_inline_feedback", browser)
         self.assertIn(".intent-dialog .dialog-actions button:last-child", browser)
         self.assertIn("J07 confirmation focus did not enter", browser)

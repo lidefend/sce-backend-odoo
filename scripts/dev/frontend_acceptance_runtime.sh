@@ -131,6 +131,26 @@ validate_backend_runtime() {
   }
 }
 
+# Browser/test-script-only changes do not alter the running product.  Bind the
+# carrier to the exact backend revision and prove the current candidate's addon
+# inputs are identical.  Product changes still require a carrier rebuild.
+validated_backend_product_revision() {
+  local backend_revision
+  backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+  [[ "$backend_revision" =~ ^[0-9a-f]{40}$ ]] || return 2
+  git -C "$ROOT_DIR" cat-file -e "$backend_revision^{commit}"
+  [[ "$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_FINGERPRINT)" == "$(printf '%s\n' "$backend_revision" | sha256sum | cut -d' ' -f1)" ]] || return 2
+  git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons || {
+    echo "DENY: acceptance backend product inputs changed; rebuild the exact candidate backend" >&2
+    return 2
+  }
+  [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || {
+    echo "DENY: acceptance backend has untracked product inputs; rebuild the exact candidate backend" >&2
+    return 2
+  }
+  printf '%s\n' "$backend_revision"
+}
+
 validate_frontend_runtime() {
   local pid process_cmd process_env process_root listener listener_pid listener_group
   [[ -f "$FRONTEND_ACCEPTANCE_PIDFILE" && ! -L "$FRONTEND_ACCEPTANCE_PIDFILE" \
@@ -488,7 +508,8 @@ PYPROBE
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: My Work approval browser requires frozen candidate" >&2; exit 2; }
         preview_identity="$(python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity)"
-        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        test_script_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        expected_sha="$(validated_backend_product_revision)"
         preview_values="$(PREVIEW_IDENTITY_JSON="$preview_identity" EXPECTED_SHA="$expected_sha" python3 - <<'PYMYWORKPREVIEW'
 import json, os
 identity = json.loads(os.environ['PREVIEW_IDENTITY_JSON'])
@@ -523,6 +544,7 @@ PYMYWORKTARGETS
           SC_ACCEPTANCE_DATABASE="$(standard_expected_db)" DB_NAME="$(standard_expected_db)" E2E_DB="$(standard_expected_db)" DB="$(standard_expected_db)" \
           SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_PREVIEW_BASE_SHA="$preview_base_sha" \
           SC_ACCEPTANCE_PREVIEW_ENTRY="$preview_entry" SC_ACCEPTANCE_PREVIEW_ENTRY_SHA256="$preview_entry_sha256" \
+        SC_ACCEPTANCE_TEST_SCRIPT_SHA="$test_script_sha" \
           SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false SC_ACCEPTANCE_TARGET_MODE=managed \
           SC_ACCEPTANCE_FIXTURE_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" SC_ACCEPTANCE_BOOTSTRAP_SECRET= \
           FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON="$targets_json" ARTIFACTS_DIR=.runtime/final-acceptance/my-work-approval \
@@ -569,13 +591,7 @@ PYMYWORKTARGETS
         candidate_db_uuid_guard
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
-        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
-        backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
-        if [[ "$backend_revision" != "$expected_sha" ]]; then
-          echo "DENY: acceptance backend served revision $backend_revision != expected $expected_sha" >&2
-          echo "HINT: run 'make backend.acceptance.up' to rebuild the acceptance backend at the candidate head before regenerating the contract receipt" >&2
-          exit 2
-        fi
+        expected_sha="$(validated_backend_product_revision)"
         resolution_output="$(docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py" 2>&1)"
         RESOLUTION_OUTPUT="$resolution_output" EXPECTED_SHA="$expected_sha" python3 - <<'PYRESOLUTION'
 import json, os
