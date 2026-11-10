@@ -78,7 +78,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run clean validation on the rebased head dc2f66e2, update the exact-head PR record, and obtain independent review without product-code expansion.",
+  "next_exact_step": "Publish the clean rebased audit/tooling head and obtain exact-head independent review without product-code expansion.",
   "validation": {
     "baseline_reconciliation": {
       "status": "passed",
