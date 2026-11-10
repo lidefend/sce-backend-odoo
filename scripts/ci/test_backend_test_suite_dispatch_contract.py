@@ -224,6 +224,29 @@ python3() {
         self.assertNotIn("modules=", target)
         self.assertNotIn("test_tags=", target)
 
+    def test_frontend_release_dispatch_is_exact_head_and_reads_back(self):
+        makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        target = makefile.split("ci.frontend_release_gate.dispatch:", 1)[1].split("\n.PHONY:", 1)[0]
+
+        for required in (
+            "guard.prod.forbid",
+            "EXPECTED_HEAD",
+            "CI_DISPATCH_BRANCH",
+            "git status --porcelain",
+            "git ls-remote --heads origin",
+            "gh workflow run frontend_release_gate.yml",
+            '--ref "$$branch"',
+            "gh run list --workflow frontend_release_gate.yml",
+            "headSha",
+            "databaseId",
+            "before_ids",
+        ):
+            self.assertIn(required, target)
+
+        self.assertIn('"$$repo" != "lidefend/sce-backend-odoo"', target)
+        self.assertIn('"$$remote_head" != "$$expected"', target)
+        self.assertIn('"$$head_sha" = "$$expected"', target)
+
     def test_workflow_supports_governed_dispatch_inputs(self):
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)

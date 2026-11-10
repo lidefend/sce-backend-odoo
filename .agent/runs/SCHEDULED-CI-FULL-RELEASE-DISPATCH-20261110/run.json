@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110",
+  "branch": "fix/scheduled-ci-full-release-dispatch-20261110",
+  "baseline_sha": "fb5f5c82fe7404939cd697ea99e1f2ba237b0310",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
+    ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",
+    "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
+    "make/ci.mk",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing GitHub owner CLI authority and governed Make entrypoints"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "exact-head full frontend release dispatch",
+    "module": "CI verification tooling",
+    "standard_vs_user_specific": "platform verification tooling",
+    "why_here": "The dispatch belongs to the CI control plane and must bind an exact remote SHA.",
+    "why_not_elsewhere": "Changing product, contracts, ACL or release budgets would hide a verification-lane failure.",
+    "blast_radius": "One make target and its contract test; no runtime product behavior.",
+    "exclusions": [
+      "product code",
+      "contracts",
+      "ACL",
+      "performance budgets",
+      "business data",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+      ]
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement and validate the exact-head full frontend release dispatch target."
+}

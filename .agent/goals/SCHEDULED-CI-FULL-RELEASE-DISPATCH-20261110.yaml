@@ -1,0 +1,36 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110
+  title: scheduled CI full frontend release dispatch
+  status: active
+  formal_product_layer: P4
+  layer_target: exact-head GitHub Actions full frontend release dispatch
+  module: CI verification tooling
+  standard_vs_user_specific: platform verification tooling
+  why_here: >
+    Scheduled CI closure requires a governed way to dispatch the full frontend
+    release lane on a verified remote main SHA and read back the exact run.
+  why_not_elsewhere: >
+    Product, contract, ACL and frontend semantic layers must not change to make
+    a verification lane executable. Direct ad hoc GitHub commands bypass the
+    repository's remote-write authority and exact-identity checks.
+  blast_radius: >
+    Adds one CI dispatch target and contract tests. It does not change workflow
+    behavior, product code, release budgets, data or deployment.
+  objective: >
+    Add and verify a controlled full frontend release dispatch target, then use
+    it on the current main SHA and close the result truthfully.
+  acceptance:
+    - The target requires a full expected SHA and a clean worktree.
+    - The expected SHA must equal the live remote target branch.
+    - Dispatch uses frontend_release_gate.yml and reads back a newly created
+      workflow_dispatch run for the same head SHA.
+    - The contract unit test is non-zero and passing.
+    - The current main full release lane is dispatched and its outcome observed.
+  exclusions:
+    - product code
+    - contracts
+    - ACL
+    - performance budgets
+    - business data
+    - deployment
