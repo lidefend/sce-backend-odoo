@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -25,6 +27,47 @@ def _tokens(relative_path: str, *expected: str) -> None:
 
 
 class CapabilityIdentityBoundaryTest(unittest.TestCase):
+    def test_unclassified_and_legacy_alias_rows_fail_closed(self):
+        rows = _load_capability_rows()
+        alias = rows.normalize_capability_row({"key": "construction.menu.example"})
+        catalog_alias = rows.normalize_capability_row({"key": "catalog.menu.example"})
+        unknown = rows.normalize_capability_row({"key": "legacy.unknown.key"})
+        self.assertEqual(alias["identity_kind"], "entry_compatibility_alias")
+        self.assertFalse(alias["business_capability"])
+        self.assertEqual(catalog_alias["identity_kind"], "entry_compatibility_alias")
+        self.assertFalse(catalog_alias["business_capability"])
+        self.assertEqual(unknown["identity_kind"], "unclassified_capability")
+        self.assertFalse(unknown["business_capability"])
+
+    def test_delivery_projection_does_not_promote_runtime_presence_to_capability(self):
+        service_module = _load_capability_service()
+        service = service_module.CapabilityService()
+        entries = service.build_entries(
+            policy={"capabilities": [
+                {"capability_key": "construction.menu.example"},
+                {"capability_key": "legacy.unknown.key"},
+            ]},
+            capabilities=[
+                {"key": "construction.menu.example"},
+                {"key": "legacy.unknown.key"},
+            ],
+        )
+        by_key = {row["key"]: row for row in entries}
+        self.assertEqual(
+            by_key["construction.menu.example"]["capability_identity"]["identity_kind"],
+            "entry_compatibility_alias",
+        )
+        self.assertFalse(
+            by_key["construction.menu.example"]["capability_identity"]["business_capability"]
+        )
+        self.assertEqual(
+            by_key["legacy.unknown.key"]["capability_identity"]["identity_kind"],
+            "unclassified_capability",
+        )
+        self.assertFalse(
+            by_key["legacy.unknown.key"]["capability_identity"]["business_capability"]
+        )
+
     def test_menu_row_remains_entry_alias_identity(self):
         source = _load_product_menu_source()
         row = source._menu_row(
@@ -88,7 +131,7 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
             "addons/smart_core/delivery/capability_service.py",
             '"capability_identity"',
             '"identity_kind": identity_kind',
-            '"business_capability": bool(',
+            '"business_capability": business_capability',
         )
         _tokens(
             "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
@@ -100,6 +143,51 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
             '"identity_kind": "entry_compatibility_alias"',
             '"business_capability": False',
         )
+
+def _load_capability_rows():
+    return _load_real_module(
+        "smart_construction_core_capability_rows_test",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+    )
+
+
+def _load_capability_service():
+    _ensure_capability_service_packages()
+    _load_real_module(
+        "odoo.addons.smart_core.core.source_authority",
+        "addons/smart_core/core/source_authority.py",
+    )
+    _load_real_module(
+        "odoo.addons.smart_core.core.delivery_capability_entry_defaults",
+        "addons/smart_core/core/delivery_capability_entry_defaults.py",
+    )
+    return _load_real_module(
+        "odoo.addons.smart_core.delivery.capability_service",
+        "addons/smart_core/delivery/capability_service.py",
+    )
+
+
+def _load_real_module(name: str, relative_path: str):
+    path = ROOT / relative_path
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module
+
+
+def _ensure_capability_service_packages():
+    for name, path in (
+        ("odoo", ROOT / "addons/smart_core"),
+        ("odoo.addons", ROOT / "addons"),
+        ("odoo.addons.smart_core", ROOT / "addons/smart_core"),
+        ("odoo.addons.smart_core.core", ROOT / "addons/smart_core/core"),
+        ("odoo.addons.smart_core.delivery", ROOT / "addons/smart_core/delivery"),
+    ):
+        module = sys.modules.get(name) or types.ModuleType(name)
+        module.__path__ = [str(path)]
+        sys.modules[name] = module
 
 
 if __name__ == "__main__":

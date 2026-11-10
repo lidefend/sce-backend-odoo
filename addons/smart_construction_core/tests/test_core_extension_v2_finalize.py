@@ -8,6 +8,7 @@ from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_construction_core import core_extension
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES
 from odoo.addons.smart_core.core.form_structure_authority import resolve_form_structure_governance
 from odoo.addons.smart_core.utils import contract_governance
 from odoo.addons.smart_core.utils.contract_governance import apply_native_authority_domain_overrides
@@ -824,6 +825,38 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIsNone(projected)
 
     def test_partner_field_hiding_is_a_published_page_declaration(self):
+        def final_partner_visible_fields():
+            action = self.env.ref("base.action_partner_form", raise_if_not_found=False)
+            view = self.env.ref("base.view_partner_form")
+            result = UiContractV2Handler(
+                self.env,
+                su_env=self.env["ir.model"].sudo().env,
+            ).handle({
+                "op": "model",
+                "model": "res.partner",
+                "action_id": action.id if action else 0,
+                "view_id": view.id,
+                "view_type": "form",
+                "render_profile": "edit",
+                "accepted_contract_versions": ["2.2.x"],
+                "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
+            })
+            result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(result.get("ok", True), result.get("error"))
+            nodes = self._field_nodes(
+                ((result.get("data") or {}).get("layoutContract") or {}).get("containerTree") or []
+            )
+            return {
+                row.get("fieldCode") or row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
+                for row in nodes
+                if (row.get("componentConfig") or {}).get("surfaceRole") != "hidden"
+            }
+
+        baseline_visible = final_partner_visible_fields()
+        self.assertNotIn("country_id", baseline_visible)
+        self.assertNotIn("user_id", baseline_visible)
+        self.assertIn("category_id", baseline_visible)
+
         configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
             "res.partner",
             view_type="form",
@@ -848,10 +881,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "hidden",
         )
 
+        partner_action = self.env.ref("base.action_partner_form", raise_if_not_found=False)
+        partner_view = self.env.ref("base.view_partner_form")
         variant = self.env["ui.business.config.contract"].sudo().create({
             "name": "partner_native_form_variant_test",
             "model": "res.partner",
             "view_type": "form",
+            "action_id": partner_action.id if partner_action else False,
+            "view_id": partner_view.id,
             "priority": 900,
             "company_id": False,
             "active": True,
@@ -867,8 +904,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                         "form": {
                             "composition_mode": "native_semantic_surface",
                             "fields": [
-                                {"name": "country_id", "visible": True},
-                                {"name": "user_id", "visible": False},
+                                {"name": "category_id", "visible": False},
                             ],
                         },
                     },
@@ -878,14 +914,17 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         variant_configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
             "res.partner",
             view_type="form",
-            action_id=None,
-            view_id=None,
+            action_id=partner_action.id if partner_action else None,
+            view_id=partner_view.id,
             role_key="",
         )
         variant_governance = resolve_form_structure_governance({}, variant_configs, view_type="form")
-        self.assertNotIn("country_id", variant_governance["hidden_field_names"])
-        self.assertIn("user_id", variant_governance["hidden_field_names"])
+        self.assertIn("category_id", variant_governance["hidden_field_names"])
+        variant_visible = final_partner_visible_fields()
+        self.assertNotIn("category_id", variant_visible)
         variant.unlink()
+        restored_visible = final_partner_visible_fields()
+        self.assertIn("category_id", restored_visible)
 
         projected = core_extension.smart_core_finalize_unified_page_contract_v2(
             self.env,

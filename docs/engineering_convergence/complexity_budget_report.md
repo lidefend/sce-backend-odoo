@@ -97,6 +97,7 @@ Generated from repository source files. This report is informational during the 
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
+| 1470 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
@@ -322,10 +323,10 @@ Generated from repository source files. This report is informational during the 
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
+| 1470 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 
 ## Interpretation
 
