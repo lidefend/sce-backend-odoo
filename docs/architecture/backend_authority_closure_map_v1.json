@@ -688,16 +688,33 @@
     {
       "id": "BE-U01-G02",
       "owner_card": "BE-U02",
-      "status": "open",
-      "summary": "permission.check 主要返回订阅/功能开关结果；allow=true 不是模型、记录、动作或审批执行授权。",
+      "status": "closed",
+      "summary": "permission.check 保留 allow 兼容字段，同时显式声明 authorization_scope=product_availability_only；它不是模型、记录、动作或审批执行授权。",
       "refs": [
         {
           "path": "addons/smart_core/handlers/permission_check.py",
           "kind": "python_symbol_tokens",
           "value": "PermissionCheckHandler.handle",
           "tokens": [
-            "data = {\"allow\": True}",
-            "required_flag"
+            "required_flag",
+            "_availability_data"
+          ]
+        },
+        {
+          "path": "addons/smart_core/handlers/permission_check.py",
+          "kind": "python_symbol_tokens",
+          "value": "PermissionCheckHandler._availability_data",
+          "tokens": [
+            "authorization_scope",
+            "does_not_authorize"
+          ]
+        },
+        {
+          "path": "addons/smart_core/handlers/permission_check.py",
+          "kind": "python_symbol_tokens",
+          "value": "PermissionCheckHandler.AUTHORIZATION_SCOPE",
+          "tokens": [
+            "product_availability_only"
           ]
         }
       ]
@@ -705,25 +722,70 @@
     {
       "id": "BE-U01-G03",
       "owner_card": "BE-U02",
-      "status": "open",
-      "summary": "租户配置管理员在通用 intent 组门禁和付款审批处理器中仍可绕过功能组门槛；需限定为配置职责或移除业务命令捷径。",
+      "status": "closed",
+      "summary": "租户配置管理员只为显式配置 intent 保留职责；付款审批、付款执行、结算引入、风险动作和待办完成不再消费该身份绕过业务组门槛。",
       "refs": [
         {
           "path": "addons/smart_core/security/intent_authorization.py",
           "kind": "python_symbol_tokens",
           "value": "user_has_required_groups",
           "tokens": [
-            "user_is_tenant_config_admin(user)",
-            "return True"
+            "allow_tenant_config_admin=False",
+            "if allow_tenant_config_admin:"
+          ]
+        },
+        {
+          "path": "addons/smart_core/security/intent_authorization.py",
+          "kind": "python_symbol_tokens",
+          "value": "handler_allows_tenant_config_admin",
+          "tokens": [
+            "TENANT_CONFIG_ADMIN_ALLOWED",
+            "is_tenant_configuration_intent"
+          ]
+        },
+        {
+          "path": "addons/smart_core/security/intent_authorization.py",
+          "kind": "python_symbol_tokens",
+          "value": "is_tenant_configuration_intent",
+          "tokens": [
+            "TENANT_CONFIG_INTENT_NAMES"
           ]
         },
         {
           "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
-          "kind": "python_symbol_tokens",
+          "kind": "python_symbol_excludes",
           "value": "_BasePaymentApprovalHandler._assert_required_groups",
-          "tokens": [
-            "user_is_tenant_config_admin(user)",
-            "return"
+          "forbidden_tokens": [
+            "user_is_tenant_config_admin"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/handlers/payment_request_execute.py",
+          "kind": "python_symbol_excludes",
+          "value": "PaymentRequestExecuteHandler._assert_required_groups",
+          "forbidden_tokens": [
+            "user_is_tenant_config_admin"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+          "kind": "text_excludes",
+          "forbidden_tokens": [
+            "user_is_tenant_config_admin"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/handlers/risk_action_execute.py",
+          "kind": "text_excludes",
+          "forbidden_tokens": [
+            "user_is_tenant_config_admin"
+          ]
+        },
+        {
+          "path": "addons/smart_construction_core/handlers/my_work_complete.py",
+          "kind": "text_excludes",
+          "forbidden_tokens": [
+            "user_is_tenant_config_admin"
           ]
         }
       ]

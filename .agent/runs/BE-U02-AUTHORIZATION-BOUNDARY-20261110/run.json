@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "id": "BE-U02-AUTHORIZATION-BOUNDARY-20261110",
+  "branch": "codex/be-u02-authorization-boundary-20261110",
+  "baseline_sha": "6bba76043ffdee0474a0f91f3390634c6b792180",
+  "status": "completed",
+  "goal": ".agent/goals/BE-U02-AUTHORIZATION-BOUNDARY-20261110.yaml",
+  "record": "docs/ops/iterations/backend_authority_closure_be_u02_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-U02-AUTHORIZATION-BOUNDARY-20261110.yaml",
+    ".agent/runs/BE-U02-AUTHORIZATION-BOUNDARY-20261110/run.json",
+    "addons/smart_core/core/base_handler.py",
+    "addons/smart_core/handlers/permission_check.py",
+    "addons/smart_core/security/intent_authorization.py",
+    "addons/smart_core/tests/test_base_handler_type_error.py",
+    "addons/smart_core/tests/test_permission_check_debug_boundary.py",
+    "addons/smart_construction_core/handlers/my_work_complete.py",
+    "addons/smart_construction_core/handlers/payment_request_approval.py",
+    "addons/smart_construction_core/handlers/payment_request_execute.py",
+    "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+    "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+    "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    "addons/smart_construction_core/handlers/risk_action_execute.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/backend_authority_closure_map_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/backend_authority_closure_be_u02_20261110.md",
+    "make/guards.mk",
+    "scripts/verify/backend_authority_closure_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_backend_authority_closure_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "fixed source baseline and registered offline test entry; targeted disposable ORM selected separately"
+  },
+  "layer": {
+    "formal_product_layer": "P0",
+    "supporting_layers": [
+      "P1"
+    ],
+    "layer_target": "intent group authorization and declared configuration scope",
+    "module": "smart_core and smart_construction_core",
+    "standard_vs_user_specific": "platform and construction standard",
+    "why_here": "REQUIRED_GROUPS is a platform mechanism; affected business handlers own their command origins.",
+    "why_not_elsewhere": "The frontend and database cannot repair an execution authorization defect.",
+    "blast_radius": "Intent surface and execution decisions, subscription-availability metadata, and five business entry guards."
+  },
+  "checks": {
+    "authorization_boundary": {
+      "target": "verify.intent_group.authorization.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/permission_check.py",
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/tests/test_base_handler_type_error.py",
+        "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+        "addons/smart_core/tests/test_permission_check_debug_boundary.py",
+        "make/dev_test.mk",
+        "scripts/verify/frontend_dev_incremental.py"
+      ]
+    },
+    "authority_map": {
+      "target": "verify.backend.authority_closure.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/backend_authority_closure_map_v1.json",
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py",
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "make/guards.mk"
+      ]
+    },
+    "permission_availability": {
+      "target": "verify.permission_check.availability.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/permission_check.py",
+        "addons/smart_core/tests/test_permission_check_debug_boundary.py",
+        "make/guards.mk",
+        "scripts/verify/frontend_dev_incremental.py"
+      ]
+    },
+    "payment_authorization_orm": {
+      "target": "verify.payment.authorization_boundary.orm",
+      "kind": "runtime",
+      "inputs": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/dev/local_test_runner.py",
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/handlers/payment_request_execute.py",
+        "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open BE-U03 from BE-U01-G01 with a new registered run."
+}

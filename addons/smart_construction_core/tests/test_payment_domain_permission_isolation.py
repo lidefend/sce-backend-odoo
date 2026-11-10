@@ -72,6 +72,11 @@ class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
             [],
             [cls.company_a],
         )
+        cls.tenant_config_admin = cls._role_user(
+            "t2_tenant_config_admin",
+            ["smart_core.group_smart_core_admin"],
+            [cls.company_a],
+        )
 
         cls.partner = cls.env["res.partner"].create(
             {
@@ -446,3 +451,12 @@ class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
         # 28: project membership alone cannot override allowed_company_ids.
         with self.assertRaises(AccessError):
             finance_a["project.project"].browse(self.project_c.id).read(["id"])
+
+    def test_tenant_config_admin_cannot_approve_without_business_review_authority(self):
+        before = self._snapshot(self.request_a)
+        with self.assertRaises(AccessError):
+            PaymentRequestApproveHandler(
+                self._user_env(self.tenant_config_admin),
+                payload={},
+            ).handle({"id": self.request_a.id, "request_id": "t2-config-admin-approve"})
+        self.assertEqual(self._snapshot(self.request_a), before)

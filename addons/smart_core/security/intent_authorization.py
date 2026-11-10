@@ -1,23 +1,61 @@
 """Shared REQUIRED_GROUPS semantics for intent execution and projection.
 
-Groups remain native Odoo groups. A declaration is any-of, retaining the
-existing tenant configuration administrator rule from the execution layer.
-Model ACLs, record rules and request scope are separate mandatory checks.
+Groups remain native Odoo groups and a declaration is any-of. Tenant
+configuration administrators retain configuration duties only for explicitly
+declared configuration intents; configuration identity never skips a business
+command's group gate. Model ACLs, record rules and request scope remain separate
+mandatory checks.
 """
 from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
+from odoo.addons.smart_core.utils.backend_contract_boundaries import (
+    APPROVAL_POLICY_INTENTS,
+    BUSINESS_CONFIG_INTENTS,
+    FORM_FIELD_CONFIG_INTENTS,
+    MENU_CONFIG_INTENTS,
+)
 
 
-def user_has_required_groups(user, required_groups):
+TENANT_CONFIG_INTENT_NAMES = frozenset(
+    value
+    for mapping in (
+        BUSINESS_CONFIG_INTENTS,
+        FORM_FIELD_CONFIG_INTENTS,
+        MENU_CONFIG_INTENTS,
+        APPROVAL_POLICY_INTENTS,
+    )
+    for value in mapping.values()
+)
+
+
+def is_tenant_configuration_intent(intent_name):
+    return str(intent_name or "").strip() in TENANT_CONFIG_INTENT_NAMES
+
+
+def handler_allows_tenant_config_admin(handler_cls):
+    """Return whether this handler owns configuration-administration duty.
+
+    The declaration is intentionally narrow: known configuration intents or an
+    explicit handler opt-in. A generic administrator identity is never enough
+    for a business command.
+    """
+    return bool(
+        getattr(handler_cls, "TENANT_CONFIG_ADMIN_ALLOWED", False)
+        or is_tenant_configuration_intent(getattr(handler_cls, "INTENT_TYPE", ""))
+    )
+
+
+def user_has_required_groups(user, required_groups, *, allow_tenant_config_admin=False):
     required = list(required_groups or [])
     if not required:
         return True
     if not user or any(not isinstance(group, str) or not group.strip() for group in required):
         return False
-    try:
-        if user_is_tenant_config_admin(user):
-            return True
-    except Exception:
-        pass
+    if allow_tenant_config_admin:
+        try:
+            if user_is_tenant_config_admin(user):
+                return True
+        except Exception:
+            pass
     for group in required:
         try:
             if user.has_group(group.strip()):
@@ -54,8 +92,17 @@ def handler_group_decision(env, user, handler_cls, *, require_declaration=False)
     declared = getattr(handler_cls, "REQUIRED_GROUPS", []) or []
     groups = normalize_required_groups(env, declared)
     valid = groups is not None and (bool(groups) or not require_declaration)
-    allowed = bool(valid and user_has_required_groups(user, groups))
+    allow_tenant_config_admin = handler_allows_tenant_config_admin(handler_cls)
+    allowed = bool(
+        valid
+        and user_has_required_groups(
+            user,
+            groups,
+            allow_tenant_config_admin=allow_tenant_config_admin,
+        )
+    )
     return {"allowed": allowed, "required_groups": groups or [],
+            "tenant_config_admin_scope": allow_tenant_config_admin,
             "reason_code": "OK" if allowed else "PERMISSION_DENIED"}
 
 

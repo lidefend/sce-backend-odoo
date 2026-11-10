@@ -555,6 +555,36 @@ RULES = (
         "verify.backend.authority_closure.unit",
     )),
     Rule((
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/core/base_handler.py",
+        "addons/smart_core/tests/test_base_handler_type_error.py",
+        "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+    ), (
+        "verify.intent_group.authorization.unit",
+    )),
+    Rule((
+        "addons/smart_core/handlers/permission_check.py",
+        "addons/smart_core/tests/test_permission_check_debug_boundary.py",
+    ), (
+        "verify.permission_check.availability.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/handlers/my_work_complete.py",
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/handlers/payment_request_execute.py",
+        "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "addons/smart_construction_core/handlers/risk_action_execute.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    ), (
+        "verify.payment.authorization_boundary.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+        "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    ), (
+        "verify.product_system_parameter_catalog",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (

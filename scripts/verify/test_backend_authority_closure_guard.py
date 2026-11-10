@@ -61,6 +61,18 @@ class BackendAuthorityClosureGuardTest(unittest.TestCase):
         errors = guard.validate(mapping)
         self.assertTrue(any("follow-up cards" in item for item in errors), errors)
 
+    def test_forbidden_symbol_behavior_fails_closed(self):
+        mapping = copy.deepcopy(self.mapping)
+        gap = next(item for item in mapping["known_gaps"] if item["id"] == "BE-U01-G03")
+        gap["refs"].append({
+            "path": "addons/smart_construction_core/handlers/payment_request_approval.py",
+            "kind": "python_symbol_excludes",
+            "value": "_BasePaymentApprovalHandler._assert_required_groups",
+            "forbidden_tokens": ["required ="],
+        })
+        errors = guard.validate(mapping)
+        self.assertTrue(any("forbidden Python symbol token is present" in item for item in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2448,11 +2448,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.intent_group.authorization.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.intent_group.authorization.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
-    },
     "verify.legacy_attachment.frontend_browser.acceptance.host": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -3047,12 +3042,6 @@
       "disposition": "product_tooling",
       "owner": "construction-product",
       "reason": "product configuration capability manifest guard and service tests; product runbook entry",
-      "review_by": "2026-12-31"
-    },
-    "verify.product_system_parameter_catalog": {
-      "disposition": "product_tooling",
-      "owner": "construction-product",
-      "reason": "controlled system parameter catalog guard and service tests; product runbook entry",
       "review_by": "2026-12-31"
     },
     "verify.production.promotion.config.preflight": {

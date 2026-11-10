@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: BE-U02-AUTHORIZATION-BOUNDARY-20261110
+  title: tenant_configuration_identity_is_not_business_execution_authority
+  status: completed
+  formal_product_layer: P0
+  supporting_layers:
+    - P1
+  layer_target:
+    - intent_group_authorization
+    - business_origin_authorization
+    - product_availability_projection
+  module:
+    - smart_core
+    - smart_construction_core
+  baseline:
+    branch: codex/be-u02-authorization-boundary-20261110
+    full_sha: 6bba76043ffdee0474a0f91f3390634c6b792180
+    source: be_u01_authority_map_candidate
+  objective: >-
+    将能力可用、入口可见、数据可访问、业务可执行和管理可操作继续分层。
+    租户配置管理员只在明确声明的配置 intent 上保留配置职责；付款、审批、
+    结算引入、风险动作和待办完成等业务命令必须取得对应业务身份或真实任务来源。
+    permission.check 保持兼容字段，但显式声明只回答订阅/功能开关可用性。
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_construction_standard
+    why_here: >-
+      REQUIRED_GROUPS 是 P0 通用 intent 执行机制；需要移除的旁路位于 P1 付款、
+      风险和待办业务入口。业务方法自身的 ACL、状态和审批人重验保持不变。
+    why_not_elsewhere:
+      - no_frontend_permission_inference
+      - no_new_permission_engine
+      - no_acl_or_record_rule_removal
+      - no_business_state_or_database_repair
+    blast_radius:
+      - intent group projection and execution
+      - subscription availability response metadata
+      - five P1 business handler entry guards
+      - source-bound authority map closure gap BE-U01-G02 and G03
+  constraints:
+    - tenant_config_admin_bypass_is_limited_to_declared_configuration_intents
+    - configuration_intents_keep_any_of_group_semantics
+    - business_handlers_cannot_import_tenant_config_admin_for_command_access
+    - permission_check_allow_is_not_execution_authorization
+    - native_acl_record_rules_scope_and_business_method_rechecks_remain_required
+  exclusions:
+    - capability_catalog_redesign
+    - publication_or_enablement_changes
+    - page_or_action_producer_changes
+    - frontend_changes
+    - acceptance_browser_journey
+    - database_or_deployment_mutation
+  acceptance:
+    - generic_business_intent_denies_tenant_config_admin_without_declared_business_group
+    - declared_configuration_intent_retains_tenant_config_admin_responsibility
+    - payment_approval_denies_tenant_config_admin_without_finance_or_reviewer_authority
+    - business_handlers_no_longer_import_tenant_config_admin
+    - permission_check_response_declares_product_availability_only
+    - focused_offline_and_targeted_orm_tests_pass_with_non_zero_counts
+  rollback: >-
+    Revert the BE-U02 commit. No schema, data, ACL, route, publication or deployed
+    artifact change is involved.
+  next_exact_step: >-
+    Open BE-U03 from BE-U01-G01: separate capability definition/provider
+    authority from menu-derived entry aliases without creating a second catalog.

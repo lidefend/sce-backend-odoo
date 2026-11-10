@@ -32,6 +32,7 @@ class ProductSystemParameterCatalogHandler(BaseIntentHandler):
     VERSION = "1.0.0"
     ETAG_ENABLED = False
     REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
+    TENANT_CONFIG_ADMIN_ALLOWED = True
 
     def _trace_id(self) -> str:
         if isinstance(self.context, dict):
@@ -100,6 +101,7 @@ class ProductSystemParameterPreviewHandler(BaseIntentHandler):
     VERSION = "1.0.0"
     ETAG_ENABLED = False
     REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
+    TENANT_CONFIG_ADMIN_ALLOWED = True
 
     def _trace_id(self) -> str:
         if isinstance(self.context, dict):

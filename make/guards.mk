@@ -62,6 +62,15 @@ verify.backend.authority_closure.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_backend_authority_closure_guard
 	@python3 scripts/verify/backend_authority_closure_guard.py
 
+.PHONY: verify.permission_check.availability.unit
+verify.permission_check.availability.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/handlers/permission_check.py addons/smart_core/tests/test_permission_check_debug_boundary.py
+	@python3 addons/smart_core/tests/test_permission_check_debug_boundary.py
+
+.PHONY: verify.payment.authorization_boundary.orm
+verify.payment.authorization_boundary.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=payment_domain_permission_isolation
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

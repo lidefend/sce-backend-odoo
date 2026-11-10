@@ -446,6 +446,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.backend.authority_closure.unit"],
                 )
 
+    def test_authorization_boundary_paths_select_their_owning_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/security/intent_authorization.py"]),
+            ["verify.intent_group.authorization.unit"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_core/handlers/permission_check.py"]),
+            ["verify.permission_check.availability.unit"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/handlers/payment_request_approval.py"]),
+            ["verify.payment.authorization_boundary.orm"],
+        )
+
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

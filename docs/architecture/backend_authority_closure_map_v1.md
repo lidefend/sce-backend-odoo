@@ -36,8 +36,8 @@
 | 缺口 | 当前源码事实 | 后续收口 |
 | --- | --- | --- |
 | `BE-U01-G01` | 菜单 XMLID 派生 `capability_key` | `BE-U03` 把能力定义、目录资格和入口兼容别名拆开 |
-| `BE-U01-G02` | `permission.check` 的 `allow=true` 主要表达订阅/功能开关 | `BE-U02` 明确 API 命名、返回语义及消费者 |
-| `BE-U01-G03` | 租户配置管理员可跳过通用 intent 组门槛和付款审批 handler 组门槛 | `BE-U02` 限定配置职责，业务命令回到业务身份 |
+| `BE-U01-G02` | 已明确 `permission.check.allow` 只表达产品可用性，并返回 `does_not_authorize` | `BE-U02` 已收口 |
+| `BE-U01-G03` | 配置管理员职责已限定为显式配置 intent；业务 handler 不再消费该身份绕过执行组 | `BE-U02` 已收口 |
 | `BE-U01-G04` | 场景发布构建使用发布者可见集合 | `BE-U04` 发布冻结产品定义，再按使用者投影 |
 | `BE-U01-G05` | 行业 finalize 后置钩子仍修改最终页面 | `BE-U05` 将页面重定义迁回声明与编排层 |
 

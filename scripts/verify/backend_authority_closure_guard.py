@@ -100,6 +100,7 @@ def _resolve_ref(ref: dict[str, Any], root: Path) -> str | None:
     kind = str(ref.get("kind") or "").strip()
     value = str(ref.get("value") or "").strip()
     tokens = ref.get("tokens") or []
+    forbidden_tokens = ref.get("forbidden_tokens") or []
     if not path_value or not kind:
         return "reference path and kind are required"
     if path_value.startswith("frontend/"):
@@ -111,7 +112,7 @@ def _resolve_ref(ref: dict[str, Any], root: Path) -> str | None:
         return "reference escapes repository root"
     if not path.is_file():
         return "reference file does not exist"
-    if not value and kind not in {"text"}:
+    if not value and kind not in {"text", "text_excludes"}:
         return "reference value is required"
     try:
         text = path.read_text(encoding="utf-8", errors="ignore")
@@ -120,6 +121,12 @@ def _resolve_ref(ref: dict[str, Any], root: Path) -> str | None:
     if kind == "text":
         if not tokens or any(not isinstance(token, str) or token not in text for token in tokens):
             return "text tokens are missing"
+        if any(isinstance(token, str) and token in text for token in forbidden_tokens):
+            return "forbidden text tokens are present"
+        return None
+    if kind == "text_excludes":
+        if not forbidden_tokens or any(not isinstance(token, str) or token in text for token in forbidden_tokens):
+            return "forbidden text token is present or undefined"
         return None
     if kind == "xml_record":
         try:
@@ -165,7 +172,7 @@ def _resolve_ref(ref: dict[str, Any], root: Path) -> str | None:
                 if isinstance(child.value, ast.Constant) and child.value.value == value:
                     return None
         return "model declaration is missing"
-    if kind not in {"python_symbol", "python_symbol_tokens"}:
+    if kind not in {"python_symbol", "python_symbol_tokens", "python_symbol_excludes"}:
         return f"unsupported reference kind: {kind}"
     node = _python_symbol_node(tree, value)
     if node is None:
@@ -174,6 +181,10 @@ def _resolve_ref(ref: dict[str, Any], root: Path) -> str | None:
         segment = ast.get_source_segment(text, node) or ""
         if not tokens or any(not isinstance(token, str) or token not in segment for token in tokens):
             return "Python symbol behavior tokens are missing"
+    if kind == "python_symbol_excludes":
+        segment = ast.get_source_segment(text, node) or ""
+        if not forbidden_tokens or any(not isinstance(token, str) or token in segment for token in forbidden_tokens):
+            return "forbidden Python symbol token is present or undefined"
     return None
 
 
