@@ -693,6 +693,12 @@ RULES = (
         "verify.daily.permission_truth.capability.orm",
     )),
     Rule((
+        "addons/smart_construction_core/models/support/product_scenario.py",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+        "verify.navigation.publication_consumers.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_acceptance_login_probe.py",
         "scripts/verify/test_frontend_acceptance_login_probe.py",
     ), (

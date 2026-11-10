@@ -394,6 +394,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.navigation.publication_consumers.unit",
                     ],
                 )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/models/support/product_scenario.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+            ],
+        )
         for path in (
             "scripts/verify/frontend_acceptance_login_probe.py",
             "scripts/verify/test_frontend_acceptance_login_probe.py",
