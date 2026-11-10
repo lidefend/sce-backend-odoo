@@ -8,6 +8,7 @@ before replaying the branch's responsibility commits on an exact origin/main.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import os
 import re
@@ -575,6 +576,35 @@ def verify_semantic_union_text(path: str, text: str) -> None:
             )
 
 
+def missing_added_lines(base: str, main: str, head: str) -> list[str]:
+    """Return main-side added lines that the reviewed union failed to contain."""
+    required = [
+        line[2:]
+        for line in difflib.ndiff(base.splitlines(), main.splitlines())
+        if line.startswith("+ ")
+    ]
+    available = head.splitlines()
+    missing = []
+    for line in required:
+        try:
+            available.remove(line)
+        except ValueError:
+            missing.append(line)
+    return missing
+
+
+def verify_semantic_union_preserves_main(plan: SyncPlan) -> None:
+    base = text_at_revision(plan.root, plan.replay_base, SEMANTIC_UNION_CONFLICT_PATH)
+    main = text_at_revision(plan.root, plan.new_main, SEMANTIC_UNION_CONFLICT_PATH)
+    head = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
+    missing = missing_added_lines(base, main, head)
+    if missing:
+        raise SyncError(
+            "semantic union source does not preserve main-side added lines: "
+            + "; ".join(missing[:5])
+        )
+
+
 def resolve_semantic_union_conflict(
     plan: SyncPlan, conflicts: tuple[str, ...]
 ) -> tuple[str, ...]:
@@ -596,6 +626,7 @@ def resolve_semantic_union_conflict(
         raise SyncError("semantic union conflicts require the extended frozen sync")
     text = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
     verify_semantic_union_text(SEMANTIC_UNION_CONFLICT_PATH, text)
+    verify_semantic_union_preserves_main(plan)
     target = generated_output_path(plan.root, SEMANTIC_UNION_CONFLICT_PATH)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")

@@ -455,6 +455,14 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             )
         with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
             syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
+        self.assertEqual(
+            syncer.missing_added_lines(
+                "base\nold\n",
+                "base\nnew\nmain-only\n",
+                "base\nnew\ntopic-only\n",
+            ),
+            ["main-only"],
+        )
 
     def test_extended_sync_unions_exact_personal_data_exemptions(self) -> None:
         path = syncer.PERSONAL_DATA_FALSE_POSITIVES_PATH
