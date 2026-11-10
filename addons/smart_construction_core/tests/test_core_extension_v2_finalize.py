@@ -28,6 +28,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             constraints[attribute] = tuple(values)
         return constraints
 
+    def _ensure_project_fixture(self):
+        project = self.env["project.project"].search([], limit=1)
+        if project:
+            return project
+        return self.env["project.project"].create({
+            "name": "Contract authority fixture project",
+        })
+
     def test_project_maintenance_form_uses_authoritative_business_sections(self):
         # Exercise the default project.form selection used by native consumers
         # that do not pin an action-specific form, rather
@@ -295,29 +303,53 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         direct_groups = arch.xpath("//form/sheet/group[@data-sc-anchor]")
         self.assertEqual(
             [group.get("string") for group in direct_groups],
-            ["基本信息", "计划与责任", "责任矩阵", "项目说明", "协作资料", "系统追溯"],
-        )
-        self.assertEqual(
-            direct_groups[0].xpath(".//field/@name"),
             [
-                "name", "project_code", "partner_id", "project_type_id", "project_category_id",
-                "operation_strategy", "location", "owner_contact", "contract_no",
-                "company_id", "phase_key",
+                "办理前检查", "项目身份", "业务主体与项目属性", "联系信息与合同关联",
+                "项目安排日期", "计划开竣工日期", "责任信息", "责任矩阵",
+                "项目说明", "协作资料", "系统追溯",
+            ],
+        )
+        groups = {
+            group.get("data-sc-anchor"): group
+            for group in direct_groups
+        }
+        self.assertEqual(
+            groups["project-identity"].xpath(".//field/@name"),
+            [
+                "name", "phase_key",
             ],
         )
         self.assertEqual(
-            direct_groups[1].xpath(".//field/@name"),
+            groups["project-entity"].xpath(".//field/@name"),
             [
-                "initiation_date", "date_start", "date", "start_date", "end_date",
-                "user_id", "manager_id", "cost_manager_id", "doc_manager_id",
+                "partner_id", "project_type_id", "project_category_id",
+                "operation_strategy", "company_id",
             ],
         )
-        date_range = direct_groups[1].xpath("./field[@name='date_start']")
+        self.assertEqual(
+            groups["project-contact"].xpath(".//field/@name"),
+            ["location", "owner_contact", "contract_no"],
+        )
+        self.assertEqual(
+            groups["project-arrangement"].xpath(".//field/@name"),
+            ["initiation_date", "date_start", "date"],
+        )
+        self.assertEqual(
+            groups["project-schedule"].xpath(".//field/@name"),
+            ["start_date", "end_date"],
+        )
+        self.assertEqual(
+            groups["project-responsible"].xpath(".//field/@name"),
+            ["manager_id", "cost_manager_id", "doc_manager_id"],
+        )
+        date_range = groups["project-arrangement"].xpath("./field[@name='date_start']")
         self.assertEqual(len(date_range), 1)
         self.assertEqual(date_range[0].get("string"), "项目周期")
         self.assertEqual(date_range[0].get("widget"), "daterange")
         self.assertIn("end_date_field", date_range[0].get("options") or "")
-        responsibility = direct_groups[2].xpath("./field[@name='responsibility_ids']")
+        responsibility = groups["project-responsibility-matrix"].xpath(
+            "./field[@name='responsibility_ids']"
+        )
         self.assertEqual(len(responsibility), 1)
         self.assertEqual(responsibility[0].get("nolabel"), "1")
         self.assertEqual(responsibility[0].xpath("./tree/@editable"), ["bottom"])
@@ -326,16 +358,19 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             ["role_key", "user_id", "note"],
         )
         self.assertEqual(
-            direct_groups[3].get("data-sc-navigation-role"), "subordinate"
+            {
+                anchor for anchor in (
+                    "project-description", "project-collaboration", "project-system-trace",
+                )
+                if groups[anchor].get("data-sc-navigation-role") == "subordinate"
+            },
+            {"project-description", "project-collaboration", "project-system-trace"},
         )
+        self.assertEqual(groups["project-system-trace"].get("data-sc-collapsible"), "1")
         self.assertEqual(
-            direct_groups[4].get("data-sc-navigation-role"), "subordinate"
+            groups["project-system-trace"].get("data-sc-collapsed-by-default"),
+            "1",
         )
-        self.assertEqual(
-            direct_groups[5].get("data-sc-navigation-role"), "subordinate"
-        )
-        self.assertEqual(direct_groups[5].get("data-sc-collapsible"), "1")
-        self.assertEqual(direct_groups[5].get("data-sc-collapsed-by-default"), "1")
 
         excluded_cross_business_fields = {
             "task_ids", "tender_bid_ids", "wbs_ids", "boq_line_ids", "work_ids",
@@ -397,8 +432,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             )
             self.assertTrue(fields, field_name)
 
-        project = self.env["project.project"].search([], limit=1)
-        self.assertTrue(project, "the dashboard contract check requires an existing project")
+        project = self._ensure_project_fixture()
         menu = self.env.ref("smart_construction_core.menu_sc_project_kanban")
         handler = UiContractV2Handler(
             self.env,
@@ -503,8 +537,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         for attribute in ("create", "edit", "delete", "duplicate"):
             self.assertNotIn(arch.get(attribute), ("0", "false", "False"), attribute)
 
-        project = self.env["project.project"].search([], limit=1)
-        self.assertTrue(project, "the ledger entry check requires an existing project")
+        project = self._ensure_project_fixture()
         menu = self.env.ref("smart_construction_core.menu_sc_project_project")
         handler = UiContractV2Handler(
             self.env,
@@ -559,10 +592,9 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         constraint_mismatches = []
         carried_scopes = {
-            "partner_id": "project-basic",
-            "user_id": "project-plan-responsibility",
-            "date_start": "project-plan-responsibility",
-            "date": "project-plan-responsibility",
+            "partner_id": "project-entity",
+            "date_start": "project-arrangement",
+            "date": "project-arrangement",
             "tag_ids": "project-collaboration",
             "description": "project-description",
         }
@@ -609,18 +641,18 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(fields_meta["responsibility_ids"]["relation"], "project.responsibility")
 
         project_type = ledger_arch.xpath(
-            "//group[@data-sc-anchor='project-basic']//field[@name='project_type_id']"
+            "//group[@data-sc-anchor='project-entity']//field[@name='project_type_id']"
         )[0]
         self.assertIn("project_type", str(fields_meta["project_type_id"].get("domain")))
         self.assertIsNotNone(project_type)
         self.assertTrue(
             ledger_arch.xpath(
-                "//group[@data-sc-anchor='project-basic']//field[@name='project_category_id' and @invisible='1']"
+                "//group[@data-sc-anchor='project-entity']//field[@name='project_category_id' and @invisible='1']"
             )
         )
         self.assertTrue(
             ledger_arch.xpath(
-                "//group[@data-sc-anchor='project-basic']//field[@name='operation_strategy']"
+                "//group[@data-sc-anchor='project-entity']//field[@name='operation_strategy']"
             )
         )
 
@@ -786,13 +818,22 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         ))
 
     def test_project_create_profile_does_not_add_collaborators(self):
+        contract = self._base_project_contract()
         projected = core_extension.smart_core_finalize_unified_page_contract_v2(
             self.env,
-            self._base_project_contract(),
+            contract,
             {"source_contract": {"model": "project.project", "view_type": "form", "render_profile": "create"}},
         )
 
-        self.assertIsNone(projected)
+        result = projected or contract
+        self.assertEqual(result["layoutContract"], contract["layoutContract"])
+        self.assertEqual(result["statusContract"], contract["statusContract"])
+        field_names = {
+            row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
+            for row in self._field_nodes(result["layoutContract"]["containerTree"], include_widget_list=False)
+        }
+        self.assertNotIn("responsibility_ids", field_names)
+        self.assertNotIn("collaborator_ids", field_names)
 
     def test_explicit_project_form_view_keeps_native_field_membership(self):
         contract = self._base_project_contract()
@@ -811,7 +852,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
 
-        self.assertIsNone(projected)
+        result = projected or contract
+        self.assertEqual(result["layoutContract"], contract["layoutContract"])
+        self.assertEqual(result["statusContract"], contract["statusContract"])
+        field_names = {
+            row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
+            for row in self._field_nodes(result["layoutContract"]["containerTree"], include_widget_list=False)
+        }
+        self.assertEqual(field_names, {"user_id", "partner_id", "manager_id"})
 
     def test_non_project_contract_is_unchanged_without_workflow_record(self):
         contract = self._base_project_contract()

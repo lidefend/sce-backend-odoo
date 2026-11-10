@@ -20,6 +20,7 @@ goal:
     - addons/smart_construction_core/services/review_work_item_service.py
     - addons/smart_construction_core/tests/__init__.py
     - addons/smart_construction_core/tests/test_approval_contract_closure.py
+    - addons/smart_construction_core/tests/test_core_extension_v2_finalize.py
     - docs/audit/test_coverage_registry/test_coverage_registry.json
     - docs/engineering_convergence/complexity_budget_report.md
     - docs/engineering_convergence/split_plan_queue.md

@@ -15,6 +15,7 @@
     "addons/smart_construction_core/services/review_work_item_service.py",
     "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
     "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
     "addons/smart_construction_core/views/core/payment_request_views.xml",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
