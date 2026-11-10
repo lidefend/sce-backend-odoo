@@ -37,7 +37,7 @@ SEMANTIC_UNION_REQUIRED_MARKERS = (
     ),
     (
         "U06 approval-page decision flow",
-        ("rejectSafetyDialog", "action_approval_reject", "action_params.reason"),
+        ("rejectSafetyDialog", "action_approval_reject", "action_params?.reason"),
     ),
 )
 GENERATED_EVIDENCE_CONFLICT_PATHS = (

@@ -398,7 +398,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "const cross_page_readout = 'cross-page';",
             "const rejectSafetyDialog = 'safety';",
             "const action_approval_reject = 'reject';",
-            "check(action_params.reason === 'reason');",
+            "check(action_params?.reason === 'reason');",
             "",
         ])
 
@@ -451,7 +451,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                 path,
                 "const rejectSafetyDialog = 1;\n"
                 "const action_approval_reject = 2;\n"
-                "check(action_params.reason);\n",
+                "check(action_params?.reason);\n",
             )
         with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
             syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
