@@ -37,4 +37,12 @@ menu-backed route publication. The test covers denied and allowed action groups.
 
 ## Result
 
-Pending clean commit, clean iteration and runtime authorization repeat.
+Completed on clean candidate `915644ab3c00e8cfafc94646079d90f599251c67`.
+
+- Clean iteration: PASS, 10 targets.
+- Runtime authorization: 2 authorized entries, `problems=0`,
+  `console_errors=0`, PM `leaked_entries=[]`, `uncovered=0`.
+
+Runtime evidence:
+`.runtime/m9-authority-r1/summary.json`, SHA-256
+`d449edcfd8c1cc0d60e8e4fd4cf5a214b119ebc5a16befa37092512aa97ae9cf`.

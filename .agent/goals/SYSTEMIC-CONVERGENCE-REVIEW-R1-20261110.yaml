@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SYSTEMIC-CONVERGENCE-REVIEW-R1-20261110
   title: "Close independent review blockers before mainline integration"
-  status: verification_pending
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: shared numeric presentation and released navigation action authorization
   module: one2many presentation, menu fact projection and action-spec route publication

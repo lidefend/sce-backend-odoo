@@ -3,7 +3,7 @@
   "id": "FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "ae8d5dc68b71abe5a1414fee79ba858b30d32492",
-  "status": "blocked",
+  "status": "active",
   "goal": ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
   "scope": [
@@ -36,8 +36,6 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "Independent exact-head review returned REQUEST_CHANGES: one2many integer rounding regression, native action_model projection/test gap, and missing action-group check in action-spec route publication."
-  ],
-  "next_exact_step": "Resume integration only after SYSTEMIC-CONVERGENCE-REVIEW-R1-20261110 fixes and revalidates all three findings."
+  "blockers": [],
+  "next_exact_step": "R1 closed all review findings; run a fresh independent review on 915644ab3 and then publish if APPROVE."
 }
