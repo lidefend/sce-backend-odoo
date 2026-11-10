@@ -39,7 +39,7 @@
 | `BE-U01-G02` | 已明确 `permission.check.allow` 只表达产品可用性，并返回 `does_not_authorize` | `BE-U02` 已收口 |
 | `BE-U01-G03` | 配置管理员职责已限定为显式配置 intent；业务 handler 不再消费该身份绕过执行组 | `BE-U02` 已收口 |
 | `BE-U01-G04` | 已分离：发布冻结全部产品 tile 定义，运行时按当前用户重算访问 | `BE-U04` 已收口 |
-| `BE-U01-G05` | `res.partner` 字段隐藏已迁入发布态声明；项目表单 fallback 仍需迁移 | `BE-U05` 部分收口 |
+| `BE-U01-G05` | partner 字段隐藏与 project 原生结构均由页面声明承担，finalize 不再重定义页面 | `BE-U05` 已收口 |
 
 这些是源码审查结论，不是对当前数据库已有未发布内容或越权访问的运行时证明。
 

@@ -94,6 +94,10 @@ verify.scene.publication_authority.orm: guard.prod.forbid
 verify.page.finalize.authority.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_partner_field_hiding_is_a_published_page_declaration
 
+.PHONY: verify.page.project_finalize.authority.orm
+verify.page.project_finalize.authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCoreExtensionV2Finalize.test_project_form_finalize_does_not_redefine_page_structure
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

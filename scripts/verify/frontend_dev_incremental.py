@@ -616,11 +616,16 @@ RULES = (
         "verify.scene.publication_authority.orm",
     )),
     Rule((
-        "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+    ), (
+        "verify.page.finalize.authority.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
     ), (
         "verify.page.finalize.authority.orm",
+        "verify.page.project_finalize.authority.orm",
     )),
     Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",

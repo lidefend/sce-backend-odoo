@@ -496,14 +496,24 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_page_finalize_paths_select_their_owning_check(self) -> None:
         for path in (
-            "addons/smart_construction_core/core_extension.py",
             "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
-            "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.page.finalize.authority.orm"],
+                )
+        for path in (
+            "addons/smart_construction_core/core_extension.py",
+            "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.page.finalize.authority.orm",
+                        "verify.page.project_finalize.authority.orm",
+                    ],
                 )
 
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
