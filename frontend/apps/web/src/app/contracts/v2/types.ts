@@ -437,6 +437,8 @@ export interface ContractV2ActionRule {
   disabled?: boolean;
   visibleProfiles?: string[];
   presentation?: ContractV2Dictionary;
+  required_params?: string[];
+  requires_reason?: boolean;
   actionSafety?: ContractV2Dictionary;
   refreshPolicy?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;

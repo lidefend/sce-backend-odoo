@@ -32,6 +32,7 @@
     "docs/ops/iterations/backend_authority_closure_be_u06_20261110.md",
     "frontend/apps/web/scripts/approval_contract_closure_test.ts",
     "frontend/apps/web/src/api/executeButton.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
     "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
