@@ -70,6 +70,7 @@
 - `TestQueryCapabilityNativeAcl.test_capability_list_resolves_published_route_authority_once`：PASS。
 - `TestQueryCapabilityNativeAcl.test_company_route_scope_context_is_reused_within_process_bucket`：PASS。
 - `TestQueryCapabilityNativeAcl.test_registry_timing_hook_reaches_startup_provider`：PASS。
+- `verify.frontend.acceptance_login_probe.unit`：新增有界认证就绪重试测试。
 
 ### 已修复的验证前置
 
@@ -89,6 +90,11 @@
 - `make ci.local.iteration` 在路由阶段阻断，原因是 8 个 backend capability 路径未被
   frontend incremental planner 映射。分类为 `validation_tool_defect`；本批次改用 run
   中已登记的 capability/navigation 定向入口，未为此扩大产品范围。
+- clean commit 的性能探针在生产构建后立即发起 HTTP 登录，遇到一次无结构
+  `401 {"code":"unknown","error_code":"unknown"}`；数秒后单独重放为 HTTP 200。
+  这是认证就绪窗口，不是凭据错误。修复为只对 unknown/空错误码的 401 做最多 10 次、
+  0.5 秒间隔的有界重试；结构化拒绝立即失败，并改走既有
+  `acceptance.runtime.login_probe` 受管入口。
 
 原始日志：
 

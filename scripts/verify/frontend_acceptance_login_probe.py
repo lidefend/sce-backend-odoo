@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from urllib import error as urlerror
 from urllib import request as urlrequest
@@ -22,6 +23,8 @@ ENTRY_IDENTITY_FILE = (
     / "acceptance"
     / "isolated_entry_identity.v1.env"
 )
+AUTH_READINESS_ATTEMPTS = 10
+AUTH_READINESS_DELAY_SECONDS = 0.5
 
 
 def _entry_identity() -> dict[str, str]:
@@ -74,6 +77,17 @@ def _decode_payload(body: bytes) -> object:
         return {}
 
 
+def _transient_auth_readiness_rejection(status: int, payload: object) -> bool:
+    """Retry only an opaque 401, never a structured credential rejection."""
+    if status != 401:
+        return False
+    envelope = _envelope(payload)
+    error = envelope.get("error") if isinstance(envelope.get("error"), dict) else {}
+    code = str(envelope.get("code") or error.get("code") or "").strip().lower()
+    error_code = str(error.get("error_code") or envelope.get("error_code") or "").strip().lower()
+    return code in {"", "unknown"} and error_code in {"", "unknown"}
+
+
 def probe() -> int:
     database = str(os.environ.get("DB_NAME") or "").strip()
     password = str(os.environ.get("SC_ACCEPTANCE_FIXTURE_PASSWORD") or "")
@@ -118,29 +132,33 @@ def probe() -> int:
         },
         method="POST",
     )
-    try:
-        with urlrequest.urlopen(request, timeout=15) as response:
-            status = int(response.status)
-            content_type = response.headers.get("Content-Type", "")
-            payload = _decode_payload(response.read())
-    except urlerror.HTTPError as exc:
-        payload = _decode_payload(exc.read())
-        diagnostic = _safe_diagnostic(exc.code, exc.headers.get("Content-Type", ""), payload)
-        print(f"[acceptance.login.probe] FAIL {diagnostic}")
-        return 2
-    except urlerror.URLError as exc:
-        print(f"[acceptance.login.probe] FAIL transport={type(exc.reason).__name__}")
-        return 2
+    for attempt in range(AUTH_READINESS_ATTEMPTS):
+        try:
+            with urlrequest.urlopen(request, timeout=15) as response:
+                status = int(response.status)
+                content_type = response.headers.get("Content-Type", "")
+                payload = _decode_payload(response.read())
+        except urlerror.HTTPError as exc:
+            status = int(exc.code)
+            content_type = exc.headers.get("Content-Type", "")
+            payload = _decode_payload(exc.read())
+        except urlerror.URLError as exc:
+            print(f"[acceptance.login.probe] FAIL transport={type(exc.reason).__name__}")
+            return 2
 
-    envelope = _envelope(payload)
-    token_present = bool(extract_login_token(envelope))
-    if status >= 400 or envelope.get("ok") is not True or not token_present:
+        envelope = _envelope(payload)
+        token_present = bool(extract_login_token(envelope))
+        if status < 400 and envelope.get("ok") is True and token_present:
+            print(f"[acceptance.login.probe] PASS http={status} db={DATABASE} login={LOGIN}")
+            return 0
+        if attempt + 1 < AUTH_READINESS_ATTEMPTS and _transient_auth_readiness_rejection(status, payload):
+            time.sleep(AUTH_READINESS_DELAY_SECONDS)
+            continue
         diagnostic = _safe_diagnostic(status, content_type, payload)
         print(f"[acceptance.login.probe] FAIL {diagnostic}")
         return 2
 
-    print(f"[acceptance.login.probe] PASS http={status} db={DATABASE} login={LOGIN}")
-    return 0
+    return 2
 
 
 if __name__ == "__main__":

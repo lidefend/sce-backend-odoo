@@ -109,6 +109,37 @@ class FrontendAcceptanceLoginProbeTest(unittest.TestCase):
             output,
         )
 
+    def test_retries_only_opaque_auth_readiness_rejection(self) -> None:
+        headers = Message()
+        headers["Content-Type"] = "application/json"
+        attempts = 0
+
+        def fake_urlopen(_request, timeout=0):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise HTTPError(
+                    PROBE.INTENT_URL,
+                    401,
+                    "Unauthorized",
+                    headers,
+                    io.BytesIO(b"{}"),
+                )
+            return _Response(b'{"ok":true,"data":{"session":{"token":"token"}}}')
+
+        output = io.StringIO()
+        with mock.patch.dict(
+            os.environ,
+            {"DB_NAME": "sc_frontend_acceptance", "SC_ACCEPTANCE_FIXTURE_PASSWORD": "secret"},
+            clear=True,
+        ), mock.patch.object(PROBE.urlrequest, "urlopen", side_effect=fake_urlopen), mock.patch.object(
+            PROBE.time, "sleep"
+        ) as sleep, contextlib.redirect_stdout(output):
+            self.assertEqual(PROBE.probe(), 0)
+        self.assertEqual(attempts, 2)
+        sleep.assert_called_once_with(PROBE.AUTH_READINESS_DELAY_SECONDS)
+        self.assertIn("PASS http=200", output.getvalue())
+
     def test_reports_sanitized_wrapped_rejection(self) -> None:
         headers = Message()
         headers["Content-Type"] = "application/json"

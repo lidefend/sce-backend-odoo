@@ -1449,10 +1449,15 @@ verify.frontend.delivery_hardening.release.performance_probe: guard.prod.forbid 
 	test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}"; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(MAKE) --no-print-directory backend.acceptance.up; \
-	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
+	$(MAKE) --no-print-directory acceptance.runtime.login_probe SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}"; \
 	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	rm -f artifacts/frontend-delivery-hardening/performance.json artifacts/frontend-delivery-hardening/performance-probe.json; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PERF_ONLY=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
+
+.PHONY: verify.frontend.acceptance_login_probe.unit
+verify.frontend.acceptance_login_probe.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/frontend_acceptance_login_probe.py scripts/verify/test_frontend_acceptance_login_probe.py
+	@python3 scripts/verify/test_frontend_acceptance_login_probe.py
 
 verify.frontend.delivery_hardening.release.browser: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-compose-project check-compose-env
