@@ -74,7 +74,16 @@
 - Batch convergence: completed.
 - Frontend engineering gates: completed.
 - Navigation authority leak: fixed on clean local candidate.
-- Remote integration: verification pending publication and exact-head checks.
+- Mainline integration: completed through PR
+  [#862](https://github.com/lidefend/sce-backend-odoo/pull/862),
+  merge commit `ca032b92dd1131485313b9299b5e799c67f1d525`.
+- The squash tree equals the reviewed candidate tree
+  `a19910ddd73cc07c09e926c50e286ffed94efbf6`; local and remote main were read
+  back at the merge commit.
+- Post-merge independent review found one S2: runtime debug opt-in was still
+  gated by `DEV=true`. The focused correction is tracked by
+  `FE-RUNTIME-DEBUG-OPTIN-20261110`; it does not reopen the navigation
+  authorization decision.
 - Deployment: not performed.
 - Next programmatic step: select the next product feature batch; do not add more
   frontend abstraction solely to raise component counts.

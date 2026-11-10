@@ -3,7 +3,7 @@
   "id": "FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110",
   "branch": "feature/fe-systemic-convergence-m1-20261110",
   "baseline_sha": "ae8d5dc68b71abe5a1414fee79ba858b30d32492",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
   "scope": [
@@ -43,7 +43,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "R3 review findings are closed on exact HEAD 19cd7caafed9c76bb36d30d5ebabda3193081d3d; publish and require exact-head remote checks before merge.",
+  "next_exact_step": "Merged as PR #862 at ca032b92dd1131485313b9299b5e799c67f1d525; the post-merge logger S2 is tracked by FE-RUNTIME-DEBUG-OPTIN-20261110.",
   "validation": {
     "r3_product_candidate": {
       "head": "19cd7caafed9c76bb36d30d5ebabda3193081d3d",
@@ -65,6 +65,32 @@
     "frontend_build": {
       "status": "passed",
       "command": "make verify.frontend.build ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev"
+    },
+    "mainline_merge": {
+      "status": "passed",
+      "pr": 862,
+      "candidate_head": "b05a87d47e25e964902ec22f95acb19c448e432f",
+      "merge_commit": "ca032b92dd1131485313b9299b5e799c67f1d525",
+      "candidate_tree": "a19910ddd73cc07c09e926c50e286ffed94efbf6",
+      "main_tree": "a19910ddd73cc07c09e926c50e286ffed94efbf6"
+    },
+    "runtime_evidence": {
+      "status": "passed",
+      "command": "make acceptance.evolution.record",
+      "source_head": "0943095f1f443c50efde735fa8c3ec7c142a54a5",
+      "reused_on": "b05a87d47e25e964902ec22f95acb19c448e432f",
+      "suites": [
+        "frontend_presentation",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ],
+      "manifest": ".runtime/acceptance-evolution/evidence.v1.json"
+    },
+    "post_merge_review": {
+      "status": "request_changes",
+      "severity": "S2",
+      "finding": "runtime debug opt-in was still gated by DEV=true",
+      "owner_run": ".agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json"
     }
   }
 }

@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: FE-RUNTIME-DEBUG-OPTIN-20261110
+  title: "Runtime debug opt-in across non-development frontend builds"
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: generic frontend runtime diagnostic logging
+  module: frontend/apps/web/src/utils/logger.ts
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Explicit runtime debug intent is a generic frontend logging mechanism.
+    The shared logger must honor it in acceptance and non-development builds
+    without enabling noisy logs by default.
+  why_not_elsewhere: >
+    Component-local console calls would recreate the fragmented logging surface
+    that the M6 convergence removed. Business or tenant-specific code must not
+    own a generic diagnostic switch.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml
+      - .agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml
+      - .agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json
+      - .agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/ops/iterations/frontend_runtime_debug_optin_20261110.md
+      - docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md
+      - frontend/apps/web/scripts/logger_runtime_test.ts
+      - frontend/apps/web/src/utils/logger.ts
+    product_behavior: explicit debug opt-in in non-development builds
+  objective: >
+    Make DEBUG_INTENT=1 and ?debug=1 effective in non-development frontend
+    builds while preserving quiet production defaults and centralized logging.
+  acceptance:
+    - explicit runtime debug intent enables debug and info output when DEV=false
+    - production builds without runtime opt-in emit only errors
+    - existing development quiet and verbose policies remain unchanged
+    - logger guard, strict typecheck, lint and current-head required checks pass
+  exclusions:
+    - backend_product_code
+    - contract_or_acl_change
+    - database_or_fixture_write
+    - deployment
+  rollback: Revert the logger and regression-test commit; no data migration is involved.
