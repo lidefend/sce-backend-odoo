@@ -61,14 +61,14 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1801 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1786 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1783 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
-| 1759 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1754 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1760 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1727 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1726 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1716 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1695 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1703 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1672 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
@@ -295,14 +295,14 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1786 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1783 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
-| 1759 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 1754 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 1760 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1727 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1726 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1716 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1695 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1703 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1672 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |

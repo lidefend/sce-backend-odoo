@@ -869,7 +869,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.scene.company_route_scope_cache.orm :: company_route_scope_cache"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "conditioned_processing_feedback",

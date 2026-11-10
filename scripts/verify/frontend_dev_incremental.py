@@ -655,6 +655,12 @@ RULES = (
         "verify.agent.resume.unit",
     )),
     Rule((
+        "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/test_safe_branch_sync_main.py",
+    ), (
+        "verify.workspace.branch.sync-main",
+    )),
+    Rule((
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
     ), (

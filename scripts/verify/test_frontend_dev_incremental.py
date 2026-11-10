@@ -372,8 +372,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         for path in (
             "addons/smart_construction_core/__init__.py",
-            "addons/smart_construction_core/core_extension.py",
-            "addons/smart_construction_core/services/capability_registry.py",
             "addons/smart_construction_scene/services/capability_scene_targets.py",
             "addons/smart_core/core/capability_provider.py",
         ):
@@ -382,6 +380,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.daily.permission_truth.capability.orm"],
                 )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/core_extension.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.daily.permission_truth.capability.orm",
+            ],
+        )
         for path in (
             "addons/smart_construction_scene/models/product_policy.py",
             "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
@@ -484,7 +497,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_capability_identity_paths_select_their_owning_check(self) -> None:
         for path in (
             "scripts/verify/test_capability_identity_boundary.py",
-            "addons/smart_construction_core/services/capability_registry.py",
             "addons/smart_construction_core/services/product_menu_source.py",
             "addons/smart_core/delivery/capability_service.py",
         ):
@@ -494,8 +506,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.capability.identity_boundary.unit"],
                 )
         self.assertEqual(
+            select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.daily.permission_truth.capability.orm",
+            ],
+        )
+        self.assertEqual(
             select_targets(["addons/smart_construction_core/tests/test_capability_registry_service.py"]),
-            ["verify.capability.identity_boundary.orm"],
+            [
+                "verify.capability.identity_boundary.orm",
+                "verify.daily.permission_truth.capability.orm",
+            ],
         )
         self.assertEqual(
             select_targets([
@@ -524,18 +546,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.page.finalize.authority.orm"],
                 )
-        for path in (
-            "addons/smart_construction_core/core_extension.py",
-            "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
-        ):
-            with self.subTest(path=path):
-                self.assertEqual(
-                    select_targets([path]),
-                    [
-                        "verify.page.finalize.authority.orm",
-                        "verify.page.project_finalize.authority.orm",
-                    ],
-                )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/core_extension.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py"
+            ]),
+            [
+                "verify.page.finalize.authority.orm",
+                "verify.page.project_finalize.authority.orm",
+            ],
+        )
 
     def test_unknown_backend_tool_stays_unmapped(self) -> None:
         output = io.StringIO()

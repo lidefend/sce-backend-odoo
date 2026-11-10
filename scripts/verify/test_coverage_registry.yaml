@@ -254,6 +254,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: company_route_scope_cache
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.scene.company_route_scope_cache.orm :: company_route_scope_cache'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: conditioned_processing_feedback
   kind: odoo_tag
   status: on-demand
