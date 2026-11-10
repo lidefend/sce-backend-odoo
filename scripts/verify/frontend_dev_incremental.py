@@ -246,6 +246,19 @@ RULES = (
         "verify.frontend.navigation_shell.unit",
     )),
     Rule((
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/composables/useModalLifecycle.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+    ), (
+        "verify.frontend.overlay_lifecycle.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_professional_business_value_guard.py",
         "scripts/verify/test_frontend_professional_business_value_guard.py",
     ), (
@@ -588,6 +601,7 @@ RULES = (
     )),
     Rule((
         "make/runtime_ops.mk",
+        "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
@@ -595,6 +609,7 @@ RULES = (
         "scripts/verify/frontend_my_work_approval_runtime.py",
         "scripts/verify/frontend_my_work_approval_runtime_ids.py",
         "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
     ), (
         "verify.frontend.standard_preview.unit",
     )),

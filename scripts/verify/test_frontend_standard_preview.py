@@ -167,10 +167,24 @@ class CandidateReplacementTest(unittest.TestCase):
         self.assertEqual(json.loads(self.receipt.read_text()), self.old)
 
     def test_unchanged_candidate_reuses_without_build(self):
-        with patch.object(preview, 'inputs', return_value='old'), patch.object(preview.subprocess, 'run') as run:
+        with patch.object(preview, 'inputs', return_value='old'), \
+             patch.object(preview, 'is_ancestor', return_value=True), \
+             patch.object(preview.subprocess, 'run') as run:
             preview.build_candidate()
             run.assert_not_called()
         self.assert_old()
+
+    def test_unchanged_candidate_rebinds_after_history_replay(self):
+        with patch.object(preview, 'inputs', return_value='old'), \
+             patch.object(preview, 'is_ancestor', return_value=False), \
+             patch.object(preview.subprocess, 'run') as run:
+            preview.build_candidate()
+            run.assert_not_called()
+            receipt = json.loads(self.receipt.read_text())
+            self.assertEqual(receipt['base_sha'], 'new')
+            self.assertEqual(receipt['diff_sha256'], 'old')
+            self.assertEqual(receipt['entry_sha256'], self.old['entry_sha256'])
+            self.assertEqual(preview.identity(), receipt)
 
     def test_changed_candidate_builds_once_and_preserves_previous(self):
         with patch.object(preview, 'inputs', return_value='new'), patch.object(preview.subprocess, 'run', side_effect=self.compile) as run:

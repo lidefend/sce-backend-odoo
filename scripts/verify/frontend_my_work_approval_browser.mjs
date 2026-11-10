@@ -268,7 +268,8 @@ async function main() {
     const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
     await approvalCard.waitFor({ timeout: 45000 });
     check(Boolean(TARGETS.approval.amount_display), 'approval target money display is required');
-    check((await approvalCard.innerText()).includes(TARGETS.approval.amount_display), 'approval work item lost the authoritative money value');
+    const approvalCardText = await approvalCard.innerText();
+    check(approvalCardText.includes(TARGETS.approval.amount_display), 'approval work item lost the authoritative money value');
     await approvalCard.getByRole('button', { name: '审批' }).click();
     const approvalDialog = page.getByRole('dialog');
     const approvalSummary = await approvalDialog.innerText();
@@ -286,9 +287,17 @@ async function main() {
     await login(page, 'fixture_role_finance');
     report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
     await page.goto(`${BASE_URL}${route(TARGETS.approval)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await waitForCanonicalForm(page, TARGETS.approval);
+    const approvedForm = await waitForCanonicalForm(page, TARGETS.approval);
     await waitForWorkflowState(page, 'approved');
-    check((await page.locator('body').innerText()).includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
+    const approvedDetailBody = await page.locator('body').innerText();
+    check(approvedDetailBody.includes('FE-JOURNEY-APPROVAL-001'), 'J08 finance cannot see approved result');
+    const approvedAmountField = approvedForm.locator('[data-field-name="amount"]:visible');
+    check(await approvedAmountField.count() === 1, 'J08 detail amount field identity is not unique');
+    const approvedAmountText = await approvedAmountField.innerText();
+    check(
+      approvedAmountText.includes(TARGETS.approval.amount_display),
+      `J08 canonical amount field lost the My Work amount: ${approvedAmountText}`,
+    );
     const approvedWorkflowBars = page.locator('[data-professional-workflow-component="action-bar"]:visible');
     await approvedWorkflowBars.first().waitFor({ timeout: 15000 });
     const approvedWorkflow = await approvedWorkflowBars.evaluateAll((nodes) => nodes.map((node) => ({
@@ -319,6 +328,15 @@ async function main() {
       approval_summary: 'PASS',
       approval_feedback: 'PASS_VISIBLE_WORKLIST_STATE_UPDATE',
       pending_inline_feedback: 'NOT_OBSERVED',
+      cross_page_readout: {
+        status: 'PASS',
+        identity: 'FE-JOURNEY-APPROVAL-001',
+        amount: TARGETS.approval.amount_display,
+        work_card: 'PASS',
+        approval_summary: 'PASS',
+        approved_detail_field: 'PASS: [data-field-name="amount"]',
+        workflow_current: 'approved',
+      },
       todo_before: reviewerTodoBefore,
       todo_after: reviewerTodoAfter,
       approved_workflow: approvedWorkflow,

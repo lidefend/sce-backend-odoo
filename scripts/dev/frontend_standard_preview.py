@@ -66,6 +66,39 @@ def inputs(base):
     return hashlib.sha256(git('diff', '--binary', base, '--', *INPUTS)).hexdigest()
 
 
+def is_ancestor(base, head):
+    return subprocess.run(
+        ['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', base, head],
+        check=False,
+    ).returncode == 0
+
+
+def rebind_replayed_build(previous):
+    """Rebind identical frontend bytes after history was replayed onto new main.
+
+    A rebase changes the commit ancestry without changing the frontend tree.
+    The existing bundle remains valid only when the old base-to-current diff
+    still has the exact hash used to build it. The receipt is then rebound to
+    the current source so governed acceptance can verify ancestry honestly.
+    """
+    current_head = git('rev-parse', 'HEAD').decode().strip()
+    if previous['base_sha'] == current_head or is_ancestor(previous['base_sha'], current_head):
+        return False
+    if inputs(previous['base_sha']) != previous['diff_sha256']:
+        raise RuntimeError('preview build inputs changed')
+    receipt = {
+        **previous,
+        'base_sha': current_head,
+        'dirty_scope': git('status', '--short').decode(),
+        'diff_sha256': inputs(current_head),
+    }
+    temporary = OUTPUT / '.build-identity.json.rebind'
+    temporary.write_text(json.dumps(receipt, indent=2))
+    os.replace(temporary, OUTPUT / 'build-identity.json')
+    identity()
+    return True
+
+
 def identity(*, observed_only=False):
     saved = json.loads((OUTPUT / 'build-identity.json').read_text())
     if not observed_only and inputs(saved['base_sha']) != saved['diff_sha256']:
@@ -134,6 +167,9 @@ def build_candidate():
         # Changed source permits a replacement; corrupt old artifacts do not.
         previous = identity(observed_only=True)
         if inputs(previous['base_sha']) == previous['diff_sha256']:
+            if rebind_replayed_build(previous):
+                print('[standard.preview] REBOUND unchanged build after history replay')
+                return
             print('[standard.preview] REUSED unchanged build')
             return
     elif DIST.exists():

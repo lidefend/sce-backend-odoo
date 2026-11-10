@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "id": "FE-USER-FLOW-CLOSURE-20261110",
+  "branch": "feature/fe-user-flow-closure-20261110",
+  "baseline_sha": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
+  "record": "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-USER-FLOW-CLOSURE-20261110.yaml",
+    ".agent/goals/FE-RUNTIME-DEBUG-OPTIN-20261110.yaml",
+    ".agent/runs/FE-USER-FLOW-CLOSURE-20261110/run.json",
+    ".agent/runs/FE-RUNTIME-DEBUG-OPTIN-20261110/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/frontend_user_flow_closure_20261110.md",
+    "frontend/apps/web/",
+    "scripts/dev/frontend_standard_preview.py",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository evidence and governed Make targets; runtime evidence considered only after source coverage is reconciled"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "systemic_static": {
+      "target": "verify.frontend.systemic.convergence.static",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "scripts/verify/frontend_text_containment_guard.py",
+        "scripts/verify/frontend_inline_style_guard.py",
+        "scripts/verify/frontend_split_usage_guard.py",
+        "scripts/verify/frontend_rich_text_guard.py",
+        "scripts/verify/frontend_console_guard.py",
+        "scripts/verify/frontend_systemic_convergence_gate_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/ops/acceptance_evolution_record.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "overlay_lifecycle": {
+      "target": "verify.frontend.overlay_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/composables/useModalLifecycle.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean rebased audit/tooling head and obtain exact-head independent review without product-code expansion.",
+  "validation": {
+    "baseline_reconciliation": {
+      "status": "passed",
+      "main_head": "1ad805b621de6ced0a497c5a5f6e10bec358896d",
+      "pre_sync_main": "ddb008826174b8c387bdd0c6a70faf9022586c6b",
+      "pr_862_merge": "ca032b92dd1131485313b9299b5e799c67f1d525",
+      "pr_863_merge": "e56cd8d17fb5d08a62ff0dd2695f2aed06696a11"
+    },
+    "coverage_reconciliation": {
+      "status": "passed",
+      "payment_request_entry": {
+        "menu_id": 559,
+        "action_id": 880,
+        "observed_rows_at_previous_candidate": 20
+      },
+      "shared_static_checks": [
+        "verify.frontend.collection_view_semantics.unit",
+        "verify.frontend.professional_business_value.unit",
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.contract_form_save_failure_recovery.unit",
+        "verify.frontend.native_form_action_presentation.unit",
+        "verify.frontend.collection_row_action_identity.unit",
+        "verify.frontend.page_identity",
+        "verify.frontend.overlay_lifecycle.unit"
+      ],
+      "initial_runtime_gaps": [
+        "payment request list/edit/save-submit/readback/return on current main",
+        "payment request My Work return",
+        "payment request relation return",
+        "payment request keyboard and failure recovery on current main"
+      ]
+    },
+    "overlay_guard_repair": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "guard expected the removed inline-style spelling boxSizing instead of the shared CSS box-sizing declaration",
+      "tests": 13,
+      "runtime_checks": 27,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261110T041732Z-2587292-920360288/receipt.json"
+    },
+    "preview_identity_rebind": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "unchanged frontend bytes retained a pre-rebase base SHA after history replay",
+      "command": "make verify.frontend.standard_preview.unit",
+      "tests": 132,
+      "behavior": "reuse the bundle only when the old-base-to-current input hash matches, then atomically rebind the receipt to current HEAD"
+    },
+    "incremental_preview_routing_repair": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "finding": "the incremental planner did not route the standard preview builder and its test to their owning unit target",
+      "command": "python3 -m unittest scripts.verify.test_frontend_dev_incremental scripts.verify.test_frontend_standard_preview",
+      "tests": 216
+    },
+    "payment_request_detail_runtime": {
+      "status": "passed",
+      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "database": "sc_frontend_acceptance",
+      "record": "FE-DELIVERY-HARDENING-001",
+      "observations": {
+        "declared_lines": 2,
+        "inline_edit": "200->150",
+        "persisted_readback": "150",
+        "restored_rows": 0,
+        "restored_amount": "20.00"
+      },
+      "report": ".runtime/final-acceptance/payment-request/7895f97569e1/report.json",
+      "report_sha256": "101d8d4ecf82becd1b9b94c4f08d746c74f4755a3709234be9789f7c3baee3b0"
+    },
+    "payment_request_my_work_runtime": {
+      "status": "passed",
+      "head": "6618f3dba6efb2dfe82a25bf90f7bfb4764a77b3",
+      "j07": "submit, detail return, company A/B/A",
+      "j08": "approval and authoritative worklist update",
+      "failure_paths": "reject without reason left data unchanged",
+      "responsive": [1440, 1280, 390],
+      "report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "report_sha256": "1e35e43ab5a3d90fc65b92ab5342198ee94ff955954da81ccb83de39e2c73ba1",
+      "cross_page_readout": {
+        "status": "passed",
+        "identity": "FE-JOURNEY-APPROVAL-001",
+        "amount": "¥20.00",
+        "surfaces": [
+          "My Work work card",
+          "approval dialog summary",
+          "approved payment detail"
+        ],
+        "canonical_amount_field": "exactly one visible payment.request amount field",
+        "workflow_state": "approved"
+      }
+    },
+    "prior_accepted_runtime_suites": {
+      "status": "passed",
+      "head": "7895f97569e1b9f74ecd2ee50eec9c386b647640",
+      "reuse_basis": "Accepted source-bound suite evidence is retained as prior evidence because the later source changes are validation-tool and evidence-binding changes; it is not represented as a rerun at the current My Work head.",
+      "frontend_presentation": {
+        "path": ".runtime/final-acceptance/frontend-presentation/header.json",
+        "sha256": "4fdc77be3e306d8c296e86a6858c016d8ce4a20dd19f6242d09dd141d5a54699"
+      },
+      "list_surface_structure": {
+        "path": ".runtime/final-acceptance/list-surface-structure.json",
+        "sha256": "196d712b6eb0ff6688744a5262abe0e273e4ef69eca9ce65da33884fb9e079b9",
+        "rows": 18,
+        "failures": 0
+      },
+      "relation_roundtrip": {
+        "path": ".runtime/acceptance/local/7895f97569e1b9f74ecd2ee50eec9c386b647640/relation-roundtrip/20261110T043334859Z-2668058-15d8a8b1/summary.json",
+        "sha256": "2d6d24dcb000a3bc0a0cb705b4b163d67d19ea0df3ca7221ece88f2f48f4d000"
+      }
+    },
+    "fe03_static_and_runtime": {
+      "status": "partially_passed",
+      "ordinary_collection": "PASS: current list surface 18/18",
+      "readonly_edit_forms": "PASS: current payment detail and My Work/approved detail",
+      "action_entry_keyboard": "PASS for represented My Work/form actions and 390 keyboard path",
+      "hierarchical_worksheet_static": "PASS: 24 tests + 15 interaction cases + 10 load-stage cases",
+      "hierarchical_runtime": "blocked: acceptance frontend port 5175 belongs to another worktree; login probe returned 401",
+      "environment_conflict": "preserved; no process from the other worktree was stopped"
+    },
+    "fe04_handling_recovery": {
+      "status": "passed_with_runtime_boundary",
+      "save_edit_readback": "PASS: payment.request.line 200->150 persisted and restored",
+      "submit": "PASS: draft payment request moved to submit and reloaded authoritatively",
+      "approval": "PASS: reviewer approval changed state and worklist visibility",
+      "reject_without_reason": "PASS: data remained unchanged",
+      "single_flight_and_retry_static": "PASS: contract form save failure recovery tests",
+      "current_network_409_runtime": "not_run: complete delivery-hardening lane blocked by foreign port owner"
+    },
+    "fe05_continuity": {
+      "status": "passed_with_runtime_boundary",
+      "my_work_detail_return": "PASS",
+      "relation_roundtrip": "PASS on current production frontend tree",
+      "company_role_isolation": "PASS",
+      "direct_payment_business_list_return": "runtime unverified",
+      "same_record_kanban_return": "runtime unverified"
+    },
+    "stage_conclusion": {
+      "status": "audit_complete_with_declared_gaps",
+      "confirmed_frontend_product_defects": 0,
+      "fixed_validation_tool_defects": [
+        "overlay lifecycle stale boxSizing marker",
+        "My Work browser lacked same-record cross-page readout assertion",
+        "preview receipt retained a pre-rebase base SHA after history replay",
+        "incremental planner omitted the preview builder and preview unit test from standard-preview routing"
+      ],
+      "pending_backend_contract_items": [
+        "CD-20261110-01 structured My Work record identity",
+        "公司&项目扣款 denied-role acceptance candidate"
+      ],
+      "runtime_unverified": [
+        "direct payment business-list entry and return",
+        "same-record kanban renderer comparison",
+        "hierarchical worksheet browser lane"
+      ]
+    }
+  }
+}
