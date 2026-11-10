@@ -147,6 +147,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "project_member": {"smart_construction_core.group_sc_cap_project_read"},
             "finance": {"smart_construction_core.group_sc_role_finance_manager"},
             "pm": {"smart_construction_core.group_sc_role_project_manager", "smart_construction_core.group_sc_cap_project_read"},
+            "operation_user": {"smart_construction_core.group_sc_role_operation_user"},
             "owner": {"smart_construction_core.group_sc_role_owner", "smart_construction_core.group_sc_cap_project_read"},
         }
         for expected, groups in matrix.items():
@@ -175,6 +176,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "finance": ({"smart_construction_core.group_sc_role_finance_manager"}, "财务主管"),
             "project_member": ({"smart_construction_core.group_sc_cap_project_read"}, "项目成员"),
             "pm": ({"smart_construction_core.group_sc_role_project_manager"}, "项目经理"),
+            "operation_user": ({"smart_construction_core.group_sc_role_operation_user"}, "经营部"),
             "owner": ({"smart_construction_core.group_sc_role_owner"}, "企业负责人"),
         }
         for role, (groups, label) in matrix.items():

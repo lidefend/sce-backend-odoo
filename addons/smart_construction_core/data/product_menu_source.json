@@ -1013,6 +1013,14 @@
           ]
         },
         {
+          "role_code": "operation_user",
+          "label": "经营部",
+          "precedence": 65,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_operation_user"
+          ]
+        },
+        {
           "role_code": "finance",
           "label": "财务主管",
           "precedence": 70,
@@ -1129,6 +1137,13 @@
                 "project.management",
                 "project.dashboard",
                 "my_work.workspace"
+              ]
+            },
+            "operation_user": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
               ]
             },
             "finance": {
@@ -1251,6 +1266,13 @@
                 "project.management",
                 "project.dashboard",
                 "my_work.workspace"
+              ]
+            },
+            "operation_user": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
               ]
             },
             "finance": {

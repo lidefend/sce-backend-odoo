@@ -3,34 +3,40 @@ goal:
   id: SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110
   title: scheduled CI full frontend release dispatch
   status: active
-  formal_product_layer: P4
-  layer_target: exact-head GitHub Actions full frontend release dispatch
-  module: CI verification tooling
-  standard_vs_user_specific: platform verification tooling
+  formal_product_layer: P1 + P4
+  layer_target: exact-head full frontend release dispatch and operation-user role surface
+  module: construction role contract plus CI verification tooling
+  standard_vs_user_specific: construction product standard plus platform verification tooling
   why_here: >
     Scheduled CI closure requires a governed way to dispatch the full frontend
     release lane on a verified remote main SHA and read back the exact run.
   why_not_elsewhere: >
-    Product, contract, ACL and frontend semantic layers must not change to make
-    a verification lane executable. Direct ad hoc GitHub commands bypass the
-    repository's remote-write authority and exact-identity checks.
+    The operation role is a declared construction product identity bound to a
+    real res.groups carrier. Making the verification lane executable must not
+    bypass that product declaration or direct ad hoc GitHub commands must not
+    bypass the repository's remote-write authority and exact-identity checks.
   blast_radius: >
-    Adds one CI dispatch target and contract tests. It does not change workflow
-    behavior, product code, release budgets, data or deployment.
+    Adds one declared role/surface and one CI dispatch target with contract
+    tests. It does not change ACL grants, workflow behavior, release budgets,
+    business data or deployment.
   objective: >
-    Add and verify a controlled full frontend release dispatch target, then use
-    it on the current main SHA and close the result truthfully.
+    Add and verify a controlled full frontend release dispatch target, close
+    the missing operation-user role declaration, then use the target on the
+    repaired SHA and close the result truthfully.
   acceptance:
     - The target requires a full expected SHA and a clean worktree.
     - The expected SHA must equal the live remote target branch.
     - Dispatch uses frontend_release_gate.yml and reads back a newly created
       workflow_dispatch run for the same head SHA.
+    - operation_user resolves from group_sc_role_operation_user to a declared
+      product role with the contract-declared landing candidates.
+    - The operation role uses capability discovery and native ACL visibility;
+      no new ACL or menu visibility grant is introduced.
     - The contract unit test is non-zero and passing.
     - The current main full release lane is dispatched and its outcome observed.
   exclusions:
-    - product code
-    - contracts
-    - ACL
+    - business ACL grants
+    - menu visibility expansion
     - performance budgets
     - business data
     - deployment

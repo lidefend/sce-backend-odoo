@@ -10,26 +10,33 @@
     ".agent/active-runs.json",
     ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
     ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
     "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "make/ci.mk",
-    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing GitHub owner CLI authority and governed Make entrypoints"
   },
   "layer": {
-    "formal_product_layer": "P4",
-    "layer_target": "exact-head full frontend release dispatch",
-    "module": "CI verification tooling",
-    "standard_vs_user_specific": "platform verification tooling",
-    "why_here": "The dispatch belongs to the CI control plane and must bind an exact remote SHA.",
-    "why_not_elsewhere": "Changing product, contracts, ACL or release budgets would hide a verification-lane failure.",
-    "blast_radius": "One make target and its contract test; no runtime product behavior.",
+    "formal_product_layer": "P1 + P4",
+    "layer_target": "operation-user role declaration and exact-head full release dispatch",
+    "module": "smart_construction_core role contract plus CI verification tooling",
+    "standard_vs_user_specific": "construction product standard plus platform verification tooling",
+    "why_here": "The operation role is owned by the P1 product contract; the dispatch belongs to the P4 CI control plane.",
+    "why_not_elsewhere": "Changing ACLs or test roles would widen authority; changing frontend assertions would hide the missing contract.",
+    "blast_radius": "Role identity and navigation projection for group_sc_role_operation_user plus one CI dispatch target; native ACL remains authoritative.",
     "exclusions": [
-      "product code",
-      "contracts",
-      "ACL",
+      "business ACL grants",
+      "menu visibility expansion",
       "performance budgets",
       "business data",
       "deployment"
@@ -43,6 +50,46 @@
         "make/ci.mk",
         ".github/workflows/frontend_release_gate.yml",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+      ]
+    },
+    "role_surface_contract": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/release/test_locked_menu_policy_contract.py"
+      ]
+    },
+    "role_exposure": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py"
+      ]
+    },
+    "navigation_policy": {
+      "target": "verify.frontend.navigation_policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "scripts/verify/frontend_release_navigation_policy_guard.py"
+      ]
+    },
+    "workflow_action_semantics": {
+      "target": "verify.workflow_action_semantics.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "scripts/verify/workflow_action_semantics_completeness_guard.py"
       ]
     },
     "agent_ledger": {
@@ -67,5 +114,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement and validate the exact-head full frontend release dispatch target."
+  "next_exact_step": "Commit the role-contract repair, publish it, and dispatch the full frontend release lane on the exact repaired head."
 }
