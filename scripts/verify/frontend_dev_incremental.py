@@ -241,6 +241,8 @@ RULES = (
         "verify.frontend.professional_detail_collection.unit",
     )),
     Rule((
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
         "scripts/verify/frontend_navigation_shell_guard.py",
         "scripts/verify/test_frontend_navigation_shell_guard.py",
     ), (

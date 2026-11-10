@@ -59,6 +59,20 @@ same menu/action pair in runtime release navigation. The container runtime also
 had to be recreated through `local.dev.up` because its source bind mount pointed
 at the separate acceptance worktree; the database volume was preserved.
 
+The first full lane on `924c8965c` passed role/navigation projection and the
+release build, then failed the delivery-hardening accessibility matrix with
+nine identical `scrollable-region-focusable` violations. Every finding targeted
+the same nested TDesign `.t-menu--scroll` list. The outer navigation tree
+already owns a labelled, focusable scroll region, so the vendor inner list must
+delegate scrolling to that host. The two navigation commits from the paused
+performance branch are integrated here with their static negative guards.
+
+The focused local axe probe did not reach browser assertions because the
+acceptance environment stopped while reading runtime IDs; that attempt is an
+environment defect and is not recorded as accessibility evidence. The current
+production build was inspected to prove both override declarations are present
+in the emitted CSS.
+
 ## Repair rule
 
 Add one P4 dispatch target that:

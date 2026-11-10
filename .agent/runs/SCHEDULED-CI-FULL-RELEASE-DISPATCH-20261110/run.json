@@ -21,11 +21,15 @@
     "addons/smart_construction_core/security/sc_role_entry_groups.xml",
     "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+  "frontend/apps/web/src/components/MenuTree.vue",
+  "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
     "make/ci.mk",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_dev_incremental.py",
+  "scripts/verify/frontend_navigation_shell_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+  "scripts/verify/test_frontend_navigation_shell_guard.py",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256"
   ],
@@ -152,5 +156,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the operation-user entry-group binding, publish the clean candidate, and dispatch the full frontend release lane on that exact head."
+  "next_exact_step": "Commit the navigation accessibility repair, publish the clean candidate, and dispatch the full frontend release lane on that exact head."
 }

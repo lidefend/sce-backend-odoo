@@ -669,6 +669,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(targets.count("verify.frontend.page_pattern_reference_parity.unit"), 1)
         self.assertIn("verify.frontend.navigation_shell.unit", targets)
         self.assertIn("verify.frontend.primitive_adapter.unit", targets)
+        for path in (
+            "frontend/apps/web/src/components/MenuTree.vue",
+            "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.navigation_shell.unit",
+                    select_targets([path]),
+                )
 
     def test_scene_route_change_recommends_scene_entry_contract(self) -> None:
         # The scene runtime is cached by <KeepAlive> and its route ownership rule
