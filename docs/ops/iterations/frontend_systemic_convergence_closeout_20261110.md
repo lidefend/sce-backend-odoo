@@ -48,11 +48,24 @@
 - M7/M9 evidence is local scoped evidence, not a claim of remote CI, production
   deployment or full 89-entry product delivery.
 
+## Mainline Integration Review
+
+- Independent re-review closed the three findings reported against `75aaeb22e`:
+  the one2many integer truncation contract, the native-tree `action_model`
+  projection/test gap and action-group enforcement in action-spec routes.
+- The current metadata HEAD `8c9a9ddc8ea0cedc29253254e7686c6df2d0e56e`
+  differs from reviewed product/runtime candidate
+  `915644ab3c00e8cfafc94646079d90f599251c67` only in governance records.
+- Local independent review found no S0-S2 product finding. Remote required
+  checks and review-thread status remain pending until the governed PR exists;
+  this record does not substitute those exact-head gates for local evidence.
+
 ## Status
 
 - Batch convergence: completed.
 - Frontend engineering gates: completed.
 - Navigation authority leak: fixed on clean local candidate.
-- Remote integration/deployment: not performed.
+- Remote integration: verification pending publication and exact-head checks.
+- Deployment: not performed.
 - Next programmatic step: select the next product feature batch; do not add more
   frontend abstraction solely to raise component counts.

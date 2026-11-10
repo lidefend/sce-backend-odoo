@@ -7,10 +7,14 @@
   "goal": ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
   "record": "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md",
   "scope": [
-    ".agent/active-runs.json",
-    ".agent/goals/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110.yaml",
-    ".agent/runs/FE-SYSTEMIC-MAINLINE-INTEGRATION-20261110/run.json",
-    "docs/ops/iterations/frontend_systemic_convergence_closeout_20261110.md"
+    ".agent/",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/tests/",
+    "docs/",
+    "frontend/apps/web/",
+    "frontend/packages/design-tokens/",
+    "make/frontend.mk",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "offline",
@@ -37,5 +41,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "R1 closed all review findings; run a fresh independent review on 915644ab3 and then publish if APPROVE."
+  "next_exact_step": "Independent re-review found no S0-S2 findings in the R1 product candidate; run exact-head publication preflight on the current metadata HEAD, create the governed PR, and require exact-head remote checks before merge."
 }
