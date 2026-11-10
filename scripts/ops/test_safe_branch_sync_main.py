@@ -390,12 +390,14 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "const approvedForm = 'approved';",
             "const approvedAmountField = 'amount';",
             "const cross_page_readout = 'cross-page';",
+            "const approvedDetailBody = 'detail';",
             "",
         ])
         union_text = "\n".join([
             "const approvedForm = 'approved';",
             "const approvedAmountField = 'amount';",
             "const cross_page_readout = 'cross-page';",
+            "const approvedDetailBody = 'detail';",
             "const rejectSafetyDialog = 'safety';",
             "const action_approval_reject = 'reject';",
             "check(action_params?.reason === 'reason');",
@@ -443,6 +445,16 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             [path],
         )
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+        without_detail = union_text.replace(
+            "const approvedDetailBody = 'detail';\n",
+            "",
+        )
+        with self.assertRaisesRegex(
+            syncer.SyncError, "does not preserve main delta"
+        ):
+            syncer.verify_semantic_union_preserves_main(
+                plan, path, without_detail
+            )
 
     def test_semantic_union_markers_fail_closed(self) -> None:
         path = syncer.SEMANTIC_UNION_CONFLICT_PATH

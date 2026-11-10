@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -605,6 +606,44 @@ def verify_semantic_union_preserves_main(plan: SyncPlan) -> None:
         )
 
 
+def verify_semantic_union_preserves_main(
+    plan: SyncPlan, path: str, text: str
+) -> None:
+    """Require the reviewed union to retain main's line-level delta."""
+    base = Counter(
+        text_at_revision(plan.root, plan.replay_base, path).splitlines()
+    )
+    main = Counter(
+        text_at_revision(plan.root, plan.new_main, path).splitlines()
+    )
+    current = Counter(text.splitlines())
+    missing_added = [
+        line
+        for line, count in main.items()
+        if count > base.get(line, 0) and current.get(line, 0) < count
+    ]
+    retained_deleted = [
+        line
+        for line, count in base.items()
+        if main.get(line, 0) < count and current.get(line, 0) > main.get(line, 0)
+    ]
+    if missing_added or retained_deleted:
+        details = [
+            *(
+                f"missing-main-addition={line!r}"
+                for line in sorted(missing_added)
+            ),
+            *(
+                f"retained-main-deletion={line!r}"
+                for line in sorted(retained_deleted)
+            ),
+        ]
+        raise SyncError(
+            f"semantic union source for {path} does not preserve main delta: "
+            + "; ".join(details[:8])
+        )
+
+
 def resolve_semantic_union_conflict(
     plan: SyncPlan, conflicts: tuple[str, ...]
 ) -> tuple[str, ...]:
@@ -626,7 +665,9 @@ def resolve_semantic_union_conflict(
         raise SyncError("semantic union conflicts require the extended frozen sync")
     text = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
     verify_semantic_union_text(SEMANTIC_UNION_CONFLICT_PATH, text)
-    verify_semantic_union_preserves_main(plan)
+    verify_semantic_union_preserves_main(
+        plan, SEMANTIC_UNION_CONFLICT_PATH, text
+    )
     target = generated_output_path(plan.root, SEMANTIC_UNION_CONFLICT_PATH)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")
