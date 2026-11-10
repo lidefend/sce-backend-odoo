@@ -241,3 +241,27 @@ baseline rebuild。前端 release 产物和 standard preview 身份均重新绑�
 
 外部边界仍为推送前停止。下一停点是 `ci.delivery.freeze.prepare` 和同步增量只读复审，不是继续
 增加产品功能。
+
+### Independent Review Remediation
+
+首轮同步增量只读复审结论为 `REQUEST_CHANGES`，没有发现审批业务回归，但指出两项证据／工具边界：
+
+1. 之前引用的 34/34 增量回执产生于 `0f1960897` 的脏工作树，不能代表后续 clean HEAD。
+2. 审批脚本语义并集只验证关键字符串，未证明 `new_main` 对该文件的全部新增行均被保留。
+
+两项已按复审要求修正：
+
+- `ecbd2a537` 在 `safe_branch_sync_main.py` 中新增主线新增行集合校验；只有 `new_main` 相对
+  replay base 的每条新增行都在当前候选最终文件中存在，且关键审批行为标记同时存在时，语义并集
+  才可放行。
+- 在 clean HEAD `ecbd2a537d3b1e94c193cd7ed8a6bf12ef7397d0` 上重新执行
+  `make ci.local.iteration`，34/34 映射目标 PASS，零未映射路径。新回执：
+
+```text
+.runtime/frontend-dev-validation/executions/
+  20261110T170348Z-276355-687099407/receipt.json
+```
+
+该回执绑定 clean 候选和当前 runtime tree；S2 修改仅属于 P4 同步/验证工具，不改变
+`addons`、`frontend`、产品契约或审批执行链，因此 `5cf3b42c3` 上取得并在
+`e4e1bd2ef` 文档提交后承接的审批浏览器报告仍有效。
