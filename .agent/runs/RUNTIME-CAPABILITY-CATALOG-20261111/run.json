@@ -15,6 +15,8 @@
     "addons/smart_core/delivery/runtime_capability_catalog.py",
     "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
     "addons/smart_core/tests/test_runtime_capability_catalog.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/runtime_capability_catalog_20261111.md",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
