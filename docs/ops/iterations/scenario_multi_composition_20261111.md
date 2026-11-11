@@ -114,6 +114,13 @@ canonical projection 和 payload seal，而本批已经把该职责收敛到
 `verify.frontend.navigation_shell.unit` 26 tests PASS。该修复必须形成新 HEAD 并重新取得
 当前 HEAD 的四项必需检查，旧 `f1858dfbb` 的失败不得被重跑成功覆盖。
 
+更新到 `f320d2e40` 后，同一远端车道又暴露另一个同类文本断言：
+`test_platform_admin_duty_contract` 仍搜索已提取的
+`surface=(...)` 内联文本。测试已改为验证 `platform_duty=(...)` 输入和
+`platform_duty_merger=lambda authority, surface: ...` 单一回调；该目标 26 个 Python
+测试和 4 个 Node 测试通过。随后本地直接执行与远端相同的
+`pnpm -C frontend/apps/web test`，完整通过，未再发现同类残留。
+
 ## 回退
 
 代码回退恢复旧的单场景约束和原 authority 链；数据库升级会移除旧唯一约束，

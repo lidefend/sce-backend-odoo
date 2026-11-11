@@ -930,6 +930,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/tests/test_entry_publication_authority.py": [
                 "verify.product.entry_publication.unit",
             ],
+            "addons/smart_core/tests/test_platform_admin_duty_contract.py": [
+                "verify.platform.duty.contract.unit",
+            ],
             "config/product_menu_contract_v1.json": [
                 "verify.product.menu.contract_v1.guard",
             ],

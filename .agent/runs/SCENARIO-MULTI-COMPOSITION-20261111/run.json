@@ -72,6 +72,7 @@
     "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
     "addons/smart_core/tests/test_native_config_menu_projection.py",
     "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
     "addons/smart_core/tests/test_relation_entry_contract.py",
     "addons/smart_core/tests/test_runtime_capability_catalog.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
@@ -286,10 +287,18 @@
       "reason": "frontend_navigation_shell_guard required the retired inline system.init assembly",
       "recovery": "guard now verifies the NavigationContractCompiler delegation and compiler ordering",
       "recovery_check": "make verify.frontend.navigation_shell.unit passed 26 tests"
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at f320d2e40",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "platform duty contract test searched for the retired inline surface= callback text",
+      "recovery": "test now verifies the compiler callback and platform_duty delegation inputs",
+      "recovery_check": "make verify.platform.duty.contract.unit passed 26 Python tests plus 4 Node tests"
     }
   ],
   "blockers": [
-    "PR 872 requires a new exact head and fresh required-check runs after the navigation-shell guard recovery.",
+    "PR 872 requires a new exact head and fresh required-check runs after both stale-assertion recoveries.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
     "No merge or deployment has been performed."
   ],

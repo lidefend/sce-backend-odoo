@@ -335,6 +335,11 @@ RULES = (
         "verify.scenario.center_projection.guard",
     )),
     Rule((
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    ), (
+        "verify.platform.duty.contract.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/runtime_capability_catalog.py",
         "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
         "addons/smart_core/tests/test_runtime_capability_catalog.py",
