@@ -26,6 +26,8 @@ goal:
       - make/frontend.mk
       - scripts/audit/verification_lane_dispositions.json
       - scripts/dev/frontend_acceptance_runtime.sh
+      - scripts/dev/frontend_cached_dependencies_restore.sh
+      - scripts/dev/frontend_standard_preview.py
       - scripts/verify/test_frontend_release_local_entry.py
       - scripts/verify/test_frontend_standard_preview.py
     product_behavior: >
