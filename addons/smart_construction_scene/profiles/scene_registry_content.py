@@ -16,7 +16,6 @@ _CORE_DIR = Path(__file__).resolve().parents[2] / "smart_construction_core"
 _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
     {
         "scene_key": "enterprise.company",
-        "route": "/s/enterprise.company",
         "action_xmlid": "smart_construction_core.action_sc_enterprise_company",
         "menu_xmlid": None,
         "action_file": "views/support/enterprise_initialization_views.xml",
@@ -24,7 +23,6 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
     },
     {
         "scene_key": "enterprise.department",
-        "route": "/s/enterprise.department",
         "action_xmlid": "smart_construction_core.action_sc_organization_department",
         "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
         "action_file": "views/support/organization_department_views.xml",
@@ -32,7 +30,6 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
     },
     {
         "scene_key": "enterprise.user",
-        "route": "/s/enterprise.user",
         "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
         "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
         "action_file": "views/support/runtime_user_management_views.xml",
@@ -40,7 +37,6 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
     },
     {
         "scene_key": "enterprise.post",
-        "route": "/s/enterprise.post",
         "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
         "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1",
         "action_file": "views/menu_product_contract_completion_v1.xml",
@@ -48,7 +44,6 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
     },
     {
         "scene_key": "enterprise.setup",
-        "route": "/s/enterprise.setup",
         "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
         "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
         "action_file": "views/support/enterprise_initialization_views.xml",
@@ -94,7 +89,7 @@ def _derive_enterprise_bootstrap_entries() -> List[Dict[str, Any]]:
             projection["action_xmlid"].rsplit(".", 1)[-1],
         )
         target: Dict[str, Any] = {
-            "route": projection["route"],
+            "route": fact.get("route") or "",
             "action_xmlid": projection["action_xmlid"],
         }
         if projection.get("menu_xmlid"):
@@ -124,7 +119,7 @@ def _derive_my_work_entry() -> Dict[str, Any]:
         "code": "my_work.workspace",
         "name": fact.get("name") or "我的工作",
         "target": {
-            "route": fact.get("route") or "/my-work",
+            "route": fact.get("route") or "",
             "menu_xmlid": "smart_construction_core.menu_sc_my_work",
             "action_xmlid": "smart_construction_core.action_sc_my_work",
         },

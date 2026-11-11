@@ -9,7 +9,7 @@
     <field name="res_model">project.project</field>
     <field name="view_mode">tree,form</field>
     <field name="target">current</field>
-    <field name="context">{'sc_web_route': '/my-work', 'sc_web_surface': 'my_work', 'create': False, 'edit': False}</field>
+    <field name="context">{'sc_web_route': '/s/my_work.workspace', 'sc_web_surface': 'my_work', 'create': False, 'edit': False}</field>
     <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
   </record>
 
