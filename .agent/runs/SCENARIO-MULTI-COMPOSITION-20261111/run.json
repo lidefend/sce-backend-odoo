@@ -39,7 +39,8 @@
     "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py"
     ,
     "scripts/ops/safe_branch_sync_main.py",
-    "scripts/ops/test_safe_branch_sync_main.py"
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
   ],
   "environment": {
     "kind": "offline",

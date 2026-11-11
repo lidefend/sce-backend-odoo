@@ -34,6 +34,7 @@ SEMANTIC_UNION_CONFLICT_PATH = (
 )
 SEMANTIC_UNION_CONFLICT_PATHS = (
     SEMANTIC_UNION_CONFLICT_PATH,
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
 )
 ADDITIVE_MERGE_EQUIVALENCE_PATHS = (
@@ -48,6 +49,16 @@ SEMANTIC_UNION_REQUIRED_MARKERS = {
         (
             "U06 approval-page decision flow",
             ("rejectSafetyDialog", "action_approval_reject", "action_params?.reason"),
+        ),
+    ),
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py": (
+        (
+            "business-config-admin precedence",
+            (
+                "business_config_admin",
+                '"business_full",\n            "executive"',
+                '"operation_user",',
+            ),
         ),
     ),
     "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py": (
@@ -860,12 +871,33 @@ def run_rebase(
             merge_personal_data_false_positives(plan)
             metadata_conflicts.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
+    semantic_conflicts.update(collect_prepared_semantic_unions(plan))
     return (
         append_only_log_resolved,
         tuple(sorted(generated_evidence_conflicts)),
         tuple(sorted(metadata_conflicts)),
         tuple(sorted(semantic_conflicts)),
     )
+
+
+def collect_prepared_semantic_unions(plan: SyncPlan) -> tuple[str, ...]:
+    """Recognize reviewed union paths even when Git merged them without conflict."""
+    if not plan.extended_history:
+        return ()
+    current_head = git_output(plan.root, "rev-parse", "HEAD")
+    prepared = []
+    for path in SEMANTIC_UNION_CONFLICT_PATHS:
+        if path not in set(plan.paths):
+            continue
+        if not path_equals_revision(plan.root, current_head, plan.head, path):
+            raise SyncError(
+                f"prepared semantic union path changed during rebase: {path}"
+            )
+        text = text_at_revision(plan.root, current_head, path)
+        verify_semantic_union_text(path, text)
+        verify_semantic_union_preserves_main(plan, path, text)
+        prepared.append(path)
+    return tuple(prepared)
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:

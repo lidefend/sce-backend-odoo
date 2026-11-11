@@ -127,13 +127,13 @@ Generated from repository source files. This report is informational during the 
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
+| 1212 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1196 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1186 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1184 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
-| 1180 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1159 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
