@@ -864,6 +864,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
+            "scripts/dev/frontend_cached_dependencies_restore.sh",
             "scripts/dev/frontend_standard_preview.py",
             "scripts/dev/frontend_acceptance_runtime.sh",
             "scripts/dev/frontend_acceptance_up.sh",

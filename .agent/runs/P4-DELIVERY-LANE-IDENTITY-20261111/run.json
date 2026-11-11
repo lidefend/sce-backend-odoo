@@ -14,7 +14,9 @@
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/dev/frontend_cached_dependencies_restore.sh",
     "scripts/dev/frontend_standard_preview.py",
+    "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_frontend_standard_preview.py"
   ],
   "environment": {

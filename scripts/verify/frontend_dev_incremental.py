@@ -696,6 +696,7 @@ RULES = (
     )),
     Rule((
         "make/runtime_ops.mk",
+        "scripts/dev/frontend_cached_dependencies_restore.sh",
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
