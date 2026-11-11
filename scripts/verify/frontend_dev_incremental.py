@@ -681,6 +681,21 @@ RULES = (
     ), (
         "verify.pr.push.unit",
     )),
+    Rule((
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/verify/repository_clean_history_guard.py",
+    ), (
+        "verify.trusted_scan.unit",
+    )),
+    Rule((
+        "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+        "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    ), (
+        "verify.construction.policy_maps.unit",
+    )),
     # The baseline-backed iteration policy guard is the authority for the
     # governed make lanes: it asserts that each lane still declares the targets
     # the execution policy depends on. Editing one of those lanes without

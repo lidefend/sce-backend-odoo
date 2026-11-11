@@ -887,6 +887,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.daily_dev.acceptance_fixture.unit"],
                 )
 
+    def test_delivery_scan_and_policy_tools_select_owned_checks(self) -> None:
+        for path in (
+            "scripts/ci/secret_scan.py",
+            "scripts/ci/personal_data_scan.py",
+            "scripts/ci/trusted_scan_scope.py",
+            "scripts/ci/test_trusted_scan_scope.py",
+            "scripts/verify/repository_clean_history_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.trusted_scan.unit"],
+                )
+        for path in (
+            "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+            "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.construction.policy_maps.unit"],
+                )
+
     def test_primitive_adapter_guard_changes_route_to_their_owned_contract(self) -> None:
         for path in (
             "scripts/verify/frontend_primitive_adapter_guard.py",
