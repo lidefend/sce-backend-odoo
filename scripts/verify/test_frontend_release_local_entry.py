@@ -60,6 +60,16 @@ load_profile
         self.assertIn('sha256sum "$lockfile"', source)
         self.assertIn("frontend/node_modules/.pnpm", source)
         self.assertIn("frontend/apps/web/node_modules/.bin/eslint", source)
+        self.assertIn('find "$ROOT_DIR/frontend" -type l -name node_modules', source)
+        self.assertIn('unlink "$projection"', source)
+        self.assertIn("DENY foreign node_modules symlink", source)
+
+        preview = (ROOT / "scripts/dev/frontend_standard_preview.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("DEPENDENCY_PROJECTIONS", preview)
+        self.assertIn("str((ROOT / relative).resolve())", preview)
+        self.assertIn("digest.update(json.dumps(projections", preview)
 
     def test_local_release_entry_orders_cache_preflight_and_real_audit(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")

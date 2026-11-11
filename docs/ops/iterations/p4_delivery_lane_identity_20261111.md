@@ -39,7 +39,7 @@ another iteration's backend as a hidden prerequisite.
 
 - `make verify.frontend.standard_preview.unit`: PASS at the code-identical
   pre-document candidate, 135 Python tests and 42 Node tests, original log
-  `.runtime/p4-delivery-lane-identity/orchestration-unit-candidate-scope.log`.
+  `.runtime/p4-delivery-lane-identity/orchestration-unit-dependency-projection.log`.
 - `make verify.frontend.list_surface_structure.browser`: PASS, 18 rows, 0 failures,
   plus 23 static contract tests.
 - `make verify.frontend.presentation.local.browser`: PASS, one header target,
@@ -60,6 +60,13 @@ another iteration's backend as a hidden prerequisite.
   selected runtime profile (`local→acceptance`, `candidate→candidate`) unless
   the caller explicitly supplies one, preventing a candidate run from writing
   the shared acceptance database.
+- Linked worktrees had inherited absolute `node_modules` symlinks from the
+  primary worktree, so Vite read `@sc/ui` source from another branch even while
+  building the candidate app. The cached dependency entry now removes only
+  repository-owned primary projections and restores a worktree-local offline
+  install; foreign symlinks still fail closed. Preview build identity now also
+  fingerprints the resolved dependency projections, so switching projections
+  invalidates a bundle that was built from another worktree.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`
