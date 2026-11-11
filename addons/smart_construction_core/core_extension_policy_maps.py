@@ -702,22 +702,6 @@ ROLE_SURFACE_OVERRIDES = {
     },
 }
 
-# My Work is a cross-scenario shell route. It belongs to the standard internal
-# role surface, not to a business scenario and not to a second menu exemption.
-INTERNAL_SHELL_MENU_XMLIDS = (
-    "smart_construction_core.menu_sc_my_work",
-)
-for _role_code, _role_surface in ROLE_SURFACE_OVERRIDES.items():
-    if _role_code == "restricted" or not isinstance(_role_surface, dict):
-        continue
-    role_home_xmlids = list(_role_surface.get("role_home_menu_xmlids") or [])
-    if not role_home_xmlids:
-        continue
-    for _menu_xmlid in INTERNAL_SHELL_MENU_XMLIDS:
-        if _menu_xmlid not in role_home_xmlids:
-            role_home_xmlids.append(_menu_xmlid)
-    _role_surface["role_home_menu_xmlids"] = role_home_xmlids
-
 ROLE_GROUPS_EXPLICIT = {
     "accounting": {
         "smart_construction_core.group_sc_role_accounting_read",

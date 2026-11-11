@@ -102,6 +102,12 @@
       "release_state": "released"
     },
     {
+      "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
       "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
       "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",

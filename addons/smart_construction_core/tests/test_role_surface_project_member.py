@@ -12,7 +12,6 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     load_locked_menu_policy_contract,
 )
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
-    INTERNAL_SHELL_MENU_XMLIDS,
     ROLE_GROUPS_CAPABILITY_FALLBACK,
     ROLE_GROUPS_EXPLICIT,
     ROLE_PRECEDENCE,
@@ -196,11 +195,6 @@ class TestProjectMemberRoleSurface(TransactionCase):
         })
         self.assertEqual(role_codes, ["business_config_admin"])
         self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
-        for role_code in ("business_full", "business_config_admin"):
-            self.assertTrue(
-                set(INTERNAL_SHELL_MENU_XMLIDS)
-                <= set(ROLE_SURFACE_OVERRIDES[role_code]["role_home_menu_xmlids"])
-            )
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()

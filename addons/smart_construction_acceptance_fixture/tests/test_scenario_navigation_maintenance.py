@@ -209,11 +209,6 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             menu = self.env.ref(xmlid)
             pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
             with self.subTest(xmlid=xmlid):
-                if xmlid == "smart_construction_core.menu_sc_my_work":
-                    self.assertIn(
-                        menu.get_external_id()[menu.id],
-                        self.role_surface.get("role_home_menu_xmlids") or [],
-                    )
                 self.assertIn(menu.id, actor_env["ir.ui.menu"]._visible_menu_ids())
                 self.assertIn(pair, nav_pairs)
                 self.assertTrue(buckets, "%s missing from allowed route buckets" % xmlid)
@@ -246,10 +241,6 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             user.has_group("smart_construction_core.group_sc_cap_business_config_admin")
         )
         navigation, _centers = self._system_init(user)
-        self.assertIn(
-            "smart_construction_core.menu_sc_my_work",
-            self.role_surface.get("role_home_menu_xmlids") or [],
-        )
         my_work = self.env.ref("smart_construction_core.menu_sc_my_work")
         pair, nav_pairs, buckets, denied = self._route_state(navigation, my_work)
         self.assertIn(pair, nav_pairs)

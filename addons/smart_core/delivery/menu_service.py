@@ -2660,92 +2660,6 @@ class MenuService:
                 out.append(next_group)
         return out
 
-    def _role_home_shell_menu_rows(self, role_surface: dict | None) -> list[dict]:
-        """Resolve explicitly declared role-home carriers from native facts.
-
-        This produces authorized navigation facts. Scenario composition consumes
-        the result later and never recovers or invents missing entries itself.
-        """
-        if self.env is None or not isinstance(role_surface, dict):
-            return []
-        xmlids = [
-            str(item or "").strip()
-            for item in role_surface.get("role_home_menu_xmlids") or []
-            if str(item or "").strip()
-        ]
-        if not xmlids:
-            return []
-        denied = {
-            str(item or "").strip().lower()
-            for item in role_surface.get("denied_menu_xmlids") or []
-            if str(item or "").strip()
-        }
-        try:
-            visible_ids = {
-                int(menu_id)
-                for menu_id in self.env["ir.ui.menu"]._visible_menu_ids()
-            }
-        except Exception:
-            return []
-        rows = []
-        for xmlid in xmlids:
-            if xmlid.lower() in denied:
-                continue
-            try:
-                menu = self.env.ref(xmlid, raise_if_not_found=False)
-            except Exception:
-                menu = None
-            if not menu or int(menu.id or 0) not in visible_ids:
-                continue
-            action = menu.sudo().action
-            if action:
-                action_groups = action.sudo().groups_id
-                if action_groups:
-                    allowed_by_group = False
-                    for group in action_groups:
-                        group_xmlid = self._record_xmlid(group)
-                        if group_xmlid and self.env.user.has_group(group_xmlid):
-                            allowed_by_group = True
-                            break
-                    if not allowed_by_group:
-                        continue
-            action_id = int(action.id or 0) if action else 0
-            model = (
-                str(getattr(action, "res_model", "") or "").strip()
-                if action and action._name == "ir.actions.act_window"
-                else ""
-            )
-            view_modes = [
-                item.strip()
-                for item in str(getattr(action, "view_mode", "") or "").split(",")
-                if item.strip()
-            ] if action else []
-            entry_target = build_web_surface_entry_target(
-                getattr(action, "context", "") if action else "",
-                menu_id=int(menu.id),
-                action_id=action_id,
-                model=model,
-                view_modes=view_modes,
-            )
-            route = str((entry_target or {}).get("route") or "").strip()
-            if not route and action_id:
-                route = f"/a/{action_id}?menu_id={int(menu.id)}"
-            rows.append({
-                "menu_key": f"system.role_home.{int(menu.id)}",
-                "label": str(menu.sudo().name or "").strip(),
-                "menu_id": int(menu.id),
-                "menu_xmlid": xmlid,
-                "action_id": action_id,
-                "action_xmlid": self._record_xmlid(action) if action else "",
-                "model": model,
-                "view_modes": view_modes,
-                "route": route,
-                "entry_target": entry_target or {},
-                "native_preview": True,
-                "sequence": int(menu.sudo().sequence or 0),
-            })
-        return [row for row in rows if row["label"] and (row["route"] or row["action_id"])]
-
     def build_nav(self, *, policy: dict, role_surface: dict | None = None, native_nav: list[dict] | None = None) -> list[dict]:
         role_code = str((role_surface or {}).get("role_code") or "").strip().lower()
         role_codes = [
@@ -3085,30 +2999,6 @@ class MenuService:
         group_nodes = self._merge_explicit_entry_with_directory(group_nodes)
         group_nodes = self._sort_delivery_nodes(group_nodes, top_level=True)
         group_nodes = self._filter_primary_delivery_nodes(group_nodes, role_surface)
-        existing_pairs = set(self._walk_nav_action_refs(group_nodes))
-        role_shell_children = []
-        for menu in self._role_home_shell_menu_rows(role_surface):
-            pair = (int(menu.get("menu_id") or 0), int(menu.get("action_id") or 0))
-            if pair in existing_pairs:
-                continue
-            child = build_delivery_menu_child(menu)
-            if child:
-                role_shell_children.append(child)
-                existing_pairs.add(pair)
-        if role_shell_children:
-            group_node = build_delivery_menu_group(
-                "system.role_home_shell",
-                "工作台",
-                role_shell_children,
-            )
-            group_meta = dict(group_node.get("meta") or {})
-            group_meta.update({
-                "native_preview": True,
-                "runtime_authority": "role_home_shell",
-                "source_authority": self.source_authority_contract(),
-            })
-            group_node["meta"] = group_meta
-            group_nodes.append(group_node)
         root = build_delivery_menu_root(group_nodes, role_code)
         root["key"] = "root:system_menu"
         root["label"] = "系统菜单"
