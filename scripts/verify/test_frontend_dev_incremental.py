@@ -267,6 +267,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.evidence_bundle.unit"],
                 )
 
+    def test_navigation_contract_compiler_selects_navigation_and_boundary(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/navigation_contract_compiler.py",
+            "addons/smart_core/handlers/system_init.py",
+            "addons/smart_core/tests/test_navigation_contract_compiler.py",
+            "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.backend.navigation_delivery.unit",
+                        "verify.system_init.menu_boundary.guard",
+                    ],
+                )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

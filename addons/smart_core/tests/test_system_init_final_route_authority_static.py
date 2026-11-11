@@ -23,36 +23,75 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertNotIn("sc_web_route", menu)
 
     def test_single_navigation_contract_owns_tree_and_route_authority(self):
-        source = (
+        system_init = (
             Path(__file__).resolve().parents[1] / "handlers" / "system_init.py"
         ).read_text(encoding="utf-8")
-        marker = '_final_navigation = data["nav"]'
-        self.assertIn(marker, source)
-        tail = source.split(marker, 1)[1]
+        compiler = (
+            Path(__file__).resolve().parents[1]
+            / "delivery"
+            / "navigation_contract_compiler.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("from odoo.addons.smart_core.delivery.navigation_contract_compiler import (", system_init)
+        self.assertIn("NavigationContractCompiler(", system_init)
+        self.assertIn(".compile(", system_init)
+        self.assertIn('data["nav"] = _compiled_navigation.nav', system_init)
+        self.assertIn('data["navigation"] = _compiled_navigation.navigation', system_init)
+        self.assertNotIn("filter_nav_by_route_authority(", system_init)
+        self.assertNotIn("project_final_navigation_routes(", system_init)
+        self.assertNotIn("project_navigation_product_policy(", system_init)
+
         self.assertIn(
-            "build_route_authority(\n            role_surface,\n            nav=_final_navigation,",
+            "self.menu_service.build_route_authority(",
+            compiler,
+        )
+        self.assertIn(
+            "self.menu_service.filter_route_authority_by_publication(",
+            compiler,
+        )
+        self.assertIn(
+            "_add_scene_internal_authority(authority, scene_internal_actions)",
+            compiler,
+        )
+        self.assertEqual(
+            compiler.count("filter_nav_by_route_authority("),
+            1,
+        )
+        self.assertIn("self.menu_service.project_canonical_navigation(", compiler)
+        self.assertIn("project_final_navigation_routes(", compiler)
+        self.assertIn("project_navigation_product_policy(", compiler)
+        self.assertIn('navigation["product_policy"]', compiler)
+        self.assertIn("canonical navigation contains unauthorized", compiler)
+        self.assertIn("scenario navigation contains unauthorized", compiler)
+        self.assertIn('"route_authority": authority,', compiler)
+        self.assertIn('"missing_authority_count": 0,', compiler)
+
+        authority_index = compiler.index("self.menu_service.build_route_authority(")
+        scene_authority_index = compiler.index(
+            "_add_scene_internal_authority(authority, scene_internal_actions)",
+            authority_index,
+        )
+        reconcile_index = compiler.index(
+            "self.menu_service.filter_nav_by_route_authority(",
+            scene_authority_index,
+        )
+        canonical_index = compiler.index(
+            "self.menu_service.project_canonical_navigation(",
+            reconcile_index,
+        )
+        scenario_index = compiler.index(
+            "self.scenario_surface_provider(nav, authority)",
+            canonical_index,
+        )
+        self.assertLess(authority_index, scene_authority_index)
+        self.assertLess(scene_authority_index, reconcile_index)
+        self.assertLess(reconcile_index, canonical_index)
+        self.assertLess(canonical_index, scenario_index)
+
+        tail = system_init.split("NavigationContractCompiler(", 1)[1]
+        self.assertIn(
+            "for _removed_navigation_carrier in (",
             tail,
         )
-        self.assertIn('data["navigation"] = {', tail)
-        self.assertIn(
-            '"route_authority": _final_route_authority,',
-            tail,
-        )
-        self.assertIn(
-            "_visible_navigation_pairs - _authorized_navigation_pairs",
-            tail,
-        )
-        self.assertIn("project_final_navigation_routes(", tail)
-        self.assertIn("project_navigation_product_policy(", tail)
-        self.assertIn('data["navigation"]["product_policy"]', tail)
-        build_index = tail.index("build_route_authority(")
-        reconcile_index = tail.index("filter_nav_by_route_authority(")
-        verify_index = tail.index("_visible_navigation_pairs = set(")
-        self.assertLess(build_index, reconcile_index)
-        self.assertLess(reconcile_index, verify_index)
-        self.assertIn('data["nav"] = _final_navigation', tail)
-        self.assertIn("canonical navigation contains unauthorized", tail)
-        self.assertIn('"missing_authority_count": 0,', tail)
         for removed in (
             '"nav",',
             '"release_navigation_v1",',

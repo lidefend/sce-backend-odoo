@@ -1,0 +1,26 @@
+schema_version: 1
+goal:
+  id: NAVIGATION-CONTRACT-COMPILER-20261111
+  status: active
+  formal_product_layer: P0 platform kernel
+  title: 收口 system.init 最终导航契约编译器
+  layer_target: single navigation contract compiler
+  module: smart_core
+  standard_vs_user_specific: platform mechanism
+  objective: >
+    Extract final navigation assembly from system.init into one P0 compiler
+    whose inputs are already-authorized navigation, role surface, release gate,
+    scene-internal authority and the P1 scenario projection hook. The compiler
+    returns the final scenarioized navigation, same-source route authority and
+    final product-policy projection without making another business decision.
+  acceptance:
+    - system.init no longer contains the final navigation reconciliation and scenarioization algorithm inline.
+    - The compiler performs no business, tenant, role or publication decision beyond sealing supplied authority.
+    - Final route and product-policy identities remain derived from the same returned navigation tree.
+    - Existing navigation behavior and contract fields remain unchanged.
+    - Focused unit tests execute with a non-zero test count.
+  exclusions:
+    - No menu, action, ACL, group, tenant enablement, product policy or scenario data change.
+    - No frontend change.
+    - No replacement of the current scenario composition algorithm in this slice.
+    - No database migration, deployment, PR or remote write.

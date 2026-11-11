@@ -320,6 +320,15 @@ RULES = (
         "verify.backend.navigation_delivery.unit",
     )),
     Rule((
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+        "verify.system_init.menu_boundary.guard",
+    )),
+    Rule((
         "frontend/apps/web/scripts/logger_runtime_test.ts",
         "frontend/apps/web/src/utils/logger.ts",
         "scripts/verify/frontend_console_guard.py",
