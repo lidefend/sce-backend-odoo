@@ -266,9 +266,12 @@ class TestScenarioNavigationMaintenance(TransactionCase):
                 allowed_company_ids=[self.actor.company_id.id],
             ),
         )
-        for xmlid in (
-            "smart_construction_core.menu_sc_my_work",
-            "smart_construction_core.menu_sc_enterprise_initialization",
+        for xmlid, expected_route in (
+            ("smart_construction_core.menu_sc_my_work", "/s/my_work.workspace"),
+            (
+                "smart_construction_core.menu_sc_enterprise_initialization",
+                "/s/enterprise.setup",
+            ),
         ):
             menu = self.env.ref(xmlid)
             pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
@@ -283,6 +286,8 @@ class TestScenarioNavigationMaintenance(TransactionCase):
                 self.assertTrue(all(
                     row.get("route_kind") != "DENIED"
                     and row.get("reason_code") != "BUSINESS_SCENARIO_CONFIGURATION_MISSING"
+                    and row.get("route") == expected_route
+                    and (row.get("entry_target") or {}).get("route") == expected_route
                     for rows in buckets.values()
                     for row in rows
                 ))
@@ -315,6 +320,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         )
         self.assertIn(pair, nav_pairs, diagnostic)
         self.assertTrue(buckets, diagnostic)
+        self.assertTrue(all(
+            row.get("route") == "/s/my_work.workspace"
+            for rows in buckets.values()
+            for row in rows
+        ))
         self.assertFalse(denied)
         enterprise = self.env.ref(
             "smart_construction_core.menu_sc_enterprise_initialization"
