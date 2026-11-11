@@ -39,6 +39,17 @@
 “source is not an ancestor of the head” 或 “inputs changed”。注意 squash 合并后旧分支 head
 不是新 main 的祖先，必须重录到新候选，不能复用旧 bound_head。
 
+运行环境的共享边界：
+
+- `local.dev`（`sc_dev_demo` / 18081，候选前端 5176）是持久迭代库，适合日常前端和只读页面联调；
+  它不是冻结候选的最终身份证据源，也不能假定其他独立迭代不会改后端或数据。
+- 冻结候选使用 `candidate`（`sc_frontend_acceptance_candidate` / 18088 / 5178），并通过独占
+  lease 完成 merge-stage 证据；后端源码、数据库 namespace、fixture scope 和前端构建都必须绑定
+  该候选。
+- 共享 `sc_frontend_acceptance`（18082 / 5180）只用于已协调的整体验收。独立迭代不得把它当作
+  稳定身份源；若观察到其他迭代改变了 `SC_SOURCE_REVISION`，必须停用该证据并切到隔离 candidate
+  或重新串行占用，不能覆盖对方环境。
+
 严格顺序（验收运行时在线：`sc-backend-odoo-acceptance` / `sc-fe-r2-p1-01`）：
 
 1. 对同批受影响的完整验收面使用单一显式入口：

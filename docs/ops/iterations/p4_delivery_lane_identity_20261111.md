@@ -26,6 +26,13 @@ write a receipt unless the served backend revision equals the clean candidate
 HEAD. Ordinary browser targets consume and verify the receipt but cannot mutate
 another iteration's backend as a hidden prerequisite.
 
+Persistent `local.dev` is the normal iteration and read-only page-validation
+database. Frozen-candidate merge evidence uses the isolated `candidate` profile
+with its own database, backend, preview and fixture scope. A shared acceptance
+carrier is only used for coordinated whole-product acceptance; if an independent
+iteration changes its source revision, that carrier is not a stable evidence
+authority for the current candidate.
+
 ## Final evidence
 
 - Final P4 candidate: `fix/p4-delivery-lane-identity-20261111` at this commit
