@@ -1076,57 +1076,6 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             self.assertEqual([row["scene_key"] for row in result["rows"] if row["workspace_candidate"]],
                              ["legacy.project"] if enabled.get("project.management") else [])
 
-    def test_p1_model_reads_current_company_and_preserves_native_principal(self):
-        class Parent:
-            def _apply_company_route_scope(self, authority):
-                return authority
-        with patch.object(odoo_mod, "api", types.SimpleNamespace(model=lambda fn: fn), create=True), \
-             patch.object(odoo_mod, "models", types.SimpleNamespace(Model=Parent), create=True), \
-             patch.object(
-                 odoo_mod,
-                 "tools",
-                 types.SimpleNamespace(ormcache=lambda *args, **kwargs: lambda fn: fn),
-                 create=True,
-             ):
-            module = _load("nav01_business_policy_model", SCENE_DIR / "models/product_policy.py")
-        fixture = self
-        states = {1: {"business.v1:project.management": True}, 2: {}}
-        surface = {"scenarios": [{"key": "project.management"}, {"key": "finance"}]}
-        queries = []
-        class Env:
-            user = types.SimpleNamespace(id=7)
-            def __init__(self, company_id):
-                self.company = types.SimpleNamespace(id=company_id)
-            def __getitem__(self, name):
-                runtime = _runtime_model(name, self)
-                if runtime is not None:
-                    return runtime
-                if name != "ir.config_parameter":
-                    raise AssertionError(name)
-                def get_param(key, default="0"):
-                    queries.append((self.company.id, self.user.id, key))
-                    rest = key[len("sc.scene.tenant.enablement."):]
-                    scene_key = rest.split(".", 1)[1] if "." in rest else rest
-                    return "1" if states[self.company.id].get(scene_key) else "0"
-                return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(get_param=get_param))
-            def ref(self, xmlid, raise_if_not_found=False):
-                return types.SimpleNamespace(id=list(fixture.index).index(xmlid) + 1, _name="ir.ui.menu",
-                                             action=types.SimpleNamespace(id=11 if xmlid == "test.project" else 99))
-        record = module.ScProductPolicy()
-        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface), \
-             patch.object(scenario_surface, "runtime_menu_scope", return_value=(self.index, {1: "test.project"}, {11: ["test.project"]})), \
-             patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries):
-            for company_id, expected in ((1, True), (2, False), (1, True)):
-                record.env = Env(company_id)
-                source = copy.deepcopy(self.authority)
-                source["contextual_actions"].append({"action_id": 11})
-                authority = record._apply_company_route_scope(source)
-                self.assertEqual((0, 11) in route_authority.published_pairs(authority), expected)
-                self.assertIs(route_authority.menu_publication_decision(authority, 1, 11), expected)
-            states[1].clear()
-            self.assertFalse(route_authority.menu_publication_decision(record._apply_company_route_scope(self.authority), 1, 11))
-        self.assertTrue(all(q[1] == 7 and q[2].startswith("sc.scene.tenant.enablement.") for q in queries))
-
     def test_business_mutation_cannot_overwrite_same_named_legacy_record(self):
         fixture = TestActualPublicationConsumers()
         fixture.setUp()
@@ -1223,21 +1172,18 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                             self.assertIs(actions[0]["enabled"], not enabled)
                             self.assertEqual(actions[0]["label"], "停用" if enabled else "启用")
 
-    def test_live_company_filter_runs_even_when_publication_is_cached(self):
-        state = {"project.management": True}
-        calls = []
+    def test_published_authority_is_final_without_company_refilter(self):
         policy = types.SimpleNamespace(published_route_authority=lambda: self.authority)
-        def live(authority):
-            calls.append("read-company-state")
-            return self.filtered(state, authority)
-        policy._apply_company_route_scope = live
+        policy._apply_company_route_scope = lambda authority: (_ for _ in ()).throw(
+            AssertionError("company scene state was applied a second time")
+        )
         env = {"sc.product.policy": policy}
-        self.assertTrue(route_authority.menu_publication_decision(route_authority.published_route_authority(env), 1, 11))
-        state.clear()
-        self.assertFalse(route_authority.menu_publication_decision(route_authority.published_route_authority(env), 1, 11))
-        self.assertEqual(calls, ["read-company-state", "read-company-state"])
-        policy._apply_company_route_scope = lambda authority: (_ for _ in ()).throw(PermissionError("denied"))
-        self.assertEqual(route_authority.published_route_authority(env), {})
+        for _attempt in range(2):
+            self.assertTrue(
+                route_authority.menu_publication_decision(
+                    route_authority.published_route_authority(env), 1, 11
+                )
+            )
 
 
 class TestEnablementModelLifecycle(unittest.TestCase):

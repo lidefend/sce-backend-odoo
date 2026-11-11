@@ -454,26 +454,49 @@
 
 
         <!-- =========================
+             业务全功能角色：Business Full
+             - 仅业务能力，不含配置管理员入口、平台或系统管理权限
+        ========================== -->
+        <record id="group_sc_business_full" model="res.groups">
+            <field name="name">SC 能力 - 业务全功能</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="comment">
+                业务全功能身份（非配置管理员、非系统管理员）
+            </field>
+            <field name="implied_ids" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_cap_project_manager'),
+                ref('smart_construction_core.group_sc_cap_contract_manager'),
+                ref('smart_construction_core.group_sc_cap_cost_manager'),
+                ref('smart_construction_core.group_sc_cap_material_manager'),
+                ref('smart_construction_core.group_sc_cap_purchase_manager'),
+                ref('smart_construction_core.group_sc_cap_finance_manager'),
+                ref('smart_construction_core.group_sc_cap_accounting_manager'),
+                ref('smart_construction_core.group_sc_cap_settlement_manager'),
+                ref('smart_construction_core.group_sc_cap_quality_manager'),
+                ref('smart_construction_core.group_sc_cap_safety_manager'),
+                ref('smart_construction_core.group_sc_cap_equipment_manager'),
+                ref('smart_construction_core.group_sc_cap_subcontract_manager'),
+                ref('smart_construction_core.group_sc_cap_labor_manager'),
+                ref('smart_construction_core.group_sc_cap_data_read'),
+                ref('smart_construction_core.group_sc_cap_contact_manager')
+            ])]"/>
+        </record>
+
+        <!-- =========================
              业务配置管理员
-             - 管业务主数据、客户/供应商、业务规则、阶段要求、定额/字典
-             - 作为业务层最高权限，覆盖各业务域 manager 能力
-             - 不继承 Odoo base.group_system
+             - 业务全功能超集：全功能业务 + 业务配置入口
+             - 不继承 Odoo base.group_system，也不继承平台管理员组
         ========================== -->
         <record id="group_sc_cap_business_config_admin" model="res.groups">
-            <field name="name">SC 能力 - 业务配置管理员</field>
+            <field name="name">SC 能力 - 业务配置管理员（全功能）</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="comment">
+                全功能业务身份，并负责业务主数据、规则和配置入口
+            </field>
             <field name="implied_ids" eval="[
                 (6, 0, [
                     ref('smart_construction_core.group_sc_internal_user'),
-                    ref('smart_construction_core.group_sc_cap_project_manager'),
-                    ref('smart_construction_core.group_sc_cap_contract_manager'),
-                    ref('smart_construction_core.group_sc_cap_cost_manager'),
-                    ref('smart_construction_core.group_sc_cap_material_manager'),
-                    ref('smart_construction_core.group_sc_cap_purchase_manager'),
-                    ref('smart_construction_core.group_sc_cap_finance_manager'),
-                    ref('smart_construction_core.group_sc_cap_settlement_manager'),
-                    ref('smart_construction_core.group_sc_cap_data_read'),
-                    ref('smart_construction_core.group_sc_cap_contact_manager'),
+                    ref('smart_construction_core.group_sc_business_full'),
                     ref('smart_core.group_smart_core_business_config_admin')
                 ])
             ]"/>
@@ -492,36 +515,6 @@
                     ref('smart_construction_core.group_sc_cap_business_config_admin')
                 ])
             ]"/>
-        </record>
-
-        <!-- =========================
-             业务全能力测试角色：Business Full
-             - 仅业务能力，不含系统管理权限
-        ========================== -->
-        <record id="group_sc_business_full" model="res.groups">
-            <field name="name">Business Full</field>
-            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <field name="comment">
-                业务全能力测试用户（非系统管理员）
-            </field>
-            <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_project_manager'),
-                ref('smart_construction_core.group_sc_cap_contract_manager'),
-                ref('smart_construction_core.group_sc_cap_cost_manager'),
-                ref('smart_construction_core.group_sc_cap_material_manager'),
-                ref('smart_construction_core.group_sc_cap_purchase_manager'),
-                ref('smart_construction_core.group_sc_cap_finance_manager'),
-                ref('smart_construction_core.group_sc_cap_accounting_manager'),
-                ref('smart_construction_core.group_sc_cap_settlement_manager'),
-                ref('smart_construction_core.group_sc_cap_quality_manager'),
-                ref('smart_construction_core.group_sc_cap_safety_manager'),
-                ref('smart_construction_core.group_sc_cap_equipment_manager'),
-                ref('smart_construction_core.group_sc_cap_subcontract_manager'),
-                ref('smart_construction_core.group_sc_cap_labor_manager'),
-                ref('smart_construction_core.group_sc_cap_data_read'),
-                ref('smart_construction_core.group_sc_cap_business_config_admin'),
-                ref('smart_construction_core.group_sc_cap_contact_manager')
-            ])]"/>
         </record>
 
         <!-- =========================

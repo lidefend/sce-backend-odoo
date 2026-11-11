@@ -149,9 +149,7 @@ def published_route_authority(env) -> dict:
             authority = policy.published_route_authority()
         except Exception:
             authority = _build_runtime_route_authority(env)
-        # Apply volatile company restrictions outside the process cache. A stale
-        # browser or cached publication cannot bypass a committed revocation.
-        return policy._apply_company_route_scope(authority)
+        return authority
     except Exception:
         return {}
 

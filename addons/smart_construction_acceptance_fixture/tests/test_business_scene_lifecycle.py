@@ -41,14 +41,14 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.assertTrue(authority, 'authority construction must succeed')
         return menu_publication_decision(authority, self.menu.id, self.menu.action.id)
 
-    def test_company_switch_and_revocation_recompute_cached_authority(self):
+    def test_company_scene_state_does_not_replace_role_navigation_authority(self):
         a, b = self._state(self.company_a), self._state(self.company_b)
         a.set_enabled(True)
         b.set_enabled(True)
         self.assertTrue(self._allowed(self.company_a))
         self.assertTrue(self._allowed(self.company_b))
         a.set_enabled(False)
-        self.assertFalse(self._allowed(self.company_a))
+        self.assertTrue(self._allowed(self.company_a))
         self.assertTrue(self._allowed(self.company_b))
         a.set_enabled(True)
         self.assertTrue(self._allowed(self.company_a))
@@ -118,12 +118,12 @@ class TestBusinessSceneLifecycle(TransactionCase):
         )
         self.assertFalse(request.with_user(member).can_review)
 
-    def test_missing_state_denies_and_legacy_key_does_not_enable_business(self):
+    def test_missing_scenario_state_does_not_remove_role_authority(self):
         self._state(self.company_a).unlink()
-        self.assertFalse(self._allowed(self.company_a))
+        self.assertTrue(self._allowed(self.company_a))
         self.states.create({'company_id': self.company_a.id,
                             'scene_key': 'finance.payment_requests', 'enabled': True})
-        self.assertFalse(self._allowed(self.company_a))
+        self.assertTrue(self._allowed(self.company_a))
 
     def test_finance_cannot_enable_scenes_or_read_another_active_company(self):
         a, b = self._state(self.company_a), self._state(self.company_b)
@@ -132,7 +132,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             a.with_env(actor).set_enabled(not a.enabled)
         self.assertFalse(actor['sc.scene.company.enablement'].search([('id', '=', b.id)]))
 
-    def test_maintained_membership_drives_company_authority_without_seed_file(self):
+    def test_maintained_membership_drives_scenario_catalog_without_seed_file(self):
         from unittest.mock import patch
         from odoo.addons.smart_construction_core.services import scenario_surface_projection
         from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
@@ -144,25 +144,30 @@ class TestBusinessSceneLifecycle(TransactionCase):
         })
         entry.scenario_id = replacement
         with patch.object(scenario_surface_projection, 'load_surface', side_effect=AssertionError('runtime read seed')):
-            self.assertFalse(self._allowed(self.company_a))
             write_tenant_enablement(self.env, self.company_a.id, 'business.v1:test.maintained.payment', True)
-            self.assertTrue(self._allowed(self.company_a))
-            self.assertFalse(self._allowed(self.company_b))
+            self.assertTrue(self._allowed(self.company_b))
             replacement.name = 'Renamed payment'
             rows = _catalog(self.env, self.company_a.id)['business_scenarios']
             row = next(row for row in rows if row['scene_key'] == replacement.code)
             self.assertEqual(row['name'], 'Renamed payment')
             self.assertTrue(row['tenant_enabled'])
             replacement.active = False
-            self.assertFalse(self._allowed(self.company_a))
+            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
+                       if row['scene_key'] == replacement.code)
+            self.assertFalse(row['product_released'])
             replacement.active = True
-            self.assertTrue(self._allowed(self.company_a))
+            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
+                       if row['scene_key'] == replacement.code)
+            self.assertTrue(row['tenant_enabled'])
             entry.unlink()
-            self.assertFalse(self._allowed(self.company_a))
+            self.assertNotIn(
+                replacement.code,
+                {row['scene_key'] for row in _catalog(self.env, self.company_a.id)['business_scenarios']},
+            )
             self.menu.sc_scenario_exempt = True
             self.assertTrue(self._allowed(self.company_a))
             self.menu.sc_scenario_exempt = False
-            self.assertFalse(self._allowed(self.company_a))
+            self.assertTrue(self._allowed(self.company_a))
 
     def test_binding_clears_old_exemption_and_identity_cannot_be_renamed(self):
         from odoo.exceptions import ValidationError
@@ -182,7 +187,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         })
         self.assertFalse(self.menu.sc_scenario_exempt)
         rebound.unlink()
-        self.assertFalse(self._allowed(self.company_a))
+        self.assertTrue(self._allowed(self.company_a))
 
     def test_exemption_migration_does_not_revive_deleted_business_binding(self):
         scenario = self.env['sc.product.scenario'].sudo()

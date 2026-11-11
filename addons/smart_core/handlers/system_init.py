@@ -2361,9 +2361,10 @@ class SystemInitHandler(BaseIntentHandler):
                 _entry["source"] = "scene_internal_action_authority"
                 _entry.setdefault("scene_key", str(_internal_row.get("scene_key") or ""))
                 _scene_internal_bucket.append(_entry)
-        # Narrow after all authority producers (including scene internal routes),
-        # using the same live company scope as request-time route admission.
-        _final_route_authority = env["sc.product.policy"]._apply_company_route_scope(_final_route_authority)
+        # All semantic authority producers (role, native permission, product
+        # publication, platform duty and scene-internal routes) have completed.
+        # Initialization only seals their result; it does not add another
+        # business-scope or role decision here.
         _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
             _final_navigation, _final_route_authority,
         )

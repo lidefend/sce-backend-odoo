@@ -64,7 +64,7 @@
       {
         "role_code": "business_full",
         "label": "业务全功能",
-        "precedence": 20,
+        "precedence": 30,
         "exclusive_surface": true,
         "group_xmlids": [
           "smart_construction_core.group_sc_business_full"
@@ -72,8 +72,9 @@
       },
       {
         "role_code": "business_config_admin",
-        "label": "业务配置管理员",
-        "precedence": 30,
+        "label": "业务配置管理员（全功能）",
+        "precedence": 20,
+        "exclusive_surface": true,
         "group_xmlids": [
           "smart_construction_core.group_sc_cap_business_config_admin"
         ]

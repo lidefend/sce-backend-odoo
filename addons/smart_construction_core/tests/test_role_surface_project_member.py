@@ -39,6 +39,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         # identity profile.  Forcing the kernel constant here would resolve
         # project_member to the terminal role and make the whole surface empty.
         resolver = IdentityResolver(self.env)
+        resolver._role_precedence = ROLE_PRECEDENCE
         resolver._role_groups_explicit = ROLE_GROUPS_EXPLICIT
         resolver._role_groups_capability_fallback = ROLE_GROUPS_CAPABILITY_FALLBACK
         resolver._role_surface_map = {**resolver._role_surface_map, **ROLE_SURFACE_OVERRIDES}
@@ -166,8 +167,34 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "smart_construction_core.group_sc_cap_business_config_admin",
             "smart_construction_core.group_sc_cap_project_manager",
         })
-        self.assertEqual(role_codes, ["business_full"])
-        self.assertEqual(evidence["surface_roles"], ["business_full"])
+        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
+
+    def test_business_config_admin_is_full_superset(self):
+        config_admin = self.env.ref(
+            "smart_construction_core.group_sc_cap_business_config_admin"
+        )
+        business_full = self.env.ref(
+            "smart_construction_core.group_sc_business_full"
+        )
+        self.assertIn(business_full, config_admin.trans_implied_ids)
+        self.assertNotIn(config_admin, business_full.trans_implied_ids)
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Business config full closure",
+            "login": "business.config.full.closure",
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                config_admin.id,
+            ])],
+        })
+        self.assertTrue(user.has_group("smart_construction_core.group_sc_business_full"))
+        self.assertTrue(user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
+        role_codes, evidence = self._resolver().resolve_role_codes_with_evidence({
+            "smart_construction_core.group_sc_business_full",
+            "smart_construction_core.group_sc_cap_business_config_admin",
+        })
+        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()
@@ -362,6 +389,9 @@ class TestProjectMemberRoleSurface(TransactionCase):
             if isinstance(menu, dict) and str(menu.get("menu_xmlid") or "").strip()
         }
         formal_xmlids.update(lowcode_system_config_menu_xmlids())
+        formal_xmlids.add(
+            "smart_construction_core.menu_sc_enterprise_initialization"
+        )
         leaves = list(self._iter_renderable_leaves(delivery.get("nav") or []))
         released_xmlids = {self._leaf_xmlid(node) for node in leaves if self._leaf_xmlid(node)}
         labels = {

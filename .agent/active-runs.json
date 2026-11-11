@@ -113,6 +113,7 @@
     "fix/quick-incremental-execution": ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json",
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/scenario-menu-fact-enumeration-20261106": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
+    "fix/scenario-entry-nav-contract-20261111": ".agent/runs/SCENARIO-ENTRY-NAV-CONTRACT-20261111/run.json",
     "fix/scene-fact-data-convergence-20261104": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "fix/scheduled-ci-authenticated-probe-20261110": ".agent/runs/SCHEDULED-CI-AUTHENTICATED-PROBE-20261110/run.json",
     "fix/scheduled-ci-full-release-dispatch-20261110": ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",

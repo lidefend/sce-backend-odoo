@@ -4,4 +4,3 @@ from . import scene_company_channel
 from . import scene_company_enablement
 from . import scene_governance_wizard
 from . import scene_package_installation
-from . import product_policy

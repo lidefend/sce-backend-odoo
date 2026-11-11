@@ -41,8 +41,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         return row
 
     def _navigation(self):
-        actor_env = self.env(user=self.actor.id, context=dict(
-            self.env.context, lang="zh_CN", allowed_company_ids=[self.actor.company_id.id]))
+        return self._system_init(self.actor)
+
+    def _system_init(self, actor):
+        actor_env = self.env(user=actor.id, context=dict(
+            self.env.context, lang="zh_CN", allowed_company_ids=[actor.company_id.id]))
         result = SystemInitHandler(env=actor_env).handle({"params": {
             "scene": "web", "with_preload": False, "scene_ready_mode": "registry",
         }})
@@ -54,7 +57,30 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.account_leaves = [row for row in leaves if str(row.get("menu_xmlid", "")).startswith("account.")]
         surface = navigation["scenario_surface"]
         self.assertTrue(surface["ok"])
-        return surface["tree"]["centers"]
+        return navigation, surface["tree"]["centers"]
+
+    def _navigation_surface(self):
+        return self._navigation()[1]
+
+    def _route_state(self, navigation, menu):
+        pair = (menu.id, menu.action.id)
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import flatten_authorized_nav_leaves
+        leaves = flatten_authorized_nav_leaves(navigation["nav"], navigation["route_authority"])
+        nav_pairs = {(row["menu_id"], row["action_id"]) for row in leaves}
+        authority = navigation["route_authority"]
+        buckets = {}
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            rows = [
+                row for row in authority.get(bucket) or []
+                if (row.get("menu_id"), row.get("action_id")) == pair
+            ]
+            if rows:
+                buckets[bucket] = rows
+        denied = [
+            row for row in authority.get("denied_actions") or []
+            if (row.get("menu_id"), row.get("action_id")) == pair
+        ]
+        return pair, nav_pairs, buckets, denied
 
     def _locations(self, centers):
         return {entry["menu_id"]: (center, scenario, entry)
@@ -111,10 +137,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.assertFalse(archived.active)
 
     def test_system_init_uses_moved_native_parent_despite_old_policy(self):
-        before = self._locations(self._navigation())
+        before = self._locations(self._navigation_surface())
         self.assertIn(self.project_menu.id, set(before))
         self.project_menu.parent_id = self.contract_center
-        after = self._locations(self._navigation())
+        after = self._locations(self._navigation_surface())
         self.assertEqual(set(after), set(before), "placement must not change authorization")
         center = after[self.project_menu.id][0]
         self.assertEqual(center["key"], "smart_construction_core.menu_sc_contract_center")
@@ -122,18 +148,18 @@ class TestScenarioNavigationMaintenance(TransactionCase):
     def test_system_init_external_center_rename_and_binding_deletion(self):
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_activity_accounting")
         self.assertEqual(self.account_menu.sc_product_center_id, self.account_center)
-        before = self._locations(self._navigation())
+        before = self._locations(self._navigation_surface())
         self.assertIn(self.account_menu.id, self.authorized_ids, str(self.account_leaves))
         self.assertIn(self.account_menu.id, set(before))
         self.assertEqual(self.account_menu.sc_product_center_id, self.account_center)
         self.account_center.with_context(lang="zh_CN").name = "Maintained accounting center"
         self._binding(self.account_menu).unlink()
         self._upgrade_seed()
-        after = self._locations(self._navigation())
+        after = self._locations(self._navigation_surface())
         self.assertNotIn(self.account_menu.id, after)
         self.assertNotIn(self.account_menu.id, self.authorized_ids)
         self.account_menu.sc_scenario_exempt = True
-        after = self._locations(self._navigation())
+        after = self._locations(self._navigation_surface())
         self.assertEqual(set(after), set(before))
         center, scenario, entry = after[self.account_menu.id]
         self.assertEqual(center["key"], "smart_construction_core.menu_sc_accounting_center")
@@ -148,7 +174,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         first, second = self._binding(self.account_menu), self._binding(menu2)
         second.scenario_id = first.scenario_id
         first.sequence, second.sequence = 90, 0
-        locations = self._locations(self._navigation())
+        locations = self._locations(self._navigation_surface())
         entries = locations[self.account_menu.id][1]["entries"]
         ids = [entry["menu_id"] for entry in entries]
         self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
@@ -156,7 +182,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         (first | second).unlink()
         (self.account_menu | menu2).write({"sc_scenario_exempt": True})
         self.account_menu.sequence, menu2.sequence = 90, 0
-        entries = self._locations(self._navigation())[self.account_menu.id][0]["entries"]
+        entries = self._locations(self._navigation_surface())[self.account_menu.id][0]["entries"]
         ids = [entry["menu_id"] for entry in entries]
         self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
 
@@ -167,3 +193,59 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.account_menu.sc_product_center_id = False
         self._upgrade_seed()
         self.assertFalse(self.account_menu.sc_product_center_id)
+
+    def test_system_init_config_admin_receives_independent_entries(self):
+        navigation, _centers = self._navigation()
+        for xmlid in (
+            "smart_construction_core.menu_sc_my_work",
+            "smart_construction_core.menu_sc_enterprise_initialization",
+        ):
+            menu = self.env.ref(xmlid)
+            pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
+            with self.subTest(xmlid=xmlid):
+                self.assertIn(pair, nav_pairs)
+                self.assertTrue(buckets, "%s missing from allowed route buckets" % xmlid)
+                self.assertFalse(denied, "%s unexpectedly denied: %s" % (xmlid, denied))
+                self.assertTrue(all(
+                    row.get("route_kind") != "DENIED"
+                    and row.get("reason_code") != "BUSINESS_SCENARIO_CONFIGURATION_MISSING"
+                    for rows in buckets.values()
+                    for row in rows
+                ))
+        enterprise = self.env.ref(
+            "smart_construction_core.menu_sc_enterprise_initialization"
+        )
+        _pair, _nav_pairs, buckets, _denied = self._route_state(navigation, enterprise)
+        self.assertIn("admin_actions", buckets)
+
+    def test_system_init_business_full_gets_my_work_but_not_configuration_entry(self):
+        full_group = self.env.ref("smart_construction_core.group_sc_business_full")
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Business full runtime principal",
+            "login": "business.full.runtime.principal",
+            "company_id": self.actor.company_id.id,
+            "company_ids": [(6, 0, [self.actor.company_id.id])],
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                full_group.id,
+            ])],
+        })
+        self.assertFalse(
+            user.has_group("smart_construction_core.group_sc_cap_business_config_admin")
+        )
+        navigation, _centers = self._system_init(user)
+        my_work = self.env.ref("smart_construction_core.menu_sc_my_work")
+        pair, nav_pairs, buckets, denied = self._route_state(navigation, my_work)
+        self.assertIn(pair, nav_pairs)
+        self.assertTrue(buckets)
+        self.assertFalse(denied)
+        enterprise = self.env.ref(
+            "smart_construction_core.menu_sc_enterprise_initialization"
+        )
+        _pair, nav_pairs, buckets, _denied = self._route_state(navigation, enterprise)
+        self.assertNotIn(enterprise.id, self.authorized_ids)
+        self.assertNotIn(
+            enterprise.id,
+            user.with_user(user).env["ir.ui.menu"]._visible_menu_ids(),
+        )
+        self.assertFalse(buckets)

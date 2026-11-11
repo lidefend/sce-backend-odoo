@@ -169,8 +169,8 @@ def main() -> int:
         if policy_maps.ROLE_PRECEDENCE != (
             "system_admin",
             "experience",
-            "business_full",
             "business_config_admin",
+            "business_full",
             "executive",
             "owner",
             "pm",
