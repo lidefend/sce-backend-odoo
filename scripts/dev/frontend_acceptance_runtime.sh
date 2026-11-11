@@ -18,7 +18,8 @@ container_env_value() {
 }
 
 load_profile() {
-  local base_env
+  local base_env requested_fixture_scope
+  requested_fixture_scope="${SC_ACCEPTANCE_FIXTURE_SCOPE:-}"
   base_env="$(python3 "$PROFILE_RESOLVER" --profile "$PROFILE" --get SC_ACCEPTANCE_BASE_ENV_FILE)"
   if [[ ! -f "$base_env" ]]; then
     echo "[acceptance.runtime] DENY missing primary-worktree credential env: $base_env" >&2
@@ -36,6 +37,13 @@ load_profile() {
     printf -v "$key" '%s' "$value"
     export "$key"
   done < <(python3 "$PROFILE_RESOLVER" --profile "$PROFILE")
+  if [[ -z "$requested_fixture_scope" ]]; then
+    case "$PROFILE" in
+      local) requested_fixture_scope=acceptance ;;
+      candidate) requested_fixture_scope=candidate ;;
+    esac
+  fi
+  export SC_ACCEPTANCE_FIXTURE_SCOPE="$requested_fixture_scope"
   docker inspect "$SC_ACCEPTANCE_CREDENTIAL_CONTAINER" >/dev/null 2>&1 || {
     echo "[acceptance.runtime] DENY missing credential authority container: $SC_ACCEPTANCE_CREDENTIAL_CONTAINER" >&2
     exit 2

@@ -38,8 +38,8 @@ another iteration's backend as a hidden prerequisite.
 ## Validation
 
 - `make verify.frontend.standard_preview.unit`: PASS at the code-identical
-  pre-document candidate, 134 Python tests and 42 Node tests, original log
-  `.runtime/p4-delivery-lane-identity/orchestration-unit-preview-decoupled.log`.
+  pre-document candidate, 135 Python tests and 42 Node tests, original log
+  `.runtime/p4-delivery-lane-identity/orchestration-unit-candidate-scope.log`.
 - `make verify.frontend.list_surface_structure.browser`: PASS, 18 rows, 0 failures,
   plus 23 static contract tests.
 - `make verify.frontend.presentation.local.browser`: PASS, one header target,
@@ -56,6 +56,10 @@ another iteration's backend as a hidden prerequisite.
   backend blocked its own repair path. The preview lifecycle now performs only
   its profile preflight; backend-dependent browser operations retain the exact
   artifact identity gate.
+- Candidate fixture execution now derives its declared fixture scope from the
+  selected runtime profile (`local→acceptance`, `candidate→candidate`) unless
+  the caller explicitly supplies one, preventing a candidate run from writing
+  the shared acceptance database.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`

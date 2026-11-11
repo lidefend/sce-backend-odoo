@@ -41,6 +41,17 @@ load_profile
             result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_profile_load_binds_fixture_scope_to_isolated_carrier(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        loader = source.split("load_profile() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("local) requested_fixture_scope=acceptance", loader)
+        self.assertIn("candidate) requested_fixture_scope=candidate", loader)
+        self.assertIn(
+            'export SC_ACCEPTANCE_FIXTURE_SCOPE="$requested_fixture_scope"', loader
+        )
+
     def test_cached_restore_is_offline_frozen_and_script_free(self) -> None:
         source = (ROOT / "scripts/dev/frontend_cached_dependencies_restore.sh").read_text(
             encoding="utf-8"
