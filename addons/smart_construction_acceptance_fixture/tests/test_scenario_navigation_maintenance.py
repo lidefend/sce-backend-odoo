@@ -100,12 +100,31 @@ class TestScenarioNavigationMaintenance(TransactionCase):
                             "action_xmlid": row.get("action_xmlid"),
                             "route": row.get("route"),
                         })
+        snapshots = []
+        for snapshot in self.env["sc.edition.release.snapshot"].sudo().search(
+            [("is_active", "=", True)], order="released_at desc, id desc"
+        ):
+            payload = snapshot.snapshot_json if isinstance(snapshot.snapshot_json, dict) else {}
+            policy = payload.get("policy") if isinstance(payload.get("policy"), dict) else {}
+            snapshot_pairs = {
+                (row.get("menu_id"), row.get("action_id"))
+                for group in policy.get("menu_groups") or []
+                for row in group.get("menus") or []
+            }
+            snapshots.append({
+                "id": snapshot.id,
+                "product_key": snapshot.product_key,
+                "state": snapshot.state,
+                "has_pair": pair in snapshot_pairs,
+                "schema": payload.get("policy_snapshot_schema"),
+            })
         return json.dumps({
             "pair": pair,
             "nav_pairs": sorted(nav_pairs),
             "buckets": buckets,
             "denied": denied,
             "policy_rows": policy_rows,
+            "release_snapshots": snapshots,
             "role_surface": {
                 "role_code": self.role_surface.get("role_code"),
                 "role_codes": self.role_surface.get("role_codes"),

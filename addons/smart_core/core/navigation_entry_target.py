@@ -144,6 +144,7 @@ def build_web_surface_entry_target(
     # gap instead of silently degrading to ``compatibility``.
     declared_any = (
         "sc_web_surface" in declared
+        or "sc_delivery_scope" in declared
         or _mentions_web_surface(context)
     )
     if not surface and not declared_any:
@@ -154,11 +155,18 @@ def build_web_surface_entry_target(
         model=model,
         view_modes=view_modes,
     )
-    entry_target = {
-        "type": "admin_surface",
-        "surface": surface,
-        "route": admin_surface_route(surface),
-    }
+    if surface or "sc_web_surface" in declared or _mentions_web_surface(context):
+        entry_target = {
+            "type": "admin_surface",
+            "surface": surface,
+            "route": admin_surface_route(surface),
+        }
+    else:
+        entry_target = {
+            "type": "compatibility",
+            "route": action_route(action_id, menu_id),
+            "compatibility_refs": compatibility_refs,
+        }
     # Presentation is not admission. Only an explicit native action scope
     # declares a configuration workspace independent of business publication.
     if declared.get("sc_delivery_scope") == "configuration":

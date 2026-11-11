@@ -253,6 +253,17 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(surface_only["surface"], "business_config")
         self.assertEqual(surface_only["route"], "/admin/business-config")
 
+        config_scope = menu_service.build_web_surface_entry_target(
+            "{'sc_delivery_scope': 'configuration'}",
+            menu_id=713,
+            action_id=961,
+            model="res.company",
+            view_modes=["form"],
+        )
+        self.assertEqual(config_scope["type"], "compatibility")
+        self.assertEqual(config_scope["route"], "/a/961?menu_id=713")
+        self.assertEqual(config_scope["delivery_scope"], "configuration")
+
         # A declaration the static parser cannot read must not be dropped
         # either: the keys are present, so the target stays explicit.
         unparsed = menu_service.build_web_surface_entry_target(
