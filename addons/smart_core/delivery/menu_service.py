@@ -2759,8 +2759,17 @@ class MenuService:
             if str(item).strip()
         }
         if "menu_groups" in policy and role_home_xmlids:
+            visible_facts = self._menu_fact_snapshot("visible").flat
+            role_shell_native = self._filter_native_action_groups(
+                self._menu_fact_tree_as_native([
+                    fact
+                    for fact in visible_facts
+                    if str(fact.get("menu_xmlid") or "").strip().lower()
+                    in role_home_xmlids
+                ])
+            )
             role_declared_native = self._native_preview_menus(
-                native_nav=primary_native_nav,
+                native_nav=role_shell_native,
                 policy=policy,
                 entry_xmlids=role_home_xmlids,
             )
