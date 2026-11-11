@@ -54,12 +54,13 @@
 - 当前维护中的 dev 产品策略仍是历史 91 入口快照，本批没有覆盖管理员维护策略。
   当前源码 92 入口策略的 My Work/企业初始化行为由验收事务同步当前策略后验证。
 
-受管验收库 `sc_frontend_acceptance` 在旧候选上曾执行
-`make acceptance.frontend.fixture_orm`：49 tests，0 failed，0 errors。该结果不适用于当前
-候选。当前候选最近一次执行为 **49 tests，0 failed，6 errors**，失败归因为
-`baseline_evidence_defect`：共享验收库尚未执行 `17.0.0.181` pre-migrate，重载 seed 时
-仍能看到人员档案的旧场景绑定。必须先用受管 `acceptance.module.upgrade` 升级并回读，
-再重新执行用例；不能通过放宽 seed 校验或让场景层覆盖事实来迁就旧库。
+受管验收库 `sc_frontend_acceptance` 在临时干净提交 `04c35ec23` 上先执行
+`make acceptance.module.upgrade MODULE=smart_construction_core`，确认
+`17.0.0.181` pre-migrate 先于模块更新运行；随后在同 SHA 重启受管后端并执行
+`make acceptance.frontend.fixture_orm`：**49 tests，0 failed，0 errors**
+（log `fixture_orm_20261111T141056Z.log`）。此前的 6 个错误已明确归因为
+`baseline_evidence_defect`：共享库尚未执行迁移，旧场景绑定仍在；迁移后同一用例集
+全部通过，没有放宽 seed 校验，也没有让场景层覆盖事实。
 
 这组用例覆盖：
 
@@ -83,7 +84,7 @@
 | `verify.scenario.center_projection.guard` | PASS，7 tests |
 | `verify.backend.navigation_delivery.unit` | PASS，76 tests |
 | `verify.daily.permission_truth.capability.orm` | PASS，13 tests |
-| `acceptance.frontend.fixture_orm` | FAIL，49 tests 中 0 failed / 6 errors，验收库尚未升级到 17.0.0.181 |
+| `acceptance.frontend.fixture_orm` | PASS，49 tests；验收库已执行 17.0.0.181 pre-migrate |
 | fresh `sc_test` direct-entry initialization | PASS，6 tests |
 | fresh `sc_test` `TestProjectMemberRoleSurface` | PASS，31 tests |
 | `local.dev.upgrade` | PASS，schema/migration/authority readback |
@@ -140,8 +141,8 @@ canonical projection 和 payload seal，而本批已经把该职责收敛到
 
 隔离新库 `TestScenarioDirectInitialization` 6 tests PASS。最新
 `make ci.local.iteration` 对 110 个变更路径执行 25 个受影响目标，全部退出 0，
-`unmappedPathCount=0`。当前剩余阻断仅为共享验收库升级与 49 例重跑，之后仍需提交新的
-精确 HEAD 并取得当前 HEAD 的远端必需检查。
+`unmappedPathCount=0`。共享验收库迁移与 49 例重跑已经关闭。当前仍需把结果索引和本记录
+冻结到新的精确 HEAD，并取得该 HEAD 的远端必需检查；本地通过不等于主线已集成或产品已部署。
 
 ## 回退
 

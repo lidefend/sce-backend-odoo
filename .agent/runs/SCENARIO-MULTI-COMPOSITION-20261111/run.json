@@ -146,15 +146,15 @@
     "acceptance_orm": {
       "target": "acceptance.frontend.fixture_orm",
       "database": "sc_frontend_acceptance",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
       "tests": 49,
       "failed": 0,
-      "errors": 6,
-      "log": ".runtime/acceptance/fixture_orm_20261111T134459Z.log",
-      "log_sha256": "213f39de11d99a58f99c2d11eef8e512f03cb6fb7927c50cd861c71404ea4047",
-      "status": "failed",
-      "failure_owner": "baseline_evidence_defect",
-      "reason": "The acceptance database had not run the 17.0.0.181 pre-migration, so the retired runtime-user scenario binding was still present when the seed tried to declare its explicit exemption.",
-      "next": "Upgrade the clean committed candidate through acceptance.module.upgrade, read back the exemption and binding count, then rerun the 49-test fixture."
+      "errors": 0,
+      "log": ".runtime/acceptance/fixture_orm_20261111T141056Z.log",
+      "log_sha256": "f59399b78a249515d7b0ed2708ae4d780a409338552afb7e18cfed2c31dabc93",
+      "upgrade_log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/acceptance-upgrade-17.0.0.181.log",
+      "upgrade_log_sha256": "5c6e10184c5cf3db39f5b7e318c68f422ed7b496c8794007281b25e7760b12b9",
+      "status": "passed"
     },
     "fresh_install": {
       "database_profile": "sc-local-test/sc_test/test",
@@ -337,15 +337,33 @@
       "log": ".runtime/acceptance/fixture_orm_20261111T134459Z.log",
       "log_sha256": "213f39de11d99a58f99c2d11eef8e512f03cb6fb7927c50cd861c71404ea4047",
       "reason": "The shared acceptance database was not upgraded to 17.0.0.181, so six seed reloads observed the retired runtime-user scenario binding before the migration could remove it."
+    },
+    {
+      "command": "make acceptance.module.upgrade EXPECTED_HEAD=04c35ec231391e7c2cb42aa9b4644bb88fd47b44 MODULE=smart_construction_core",
+      "status": "passed",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/acceptance-upgrade-17.0.0.181.log",
+      "log_sha256": "5c6e10184c5cf3db39f5b7e318c68f422ed7b496c8794007281b25e7760b12b9",
+      "notes": "The governed pre-migrate ran before the module update; writers were left stopped for the same-SHA backend restart."
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
+      "tests": 49,
+      "failed": 0,
+      "errors": 0,
+      "log": ".runtime/acceptance/fixture_orm_20261111T141056Z.log",
+      "log_sha256": "f59399b78a249515d7b0ed2708ae4d780a409338552afb7e18cfed2c31dabc93",
+      "recovery": "The clean committed candidate ran acceptance.module.upgrade to 17.0.0.181 and then the same 49-test fixture, which passed."
     }
   ],
   "blockers": [
-    "The shared acceptance database must be upgraded to 17.0.0.181 on a clean committed candidate before the 49-test fixture can pass.",
     "PR 872 requires a new exact head and fresh required-check runs after the backend-suite recovery.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
     "No merge or deployment has been performed."
   ],
-  "next_exact_step": "Freeze and commit the affected-target recovery, run the governed acceptance.module.upgrade to 17.0.0.181, read back the direct exemption, and rerun acceptance.frontend.fixture_orm.",
+  "next_exact_step": "Update the iteration record with the passing acceptance migration evidence, freeze and commit the new exact head, then push PR 872 and wait for all current-head required checks.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",
