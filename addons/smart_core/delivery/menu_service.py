@@ -2749,6 +2749,22 @@ class MenuService:
                 ]) for group in config_groups]
                 config_groups = [group for group in config_groups if group["menus"]]
             grouped_native = config_groups + list(grouped_native or [])
+        # A closed product policy selects product entries, not the complete
+        # internal role surface. Explicit role-home/shell carriers still come
+        # from the native ACL-visible tree and are authorized by the same role
+        # projection as every other route.
+        role_home_xmlids = {
+            str(item).strip().lower()
+            for item in (role_surface or {}).get("role_home_menu_xmlids") or []
+            if str(item).strip()
+        }
+        if "menu_groups" in policy and role_home_xmlids:
+            role_declared_native = self._native_preview_menus(
+                native_nav=primary_native_nav,
+                policy=policy,
+                entry_xmlids=role_home_xmlids,
+            )
+            grouped_native = role_declared_native + list(grouped_native or [])
         groups_by_key = {}
         group_order = []
         scene_group_map = {}

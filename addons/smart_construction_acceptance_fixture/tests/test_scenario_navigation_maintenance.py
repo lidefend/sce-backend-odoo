@@ -156,10 +156,8 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self._binding(self.account_menu).unlink()
         self._upgrade_seed()
         after = self._locations(self._navigation_surface())
-        self.assertNotIn(self.account_menu.id, after)
-        self.assertNotIn(self.account_menu.id, self.authorized_ids)
-        self.account_menu.sc_scenario_exempt = True
-        after = self._locations(self._navigation_surface())
+        self.assertIn(self.account_menu.id, after)
+        self.assertIn(self.account_menu.id, self.authorized_ids)
         self.assertEqual(set(after), set(before))
         center, scenario, entry = after[self.account_menu.id]
         self.assertEqual(center["key"], "smart_construction_core.menu_sc_accounting_center")
