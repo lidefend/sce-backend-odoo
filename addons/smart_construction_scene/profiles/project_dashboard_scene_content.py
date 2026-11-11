@@ -92,7 +92,6 @@ def build_project_dashboard_scene_content() -> Dict[str, Any]:
         "page": {
             "key": "project.management.dashboard",
             "title": "项目驾驶舱",
-            "route": "/s/project.management",
             "page_type": "dashboard",
             "layout_mode": "dashboard",
         },

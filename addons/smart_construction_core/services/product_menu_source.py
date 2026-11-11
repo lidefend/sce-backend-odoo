@@ -223,7 +223,6 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
     """
     capability_key = "construction.menu.%s" % menu_xmlid.replace(".", "_")
     domain_label = path[-2] if len(path) > 1 else center
-    route = "/s/%s" % scene_key
     return {
         "access_level": "public", "action_xmlid": "",
         "business_entry_contract_version": "business_entry_disposition.v1",
@@ -244,7 +243,7 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
         "product_domain": center, "product_domain_label": domain_label, "product_key": center,
         "productization_source": "p1_locked_menu_surface_projection",
         "release_domain": "construction",
-        "release_state": "released", "res_model": "", "route": route, "scene_key": scene_key,
+        "release_state": "released", "res_model": "", "scene_key": scene_key,
         "source_kind": "p1_locked_menu_surface_projection",
         "target_scene_key": scene_key, "title": label, "view_modes": [],
         "visible_menu_path": " / ".join(("智慧施工管理平台", center, *path)),

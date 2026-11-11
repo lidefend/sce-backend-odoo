@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
+from odoo.addons.smart_core.core.navigation_entry_target import (
+    build_web_surface_entry_target,
+    derive_entry_route,
+    target_route,
+)
 from odoo.addons.smart_core.security.platform_admin import (
     can_discover_platform_capabilities,
     user_is_platform_control_admin,
@@ -177,15 +181,6 @@ class DeliveryEngine:
         if view_modes:
             meta["view_modes"] = view_modes
 
-        current_route = _text(meta.get("route") or node.get("route"))
-        if action_id and not current_route.startswith("/s/"):
-            route = f"/a/{action_id}"
-            if menu_id:
-                route = f"{route}?menu_id={menu_id}"
-            meta["route"] = route
-        else:
-            route = current_route
-
         existing_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
         declared_surface = (
             {}
@@ -198,6 +193,18 @@ class DeliveryEngine:
                 view_modes=view_modes,
             )
         )
+        route = (
+            target_route(existing_target)
+            or target_route(declared_surface)
+            or derive_entry_route(
+                scene_key=existing_target.get("scene_key"),
+                action_id=action_id,
+                menu_id=menu_id,
+                surface=declared_surface.get("surface") or existing_target.get("surface"),
+            )
+        )
+        if route:
+            meta["route"] = route
         if declared_surface:
             meta["entry_target"] = self._normalize_entry_target_refs(
                 entry_target=declared_surface,

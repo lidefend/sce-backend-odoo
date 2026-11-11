@@ -34,15 +34,11 @@ def _load(path: Path, name: str):
 
 
 def my_work_fact_errors(root: Path, policy_maps) -> list[str]:
-    """PR #800 moved this entry to native facts, not a critical-route override.
-
-    Exercise the real XML reader, public scene list and runtime projector with
-    two different native declarations. No repository or database is mutated.
-    """
+    """Verify a native workspace entry composes identity without maintaining a route."""
     errors: list[str] = []
     scene_key = "my_work.workspace"
     if scene_key in policy_maps.CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES:
-        errors.append("my-work route must come from native action facts, not policy-map override")
+        errors.append("my-work route must be derived, not supplied by a policy-map override")
     core = root / "addons/smart_construction_core"
     relative = "views/support/my_work_views.xml"
     try:
@@ -61,9 +57,10 @@ def my_work_fact_errors(root: Path, policy_maps) -> list[str]:
         if name is None or context is None:
             raise ValueError("native my-work name/context declaration is missing")
         declared = ast.literal_eval(context.text or "")
-        if (not isinstance(declared, dict) or not isinstance(declared.get("sc_web_route"), str)
-                or not declared["sc_web_route"].startswith("/") or not declared.get("sc_web_surface")):
-            raise ValueError("native my-work route/surface declaration is incomplete")
+        if not isinstance(declared, dict):
+            raise ValueError("native my-work context must be a mapping")
+        if "sc_web_route" in declared:
+            raise ValueError("native my-work route declaration is forbidden")
         # The scene extension must not reintroduce the same second authority.
         scene_extension = ast.parse(_read(root / "addons/smart_construction_scene/core_extension.py"))
         maps = [node.value for node in scene_extension.body if isinstance(node, ast.Assign)
@@ -76,35 +73,39 @@ def my_work_fact_errors(root: Path, policy_maps) -> list[str]:
         runtime = _load(root / "addons/smart_core/core/navigation_entry_target.py",
                         "native_my_work_runtime_projection_under_guard")
 
-        def verify_projection(expected_context, expected_name):
+        def verify_projection(expected_name):
             rows = [row for row in projection.list_scene_entries() if row.get("code") == scene_key]
             if len(rows) != 1:
                 errors.append("native my-work facts must produce exactly one public scene entry")
                 return
             row = rows[0]
             target = row.get("target", {})
-            expected = {"route": expected_context["sc_web_route"],
+            expected = {"route": f"/s/{scene_key}",
                         "menu_xmlid": "smart_construction_core.menu_sc_my_work",
                         "action_xmlid": "smart_construction_core.action_sc_my_work"}
             if row.get("name") != expected_name or any(target.get(k) != v for k, v in expected.items()):
-                errors.append("scene projection must consume native my-work route/name and entry identities")
-            projected = runtime.build_web_surface_entry_target(expected_context)
-            if (projected.get("route") != expected_context["sc_web_route"]
-                    or projected.get("surface") != expected_context["sc_web_surface"]):
-                errors.append("runtime entry must consume the declared route and surface")
+                errors.append("scene projection must consume native my-work name and entry identities")
+            if runtime.derive_entry_route(scene_key=scene_key) != f"/s/{scene_key}":
+                errors.append("runtime entry must derive the scene route from scene identity")
+            if runtime.derive_entry_route(action_id=962, menu_id=714) != "/a/962?menu_id=714":
+                errors.append("runtime entry must derive action routes from action/menu identity")
+            try:
+                runtime.build_web_surface_entry_target("{'sc_web_route': '/my-work'}")
+            except ValueError:
+                pass
+            else:
+                errors.append("runtime entry must reject maintained sc_web_route facts")
 
-        verify_projection(declared, (name.text or "").strip())
+        verify_projection((name.text or "").strip())
         original_core = projection._CORE_DIR
         with tempfile.TemporaryDirectory(prefix="my-work-fact-guard-") as directory:
             fixture = Path(directory) / relative
             fixture.parent.mkdir(parents=True)
-            changed = {**declared, "sc_web_route": "/__fact_guard__/maintained-work"}
-            context.text = repr(changed)
             name.text = "Maintained workspace fixture"
             xml.write(fixture, encoding="unicode")
             projection._CORE_DIR = Path(directory)
             try:
-                verify_projection(changed, name.text)
+                verify_projection(name.text)
             finally:
                 projection._CORE_DIR = original_core
     except (OSError, ValueError, TypeError, SyntaxError, ET.ParseError, AttributeError) as exc:

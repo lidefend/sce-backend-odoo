@@ -33,6 +33,12 @@ ENABLEMENT_WRITERS = [
 SCENE_DATA_DIR = ROOT / "addons/smart_construction_scene/data"
 SCENE_PROFILE_DIR = ROOT / "addons/smart_construction_scene/profiles"
 ROUTE_FACT_PATTERN = re.compile(r"""['"]route['"]\s*:\s*['"]([^'"]+)['"]""")
+LEGACY_WEB_ROUTE_PATTERN = re.compile(r"sc_web_route")
+PRODUCT_ROUTE_FACT_CARRIERS = (
+    ROOT / "addons/smart_construction_core/services/product_menu_source.py",
+    ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py",
+    ROOT / "addons/smart_construction_core/data/product_menu_source.json",
+)
 
 
 def _sha(text: str) -> str:
@@ -101,6 +107,24 @@ def _scene_route_fact_declarations() -> str:
     return "\n".join(sorted(set(rows)))
 
 
+def _legacy_route_fact_maintenance() -> str:
+    """Find route declarations outside the route projection owner."""
+    rows = []
+    for path in sorted((ROOT / "addons").glob("*/views/**/*.xml")):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if LEGACY_WEB_ROUTE_PATTERN.search(text):
+            rows.append(f"{path.relative_to(ROOT).as_posix()}:sc_web_route")
+    for path in PRODUCT_ROUTE_FACT_CARRIERS:
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in ROUTE_FACT_PATTERN.finditer(text):
+            rows.append(
+                f"{path.relative_to(ROOT).as_posix()}:route:{str(match.group(1)).strip()}"
+            )
+    return "\n".join(sorted(set(rows)))
+
+
 def _current_violations() -> dict[str, str | None]:
     """Return the live violation signature. A missing carrier yields None."""
     registry_codes = _hardcoded_enterprise_codes()
@@ -113,7 +137,14 @@ def _current_violations() -> dict[str, str | None]:
         "scene_enablement_fact_writes": _sha(enablement_writes) if enablement_writes else None,
         "hardcoded_provider_layout": _sha(provider_layout) if provider_layout else None,
         "hardcoded_scene_surface_menus": _sha(surface_menus) if surface_menus else None,
-        "scene_route_fact_declarations": _sha(_scene_route_fact_declarations()),
+        "scene_route_fact_declarations": (
+            _sha(signature) if (signature := _scene_route_fact_declarations()) else None
+        ),
+        "legacy_route_fact_maintenance": (
+            _sha(signature)
+            if (signature := _legacy_route_fact_maintenance())
+            else None
+        ),
     }
 
 

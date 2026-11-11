@@ -43,9 +43,20 @@
         "addons/smart_construction_scene/data/",
         "addons/smart_construction_scene/profiles/"
       ],
-      "sha256": "ce3e7df59e03d2445d9a6f7216f20f7280db65b992ce9d6db1455bd18dbb7588",
-      "converged": false,
-      "note": "Existing route-fact debt is pinned. New or changed scene-layer route declarations fail closed; scene composition must reference native/product facts."
+      "sha256": null,
+      "converged": true,
+      "converged_by": "routes are derived from final scene/action/menu identity during navigation projection; scene carriers hold only composition identities"
+    },
+    "legacy_route_fact_maintenance": {
+      "files": [
+        "addons/*/views/**/*.xml",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/data/product_menu_source.json"
+      ],
+      "sha256": null,
+      "converged": true,
+      "converged_by": "native actions and product-entry facts no longer maintain URL routes; navigation projection derives them from scene/action/menu identity"
     }
   }
 }

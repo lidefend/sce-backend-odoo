@@ -217,7 +217,7 @@ class EntryPublicationTest(unittest.TestCase):
             "config.action": SimpleNamespace(
                 id=806, _name="ir.actions.act_window", res_model="ui.business.config.contract",
                 view_mode="tree,form",
-                context="{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config'}",
+                context="{'sc_web_surface': 'business_config'}",
             ),
         }
         normalizer._resolve_xmlid_record = lambda xmlid, **kwargs: records.get(xmlid)

@@ -43,8 +43,8 @@ class NativeWorkspaceFactGuardTest(unittest.TestCase):
         expected = (
             "system_admin",
             "experience",
-            "business_full",
             "business_config_admin",
+            "business_full",
             "executive",
             "owner",
             "pm",
@@ -55,25 +55,24 @@ class NativeWorkspaceFactGuardTest(unittest.TestCase):
         )
         self.assertEqual(expected, module.ROLE_PRECEDENCE)
 
-    def test_maintained_xml_route_and_name_are_consumed_without_map_changes(self):
+    def test_maintained_native_name_is_consumed_without_route_or_map_changes(self):
         tree = ET.parse(self.xml)
         action = tree.find(".//record[@id='action_sc_my_work']")
         context = action.find("field[@name='context']")
         facts = ast.literal_eval(context.text)
-        facts['sc_web_route'] = '/configured-workspace'
-        context.text = repr(facts)
+        self.assertNotIn('sc_web_route', facts)
         action.find("field[@name='name']").text = 'Configured workspace'
         tree.write(self.xml, encoding='unicode')
         self.assertEqual([], self.errors())
 
-    def test_missing_context_route_cannot_pass_using_projection_fallback(self):
+    def test_legacy_context_route_is_rejected(self):
         tree = ET.parse(self.xml)
         field = tree.find(".//record[@id='action_sc_my_work']/field[@name='context']")
         facts = ast.literal_eval(field.text)
-        del facts['sc_web_route']
+        facts['sc_web_route'] = '/my-work'
         field.text = repr(facts)
         tree.write(self.xml, encoding='unicode')
-        self.assertTrue(any('incomplete' in error for error in self.errors()))
+        self.assertTrue(any('forbidden' in error for error in self.errors()))
 
     def test_unloaded_native_declaration_is_rejected(self):
         path = self.root / 'addons/smart_construction_core/__manifest__.py'
@@ -104,21 +103,22 @@ class NativeWorkspaceFactGuardTest(unittest.TestCase):
     def test_hardcoded_scene_route_or_name_fails_the_changed_fact_case(self):
         path = self.root / 'addons/smart_construction_scene/profiles/scene_registry_content.py'
         original = path.read_text()
-        for expression, frozen in (('fact.get("route") or "/my-work"', '"/my-work"'),
+        for expression, frozen in (('target["route"] = f"/s/{scene_key}"', 'target["route"] = "/my-work"'),
                                    ('fact.get("name") or "我的工作"', '"我的工作"')):
             with self.subTest(expression=expression):
                 changed = original.replace(expression, frozen)
                 self.assertNotEqual(original, changed)
                 path.write_text(changed)
-                self.assertTrue(any('scene projection must consume' in error for error in self.errors()))
+                self.assertTrue(self.errors())
 
     def test_hardcoded_runtime_route_is_rejected(self):
         path = self.root / 'addons/smart_core/core/navigation_entry_target.py'
         original = path.read_text()
-        changed = original.replace('"route": route,', '"route": "/my-work",', 1)
+        changed = original.replace('return f"{SCENE_ROUTE_PREFIX}{key}" if key else ""',
+                                   'return "/my-work"', 1)
         self.assertNotEqual(original, changed)
         path.write_text(changed)
-        self.assertTrue(any('runtime entry must consume' in error for error in self.errors()))
+        self.assertTrue(any('derive the scene route' in error for error in self.errors()))
 
 
 if __name__ == '__main__':

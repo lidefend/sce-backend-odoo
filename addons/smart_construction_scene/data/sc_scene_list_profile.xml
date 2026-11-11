@@ -41,8 +41,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/projects.list',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_project_project',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_project_project',
                     'action_xmlid': 'smart_construction_core.action_sc_project_list'
                 },
                 'list_profile': {
@@ -167,8 +166,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/projects.ledger',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_project_project',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_project_project',
                     'action_xmlid': 'smart_construction_core.action_sc_project_list'
                 },
                 'list_profile': {
@@ -267,8 +265,7 @@
                     {'key': 'risk', 'title': '风险提醒', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.finance.payment.risk'}
                 ],
                 'target': {
-                    'route': '/s/finance.payment_requests',
-                    'menu_xmlid': 'smart_construction_core.menu_payment_request',
+                                        'menu_xmlid': 'smart_construction_core.menu_payment_request',
                     'action_xmlid': 'smart_construction_core.action_payment_request_my'
                 },
                 'list_profile': {
@@ -349,8 +346,7 @@
                     {'key': 'alerts', 'title': '异常提示', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.cost.compare.alerts'}
                 ],
                 'target': {
-                    'route': '/s/cost.cost_compare',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_cost_center',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_cost_center',
                     'action_xmlid': 'smart_construction_core.action_project_cost_compare'
                 },
                 'list_profile': {
@@ -414,8 +410,7 @@
                     {'key': 'variance', 'title': '偏差追踪', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.cost.ledger.variance'}
                 ],
                 'target': {
-                    'route': '/s/cost.project_cost_ledger',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_project_cost_ledger',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_project_cost_ledger',
                     'action_xmlid': 'smart_construction_core.action_project_cost_ledger'
                 },
                 'list_profile': {
@@ -479,8 +474,7 @@
                     {'key': 'settlement', 'title': '结算联动', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.finance.center.settlement'}
                 ],
                 'target': {
-                    'route': '/s/finance.center',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_finance_center',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_finance_center',
                     'action_xmlid': 'smart_construction_core.action_sc_tier_review_my_payment_request'
                 },
                 'action_specs': {
@@ -536,8 +530,7 @@
                     {'key': 'risk', 'title': '风险提醒', 'zone_type': 'supporting', 'display_mode': 'stack', 'block_key': 'block.finance.settlement.risk'}
                 ],
                 'target': {
-                    'route': '/s/finance.settlement_orders',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_settlement_order',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_settlement_order',
                     'action_xmlid': 'smart_construction_core.action_sc_settlement_order'
                 },
                 'list_profile': {

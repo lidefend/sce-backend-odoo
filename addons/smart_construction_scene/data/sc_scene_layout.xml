@@ -11,7 +11,7 @@
                 'name': 'Scene Smoke Default',
                 'version': 'v2',
                 'layout': {'kind': 'workspace', 'sidebar': 'fixed', 'header': 'full'},
-                'target': {'route': '/workbench?scene=scene_smoke_default'},
+                'target': {},
                 'tiles': []
             }"/>
         </record>
@@ -106,8 +106,7 @@
                     'stage': 'wave1'
                 },
                 'target': {
-                    'route': '/s/projects.intake',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation',
                     'action_xmlid': 'smart_construction_core.action_project_initiation'
                 }
             }"/>
@@ -171,8 +170,7 @@
                     }
                 },
                 'target': {
-                    'route': '/s/project.initiation',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation',
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation',
                     'action_xmlid': 'smart_construction_core.action_project_initiation'
                 }
             }"/>
@@ -260,8 +258,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/projects.dashboard'
-                }
+                                    }
             }"/>
         </record>
 
@@ -347,8 +344,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/portal.capability_matrix'
-                }
+                                    }
             }"/>
         </record>
 
@@ -434,8 +430,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/'
-                }
+                                    }
             }"/>
         </record>
 
@@ -553,8 +548,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/portal.shortcuts'
-                }
+                                    }
             }"/>
         </record>
 
@@ -669,8 +663,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/portal.notifications',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_product_message_notification_v1'
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_product_message_notification_v1'
                 }
             }"/>
         </record>
@@ -804,8 +797,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/contract.center',
-                    'menu_xmlid': 'smart_construction_core.menu_sc_contract_center'
+                                        'menu_xmlid': 'smart_construction_core.menu_sc_contract_center'
                 },
                 'list_profile': {
                     'model': 'construction.contract',
@@ -903,8 +895,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/contracts.workspace',
-                    'action_xmlid': 'smart_construction_core.action_construction_contract_my',
+                                        'action_xmlid': 'smart_construction_core.action_construction_contract_my',
                     'menu_xmlid': 'smart_construction_core.menu_sc_contract_center'
                 },
                 'action_specs': {
@@ -988,8 +979,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/cost.analysis',
-                    'action_xmlid': 'smart_construction_core.action_project_cost_ledger',
+                                        'action_xmlid': 'smart_construction_core.action_project_cost_ledger',
                     'menu_xmlid': 'smart_construction_core.menu_sc_project_cost_ledger'
                 },
                 'action_specs': {
@@ -1072,8 +1062,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/finance.workspace',
-                    'action_xmlid': 'smart_construction_core.action_sc_tier_review_my_payment_request',
+                                        'action_xmlid': 'smart_construction_core.action_sc_tier_review_my_payment_request',
                     'menu_xmlid': 'smart_construction_core.menu_sc_finance_center'
                 },
                 'action_specs': {
@@ -1156,8 +1145,7 @@
                     }
                 ],
                 'target': {
-                    'route': '/s/risk.center',
-                    'action_xmlid': 'smart_construction_core.action_sc_operating_drill_overpay_risk_pr'
+                                        'action_xmlid': 'smart_construction_core.action_sc_operating_drill_overpay_risk_pr'
                 },
                 'list_profile': {
                     'columns': [
@@ -1299,8 +1287,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/pm/dashboard',
-                    'action_xmlid': 'smart_construction_core.action_project_dashboard',
+                                        'action_xmlid': 'smart_construction_core.action_project_dashboard',
                     'menu_xmlid': 'smart_construction_core.menu_sc_project_dashboard'
                 }
             }"/>
@@ -1380,8 +1367,7 @@
                     'stage': 'phase12c'
                 },
                 'target': {
-                    'route': '/s/project.dashboard',
-                    'action_xmlid': 'smart_construction_core.action_project_dashboard',
+                                        'action_xmlid': 'smart_construction_core.action_project_dashboard',
                     'menu_xmlid': 'smart_construction_core.menu_sc_project_dashboard'
                 }
             }"/>
@@ -1460,8 +1446,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/projects.dashboard_focus',
-                    'action_xmlid': 'smart_construction_core.action_project_dashboard',
+                                        'action_xmlid': 'smart_construction_core.action_project_dashboard',
                     'menu_xmlid': 'smart_construction_core.menu_sc_project_dashboard'
                 }
             }"/>
@@ -1540,8 +1525,7 @@
                     'stage': 'wave3'
                 },
                 'target': {
-                    'route': '/s/data.dictionary',
-                    'action_xmlid': 'smart_construction_core.action_project_dictionary',
+                                        'action_xmlid': 'smart_construction_core.action_project_dictionary',
                     'menu_xmlid': 'smart_construction_core.menu_sc_dictionary'
                 }
             }"/>

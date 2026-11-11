@@ -10,25 +10,65 @@
     ".agent/active-runs.json",
     ".agent/goals/SCENARIO-ENTRY-NAV-CONTRACT-20261111.yaml",
     ".agent/runs/SCENARIO-ENTRY-NAV-CONTRACT-20261111/run.json",
+    ".agent/decisions/ARCH-DECISION-010.yaml",
     "docs/ops/iterations/scenario_entry_nav_contract_20261111.md",
+    "docs/architecture/scene_layer_responsibility_20261105.md",
+    "docs/architecture/scene_fact_data_boundary_ledger.json",
     "docs/architecture/backend-owned-page-composition/335-bnva-03-identity-resolver-role-projection.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/router/index.ts",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/security/sc_capability_groups.xml",
     "addons/smart_construction_core/core_extension_policy_maps.py",
     "addons/smart_construction_core/data/product_menu_source.json",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+    "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    "addons/smart_construction_core/views/support/my_work_views.xml",
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_scene/data/project_management_scene.xml",
+    "addons/smart_construction_scene/data/sc_scene_finance_payment_ledger.xml",
+    "addons/smart_construction_scene/data/sc_scene_layout.xml",
+    "addons/smart_construction_scene/data/sc_scene_list_profile.xml",
+    "addons/smart_construction_scene/data/sc_scene_orchestration.xml",
+    "addons/smart_construction_scene/data/sc_scene_tiles.xml",
     "addons/smart_construction_scene/models/__init__.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/scene_registry.py",
     "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_core/core/navigation_entry_target.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
     "addons/smart_core/delivery/runtime_route_authority.py",
     "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+    "addons/smart_core/tests/test_native_config_menu_projection.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/views/ui_menu_config_policy_views.xml",
+    "config/product_menu_contract_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
-    "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/scene_fact_data_boundary_guard.py",
+    "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -50,6 +90,10 @@
       "target": "verify.navigation.publication_consumers.unit",
       "inputs": [
         "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/profiles/scene_registry_content.py",
+        "addons/smart_construction_scene/data/sc_scene_layout.xml",
+        "addons/smart_construction_scene/data/sc_scene_orchestration.xml",
         "addons/smart_construction_scene/services/business_scene_enablement.py",
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
@@ -62,6 +106,8 @@
     "backend_navigation_delivery": {
       "target": "verify.backend.navigation_delivery.unit",
       "inputs": [
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/delivery_engine.py",
         "addons/smart_core/delivery/menu_service.py",
         "addons/smart_core/delivery/runtime_route_authority.py",
         "addons/smart_core/handlers/system_init.py",
@@ -77,17 +123,39 @@
         "scripts/verify/system_init_menu_boundary_guard.py"
       ],
       "kind": "offline"
+    },
+    "scene_fact_data_boundary": {
+      "target": "verify.scene.fact_data.boundary.unit",
+      "inputs": [
+        "addons/smart_construction_scene/data",
+        "addons/smart_construction_scene/profiles",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "scripts/verify/scene_fact_data_boundary_guard.py",
+        "docs/architecture/scene_fact_data_boundary_ledger.json"
+      ],
+      "kind": "offline"
+    },
+    "product_menu_contract": {
+      "target": "verify.product_menu_release_gate.contract.unit",
+      "inputs": [
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Run role-closure ORM, governed acceptance upgrade, and final system.init/route-authority readback for Business Config Admin and Business Full.",
+  "next_exact_step": "Commit the clean backend candidate, run governed acceptance module upgrade, then execute fixture_orm and read back business_config_admin/business_full final nav and route authority.",
   "layer": {
     "formal_product_layer": "P1 product semantics; P0 init consumes the finalized contract without another business decision",
-    "layer_target": "single login-role/native-menu authority and business role capability closure",
+    "layer_target": "single login-role/native-menu authority, composition-only scenario layer, and route projection from final navigation identity",
     "module": "smart_construction_core / smart_construction_scene; smart_core consumption cleanup",
     "standard_vs_user_specific": "construction industry standard",
-    "why_here": "P1 owns native construction menus, standard roles, and the scene state that must remain configuration-only",
+    "why_here": "P1 owns native construction menus and standard roles; P0 derives the final route without creating a second route fact",
     "why_not_elsewhere": "The frontend cannot infer entries; P0 supplies only the completed delivery authority; P3 cannot repair standard semantic duplication",
-    "blast_radius": "Final route authority no longer reapplies scene enablement; system.init stops invoking that secondary decision; My Work and enterprise initialization follow native groups; Business Config Admin becomes the full-business superset"
+    "blast_radius": "Native actions, product-entry sources and scene carriers stop maintaining URLs; scenario composition references existing entry identities; system.init returns the same final nav and route authority derived from that result"
   }
 }

@@ -2408,6 +2408,12 @@ class SystemInitHandler(BaseIntentHandler):
             data["navigation"]["scenario_surface"] = _scenario_surface
             _scenarioized_navigation = _scenario_surface.get("nav")
             if isinstance(_scenarioized_navigation, list):
+                _scenarioized_navigation, _final_route_authority = (
+                    delivery_engine.menu_service.project_final_navigation_routes(
+                        _scenarioized_navigation,
+                        _final_route_authority,
+                    )
+                )
                 _scenarioized_pairs = set(
                     MenuService._walk_nav_action_refs(_scenarioized_navigation)
                 )

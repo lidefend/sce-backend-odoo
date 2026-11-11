@@ -24,11 +24,15 @@ decision:
     - 任何产品入口暴露调整，只能落到事实层的分组绑定，不得落到机制层。
     - 场景层只能编排已有事实；不得新声明入口 route、menu_xmlid、action_xmlid、model、visibility、permission 或 group 事实。
     - 问题定位先判定“事实不足”还是“事实完整但编排错误”：事实不足回事实所有者层，事实完整才允许在场景编排层修复组合。
+    - route 不是事实层数据；原生 action、产品入口选择和场景编排都不得维护 URL。
+    - "最终导航投影按最终节点身份派生 route：场景节点为 `/s/{scene_key}`，普通动作为 `/a/{action_id}?menu_id={menu_id}`，目录为 `/m/{menu_id}`。"
+    - "`system.init` 只返回同一棵最终场景化导航及其同源 route authority，不再读取另一份 route 事实。"
   enforcement:
     - 新增或调整角色可见入口时，先核对原生 menu / action 的 groups 绑定，再改事实层。
     - 禁止在 role_surface / 场景投影 / 前端新增硬编码入口清单。
     - 对机制层事实代持（如 role_surface primary_menu_xmlids）仅允许逐步收敛到事实层派生，不允许继续扩展。
-    - `verify.scene.fact_data.boundary.unit` 锁定场景层 route 事实签名；新增或变化即失败，迫使入口事实回到原生/产品事实层。
+    - "`verify.scene.fact_data.boundary.unit` 锁定场景层 route 事实签名；新增或变化即失败，迫使入口事实回到原生/产品事实层。"
+    - "原生 action 的 `sc_web_route`、场景数据/注册中的硬编码 route、P1 产品入口源中的 route 字段均为禁止载体；只允许最终契约输出派生 route。"
   related:
     - .agent/decisions/ARCH-DECISION-009.yaml
     - .agent/decisions/data-authority-boundary.yaml

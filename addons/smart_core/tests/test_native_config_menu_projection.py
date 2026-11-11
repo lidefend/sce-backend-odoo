@@ -95,18 +95,18 @@ class NativeConfigMenuProjectionTests(unittest.TestCase):
     def test_native_declared_surface_survives_config_projection(self):
         module = _load_module()
         action = _ProjectedAction()
-        action.context = "{'sc_web_surface': 'test_workspace', 'sc_web_route': '/s/test.setup'}"
+        action.context = "{'sc_web_surface': 'business_config'}"
         action.sudo = lambda: action
         payload = module._action_payload(_Menu(action))
         self.assertEqual(payload['type'], 'admin_surface')
-        self.assertEqual(payload['route'], '/s/test.setup')
+        self.assertEqual(payload['route'], '/admin/business-config')
         self.assertEqual(payload['compatibility_refs']['menu_id'], 17)
         self.assertEqual(payload['compatibility_refs']['action_id'], 91)
 
     def test_partial_surface_is_not_silently_replaced_with_action_route(self):
         module = _load_module()
         action = _ProjectedAction()
-        action.context = "{'sc_web_surface': 'test_workspace'}"
+        action.context = "{'sc_web_surface': 'unregistered_surface'}"
         action.sudo = lambda: action
         payload = module._action_payload(_Menu(action))
         self.assertEqual(payload['type'], 'admin_surface')

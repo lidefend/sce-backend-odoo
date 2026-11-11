@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any, Dict, List
 from xml.etree import ElementTree as ET
@@ -54,8 +53,8 @@ _ENTERPRISE_BOOTSTRAP_PROJECTION: List[Dict[str, Any]] = [
 
 
 def _read_native_action_fact(relative_path: str, action_id: str) -> Dict[str, str]:
-    """Read name/res_model/sc_web_route from a native act_window record."""
-    fact: Dict[str, str] = {"name": "", "model": "", "route": ""}
+    """Read native action name/model without copying a route fact."""
+    fact: Dict[str, str] = {"name": "", "model": ""}
     try:
         root = ET.parse(str(_CORE_DIR / relative_path)).getroot()
     except (OSError, ET.ParseError):
@@ -69,13 +68,6 @@ def _read_native_action_fact(relative_path: str, action_id: str) -> Dict[str, st
                 fact["name"] = str(field.text or "").strip()
             elif field_name == "res_model":
                 fact["model"] = str(field.text or "").strip()
-            elif field_name == "context":
-                match = re.search(
-                    r"""['"]sc_web_route['"]\s*:\s*['"]([^'"]+)['"]""",
-                    str(field.text or ""),
-                )
-                if match:
-                    fact["route"] = match.group(1).strip()
         break
     return fact
 
@@ -89,7 +81,6 @@ def _derive_enterprise_bootstrap_entries() -> List[Dict[str, Any]]:
             projection["action_xmlid"].rsplit(".", 1)[-1],
         )
         target: Dict[str, Any] = {
-            "route": fact.get("route") or "",
             "action_xmlid": projection["action_xmlid"],
         }
         if projection.get("menu_xmlid"):
@@ -119,11 +110,24 @@ def _derive_my_work_entry() -> Dict[str, Any]:
         "code": "my_work.workspace",
         "name": fact.get("name") or "我的工作",
         "target": {
-            "route": fact.get("route") or "",
             "menu_xmlid": "smart_construction_core.menu_sc_my_work",
             "action_xmlid": "smart_construction_core.action_sc_my_work",
         },
     }
+
+
+def _with_derived_routes(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Project scene routes from scene identity; routes are never maintained here."""
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        scene_key = str(entry.get("code") or "").strip()
+        if not scene_key:
+            continue
+        target = entry.get("target") if isinstance(entry.get("target"), dict) else {}
+        target["route"] = f"/s/{scene_key}"
+        entry["target"] = target
+    return entries
 
 
 def list_scene_entries() -> List[Dict[str, Any]]:
@@ -153,7 +157,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "projects.dashboard",
             "name": "项目驾驶舱",
             "target": {
-                "route": "/pm/dashboard",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_dashboard",
                 "action_xmlid": "smart_construction_core.action_project_dashboard",
             },
@@ -162,7 +165,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "project.dashboard",
             "name": "项目驾驶舱（产品场景）",
             "target": {
-                "route": "/s/project.dashboard",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_dashboard",
                 "action_xmlid": "smart_construction_core.action_project_dashboard",
             },
@@ -174,7 +176,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "target": {
                 "menu_xmlid": "smart_construction_core.menu_sc_project_dashboard",
                 "action_xmlid": "smart_construction_core.action_project_dashboard",
-                "route": "/s/projects.dashboard_focus",
             },
         },
         {
@@ -183,7 +184,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "target": {
                 "menu_xmlid": "smart_construction_core.menu_sc_project_dashboard",
                 "action_xmlid": "smart_construction_core.action_project_dashboard",
-                "route": "/s/project.management",
                 "intent": "project.dashboard.enter",
             },
         },
@@ -191,7 +191,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "projects.intake",
             "name": "项目立项",
             "target": {
-                "route": "/s/projects.intake",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_initiation",
                 "action_xmlid": "smart_construction_core.action_project_initiation",
             },
@@ -200,7 +199,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "project.initiation",
             "name": "项目立项（产品场景）",
             "target": {
-                "route": "/s/project.initiation",
             },
         },
         {
@@ -208,7 +206,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "name": "项目台账",
             "identity_owner": True,
             "target": {
-                "route": "/s/projects.list",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_project",
                 "action_xmlid": "smart_construction_core.action_sc_project_list",
             },
@@ -218,7 +215,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "name": "项目台账",
             "alias_of": "projects.list",
             "target": {
-                "route": "/s/projects.ledger",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_project",
                 "action_xmlid": "smart_construction_core.action_sc_project_list",
             },
@@ -227,7 +223,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "task.center",
             "name": "任务中心",
             "target": {
-                "route": "/s/task.center",
                 "action_xmlid": "project.action_view_all_task",
             },
         },
@@ -235,14 +230,12 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "task.board",
             "name": "任务看板",
             "target": {
-                "route": "/s/task.board",
             },
         },
         {
             "code": "contract.center",
             "name": "合同中心",
             "target": {
-                "route": "/s/contract.center",
                 "menu_xmlid": "smart_construction_core.menu_sc_contract_center",
             },
         },
@@ -250,7 +243,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "contracts.workspace",
             "name": "合同管理工作台",
             "target": {
-                "route": "/s/contracts.workspace",
                 "menu_xmlid": "smart_construction_core.menu_sc_contract_center",
                 "action_xmlid": "smart_construction_core.action_construction_contract_my",
             },
@@ -259,7 +251,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "contracts.monitor",
             "name": "合同履约监控",
             "target": {
-                "route": "/s/contracts.monitor",
                 "menu_xmlid": "smart_construction_core.menu_sc_contract_center",
             },
         },
@@ -274,7 +265,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "risk.center",
             "name": "风险提醒工作台",
             "target": {
-                "route": "/s/risk.center",
                 "action_xmlid": "smart_construction_core.action_sc_operating_drill_overpay_risk_pr",
             },
         },
@@ -282,7 +272,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.center",
             "name": "财务中心",
             "target": {
-                "route": "/s/finance.center",
                 "menu_xmlid": "smart_construction_core.menu_sc_finance_center",
                 "action_xmlid": "smart_construction_core.action_sc_finance_dashboard",
             },
@@ -291,7 +280,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.workspace",
             "name": "资金管理工作台",
             "target": {
-                "route": "/s/finance.workspace",
                 "menu_xmlid": "smart_construction_core.menu_sc_finance_center",
             },
         },
@@ -307,7 +295,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.payment_requests",
             "name": "付款收款申请",
             "target": {
-                "route": "/s/finance.payment_requests",
                 "menu_xmlid": "smart_construction_core.menu_payment_request",
                 "action_xmlid": "smart_construction_core.action_payment_request_my",
             },
@@ -316,7 +303,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.settlement_orders",
             "name": "结算单",
             "target": {
-                "route": "/s/finance.settlement_orders",
                 "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
                 "action_xmlid": "smart_construction_core.action_sc_settlement_order",
             },
@@ -325,14 +311,12 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.payment_ledger",
             "name": "收付款业务台账",
             "target": {
-                "route": "/s/finance.payment_ledger",
             },
         },
         {
             "code": "finance.treasury_ledger",
             "name": "资金台账",
             "target": {
-                "route": "/s/finance.treasury_ledger",
                 "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
                 "action_xmlid": "smart_construction_core.action_sc_treasury_ledger",
             },
@@ -341,7 +325,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "finance.payment_ledger",
             "name": "收付款台账",
             "target": {
-                "route": "/s/finance.payment_ledger",
                 "menu_xmlid": "smart_construction_core.menu_payment_ledger",
                 "action_xmlid": "smart_construction_core.action_payment_ledger",
             },
@@ -350,7 +333,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.center",
             "name": "物资与分包",
             "target": {
-                "route": "/s/material.center",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_center",
             },
         },
@@ -358,7 +340,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.catalog",
             "name": "材料档案",
             "target": {
-                "route": "/s/material.catalog",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_catalog",
                 "action_xmlid": "smart_construction_core.action_sc_material_product_template",
             },
@@ -367,7 +348,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.procurement",
             "name": "采购协同",
             "target": {
-                "route": "/s/material.procurement",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_purchase_request",
                 "action_xmlid": "smart_construction_core.action_sc_material_purchase_request",
             },
@@ -376,7 +356,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.rfq",
             "name": "询比价",
             "target": {
-                "route": "/s/material.rfq",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_rfq",
                 "action_xmlid": "smart_construction_core.action_sc_material_rfq",
             },
@@ -385,7 +364,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.acceptance",
             "name": "材料进场验收",
             "target": {
-                "route": "/s/material.acceptance",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_acceptance",
                 "action_xmlid": "smart_construction_core.action_sc_material_acceptance",
             },
@@ -394,7 +372,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.inbound",
             "name": "入库单",
             "target": {
-                "route": "/s/material.inbound",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_inbound",
                 "action_xmlid": "smart_construction_core.action_sc_material_inbound",
             },
@@ -403,7 +380,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.outbound",
             "name": "出库单",
             "target": {
-                "route": "/s/material.outbound",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
                 "action_xmlid": "smart_construction_core.action_sc_material_outbound",
             },
@@ -412,7 +388,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.price_library",
             "name": "材料价格库",
             "target": {
-                "route": "/s/material.price_library",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_price_library",
                 "action_xmlid": "smart_construction_core.action_sc_material_price_library",
             },
@@ -421,7 +396,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.settlement",
             "name": "材料结算",
             "target": {
-                "route": "/s/material.settlement",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_settlement",
                 "action_xmlid": "smart_construction_core.action_sc_material_settlement",
             },
@@ -430,7 +404,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.rental",
             "name": "周转材料租赁",
             "target": {
-                "route": "/s/material.rental",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_rental_plan",
                 "action_xmlid": "smart_construction_core.action_sc_material_rental_plan",
             },
@@ -439,7 +412,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.rental_order",
             "name": "租赁单",
             "target": {
-                "route": "/s/material.rental_order",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_rental_order",
                 "action_xmlid": "smart_construction_core.action_sc_material_rental_order",
             },
@@ -448,7 +420,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "material.rental_settlement",
             "name": "租赁结算",
             "target": {
-                "route": "/s/material.rental_settlement",
                 "menu_xmlid": "smart_construction_core.menu_sc_material_rental_settlement",
                 "action_xmlid": "smart_construction_core.action_sc_material_rental_settlement",
             },
@@ -457,7 +428,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "labor.management",
             "name": "劳务管理",
             "target": {
-                "route": "/s/labor.management",
                 "menu_xmlid": "smart_construction_core.menu_sc_labor_plan",
                 "action_xmlid": "smart_construction_core.action_sc_labor_plan",
             },
@@ -466,7 +436,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "labor.request",
             "name": "劳务申请",
             "target": {
-                "route": "/s/labor.request",
                 "menu_xmlid": "smart_construction_core.menu_sc_labor_request",
                 "action_xmlid": "smart_construction_core.action_sc_labor_request",
             },
@@ -475,7 +444,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "labor.attendance",
             "name": "考勤记录",
             "target": {
-                "route": "/s/labor.attendance",
                 "menu_xmlid": "smart_construction_core.menu_sc_attendance_checkin",
                 "action_xmlid": "smart_construction_core.action_sc_attendance_checkin",
             },
@@ -484,7 +452,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "labor.settlement",
             "name": "劳务结算",
             "target": {
-                "route": "/s/labor.settlement",
                 "menu_xmlid": "smart_construction_core.menu_sc_labor_settlement",
                 "action_xmlid": "smart_construction_core.action_sc_labor_settlement",
             },
@@ -493,7 +460,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "equipment.management",
             "name": "机械设备",
             "target": {
-                "route": "/s/equipment.management",
                 "menu_xmlid": "smart_construction_core.menu_sc_equipment_plan",
                 "action_xmlid": "smart_construction_core.action_sc_equipment_plan",
             },
@@ -502,7 +468,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "equipment.request",
             "name": "设备申请",
             "target": {
-                "route": "/s/equipment.request",
                 "menu_xmlid": "smart_construction_core.menu_sc_equipment_request",
                 "action_xmlid": "smart_construction_core.action_sc_equipment_request",
             },
@@ -511,7 +476,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "equipment.usage",
             "name": "设备使用登记",
             "target": {
-                "route": "/s/equipment.usage",
                 "menu_xmlid": "smart_construction_core.menu_sc_equipment_usage",
                 "action_xmlid": "smart_construction_core.action_sc_equipment_usage",
             },
@@ -520,7 +484,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "equipment.settlement",
             "name": "设备结算",
             "target": {
-                "route": "/s/equipment.settlement",
                 "menu_xmlid": "smart_construction_core.menu_sc_equipment_settlement",
                 "action_xmlid": "smart_construction_core.action_sc_equipment_settlement",
             },
@@ -529,7 +492,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "subcontract.management",
             "name": "专业分包",
             "target": {
-                "route": "/s/subcontract.management",
                 "menu_xmlid": "smart_construction_core.menu_sc_subcontract_plan",
                 "action_xmlid": "smart_construction_core.action_sc_subcontract_plan",
             },
@@ -538,7 +500,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "subcontract.request",
             "name": "分包申请",
             "target": {
-                "route": "/s/subcontract.request",
                 "menu_xmlid": "smart_construction_core.menu_sc_subcontract_request",
                 "action_xmlid": "smart_construction_core.action_sc_subcontract_request",
             },
@@ -547,7 +508,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "subcontract.register",
             "name": "分包登记",
             "target": {
-                "route": "/s/subcontract.register",
                 "menu_xmlid": "smart_construction_core.menu_sc_subcontract_register",
                 "action_xmlid": "smart_construction_core.action_sc_subcontract_register",
             },
@@ -556,7 +516,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "subcontract.settlement",
             "name": "分包结算",
             "target": {
-                "route": "/s/subcontract.settlement",
                 "menu_xmlid": "smart_construction_core.menu_sc_subcontract_settlement",
                 "action_xmlid": "smart_construction_core.action_sc_subcontract_settlement",
             },
@@ -565,7 +524,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.cost_compare",
             "name": "成本中心",
             "target": {
-                "route": "/s/cost.cost_compare",
                 "menu_xmlid": "smart_construction_core.menu_sc_cost_center",
                 "action_xmlid": "smart_construction_core.action_project_cost_compare",
             },
@@ -574,7 +532,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.project_budget",
             "name": "预算管理",
             "target": {
-                "route": "/s/cost.project_budget",
             },
         },
         {
@@ -597,7 +554,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.analysis",
             "name": "成本控制工作台",
             "target": {
-                "route": "/s/cost.analysis",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_cost_ledger",
                 "action_xmlid": "smart_construction_core.action_project_cost_ledger",
             },
@@ -606,7 +562,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.control",
             "name": "成本驾驶舱",
             "target": {
-                "route": "/s/cost.control",
                 "menu_xmlid": "smart_construction_core.menu_sc_dashboard_cost_cockpit_fact",
                 "action_xmlid": "smart_construction_core.action_sc_dashboard_cost_cockpit_fact",
             },
@@ -615,7 +570,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.project_progress",
             "name": "进度填报",
             "target": {
-                "route": "/s/cost.project_progress",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_progress",
                 "action_xmlid": "smart_construction_core.action_project_progress_entry",
             },
@@ -632,7 +586,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "cost.profit_compare",
             "name": "盈亏对比",
             "target": {
-                "route": "/s/cost.profit_compare",
                 "menu_xmlid": "smart_construction_core.menu_sc_profit_reports",
                 "action_xmlid": "smart_construction_core.action_project_profit_compare",
             },
@@ -641,7 +594,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "construction.execution",
             "name": "施工管理",
             "target": {
-                "route": "/s/construction.execution",
                 "menu_xmlid": "smart_construction_core.menu_sc_construction_management_center",
             },
         },
@@ -649,7 +601,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "construction.plan",
             "name": "计划管理",
             "target": {
-                "route": "/s/construction.plan",
                 "menu_xmlid": "smart_construction_core.menu_sc_plan",
                 "action_xmlid": "smart_construction_core.action_sc_plan",
             },
@@ -658,7 +609,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "construction.plan_report",
             "name": "计划汇报",
             "target": {
-                "route": "/s/construction.plan_report",
                 "menu_xmlid": "smart_construction_core.menu_sc_plan_report",
                 "action_xmlid": "smart_construction_core.action_sc_plan_report",
             },
@@ -667,7 +617,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "construction.diary",
             "name": "施工日志",
             "target": {
-                "route": "/s/construction.diary",
                 "menu_xmlid": "smart_construction_core.menu_sc_construction_diary",
                 "action_xmlid": "smart_construction_core.action_sc_construction_diary",
             },
@@ -676,7 +625,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "quality.center",
             "name": "质量检查",
             "target": {
-                "route": "/s/quality.center",
                 "menu_xmlid": "smart_construction_core.menu_sc_quality_issue",
                 "action_xmlid": "smart_construction_core.action_sc_quality_issue",
             },
@@ -685,7 +633,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "quality.rectification",
             "name": "质量整改",
             "target": {
-                "route": "/s/quality.rectification",
                 "menu_xmlid": "smart_construction_core.menu_sc_quality_rectification",
                 "action_xmlid": "smart_construction_core.action_sc_quality_rectification",
             },
@@ -694,7 +641,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "quality.recheck",
             "name": "质量复验",
             "target": {
-                "route": "/s/quality.recheck",
                 "menu_xmlid": "smart_construction_core.menu_sc_quality_recheck",
                 "action_xmlid": "smart_construction_core.action_sc_quality_recheck",
             },
@@ -703,7 +649,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "safety.center",
             "name": "安全检查",
             "target": {
-                "route": "/s/safety.center",
                 "menu_xmlid": "smart_construction_core.menu_sc_safety_issue",
                 "action_xmlid": "smart_construction_core.action_sc_safety_issue",
             },
@@ -712,7 +657,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "safety.rectification",
             "name": "安全整改",
             "target": {
-                "route": "/s/safety.rectification",
                 "menu_xmlid": "smart_construction_core.menu_sc_safety_rectification",
                 "action_xmlid": "smart_construction_core.action_sc_safety_rectification",
             },
@@ -721,7 +665,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "safety.recheck",
             "name": "安全复验",
             "target": {
-                "route": "/s/safety.recheck",
                 "menu_xmlid": "smart_construction_core.menu_sc_safety_recheck",
                 "action_xmlid": "smart_construction_core.action_sc_safety_recheck",
             },
@@ -729,23 +672,22 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         {
             "code": "portal.lifecycle",
             "name": "生命周期驾驶舱",
-            "target": {"route": "/s/projects.dashboard"},
+            "target": {},
         },
         {
             "code": "portal.capability_matrix",
             "name": "能力矩阵",
-            "target": {"route": "/s/portal.capability_matrix"},
+            "target": {},
         },
         {
             "code": "portal.dashboard",
             "name": "门户工作台",
-            "target": {"route": "/"},
+            "target": {},
         },
         {
             "code": "payments.approval",
             "name": "收付款审批中心",
             "target": {
-                "route": "/s/payments.approval",
                 "menu_xmlid": "smart_construction_core.menu_sc_tier_review_my_payment_request",
                 "action_xmlid": "smart_construction_core.action_sc_tier_review_my_payment_request",
             },
@@ -754,7 +696,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "projects.detail",
             "name": "项目详情",
             "target": {
-                "route": "/s/projects.detail",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_project",
             },
         },
@@ -762,64 +703,62 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "projects.execution",
             "name": "项目执行中心",
             "target": {
-                "route": "/s/projects.execution",
             },
         },
         {
             "code": "portfolio.center",
             "name": "项目组合中心",
-            "target": {"route": "/s/portfolio.center"},
+            "target": {},
         },
         {
             "code": "portfolio.monitor",
             "name": "项目组合监控",
-            "target": {"route": "/s/portfolio.monitor"},
+            "target": {},
         },
         {
             "code": "contracts.execution",
             "name": "合同执行跟踪",
-            "target": {"route": "/s/contracts.execution"},
+            "target": {},
         },
         {
             "code": "cost.forecast",
             "name": "成本预测",
-            "target": {"route": "/s/cost.forecast"},
+            "target": {},
         },
         {
             "code": "cost.warning.center",
             "name": "成本预警中心",
-            "target": {"route": "/s/cost.warning.center"},
+            "target": {},
         },
         {
             "code": "payments.collection.center",
             "name": "收款管理中心",
-            "target": {"route": "/s/payments.collection.center"},
+            "target": {},
         },
         {
             "code": "payments.risk.control",
             "name": "付款风险控制",
-            "target": {"route": "/s/payments.risk.control"},
+            "target": {},
         },
         {
             "code": "resource.center",
             "name": "资源调配中心",
-            "target": {"route": "/s/resource.center"},
+            "target": {},
         },
         {
             "code": "delivery.command",
             "name": "交付指挥台",
-            "target": {"route": "/s/delivery.command"},
+            "target": {},
         },
         {
             "code": "operation.overview",
             "name": "经营总览",
-            "target": {"route": "/s/operation.overview"},
+            "target": {},
         },
         {
             "code": "workspace.home",
             "name": "角色首页",
             "target": {
-                "route": "/s/workspace.home",
                 "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
                 "intent": "workspace.home.enter",
             },
@@ -828,7 +767,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "code": "dashboard.company",
             "name": "公司驾驶舱",
             "target": {
-                "route": "/s/dashboard.company",
                 "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
                 "intent": "dashboard.company.enter",
             },
@@ -836,4 +774,4 @@ def list_scene_entries() -> List[Dict[str, Any]]:
     ]
     entries.extend(_derive_enterprise_bootstrap_entries())
     entries.append(_derive_my_work_entry())
-    return entries
+    return _with_derived_routes(entries)

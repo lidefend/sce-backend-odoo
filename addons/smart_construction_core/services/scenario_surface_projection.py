@@ -527,6 +527,67 @@ def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
     return result
 
 
+def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
+    """Compose scene identities over existing native menu/action facts.
+
+    The scene registry owns scene composition identities, not a second copy of
+    the native action. This index only associates an existing action/menu pair
+    with the scene page that composes it. Ambiguous pairs are excluded so a
+    route can never be selected by iteration order.
+    """
+    if env is None:
+        return {}, []
+    try:
+        from odoo.addons.smart_core.core.scene_provider import (
+            load_scenes_from_db_or_fallback,
+        )
+    except ModuleNotFoundError:
+        return {}, []
+    payload = load_scenes_from_db_or_fallback(env, drift=None, logger=None) or {}
+    by_pair: dict[tuple[int, int], str] = {}
+    ambiguous: set[str] = set()
+    for scene in payload.get("scenes") or []:
+        if not isinstance(scene, dict):
+            continue
+        scene_key = _text(scene.get("code") or scene.get("key") or scene.get("scene_key"))
+        target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
+        if not scene_key or not target:
+            continue
+        try:
+            action_id = int(target.get("action_id") or 0)
+            menu_id = int(target.get("menu_id") or 0)
+        except (TypeError, ValueError):
+            action_id, menu_id = 0, 0
+        if action_id <= 0:
+            action_xmlid = _text(target.get("action_xmlid"))
+            if action_xmlid:
+                try:
+                    action = env.ref(action_xmlid, raise_if_not_found=False)
+                except Exception:
+                    action = None
+                action_id = int(getattr(action, "id", 0) or 0)
+        if menu_id <= 0:
+            menu_xmlid = _text(target.get("menu_xmlid"))
+            try:
+                menu = env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else None
+            except Exception:
+                menu = None
+            menu_id = int(getattr(menu, "id", 0) or 0)
+            if menu and action_id <= 0:
+                action_id = int(getattr(getattr(menu, "action", None), "id", 0) or 0)
+        if menu_id <= 0 or action_id <= 0:
+            continue
+        pair = (menu_id, action_id)
+        previous = by_pair.get(pair)
+        if previous and previous != scene_key:
+            by_pair.pop(pair, None)
+            ambiguous.add(f"{menu_id}/{action_id}")
+            continue
+        if f"{menu_id}/{action_id}" not in ambiguous:
+            by_pair[pair] = scene_key
+    return by_pair, sorted(ambiguous)
+
+
 def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, Any]]:
     """Project scenario centers into the final canonical navigation contract."""
     try:
@@ -598,6 +659,28 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     not silently disappear.
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
+    scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
+    for leaf in leaves:
+        pair = (int(leaf.get("menu_id") or 0), int(leaf.get("action_id") or 0))
+        scene_key = scene_targets.get(pair)
+        if not scene_key:
+            continue
+        leaf["scene_key"] = scene_key
+        leaf["entry_target"] = {
+            "type": "scene",
+            "scene_key": scene_key,
+            "compatibility_refs": {
+                key: value
+                for key, value in {
+                    "menu_id": pair[0],
+                    "action_id": pair[1],
+                    "model": leaf.get("model"),
+                    "view_modes": leaf.get("view_modes"),
+                }.items()
+                if value not in (None, "", [])
+            },
+        }
+        leaf["route"] = ""
     center_by_id = _native_center_for_menus(env, [leaf.get("menu_id") for leaf in leaves])
     scenario_by_menu = _scenario_entries_by_menu(env)
     centers: dict[str, dict[str, Any]] = {}
@@ -662,5 +745,6 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "center_count": len(center_rows),
             "scenario_count": sum(len(c["scenarios"]) for c in center_rows),
             "unconfigured_entry_count": sum(len(c["entries"]) for c in center_rows),
+            "ambiguous_scene_targets": ambiguous_scene_targets,
         },
     }

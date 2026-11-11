@@ -15,12 +15,12 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             / "business_config_workbench_views.xml"
         ).read_text(encoding="utf-8")
         self.assertIn("'sc_web_surface': 'business_config'", business)
-        self.assertIn("'sc_web_route': '/admin/business-config'", business)
+        self.assertNotIn("sc_web_route", business)
         menu = (
             root / "addons" / "smart_core" / "views" / "ui_menu_config_policy_views.xml"
         ).read_text(encoding="utf-8")
         self.assertIn("'sc_web_surface': 'menu_config'", menu)
-        self.assertIn("'sc_web_route': '/admin/menu-config'", menu)
+        self.assertNotIn("sc_web_route", menu)
 
     def test_single_navigation_contract_owns_tree_and_route_authority(self):
         source = (
@@ -42,6 +42,7 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             "_visible_navigation_pairs - _authorized_navigation_pairs",
             tail,
         )
+        self.assertIn("project_final_navigation_routes(", tail)
         build_index = tail.index("build_route_authority(")
         reconcile_index = tail.index("filter_nav_by_route_authority(")
         verify_index = tail.index("_visible_navigation_pairs = set(")

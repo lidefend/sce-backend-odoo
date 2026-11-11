@@ -192,7 +192,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 'action_model': 'ir.actions.act_window', 'menu_xmlid': 'test.setup', 'name': 'Setup'}
         for scope, expected in [('', False), ("'sc_delivery_scope': 'configuration',", True),
                                 ("'sc_delivery_scope': 'unknown',", False)]:
-            context = "{" + scope + "'sc_web_surface': 'test', 'sc_web_route': '/s/test.setup'}"
+            context = "{" + scope + "'sc_web_surface': 'business_config'}"
             with patch.object(service, '_action_is_runtime_allowed', return_value=True):
                 entry = service._route_entry_from_menu(dict(base, action_meta={'context': context}),
                     route_kind='PRIMARY_NAV', source='native', action_xmlids={('ir.actions.act_window', 601): 'test.action'})
@@ -207,9 +207,9 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
     def test_closed_edition_retains_only_declared_native_config_surfaces(self):
         service = menu_service.MenuService(object())
         declared = {'menu_id': 501, 'action_id': 601, 'menu_xmlid': 'test.setup',
-                    'menu_key': 'test.setup', 'label': 'Setup', 'route': '/s/test.setup',
+                    'menu_key': 'test.setup', 'label': 'Setup',
                     'scene_source': 'native_business_config_menu_projection',
-                    'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.setup', 'delivery_scope': 'configuration'}}
+                    'entry_target': {'type': 'admin_surface', 'surface': 'business_config', 'delivery_scope': 'configuration'}}
         ordinary = dict(declared, menu_id=502, action_id=602, menu_xmlid='test.other', menu_key='test.other', entry_target={})
         groups = [{'group_key': 'platform.config', 'group_label': 'Configuration', 'menus': [declared, ordinary]}]
         with patch.object(menu_service, 'native_config_delivery_groups', return_value=groups), \
@@ -220,7 +220,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
     def test_web_surface_entry_target_projects_only_declared_fields(self):
         target = menu_service.build_web_surface_entry_target(
-            "{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config',"
+            "{'sc_web_surface': 'business_config',"
             " 'business_config_root_menu_xmlid': 'smart_construction_core.menu_sc_root'}",
             menu_id=431,
             action_id=737,
@@ -240,32 +240,75 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(menu_service.build_web_surface_entry_target({}), {})
 
     def test_partial_web_surface_declaration_is_an_explicit_gap_target(self):
-        # A route spelling alone is not a surface declaration: the declaration
-        # is incomplete, so it must surface as an explicit ``admin_surface``
-        # target with the missing field empty (consumer fails closed) instead of
-        # silently degrading to ``compatibility``.
-        route_only = menu_service.build_web_surface_entry_target(
-            "{'sc_web_route': '/admin/business-config'}"
-        )
-        self.assertEqual(route_only["type"], "admin_surface")
-        self.assertEqual(route_only["surface"], "")
-        self.assertEqual(route_only["route"], "/admin/business-config")
+        # A route spelling is no longer a declaration source at all.
+        with self.assertRaisesRegex(ValueError, "ROUTE_FACT_DECLARATION_FORBIDDEN"):
+            menu_service.build_web_surface_entry_target(
+                "{'sc_web_route': '/admin/business-config'}"
+            )
 
         surface_only = menu_service.build_web_surface_entry_target(
             "{'sc_web_surface': 'business_config'}"
         )
         self.assertEqual(surface_only["type"], "admin_surface")
         self.assertEqual(surface_only["surface"], "business_config")
-        self.assertEqual(surface_only["route"], "")
+        self.assertEqual(surface_only["route"], "/admin/business-config")
 
         # A declaration the static parser cannot read must not be dropped
         # either: the keys are present, so the target stays explicit.
         unparsed = menu_service.build_web_surface_entry_target(
-            "{'sc_web_surface': MODEL_SURFACE, 'sc_web_route': '/admin/business-config'}"
+            "{'sc_web_surface': MODEL_SURFACE}"
         )
         self.assertEqual(unparsed["type"], "admin_surface")
         self.assertEqual(unparsed["surface"], "")
         self.assertEqual(unparsed["route"], "")
+
+    def test_final_routes_are_derived_from_the_scenario_composed_identity(self):
+        nav = [{
+            "key": "menu_714",
+            "label": "我的工作",
+            "menu_id": 714,
+            "action_id": 962,
+            "route": "/a/962?menu_id=714",
+            "scene_key": "my_work.workspace",
+            "entry_target": {
+                "type": "scene",
+                "scene_key": "my_work.workspace",
+                "route": "/a/962?menu_id=714",
+            },
+            "meta": {
+                "menu_id": 714,
+                "action_id": 962,
+                "route": "/a/962?menu_id=714",
+                "scene_key": "my_work.workspace",
+            },
+        }]
+        authority = {
+            "primary_actions": [{
+                "menu_id": 714,
+                "action_id": 962,
+                "route": "/a/962?menu_id=714",
+            }],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        node = projected_nav[0]
+        self.assertEqual(node["route"], "/s/my_work.workspace")
+        self.assertEqual(node["meta"]["route"], "/s/my_work.workspace")
+        self.assertEqual(node["entry_target"]["route"], "/s/my_work.workspace")
+        self.assertEqual(
+            projected_authority["primary_actions"][0]["route"],
+            "/s/my_work.workspace",
+        )
+        self.assertEqual(
+            projected_authority["primary_actions"][0]["entry_target"]["scene_key"],
+            "my_work.workspace",
+        )
 
     def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
         class DeniedModel:

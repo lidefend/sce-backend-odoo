@@ -36,7 +36,7 @@
                     'payment_facts': {'source_type': 'odoo_model', 'model': 'payment.request'},
                     'account_facts': {'source_type': 'odoo_model', 'model': 'account.move'}
                 },
-                'target': {'route': '/s/finance.payment_ledger'},
+                'target': {},
                 'role_variants': {
                     'finance': {'default_actions': ['query', 'trace'], 'focus_zones': ['ledger_area', 'filters']}
                 },

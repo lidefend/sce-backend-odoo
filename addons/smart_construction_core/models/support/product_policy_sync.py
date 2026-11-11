@@ -60,7 +60,6 @@ class ScProductPolicy(models.Model):
             "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
             "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
             "res_model": action.res_model, "model": action.res_model,
-            "route": "/a/%s?menu_id=%s" % (action.id, menu.id),
             "enabled": release_state in {"released", "preview"}, "release_state": release_state,
             "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
         })
@@ -162,13 +161,11 @@ class ScProductPolicy(models.Model):
                         f"{product_key} action model mismatch {menu_xmlid}",
                     )
                 if scene_key:
-                    # A declared scene entry has no action route: the server owns the
-                    # scene channel and the frontend never derives it.
+                    # Actionless scene entries keep the native menu as their
+                    # authorization carrier; the route is derived later.
                     res_model = ""
-                    route = "/s/%s" % scene_key
                 else:
                     res_model = action_res_model or locked_res_model
-                    route = "/a/%s?menu_id=%s" % (action_id, menu_id) if menu_id else "/a/%s" % action_id
                 row.update(
                     {
                         "menu_xmlid": menu_xmlid,
@@ -177,9 +174,10 @@ class ScProductPolicy(models.Model):
                         "menu_id": menu_id,
                         "action_id": action_id,
                         "action_xmlid": resolved_action_xmlid,
-                        "route": route,
                         "res_model": res_model,
                         "model": res_model,
+                        "scene_key": scene_key,
+                        "target_scene_key": scene_key,
                         "enabled": True,
                         "release_state": row["release_state"],
                         "access_level": "public",

@@ -19,6 +19,22 @@
 
 场景层不得新产生 `route`、`menu_xmlid`、`action_xmlid`、`model`、`visibility`、`permission` 或 `group` 事实。它只能引用事实层稳定身份，并声明 layout、zone、provider、相关场景和调用顺序。
 
+### Route 不属于事实层
+
+原生 `ir.ui.menu / ir.actions / ir.ui.view / res.groups / ACL` 决定“有哪些入口、谁能使用、
+入口承载什么动作”，但不决定前端 URL。场景编排通过稳定身份引用这些既有入口，并且不复制
+菜单、动作、模型、权限或场景页实现。
+
+最终导航投影从已经场景化的节点派生 URL：
+
+- 场景节点：`/s/{scene_key}`。
+- 普通原生动作节点：`/a/{action_id}?menu_id={menu_id}`。
+- 目录节点：`/m/{menu_id}`。
+
+`sc_web_route`、场景数据中的硬编码 route 和产品入口源中的 route 字段都不是合法维护载体。
+`system.init` 只返回同一棵最终场景化 `navigation.nav` 及其同源 `route_authority`，不再从
+action context、场景注册或另一份路由表读取第二套 URL。
+
 有明确原生事实投影或原生直达 handoff 声明、且无生效编排内容的入口，无须另建或发布重复的 `sc.scene`。不能仅凭存在 action 判断纯原生。原生入口绑定与资格正确即可通过产品依赖诊断，但访问时仍须经过有效发布策略、企业启用、用户权限和作用域检查。声明专用 intent、区块、数据源、角色组合或后续步骤的入口不能仅因附带兼容 action 就被降格为纯原生页面。诊断复用现有场景加载器及 provider 声明，明确组合内容优先；缺少正向原生证据时保守要求组合发布。
 
 ## 发布层次

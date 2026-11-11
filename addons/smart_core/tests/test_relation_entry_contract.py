@@ -88,7 +88,7 @@ class TestRelationEntryContract(unittest.TestCase):
         module_name = "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
         helper = sys.modules[module_name]._relation_action_is_record_open_form
         workspace = types.SimpleNamespace(
-            context="{'sc_web_surface': 'enterprise_initialization', 'sc_web_route': '/s/enterprise.setup'}")
+            context="{'sc_web_surface': 'enterprise_initialization'}")
         record_form = types.SimpleNamespace(context="{'create': False, 'delete': False}")
         self.assertFalse(helper(workspace))
         self.assertTrue(helper(record_form))
