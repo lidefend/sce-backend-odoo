@@ -61,4 +61,25 @@ Passed:
 - `python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py`
 - `python3 addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py`
 
-Runtime acceptance remains pending until the backend candidate is committed and upgraded on the governed acceptance profile. No full Quick, release audit, deployment, or production-data operation is implied.
+- `make acceptance.module.upgrade MODULE=smart_core,smart_construction_core,smart_construction_scene`
+  on `ceff9ad3f90ec363a6cc472241fffddabb3262cc`
+- `make acceptance.frontend.fixture_orm` on final product code
+  `701c0766da1cfbb7b5c84b8a00e7cf68a3b7ef5b`:
+  47 passed, 0 failed, 0 errors
+
+Runtime evidence:
+
+- Business Full receives `(714, 962)` for My Work at `/s/my_work.workspace`
+  and does not receive enterprise initialization.
+- Business Config Admin receives `(714, 962)` and `(713, 961)`, at
+  `/s/my_work.workspace` and `/s/enterprise.setup`.
+- Both pairs are in final `navigation.nav`, allowed route-authority buckets and
+  `entry_target`; neither carries `BUSINESS_SCENARIO_CONFIGURATION_MISSING`.
+- The acceptance test archives only historical construction release snapshots
+  inside its rollback-only transaction so the current maintained P1 policy is
+  tested instead of a prior immutable snapshot.
+
+Original runtime log:
+`.runtime/acceptance/fixture_orm_20261111T053901Z.log`.
+
+No full Quick, release audit, deployment, or production-data operation is implied.

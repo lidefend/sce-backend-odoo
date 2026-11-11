@@ -3,7 +3,7 @@
   "id": "SCENARIO-ENTRY-NAV-CONTRACT-20261111",
   "branch": "fix/scenario-entry-nav-contract-20261111",
   "baseline_sha": "fe2f8ba175a685988a24c26dad08139d81018b30",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/SCENARIO-ENTRY-NAV-CONTRACT-20261111.yaml",
   "record": "docs/ops/iterations/scenario_entry_nav_contract_20261111.md",
   "scope": [
@@ -145,23 +145,10 @@
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
       ],
       "kind": "offline"
-    },
-    "acceptance_runtime": {
-      "target": "acceptance.frontend.fixture_orm",
-      "inputs": [
-        "addons/smart_core/core/navigation_entry_target.py",
-        "addons/smart_core/delivery/delivery_engine.py",
-        "addons/smart_core/delivery/menu_service.py",
-        "addons/smart_core/handlers/system_init.py",
-        "addons/smart_construction_core/services/scenario_surface_projection.py",
-        "addons/smart_construction_scene/scene_registry.py",
-        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
-      ],
-      "kind": "runtime"
     }
   },
   "blockers": [],
-  "next_exact_step": "Run fixture_orm on the final clean SHA and record the 47-test acceptance receipt.",
+  "next_exact_step": "Publish the exact clean backend candidate through the governed PR entry; handle the unmapped backend incremental-planner lane as independent P4 work.",
   "layer": {
     "formal_product_layer": "P1 product semantics; P0 init consumes the finalized contract without another business decision",
     "layer_target": "single login-role/native-menu authority, composition-only scenario layer, and route projection from final navigation identity",
