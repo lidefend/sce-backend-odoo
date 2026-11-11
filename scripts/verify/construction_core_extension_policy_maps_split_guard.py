@@ -174,6 +174,7 @@ def main() -> int:
             "executive",
             "owner",
             "pm",
+            "operation_user",
             "finance",
             "cost",
             "accounting",

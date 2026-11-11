@@ -74,6 +74,10 @@ authority for the current candidate.
   install; foreign symlinks still fail closed. Preview build identity now also
   fingerprints the resolved dependency projections, so switching projections
   invalidates a bundle that was built from another worktree.
+- The frozen Quick exposed a mainline evidence mismatch: `operation_user` had
+  been merged into `ROLE_PRECEDENCE`, but the split guard still expected the
+  previous tuple. The guard and its regression test now lock the already
+  integrated mainline order without changing the role implementation.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`
