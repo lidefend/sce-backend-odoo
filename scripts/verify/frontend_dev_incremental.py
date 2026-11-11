@@ -690,6 +690,17 @@ RULES = (
     ), (
         "verify.trusted_scan.unit",
     )),
+    # The exact-head receipt verifier and both sides of its regression suite
+    # are one executable contract. The consistency entry runs the verifier
+    # tests and the branch-policy lock together, so this P4 input cannot fall
+    # through as an unmapped path and lose its non-zero L2 execution.
+    Rule((
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/ops/test_local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py",
+    ), (
+        "verify.branch.governance.consistency",
+    )),
     Rule((
         "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
         "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",

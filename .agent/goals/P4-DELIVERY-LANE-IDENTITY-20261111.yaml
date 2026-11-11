@@ -30,6 +30,7 @@ goal:
       - scripts/ci/secret_scan.py
       - scripts/ci/test_trusted_scan_scope.py
       - scripts/ci/trusted_scan_scope.py
+      - scripts/ops/local_quick_evidence.py
       - scripts/verify/repository_clean_history_guard.py
       - scripts/dev/frontend_acceptance_runtime.sh
       - scripts/dev/frontend_cached_dependencies_restore.sh
@@ -43,6 +44,7 @@ goal:
       - scripts/verify/test_frontend_release_local_entry.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/test_frontend_standard_preview.py
+      - scripts/verify/test_local_quick_evidence.py
     product_behavior: >
       Contract and list/presentation browser lanes resolve an exact candidate
       backend carrier before writing or consuming their resolver receipt.

@@ -84,6 +84,13 @@ authority for the current candidate.
   Quick shards now freeze their initial ref/OID set and all scanners enumerate
   that immutable set. Sibling iterations can continue without changing the
   current candidate's scan coverage; candidate HEAD/tree drift still fails.
+- Exact-head receipt verification had retained the old live-object-set equality
+  check, so a sibling worktree commit observed after Quick still made the
+  already-issued receipt fail with `does not match`. Verification now validates
+  the receipt's candidate HEAD/tree, frozen ref snapshot, authority digests and
+  scan revisions at the source head. Current refs owned by other iterations are
+  not an invalidation input; candidate mutation still requires a new exact-head
+  receipt. This is a `validation_tool_defect` fix in the owning P4 lane.
 - The incremental planner now routes the isolated scan tools to
   `verify.trusted_scan.unit`; its stale zero-reference disposition was removed
   with the governed audit command after the wiring became live.
