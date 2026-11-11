@@ -1,8 +1,8 @@
 {
   "schema": "scene_fact_data_boundary.v1",
-  "rule": "fact_layer_is_the_single_maintenance_source",
+  "rule": "fact_layer_is_the_single_maintenance_source; scene_layer_composes_only",
   "decision": "ARCH-DECISION-010",
-  "note": "Scenario entries, workspace layout and enablement must be read-only projections of native model/view/permission/group facts. Carriers below hold scene configuration fact data and are bound by exact content SHA until the governed convergence retires them.",
+  "note": "Scenario entries, workspace layout and enablement must be read-only projections of native model/view/permission/group facts. First classify fact insufficiency versus composition insufficiency; fact insufficiency returns to its owning fact layer. Scene carriers are bound by exact content SHA until the governed convergence retires them.",
   "violations": {
     "hardcoded_scene_registry_enterprise_entries": {
       "file": "addons/smart_construction_scene/profiles/scene_registry_content.py",
@@ -37,6 +37,15 @@
       "sha256": null,
       "converged": true,
       "converged_by": "horizontal and platform groups derive from native menu-tree roots"
+    },
+    "scene_route_fact_declarations": {
+      "files": [
+        "addons/smart_construction_scene/data/",
+        "addons/smart_construction_scene/profiles/"
+      ],
+      "sha256": "ce3e7df59e03d2445d9a6f7216f20f7280db65b992ce9d6db1455bd18dbb7588",
+      "converged": false,
+      "note": "Existing route-fact debt is pinned. New or changed scene-layer route declarations fail closed; scene composition must reference native/product facts."
     }
   }
 }

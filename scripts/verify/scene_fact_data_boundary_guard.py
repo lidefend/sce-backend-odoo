@@ -30,6 +30,9 @@ ENABLEMENT_WRITERS = [
     ROOT / "addons/smart_construction_scene/services/tenant_scene_activation.py",
     ROOT / "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
 ]
+SCENE_DATA_DIR = ROOT / "addons/smart_construction_scene/data"
+SCENE_PROFILE_DIR = ROOT / "addons/smart_construction_scene/profiles"
+ROUTE_FACT_PATTERN = re.compile(r"""['"]route['"]\s*:\s*['"]([^'"]+)['"]""")
 
 
 def _sha(text: str) -> str:
@@ -80,6 +83,24 @@ def _hardcoded_surface_menu_lists() -> str:
     return "\n".join(parts)
 
 
+def _scene_route_fact_declarations() -> str:
+    """Stable signature of route facts still declared by scene carriers.
+
+    Existing debt remains visible and pinned; any new or changed route fact in
+    scene data/profiles fails closed. Scene-layer additions must instead
+    reference stable native/product facts.
+    """
+    rows = []
+    for folder in (SCENE_DATA_DIR, SCENE_PROFILE_DIR):
+        for path in sorted(folder.rglob("*")):
+            if not path.is_file() or path.suffix not in {".xml", ".py", ".json"}:
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for route in ROUTE_FACT_PATTERN.findall(text):
+                rows.append(f"{path.relative_to(ROOT).as_posix()}:{str(route).strip()}")
+    return "\n".join(sorted(set(rows)))
+
+
 def _current_violations() -> dict[str, str | None]:
     """Return the live violation signature. A missing carrier yields None."""
     registry_codes = _hardcoded_enterprise_codes()
@@ -92,6 +113,7 @@ def _current_violations() -> dict[str, str | None]:
         "scene_enablement_fact_writes": _sha(enablement_writes) if enablement_writes else None,
         "hardcoded_provider_layout": _sha(provider_layout) if provider_layout else None,
         "hardcoded_scene_surface_menus": _sha(surface_menus) if surface_menus else None,
+        "scene_route_fact_declarations": _sha(_scene_route_fact_declarations()),
     }
 
 
