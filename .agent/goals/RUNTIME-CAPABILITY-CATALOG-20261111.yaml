@@ -1,0 +1,25 @@
+schema_version: 1
+goal:
+  id: RUNTIME-CAPABILITY-CATALOG-20261111
+  status: completed
+  formal_product_layer: P0 platform kernel with P1 consumption
+  title: 从已安装 Odoo 事实生成只读能力目录
+  layer_target: installed capability catalog projection
+  module: smart_core
+  standard_vs_user_specific: platform mechanism
+  objective: >
+    Project one read-only capability catalogue from installed Odoo menus,
+    actions, model data and native groups, and reuse it from the existing
+    product-policy catalog synchronizer so module installation exposes
+    candidate capabilities without another hand-maintained menu list.
+  acceptance:
+    - Capability identity is derived from stable native menu/action XMLIDs with native IDs only as runtime handles.
+    - The projection contains no route, product publication or tenant decision.
+    - Existing product-policy catalog extraction behavior remains compatible.
+    - Module installation provides candidates; it does not auto-publish every candidate.
+    - Focused tests execute with a non-zero count.
+  exclusions:
+    - No menu/action/view/group/ACL change.
+    - No product publication, tenant selection or scenario composition change.
+    - No frontend change.
+    - No runtime write, migration, deployment, PR or remote mutation.

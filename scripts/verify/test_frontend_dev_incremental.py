@@ -283,6 +283,27 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_runtime_capability_catalog_selects_its_projection_unit(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/runtime_capability_catalog.py",
+            "addons/smart_core/tests/test_runtime_capability_catalog.py",
+            "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.runtime_capability_catalog.unit"],
+                )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/delivery/product_policy_catalog_sync_service.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.runtime_capability_catalog.unit",
+            ],
+        )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",

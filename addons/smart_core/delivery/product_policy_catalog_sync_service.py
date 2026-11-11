@@ -12,61 +12,11 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 
 from .product_identity import resolve_product_identity
 from .product_policy_service import ProductPolicyService
+from .runtime_capability_catalog import RuntimeCapabilityCatalogService
 
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
-
-
-def _action_id(action: Any) -> int:
-    try:
-        return int(action.id or 0) if action else 0
-    except Exception:
-        return 0
-
-
-def _action_model(action: Any) -> str:
-    try:
-        model = _text(getattr(action, "res_model", ""))
-        if model:
-            return model
-        model = _text(getattr(action, "model_name", ""))
-        if model:
-            return model
-        model_id = getattr(action, "model_id", None)
-        model = _text(getattr(model_id, "model", ""))
-        if model:
-            return model
-        binding_model_id = getattr(action, "binding_model_id", None)
-        return _text(getattr(binding_model_id, "model", ""))
-    except Exception:
-        return ""
-
-
-def _action_view_modes(action: Any) -> list[str]:
-    try:
-        value = _text(getattr(action, "view_mode", ""))
-    except Exception:
-        value = ""
-    return [_text(item) for item in value.split(",") if _text(item)]
-
-
-def _menu_xmlid(menu: Any) -> str:
-    try:
-        return _text(menu.get_external_id().get(menu.id, ""))
-    except Exception:
-        return ""
-
-
-def _menu_path(menu: Any) -> list[str]:
-    path: list[str] = []
-    current = menu
-    while current:
-        name = _text(getattr(current, "name", ""))
-        if name:
-            path.append(name)
-        current = getattr(current, "parent_id", None)
-    return list(reversed(path))
 
 
 def _slug(value: str) -> str:
@@ -103,27 +53,6 @@ class ProductPolicyCatalogSyncService:
             "root_label": root_label,
         }
 
-    def _candidate_user_menus(self, source_env):
-        config = self._catalog_source_config(source_env)
-        module = _text(config.get("module"))
-        if not module:
-            return source_env["ir.ui.menu"].sudo().search([], order="sequence,id")
-        try:
-            rows = source_env["ir.model.data"].sudo().search(
-                [
-                    ("module", "=", module),
-                    ("model", "=", "ir.ui.menu"),
-                ]
-            )
-            menu_ids = [int(row.res_id or 0) for row in rows if int(row.res_id or 0) > 0]
-            if menu_ids:
-                menus = source_env["ir.ui.menu"].sudo().browse(menu_ids).exists()
-                return sorted(menus, key=lambda menu: (int(getattr(menu, "sequence", 0) or 0), int(menu.id or 0)))
-        except Exception:
-            pass
-
-        return source_env["ir.ui.menu"].sudo().search([], order="sequence,id")
-
     def _extract_user_menu_pages(self, source_env) -> list[dict[str, Any]]:
         # ir.ui.menu.search() applies menu visibility rules, and action is a
         # reference field whose domains may miss menus that still expose a
@@ -133,37 +62,34 @@ class ProductPolicyCatalogSyncService:
         config = self._catalog_source_config(source_env)
         xmlid_prefix = _text(config.get("xmlid_prefix"))
         root_label = _text(config.get("root_label"))
-        menus = self._candidate_user_menus(source_env)
+        module = _text(config.get("module"))
+        projection = RuntimeCapabilityCatalogService(source_env).collect(
+            module=module,
+            xmlid_prefix=xmlid_prefix,
+            root_label=root_label,
+            leaf_actions_only=True,
+        )
         rows: list[dict[str, Any]] = []
         seen: set[str] = set()
-        for menu in menus:
-            if hasattr(menu, "active") and not bool(getattr(menu, "active")):
-                continue
-            xmlid = _menu_xmlid(menu)
-            if xmlid_prefix and not xmlid.startswith(xmlid_prefix):
-                continue
-            action = menu.action
-            action_id = _action_id(action)
-            if action_id <= 0:
-                continue
-            path = _menu_path(menu)
-            if not path:
-                continue
-            current_root_label = path[0] if path else ""
-            if root_label and current_root_label != root_label:
-                continue
-            children = getattr(menu, "child_id", None)
-            if children and any(bool(getattr(child, "active", True)) for child in children):
-                continue
+        for capability in projection.rows:
+            xmlid = _text(capability.get("menu_xmlid"))
             page_key = xmlid
             if page_key in seen:
                 continue
             seen.add(page_key)
+            path = list(capability.get("menu_path") or [])
+            if not path:
+                continue
             group_label = path[1] if len(path) > 1 else root_label
             page_label = path[-1]
-            menu_id = int(menu.id or 0)
-            res_model = _action_model(action)
-            view_modes = _action_view_modes(action)
+            action_id = int(capability.get("action_id") or 0)
+            res_model = _text(capability.get("res_model"))
+            view_modes = (
+                list(capability.get("view_modes") or [])
+                if isinstance(capability.get("view_modes"), list)
+                else []
+            )
+            menu_id = int(capability.get("menu_id") or 0)
             resolved_scene_key = resolve_scene_key(
                 source_env,
                 menu_id=menu_id,
@@ -186,7 +112,8 @@ class ProductPolicyCatalogSyncService:
                     "scene_key": resolved_scene_key,
                     "target_scene_key": resolved_scene_key,
                     "action_id": action_id,
-                    "action_model": _text(getattr(action, "_name", "")),
+                    "action_model": _text(capability.get("action_model")),
+                    "capability_key": _text(capability.get("capability_key")),
                     "res_model": res_model,
                     "view_modes": view_modes,
                     "visible_menu_path": " / ".join(path),

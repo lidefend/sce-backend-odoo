@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "id": "RUNTIME-CAPABILITY-CATALOG-20261111",
+  "branch": "refactor/navigation-contract-compiler-20261111",
+  "baseline_sha": "9b87f21b9706507cd9363821414567467e03955d",
+  "status": "completed",
+  "goal": ".agent/goals/RUNTIME-CAPABILITY-CATALOG-20261111.yaml",
+  "record": "docs/ops/iterations/runtime_capability_catalog_20261111.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NAVIGATION-CONTRACT-COMPILER-20261111.yaml",
+    ".agent/goals/RUNTIME-CAPABILITY-CATALOG-20261111.yaml",
+    ".agent/runs/RUNTIME-CAPABILITY-CATALOG-20261111/run.json",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+    "addons/smart_core/delivery/runtime_capability_catalog.py",
+    "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    "addons/smart_core/tests/test_runtime_capability_catalog.py",
+    "docs/ops/iterations/runtime_capability_catalog_20261111.md",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound catalog and product-policy catalog compatibility tests"
+  },
+  "runtime_observation": {
+    "database": "sc_dev_demo",
+    "source": "candidate worktree after smart_core upgrade",
+    "command": "make verify.platform.release_policy.runtime ENV=dev ENV_FILE=<primary .env.dev> DB_NAME=sc_dev_demo",
+    "artifact": "artifacts/backend/platform_release_policy_runtime_probe_after_catalog.json",
+    "artifact_sha256": "f2975572443af8d1c8aab79ae305edf60eda7894aec44315a5feb7c9616d5b75",
+    "catalog_projection": {
+      "construction.standard": {
+        "menu_count": 274,
+        "menu_group_count": 11,
+        "capability_count": 274,
+        "scene_count": 4
+      },
+      "construction.preview": {
+        "menu_count": 274,
+        "menu_group_count": 11,
+        "capability_count": 274,
+        "scene_count": 4
+      }
+    },
+    "status": "partial",
+    "catalog_projection_status": "passed",
+    "full_probe_status": "failed",
+    "failure_owner": "baseline_evidence_defect",
+    "failure_reason": "The probe passes an empty native_nav but also declares an exposure policy, so MenuService intentionally authorizes from the request user's ACL-visible menu facts. Its no-native/subset assertions therefore do not test the path they name. This delivery path does not use the changed capability-catalog projection and is not attributed to this batch."
+  },
+  "checks": {
+    "capability_catalog": {
+      "target": "verify.runtime_capability_catalog.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "make/frontend.mk"
+      ]
+    },
+    "backend_navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "make/frontend.mk"
+      ]
+    },
+    "capability_identity_boundary": {
+      "target": "verify.capability.identity_boundary.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "make/guards.mk"
+      ]
+    },
+    "product_menu_contract": {
+      "target": "verify.product_menu_release_gate.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "scripts/verify/test_product_menu_release_gate_contract.py"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze the capability catalog projection, then introduce scenario composition records that reference these stable capability identities and emit center/scenario/entry directly.",
+  "layer": {
+    "formal_product_layer": "P0 platform kernel with P1 consumption",
+    "layer_target": "installed native capability catalog",
+    "module": "smart_core",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "Installed Odoo menu/action facts are common platform inputs for every product; projecting them belongs to P0.",
+    "why_not_elsewhere": "P1 product policy may select candidates but must not own a second native scanner; frontend cannot enumerate capabilities.",
+    "blast_radius": "Read-only capability discovery and the existing product-policy catalog synchronizer only; publication semantics remain unchanged."
+  },
+  "validation_results": [
+    {
+      "command": "make verify.runtime_capability_catalog.unit",
+      "status": "passed",
+      "tests": 5,
+      "log": ".runtime/runtime-capability-catalog/catalog.log"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 73,
+      "log": ".runtime/runtime-capability-catalog/navigation-delivery.log"
+    },
+    {
+      "command": "make verify.capability.identity_boundary.unit",
+      "status": "passed",
+      "tests": 6,
+      "log": ".runtime/runtime-capability-catalog/capability-identity.log"
+    },
+    {
+      "command": "make verify.product_menu_release_gate.contract.unit",
+      "status": "passed",
+      "tests": 9,
+      "log": ".runtime/runtime-capability-catalog/product-menu-contract.log"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "tests": 115,
+      "log": ".runtime/runtime-capability-catalog/incremental-planner.log"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "head": "9b87f21b9706507cd9363821414567467e03955d"
+    }
+  ],
+  "completion": {
+    "batch": "runtime_capability_catalog_projection_complete",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "The aggregate platform release runtime probe still has unrelated no-native/subset assertion failures recorded in runtime_observation.",
+    "Scenario composition is not changed in this batch.",
+    "No remote PR, CI, merge or deployment was performed."
+  ]
+}

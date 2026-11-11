@@ -32,6 +32,11 @@ def _ensure_stub_packages():
     smart_core_pkg.__path__ = [str(ROOT / "addons/smart_core")]
     core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
     core_pkg.__path__ = [str(ROOT / "addons/smart_core/core")]
+    delivery_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.delivery",
+        types.ModuleType("odoo.addons.smart_core.delivery"),
+    )
+    delivery_pkg.__path__ = [str(ROOT / "addons/smart_core/delivery")]
     sys.modules.setdefault("odoo.exceptions", types.ModuleType("odoo.exceptions"))
     sys.modules["odoo.exceptions"].AccessError = type("AccessError", (Exception,), {})
 
@@ -58,6 +63,10 @@ SCENE_CONTRACT_BUILDER = _load_module(
 PRODUCT_POLICY_SERVICE = _load_module(
     "smart_core_product_policy_service_test",
     "addons/smart_core/delivery/product_policy_service.py",
+)
+_load_module(
+    "odoo.addons.smart_core.delivery.runtime_capability_catalog",
+    "addons/smart_core/delivery/runtime_capability_catalog.py",
 )
 PRODUCT_POLICY_CATALOG_SYNC_SERVICE = _load_module(
     "odoo.addons.smart_core.delivery.product_policy_catalog_sync_service",

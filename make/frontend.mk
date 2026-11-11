@@ -190,7 +190,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_scene_provider_target_identity_merge.py
 
 .PHONY: verify.backend.navigation_delivery.unit
-verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit
+verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_menu_acl_carrier_authorization.py
@@ -200,6 +200,11 @@ verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_con
 verify.navigation_contract_compiler.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/delivery/navigation_contract_compiler.py addons/smart_core/handlers/system_init.py addons/smart_core/tests/test_navigation_contract_compiler.py
 	@python3 addons/smart_core/tests/test_navigation_contract_compiler.py
+
+.PHONY: verify.runtime_capability_catalog.unit
+verify.runtime_capability_catalog.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/delivery/runtime_capability_catalog.py addons/smart_core/delivery/product_policy_catalog_sync_service.py addons/smart_core/tests/test_runtime_capability_catalog.py addons/smart_core/tests/test_backend_semantic_copy_supply.py
+	@python3 addons/smart_core/tests/test_runtime_capability_catalog.py
 
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit verify.backend.navigation_delivery.unit

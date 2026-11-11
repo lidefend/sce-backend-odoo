@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: NAVIGATION-CONTRACT-COMPILER-20261111
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel
   title: 收口 system.init 最终导航契约编译器
   layer_target: single navigation contract compiler

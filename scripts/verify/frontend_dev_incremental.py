@@ -329,6 +329,14 @@ RULES = (
         "verify.system_init.menu_boundary.guard",
     )),
     Rule((
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    ), (
+        "verify.runtime_capability_catalog.unit",
+    )),
+    Rule((
         "frontend/apps/web/scripts/logger_runtime_test.ts",
         "frontend/apps/web/src/utils/logger.ts",
         "scripts/verify/frontend_console_guard.py",
