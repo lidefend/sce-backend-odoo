@@ -96,7 +96,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
-| 1554 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
@@ -203,12 +203,12 @@ Generated from repository source files. This report is informational during the 
 | 851 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
+| 844 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
-| 839 | Python source | `addons/smart_construction_scene/profiles/scene_registry_content.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
@@ -313,8 +313,8 @@ Generated from repository source files. This report is informational during the 
 | 1580 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
-| 1554 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1537 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |

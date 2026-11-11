@@ -36,6 +36,33 @@ def register_customer_acceptance_group_label(label: str) -> None:
 class MenuService:
     ROUTE_AUTHORITY_CONTRACT_VERSION = "2.0.0"
 
+    def _groups_authorize_current_user(self, groups) -> bool:
+        """Apply Odoo group closure, including implied groups."""
+        if not groups:
+            return True
+        if self.env is None:
+            return False
+        resolved_groups = groups.sudo() if hasattr(groups, "sudo") else groups
+        try:
+            group_iter = iter(resolved_groups)
+        except TypeError:
+            user_groups = getattr(self.env.user, "groups_id", None)
+            return bool(user_groups is not None and resolved_groups & user_groups)
+        for group in group_iter:
+            try:
+                group_xmlid = self._record_xmlid(group)
+            except Exception:
+                group_xmlid = ""
+            if group_xmlid and self.env.user.has_group(group_xmlid):
+                return True
+        user_groups = getattr(self.env.user, "groups_id", None)
+        if user_groups is None:
+            return False
+        try:
+            return bool(set(resolved_groups) & set(user_groups))
+        except TypeError:
+            return False
+
     @staticmethod
     def _role_surface_menu_allowed(menu: dict, role_surface: dict | None) -> bool:
         """Apply identifier-based role projection without owning industry semantics."""
@@ -207,8 +234,6 @@ class MenuService:
         acting user's closure. An actionless node remains a declared container or
         scene anchor and is retained for the normal role projection.
         """
-        user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
-
         def walk(node: dict) -> dict | None:
             if not isinstance(node, dict):
                 return None
@@ -230,7 +255,7 @@ class MenuService:
             allowed = True
             if action:
                 action_groups = getattr(action, "groups_id", None)
-                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                if action_groups and not self._groups_authorize_current_user(action_groups):
                     allowed = False
 
             children = [
@@ -397,7 +422,7 @@ class MenuService:
             if bool(getattr(menu_record, "active", True)):
                 return False
             menu_groups = getattr(menu_record.sudo(), "groups_id", self.env["res.groups"])
-            if menu_groups and not bool(menu_groups & self.env.user.groups_id):
+            if menu_groups and not self._groups_authorize_current_user(menu_groups):
                 return False
         else:
             menu_record = None
@@ -412,7 +437,7 @@ class MenuService:
         if not action:
             return False
         action_groups = getattr(action.sudo(), "groups_id", self.env["res.groups"])
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return False
         return self._action_is_runtime_allowed(action, allowed_operation)
 
@@ -431,7 +456,7 @@ class MenuService:
         if not action or not self._action_is_runtime_allowed(action, "read"):
             return None
         action_groups = getattr(action, "groups_id", None)
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return None
         action_meta = row.get("action_meta") if isinstance(row.get("action_meta"), dict) else {}
         model_name = str(action_meta.get("res_model") or "").strip()
@@ -481,7 +506,7 @@ class MenuService:
         if not action or str(getattr(action, "_name", "") or "") != "ir.actions.act_window":
             return None
         action_groups = getattr(action, "groups_id", None)
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return None
         allowed_operation = str(row.get("allowed_operation") or "read").strip().lower() or "read"
         if not self._action_is_runtime_allowed(action, allowed_operation):
@@ -1841,8 +1866,7 @@ class MenuService:
                     action = None
             if action:
                 action_groups = getattr(action.sudo(), "groups_id", None)
-                user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
-                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                if action_groups and not self._groups_authorize_current_user(action_groups):
                     return False
             elif action_xmlid:
                 return False
