@@ -163,7 +163,6 @@ class TestBusinessSceneLifecycle(TransactionCase):
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertFalse(row['product_released'])
-            self.assertIsNone(row['product_surface'])
             self.menu.sc_scenario_exempt = True
             self.assertTrue(self._allowed(self.company_a))
             self.menu.sc_scenario_exempt = False

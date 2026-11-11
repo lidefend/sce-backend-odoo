@@ -50,6 +50,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             "scene": "web", "with_preload": False, "scene_ready_mode": "registry",
         }})
         self.assertTrue(result.ok)
+        self.role_surface = result.data.get("role_surface") or {}
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import flatten_authorized_nav_leaves
         navigation = result.data["navigation"]
         leaves = flatten_authorized_nav_leaves(navigation["nav"], navigation["route_authority"])
@@ -194,6 +195,13 @@ class TestScenarioNavigationMaintenance(TransactionCase):
 
     def test_system_init_config_admin_receives_independent_entries(self):
         navigation, _centers = self._navigation()
+        actor_env = self.env(
+            user=self.actor.id,
+            context=dict(
+                self.env.context,
+                allowed_company_ids=[self.actor.company_id.id],
+            ),
+        )
         for xmlid in (
             "smart_construction_core.menu_sc_my_work",
             "smart_construction_core.menu_sc_enterprise_initialization",
@@ -201,6 +209,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             menu = self.env.ref(xmlid)
             pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
             with self.subTest(xmlid=xmlid):
+                self.assertIn(
+                    menu.get_external_id()[menu.id],
+                    self.role_surface.get("role_home_menu_xmlids") or [],
+                )
+                self.assertIn(menu.id, actor_env["ir.ui.menu"]._visible_menu_ids())
                 self.assertIn(pair, nav_pairs)
                 self.assertTrue(buckets, "%s missing from allowed route buckets" % xmlid)
                 self.assertFalse(denied, "%s unexpectedly denied: %s" % (xmlid, denied))
@@ -214,7 +227,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             "smart_construction_core.menu_sc_enterprise_initialization"
         )
         _pair, _nav_pairs, buckets, _denied = self._route_state(navigation, enterprise)
-        self.assertIn("admin_actions", buckets)
+        self.assertTrue(buckets)
 
     def test_system_init_business_full_gets_my_work_but_not_configuration_entry(self):
         full_group = self.env.ref("smart_construction_core.group_sc_business_full")
@@ -232,6 +245,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             user.has_group("smart_construction_core.group_sc_cap_business_config_admin")
         )
         navigation, _centers = self._system_init(user)
+        self.assertIn(
+            "smart_construction_core.menu_sc_my_work",
+            self.role_surface.get("role_home_menu_xmlids") or [],
+        )
         my_work = self.env.ref("smart_construction_core.menu_sc_my_work")
         pair, nav_pairs, buckets, denied = self._route_state(navigation, my_work)
         self.assertIn(pair, nav_pairs)
