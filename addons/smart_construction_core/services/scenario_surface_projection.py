@@ -527,6 +527,67 @@ def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
     return result
 
 
+def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, Any]]:
+    """Project scenario centers into the final canonical navigation contract."""
+    try:
+        from odoo.addons.smart_core.core.delivery_menu_defaults import (
+            build_delivery_menu_child,
+            build_delivery_menu_group,
+            build_delivery_menu_root,
+        )
+        from odoo.addons.smart_core.delivery.menu_service import MenuService
+    except ModuleNotFoundError:
+        return []
+
+    def child(entry):
+        row = dict(entry)
+        row["menu_key"] = (
+            f"scenario.entry.{int(row.get('menu_id') or 0)}."
+            f"{int(row.get('action_id') or 0)}"
+        )
+        return build_delivery_menu_child(row)
+
+    group_nodes = []
+    for center in centers or []:
+        if not isinstance(center, dict):
+            continue
+        children = []
+        for scenario in center.get("scenarios") or []:
+            scenario_children = [
+                node
+                for entry in scenario.get("entries") or []
+                if (node := child(entry))
+            ]
+            if not scenario_children:
+                continue
+            children.append(build_delivery_menu_group(
+                f"scenario.{center.get('key')}.{scenario.get('key')}",
+                _text(scenario.get("name") or scenario.get("key")),
+                scenario_children,
+            ))
+        children.extend(
+            node
+            for entry in center.get("entries") or []
+            if (node := child(entry))
+        )
+        if not children:
+            continue
+        center_menu = env.ref(center.get("key"), raise_if_not_found=False)
+        group_nodes.append(build_delivery_menu_group(
+            _text(center.get("key")) or f"scenario.center.{center.get('sequence')}",
+            _text(center.get("name") or center.get("key")),
+            children,
+            config_menu_id=int(getattr(center_menu, "id", 0) or 0),
+        ))
+    if not group_nodes:
+        return []
+    root = build_delivery_menu_root(group_nodes, "")
+    root["key"] = "root:scenario_navigation"
+    root["label"] = "业务场景"
+    root["title"] = "业务场景"
+    return MenuService(env).project_canonical_navigation([root], route_authority)
+
+
 def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str, Any]:
     """Project authorized navigation into native-center -> scenario -> entries.
 
@@ -591,9 +652,11 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "scenarios": scenarios,
             "entries": center["entries"],
         })
+    scenarioized_nav = _scenarioized_navigation(env, center_rows, route_authority)
     return {
         "ok": True,
         "tree": {"centers": center_rows},
+        "nav": scenarioized_nav,
         "diagnostics": {
             "authorized_leaf_count": sum(1 for leaf in leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
             "center_count": len(center_rows),

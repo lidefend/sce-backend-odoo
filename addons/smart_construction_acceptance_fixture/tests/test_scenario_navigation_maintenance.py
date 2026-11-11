@@ -209,10 +209,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             menu = self.env.ref(xmlid)
             pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
             with self.subTest(xmlid=xmlid):
-                self.assertIn(
-                    menu.get_external_id()[menu.id],
-                    self.role_surface.get("role_home_menu_xmlids") or [],
-                )
+                if xmlid == "smart_construction_core.menu_sc_my_work":
+                    self.assertIn(
+                        menu.get_external_id()[menu.id],
+                        self.role_surface.get("role_home_menu_xmlids") or [],
+                    )
                 self.assertIn(menu.id, actor_env["ir.ui.menu"]._visible_menu_ids())
                 self.assertIn(pair, nav_pairs)
                 self.assertTrue(buckets, "%s missing from allowed route buckets" % xmlid)

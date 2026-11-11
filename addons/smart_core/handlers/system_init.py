@@ -2406,6 +2406,26 @@ class SystemInitHandler(BaseIntentHandler):
         )
         if isinstance(_scenario_surface, dict):
             data["navigation"]["scenario_surface"] = _scenario_surface
+            _scenarioized_navigation = _scenario_surface.get("nav")
+            if isinstance(_scenarioized_navigation, list):
+                _scenarioized_pairs = set(
+                    MenuService._walk_nav_action_refs(_scenarioized_navigation)
+                )
+                _scenarioized_missing = sorted(
+                    _scenarioized_pairs - _authorized_navigation_pairs
+                )
+                if _scenarioized_missing:
+                    raise RuntimeError(
+                        "scenario navigation contains unauthorized menu/action pairs: %s"
+                        % _scenarioized_missing[:20]
+                    )
+                data["nav"] = _scenarioized_navigation
+                data["navigation"]["nav"] = _scenarioized_navigation
+                data["navigation"]["integrity"] = {
+                    "visible_action_count": len(_scenarioized_pairs),
+                    "authorized_action_count": len(_authorized_navigation_pairs),
+                    "missing_authority_count": 0,
+                }
         for _removed_navigation_carrier in (
             "nav",
             "nav_role_surface",

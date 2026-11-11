@@ -2663,10 +2663,8 @@ class MenuService:
     def _role_home_shell_menu_rows(self, role_surface: dict | None) -> list[dict]:
         """Resolve explicitly declared role-home carriers from native facts.
 
-        The role declaration selects the stable menu identities; Odoo remains
-        authoritative for menu visibility, action existence and both group
-        closures. This path exists because closed product policies intentionally
-        omit cross-product shell entries from their catalogue.
+        This produces authorized navigation facts. Scenario composition consumes
+        the result later and never recovers or invents missing entries itself.
         """
         if self.env is None or not isinstance(role_surface, dict):
             return []
@@ -2722,9 +2720,8 @@ class MenuService:
                 for item in str(getattr(action, "view_mode", "") or "").split(",")
                 if item.strip()
             ] if action else []
-            context = getattr(action, "context", "") if action else ""
             entry_target = build_web_surface_entry_target(
-                context,
+                getattr(action, "context", "") if action else "",
                 menu_id=int(menu.id),
                 action_id=action_id,
                 model=model,
