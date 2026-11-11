@@ -320,7 +320,14 @@ class ProjectionAndRouteTests(unittest.TestCase):
         """
         source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
         self.assertIn("merge_platform_duty_route_authority", source)
-        self.assertIn('surface=(data.get("user") or {}).get("platform_duty")', source)
+        self.assertIn(
+            "platform_duty_merger=lambda authority, surface: merge_platform_duty_route_authority",
+            source,
+        )
+        self.assertIn(
+            'platform_duty=(data.get("user") or {}).get("platform_duty")',
+            source,
+        )
 
         contract = _load_contract()
         surface = contract.build_platform_duty_surface(
