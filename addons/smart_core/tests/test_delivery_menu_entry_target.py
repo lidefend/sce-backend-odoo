@@ -320,6 +320,19 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             projected_authority["primary_actions"][0]["entry_target"]["scene_key"],
             "my_work.workspace",
         )
+        product_policy = menu_service.MenuService.project_navigation_product_policy(
+            projected_nav,
+            product_key="construction.standard",
+            edition_key="standard",
+            role_code="business_full",
+            role_codes=["business_full"],
+        )
+        self.assertEqual(product_policy["source"], "scenarioized_navigation.nav")
+        self.assertEqual(product_policy["entry_count"], 1)
+        self.assertEqual(product_policy["action_entry_count"], 1)
+        self.assertEqual(product_policy["scene_entry_count"], 1)
+        self.assertEqual(product_policy["entries"][0]["route"], "/s/my_work.workspace")
+        self.assertEqual(product_policy["entries"][0]["scene_key"], "my_work.workspace")
 
     def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
         class DeniedModel:

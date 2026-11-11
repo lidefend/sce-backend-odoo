@@ -43,6 +43,8 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             tail,
         )
         self.assertIn("project_final_navigation_routes(", tail)
+        self.assertIn("project_navigation_product_policy(", tail)
+        self.assertIn('data["navigation"]["product_policy"]', tail)
         build_index = tail.index("build_route_authority(")
         reconcile_index = tail.index("filter_nav_by_route_authority(")
         verify_index = tail.index("_visible_navigation_pairs = set(")

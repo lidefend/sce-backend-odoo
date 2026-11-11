@@ -2397,6 +2397,7 @@ class SystemInitHandler(BaseIntentHandler):
             },
             "meta": _navigation_meta,
         }
+        _scenario_product_policy = None
         _scenario_surface = call_extension_hook_first(
             env,
             "smart_core_scenario_surface_projection",
@@ -2414,6 +2415,16 @@ class SystemInitHandler(BaseIntentHandler):
                         _final_route_authority,
                     )
                 )
+                _scenario_product_policy = (
+                    delivery_engine.menu_service.project_navigation_product_policy(
+                        _scenarioized_navigation,
+                        product_key=str(delivery_payload.get("product_key") or ""),
+                        edition_key=str(delivery_payload.get("edition_key") or ""),
+                        role_code=str(delivery_payload.get("role_code") or ""),
+                        role_codes=list(delivery_payload.get("role_codes") or []),
+                    )
+                )
+                data["navigation"]["product_policy"] = _scenario_product_policy
                 _scenarioized_pairs = set(
                     MenuService._walk_nav_action_refs(_scenarioized_navigation)
                 )

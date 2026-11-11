@@ -1154,6 +1154,106 @@ class MenuService:
                     entry["entry_target"] = dict(target["entry_target"])
         return projected_nav, authority
 
+    @staticmethod
+    def project_navigation_product_policy(
+        nav: list[dict],
+        *,
+        product_key: str = "",
+        edition_key: str = "",
+        role_code: str = "",
+        role_codes: list[str] | None = None,
+    ) -> dict:
+        """Project the final P1 product policy from scenarioized navigation.
+
+        Product release selection is an input to authorization. It is not the
+        user-facing product policy. This projection is the final policy result:
+        every menu/action/scene/route identity below comes from the same tree
+        returned to the client.
+        """
+        entries: list[dict] = []
+        node_count = 0
+        directory_count = 0
+
+        def walk(nodes: list[dict], parent_path: list[str]) -> None:
+            nonlocal node_count, directory_count
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                node_count += 1
+                meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+                label = str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                path = [*parent_path, label] if label else list(parent_path)
+                children = [child for child in node.get("children") or [] if isinstance(child, dict)]
+                menu_id = MenuService._node_route_menu_id(node)
+                try:
+                    action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+                except (TypeError, ValueError):
+                    action_id = 0
+                entry_target = (
+                    node.get("entry_target")
+                    if isinstance(node.get("entry_target"), dict)
+                    else meta.get("entry_target")
+                    if isinstance(meta.get("entry_target"), dict)
+                    else {}
+                )
+                scene_key = str(
+                    node.get("scene_key")
+                    or meta.get("scene_key")
+                    or entry_target.get("scene_key")
+                    or ""
+                ).strip()
+                route = str(
+                    node.get("route")
+                    or meta.get("route")
+                    or entry_target.get("route")
+                    or ""
+                ).strip()
+                if children:
+                    directory_count += 1
+                elif menu_id > 0 and (action_id > 0 or scene_key or route):
+                    entries.append({
+                        "menu_id": menu_id,
+                        "menu_xmlid": str(
+                            node.get("menu_xmlid")
+                            or node.get("xmlid")
+                            or meta.get("menu_xmlid")
+                            or ""
+                        ).strip(),
+                        "action_id": action_id,
+                        "action_xmlid": str(meta.get("action_xmlid") or "").strip(),
+                        "scene_key": scene_key,
+                        "route": route,
+                        "label": label,
+                        "group_path": path[:-1],
+                        "delivery_bucket": str(
+                            node.get("delivery_bucket") or meta.get("delivery_bucket") or ""
+                        ).strip(),
+                    })
+                walk(children, path)
+
+        walk(nav or [], [])
+        normalized_roles = [
+            str(item or "").strip()
+            for item in (role_codes or [role_code])
+            if str(item or "").strip()
+        ]
+        return {
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
+            "source": "scenarioized_navigation.nav",
+            "projection_only": True,
+            "product_key": str(product_key or "").strip(),
+            "edition_key": str(edition_key or "").strip(),
+            "role_code": str(role_code or "").strip(),
+            "role_codes": normalized_roles,
+            "node_count": node_count,
+            "directory_count": directory_count,
+            "entry_count": len(entries),
+            "action_entry_count": sum(1 for entry in entries if entry["action_id"] > 0),
+            "scene_entry_count": sum(1 for entry in entries if entry["scene_key"]),
+            "entries": entries,
+        }
+
     @classmethod
     def _intersect_primary_authority_with_nav(cls, buckets: dict, nav: list[dict]) -> None:
         """Primary authority follows delivered membership; admin/context stay independent."""

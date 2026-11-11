@@ -62,6 +62,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.role_surface = result.data.get("role_surface") or {}
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import flatten_authorized_nav_leaves
         navigation = result.data["navigation"]
+        self.product_policy_projection = navigation["product_policy"]
         leaves = flatten_authorized_nav_leaves(navigation["nav"], navigation["route_authority"])
         self.authorized_ids = {row["menu_id"] for row in leaves}
         self.account_leaves = [row for row in leaves if str(row.get("menu_xmlid", "")).startswith("account.")]
@@ -91,6 +92,12 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             if (row.get("menu_id"), row.get("action_id")) == pair
         ]
         return pair, nav_pairs, buckets, denied
+
+    def _product_policy_entries(self):
+        return {
+            (row.get("menu_id"), row.get("action_id")): row
+            for row in self.product_policy_projection.get("entries") or []
+        }
 
     def _entry_diagnostic(self, actor, menu, pair, nav_pairs, buckets, denied):
         policy_rows = []
@@ -291,11 +298,21 @@ class TestScenarioNavigationMaintenance(TransactionCase):
                     for rows in buckets.values()
                     for row in rows
                 ))
+        my_work = self.env.ref("smart_construction_core.menu_sc_my_work")
         enterprise = self.env.ref(
             "smart_construction_core.menu_sc_enterprise_initialization"
         )
         _pair, _nav_pairs, buckets, _denied = self._route_state(navigation, enterprise)
         self.assertTrue(buckets, diagnostic)
+        policy_entries = self._product_policy_entries()
+        self.assertEqual(
+            policy_entries[(my_work.id, my_work.action.id)]["route"],
+            "/s/my_work.workspace",
+        )
+        self.assertEqual(
+            policy_entries[(enterprise.id, enterprise.action.id)]["route"],
+            "/s/enterprise.setup",
+        )
 
     def test_system_init_business_full_gets_my_work_but_not_configuration_entry(self):
         full_group = self.env.ref("smart_construction_core.group_sc_business_full")
@@ -326,6 +343,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             for row in rows
         ))
         self.assertFalse(denied)
+        policy_entries = self._product_policy_entries()
+        self.assertEqual(
+            policy_entries[(my_work.id, my_work.action.id)]["route"],
+            "/s/my_work.workspace",
+        )
         enterprise = self.env.ref(
             "smart_construction_core.menu_sc_enterprise_initialization"
         )
@@ -336,3 +358,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             user.with_user(user).env["ir.ui.menu"]._visible_menu_ids(),
         )
         self.assertFalse(buckets)
+        self.assertNotIn(
+            (enterprise.id, enterprise.action.id),
+            self._product_policy_entries(),
+        )
