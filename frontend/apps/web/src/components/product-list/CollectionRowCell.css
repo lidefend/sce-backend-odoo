@@ -33,10 +33,15 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .cell-primary-link {
   display: -webkit-box;
+  box-sizing: border-box;
+  width: 100%;
   max-width: 100%;
   padding: 0;
   font: inherit;

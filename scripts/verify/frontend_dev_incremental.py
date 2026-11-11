@@ -761,6 +761,17 @@ RULES = (
         "verify.frontend.list_surface_search_contract.unit",
     )),
     Rule((
+        "scripts/verify/frontend_collection_row_cell_guard.py",
+        "scripts/verify/test_frontend_collection_row_cell_guard.py",
+    ), (
+        "verify.frontend.collection_row_cell.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_list_optional_columns_contract_test.ts",
+    ), (
+        "verify.frontend.list_optional_columns.unit",
+    )),
+    Rule((
         "scripts/verify/business_entry_matrix_",
         "scripts/verify/business_entry_negative_closures.mjs",
         "scripts/ops/evidence_scope.py",

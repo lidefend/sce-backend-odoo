@@ -14,6 +14,7 @@ PATHS = (
     "frontend/apps/web/src/components/MenuTree.vue",
     "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
     "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
     "frontend/packages/ui/src/primitives.ts",
     "frontend/packages/ui/src/kits/tdesign/theme.css",
     "frontend/apps/web/src/stores/session.ts",
@@ -171,6 +172,20 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path = root / "frontend/apps/web/src/layouts/AppShell.css"
         path.write_text(path.read_text().replace("  flex-shrink: 0;\n", "", 1), encoding="utf-8")
         self.assertIn("responsive topbar must not shrink over the activity page tabs", validate(root))
+
+    def test_activity_tabs_must_remain_reachable_on_narrow_viewports(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+        path.write_text(path.read_text().replace("overflow-x: auto;", "overflow-x: hidden;"), encoding="utf-8")
+        self.assertTrue(any("narrow reachability" in error for error in validate(root)))
+
+    def test_active_path_expansion_must_not_reapply_after_user_collapse(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/MenuTree.vue"
+        path.write_text(path.read_text().replace("activePathKey !== lastAppliedActiveKey", "true"), encoding="utf-8")
+        self.assertTrue(any("canonical interaction token" in error for error in validate(root)))
 
     def test_navigation_search_must_use_the_input_prefix_adapter(self):
         temporary, root = self.fixture()

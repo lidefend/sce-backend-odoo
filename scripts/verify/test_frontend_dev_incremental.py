@@ -1005,6 +1005,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.list_surface_search_contract.unit"],
                 )
 
+    def test_collection_row_and_optional_column_guards_route_to_their_owned_units(self) -> None:
+        for path in (
+            "scripts/verify/frontend_collection_row_cell_guard.py",
+            "scripts/verify/test_frontend_collection_row_cell_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.collection_row_cell.unit"],
+                )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_list_optional_columns_contract_test.ts"]),
+            ["verify.frontend.list_optional_columns.unit"],
+        )
+
     def test_narrative_documentation_is_not_an_unmapped_product_path(self) -> None:
         # Writing an iteration record is a documentation-only change, which the
         # recorded reuse decision says does not invalidate a unit. Reporting it as

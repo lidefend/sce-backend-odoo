@@ -5,12 +5,19 @@ ROOT = Path(__file__).resolve().parents[2]
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 ROW_CELL = ROOT / "frontend/apps/web/src/components/product-list/CollectionRowCell.vue"
 ROW_CELL_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionRowCell.css"
+THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 
 
-def validate(list_source: str | None = None, cell_source: str | None = None, css_source: str | None = None) -> list[str]:
+def validate(
+    list_source: str | None = None,
+    cell_source: str | None = None,
+    css_source: str | None = None,
+    theme_source: str | None = None,
+) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     cell_text = cell_source if cell_source is not None else ROW_CELL.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else ROW_CELL_CSS.read_text(encoding="utf-8")
+    theme_text = theme_source if theme_source is not None else THEME.read_text(encoding="utf-8")
     failures: list[str] = []
     if list_text.count("h(CollectionRowCell") != 1 or list_text.count(":columns=\"collectionTableColumns(") != 2:
         failures.append("flat and grouped collection rows must share one TDesign column cell adapter")
@@ -43,6 +50,7 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
         "'open-attachment': [link: CollectionAttachmentLink]",
         "'open-attachment-count': []",
         "data-semantic-cell-kind=\"relation-tags\"",
+        ':title="text"',
     )
     for marker in required_cell:
         if marker not in cell_text:
@@ -50,9 +58,19 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
     for selector in (".favorite-toggle", ".status-badge", ".cell-primary-link", ".attachment-links", ".attachment-count-link", ".relation-tags", ".relation-tag"):
         if selector not in css_text:
             failures.append(f"CollectionRowCell missing style ownership {selector}")
-    for marker in ("white-space: nowrap", "overflow: hidden", "text-overflow: ellipsis"):
+    for marker in ("white-space: normal", "overflow: hidden", "-webkit-line-clamp: 2"):
         if marker not in css_text:
             failures.append(f"CollectionRowCell primary identity missing truncation contract {marker}")
+    for marker in (
+        ".sc-btn[data-semantic-cell-kind='primary'] .t-button__text",
+        ".sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content",
+        "justify-content: flex-start",
+        "-webkit-line-clamp: 2",
+    ):
+        if marker not in theme_text:
+            failures.append(f"TDesign primary identity bridge missing containment contract {marker}")
+    if "td.column-long-text :is(.collection-row-cell,.cell-primary) { min-width: 0; max-width: 100%; white-space: nowrap" in theme_text:
+        failures.append("TDesign collection bridge reintroduces one-line primary identity containment")
     return failures
 
 
@@ -63,4 +81,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_row_cell_guard] PASS owners=1 adapters=tdesign-columns-flat,group")
+    print("[frontend_collection_row_cell_guard] PASS owners=1 adapters=tdesign-columns-flat,group identity=two-line")

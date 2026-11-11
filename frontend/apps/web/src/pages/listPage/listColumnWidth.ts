@@ -97,7 +97,9 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
   const [roleMinimum, roleMaximum] = limits[input.role];
   const minimum = input.primary ? Math.max(roleMinimum, 208) : roleMinimum;
   const maximum = input.primary ? Math.max(roleMaximum, 300) : roleMaximum;
-  const headerWidth = textWidth(input.label) + 32;
+  // Header controls occupy 10px leading padding plus the 34px/50px reorder and
+  // resize reserve. Budget them before deciding that a label itself must wrap.
+  const headerWidth = textWidth(input.label) + 52;
   if (input.role === 'date') {
     return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }

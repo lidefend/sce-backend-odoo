@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "fe2f8ba175a685988a24c26dad08139d81018b30",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-WALKTHROUGH-LIST-TABS-20261111.yaml",
+    ".agent/runs/FE-WALKTHROUGH-LIST-TABS-20261111/run.json",
+    "docs/ops/iterations/frontend_walkthrough_list_tabs_20261111.md",
+    "docs/architecture/text_containment_allowlist.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/components/MenuTree.vue",
+    "frontend/apps/web/src/components/product-list/",
+    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+    "frontend/apps/web/src/pages/listPage/listColumnWidth.ts",
+    "frontend/packages/ui/src/kits/tdesign/theme.css",
+    "scripts/verify/frontend_collection_row_cell_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_collection_row_cell_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "scripts/verify/frontend_list_optional_columns_contract_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; daily 1.95.85.92:18081 is read-only affected-surface observation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "collection_row_cell": {
+      "target": "verify.frontend.collection_row_cell.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.css",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "scripts/verify/frontend_collection_row_cell_guard.py",
+        "scripts/verify/test_frontend_collection_row_cell_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "collection_action_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/product-list/",
+        "scripts/verify/frontend_collection_action_toolbar_guard.py",
+        "scripts/verify/test_frontend_collection_action_toolbar_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "list_optional_columns": {
+      "target": "verify.frontend.list_optional_columns.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/listPage/listColumnWidth.ts",
+        "scripts/verify/frontend_list_optional_columns_contract_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "list_surface_probe": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py"
+      ],
+      "kind": "offline"
+    },
+    "text_containment": {
+      "target": "verify.frontend.text_containment.guard",
+      "inputs": [
+        "docs/architecture/text_containment_allowlist.json",
+        "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css",
+        "scripts/verify/frontend_text_containment_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_patterns": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.css",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-list/",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-list/",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "frontend/apps/web/src/pages/listPage/listColumnWidth.ts",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    },
+    "build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Deploy the exact clean candidate and run the affected list-surface browser lane before publication.",
+  "id": "FE-WALKTHROUGH-LIST-TABS-20261111",
+  "branch": "fix/fe-walkthrough-list-tabs-20261111",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-WALKTHROUGH-LIST-TABS-20261111.yaml",
+  "record": "docs/ops/iterations/frontend_walkthrough_list_tabs_20261111.md"
+}

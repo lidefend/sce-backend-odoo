@@ -68,6 +68,7 @@
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
     "fix/fe-iteration-efficiency-20261109": ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",
+    "fix/fe-walkthrough-list-tabs-20261111": ".agent/runs/FE-WALKTHROUGH-LIST-TABS-20261111/run.json",
     "fix/fe-loop-01-r1-boundary-20261107": ".agent/runs/FE-LOOP-01-R1/run.json",
     "fix/fe-loop-02-ci-path-ownership-20261107": ".agent/runs/CI-SCOPE-01-R1/run.json",
     "fix/fe-polish-b1-20261109": ".agent/runs/FE-POLISH-B1-20261109/run.json",

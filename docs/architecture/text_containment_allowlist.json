@@ -49,6 +49,10 @@
       "reason": "single-line filter chips, toolbar controls and numeric totals"
     },
     {
+      "file": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css",
+      "reason": "single-line table headers reserve their reorder and resize controls"
+    },
+    {
       "file": "frontend/apps/web/src/views/businessConfigSurface/style.css",
       "reason": "configuration toolbar controls, selectable field chips and status pills"
     }
