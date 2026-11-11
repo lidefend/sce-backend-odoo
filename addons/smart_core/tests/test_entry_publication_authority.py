@@ -9,13 +9,17 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def load_entry_target_projection():
+def load_entry_target_module():
     path = ROOT / "core/navigation_entry_target.py"
     spec = importlib.util.spec_from_file_location("navigation_entry_target_test", path)
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
     spec.loader.exec_module(module)
-    return module.build_web_surface_entry_target
+    return module
+
+
+def load_entry_target_projection():
+    return load_entry_target_module().build_web_surface_entry_target
 
 
 def load_projection():
@@ -156,7 +160,12 @@ class EntryPublicationTest(unittest.TestCase):
         method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "_nav_target_index")
         method.decorator_list = []
         menus = SimpleNamespace(_node_route_menu_id=lambda node: node.get("menu_id", 0))
-        scope = {"MenuService": menus}
+        target_api = load_entry_target_module()
+        scope = {
+            "MenuService": menus,
+            "derive_entry_route": target_api.derive_entry_route,
+            "target_route": target_api.target_route,
+        }
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), "exec"), scope)
         menus._nav_target_index = scope[method.name]
         node = {"key": "published.aggregate", "menu_id": 42, "meta": {"action_id": 775,
@@ -181,7 +190,14 @@ class EntryPublicationTest(unittest.TestCase):
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "DeliveryEngine")
         names = {"_normalize_entry_target_refs", "_normalize_delivery_nav_node_refs", "_normalize_delivery_nav_refs"}
         methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
-        scope = {"_text": lambda v: str(v or "").strip(), "_to_int": lambda v: int(v or 0)}
+        target_api = load_entry_target_module()
+        scope = {
+            "_text": lambda v: str(v or "").strip(),
+            "_to_int": lambda v: int(v or 0),
+            "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
+            "derive_entry_route": target_api.derive_entry_route,
+            "target_route": target_api.target_route,
+        }
         target_class = ast.ClassDef(name="Normalizer", bases=[], keywords=[], body=methods, decorator_list=[])
         tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
         exec(compile(tree, str(path), "exec"), scope)
@@ -196,7 +212,9 @@ class EntryPublicationTest(unittest.TestCase):
             result = normalizer._normalize_delivery_nav_refs([node])[0]
             self.assertEqual(result["menu_id"], 42)
             self.assertEqual(result["meta"]["action_id"], 775)
-            self.assertEqual(result["meta"]["route"], route if route.startswith("/s/") else "/a/775?menu_id=42")
+            # A resolved scene target owns the final route even when the incoming
+            # node still carries a stale action route.
+            self.assertEqual(result["meta"]["route"], "/s/published.page")
             self.assertEqual(result["meta"]["entry_target"]["scene_key"], "published.page")
             self.assertEqual(result["meta"]["entry_target"]["compatibility_refs"]["model"], "test.document")
             self.assertEqual(result["entry_target"], result["meta"]["entry_target"])
@@ -206,8 +224,14 @@ class EntryPublicationTest(unittest.TestCase):
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "DeliveryEngine")
         names = {"_normalize_entry_target_refs", "_normalize_delivery_nav_node_refs", "_normalize_delivery_nav_refs"}
         methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
-        scope = {"_text": lambda v: str(v or "").strip(), "_to_int": lambda v: int(v or 0),
-                 "build_web_surface_entry_target": load_entry_target_projection()}
+        target_api = load_entry_target_module()
+        scope = {
+            "_text": lambda v: str(v or "").strip(),
+            "_to_int": lambda v: int(v or 0),
+            "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
+            "derive_entry_route": target_api.derive_entry_route,
+            "target_route": target_api.target_route,
+        }
         target_class = ast.ClassDef(name="Normalizer", bases=[], keywords=[], body=methods, decorator_list=[])
         tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
         exec(compile(tree, str(path), "exec"), scope)
