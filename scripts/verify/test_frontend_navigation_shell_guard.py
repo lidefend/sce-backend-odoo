@@ -20,6 +20,7 @@ PATHS = (
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/src/app/canonicalNavigation.ts",
     "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
     "addons/smart_core/handlers/system_init.py",
     *(f"frontend/apps/web/src/components/product-shell/{component}.vue" for component in COMPONENTS),
 )
@@ -98,9 +99,22 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
     def test_backend_projection_order_fails_closed(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
-        path = root / "addons/smart_core/handlers/system_init.py"
+        path = root / "addons/smart_core/delivery/navigation_contract_compiler.py"
         path.write_text(path.read_text().replace("project_canonical_navigation(", "removed_projection("), encoding="utf-8")
         self.assertTrue(any("filter authority" in error for error in validate(root)))
+
+    def test_system_init_must_not_reintroduce_navigation_assembly(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "addons/smart_core/handlers/system_init.py"
+        path.write_text(
+            path.read_text().replace(
+                'data["navigation"] = _compiled_navigation.navigation',
+                'data["navigation"] = {"nav": data["nav"]}',
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("delegate navigation compilation" in error for error in validate(root)))
 
     def test_sidebar_child_root_must_keep_bounded_scroll_style(self):
         temporary, root = self.fixture()
