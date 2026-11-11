@@ -356,14 +356,44 @@
       "log": ".runtime/acceptance/fixture_orm_20261111T141056Z.log",
       "log_sha256": "f59399b78a249515d7b0ed2708ae4d780a409338552afb7e18cfed2c31dabc93",
       "recovery": "The clean committed candidate ran acceptance.module.upgrade to 17.0.0.181 and then the same 49-test fixture, which passed."
+    },
+    {
+      "command": "GitHub backend_suite (0) on PR 872 at 15ef35f06",
+      "status": "passed",
+      "notes": "The shard that previously exposed the project-member precedence and runtime-user scene misclassification now passes."
+    },
+    {
+      "command": "GitHub backend_suite (1) on PR 872 at 15ef35f06",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "The mixed-Python runner executed test_backend_semantic_copy_supply.py in bare Python, but the test imported the full core_extension module and therefore required the Odoo runtime.",
+      "recovery": "The test now exercises the owning core_extension_system_init_rows implementation and provides the platform-database policy environment explicitly, so it remains a real pure-Python test.",
+      "recovery_check": "scripts/ci/run_mixed_python_tests.py addons/smart_core/tests/test_backend_semantic_copy_supply.py passed 8 tests",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/semantic-copy-supply-final.log",
+      "log_sha256": "dd952ff5c00e966c9927949ce7c030c2f8360248d766f37c6e116110569d6081"
+    },
+    {
+      "command": "GitHub professional_quality_checks on PR 872 at 15ef35f06",
+      "status": "failed",
+      "failure_owner": "environment_defect",
+      "reason": "The GitHub-hosted runner could not resolve azure.archive.ubuntu.com and failed while apt-installing bubblewrap and ripgrep in the dependency-preparation step.",
+      "recovery": "The source tree is being updated for the independent backend-suite recovery, so a new exact head will receive fresh dependency installation and required checks."
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at 15ef35f06",
+      "status": "failed",
+      "failure_owner": "environment_defect",
+      "reason": "The GitHub-hosted runner could not resolve azure.archive.ubuntu.com and failed while installing Chromium OS dependencies.",
+      "recovery": "The source tree is being updated for the independent backend-suite recovery, so a new exact head will receive fresh dependency installation and required checks."
     }
   ],
   "blockers": [
-    "PR 872 requires a new exact head and fresh required-check runs after the backend-suite recovery.",
+    "The pure-Python test fix requires a new exact head and fresh required-check runs.",
+    "The previous exact head's professional and frontend jobs failed only at GitHub-runner dependency downloads due DNS resolution failure.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
     "No merge or deployment has been performed."
   ],
-  "next_exact_step": "Update the iteration record with the passing acceptance migration evidence, freeze and commit the new exact head, then push PR 872 and wait for all current-head required checks.",
+  "next_exact_step": "Freeze and commit the mixed-Python test recovery, push PR 872, and verify every required check on the new exact head.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",

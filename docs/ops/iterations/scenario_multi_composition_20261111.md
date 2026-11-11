@@ -144,6 +144,18 @@ canonical projection 和 payload seal，而本批已经把该职责收敛到
 `unmappedPathCount=0`。共享验收库迁移与 49 例重跑已经关闭。当前仍需把结果索引和本记录
 冻结到新的精确 HEAD，并取得该 HEAD 的远端必需检查；本地通过不等于主线已集成或产品已部署。
 
+在 `15ef35f06` 的远端检查中，原先失败的 `backend_suite (0)` 已经通过。随后
+`backend_suite (1)` 暴露了一个独立测试分类缺口：
+`test_backend_semantic_copy_supply.py` 被作为纯 Python 文件执行，但它导入了完整的
+`core_extension.py`，因此实际依赖 Odoo 运行时。测试现改为直接消费其职责归属模块
+`core_extension_system_init_rows.py`，并显式提供平台数据库策略环境；该文件 8 tests PASS，
+无需把 Odoo 依赖伪装成纯测试，也没有扩大生产代码边界。
+
+同一旧 SHA 的 `professional_quality_checks` 与 `frontend_release_gate` 均在依赖安装阶段
+因 GitHub runner 无法解析 `azure.archive.ubuntu.com` 而失败，归因为
+`environment_defect`，不是产品断言失败。该测试修复会形成新的精确 HEAD，依赖安装与全部
+必需检查必须在新 SHA 上重新取得；旧 SHA 的失败和环境错误不得混入新结果。
+
 ## 回退
 
 代码回退恢复旧的单场景约束和原 authority 链；数据库升级会移除旧唯一约束，
