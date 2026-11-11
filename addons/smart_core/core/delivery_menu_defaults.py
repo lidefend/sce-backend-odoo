@@ -201,12 +201,12 @@ def build_delivery_menu_child(menu: Dict[str, Any]) -> Dict[str, Any] | None:
     ):
         if value not in (None, "", []):
             node[field] = value
-    try:
-        sequence = int(menu.get("sequence") or 0)
-    except Exception:
-        sequence = 0
-    if sequence > 0:
-        node["sequence"] = sequence
+    raw_sequence = menu.get("sequence")
+    if raw_sequence not in (None, ""):
+        try:
+            node["sequence"] = int(raw_sequence)
+        except (TypeError, ValueError):
+            pass
     return node
 
 

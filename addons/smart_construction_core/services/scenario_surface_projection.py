@@ -39,13 +39,22 @@ def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
+def _int_or(value: Any, default: int) -> int:
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _scenario_location_sort_key(location: dict[str, Any]):
     return (
-        int(location.get("scenario_sequence") or 10),
-        int(location.get("sequence") or 10),
+        _int_or(location.get("scenario_sequence"), 10),
+        _int_or(location.get("sequence"), 10),
         _text(location.get("scenario_key")),
         _text(location.get("intent")),
-        int(location.get("entry_id") or 0),
+        _int_or(location.get("entry_id"), 0),
     )
 
 
@@ -72,14 +81,14 @@ def build_menu_assignments(
             "scenario_key": _text(meta.get("scenario_key")),
             "scenario_name": _text(meta.get("scenario_name")),
             "scenario_active": bool(meta.get("scenario_active", True)),
-            "scenario_sequence": int(meta.get("scenario_sequence") or 10),
+            "scenario_sequence": _int_or(meta.get("scenario_sequence"), 10),
             "intent": _text(meta.get("intent")),
-            "sequence": int(meta.get("sequence") or 10),
-            "entry_id": int(meta.get("entry_id") or 0),
-            "menu_id": int(meta.get("menu_id") or 0),
+            "sequence": _int_or(meta.get("sequence"), 10),
+            "entry_id": _int_or(meta.get("entry_id"), 0),
+            "menu_id": _int_or(meta.get("menu_id"), 0),
             "center_key": _text(meta.get("center_key")),
             "center_name": _text(meta.get("center_name")),
-            "center_sequence": int(meta.get("center_sequence") or 10),
+            "center_sequence": _int_or(meta.get("center_sequence"), 10),
         }
         existing = assignments.setdefault(key, [])
         if location != "scenario":
@@ -123,7 +132,7 @@ def build_menu_assignments(
             raise ValueError(f"duplicate scenario key in scenario product surface: {scenario_key}")
         scenario_keys.add(scenario_key)
         scenario_name = _text(scenario.get("name") or scenario_key)
-        scenario_sequence = int(scenario.get("sequence") or 10)
+        scenario_sequence = _int_or(scenario.get("sequence"), 10)
         bindings = scenario.get("bindings")
         if isinstance(bindings, list) and bindings:
             for binding in bindings:
@@ -520,7 +529,7 @@ def legacy_native_center_seed(env, menu) -> dict[str, Any]:
     return {
         "center_key": _menu_external_id(env, center) or f"center:{center.id}",
         "center_name": _text(center.name),
-        "center_sequence": int(center.sequence or 10),
+        "center_sequence": _int_or(center.sequence, 10),
     }
 
 
@@ -618,7 +627,7 @@ def _scenario_entries_by_menu(env) -> dict[int, list[dict[str, Any]]]:
             "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
             "center_key": _text(entry.center_key),
             "center_name": _text(entry.center_name),
-            "center_sequence": int(entry.center_sequence or 10),
+            "center_sequence": _int_or(entry.center_sequence, 10),
         })
     for bindings in result.values():
         bindings.sort(key=lambda item: (
@@ -656,7 +665,7 @@ def composition_center_for_leaf(leaf: dict[str, Any], binding: dict[str, Any] | 
         return {
             "key": center_key,
             "name": _text(binding.get("center_name")) or center_key,
-            "sequence": int(binding.get("center_sequence") or 10),
+            "sequence": _int_or(binding.get("center_sequence"), 10),
         }
     group_key = _text(
         leaf.get("policy_group_key")
@@ -812,6 +821,19 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     policy grouping is the explicit fallback for unconfigured entries.
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
+    direct_menu_ids = {
+        int(leaf.get("menu_id") or 0)
+        for leaf in leaves
+        if int(leaf.get("menu_id") or 0) > 0
+    }
+    native_menu_sequences = {}
+    if direct_menu_ids and env is not None:
+        menus = env["ir.ui.menu"].sudo().browse(sorted(direct_menu_ids)).exists()
+        native_menu_sequences = {
+            int(menu.id): int(menu.sequence or 0)
+            for menu in menus
+            if int(menu.id or 0) > 0
+        }
     scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
     for leaf in leaves:
         pair = (int(leaf.get("menu_id") or 0), int(leaf.get("action_id") or 0))
@@ -869,7 +891,10 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         entry["sequence"] = (
             binding["sequence"]
             if binding and binding.get("scenario_active")
-            else int(leaf.get("sequence") or 1000)
+            else native_menu_sequences.get(
+                menu_id,
+                int(leaf.get("sequence") or 1000),
+            )
         )
         if binding and binding.get("scenario_active"):
             entry["intent"] = binding["intent"]
@@ -882,7 +907,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             scenario_node = node["scenarios"].setdefault(scenario_key, {
                 "key": scenario_key,
                 "name": binding["scenario_name"],
-                "sequence": int(binding.get("scenario_sequence") or 10),
+                "sequence": _int_or(binding.get("scenario_sequence"), 10),
                 "entries": [],
             })
             scenario_node["entries"].append(entry)

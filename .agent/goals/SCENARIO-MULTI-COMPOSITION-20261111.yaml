@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: SCENARIO-MULTI-COMPOSITION-20261111
-  status: active
+  status: verification_pending
   formal_product_layer: P1 construction product orchestration
   title: 多场景能力复用与租户场景编排权威
   layer_target: native capability composition and tenant-selected scenario projection

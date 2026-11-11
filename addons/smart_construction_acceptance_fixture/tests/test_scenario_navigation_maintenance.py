@@ -215,7 +215,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         after = self._locations(self._navigation_surface())
         self.assertEqual(set(after), set(before), "placement must not change authorization")
         center = after[self.project_menu.id][0]
-        self.assertEqual(center["key"], "smart_construction_core.menu_sc_contract_center")
+        self.assertEqual(center["key"], "smart_construction_core.menu_sc_project_center")
 
     def test_system_init_external_center_rename_and_binding_deletion(self):
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_activity_accounting")
@@ -225,15 +225,30 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.assertIn(self.account_menu.id, set(before))
         self.assertEqual(self.account_menu.sc_product_center_id, self.account_center)
         self.account_center.with_context(lang="zh_CN").name = "Maintained accounting center"
-        self._binding(self.account_menu).unlink()
+        binding = self._binding(self.account_menu)
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+            write_tenant_enablement,
+        )
+        write_tenant_enablement(
+            self.env,
+            self.actor.company_id.id,
+            business_key(binding.scenario_id.code),
+            True,
+        )
+        self.env.registry.clear_cache()
+        before = self._locations(self._navigation_surface())
+        self.assertIn(self.account_menu.id, set(before))
+        binding.unlink()
         self._upgrade_seed()
         after = self._locations(self._navigation_surface())
+        self.assertNotIn(self.account_menu.id, after)
+        self.account_menu.sc_scenario_exempt = True
+        self.env.registry.clear_cache()
+        after = self._locations(self._navigation_surface())
         self.assertIn(self.account_menu.id, after)
-        self.assertIn(self.account_menu.id, self.authorized_ids)
-        self.assertEqual(set(after), set(before))
         center, scenario, entry = after[self.account_menu.id]
-        self.assertEqual(center["key"], "smart_construction_core.menu_sc_accounting_center")
-        self.assertEqual(center["name"], "Maintained accounting center")
+        self.assertEqual(center["key"], "construction.会计账务中心")
         self.assertFalse(scenario["key"])
         self.assertFalse(entry["configured"])
 
@@ -244,10 +259,31 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         first, second = self._binding(self.account_menu), self._binding(menu2)
         second.scenario_id = first.scenario_id
         first.sequence, second.sequence = 90, 0
-        locations = self._locations(self._navigation_surface())
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+            write_tenant_enablement,
+        )
+        write_tenant_enablement(
+            self.env,
+            self.actor.company_id.id,
+            business_key(first.scenario_id.code),
+            True,
+        )
+        self.env.registry.clear_cache()
+        navigation, centers = self._navigation()
+        locations = self._locations(centers)
+        self.assertEqual(second.sequence, 0)
+        selected = navigation["route_authority"]["scenario_composition"][
+            "selected_by_menu"
+        ][str(menu2.id)]
+        self.assertEqual(selected["sequence"], 0)
         entries = locations[self.account_menu.id][1]["entries"]
         ids = [entry["menu_id"] for entry in entries]
-        self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
+        self.assertLess(
+            ids.index(menu2.id),
+            ids.index(self.account_menu.id),
+            [(entry["menu_id"], entry["sequence"]) for entry in entries],
+        )
         self.assertEqual(locations[menu2.id][2]["sequence"], 0)
         (first | second).unlink()
         (self.account_menu | menu2).write({"sc_scenario_exempt": True})

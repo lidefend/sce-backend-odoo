@@ -362,7 +362,6 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
                 env.menus[201].xmlid,
                 policy_group_key=env.menus[10].xmlid,
                 policy_group_label=env.menus[10].name,
-                sequence=0,
             ),
         ]
         entries = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["entries"]

@@ -826,6 +826,29 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
         self.assertEqual(node["meta"]["entry_target"], entry_target)
 
+    def test_zero_sequence_is_an_explicit_navigation_order(self):
+        child = delivery_menu_defaults.build_delivery_menu_child(
+            {
+                "menu_key": "system.menu_first",
+                "label": "First",
+                "menu_id": 10,
+                "action_id": 20,
+                "sequence": 0,
+            }
+        )
+        later = delivery_menu_defaults.build_delivery_menu_child(
+            {
+                "menu_key": "system.menu_later",
+                "label": "Later",
+                "menu_id": 30,
+                "action_id": 40,
+                "sequence": 10,
+            }
+        )
+        self.assertEqual(child["sequence"], 0)
+        ordered = menu_service.MenuService(env={})._sort_delivery_nodes([later, child])
+        self.assertEqual([node["menu_id"] for node in ordered], [10, 30])
+
     def test_project_ledger_query_menu_uses_current_project_scope(self):
         delivery_menu_defaults.register_current_project_scope_model("project.project")
 

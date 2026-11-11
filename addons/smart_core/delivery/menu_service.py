@@ -1960,7 +1960,26 @@ class MenuService:
             return 0
         return number if number > 0 else 0
 
+    def _declared_sequence(self, node: dict):
+        for carrier in (
+            node,
+            node.get("meta") if isinstance(node.get("meta"), dict) else {},
+        ):
+            raw = carrier.get("sequence")
+            if raw in (None, ""):
+                continue
+            try:
+                number = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if number >= 0:
+                return number
+        return None
+
     def _node_sequence(self, node: dict) -> int:
+        declared = self._declared_sequence(node)
+        if declared is not None:
+            return declared
         sequence = self._positive_int(node.get("sequence"))
         if sequence:
             return sequence
@@ -2003,10 +2022,16 @@ class MenuService:
         def sort_key(item):
             index, node = item
             label = str(node.get("label") or node.get("title") or "").strip()
+            declared_sequence = self._declared_sequence(node)
+            sequence = (
+                declared_sequence
+                if declared_sequence is not None
+                else self._node_sequence(node) or 9999
+            )
             if top_level:
                 group_rank = self._business_group_display_order.get(label, 500)
-                return (group_rank, self._node_sequence(node) or 9999, index)
-            return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)
+                return (group_rank, sequence, index)
+            return (self._node_followup_rank(node), sequence, index)
 
         return [node for _index, node in sorted(decorated, key=sort_key)]
 

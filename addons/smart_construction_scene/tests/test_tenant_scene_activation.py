@@ -1086,12 +1086,12 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 },
                 {
                     "key": "scenario.b",
-                    "sequence": 10,
+                    "sequence": 0,
                     "bindings": [{
                         "menu_id": 1,
                         "menu_key": "test.shared",
                         "intent": "view",
-                        "sequence": 20,
+                        "sequence": 0,
                     }],
                 },
             ]
@@ -1101,6 +1101,8 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             [row["scenario_key"] for row in index["test.shared"]["scenario_locations"]],
             ["scenario.b", "scenario.a"],
         )
+        self.assertEqual(index["test.shared"]["scenario_locations"][0]["sequence"], 0)
+        self.assertEqual(index["test.shared"]["scenario_locations"][0]["scenario_sequence"], 0)
         surface["scenarios"][1]["bindings"].append({
             "menu_id": 1,
             "menu_key": "test.shared",

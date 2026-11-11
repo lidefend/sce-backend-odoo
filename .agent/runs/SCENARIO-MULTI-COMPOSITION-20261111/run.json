@@ -3,7 +3,7 @@
   "id": "SCENARIO-MULTI-COMPOSITION-20261111",
   "branch": "refactor/navigation-contract-compiler-20261111",
   "baseline_sha": "5148b71ef90fee3085f0d96e218b600e06bc51cc",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
   "record": "docs/ops/iterations/scenario_multi_composition_20261111.md",
   "scope": [
@@ -11,6 +11,7 @@
     ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
     ".agent/runs/SCENARIO-MULTI-COMPOSITION-20261111/run.json",
     "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/data/product_scenario_seed.xml",
     "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
@@ -22,10 +23,13 @@
     "addons/smart_construction_scene/services/business_scene_enablement.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/core/delivery_menu_defaults.py",
+    "addons/smart_core/delivery/menu_service.py",
     "addons/smart_core/delivery/runtime_route_authority.py",
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/tests/test_navigation_contract_compiler.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/module_dependency_map.md",
     "docs/engineering_convergence/split_plan_queue.md",
@@ -34,8 +38,39 @@
     "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "source-bound pure tests first; governed local.dev runtime follows affected schema and navigation changes"
+    "kind": "mixed",
+    "authority": "source-bound pure tests, governed local.dev schema upgrade, and governed acceptance fixture ORM"
+  },
+  "runtime_observation": {
+    "local_dev": {
+      "database": "sc_dev_demo",
+      "upgrade_log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/local-dev-upgrade-final.log",
+      "upgrade_log_sha256": "ff2e46d206bd9555d1c30c8d7ced8a558d535662d1d47d98c46653a8b6a8b0dd",
+      "scenario_count": 17,
+      "entry_count": 79,
+      "explicit_exemption_count": 14,
+      "constraint": "unique(scenario_id, menu_id)",
+      "tenant_enabled_scenarios": ["payment.capital"],
+      "business_config_admin": {
+        "enterprise_setup": true,
+        "selected_scenarios": ["payment.capital"]
+      },
+      "business_full": {
+        "enterprise_setup": false,
+        "selected_scenarios": ["payment.capital"]
+      },
+      "status": "passed_for_schema_exemption_and_tenant_selection",
+      "limit": "The maintained dev product policy is still the historical 91-entry snapshot; current 92-entry product behavior is proven in the acceptance transaction, not by overwriting maintained dev policy."
+    },
+    "acceptance_orm": {
+      "target": "acceptance.frontend.fixture_orm",
+      "database": "sc_frontend_acceptance",
+      "tests": 49,
+      "failed": 0,
+      "log": ".runtime/acceptance/fixture_orm_20261111T100215Z.log",
+      "log_sha256": "54705a06fca8fb63aaa633635175fdf7ec1ecc3c83639d6ae86abdcfb080eaea",
+      "status": "passed"
+    }
   },
   "checks": {
     "contract_compiler": {
@@ -84,8 +119,63 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Implement the P1 authority finalizer and multi-scenario placement model, then run focused pure tests before ORM upgrade.",
+  "validation_results": [
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 173,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/navigation-consumers-final.log",
+      "log_sha256": "41d38391d5dd1086adf88394b1005ef304a398e9895f0b8d863b1270159251ad"
+    },
+    {
+      "command": "make verify.scenario.center_projection.guard",
+      "status": "passed",
+      "tests": 7,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/center-projection-final.log",
+      "log_sha256": "fec8330a2c0b6b9f7dd7f8846fe97fe7fba14c86cda944f965f658919008c793"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 76,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/backend-navigation-final.log",
+      "log_sha256": "d7f8537e1f7d1ab92bfd6e2e230b12155785a70d02acb51a468a3b4409752ab9"
+    },
+    {
+      "command": "make verify.daily.permission_truth.capability.orm",
+      "status": "passed",
+      "tests": 13,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/daily-permission-truth.log",
+      "log_sha256": "463f040a3a512b5f35524160b7a5fe43fd7dc617ba8bbd01c8555473dfa8dadf"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "tests": 49,
+      "log": ".runtime/acceptance/fixture_orm_20261111T100215Z.log",
+      "log_sha256": "54705a06fca8fb63aaa633635175fdf7ec1ecc3c83639d6ae86abdcfb080eaea"
+    },
+    {
+      "command": "make local.dev.upgrade MODULE=smart_core,smart_construction_core,smart_construction_scene",
+      "status": "passed",
+      "stage_identity": "51acb153f8a9ffc26805f2f4c5a2716c2a11020b plus owned dirty scope",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/local-dev-upgrade-final.log",
+      "log_sha256": "ff2e46d206bd9555d1c30c8d7ced8a558d535662d1d47d98c46653a8b6a8b0dd"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "failed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "the pre-P4-update planner reports unmapped owned backend/test paths and refuses the iteration lane",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/ci-local-iteration-final.log"
+    }
+  ],
+  "blockers": [
+    "ci.local.iteration remains blocked by the older delivery planner; runtime and targeted checks are non-zero and pass.",
+    "The branch is behind GitHub main 19b502b48 and has not been synchronized by request while local product iteration is active.",
+    "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten."
+  ],
+  "next_exact_step": "Review and commit the local product delta, then synchronize the exact candidate to latest main and rerun the affected gates after the integrated P4 planner is present.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",
@@ -96,7 +186,7 @@
     "blast_radius": "Scenario-entry schema, business enablement authority filtering, final canonical navigation deduplication, direct-route authority and system.init contract integration."
   },
   "completion": {
-    "batch": "in_progress",
+    "batch": "verification_pending",
     "mainline": "not_integrated",
     "deployment": "not_performed",
     "user_acceptance": "not_claimed"

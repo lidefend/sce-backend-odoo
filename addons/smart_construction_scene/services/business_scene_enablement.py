@@ -64,13 +64,22 @@ def _scenario_locations(location):
     return []
 
 
+def _int_or(value, default):
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _location_sort_key(location):
     return (
-        int(location.get("scenario_sequence") or 10),
-        int(location.get("sequence") or 10),
+        _int_or(location.get("scenario_sequence"), 10),
+        _int_or(location.get("sequence"), 10),
         str(location.get("scenario_key") or ""),
         str(location.get("intent") or ""),
-        int(location.get("entry_id") or 0),
+        _int_or(location.get("entry_id"), 0),
     )
 
 
