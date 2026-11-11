@@ -138,6 +138,16 @@ load_profile
         positions = [integration.index(step) for step in evidence_steps]
         self.assertEqual(positions, sorted(positions))
 
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        preview = runtime.split("  standard-page-build|standard-page-up)", 1)[1].split(
+            "    ;;\n", 1
+        )[0]
+        self.assertIn("preflight", preview)
+        self.assertIn("frontend_standard_preview.py", preview)
+        self.assertNotIn("validate_backend_resource_identity", preview)
+
     def test_direct_runtime_is_denied_before_any_mutator(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

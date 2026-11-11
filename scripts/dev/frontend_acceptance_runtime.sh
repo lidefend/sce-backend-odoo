@@ -453,7 +453,17 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-my-work-approval-runtime|standard-my-work-approval-browser|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-page-build|standard-page-up)
+    # The static preview lifecycle is independent of backend artifact identity.
+    # Keeping these steps outside the backend-dependent block lets an explicit
+    # integration repair a stale backend without first requiring it to be valid.
+    preflight
+    case "$command" in
+      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
+      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
+    esac
+    ;;
+  standard-approval-runtime|standard-my-work-approval-runtime|standard-my-work-approval-browser|standard-favorite-recovery|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -550,8 +560,6 @@ PYMYWORKTARGETS
           FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON="$targets_json" ARTIFACTS_DIR=.runtime/final-acceptance/my-work-approval \
           node "$ROOT_DIR/scripts/verify/frontend_my_work_approval_browser.mjs"
         ;;
-      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
-      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
       standard-favorite-recovery)
         docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_favorite_probe_recovery.py"
         ;;

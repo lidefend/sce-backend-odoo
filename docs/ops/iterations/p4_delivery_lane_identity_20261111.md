@@ -39,7 +39,7 @@ another iteration's backend as a hidden prerequisite.
 
 - `make verify.frontend.standard_preview.unit`: PASS at the code-identical
   pre-document candidate, 134 Python tests and 42 Node tests, original log
-  `.runtime/p4-delivery-lane-identity/orchestration-unit-single-receipt.log`.
+  `.runtime/p4-delivery-lane-identity/orchestration-unit-preview-decoupled.log`.
 - `make verify.frontend.list_surface_structure.browser`: PASS, 18 rows, 0 failures,
   plus 23 static contract tests.
 - `make verify.frontend.presentation.local.browser`: PASS, one header target,
@@ -51,6 +51,11 @@ another iteration's backend as a hidden prerequisite.
   targets live, leaving their old dispositions stale. The governed
   `--unregister-target` operations removed only those two stale entries; the
   73-test coverage unit and audited lane check then passed.
+- A second integration attempt exposed residual coupling: static preview
+  build/up still validated the existing backend artifact first, so a stale
+  backend blocked its own repair path. The preview lifecycle now performs only
+  its profile preflight; backend-dependent browser operations retain the exact
+  artifact identity gate.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`
