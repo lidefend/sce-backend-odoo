@@ -35,7 +35,11 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/scenario_multi_composition_20261111.md",
     "scripts/verify/scenario_center_projection_guard.py",
-    "scripts/verify/scenario_surface_projection_guard.py"
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py"
+    ,
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py"
   ],
   "environment": {
     "kind": "offline",
