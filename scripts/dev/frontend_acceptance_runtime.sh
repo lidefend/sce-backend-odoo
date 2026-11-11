@@ -592,6 +592,12 @@ PYMYWORKTARGETS
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(validated_backend_product_revision)"
+        served_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+        [[ "$served_sha" == "$expected_sha" ]] || {
+          echo "DENY: contract receipt backend revision $served_sha != candidate $expected_sha" >&2
+          echo "run make acceptance.runtime.integration.prepare before regenerating acceptance evidence" >&2
+          exit 2
+        }
         resolution_output="$(docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py" 2>&1)"
         RESOLUTION_OUTPUT="$resolution_output" EXPECTED_SHA="$expected_sha" python3 - <<'PYRESOLUTION'
 import json, os

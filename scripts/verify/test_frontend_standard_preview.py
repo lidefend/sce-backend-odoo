@@ -1547,8 +1547,10 @@ node(){
         self.assertEqual(result.stderr.splitlines(), ['profile', 'preflight', 'backend', 'identity', 'browser'])
         make = Path('make/frontend.mk').read_text()
         target = make.split('verify.frontend.list_surface_structure.browser: guard.prod.forbid', 1)[1].split('\n\n', 1)[0]
-        self.assertIn('frontend_acceptance_operation_entry.sh standard-list-surface-browser', target)
-        self.assertNotIn('@node ', target)
+        self.assertIn('verify.frontend.list_surface_structure.browser.internal', target)
+        internal = make.split('verify.frontend.list_surface_structure.browser.internal: guard.prod.forbid', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('frontend_acceptance_operation_entry.sh standard-list-surface-browser', internal)
+        self.assertNotIn('@node ', internal)
 
     def test_conflicting_profiles_urls_databases_and_actor_fail_before_preflight(self):
         for override in [{'SC_ACCEPTANCE_PROFILE':'production'}, {'SC_ACCEPTANCE_RUNTIME_PROFILE':'daily'}, {'BASE_URL':'http://127.0.0.1:5175'},
@@ -1587,12 +1589,14 @@ class StandardListSurfaceMakeBoundaryTest(unittest.TestCase):
             shim = Path(directory) / 'bash'
             shim.write_text("""#!/usr/bin/python3
 import json, os, sys
-if sys.argv[1:] == ['scripts/dev/frontend_acceptance_operation_entry.sh', 'standard-list-surface-browser']:
+entry = ['scripts/dev/frontend_acceptance_operation_entry.sh']
+if sys.argv[1:2] != entry:
+    os.execv('/bin/bash', ['/bin/bash', *sys.argv[1:]])
+if sys.argv[2:] == ['standard-list-surface-browser']:
     keys = ['ACCEPTANCE_BASE_URL', 'BASE_URL', 'SC_ACCEPTANCE_FRONTEND_URL', 'DB_NAME', 'DB', 'E2E_DB', 'SC_ACCEPTANCE_DATABASE', 'SC_FRONTEND_RELEASE_CI_ENTRY']
     with open(os.environ['SC_TEST_MAKE_CAPTURE'], 'w') as stream:
         json.dump({key:os.environ.get(key) for key in keys}, stream)
-else:
-    os.execv('/bin/bash', ['/bin/bash', *sys.argv[1:]])
+raise SystemExit(0)
 """)
             shim.chmod(0o755)
             env = {'PATH': directory + ':' + os.environ['PATH'], 'HOME': os.environ['HOME'],

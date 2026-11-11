@@ -41,15 +41,17 @@
 
 严格顺序（验收运行时在线：`sc-backend-odoo-acceptance` / `sc-fe-r2-p1-01`）：
 
-1. `make frontend.standard.preview.build`（在候选 head 重建验收预览）。
-2. `make frontend.standard.preview.up`（监听器切到新 dist）。
-3. `make backend.acceptance.up`（把验收后端 SC_SOURCE_REVISION 切到候选 head）。
-4. `make acceptance.runtime.contract_receipt`（重新生成合同回执）。
-5. 依次重跑三套：
+1. 对同批受影响的完整验收面使用单一显式入口：
+   `make verify.frontend.acceptance.integration`。它严格串行执行：
+   - `make frontend.standard.preview.build`（在候选 head 重建验收预览）
+   - `make frontend.standard.preview.up`（监听器切到新 dist）
+   - `make backend.acceptance.up`（把验收后端 SC_SOURCE_REVISION 切到候选 head）
+   - `make acceptance.runtime.contract_receipt`（重新生成合同回执）
    - `make verify.frontend.presentation.local.browser`
    - `make verify.frontend.list_surface_structure.browser`
    - `make verify.frontend.relation_roundtrip.browser`
-6. 录入：
+2. 修复单个失败时只重跑受影响的单项；普通 browser 目标不会隐式替换共享后端。
+3. 录入：
 
 ```bash
 REL=$(ls -d .runtime/acceptance/local/<head>/relation-roundtrip/*/summary.json | head -1)
@@ -60,12 +62,12 @@ python3 scripts/ops/acceptance_evolution_record.py --stage merge \
   --output .runtime/acceptance-evolution/evidence.v1.json
 ```
 
-7. 回到第 1 节第 9 步重跑 preflight。
+4. 回到第 1 节第 9 步重跑 preflight。
 
 机制化已拦截的坑：
 
 - `standard-contract-prerequisite` 在生成合同回执前先核对验收后端 `SC_SOURCE_REVISION == HEAD`，
-  不匹配即退出并提示先 `make backend.acceptance.up`，不再等到 probe 报 `runtime_identity_not_verified`。
+  不匹配即退出并提示先执行显式集成准备，不再等到 probe 报 `runtime_identity_not_verified`。
 
 ## 3. 日常开发服务器（sc-root）部署
 

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "cbe509f08085d9ac65bf70a352af50898a3511fa",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P4-DELIVERY-LANE-IDENTITY-20261111.yaml",
+    ".agent/runs/P4-DELIVERY-LANE-IDENTITY-20261111/run.json",
+    "docs/ops/iterations/p4_delivery_lane_identity_20261111.md",
+    "docs/ops/delivery_lane_execution_runbook_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "make/frontend.mk",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/test_frontend_standard_preview.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local acceptance profile sc-fe-r2-p1-01, database sc_frontend_acceptance, filter ^sc_frontend_acceptance$, existing sc_fe_r2_p1_01_* volumes"
+  },
+  "checks": {
+    "orchestration_unit": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py"
+      ],
+      "kind": "offline"
+    },
+    "list_surface": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/p4-delivery-lane-identity/backend-readback.json"
+      }
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the explicit acceptance integration entry on the final clean candidate, then hand off without pushing.",
+  "id": "P4-DELIVERY-LANE-IDENTITY-20261111",
+  "branch": "fix/p4-delivery-lane-identity-20261111",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P4-DELIVERY-LANE-IDENTITY-20261111.yaml",
+  "record": "docs/ops/iterations/p4_delivery_lane_identity_20261111.md",
+  "layer": {
+    "formal_product_layer": "P4 ops delivery tool",
+    "layer_target": "registered frontend acceptance contract receipt and browser prerequisite orchestration",
+    "module": "make/frontend.mk and frontend acceptance runtime profile tooling",
+    "standard_vs_user_specific": "shared delivery infrastructure",
+    "why_here": "Delivery identity and prerequisite ordering are P4 mechanics.",
+    "why_not_elsewhere": "The frontend assertions remain strict and no product contract or ACL changes are needed.",
+    "blast_radius": "Local acceptance backend lifecycle and receipts only; existing database and volumes are retained."
+  },
+  "exclusions": [
+    "backend scene menu issue",
+    "contract, ACL or database write changes",
+    "frontend product implementation changes",
+    "GitHub push, PR creation or mainline merge"
+  ]
+}

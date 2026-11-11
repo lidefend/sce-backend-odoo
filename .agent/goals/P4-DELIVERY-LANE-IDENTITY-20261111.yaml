@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: P4-DELIVERY-LANE-IDENTITY-20261111
+  title: 统一前端验收交付车道的后端与合同回执身份
+  status: verification_pending
+  formal_product_layer: P4 ops delivery tool
+  layer_target: registered frontend acceptance contract receipt and browser prerequisite orchestration
+  module: make/frontend.mk and frontend acceptance runtime profile tooling
+  standard_vs_user_specific: shared delivery infrastructure
+  why_here: >
+    Backend carrier identity, contract receipt generation and browser prerequisite
+    ordering are delivery-lane mechanics. They must be owned by P4 so product
+    evidence is bound to the exact candidate without duplicating product logic.
+  why_not_elsewhere: >
+    The frontend candidate and its assertions are already correct and must not be
+    weakened. No P0-P3 contract, ACL, scene menu or business behavior is changing.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/P4-DELIVERY-LANE-IDENTITY-20261111.yaml
+      - .agent/runs/P4-DELIVERY-LANE-IDENTITY-20261111/run.json
+      - docs/ops/iterations/p4_delivery_lane_identity_20261111.md
+      - docs/ops/delivery_lane_execution_runbook_v1.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - make/frontend.mk
+      - scripts/dev/frontend_acceptance_runtime.sh
+      - scripts/verify/test_frontend_release_local_entry.py
+      - scripts/verify/test_frontend_standard_preview.py
+    product_behavior: >
+      Contract and list/presentation browser lanes resolve an exact candidate
+      backend carrier before writing or consuming their resolver receipt.
+  objective: >
+    Establish one explicit, ordered acceptance-integration entry so a frontend
+    iteration converges preview, backend, contract receipt and affected browser
+    evidence on the same clean candidate without hidden shared-runtime mutation
+    from ordinary browser targets.
+  acceptance:
+    - integration preparation is the only front-door that replaces the shared acceptance backend
+    - contract receipt and ordinary browser targets never rebuild the backend implicitly
+    - list surface browser target depends on the contract receipt and unit probe
+    - runtime refuses to write a receipt when served backend SHA differs from candidate HEAD
+    - one explicit integration target runs prepare and presentation/list/relation evidence in order
+    - focused non-zero tests cover ordering, exact-SHA guard and non-interference
+    - candidate backend is rebuilt or proven reusable at cbe509f08 before re-running the browser lane
+  exclusions:
+    - backend scene menu issue
+    - contract, ACL or database write changes
+    - frontend product implementation changes
+    - GitHub push, PR creation or mainline merge
+    - deployment beyond the existing local acceptance preview/carrier
+  rollback: Revert this P4 branch; the previous backend container is retained by the governed replacement path.
