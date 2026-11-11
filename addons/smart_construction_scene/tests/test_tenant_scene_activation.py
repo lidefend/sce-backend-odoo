@@ -973,6 +973,142 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         self.assertEqual(route_authority.published_pairs(result), {(3, 33), (4, 44)})
         self.assertEqual(len(result["denied_actions"]), 3)
 
+    def test_shared_menu_survives_through_any_selected_scenario(self):
+        location = {
+            "location": "scenario",
+            "scenario_key": "scenario.a",
+            "scenario_locations": [
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.a",
+                    "scenario_active": True,
+                    "scenario_sequence": 20,
+                    "sequence": 10,
+                    "intent": "handle",
+                    "entry_id": 1,
+                },
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.b",
+                    "scenario_active": True,
+                    "scenario_sequence": 10,
+                    "sequence": 20,
+                    "intent": "view",
+                    "entry_id": 2,
+                },
+            ],
+            "menu_id": 1,
+        }
+        source = {"primary_actions": [
+            {"menu_id": 1, "action_id": 11, "menu_xmlid": "test.shared"}
+        ]}
+        for enabled, expected_scene in (
+            ({"scenario.a": True}, "scenario.a"),
+            ({"scenario.b": True}, "scenario.b"),
+            ({"scenario.a": True, "scenario.b": True}, "scenario.b"),
+        ):
+            with self.subTest(enabled=enabled):
+                result = business_enablement.filter_business_authority(
+                    source,
+                    surface_index={"test.shared": location},
+                    enabled=enabled,
+                    entries=[],
+                    menu_xmlids_by_id={1: "test.shared"},
+                    company_id=9,
+                )
+                self.assertEqual(result["primary_actions"], source["primary_actions"])
+                self.assertFalse(result["denied_actions"])
+                composition = result["scenario_composition"]
+                self.assertEqual(composition["company_id"], 9)
+                self.assertEqual(
+                    composition["selected_by_menu"]["1"]["scenario_key"],
+                    expected_scene,
+                )
+
+    def test_unselected_shared_menu_is_denied_without_losing_composition(self):
+        location = {
+            "location": "scenario",
+            "scenario_key": "scenario.b",
+            "scenario_locations": [
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.a",
+                    "scenario_active": True,
+                    "scenario_sequence": 10,
+                },
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.b",
+                    "scenario_active": True,
+                    "scenario_sequence": 20,
+                },
+            ],
+            "menu_id": 1,
+        }
+        result = business_enablement.filter_business_authority(
+            {"primary_actions": [
+                {"menu_id": 1, "action_id": 11, "menu_xmlid": "test.shared"}
+            ]},
+            surface_index={"test.shared": location},
+            enabled={"scenario.a": False, "scenario.b": False},
+            entries=[],
+            menu_xmlids_by_id={1: "test.shared"},
+            company_id=9,
+        )
+        self.assertFalse(result["primary_actions"])
+        self.assertEqual(
+            result["denied_actions"][0]["reason_code"],
+            "BUSINESS_SCENARIO_NOT_ENABLED",
+        )
+        selected = result["scenario_composition"]["selected_by_menu"]["1"]
+        self.assertNotEqual(selected.get("location"), "scenario")
+        self.assertEqual(
+            selected["available_scenario_keys"],
+            ["scenario.a", "scenario.b"],
+        )
+
+    def test_one_menu_can_be_declared_in_multiple_scenarios_but_not_twice_in_one(self):
+        surface = {
+            "scenarios": [
+                {
+                    "key": "scenario.a",
+                    "sequence": 20,
+                    "bindings": [{
+                        "menu_id": 1,
+                        "menu_key": "test.shared",
+                        "intent": "handle",
+                        "sequence": 10,
+                    }],
+                },
+                {
+                    "key": "scenario.b",
+                    "sequence": 10,
+                    "bindings": [{
+                        "menu_id": 1,
+                        "menu_key": "test.shared",
+                        "intent": "view",
+                        "sequence": 20,
+                    }],
+                },
+            ]
+        }
+        index = scenario_surface.build_menu_index(surface)
+        self.assertEqual(
+            [row["scenario_key"] for row in index["test.shared"]["scenario_locations"]],
+            ["scenario.b", "scenario.a"],
+        )
+        surface["scenarios"][1]["bindings"].append({
+            "menu_id": 1,
+            "menu_key": "test.shared",
+            "intent": "handle",
+        })
+        with self.assertRaisesRegex(ValueError, "duplicate menu assignment"):
+            scenario_surface.build_menu_index(surface)
+
     def test_explicit_enable_then_disable_narrows_all_alias_routes(self):
         original = copy.deepcopy(self.authority)
         enabled = business_enablement.business_states({"business.v1:project.management": True})

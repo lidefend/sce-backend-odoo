@@ -136,7 +136,7 @@ class FakeMenuService:
 
 
 class NavigationContractCompilerTests(unittest.TestCase):
-    def _compiler(self, service, *, scenario_provider=None):
+    def _compiler(self, service, *, scenario_provider=None, authority_finalizer=None):
         return NavigationContractCompiler(
             service,
             scenario_surface_provider=scenario_provider or (lambda nav, authority: None),
@@ -147,6 +147,7 @@ class NavigationContractCompilerTests(unittest.TestCase):
             },
             release_node_filter=lambda nodes: nodes,
             action_pair_walker=_walk_pairs,
+            authority_finalizer=authority_finalizer,
         )
 
     def test_all_authority_producers_complete_before_one_nav_filter(self):
@@ -184,6 +185,66 @@ class NavigationContractCompilerTests(unittest.TestCase):
         self.assertEqual(
             compilation.navigation["route_authority"]["principal_scope"]["company_id"],
             2,
+        )
+
+    def test_authority_finalizer_runs_before_the_single_nav_filter(self):
+        service = FakeMenuService(_authority((10, 20), (30, 40)))
+        calls = []
+
+        def finalize(authority):
+            calls.append("finalize")
+            result = copy.deepcopy(authority)
+            result["primary_actions"] = [
+                row for row in result["primary_actions"]
+                if (row["menu_id"], row["action_id"]) == (30, 40)
+            ]
+            result["scenario_composition"] = {
+                "selected_by_menu": {"30": {"location": "scenario"}}
+            }
+            return result
+
+        compilation = self._compiler(
+            service,
+            authority_finalizer=finalize,
+        ).compile(
+            nav=[
+                {"menu_id": 10, "action_id": 20},
+                {"menu_id": 30, "action_id": 40},
+            ],
+            role_surface={"role_code": "business_config_admin"},
+            delivery_payload={"product_key": "construction.standard"},
+            release_gate={},
+            platform_duty=None,
+            scene_internal_actions=None,
+            company_id=7,
+        )
+        self.assertEqual(calls, ["finalize"])
+        self.assertEqual(
+            [(row["menu_id"], row["action_id"]) for row in compilation.nav],
+            [(30, 40)],
+        )
+        self.assertEqual(
+            compilation.navigation["route_authority"]["scenario_composition"],
+            {"selected_by_menu": {"30": {"location": "scenario"}}},
+        )
+
+    def test_authority_finalizer_can_leave_authority_unchanged(self):
+        service = FakeMenuService(_authority((10, 20)))
+        compilation = self._compiler(
+            service,
+            authority_finalizer=lambda authority: None,
+        ).compile(
+            nav=[{"menu_id": 10, "action_id": 20}],
+            role_surface={"role_code": "project_member"},
+            delivery_payload={"product_key": "construction.standard"},
+            release_gate={},
+            platform_duty=None,
+            scene_internal_actions=None,
+            company_id=1,
+        )
+        self.assertEqual(
+            [(row["menu_id"], row["action_id"]) for row in compilation.nav],
+            [(10, 20)],
         )
 
     def test_scenarioization_derives_route_and_product_policy_from_same_nav(self):

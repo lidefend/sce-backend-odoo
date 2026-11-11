@@ -73,12 +73,14 @@ class NavigationContractCompiler:
         platform_duty_merger: Callable[[dict, dict], dict],
         release_node_filter: Callable[[list[dict]], list[dict]],
         action_pair_walker: Callable[[list[dict]], object],
+        authority_finalizer: Callable[[dict], dict | None] | None = None,
     ):
         self.menu_service = menu_service
         self.scenario_surface_provider = scenario_surface_provider
         self.platform_duty_merger = platform_duty_merger
         self.release_node_filter = release_node_filter
         self.action_pair_walker = action_pair_walker
+        self.authority_finalizer = authority_finalizer
 
     def compile(
         self,
@@ -107,6 +109,10 @@ class NavigationContractCompiler:
             platform_duty if isinstance(platform_duty, dict) else {},
         )
         _add_scene_internal_authority(authority, scene_internal_actions)
+        if self.authority_finalizer is not None:
+            finalized = self.authority_finalizer(authority)
+            if isinstance(finalized, dict):
+                authority = finalized
         authority = dict(authority)
         authority["principal_scope"] = dict(authority.get("principal_scope") or {})
         authority["principal_scope"]["company_id"] = int(company_id)

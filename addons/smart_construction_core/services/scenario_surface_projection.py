@@ -39,31 +39,61 @@ def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
-def build_menu_index(
+def _scenario_location_sort_key(location: dict[str, Any]):
+    return (
+        int(location.get("scenario_sequence") or 10),
+        int(location.get("sequence") or 10),
+        _text(location.get("scenario_key")),
+        _text(location.get("intent")),
+        int(location.get("entry_id") or 0),
+    )
+
+
+def build_menu_assignments(
     surface: dict[str, Any],
     *,
     parent_by_menu: dict[str, str] | None = None,
-) -> dict[str, dict[str, str]]:
-    """Return menu_xmlid -> location/intent/scenario metadata.
+) -> dict[str, list[dict[str, Any]]]:
+    """Return every declared placement for each native menu identity.
 
-    Raises ValueError on duplicate or empty menu assignments so the caller can
-    treat a malformed surface as a fallback-triggering error rather than
-    rendering partial navigation.
+    One menu may be referenced by multiple scenarios. Repeating the same menu
+    inside one scenario or mixing it between a direct surface and a scenario is
+    ambiguous and rejected. The returned rows are composition references only;
+    they never author native menu/action facts.
     """
-    index: dict[str, dict[str, str]] = {}
+    assignments: dict[str, list[dict[str, Any]]] = {}
 
-    def claim(menu_xmlid: str, location: str, scenario_key: str = "", scenario_name: str = "", intent: str = "") -> None:
+    def claim(menu_xmlid: str, location: str, **meta: Any) -> None:
         key = _text(menu_xmlid)
         if not key:
             raise ValueError("empty menu_xmlid in scenario product surface")
-        if key in index:
-            raise ValueError(f"duplicate menu assignment in scenario product surface: {key}")
-        index[key] = {
+        row = {
             "location": location,
-            "scenario_key": _text(scenario_key),
-            "scenario_name": _text(scenario_name),
-            "intent": _text(intent),
+            "scenario_key": _text(meta.get("scenario_key")),
+            "scenario_name": _text(meta.get("scenario_name")),
+            "scenario_active": bool(meta.get("scenario_active", True)),
+            "scenario_sequence": int(meta.get("scenario_sequence") or 10),
+            "intent": _text(meta.get("intent")),
+            "sequence": int(meta.get("sequence") or 10),
+            "entry_id": int(meta.get("entry_id") or 0),
+            "menu_id": int(meta.get("menu_id") or 0),
+            "center_key": _text(meta.get("center_key")),
+            "center_name": _text(meta.get("center_name")),
+            "center_sequence": int(meta.get("center_sequence") or 10),
         }
+        existing = assignments.setdefault(key, [])
+        if location != "scenario":
+            if existing:
+                raise ValueError(f"duplicate menu assignment in scenario product surface: {key}")
+        else:
+            same_scenario = any(
+                item.get("location") == "scenario"
+                and item.get("scenario_key") == row["scenario_key"]
+                for item in existing
+            )
+            if same_scenario or any(item.get("location") != "scenario" for item in existing):
+                raise ValueError(f"duplicate menu assignment in scenario product surface: {key}")
+        existing.append(row)
 
     horizontal_root = _text(surface.get("horizontal_work_center", {}).get("root_menu_xmlid"))
     platform_root = _text(surface.get("platform_support", {}).get("root_menu_xmlid"))
@@ -81,6 +111,7 @@ def build_menu_index(
             claim(menu, "horizontal")
         for menu in surface.get("platform_support", {}).get("menus", []) or []:
             claim(menu, "platform")
+
     scenario_keys: set[str] = set()
     for scenario in surface.get("scenarios", []) or []:
         if not isinstance(scenario, dict) or not isinstance(scenario.get("key"), str):
@@ -92,9 +123,55 @@ def build_menu_index(
             raise ValueError(f"duplicate scenario key in scenario product surface: {scenario_key}")
         scenario_keys.add(scenario_key)
         scenario_name = _text(scenario.get("name") or scenario_key)
+        scenario_sequence = int(scenario.get("sequence") or 10)
+        bindings = scenario.get("bindings")
+        if isinstance(bindings, list) and bindings:
+            for binding in bindings:
+                if not isinstance(binding, dict):
+                    raise ValueError("scenario binding must be an object")
+                claim(
+                    binding.get("menu_key"),
+                    "scenario",
+                    scenario_key=scenario_key,
+                    scenario_name=scenario_name,
+                    scenario_active=scenario.get("active", True),
+                    scenario_sequence=scenario_sequence,
+                    intent=binding.get("intent"),
+                    sequence=binding.get("sequence"),
+                    entry_id=binding.get("entry_id"),
+                    menu_id=binding.get("menu_id"),
+                    center_key=binding.get("center_key"),
+                    center_name=binding.get("center_name"),
+                    center_sequence=binding.get("center_sequence"),
+                )
+            continue
         for intent, menus in (scenario.get("intents") or {}).items():
             for menu in menus or []:
-                claim(menu, "scenario", scenario_key, scenario_name, _text(intent))
+                claim(
+                    menu,
+                    "scenario",
+                    scenario_key=scenario_key,
+                    scenario_name=scenario_name,
+                    scenario_active=scenario.get("active", True),
+                    scenario_sequence=scenario_sequence,
+                    intent=intent,
+                )
+    return assignments
+
+
+def build_menu_index(
+    surface: dict[str, Any],
+    *,
+    parent_by_menu: dict[str, str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Return one deterministic representative plus every scenario placement."""
+    assignments = build_menu_assignments(surface, parent_by_menu=parent_by_menu)
+    index: dict[str, dict[str, Any]] = {}
+    for menu_key, rows in assignments.items():
+        locations = sorted(rows, key=_scenario_location_sort_key)
+        representative = dict(locations[0])
+        representative["scenario_locations"] = [dict(row) for row in locations]
+        index[menu_key] = representative
     return index
 
 
@@ -464,8 +541,16 @@ def load_runtime_surface(env):
             menu = entry.menu_id
             key = _menu_external_id(env, menu) or f"menu:{menu.id}"
             intents.setdefault(entry.intent, []).append(key)
-            bindings.append({"menu_id": menu.id, "menu_key": key,
-                             "sequence": entry.sequence, "intent": entry.intent})
+            bindings.append({
+                "entry_id": int(getattr(entry, "id", 0) or 0),
+                "menu_id": menu.id,
+                "menu_key": key,
+                "sequence": entry.sequence,
+                "intent": entry.intent,
+                "center_key": getattr(entry, "center_key", ""),
+                "center_name": getattr(entry, "center_name", ""),
+                "center_sequence": getattr(entry, "center_sequence", 10),
+            })
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
@@ -480,7 +565,6 @@ def runtime_menu_scope(env, surface=None):
     """
     surface = load_runtime_surface(env) if surface is None else surface
     index = build_menu_index(surface)
-    active = {row["key"]: row["active"] for row in surface["scenarios"]}
     by_id, by_action = {}, {}
     # The scene-fact index must cover every native menu, not just the menus the
     # current principal may see. Odoo filters ir.ui.menu search by the caller's
@@ -495,25 +579,36 @@ def runtime_menu_scope(env, surface=None):
         if menu.action:
             by_action.setdefault(menu.action.id, []).append(key)
         if key in index:
-            index[key]["scenario_active"] = active[index[key]["scenario_key"]]
+            index[key]["menu_id"] = menu.id
         else:
-            index[key] = {"location": ("exempt" if menu.sc_scenario_exempt else
-                                       "container" if not menu.action and menu.child_id else "missing"),
-                          "scenario_key": "", "scenario_name": "", "intent": ""}
+            index[key] = {
+                "location": (
+                    "exempt"
+                    if menu.sc_scenario_exempt
+                    else "container"
+                    if not menu.action and menu.child_id
+                    else "missing"
+                ),
+                "scenario_key": "",
+                "scenario_name": "",
+                "scenario_locations": [],
+                "menu_id": menu.id,
+            }
     return index, by_id, by_action
 
 
-def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
-    """Load maintainable scenario bindings from the Odoo model, server-side."""
+def _scenario_entries_by_menu(env) -> dict[int, list[dict[str, Any]]]:
+    """Load every maintainable scenario reference for each native menu."""
     if env is None:
         return {}
     Entry = env["sc.product.scenario.entry"].sudo()
-    result: dict[int, dict[str, Any]] = {}
+    result: dict[int, list[dict[str, Any]]] = {}
     for entry in Entry.search([]):
         if not entry.menu_id or not entry.scenario_id:
             continue
         intent = _text(entry.intent)
-        result[int(entry.menu_id.id)] = {
+        result.setdefault(int(entry.menu_id.id), []).append({
+            "entry_id": int(getattr(entry, "id", 0) or 0),
             "scenario_key": _text(entry.scenario_id.code),
             "scenario_name": _text(entry.scenario_id.name),
             "scenario_active": bool(entry.scenario_id.active),
@@ -524,8 +619,33 @@ def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
             "center_key": _text(entry.center_key),
             "center_name": _text(entry.center_name),
             "center_sequence": int(entry.center_sequence or 10),
-        }
+        })
+    for bindings in result.values():
+        bindings.sort(key=lambda item: (
+            item["scenario_sequence"],
+            item["sequence"],
+            item["scenario_key"],
+            item["intent"],
+            item["entry_id"],
+        ))
     return result
+
+
+def _selected_scenario_binding(
+    bindings: list[dict[str, Any]],
+    route_authority: dict[str, Any] | None,
+    menu_id: int,
+) -> dict[str, Any] | None:
+    authority = route_authority if isinstance(route_authority, dict) else {}
+    composition = authority.get("scenario_composition")
+    if isinstance(composition, dict):
+        selected = composition.get("selected_by_menu")
+        if isinstance(selected, dict):
+            candidate = selected.get(str(menu_id))
+            if isinstance(candidate, dict) and candidate.get("location") == "scenario":
+                return {**candidate, "scenario_active": bool(candidate.get("scenario_active", True))}
+            return None
+    return next((binding for binding in bindings if binding.get("scenario_active")), None)
 
 
 def composition_center_for_leaf(leaf: dict[str, Any], binding: dict[str, Any] | None) -> dict[str, Any]:
@@ -715,6 +835,17 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         }
         leaf["route"] = ""
     scenario_by_menu = _scenario_entries_by_menu(env)
+    composition = (
+        route_authority.get("scenario_composition")
+        if isinstance(route_authority, dict)
+        and isinstance(route_authority.get("scenario_composition"), dict)
+        else {}
+    )
+    shared_by_menu = (
+        composition.get("shared_by_menu")
+        if isinstance(composition.get("shared_by_menu"), dict)
+        else {}
+    )
     centers: dict[str, dict[str, Any]] = {}
     for leaf in leaves:
         menu_id = int(leaf.get("menu_id") or 0)
@@ -723,8 +854,10 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         # re-attached as children of themselves.
         if not _text(leaf.get("menu_xmlid")):
             continue
-        binding = scenario_by_menu.get(menu_id)
-        center = composition_center_for_leaf(leaf, binding)
+        bindings = scenario_by_menu.get(menu_id) or []
+        binding = _selected_scenario_binding(bindings, route_authority, menu_id)
+        center_binding = binding or (bindings[0] if bindings else None)
+        center = composition_center_for_leaf(leaf, center_binding)
         node = centers.setdefault(center["key"], {
             "key": center["key"],
             "name": center["name"],
@@ -735,18 +868,21 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         entry = dict(leaf)
         entry["sequence"] = (
             binding["sequence"]
-            if binding and binding["scenario_active"]
+            if binding and binding.get("scenario_active")
             else int(leaf.get("sequence") or 1000)
         )
-        if binding and binding["scenario_active"]:
+        if binding and binding.get("scenario_active"):
             entry["intent"] = binding["intent"]
-            entry["intent_label"] = binding["intent_label"]
+            entry["intent_label"] = (
+                binding.get("intent_label")
+                or SCENARIO_INTENT_LABELS.get(binding["intent"], binding["intent"])
+            )
             entry["configured"] = True
             scenario_key = binding["scenario_key"]
             scenario_node = node["scenarios"].setdefault(scenario_key, {
                 "key": scenario_key,
                 "name": binding["scenario_name"],
-                "sequence": binding["scenario_sequence"],
+                "sequence": int(binding.get("scenario_sequence") or 10),
                 "entries": [],
             })
             scenario_node["entries"].append(entry)
@@ -780,5 +916,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "scenario_count": sum(len(c["scenarios"]) for c in center_rows),
             "unconfigured_entry_count": sum(len(c["entries"]) for c in center_rows),
             "ambiguous_scene_targets": ambiguous_scene_targets,
+            "shared_capability_count": len(shared_by_menu),
+            "shared_capability_placements": shared_by_menu,
         },
     }

@@ -2319,6 +2319,12 @@ class SystemInitHandler(BaseIntentHandler):
                 else _filter_nav_by_release_gate(nodes, release_gate, env=env)[0]
             ),
             action_pair_walker=MenuService._walk_nav_action_refs,
+            authority_finalizer=lambda authority: call_extension_hook_first(
+                env,
+                "smart_core_navigation_authority_filter",
+                env,
+                authority,
+            ),
         ).compile(
             nav=data.get("nav"),
             role_surface=role_surface,

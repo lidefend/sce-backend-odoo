@@ -1,0 +1,30 @@
+schema_version: 1
+goal:
+  id: SCENARIO-MULTI-COMPOSITION-20261111
+  status: active
+  formal_product_layer: P1 construction product orchestration
+  title: 多场景能力复用与租户场景编排权威
+  layer_target: native capability composition and tenant-selected scenario projection
+  module: smart_construction_core, smart_construction_scene, smart_core hook
+  standard_vs_user_specific: construction industry standard with tenant selection
+  objective: >
+    Let one native menu/action capability be referenced by multiple product
+    scenarios without duplicating native facts. Resolve each tenant's enabled
+    scenario selection once in the scene responsibility layer before final
+    navigation filtering, then compose one unambiguous final navigation node.
+  acceptance:
+    - A scenario entry is unique by scenario and menu while one menu may belong to multiple scenarios.
+    - The scene layer narrows already-authorized startup and direct-route authority by the selected tenant scenarios.
+    - system.init only compiles the completed authority and does not re-evaluate business scene selection.
+    - Final navigation contains each native menu at most once.
+    - Shared capability placement is deterministic from enabled scenarios and declared scenario/entry sequence.
+    - Shared placement alternatives are exposed as diagnostics rather than silently discarded.
+    - Disabled or unselected scenarios remove routes from both startup navigation and direct-route authority.
+    - Focused pure, ORM and contract checks execute with non-zero counts.
+  exclusions:
+    - No frontend change or frontend fallback.
+    - No route, menu, action, model, group, ACL or permission fact is created by the scene layer.
+    - No native-fact duplication in scenario entries.
+    - No product publication widening.
+    - No mainline integration, remote mutation, deployment or product acceptance claim.
+

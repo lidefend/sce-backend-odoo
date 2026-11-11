@@ -2,10 +2,11 @@
 """Maintainable business-scenario organization for the scenario center navigation.
 
 The scenario is an organization layer over already-authorized navigation
-entries. Center ownership is derived from the native ``ir.ui.menu`` tree, with
-a separate menu relation for external entries; a scenario may span centers, while an entry
-binds to exactly one scenario. This model is the runtime maintenance source
-that ``system.init`` projects; the P1 JSON surface is only a seed input.
+entries. Center ownership and ordering are scenario composition, while the
+native menu/action remains the only executable fact. A scenario may span
+centers, and one native menu may be referenced by multiple scenarios. This
+model is the runtime maintenance source that ``system.init`` projects; the P1
+JSON surface is only a seed input.
 """
 from __future__ import annotations
 
@@ -28,6 +29,24 @@ DIRECT_CONFIGURATION_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_approval_policy",  # Approval configuration
     "smart_construction_core.menu_ui_form_field_policy_business_config",  # Field maintenance
     "smart_construction_core.menu_ui_menu_config_policy_business_config",  # Menu configuration
+)
+DIRECT_WORKSPACE_MENU_XMLIDS = (
+    "smart_construction_core.menu_sc_my_work",
+    "smart_construction_core.menu_sc_operating_metrics_project",
+    "smart_construction_core.menu_sc_project_kanban",
+    "smart_construction_core.menu_sc_workbench_my_todo_fact",
+    "smart_construction_core.menu_sc_product_message_notification_v1",
+)
+DIRECT_PLATFORM_MENU_XMLIDS = (
+    "smart_construction_core.menu_sc_enterprise_initialization",
+    "smart_construction_core.menu_sc_business_config_workbench",
+    "smart_construction_core.menu_sc_approval_policy",
+    "smart_construction_core.menu_ui_form_field_policy_business_config",
+    "smart_construction_core.menu_ui_menu_config_policy_business_config",
+    "smart_construction_core.menu_sc_product_data_permission_v1",
+    "smart_construction_core.menu_sc_product_scenario_business_config",
+    "smart_construction_core.menu_sc_product_system_parameter_v1",
+    "smart_construction_core.menu_sc_product_numbering_rule_v1",
 )
 SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
 EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
@@ -98,6 +117,37 @@ class ScProductScenario(models.Model):
         params.set_param(marker, "1")
 
     @api.model
+    def initialize_navigation_entry_exemptions(self):
+        """Declare system shell and platform entries that are not business scenes.
+
+        These are native menu facts, not scene-created permissions. Native ACL
+        still controls every entry. The one-time marker means an administrator
+        can later revoke an exemption without the next upgrade restoring it.
+        """
+        params = self.env["ir.config_parameter"].sudo()
+        marker = "smart_construction_core.navigation_entry_scope.v1"
+        if params.get_param(marker):
+            return
+        Entry = self.env["sc.product.scenario.entry"].sudo()
+        for xmlid in dict.fromkeys(
+            DIRECT_WORKSPACE_MENU_XMLIDS + DIRECT_PLATFORM_MENU_XMLIDS
+        ):
+            menu = self.env.ref(xmlid, raise_if_not_found=False)
+            if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
+                raise ValidationError(
+                    "Direct navigation declaration requires an available menu: %s" % xmlid
+                )
+            if not menu.action:
+                raise ValidationError(
+                    "Direct navigation declaration requires an action menu: %s" % xmlid
+                )
+            if Entry.search_count([("menu_id", "=", menu.id)]):
+                continue
+            if not menu.sc_scenario_exempt:
+                menu.sudo().write({"sc_scenario_exempt": True})
+        params.set_param(marker, "1")
+
+    @api.model
     def import_scenario_product_surface(self):
         """Initialize once, atomically; later upgrades preserve even deletions.
 
@@ -137,9 +187,10 @@ class ScProductScenario(models.Model):
                     menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
                     if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
                         continue
-                    exists = Entry.search(
-                        [("menu_id", "=", menu.id)], limit=1
-                    )
+                    exists = Entry.search([
+                        ("scenario_id", "=", record.id),
+                        ("menu_id", "=", menu.id),
+                    ], limit=1)
                     if not exists:
                         center = legacy_native_center_seed(self.env, menu)
                         Entry.create({
@@ -228,9 +279,9 @@ class ScProductScenarioEntry(models.Model):
 
     _sql_constraints = [
         (
-            "sc_product_scenario_entry_menu_uniq",
-            "unique(menu_id)",
-            "Each navigation entry can bind to exactly one scenario.",
+            "sc_scenario_entry_scenario_menu_uniq",
+            "unique(scenario_id, menu_id)",
+            "Each native menu may appear only once within a scenario.",
         ),
     ]
 

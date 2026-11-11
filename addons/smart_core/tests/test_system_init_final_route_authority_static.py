@@ -52,6 +52,14 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             "_add_scene_internal_authority(authority, scene_internal_actions)",
             compiler,
         )
+        self.assertIn(
+            "self.authority_finalizer(authority)",
+            compiler,
+        )
+        self.assertIn(
+            "smart_core_navigation_authority_filter",
+            system_init,
+        )
         self.assertEqual(
             compiler.count("filter_nav_by_route_authority("),
             1,
@@ -70,9 +78,13 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             "_add_scene_internal_authority(authority, scene_internal_actions)",
             authority_index,
         )
+        finalizer_index = compiler.index(
+            "self.authority_finalizer(authority)",
+            scene_authority_index,
+        )
         reconcile_index = compiler.index(
             "self.menu_service.filter_nav_by_route_authority(",
-            scene_authority_index,
+            finalizer_index,
         )
         canonical_index = compiler.index(
             "self.menu_service.project_canonical_navigation(",
@@ -83,7 +95,8 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             canonical_index,
         )
         self.assertLess(authority_index, scene_authority_index)
-        self.assertLess(scene_authority_index, reconcile_index)
+        self.assertLess(scene_authority_index, finalizer_index)
+        self.assertLess(finalizer_index, reconcile_index)
         self.assertLess(reconcile_index, canonical_index)
         self.assertLess(canonical_index, scenario_index)
 

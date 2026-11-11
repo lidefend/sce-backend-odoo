@@ -256,6 +256,166 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         ids = [entry["menu_id"] for entry in entries]
         self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
 
+    def test_one_menu_can_bind_to_multiple_scenarios_but_only_once_per_scenario(self):
+        original = self._binding(self.project_menu)
+        alternate = self.Scenario.create({
+            "code": "test.shared.capability",
+            "name": "Shared capability",
+            "sequence": 999,
+        })
+        shared = self.Entry.create({
+            "scenario_id": alternate.id,
+            "menu_id": self.project_menu.id,
+            "intent": "view",
+            "sequence": 999,
+            "center_key": self.contract_center.get_external_id().get(self.contract_center.id),
+            "center_name": self.contract_center.name,
+            "center_sequence": self.contract_center.sequence,
+        })
+        self.assertEqual(
+            self.Entry.search_count([("menu_id", "=", self.project_menu.id)]),
+            2,
+        )
+        self.assertEqual(shared.scenario_id, alternate)
+        self.assertNotEqual(shared.scenario_id, original.scenario_id)
+        with self.assertRaises(Exception):
+            self.Entry.create({
+                "scenario_id": alternate.id,
+                "menu_id": self.project_menu.id,
+                "intent": "handle",
+            })
+
+    def test_system_init_uses_tenant_selected_shared_capability_once(self):
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+            write_tenant_enablement,
+        )
+
+        primary = self._binding(self.project_menu)
+        alternate = self.Scenario.create({
+            "code": "test.shared.capability",
+            "name": "Shared capability",
+            "sequence": 999,
+        })
+        self.Entry.create({
+            "scenario_id": alternate.id,
+            "menu_id": self.project_menu.id,
+            "intent": "view",
+            "sequence": 999,
+            "center_key": self.contract_center.get_external_id().get(self.contract_center.id),
+            "center_name": self.contract_center.name,
+            "center_sequence": self.contract_center.sequence,
+        })
+        company_id = self.actor.company_id.id
+        for scene_key in (primary.scenario_id.code, alternate.code):
+            write_tenant_enablement(
+                self.env,
+                company_id,
+                business_key(scene_key),
+                True,
+            )
+        self.env.registry.clear_cache()
+
+        navigation = self._navigation()[0]
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+            flatten_authorized_nav_leaves,
+        )
+        leaves = [
+            row for row in flatten_authorized_nav_leaves(
+                navigation["nav"], navigation["route_authority"]
+            )
+            if row["menu_id"] == self.project_menu.id
+        ]
+        self.assertEqual(len(leaves), 1)
+        composition = navigation["route_authority"]["scenario_composition"]
+        selected = composition["selected_by_menu"][str(self.project_menu.id)]
+        self.assertEqual(selected["scenario_key"], primary.scenario_id.code)
+        self.assertEqual(
+            composition["shared_by_menu"][str(self.project_menu.id)][0]["scenario_key"],
+            alternate.code,
+        )
+
+        write_tenant_enablement(
+            self.env,
+            company_id,
+            business_key(primary.scenario_id.code),
+            False,
+        )
+        self.env.registry.clear_cache()
+        navigation = self._navigation()[0]
+        self.assertIn(
+            (self.project_menu.id, self.project_menu.action.id),
+            {
+                row["menu_id"]: row["action_id"]
+                for row in flatten_authorized_nav_leaves(
+                    navigation["nav"], navigation["route_authority"]
+                )
+            }.items(),
+        )
+        selected = navigation["route_authority"]["scenario_composition"][
+            "selected_by_menu"
+        ][str(self.project_menu.id)]
+        self.assertEqual(selected["scenario_key"], alternate.code)
+
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            published_route_authority,
+        )
+        actor_env = self.env(
+            user=self.actor.id,
+            context=dict(
+                self.env.context,
+                allowed_company_ids=[self.actor.company_id.id],
+            ),
+        )
+        direct = published_route_authority(actor_env)
+        direct_pair = (self.project_menu.id, self.project_menu.action.id)
+        self.assertIn(
+            direct_pair,
+            {
+                (row.get("menu_id"), row.get("action_id"))
+                for bucket in (
+                    "primary_actions",
+                    "role_home_actions",
+                    "contextual_actions",
+                    "admin_actions",
+                )
+                for row in direct.get(bucket) or []
+            },
+        )
+
+        write_tenant_enablement(
+            self.env,
+            company_id,
+            business_key(alternate.code),
+            False,
+        )
+        self.env.registry.clear_cache()
+        navigation = self._navigation()[0]
+        pair, nav_pairs, buckets, denied = self._route_state(
+            navigation, self.project_menu
+        )
+        self.assertNotIn(pair, nav_pairs)
+        self.assertFalse(buckets)
+        self.assertTrue(
+            any(
+                row.get("reason_code") == "BUSINESS_SCENARIO_NOT_ENABLED"
+                for row in denied
+            ),
+            denied,
+        )
+        direct = published_route_authority(actor_env)
+        self.assertFalse({
+            (row.get("menu_id"), row.get("action_id"))
+            for bucket in (
+                "primary_actions",
+                "role_home_actions",
+                "contextual_actions",
+                "admin_actions",
+            )
+            for row in direct.get(bucket) or []
+            if (row.get("menu_id"), row.get("action_id")) == pair
+        })
+
     def test_external_association_edits_survive_seed_reload(self):
         self.account_menu.sc_product_center_id = self.contract_center
         self._upgrade_seed()

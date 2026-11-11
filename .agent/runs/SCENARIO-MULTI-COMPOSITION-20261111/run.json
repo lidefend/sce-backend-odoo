@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-MULTI-COMPOSITION-20261111",
+  "branch": "refactor/navigation-contract-compiler-20261111",
+  "baseline_sha": "5148b71ef90fee3085f0d96e218b600e06bc51cc",
+  "status": "active",
+  "goal": ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
+  "record": "docs/ops/iterations/scenario_multi_composition_20261111.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
+    ".agent/runs/SCENARIO-MULTI-COMPOSITION-20261111/run.json",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/scenario_multi_composition_20261111.md",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "scripts/verify/scenario_surface_projection_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound pure tests first; governed local.dev runtime follows affected schema and navigation changes"
+  },
+  "checks": {
+    "contract_compiler": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+      ]
+    },
+    "scenario_center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py"
+      ]
+    },
+    "backend_navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "make/frontend.mk"
+      ]
+    },
+    "daily_permission_truth": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/daily-permission-truth.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement the P1 authority finalizer and multi-scenario placement model, then run focused pure tests before ORM upgrade.",
+  "layer": {
+    "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
+    "layer_target": "tenant-selected scenario composition over native capability references",
+    "module": "smart_construction_core + smart_construction_scene; generic compiler hook in smart_core",
+    "standard_vs_user_specific": "construction industry standard composition plus tenant enablement selection",
+    "why_here": "The scene layer owns scenario references, center placement and tenant scenario selection; the platform compiler only seals completed authority into one contract.",
+    "why_not_elsewhere": "system.init must not re-judge business selection, native menus must not carry scenario keys, and the frontend must not deduplicate or infer composition.",
+    "blast_radius": "Scenario-entry schema, business enablement authority filtering, final canonical navigation deduplication, direct-route authority and system.init contract integration."
+  },
+  "completion": {
+    "batch": "in_progress",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "No remote PR, CI, merge or deployment is authorized in this local batch.",
+    "Existing native actions and menus remain the only executable fact carriers."
+  ]
+}
+

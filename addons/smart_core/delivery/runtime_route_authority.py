@@ -202,6 +202,14 @@ def _build_runtime_route_authority(env) -> dict:
             filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
                 _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
         )
+        from ..utils.extension_hooks import call_extension_hook_first
+
+        authority = call_extension_hook_first(
+            env,
+            "smart_core_navigation_authority_filter",
+            env,
+            authority,
+        ) or authority
         return authority if isinstance(authority, dict) else {}
     except Exception:
         return {}

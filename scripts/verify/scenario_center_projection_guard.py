@@ -213,6 +213,62 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         self.assertEqual(finance["scenarios"], [])
         self.assertEqual(finance["entries"][0]["configured"], False)
 
+    def test_shared_capability_is_projected_once_at_selected_tenant_placement(self):
+        env = _Env()
+        primary = env.entries.entries[0]
+        alternative = _Entry(
+            env.menus[101],
+            _Scenario("cost.budget", "成本与预算管理", sequence=20),
+            sequence=20,
+            center_key=env.menus[20].xmlid,
+            center_name=env.menus[20].name,
+            center_sequence=env.menus[20].sequence,
+        )
+        env.entries = _Entries([primary, alternative])
+        authority = {
+            "primary_actions": [{
+                "menu_id": 101,
+                "action_id": 1011,
+                "menu_xmlid": env.menus[101].xmlid,
+            }],
+            "scenario_composition": {
+                "selected_by_menu": {
+                    "101": {
+                        "location": "scenario",
+                        "scenario_key": "payment.capital",
+                        "scenario_name": "付款与资金办理",
+                        "scenario_sequence": 10,
+                        "sequence": 10,
+                        "entry_id": 1,
+                        "intent": "handle",
+                        "center_key": env.menus[10].xmlid,
+                        "center_name": env.menus[10].name,
+                        "center_sequence": env.menus[10].sequence,
+                    }
+                },
+                "shared_by_menu": {
+                    "101": [{
+                        "scenario_key": "cost.budget",
+                        "scenario_name": "成本与预算管理",
+                        "center_key": env.menus[20].xmlid,
+                    }]
+                },
+            },
+        }
+        nav = [_leaf(101, 1011, "付款申请", env.menus[101].xmlid)]
+        result = PROJ.project_authorized_nav_with_env(env, nav, authority)
+        centers = result["tree"]["centers"]
+        self.assertEqual(len(centers), 1)
+        self.assertEqual(centers[0]["key"], env.menus[10].xmlid)
+        self.assertEqual(len(centers[0]["scenarios"]), 1)
+        self.assertEqual(centers[0]["scenarios"][0]["key"], "payment.capital")
+        self.assertEqual(len(centers[0]["scenarios"][0]["entries"]), 1)
+        self.assertEqual(result["diagnostics"]["shared_capability_count"], 1)
+        self.assertEqual(
+            result["diagnostics"]["shared_capability_placements"]["101"][0]["scenario_key"],
+            "cost.budget",
+        )
+
     def test_stable_center_identity_fallback_for_native_core_menus(self):
         # External menus retain a database association even after center rename
         # makes the legacy delivery group's label lookup return no center ID.
