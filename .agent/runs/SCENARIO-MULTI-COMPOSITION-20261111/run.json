@@ -38,8 +38,8 @@
     "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
-    "kind": "mixed",
-    "authority": "source-bound pure tests, governed local.dev schema upgrade, and governed acceptance fixture ORM"
+    "kind": "offline",
+    "authority": "source-bound pure tests first; governed local.dev runtime follows affected schema and navigation changes"
   },
   "runtime_observation": {
     "local_dev": {
@@ -175,7 +175,7 @@
     "The branch is behind GitHub main 19b502b48 and has not been synchronized by request while local product iteration is active.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten."
   ],
-  "next_exact_step": "Review and commit the local product delta, then synchronize the exact candidate to latest main and rerun the affected gates after the integrated P4 planner is present.",
+  "next_exact_step": "Run the governed extended main synchronization from the clean 9c2103d7e candidate to 19b502b48, then rerun the affected gates with the integrated P4 planner.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",
