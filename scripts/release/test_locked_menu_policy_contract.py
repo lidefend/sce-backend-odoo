@@ -15,6 +15,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+NAVIGATION_TARGET_PATH = ROOT / "addons/smart_core/core/navigation_entry_target.py"
+NAVIGATION_TARGET_SPEC = importlib.util.spec_from_file_location(
+    "navigation_entry_target_contract_test", NAVIGATION_TARGET_PATH
+)
+assert NAVIGATION_TARGET_SPEC and NAVIGATION_TARGET_SPEC.loader
+NAVIGATION_TARGET = importlib.util.module_from_spec(NAVIGATION_TARGET_SPEC)
+NAVIGATION_TARGET_SPEC.loader.exec_module(NAVIGATION_TARGET)
 MODULE_PATH = ROOT / "addons/smart_construction_core/services/locked_menu_policy_contract.py"
 SPEC = importlib.util.spec_from_file_location("locked_menu_policy_contract", MODULE_PATH)
 assert SPEC and SPEC.loader
@@ -834,7 +841,12 @@ class SceneEntryIdentityContractTests(unittest.TestCase):
             scene_key = str(menu["target_scene_key"]).strip()
             seen.add(scene_key)
             with self.subTest(menu=menu.get("menu_xmlid")):
-                self.assertEqual(menu.get("route"), f"/s/{scene_key}")
+                self.assertNotIn(
+                    "route",
+                    menu,
+                    "route must be derived from the declared scene identity",
+                )
+                self.assertEqual(NAVIGATION_TARGET.scene_route(scene_key), f"/s/{scene_key}")
                 self.assertEqual(str(menu.get("scene_key") or "").strip(), scene_key)
         if declared:
             self.assertTrue(seen)
@@ -844,10 +856,11 @@ class SceneEntryIdentityContractTests(unittest.TestCase):
         for _product_key, menu in self._declared_scene_entries():
             with self.subTest(menu=menu.get("menu_xmlid")):
                 self.assertEqual(menu.get("locked_data_policy"), "odoo_model_acl_and_record_rules")
-                self.assertNotEqual(str(menu.get("target_scene_key") or "").strip(), "")
-                self.assertFalse(
-                    str(menu.get("target_scene_key") or "").strip()
-                    and not str(menu.get("route") or "").startswith("/s/"),
+                scene_key = str(menu.get("target_scene_key") or "").strip()
+                self.assertNotEqual(scene_key, "")
+                self.assertEqual(
+                    NAVIGATION_TARGET.derive_entry_route(scene_key=scene_key),
+                    f"/s/{scene_key}",
                     "a declared scene entry must route through the scene channel",
                 )
 
