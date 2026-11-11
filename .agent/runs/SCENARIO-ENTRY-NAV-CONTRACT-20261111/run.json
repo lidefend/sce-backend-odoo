@@ -15,6 +15,8 @@
     "docs/architecture/scene_layer_responsibility_20261105.md",
     "docs/architecture/scene_fact_data_boundary_ledger.json",
     "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
     "docs/architecture/backend-owned-page-composition/335-bnva-03-identity-resolver-role-projection.md",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/module_dependency_map.md",
@@ -163,6 +165,17 @@
         "scripts/verify/test_menu_metadata_batch.py",
         "addons/smart_core/core/navigation_entry_target.py",
         "addons/smart_core/delivery/menu_service.py"
+      ],
+      "kind": "offline"
+    },
+    "role_surface_exposure": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "inputs": [
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
       ],
       "kind": "offline"
     }
