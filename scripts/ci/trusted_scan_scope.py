@@ -63,6 +63,38 @@ def revision_args(kind: str) -> tuple[str, ...]:
     return ('HEAD', '--branches', '--tags', '--remotes') if kind == 'history' else ('HEAD', '--all')
 
 
+def _launched_coverage(root: Path, kind: str) -> dict | None:
+    directory = os.environ.get(COVERAGE_ENV)
+    if not directory:
+        return None
+    launch_path = Path(directory) / 'launch.json'
+    try:
+        launch = json.loads(launch_path.read_text())
+    except (OSError, ValueError):
+        return None
+    if str(root.resolve()) != launch.get('root'):
+        return None
+    row = (launch.get('coverage') or {}).get('scanners', {}).get(kind)
+    return row if isinstance(row, dict) and isinstance(row.get('refs'), list) else None
+
+
+def scan_revision_args(root: Path, kind: str) -> tuple[str, ...]:
+    """Use the immutable tip set captured by the owning Quick shard.
+
+    An independent worktree may advance a branch while a long scan is running.
+    The scan receipt belongs to the candidate snapshot that existed at launch,
+    not to every ref that happens to appear before the scanner exits.
+    """
+    frozen = _launched_coverage(root, kind)
+    if frozen is None:
+        return revision_args(kind)
+    tips = []
+    for _name, oid, _object_type in frozen['refs']:
+        if oid not in tips:
+            tips.append(oid)
+    return tuple(tips)
+
+
 # A spawn can fail before the child exists with a host-level errno: EAGAIN under
 # a thread/process ceiling, ENOMEM under memory pressure, or EFAULT from a
 # fork/vfork window while another thread of this multi-threaded parent is
@@ -347,6 +379,9 @@ def authority_digest(root: Path, kind: str, revision: str | None = None) -> str:
 
 
 def ref_snapshot(root: Path, kind: str) -> list[list[str]]:
+    frozen = _launched_coverage(root, kind)
+    if frozen is not None:
+        return [list(row) for row in frozen['refs']]
     rows = [['HEAD', git(root, 'rev-parse', 'HEAD').strip(), 'commit']]
     for line in git(root, 'for-each-ref', '--format=%(refname)%00%(objectname)%00%(objecttype)').splitlines():
         name, oid, object_type = line.split('\0')

@@ -78,6 +78,12 @@ authority for the current candidate.
   been merged into `ROLE_PRECEDENCE`, but the split guard still expected the
   previous tuple. The guard and its regression test now lock the already
   integrated mainline order without changing the role implementation.
+- `ci.local.quick.full` then exposed shared-ref interference: an independent
+  backend worktree advanced its branch while the three security scans were
+  running, and the live coverage snapshot no longer matched the launch snapshot.
+  Quick shards now freeze their initial ref/OID set and all scanners enumerate
+  that immutable set. Sibling iterations can continue without changing the
+  current candidate's scan coverage; candidate HEAD/tree drift still fails.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`

@@ -196,14 +196,14 @@ def is_scanned_path(path: str) -> bool:
 def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
     if base:
         paths: dict[str, list[str]] = {}
-        for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.revision_args('secrets')):
+        for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.scan_revision_args(ROOT, 'secrets')):
             if size <= 8 * 1024 * 1024 and is_scanned_path(path):
                 paths.setdefault(oid, []).append(path)
         return paths
     if not (ROOT / ".git").exists():
         return {}
     rev_list = subprocess.run(
-        ["git", "rev-list", "--objects", "--all"],
+        ["git", "rev-list", "--objects", *trusted_scan_scope.scan_revision_args(ROOT, 'secrets')],
         cwd=ROOT,
         text=True,
         encoding="utf-8",
@@ -233,7 +233,7 @@ def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
         if int(parts[2]) > 8 * 1024 * 1024 or not is_scanned_path(parts[3]):
             continue
         paths.setdefault(parts[0], []).append(parts[3])
-    for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.revision_args('secrets')):
+    for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.scan_revision_args(ROOT, 'secrets')):
         if size <= 8 * 1024 * 1024 and is_scanned_path(path):
             paths.setdefault(oid, []).append(path)
     return {oid: sorted(set(names)) for oid, names in paths.items()}

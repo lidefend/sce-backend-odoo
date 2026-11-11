@@ -25,6 +25,11 @@ goal:
       - docs/engineering_convergence/split_plan_queue.md
       - make/frontend.mk
       - scripts/audit/verification_lane_dispositions.json
+      - scripts/ci/personal_data_scan.py
+      - scripts/ci/secret_scan.py
+      - scripts/ci/test_trusted_scan_scope.py
+      - scripts/ci/trusted_scan_scope.py
+      - scripts/verify/repository_clean_history_guard.py
       - scripts/dev/frontend_acceptance_runtime.sh
       - scripts/dev/frontend_cached_dependencies_restore.sh
       - scripts/dev/frontend_standard_preview.py

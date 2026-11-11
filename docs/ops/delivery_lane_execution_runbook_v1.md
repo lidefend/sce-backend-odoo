@@ -50,6 +50,9 @@
 - 共享 `sc_frontend_acceptance`（18082 / 5180）只用于已协调的整体验收。独立迭代不得把它当作
   稳定身份源；若观察到其他迭代改变了 `SC_SOURCE_REVISION`，必须停用该证据并切到隔离 candidate
   或重新串行占用，不能覆盖对方环境。
+- 精确候选 Quick 在 shard 启动时冻结扫描 refs/OID。扫描期间其他 worktree 继续提交不会改变
+  当前 receipt 的覆盖，也不会强迫重跑；receipt 仍绑定该次启动时的 HEAD、tree、authority 和完整
+  冻结覆盖。候选自身在扫描中变化仍 fail-closed。
 
 严格顺序（验收运行时在线：`sc-backend-odoo-acceptance` / `sc-fe-r2-p1-01`）：
 
