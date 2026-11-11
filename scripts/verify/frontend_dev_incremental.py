@@ -681,6 +681,32 @@ RULES = (
     ), (
         "verify.pr.push.unit",
     )),
+    Rule((
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/verify/repository_clean_history_guard.py",
+    ), (
+        "verify.trusted_scan.unit",
+    )),
+    # The exact-head receipt verifier and both sides of its regression suite
+    # are one executable contract. The consistency entry runs the verifier
+    # tests and the branch-policy lock together, so this P4 input cannot fall
+    # through as an unmapped path and lose its non-zero L2 execution.
+    Rule((
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/ops/test_local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py",
+    ), (
+        "verify.branch.governance.consistency",
+    )),
+    Rule((
+        "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+        "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    ), (
+        "verify.construction.policy_maps.unit",
+    )),
     # The baseline-backed iteration policy guard is the authority for the
     # governed make lanes: it asserts that each lane still declares the targets
     # the execution policy depends on. Editing one of those lanes without
@@ -696,6 +722,7 @@ RULES = (
     )),
     Rule((
         "make/runtime_ops.mk",
+        "scripts/dev/frontend_cached_dependencies_restore.sh",
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
@@ -759,6 +786,17 @@ RULES = (
         "scripts/verify/test_frontend_list_surface_search_contract.py",
     ), (
         "verify.frontend.list_surface_search_contract.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_collection_row_cell_guard.py",
+        "scripts/verify/test_frontend_collection_row_cell_guard.py",
+    ), (
+        "verify.frontend.collection_row_cell.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_list_optional_columns_contract_test.ts",
+    ), (
+        "verify.frontend.list_optional_columns.unit",
     )),
     Rule((
         "scripts/verify/business_entry_matrix_",

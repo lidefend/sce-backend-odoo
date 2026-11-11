@@ -585,8 +585,12 @@ def _payload_matches(root: Path, head: str, tree: str, payload: dict) -> bool:
     try:
         coverage = payload['coverage']
         expected.update(schema_version=SCHEMA_VERSION, producer=PRODUCER, coverage=coverage)
-        return (payload == expected and scans.valid_coverage(root, coverage, head)
-                and scans.equivalent_coverage(root, coverage, scans.coverage_snapshot(root)))
+        # The receipt binds the candidate commit/tree and the ref snapshot that
+        # the scanners actually consumed. Refs owned by other worktrees may move
+        # after launch without changing this candidate's proof. Requiring their
+        # live object set to equal the launch snapshot made independent
+        # iterations invalidate each other's already-issued receipts.
+        return payload == expected and scans.valid_coverage(root, coverage, head)
     except (KeyError, TypeError, OSError, ValueError, subprocess.CalledProcessError):
         return False
 

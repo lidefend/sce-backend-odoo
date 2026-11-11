@@ -582,16 +582,6 @@
       "owner": "platform-team",
       "reason": "前端构建/开发辅助目标，人工调用。"
     },
-    "frontend.standard.preview.build": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json。登记待接线或退役，B3 按族处理。"
-    },
-    "frontend.standard.preview.up": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "gate.audit": {
       "disposition": "ops_tooling",
       "owner": "platform-team",
@@ -3298,11 +3288,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/architecture/platform_universal_optional_scope_metadata_v1.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.trusted_scan.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.unified_page_contract.lite.mainline_readiness": {
       "disposition": "candidate",

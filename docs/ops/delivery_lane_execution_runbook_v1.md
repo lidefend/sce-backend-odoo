@@ -39,17 +39,34 @@
 “source is not an ancestor of the head” 或 “inputs changed”。注意 squash 合并后旧分支 head
 不是新 main 的祖先，必须重录到新候选，不能复用旧 bound_head。
 
+运行环境的共享边界：
+
+- `local.dev`（`sc_dev_demo` / 18081，候选前端 5176）是持久迭代库，适合日常前端和只读页面联调；
+  它始终跟随已集成的最新主线，不承载未合并专题的最终身份证据。它不是冻结候选的最终证据源，
+  也不能假定其他独立迭代不会改数据。
+- 冻结候选使用 `candidate`（`sc_frontend_acceptance_candidate` / 18088 / 5178），并通过独占
+  lease 完成 merge-stage 证据；后端源码、数据库 namespace、fixture scope 和前端构建都必须绑定
+  该候选。
+- 共享 `sc_frontend_acceptance`（18082 / 5180）只用于已协调的整体验收。独立迭代不得把它当作
+  稳定身份源；若观察到其他迭代改变了 `SC_SOURCE_REVISION`，必须停用该证据并切到隔离 candidate
+  或重新串行占用，不能覆盖对方环境。
+- 精确候选 Quick 在 shard 启动时冻结扫描 refs/OID。扫描期间其他 worktree 继续提交不会改变
+  当前 receipt 的覆盖，也不会强迫重跑；receipt 仍绑定该次启动时的 HEAD、tree、authority 和完整
+  冻结覆盖。候选自身在扫描中变化仍 fail-closed。
+
 严格顺序（验收运行时在线：`sc-backend-odoo-acceptance` / `sc-fe-r2-p1-01`）：
 
-1. `make frontend.standard.preview.build`（在候选 head 重建验收预览）。
-2. `make frontend.standard.preview.up`（监听器切到新 dist）。
-3. `make backend.acceptance.up`（把验收后端 SC_SOURCE_REVISION 切到候选 head）。
-4. `make acceptance.runtime.contract_receipt`（重新生成合同回执）。
-5. 依次重跑三套：
+1. 对同批受影响的完整验收面使用单一显式入口：
+   `make verify.frontend.acceptance.integration`。它严格串行执行：
+   - `make frontend.standard.preview.build`（在候选 head 重建验收预览）
+   - `make frontend.standard.preview.up`（监听器切到新 dist）
+   - `make backend.acceptance.up`（把验收后端 SC_SOURCE_REVISION 切到候选 head）
+   - `make acceptance.runtime.contract_receipt`（重新生成合同回执）
    - `make verify.frontend.presentation.local.browser`
    - `make verify.frontend.list_surface_structure.browser`
    - `make verify.frontend.relation_roundtrip.browser`
-6. 录入：
+2. 修复单个失败时只重跑受影响的单项；普通 browser 目标不会隐式替换共享后端。
+3. 录入：
 
 ```bash
 REL=$(ls -d .runtime/acceptance/local/<head>/relation-roundtrip/*/summary.json | head -1)
@@ -60,12 +77,12 @@ python3 scripts/ops/acceptance_evolution_record.py --stage merge \
   --output .runtime/acceptance-evolution/evidence.v1.json
 ```
 
-7. 回到第 1 节第 9 步重跑 preflight。
+4. 回到第 1 节第 9 步重跑 preflight。
 
 机制化已拦截的坑：
 
 - `standard-contract-prerequisite` 在生成合同回执前先核对验收后端 `SC_SOURCE_REVISION == HEAD`，
-  不匹配即退出并提示先 `make backend.acceptance.up`，不再等到 probe 报 `runtime_identity_not_verified`。
+  不匹配即退出并提示先执行显式集成准备，不再等到 probe 报 `runtime_identity_not_verified`。
 
 ## 3. 日常开发服务器（sc-root）部署
 

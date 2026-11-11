@@ -1384,14 +1384,42 @@ SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_config_admin
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs
-.PHONY: acceptance.runtime.contract_receipt verify.frontend.relation_roundtrip.browser
+.PHONY: acceptance.runtime.integration.prepare acceptance.runtime.contract_receipt verify.frontend.acceptance.integration verify.frontend.relation_roundtrip.browser
+# Explicit acceptance preparation follows the merge-evidence Runbook. Keeping
+# these mutators in one front-door prevents an ordinary browser target invoked
+# by another iteration from replacing the shared backend as a hidden side effect.
+acceptance.runtime.integration.prepare: guard.prod.forbid
+	@test -z "$$(git status --porcelain)" || { echo "DENY: acceptance integration preparation requires a clean candidate" >&2; exit 2; }
+	@$(MAKE) --no-print-directory frontend.standard.preview.build
+	@$(MAKE) --no-print-directory frontend.standard.preview.up
+	@$(MAKE) --no-print-directory backend.acceptance.up
+	@$(MAKE) --no-print-directory acceptance.runtime.contract_receipt
+
+# A contract receipt validates the already-prepared carrier. It never rebuilds
+# the backend implicitly; a stale identity fails before a new receipt is written.
 acceptance.runtime.contract_receipt: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-prerequisite
 
 verify.frontend.relation_roundtrip.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RELATION_LOGIN="$(SC_ACCEPTANCE_RELATION_LOGIN)" RELATION_RESOLUTION_KEY="$(or $(RELATION_RESOLUTION_KEY),project)" RELATION_FIELD="$(RELATION_FIELD)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
 
-verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
+# One operator-facing entry applies the same order for every affected suite.
+# Individual browser targets remain available for bounded reruns and fail when
+# their receipt prerequisite is stale.
+verify.frontend.acceptance.integration: guard.prod.forbid
+	@$(MAKE) --no-print-directory acceptance.runtime.integration.prepare
+	@$(MAKE) --no-print-directory verify.frontend.presentation.local.browser.internal
+	@$(MAKE) --no-print-directory verify.frontend.list_surface_search_contract.unit
+	@$(MAKE) --no-print-directory verify.frontend.list_surface_structure.browser.internal
+	@$(MAKE) --no-print-directory verify.frontend.relation_roundtrip.browser
+
+# The list browser consumes the resolver receipt. Make that prerequisite
+# explicit so a current frontend preview can never be paired with a receipt
+# generated from a parent backend revision.
+verify.frontend.list_surface_structure.browser: guard.prod.forbid acceptance.runtime.contract_receipt verify.frontend.list_surface_search_contract.unit
+	@$(MAKE) --no-print-directory verify.frontend.list_surface_structure.browser.internal
+
+verify.frontend.list_surface_structure.browser.internal: guard.prod.forbid
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_FRONTEND_URL)))
 	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_DB)))
 	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),$(SC_LIST_PREVIEW_DB)))
@@ -1416,9 +1444,12 @@ verify.daily.demo_credential.confirmation: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/daily_demo_credential_confirmation.py scripts/verify/test_daily_demo_credential_confirmation.py
 	@python3 -m unittest scripts.verify.test_daily_demo_credential_confirmation
 
-.PHONY: verify.frontend.presentation.local.browser
+.PHONY: verify.frontend.presentation.local.browser verify.frontend.presentation.local.browser.internal
 PRESENTATION_ENTRY ?= project
 verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime.contract_receipt
+	@$(MAKE) --no-print-directory verify.frontend.presentation.local.browser.internal
+
+verify.frontend.presentation.local.browser.internal: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" PRESENTATION_ENTRY="$(PRESENTATION_ENTRY)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
 
 .PHONY: verify.frontend.contract_form_presentation.browser

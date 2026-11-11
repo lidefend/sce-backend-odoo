@@ -41,6 +41,17 @@ load_profile
             result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_profile_load_binds_fixture_scope_to_isolated_carrier(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        loader = source.split("load_profile() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("local) requested_fixture_scope=acceptance", loader)
+        self.assertIn("candidate) requested_fixture_scope=candidate", loader)
+        self.assertIn(
+            'export SC_ACCEPTANCE_FIXTURE_SCOPE="$requested_fixture_scope"', loader
+        )
+
     def test_cached_restore_is_offline_frozen_and_script_free(self) -> None:
         source = (ROOT / "scripts/dev/frontend_cached_dependencies_restore.sh").read_text(
             encoding="utf-8"
@@ -49,6 +60,16 @@ load_profile
         self.assertIn('sha256sum "$lockfile"', source)
         self.assertIn("frontend/node_modules/.pnpm", source)
         self.assertIn("frontend/apps/web/node_modules/.bin/eslint", source)
+        self.assertIn('find "$ROOT_DIR/frontend" -type l -name node_modules', source)
+        self.assertIn('unlink "$projection"', source)
+        self.assertIn("DENY foreign node_modules symlink", source)
+
+        preview = (ROOT / "scripts/dev/frontend_standard_preview.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("DEPENDENCY_PROJECTIONS", preview)
+        self.assertIn("str((ROOT / relative).resolve())", preview)
+        self.assertIn("digest.update(json.dumps(projections", preview)
 
     def test_local_release_entry_orders_cache_preflight_and_real_audit(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
@@ -76,6 +97,77 @@ load_profile
         self.assertIn("CONFIRM_FRONTEND_RELEASE_AUDIT", confirmation)
         self.assertIn("RUN_FROZEN_FRONTEND_RELEASE_AUDIT", confirmation)
         self.assertIn("not a daily-development target", confirmation)
+
+    def test_contract_receipt_runtime_identity_is_aligned_before_resolution(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        receipt = source.split("acceptance.runtime.contract_receipt:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertNotIn("backend.acceptance.up", receipt)
+
+        browser = source.split(
+            "verify.frontend.list_surface_structure.browser:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("acceptance.runtime.contract_receipt", browser)
+        self.assertIn("verify.frontend.list_surface_search_contract.unit", browser)
+
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        prerequisite = runtime.split("      standard-contract-prerequisite)", 1)[
+            1
+        ].split("        ;;", 1)[0]
+        self.assertIn(
+            'served_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"',
+            prerequisite,
+        )
+        self.assertIn('[[ "$served_sha" == "$expected_sha" ]]', prerequisite)
+        self.assertLess(
+            prerequisite.index('[[ "$served_sha" == "$expected_sha" ]]'),
+            prerequisite.index("frontend_delivery_hardening_runtime_ids.py"),
+        )
+
+    def test_acceptance_integration_prepare_is_explicit_ordered_and_non_interfering(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        receipt = source.split("acceptance.runtime.contract_receipt:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertNotIn("backend.acceptance.up", receipt.splitlines()[0])
+
+        prepare = source.split(
+            "acceptance.runtime.integration.prepare:", 1
+        )[1].split("\n\n", 1)[0]
+        prepared_steps = [
+            "frontend.standard.preview.build",
+            "frontend.standard.preview.up",
+            "backend.acceptance.up",
+            "acceptance.runtime.contract_receipt",
+        ]
+        positions = [prepare.index(step) for step in prepared_steps]
+        self.assertEqual(positions, sorted(positions))
+
+        integration = source.split(
+            "verify.frontend.acceptance.integration:", 1
+        )[1].split("\n\n", 1)[0]
+        evidence_steps = [
+            "acceptance.runtime.integration.prepare",
+            "verify.frontend.presentation.local.browser.internal",
+            "verify.frontend.list_surface_search_contract.unit",
+            "verify.frontend.list_surface_structure.browser.internal",
+            "verify.frontend.relation_roundtrip.browser",
+        ]
+        positions = [integration.index(step) for step in evidence_steps]
+        self.assertEqual(positions, sorted(positions))
+
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        preview = runtime.split("  standard-page-build|standard-page-up)", 1)[1].split(
+            "    ;;\n", 1
+        )[0]
+        self.assertIn("preflight", preview)
+        self.assertIn("frontend_standard_preview.py", preview)
+        self.assertNotIn("validate_backend_resource_identity", preview)
 
     def test_direct_runtime_is_denied_before_any_mutator(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

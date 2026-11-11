@@ -399,8 +399,8 @@
 .sc-btn[data-appearance='auth-link'],
 .sc-btn[data-appearance='readonly-relation'] { border: 0; background: transparent; color: var(--sc-app-info-text); }
 .sc-btn[data-appearance='readonly-relation'] { height: auto; min-height: var(--sc-product-control-height); max-width: 100%; white-space: normal; }
-.sc-btn[data-semantic-cell-kind='primary'] { width: 100%; max-width: 100%; min-width: 0; padding-inline: 0; font: inherit; text-align: left; }
-.sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content { display: block; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-btn[data-semantic-cell-kind='primary'] { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; height: auto; min-height: 0; padding-inline: 0; justify-content: flex-start; align-items: flex-start; font: inherit; text-align: left; white-space: normal; }
+.sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content { display: -webkit-box; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; overflow-wrap: anywhere; white-space: normal; text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .sc-btn[data-appearance='primary-submit'] { border-color: var(--sc-app-accent); background: var(--sc-app-accent); color: var(--sc-semantic-text-on-interactive); }
 .sc-checkbox[data-appearance='menu-choice'] { color: var(--sc-app-text-primary); }
 [data-semantic-component='ScTable'][data-appearance='flush'] { border: 0; border-radius: 0; box-shadow: none; }
@@ -429,9 +429,9 @@
 [data-semantic-component='ScTable'][data-appearance='collection'] thead th { height: var(--sc-product-table-header-height); padding-top: 0; padding-bottom: 0; line-height: var(--sc-component-table-row-line-height); vertical-align: middle; }
 [data-semantic-component='ScTable'][data-appearance='collection'] tbody tr { height: var(--sc-product-table-row-height); }
 [data-semantic-component='ScTable'][data-appearance='collection'] tbody td { height: var(--sc-product-table-row-height); padding-top: 0; padding-bottom: 0; line-height: var(--sc-component-table-row-line-height); vertical-align: middle; }
-[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text { max-width: var(--sc-component-table-long-text-max-width); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text { max-width: var(--sc-component-table-long-text-max-width); overflow: hidden; white-space: normal; overflow-wrap: anywhere; }
 [data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text > *,
-[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text :is(.collection-row-cell,.cell-primary) { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text :is(.collection-row-cell,.cell-primary) { min-width: 0; max-width: 100%; }
 [data-semantic-component='ScTable'][data-appearance='collection'] td:is(.column-numeric,.column-layout-money) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 [data-semantic-component='ScTable'][data-appearance='collection'] td.column-layout-date { color: var(--sc-app-text-secondary); white-space: nowrap; }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] { width: 100%; font-size: var(--sc-product-text-body); }

@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: FE-WALKTHROUGH-LIST-TABS-20261111
+  title: 自定义前端走查列表完整性与移动页签收口
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared contract-driven collection rendering and responsive product-shell tabs
+  module: frontend shared list cell, list column sizing, TDesign theme bridge and activity page tabs
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Bidirectional clipping, two-line business identity containment, header width
+    budgeting and horizontally reachable activity tabs are generic presentation
+    mechanics shared by contract-driven pages. They belong to the P0 frontend
+    renderer and design-system bridge.
+  why_not_elsewhere: >
+    No field meaning, permission, workflow or record identity is being invented.
+    Backend contracts and customer modules must not compensate for a generic
+    CSS/DOM containment defect, and page-specific project or payment rules would
+    create parallel presentation authorities.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-WALKTHROUGH-LIST-TABS-20261111.yaml
+      - .agent/runs/FE-WALKTHROUGH-LIST-TABS-20261111/run.json
+      - docs/ops/iterations/frontend_walkthrough_list_tabs_20261111.md
+      - docs/architecture/text_containment_allowlist.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/components/MenuTree.vue
+      - frontend/apps/web/src/components/product-list/
+      - frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue
+      - frontend/apps/web/src/pages/listPage/listColumnWidth.ts
+      - frontend/packages/ui/src/kits/tdesign/theme.css
+      - scripts/verify/frontend_collection_row_cell_guard.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/frontend_list_surface_structure_browser.mjs
+      - scripts/verify/frontend_navigation_shell_guard.py
+      - scripts/verify/test_frontend_collection_row_cell_guard.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/test_frontend_navigation_shell_guard.py
+      - scripts/verify/test_frontend_list_surface_search_contract.py
+      - scripts/verify/frontend_list_optional_columns_contract_test.ts
+    product_behavior: >
+      List primary identities start at the left edge, use at most two lines,
+      never lose characters by simultaneous left/right clipping, and expose the
+      complete business value through title and aria-label. Table headers remain
+      single-line with enough width for their own controls. Activity page tabs
+      remain reachable at 390px through horizontal scrolling with touch targets
+      of at least 44px.
+  objective: >
+    Fix the frontend walkthrough P1/P2 findings in the shared renderer, add a
+    browser assertion for first/last character visibility plus complete-value
+    fallback, and ensure deliberately collapsed active navigation paths remain
+    collapsed until the active path changes.
+  acceptance:
+    - primary collection identity is left-aligned, two-line bounded and carries an exact full-value fallback
+    - browser measurement detects simultaneous left/right identity clipping
+    - table headers remain single-line and derive width from label plus header controls
+    - activity page tabs horizontally scroll at 390px and expose 44px title/close targets
+    - active navigation path is not re-expanded by the same active route after a user collapse
+    - focused static tests, lint, strict typecheck and production build pass non-zero
+    - daily read-only pages are used only as affected surface evidence; no backend or data mutation
+  exclusions:
+    - backend_contract_change
+    - acl_or_permission_change
+    - customer_module_change
+    - database_or_runtime_write
+    - deployment
+    - new_compact_density_switch
+  rollback: Revert this topic branch; no persistent data or service state is involved.

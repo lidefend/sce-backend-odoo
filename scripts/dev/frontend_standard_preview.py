@@ -54,6 +54,11 @@ PREVIOUS = (
     else OUTPUT / 'previous-dist'
 )
 INPUTS = ['frontend', ':!frontend/apps/web/scripts']
+DEPENDENCY_PROJECTIONS = (
+    'frontend/node_modules',
+    'frontend/apps/web/node_modules',
+    'frontend/packages/ui/node_modules',
+)
 
 
 def git(*args):
@@ -63,7 +68,15 @@ def git(*args):
 def inputs(base):
     if git('ls-files', '--others', '--exclude-standard', '--', *INPUTS).strip():
         raise RuntimeError('untracked frontend build inputs must be reviewed and staged')
-    return hashlib.sha256(git('diff', '--binary', base, '--', *INPUTS)).hexdigest()
+    digest = hashlib.sha256()
+    projections = {
+        relative: str((ROOT / relative).resolve())
+        for relative in DEPENDENCY_PROJECTIONS
+        if (ROOT / relative).exists() or (ROOT / relative).is_symlink()
+    }
+    digest.update(json.dumps(projections, sort_keys=True).encode())
+    digest.update(git('diff', '--binary', base, '--', *INPUTS))
+    return digest.hexdigest()
 
 
 def is_ancestor(base, head):

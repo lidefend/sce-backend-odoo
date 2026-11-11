@@ -218,7 +218,7 @@ def object_rows(root: Path, revision_args: tuple[str, ...]) -> list[ObjectRow]:
     return rows
 
 
-def public_revision_args() -> tuple[str, ...]:
+def public_revision_args(root: Path | None = None) -> tuple[str, ...]:
     """Return refs that can participate in repository publication.
 
     ``--all`` also includes local-only refs such as ``refs/stash``.  A shared
@@ -230,6 +230,8 @@ def public_revision_args() -> tuple[str, ...]:
     Local-only refs remain governed by ``--local-hygiene``.
     """
 
+    if root is not None:
+        return trusted_scan_scope.scan_revision_args(root, "history")
     return ("HEAD", "--branches", "--tags", "--remotes")
 
 
@@ -240,7 +242,7 @@ def trusted_incremental_revision_args(root: Path, trusted_base: str) -> tuple[st
         raise ValueError("trusted base commit is unavailable")
     if run_git(root, "merge-base", "--is-ancestor", trusted_base, "HEAD", check=False).returncode != 0:
         raise ValueError("trusted base must be an ancestor of HEAD")
-    return (*public_revision_args(), f"^{trusted_base}")
+    return (*public_revision_args(root), f"^{trusted_base}")
 
 
 def incremental_authority_paths(rules: dict[str, object]) -> set[str]:
@@ -583,7 +585,7 @@ def main(argv: list[str] | None = None) -> int:
         rules["_policy_relative"] = ""
 
     errors: set[Finding] = set()
-    publication_revisions = public_revision_args()
+    publication_revisions = public_revision_args(root)
     scan_revisions = publication_revisions
     scan_mode = "public_refs"
     if args.trusted_base and args.auto_trusted_base:

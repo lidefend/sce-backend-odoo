@@ -65,6 +65,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.validation.delivery.unit"],
                 )
 
+    def test_quick_receipt_verifier_inputs_select_the_joint_consistency_unit(self) -> None:
+        for path in (
+            "scripts/ops/local_quick_evidence.py",
+            "scripts/ops/test_local_quick_evidence.py",
+            "scripts/verify/test_local_quick_evidence.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.branch.governance.consistency"],
+                )
+
     def test_component_takeover_inputs_select_their_inventory_lock(self) -> None:
         for path in (
             "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
@@ -864,6 +876,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         for path in (
+            "scripts/dev/frontend_cached_dependencies_restore.sh",
             "scripts/dev/frontend_standard_preview.py",
             "scripts/dev/frontend_acceptance_runtime.sh",
             "scripts/dev/frontend_acceptance_up.sh",
@@ -884,6 +897,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.daily_dev.acceptance_fixture.unit"],
+                )
+
+    def test_delivery_scan_and_policy_tools_select_owned_checks(self) -> None:
+        for path in (
+            "scripts/ci/secret_scan.py",
+            "scripts/ci/personal_data_scan.py",
+            "scripts/ci/trusted_scan_scope.py",
+            "scripts/ci/test_trusted_scan_scope.py",
+            "scripts/verify/repository_clean_history_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.trusted_scan.unit"],
+                )
+        for path in (
+            "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+            "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.construction.policy_maps.unit"],
                 )
 
     def test_primitive_adapter_guard_changes_route_to_their_owned_contract(self) -> None:
@@ -1004,6 +1040,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.frontend.list_surface_search_contract.unit"],
                 )
+
+    def test_collection_row_and_optional_column_guards_route_to_their_owned_units(self) -> None:
+        for path in (
+            "scripts/verify/frontend_collection_row_cell_guard.py",
+            "scripts/verify/test_frontend_collection_row_cell_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.collection_row_cell.unit"],
+                )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_list_optional_columns_contract_test.ts"]),
+            ["verify.frontend.list_optional_columns.unit"],
+        )
 
     def test_narrative_documentation_is_not_an_unmapped_product_path(self) -> None:
         # Writing an iteration record is a documentation-only change, which the

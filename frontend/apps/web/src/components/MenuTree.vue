@@ -54,6 +54,8 @@ const activeKey = computed(() => activeNode.value?.key || '');
 const effectiveExpandedKeys = computed(() => props.searchActive
   ? flatNodes.value.filter((node) => node.children.length).map((node) => node.key)
   : props.expandedKeys);
+let lastAppliedActiveKey = '';
+let appliedDefaultExpansion = false;
 
 provide('canonical-navigation-active-key', activeKey);
 
@@ -77,9 +79,16 @@ function onExpand(values: Array<string | number>) {
 
 watchEffect(() => {
   const required = new Set<string>();
-  for (const parent of activeNode.value?.parentChain || []) required.add(parent.key);
-  for (const node of flatNodes.value) {
-    if (node.children.length && node.source.meta?.default_expanded === true) required.add(node.key);
+  const activePathKey = activeNode.value?.key || '';
+  if (activePathKey && activePathKey !== lastAppliedActiveKey) {
+    for (const parent of activeNode.value?.parentChain || []) required.add(parent.key);
+    lastAppliedActiveKey = activePathKey;
+  }
+  if (!appliedDefaultExpansion) {
+    for (const node of flatNodes.value) {
+      if (node.children.length && node.source.meta?.default_expanded === true) required.add(node.key);
+    }
+    appliedDefaultExpansion = true;
   }
   const expanded = new Set(props.expandedKeys);
   const missing = [...required].filter((key) => !expanded.has(key));

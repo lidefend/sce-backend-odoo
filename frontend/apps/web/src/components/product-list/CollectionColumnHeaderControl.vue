@@ -17,7 +17,7 @@
       <ScIcon name="menu" :size="14" />
     </ScIconButton>
     <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="sortable && $emit('sort')">
-      <span>{{ label }}</span>
+      <span class="column-sort-label" :title="label">{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
     </ScButton>
     <ScIconButton class="column-resize-handle" appearance="column-handle" :label="`${label}：${resizeLabel}`" aria-description="使用左右方向键调整列宽，按住 Shift 加快调整。" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" @keydown.left.stop.prevent="$emit('resize-step', $event.shiftKey ? -40 : -10)" @keydown.right.stop.prevent="$emit('resize-step', $event.shiftKey ? 40 : 10)" />

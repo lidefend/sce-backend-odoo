@@ -18,7 +18,8 @@ container_env_value() {
 }
 
 load_profile() {
-  local base_env
+  local base_env requested_fixture_scope
+  requested_fixture_scope="${SC_ACCEPTANCE_FIXTURE_SCOPE:-}"
   base_env="$(python3 "$PROFILE_RESOLVER" --profile "$PROFILE" --get SC_ACCEPTANCE_BASE_ENV_FILE)"
   if [[ ! -f "$base_env" ]]; then
     echo "[acceptance.runtime] DENY missing primary-worktree credential env: $base_env" >&2
@@ -36,6 +37,13 @@ load_profile() {
     printf -v "$key" '%s' "$value"
     export "$key"
   done < <(python3 "$PROFILE_RESOLVER" --profile "$PROFILE")
+  if [[ -z "$requested_fixture_scope" ]]; then
+    case "$PROFILE" in
+      local) requested_fixture_scope=acceptance ;;
+      candidate) requested_fixture_scope=candidate ;;
+    esac
+  fi
+  export SC_ACCEPTANCE_FIXTURE_SCOPE="$requested_fixture_scope"
   docker inspect "$SC_ACCEPTANCE_CREDENTIAL_CONTAINER" >/dev/null 2>&1 || {
     echo "[acceptance.runtime] DENY missing credential authority container: $SC_ACCEPTANCE_CREDENTIAL_CONTAINER" >&2
     exit 2
@@ -453,7 +461,17 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-my-work-approval-runtime|standard-my-work-approval-browser|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-page-build|standard-page-up)
+    # The static preview lifecycle is independent of backend artifact identity.
+    # Keeping these steps outside the backend-dependent block lets an explicit
+    # integration repair a stale backend without first requiring it to be valid.
+    preflight
+    case "$command" in
+      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
+      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
+    esac
+    ;;
+  standard-approval-runtime|standard-my-work-approval-runtime|standard-my-work-approval-browser|standard-favorite-recovery|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-contract-form-presentation|standard-project-workspace-dom|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -550,8 +568,6 @@ PYMYWORKTARGETS
           FRONTEND_MY_WORK_APPROVAL_TARGETS_JSON="$targets_json" ARTIFACTS_DIR=.runtime/final-acceptance/my-work-approval \
           node "$ROOT_DIR/scripts/verify/frontend_my_work_approval_browser.mjs"
         ;;
-      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
-      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
       standard-favorite-recovery)
         docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_favorite_probe_recovery.py"
         ;;
@@ -592,6 +608,12 @@ PYMYWORKTARGETS
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(validated_backend_product_revision)"
+        served_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+        [[ "$served_sha" == "$expected_sha" ]] || {
+          echo "DENY: contract receipt backend revision $served_sha != candidate $expected_sha" >&2
+          echo "run make acceptance.runtime.integration.prepare before regenerating acceptance evidence" >&2
+          exit 2
+        }
         resolution_output="$(docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py" 2>&1)"
         RESOLUTION_OUTPUT="$resolution_output" EXPECTED_SHA="$expected_sha" python3 - <<'PYRESOLUTION'
 import json, os

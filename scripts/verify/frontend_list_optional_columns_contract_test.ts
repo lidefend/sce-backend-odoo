@@ -72,6 +72,11 @@ assert.equal(
   'non-primary identity columns retain the ordinary adaptive floor',
 );
 assert.equal(
+  deriveListColumnWidth({ label: '单据状态', role: 'status' }),
+  104,
+  'status headers reserve both their text and the TDesign header controls on one line',
+);
+assert.equal(
   resolveListColumnBudgetWidth({ customWidth: 0, derivedWidth: 184, role: 'text' }),
   184,
   'responsive selection must budget the same content-derived width used by the rendered column',

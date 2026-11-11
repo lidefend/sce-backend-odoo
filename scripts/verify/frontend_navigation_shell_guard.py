@@ -8,6 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 VENDOR_MENU_SCROLL_SELECTOR = ":deep(." + "t-menu--scroll)"
+VENDOR_BUTTON_TEXT_SELECTOR = "." + "t-button__" + "text"
 COMPONENTS = (
     "ProductAppShell",
     "ProductSideNavigation",
@@ -33,6 +34,7 @@ def validate(root: Path = ROOT) -> list[str]:
     shell_style = read(root, "frontend/apps/web/src/layouts/AppShell.css")
     tree = read(root, "frontend/apps/web/src/components/MenuTree.vue")
     menu_node = read(root, "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue")
+    activity_tabs = read(root, "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue")
     primitive_bridge = read(root, "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts")
     theme = read(root, "frontend/packages/ui/src/kits/tdesign/theme.css")
     ui_primitives = read(root, "frontend/packages/ui/src/primitives.ts")
@@ -121,7 +123,18 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
     if not re.search(r"\.topbar\s*\{[^}]*flex-shrink:\s*0", shell_style, re.DOTALL):
         errors.append("responsive topbar must not shrink over the activity page tabs")
-    if ".t-button__text" in shell_style:
+    for marker in (
+        "revealActivePageTab",
+        "scrollBy({ left:",
+        "overflow-x: auto",
+        ".t-tabs__operations--right",
+        "display: none",
+        "min-height: var(--sc-touch-target-min)",
+        "width: var(--sc-touch-target-min)",
+    ):
+        if marker not in activity_tabs:
+            errors.append(f"activity page tabs lost narrow reachability contract: {marker}")
+    if VENDOR_BUTTON_TEXT_SELECTOR in shell_style:
         errors.append("published app layout must use owned content markup instead of vendor internals")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
         errors.append("navigation drawer root styling bypasses the child-component deep boundary")
@@ -150,7 +163,7 @@ def validate(root: Path = ROOT) -> list[str]:
     for forbidden in ("useSessionStore", "evaluateCapabilityPolicy", "capabilityTooltip", "console.info"):
         if forbidden in tree + menu_node:
             errors.append(f"MenuTree must remain presentation-only: {forbidden}")
-    for required in ("TDesignMenu", 'data-semantic-driver="tdesign-menu"', "expandedKeys", "emit('toggle'", ".parentChain"):
+    for required in ("TDesignMenu", 'data-semantic-driver="tdesign-menu"', "expandedKeys", "emit('toggle'", ".parentChain", "activePathKey !== lastAppliedActiveKey"):
         if required not in tree:
             errors.append(f"MenuTree missing canonical interaction token: {required}")
     for required in ("TDesignSubmenu", "TDesignMenuItem", "node.disabledReason", 'data-navigation-node="canonical"'):

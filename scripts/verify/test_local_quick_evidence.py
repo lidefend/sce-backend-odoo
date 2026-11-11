@@ -283,22 +283,42 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         evidence.git(self.root, "update-ref", "refs/remotes/origin/feature", self.head)
         self.assertEqual(evidence.verify(self.root, self.head), path)
 
-    def test_new_content_ref_invalidates_exact_head_verification(self) -> None:
-        self.run_success()
+    def test_new_content_ref_does_not_invalidate_exact_head_verification(self) -> None:
+        path, _calls = self.run_success()
         tree = evidence.git(self.root, "rev-parse", "HEAD^{tree}")
         extra = evidence.git(self.root, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit-tree", tree, "-p", self.head, "-m", "new side commit")
         evidence.git(self.root, "update-ref", "refs/tags/after-quick", extra)
-        with self.assertRaisesRegex(evidence.EvidenceError, "does not match"):
-            evidence.verify(self.root, self.head)
+        self.assertEqual(evidence.verify(self.root, self.head), path)
 
-    def test_deleting_unique_covered_reference_invalidates_verification(self) -> None:
+    def test_sibling_worktree_advance_does_not_invalidate_exact_head_verification(self) -> None:
+        path, _calls = self.run_success()
+        with tempfile.TemporaryDirectory() as temporary:
+            sibling = Path(temporary) / "sibling"
+            evidence.git(self.root, "worktree", "add", "-q", "-b", "sibling-iteration", str(sibling))
+            (sibling / "tracked.txt").write_text("independent iteration\n", encoding="utf-8")
+            evidence.git(sibling, "add", "tracked.txt")
+            evidence.git(
+                sibling,
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.invalid",
+                "commit",
+                "-qm",
+                "sibling iteration",
+            )
+            sibling_head = evidence.git(sibling, "rev-parse", "HEAD")
+            self.assertNotEqual(sibling_head, self.head)
+            self.assertEqual(evidence.verify(self.root, self.head), path)
+            evidence.git(self.root, "worktree", "remove", "--force", str(sibling))
+
+    def test_deleting_unique_covered_reference_does_not_invalidate_exact_head_verification(self) -> None:
         tree = evidence.git(self.root, "rev-parse", "HEAD^{tree}")
         extra = evidence.git(self.root, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit-tree", tree, "-p", self.head, "-m", "side commit")
         evidence.git(self.root, "update-ref", "refs/tags/covered", extra)
-        self.run_success()
+        path, _calls = self.run_success()
         evidence.git(self.root, "update-ref", "-d", "refs/tags/covered")
-        with self.assertRaisesRegex(evidence.EvidenceError, "does not match"):
-            evidence.verify(self.root, self.head)
+        self.assertEqual(evidence.verify(self.root, self.head), path)
 
     def test_ref_drift_without_original_proofs_does_not_sign(self) -> None:
         def runner(command, **kwargs):

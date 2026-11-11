@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { TDesignTabs, TDesignTabPanel } from '../design-system/tdesignPrimitiveBridge';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScButton from '../design-system/ScButton.vue';
@@ -89,8 +89,28 @@ let focusObserver: MutationObserver | null = null;
 onMounted(() => {
   focusObserver = new MutationObserver(restoreKeyboardFocus);
   if (focusHost.value) focusObserver.observe(focusHost.value, { childList: true, subtree: true });
+  nextTick(revealActivePageTab);
 });
 onBeforeUnmount(() => focusObserver?.disconnect());
+
+function revealActivePageTab() {
+  const scroller = focusHost.value?.querySelector<HTMLElement>('.t-tabs__nav-scroll');
+  const label = Array.from(focusHost.value?.querySelectorAll<HTMLElement>('[data-activity-page-key]') || [])
+    .find((element) => element.dataset.activityPageKey === props.activeKey);
+  if (!scroller || !label) return;
+  const scrollerRect = scroller.getBoundingClientRect();
+  const labelRect = label.getBoundingClientRect();
+  if (labelRect.left < scrollerRect.left) {
+    scroller.scrollBy({ left: labelRect.left - scrollerRect.left, behavior: 'instant' });
+  } else if (labelRect.right > scrollerRect.right) {
+    scroller.scrollBy({ left: labelRect.right - scrollerRect.right, behavior: 'instant' });
+  }
+}
+
+watch(() => props.activeKey, async () => {
+  await nextTick();
+  revealActivePageTab();
+});
 
 function handleTitleActivate(page: ActivityPage) {
   pendingFocusKey = '';
@@ -172,10 +192,52 @@ async function handleKeydown(event: KeyboardEvent) {
 
 @media (max-width: 760px) {
   .activity-page-tabs {
+    overflow: visible;
+    padding-inline: 0;
+  }
+
+  .activity-page-tabs :deep(.t-tabs__nav) {
+    min-width: 0;
+  }
+
+  .activity-page-tabs :deep(.t-tabs__nav-container) {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .activity-page-tabs :deep(.t-tabs__nav-scroll) {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .activity-page-tabs :deep(.t-tabs__nav-wrap) {
     padding-inline: 8px;
   }
+
+  .activity-page-tabs :deep(.t-tabs__operations--right) {
+    display: none;
+  }
+
+  .activity-page-tabs :deep(.t-tabs__nav-item) {
+    min-height: var(--sc-touch-target-min);
+  }
+
   .activity-page-tab-label {
-    max-width: 132px;
+    min-height: var(--sc-touch-target-min);
+    max-width: 160px;
+  }
+
+  .activity-page-tab-title,
+  .activity-page-tab-close {
+    min-height: var(--sc-touch-target-min);
+  }
+
+  .activity-page-tab-close {
+    width: var(--sc-touch-target-min);
+    min-width: var(--sc-touch-target-min);
+    opacity: .65;
   }
 }
 </style>

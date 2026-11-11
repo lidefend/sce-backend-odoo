@@ -135,7 +135,15 @@ class TrustedScopeTests(unittest.TestCase):
             launch = {'root': str(self.root), 'head': self.git('rev-parse', 'HEAD').strip(),
                       'tree': self.git('rev-parse', 'HEAD^{tree}').strip(), 'coverage': scope.coverage_snapshot(self.root)}
             (folder / 'launch.json').write_text(json.dumps(launch))
+            sibling = self.git('commit-tree', self.git('rev-parse', 'HEAD^{tree}').strip(),
+                               '-p', self.git('rev-parse', 'HEAD').strip(), '-m', 'independent sibling').strip()
+            self.git('update-ref', 'refs/heads/sibling-iteration', sibling)
             with mock.patch.dict(os.environ, {scope.COVERAGE_ENV: directory}), mock.patch.object(secrets, 'ROOT', self.root), contextlib.redirect_stdout(io.StringIO()):
+                frozen = scope.scan_revision_args(self.root, 'secrets')
+                self.assertNotIn('--all', frozen)
+                self.assertEqual(frozen, scope.scan_revision_args(self.root, 'secrets'))
+                self.assertEqual(scope.coverage_snapshot(self.root)['scanners']['secrets'],
+                                 launch['coverage']['scanners']['secrets'])
                 self.assertEqual(secrets.main(['--scope', 'worktree']), 0)
                 self.assertFalse((folder / 'secrets.json').exists())
                 self.assertEqual(secrets.main(['--scope', 'all']), 0)

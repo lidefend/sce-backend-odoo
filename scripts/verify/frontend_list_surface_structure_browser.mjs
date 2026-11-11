@@ -296,6 +296,93 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       && Array.isArray(columnDecisionTrace.desktop?.visibleColumns)
       && Array.isArray(columnDecisionTrace.mobile?.visibleColumns),
     );
+    const headerMetrics = Array.from(document.querySelectorAll('[data-semantic-component="CollectionColumnHeaderControl"]'))
+      .filter(visible)
+      .map((control) => {
+        const label = control.querySelector('.column-sort-label');
+        if (!(label instanceof HTMLElement)) {
+          return { field: control.getAttribute('data-column'), label: '', valid: false };
+        }
+        const rect = label.getBoundingClientRect();
+        const style = getComputedStyle(label);
+        const lineHeight = Number.parseFloat(style.lineHeight) || rect.height || 1;
+        return {
+          field: control.getAttribute('data-column'),
+          label: String(label.textContent || '').trim(),
+          white_space: style.whiteSpace,
+          height: rect.height,
+          line_height: lineHeight,
+          client_width: label.clientWidth,
+          scroll_width: label.scrollWidth,
+          valid: style.whiteSpace === 'nowrap'
+            && rect.height <= lineHeight * 1.5 + 1
+            && label.scrollWidth <= label.clientWidth + 1,
+        };
+      });
+    const textNodeOf = (element) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (String(node.nodeValue || '').trim()) return node;
+      }
+      return null;
+    };
+    const primaryContainer = document.querySelector('.table tbody td.column-layout-identity .collection-row-cell.cell-primary');
+    const primaryLink = primaryContainer?.querySelector('.cell-primary-link');
+    const primaryContent = primaryLink?.querySelector('.sc-btn__content');
+    let primaryIdentity = null;
+    if (primaryContainer instanceof HTMLElement && primaryLink instanceof HTMLElement && primaryContent instanceof HTMLElement) {
+      const textNode = textNodeOf(primaryContent);
+      const text = String(primaryContent.textContent || '').trim().replace(/\s+/g, ' ');
+      const contentRect = primaryContent.getBoundingClientRect();
+      const linkRect = primaryLink.getBoundingClientRect();
+      const contentStyle = getComputedStyle(primaryContent);
+      let firstVisible = false;
+      let lastVisible = false;
+      if (textNode?.nodeValue) {
+        const firstRange = document.createRange();
+        firstRange.setStart(textNode, 0);
+        firstRange.setEnd(textNode, 1);
+        const lastRange = document.createRange();
+        lastRange.setStart(textNode, Math.max(0, textNode.nodeValue.length - 1));
+        lastRange.setEnd(textNode, textNode.nodeValue.length);
+        const firstRect = firstRange.getBoundingClientRect();
+        const lastRect = lastRange.getBoundingClientRect();
+        firstVisible = firstRect.left >= linkRect.left - 1 && firstRect.right <= linkRect.right + 1;
+        const overflowed = contentRect.left < linkRect.left - 1
+          || contentRect.right > linkRect.right + 1
+          || primaryContent.scrollWidth > primaryContent.clientWidth + 1
+          || primaryContent.scrollHeight > primaryContent.clientHeight + 1;
+        const fallback = String(primaryLink.getAttribute('title') || primaryLink.getAttribute('aria-label') || primaryContainer.getAttribute('title') || '').trim();
+        lastVisible = overflowed
+          ? fallback === text
+          : lastRect.left >= linkRect.left - 1 && lastRect.right <= linkRect.right + 1;
+      }
+      primaryIdentity = {
+        text,
+        title: primaryLink.getAttribute('title') || primaryContainer.getAttribute('title') || '',
+        aria_label: primaryLink.getAttribute('aria-label') || '',
+        white_space: contentStyle.whiteSpace,
+        line_clamp: contentStyle.webkitLineClamp,
+        first_visible: firstVisible,
+        last_or_fallback_visible: lastVisible,
+        link_left: linkRect.left,
+        link_right: linkRect.right,
+        content_left: contentRect.left,
+        content_right: contentRect.right,
+        client_width: primaryContent.clientWidth,
+        scroll_width: primaryContent.scrollWidth,
+        client_height: primaryContent.clientHeight,
+        scroll_height: primaryContent.scrollHeight,
+      };
+    }
+    const primaryIdentityIntegrity = mobileMode || expectedState === 'empty' || Boolean(
+      primaryIdentity
+      && primaryIdentity.first_visible
+      && primaryIdentity.last_or_fallback_visible
+      && primaryIdentity.white_space === 'normal'
+      && primaryIdentity.line_clamp === '2',
+    );
+    const tableHeadersSingleLine = mobileMode || headerMetrics.every((header) => header.valid);
     if (expectedState === 'batch') {
       const controls = Array.from(toolbar?.querySelectorAll('button, input, select') || []).filter(visible);
       const rowCenters = [];
@@ -320,6 +407,8 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           mobile_selection_does_not_open_detail: !mobileMode || selectionNavigationStable,
           selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.collection-mobile-record-row__card'))),
           decision_trace_complete: expectedState === 'empty' || traceComplete,
+          table_headers_single_line: tableHeadersSingleLine,
+          primary_identity_integrity: primaryIdentityIntegrity,
         },
         metrics: {
           viewport_width: width,
@@ -332,6 +421,8 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           selected_mobile_card_count: selectedMobileCards.length,
           selection_source: selectionSource,
           column_decision_trace: columnDecisionTrace,
+          header_metrics: headerMetrics,
+          primary_identity: primaryIdentity,
         },
       };
     }
@@ -469,6 +560,8 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       toolbar_controls_not_overlapping: !controlsOverlap,
       mobile_touch_targets: mobileTouchTargetsPass,
       search_input_usable: Boolean(searchInputRect && searchInputRect.width >= 72 && searchInputRect.height >= 28),
+      table_headers_single_line: tableHeadersSingleLine,
+      primary_identity_integrity: primaryIdentityIntegrity,
     };
     return {
       checks,
@@ -494,6 +587,8 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         toolbar_control_rects: controlRects,
         search_input_rect: searchInputRect ? { left: searchInputRect.left, right: searchInputRect.right, width: searchInputRect.width, height: searchInputRect.height } : null,
         column_decision_trace: columnDecisionTrace,
+        header_metrics: headerMetrics,
+        primary_identity: primaryIdentity,
       },
       observations: {
         desktop_context_text_duplicated: width > 960 && repeatedContext.length > 0,
@@ -549,6 +644,7 @@ async function negativeProofs(page, viewport) {
   const baselineWithinHeader = baseline.checks.toolbar_controls_within_header === true;
   const baselineAligned = baseline.checks.desktop_actions_query_aligned === true;
   const baselineContextClean = baseline.observations.desktop_context_text_duplicated === false;
+  const baselineIdentityIntegrity = baseline.checks.primary_identity_integrity === true;
   const twoRows = await page.addStyleTag({ content: `
     [data-list-query-action-bar] { position: relative !important; }
     [data-list-query-action-bar] .list-surface-column-manager { transform: translateY(200vh) !important; }
@@ -562,6 +658,29 @@ async function negativeProofs(page, viewport) {
     metrics: brokenRows.metrics,
   });
   await twoRows.evaluate((element) => element.remove());
+
+  if (viewport.width > 760) {
+    const clippedIdentity = await page.addStyleTag({ content: `
+      .cell-primary-link { justify-content: center !important; }
+      .cell-primary-link .sc-btn__content {
+        display: block !important;
+        width: max-content !important;
+        min-width: max-content !important;
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        -webkit-line-clamp: unset !important;
+      }
+    ` });
+    const brokenIdentity = await measure(page, viewport);
+    results.push({
+      fixture: 'primary_identity_bidirectional_clip',
+      baseline_ok: baselineIdentityIntegrity,
+      baseline_metrics: { primary_identity_integrity: baseline.checks.primary_identity_integrity, primary_identity: baseline.metrics.primary_identity },
+      detected: baselineIdentityIntegrity && brokenIdentity.checks.primary_identity_integrity === false,
+      metrics: { primary_identity_integrity: brokenIdentity.checks.primary_identity_integrity, primary_identity: brokenIdentity.metrics.primary_identity },
+    });
+    await clippedIdentity.evaluate(element => element.remove());
+  }
 
   if (viewport.width >= 1440) {
     const stacked = await page.addStyleTag({ content: '[data-list-query-action-bar] .product-list-header__layout { flex-direction: column !important; align-items: stretch !important; }' });
@@ -1326,6 +1445,8 @@ try {
     'toolbar_controls_not_overlapping',
     'mobile_touch_targets',
     'search_input_usable',
+    'table_headers_single_line',
+    'primary_identity_integrity',
   ]);
   const failures = rows.flatMap((row) => Object.entries(row.measurement.checks)
     .filter(([check, passed]) => gatedChecks.has(check) && !passed)

@@ -166,10 +166,10 @@ def worktree_findings(base: str | None = None) -> list[Finding]:
 
 def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
     if base:
-        return trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.revision_args('personal'))
+        return trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.scan_revision_args(ROOT, 'personal'))
     if not (ROOT / ".git").exists():
         return []
-    rev_list = git("rev-list", "--objects", "--all", check=False)
+    rev_list = git("rev-list", "--objects", *trusted_scan_scope.scan_revision_args(ROOT, 'personal'), check=False)
     if not rev_list.strip():
         return []
     result = subprocess.run(
@@ -188,7 +188,7 @@ def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
         parts = line.split(" ", 3)
         if len(parts) == 4 and parts[1] == "blob" and parts[2].isdigit() and parts[3]:
             objects.append((parts[0], parts[3], int(parts[2])))
-    objects.extend(trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.revision_args('personal')))
+    objects.extend(trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.scan_revision_args(ROOT, 'personal')))
     return sorted(set(objects))
 
 

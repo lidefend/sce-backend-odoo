@@ -36,6 +36,25 @@ class NativeWorkspaceFactGuardTest(unittest.TestCase):
     def test_real_native_fact_and_both_projections_pass(self):
         self.assertEqual([], self.errors())
 
+    def test_mainline_operation_user_precedence_is_locked(self):
+        module = guard._load(
+            guard.POLICY_MAPS, "construction_core_policy_maps_precedence_test"
+        )
+        expected = (
+            "system_admin",
+            "experience",
+            "business_full",
+            "business_config_admin",
+            "executive",
+            "owner",
+            "pm",
+            "operation_user",
+            "finance",
+            "cost",
+            "accounting",
+        )
+        self.assertEqual(expected, module.ROLE_PRECEDENCE)
+
     def test_maintained_xml_route_and_name_are_consumed_without_map_changes(self):
         tree = ET.parse(self.xml)
         action = tree.find(".//record[@id='action_sc_my_work']")

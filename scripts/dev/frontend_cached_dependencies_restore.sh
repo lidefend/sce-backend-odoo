@@ -14,6 +14,27 @@ lock_sha="$(sha256sum "$lockfile" | awk '{print $1}')"
   exit 2
 }
 
+# Older linked worktrees reused the primary worktree through absolute
+# node_modules symlinks. That makes workspace packages import source from the
+# wrong branch. Replace only repository-owned primary-worktree projections with
+# local directories; any foreign symlink still fails closed.
+common_dir="$(git -C "$ROOT_DIR" rev-parse --path-format=absolute --git-common-dir)"
+primary_root="$(cd "$(dirname "$common_dir")" && pwd -P)"
+while IFS= read -r -d '' projection; do
+  target="$(readlink -f "$projection" 2>/dev/null || true)"
+  case "$target" in
+    "$primary_root"/*)
+      unlink "$projection"
+      mkdir -p "$projection"
+      echo "[frontend.dependencies.cached] detached primary projection $projection"
+      ;;
+    *)
+      echo "[frontend.dependencies.cached] DENY foreign node_modules symlink: $projection -> ${target:-<unresolved>}" >&2
+      exit 2
+      ;;
+  esac
+done < <(find "$ROOT_DIR/frontend" -type l -name node_modules -print0)
+
 "$ROOT_DIR/scripts/dev/pnpm_exec.sh" -C "$ROOT_DIR/frontend" install \
   --offline --frozen-lockfile --ignore-scripts
 

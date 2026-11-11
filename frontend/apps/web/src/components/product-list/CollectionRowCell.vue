@@ -15,7 +15,7 @@
   <span v-else-if="kind === 'status'" data-semantic-component="CollectionRowCell" class="collection-row-cell status-badge" :class="`tone-${tone}`">
     {{ text }}
   </span>
-  <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="collection-row-cell cell-primary">
+  <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="collection-row-cell cell-primary" :title="text">
     <ScButton type="button" class="cell-primary-link" data-semantic-cell-kind="primary" appearance="auth-link" variant="ghost" size="small" :title="text" :aria-label="text" @click.stop="$emit('open-record')">
       {{ text }}
     </ScButton>
