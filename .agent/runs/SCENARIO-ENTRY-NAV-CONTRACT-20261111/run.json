@@ -14,6 +14,7 @@
     "docs/ops/iterations/scenario_entry_nav_contract_20261111.md",
     "docs/architecture/scene_layer_responsibility_20261105.md",
     "docs/architecture/scene_fact_data_boundary_ledger.json",
+    "docs/architecture/backend_authority_closure_map_v1.json",
     "docs/architecture/backend-owned-page-composition/335-bnva-03-identity-resolver-role-projection.md",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/module_dependency_map.md",
@@ -67,6 +68,7 @@
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_menu_metadata_batch.py",
     "scripts/verify/scene_fact_data_boundary_guard.py",
     "scripts/verify/scenario_surface_projection_guard.py"
   ],
@@ -143,6 +145,24 @@
         "addons/smart_construction_core/services/product_menu_source.py",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "backend_authority_closure": {
+      "target": "verify.backend.authority_closure.unit",
+      "inputs": [
+        "docs/architecture/backend_authority_closure_map_v1.json",
+        "scripts/verify/backend_authority_closure_guard.py",
+        "scripts/verify/test_backend_authority_closure_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "product_menu_metadata": {
+      "target": "verify.product.menu.metadata_batch.unit",
+      "inputs": [
+        "scripts/verify/test_menu_metadata_batch.py",
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/menu_service.py"
       ],
       "kind": "offline"
     }

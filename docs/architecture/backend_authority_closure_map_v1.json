@@ -186,17 +186,11 @@
               "path": "addons/smart_core/delivery/runtime_route_authority.py",
               "kind": "python_symbol",
               "value": "menu_publication_decision"
-            },
-            {
-              "path": "addons/smart_construction_scene/models/product_policy.py",
-              "kind": "python_symbol",
-              "value": "ScProductPolicy._apply_company_route_scope"
             }
           ],
           "maintains": [],
           "consumes": [
-            "product_delivery_scope",
-            "tenant_enablement_scope"
+            "product_delivery_scope"
           ],
           "authorizes": [],
           "projection_only": true,
