@@ -70,6 +70,13 @@
       "log": ".runtime/acceptance/fixture_orm_20261111T100215Z.log",
       "log_sha256": "54705a06fca8fb63aaa633635175fdf7ec1ecc3c83639d6ae86abdcfb080eaea",
       "status": "passed"
+    },
+    "fresh_install": {
+      "database_profile": "sc-local-test/sc_test/test",
+      "tests": 6,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries.log",
+      "log_sha256": "54a2922290c66f17d782a3f663cefd80e4d321f0f6fc1da81101a86d39912a6b",
+      "status": "passed"
     }
   },
   "checks": {
@@ -154,6 +161,13 @@
       "tests": 49,
       "log": ".runtime/acceptance/fixture_orm_20261111T100215Z.log",
       "log_sha256": "54705a06fca8fb63aaa633635175fdf7ec1ecc3c83639d6ae86abdcfb080eaea"
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization",
+      "status": "passed",
+      "tests": 6,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries.log",
+      "log_sha256": "54a2922290c66f17d782a3f663cefd80e4d321f0f6fc1da81101a86d39912a6b"
     },
     {
       "command": "make local.dev.upgrade MODULE=smart_core,smart_construction_core,smart_construction_scene",

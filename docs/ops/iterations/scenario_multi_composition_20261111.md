@@ -65,6 +65,10 @@
 - 场景中心不再随原生 menu 迁移，直连入口按原生 sequence 排序；
 - 场景中心和入口的 `scenario.sequence`、`entry.sequence` 都支持显式 `0`。
 
+全新隔离测试库 `sc-local-test/sc_test` 执行
+`TestScenarioDirectInitialization`：**6 tests PASS，0 failed，0 errors**，证明首次安装
+即可生成工作区/平台直连声明，且已有场景绑定优先于直连豁免。
+
 ## 验证与交付车道
 
 | 检查 | 结果 |
@@ -74,6 +78,7 @@
 | `verify.backend.navigation_delivery.unit` | PASS，76 tests |
 | `verify.daily.permission_truth.capability.orm` | PASS，13 tests |
 | `acceptance.frontend.fixture_orm` | PASS，49 tests |
+| fresh `sc_test` direct-entry initialization | PASS，6 tests |
 | `local.dev.upgrade` | PASS，schema/migration/authority readback |
 | `ci.local.iteration` | BLOCKED，旧交付规划器不映射本批新增迁移/数据/测试路径 |
 
