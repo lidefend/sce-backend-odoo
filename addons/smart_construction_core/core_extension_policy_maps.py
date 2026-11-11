@@ -684,6 +684,21 @@ ROLE_SURFACE_OVERRIDES = {
             "construction.人事行政",
         ],
     },
+    "operation_user": {
+        "label": "经营部",
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.ledger"],
+        "discover_installed_capabilities": True,
+        "menu_xmlids": ["smart_construction_core.menu_sc_root"],
+        "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+        "menu_blocklist_xmlids": [],
+        "action_blocklist_xmlids": [],
+        "model_blocklist": [],
+        "model_prefix_blocklist": [],
+        "group_key_blocklist": [],
+    },
 }
 
 ROLE_GROUPS_EXPLICIT = {
@@ -715,6 +730,9 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_project_manager",
         "smart_construction_core.group_sc_role_project_user",
     },
+    "operation_user": {
+        "smart_construction_core.group_sc_role_operation_user",
+    },
     "finance": {
         "smart_construction_core.group_sc_role_finance_manager",
         "smart_construction_core.group_sc_role_finance_user",
@@ -741,7 +759,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost", "accounting")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "operation_user", "finance", "cost", "accounting")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

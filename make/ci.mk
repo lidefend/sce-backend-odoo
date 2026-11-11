@@ -965,6 +965,49 @@ ci.backend_test_suite.dispatch: guard.prod.forbid
 	echo "[ci.backend_test_suite.dispatch] dispatched full backend suite for exact_head=$$expected"; \
 	'
 
+.PHONY: ci.frontend_release_gate.dispatch
+ci.frontend_release_gate.dispatch: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	if [ "$${ENV:-dev}" = "prod" ] || [ -n "$${PROD_DANGER:-}" ]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: production context is forbidden"; exit 2; \
+	fi; \
+	expected="$(EXPECTED_HEAD)"; \
+	if ! [[ "$$expected" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 3; \
+	fi; \
+	branch="$(CI_DISPATCH_BRANCH)"; \
+	if ! [[ "$$branch" =~ ^[A-Za-z0-9._/-]+$$ ]]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: invalid branch"; exit 4; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: worktree must be clean"; exit 5; \
+	fi; \
+	repo="$$(gh repo view --json nameWithOwner --jq .nameWithOwner)"; \
+	if [ "$$repo" != "lidefend/sce-backend-odoo" ]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: unexpected GitHub repository $$repo"; exit 6; \
+	fi; \
+	remote_head="$$(git ls-remote --heads origin "refs/heads/$$branch" | cut -f1)"; \
+	if [ "$$remote_head" != "$$expected" ]; then \
+	  echo "[DENY] ci.frontend_release_gate.dispatch: remote branch HEAD $$remote_head does not match EXPECTED_HEAD $$expected"; exit 7; \
+	fi; \
+	before_ids="$$(gh run list --workflow frontend_release_gate.yml --branch "$$branch" --event workflow_dispatch --limit 100 --json databaseId --jq ".[].databaseId")"; \
+	echo "[ci.frontend_release_gate.dispatch] repo=$$repo branch=$$branch exact_head=$$expected"; \
+	gh workflow run frontend_release_gate.yml --ref "$$branch"; \
+	for attempt in $$(seq 1 30); do \
+	  while IFS=$$'\''\t'\'' read -r run_id head_sha run_url; do \
+	    [ -n "$$run_id" ] || continue; \
+	    [ "$$head_sha" = "$$expected" ] || continue; \
+	    if ! grep -Fxq "$$run_id" <<<"$$before_ids"; then \
+	      echo "[ci.frontend_release_gate.dispatch] PASS run_id=$$run_id head=$$head_sha url=$$run_url"; \
+	      exit 0; \
+	    fi; \
+	  done < <(gh run list --workflow frontend_release_gate.yml --branch "$$branch" --event workflow_dispatch --limit 100 --json databaseId,headSha,url --jq ".[] | [.databaseId,.headSha,.url] | @tsv"); \
+	  sleep 2; \
+	done; \
+	echo "[DENY] ci.frontend_release_gate.dispatch: dispatched run was not readable for exact head"; exit 8; \
+	'
+
 .PHONY: verify.visualization.chart.capability
 verify.visualization.chart.capability: guard.prod.forbid
 	@python3 -m py_compile addons/smart_construction_core/services/visualization_chart_registry.py addons/smart_construction_core/services/visualization_chart_definitions.py addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py addons/smart_construction_core/services/project_dashboard_builders/project_payment_chart_builder.py addons/smart_construction_core/handlers/visualization_chart_fetch.py addons/smart_construction_core/tests/test_visualization_chart_capability.py addons/smart_construction_core/tests/test_project_chart_builder.py

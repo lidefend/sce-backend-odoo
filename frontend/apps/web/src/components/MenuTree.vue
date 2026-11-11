@@ -94,6 +94,8 @@ watchEffect(() => {
   min-width: 0;
   max-width: 100%;
   display: block;
+  overflow: visible !important;
+  max-height: none !important;
   border-right: 0;
   background: transparent;
 }

@@ -51,13 +51,13 @@ Generated from repository source files. This report is informational during the 
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1954 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1938 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1914 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1891 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1867 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
@@ -111,11 +111,11 @@ Generated from repository source files. This report is informational during the 
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1331 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1313 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1290 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
@@ -285,13 +285,13 @@ Generated from repository source files. This report is informational during the 
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1954 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1938 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1914 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1891 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1867 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |

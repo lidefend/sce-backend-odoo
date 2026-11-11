@@ -7,6 +7,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
+VENDOR_MENU_SCROLL_SELECTOR = ":deep(." + "t-menu--scroll)"
 COMPONENTS = (
     "ProductAppShell",
     "ProductSideNavigation",
@@ -87,6 +88,8 @@ def validate(root: Path = ROOT) -> list[str]:
         ".sc-navigation-menu.t-default-menu",
         "max-width: 100%",
         "display: block",
+        "overflow: visible !important",
+        "max-height: none !important",
     ):
         if marker not in tree:
             errors.append(f"canonical menu must override the vendor fixed width: {marker}")
@@ -110,6 +113,9 @@ def validate(root: Path = ROOT) -> list[str]:
         "overflow: hidden",
         ".product-side-navigation__tree",
         "overflow: auto",
+        VENDOR_MENU_SCROLL_SELECTOR,
+        "max-height: none !important",
+        "overflow: visible !important",
     ):
         if marker not in (shell_style + "\n" + side_navigation):
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")

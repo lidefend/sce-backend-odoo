@@ -421,6 +421,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             ["verify.scene.company_route_scope_cache.orm"],
         )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/data/product_menu_source.json",
+            ]),
+            [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
+        )
         for path in (
             "scripts/verify/frontend_acceptance_login_probe.py",
             "scripts/verify/test_frontend_acceptance_login_probe.py",
@@ -524,8 +535,28 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json"
             ]),
-            ["verify.product.menu.contract_v1.guard"],
+            [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.product.menu.contract_v1.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
         )
+
+    def test_operation_entry_paths_select_navigation_and_role_surface(self) -> None:
+        for path in (
+            "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+            "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.frontend.navigation_shell.unit",
+                        "verify.role_surface.landing.contract.unit",
+                    ],
+                )
 
     def test_scene_publication_paths_select_their_owning_check(self) -> None:
         for path in (
@@ -638,6 +669,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(targets.count("verify.frontend.page_pattern_reference_parity.unit"), 1)
         self.assertIn("verify.frontend.navigation_shell.unit", targets)
         self.assertIn("verify.frontend.primitive_adapter.unit", targets)
+        for path in (
+            "frontend/apps/web/src/components/MenuTree.vue",
+            "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.navigation_shell.unit",
+                    select_targets([path]),
+                )
 
     def test_scene_route_change_recommends_scene_entry_contract(self) -> None:
         # The scene runtime is cached by <KeepAlive> and its route ownership rule

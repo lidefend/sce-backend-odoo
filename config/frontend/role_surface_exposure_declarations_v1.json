@@ -91,6 +91,15 @@
       "identity_evidence": "受管夹具身份 fixture_role_pm。",
       "rationale": "能力发现模式（capability_discover）：原生 Entry Group 派生入口，可达即交付；不再维护声明白名单窄化。"
     },
+    "operation_user": {
+      "label": "经营部",
+      "delivery_mode": "capability_discover",
+      "identity_groups": [
+        "smart_construction_core.group_sc_role_operation_user"
+      ],
+      "identity_evidence": "受管夹具身份 fixture_role_contract_operator。",
+      "rationale": "能力发现模式（capability_discover）：经真实合同、成本、结算与项目组权限投影原生可见入口；不新增 ACL。"
+    },
     "finance": {
       "label": "财务主管",
       "delivery_mode": "capability_discover",

@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "id": "SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110",
+  "branch": "fix/scheduled-ci-full-release-dispatch-20261110",
+  "baseline_sha": "5897cb3c3cf23be94cc935741fcf11840e31f54f",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110.yaml",
+    ".agent/runs/SCHEDULED-CI-FULL-RELEASE-DISPATCH-20261110/run.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+  "docs/architecture/text_containment_allowlist.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+  "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/scheduled_ci_full_release_dispatch_20261110.md",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+  "frontend/apps/web/src/components/MenuTree.vue",
+  "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+    "make/ci.mk",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+  "scripts/verify/frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+  "scripts/verify/test_frontend_navigation_shell_guard.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing GitHub owner CLI authority and governed Make entrypoints"
+  },
+  "layer": {
+    "formal_product_layer": "P1 + P4",
+    "layer_target": "operation-user role declaration and exact-head full release dispatch",
+    "module": "smart_construction_core role contract plus CI verification tooling",
+    "standard_vs_user_specific": "construction product standard plus platform verification tooling",
+    "why_here": "The operation role is owned by the P1 product contract; the dispatch belongs to the P4 CI control plane.",
+    "why_not_elsewhere": "Changing ACLs or test roles would widen authority; changing frontend assertions would hide the missing contract.",
+    "blast_radius": "Role identity and navigation projection for group_sc_role_operation_user plus one CI dispatch target; native ACL remains authoritative.",
+    "exclusions": [
+      "business ACL grants",
+      "menu visibility expansion",
+      "performance budgets",
+      "business data",
+      "deployment"
+    ]
+  },
+  "checks": {
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+      ]
+    },
+    "baseline_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ]
+    },
+    "role_surface_contract": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/release/test_locked_menu_policy_contract.py"
+      ]
+    },
+    "role_exposure": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py"
+      ]
+    },
+    "navigation_policy": {
+      "target": "verify.frontend.navigation_policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "scripts/verify/frontend_release_navigation_policy_guard.py"
+      ]
+    },
+    "workflow_action_semantics": {
+      "target": "verify.workflow_action_semantics.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "scripts/verify/workflow_action_semantics_completeness_guard.py"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/guards.mk"
+      ]
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the navigation accessibility repair, publish the clean candidate, and dispatch the full frontend release lane on that exact head."
+}

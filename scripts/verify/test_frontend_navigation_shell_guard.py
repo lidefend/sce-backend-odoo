@@ -202,6 +202,27 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("vendor fixed width" in error for error in validate(root)))
 
+    def test_vendor_menu_cannot_own_a_nested_scroll_region(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/MenuTree.vue"
+        path.write_text(
+            path.read_text().replace("  overflow: visible !important;\n", "", 1),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("vendor fixed width" in error for error in validate(root)))
+
+    def test_vendor_child_scroll_must_be_delegated_to_the_focusable_tree(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
+        scroll_selector = ":deep(." + "t-menu--scroll)"
+        path.write_text(
+            path.read_text().replace(scroll_selector, ":deep(.unowned-menu)"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("bounded scroll ownership" in error for error in validate(root)))
+
     def test_menu_host_must_not_reintroduce_horizontal_scroll(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)

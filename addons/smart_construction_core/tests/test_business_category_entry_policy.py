@@ -46,6 +46,13 @@ class CategoryEntryPolicyTest(unittest.TestCase):
         implied = roles.find(".//record[@id='group_sc_role_operation_user']/field[@name='implied_ids']").get('eval')
         self.assertIn('group_sc_cap_contract_user', implied)
 
+    def test_operation_role_declares_contract_entry_group(self):
+        roles = ET.parse(MODULE / 'security/sc_role_entry_groups.xml')
+        implied = roles.find(
+            ".//record[@id='group_sc_role_operation_user']/field[@name='implied_ids']"
+        ).get('eval')
+        self.assertIn('smart_construction_core.group_sc_entry_p06', implied)
+
 
 
 if __name__ == "__main__":
