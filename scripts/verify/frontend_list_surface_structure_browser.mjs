@@ -662,9 +662,10 @@ async function negativeProofs(page, viewport) {
   if (viewport.width > 760) {
     const clippedIdentity = await page.addStyleTag({ content: `
       .cell-primary-link { justify-content: center !important; }
-      .cell-primary-link .t-button__text { width: max-content !important; min-width: max-content !important; }
       .cell-primary-link .sc-btn__content {
         display: block !important;
+        width: max-content !important;
+        min-width: max-content !important;
         white-space: nowrap !important;
         overflow-wrap: normal !important;
         -webkit-line-clamp: unset !important;

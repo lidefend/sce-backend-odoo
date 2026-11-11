@@ -87,6 +87,10 @@ authority for the current candidate.
 - The incremental planner now routes the isolated scan tools to
   `verify.trusted_scan.unit`; its stale zero-reference disposition was removed
   with the governed audit command after the wiring became live.
+- Quick's vendor-coupling ratchet then caught presentation probes that still
+  asserted or injected TDesign internals. The probes now use the owned
+  `sc-btn__content` surface and the theme bridge no longer names a vendor text
+  wrapper; no selector baseline was raised.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`

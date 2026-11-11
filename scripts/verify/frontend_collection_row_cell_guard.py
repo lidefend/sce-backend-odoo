@@ -62,7 +62,6 @@ def validate(
         if marker not in css_text:
             failures.append(f"CollectionRowCell primary identity missing truncation contract {marker}")
     for marker in (
-        ".sc-btn[data-semantic-cell-kind='primary'] .t-button__text",
         ".sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content",
         "justify-content: flex-start",
         "-webkit-line-clamp: 2",

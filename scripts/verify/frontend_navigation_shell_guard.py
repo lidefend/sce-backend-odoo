@@ -8,6 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 VENDOR_MENU_SCROLL_SELECTOR = ":deep(." + "t-menu--scroll)"
+VENDOR_BUTTON_TEXT_SELECTOR = "." + "t-button__" + "text"
 COMPONENTS = (
     "ProductAppShell",
     "ProductSideNavigation",
@@ -133,7 +134,7 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in activity_tabs:
             errors.append(f"activity page tabs lost narrow reachability contract: {marker}")
-    if ".t-button__text" in shell_style:
+    if VENDOR_BUTTON_TEXT_SELECTOR in shell_style:
         errors.append("published app layout must use owned content markup instead of vendor internals")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
         errors.append("navigation drawer root styling bypasses the child-component deep boundary")

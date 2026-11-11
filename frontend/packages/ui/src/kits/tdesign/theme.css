@@ -400,7 +400,6 @@
 .sc-btn[data-appearance='readonly-relation'] { border: 0; background: transparent; color: var(--sc-app-info-text); }
 .sc-btn[data-appearance='readonly-relation'] { height: auto; min-height: var(--sc-product-control-height); max-width: 100%; white-space: normal; }
 .sc-btn[data-semantic-cell-kind='primary'] { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; height: auto; min-height: 0; padding-inline: 0; justify-content: flex-start; align-items: flex-start; font: inherit; text-align: left; white-space: normal; }
-.sc-btn[data-semantic-cell-kind='primary'] .t-button__text { display: block; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; }
 .sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content { display: -webkit-box; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; overflow-wrap: anywhere; white-space: normal; text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .sc-btn[data-appearance='primary-submit'] { border-color: var(--sc-app-accent); background: var(--sc-app-accent); color: var(--sc-semantic-text-on-interactive); }
 .sc-checkbox[data-appearance='menu-choice'] { color: var(--sc-app-text-primary); }
