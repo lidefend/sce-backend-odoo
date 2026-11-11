@@ -4,6 +4,7 @@ Run only in the governed acceptance fixture lane. Every edit rolls back with
 TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
 import runpy
+import json
 from pathlib import Path
 
 from odoo.tests.common import TransactionCase, tagged
@@ -82,6 +83,42 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             if (row.get("menu_id"), row.get("action_id")) == pair
         ]
         return pair, nav_pairs, buckets, denied
+
+    def _entry_diagnostic(self, actor, menu, pair, nav_pairs, buckets, denied):
+        policy_rows = []
+        for policy in self.env["sc.product.policy"].sudo().search(
+            [("product_key", "in", ["construction.standard", "construction.preview"])]
+        ):
+            for group in policy.menu_groups or []:
+                for row in group.get("menus") or []:
+                    if row.get("menu_xmlid") == menu.get_external_id().get(menu.id):
+                        policy_rows.append({
+                            "product_key": policy.product_key,
+                            "group": group.get("group_key"),
+                            "menu_id": row.get("menu_id"),
+                            "action_id": row.get("action_id"),
+                            "action_xmlid": row.get("action_xmlid"),
+                            "route": row.get("route"),
+                        })
+        return json.dumps({
+            "pair": pair,
+            "nav_pairs": sorted(nav_pairs),
+            "buckets": buckets,
+            "denied": denied,
+            "policy_rows": policy_rows,
+            "role_surface": {
+                "role_code": self.role_surface.get("role_code"),
+                "role_codes": self.role_surface.get("role_codes"),
+                "discover_installed_capabilities": self.role_surface.get("discover_installed_capabilities"),
+                "exposure_policy_declared": self.role_surface.get("exposure_policy_declared"),
+                "role_home_menu_xmlids": self.role_surface.get("role_home_menu_xmlids"),
+            },
+            "menu": {
+                "id": menu.id,
+                "action_id": menu.action.id,
+                "groups": [group.get_external_id().get(group.id) for group in menu.groups_id],
+            },
+        }, ensure_ascii=False, sort_keys=True)
 
     def _locations(self, centers):
         return {entry["menu_id"]: (center, scenario, entry)
@@ -208,10 +245,13 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         ):
             menu = self.env.ref(xmlid)
             pair, nav_pairs, buckets, denied = self._route_state(navigation, menu)
+            diagnostic = self._entry_diagnostic(
+                actor_env, menu, pair, nav_pairs, buckets, denied
+            )
             with self.subTest(xmlid=xmlid):
                 self.assertIn(menu.id, actor_env["ir.ui.menu"]._visible_menu_ids())
-                self.assertIn(pair, nav_pairs)
-                self.assertTrue(buckets, "%s missing from allowed route buckets" % xmlid)
+                self.assertIn(pair, nav_pairs, diagnostic)
+                self.assertTrue(buckets, "%s missing from allowed route buckets: %s" % (xmlid, diagnostic))
                 self.assertFalse(denied, "%s unexpectedly denied: %s" % (xmlid, denied))
                 self.assertTrue(all(
                     row.get("route_kind") != "DENIED"
@@ -223,7 +263,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             "smart_construction_core.menu_sc_enterprise_initialization"
         )
         _pair, _nav_pairs, buckets, _denied = self._route_state(navigation, enterprise)
-        self.assertTrue(buckets)
+        self.assertTrue(buckets, diagnostic)
 
     def test_system_init_business_full_gets_my_work_but_not_configuration_entry(self):
         full_group = self.env.ref("smart_construction_core.group_sc_business_full")
@@ -243,8 +283,11 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         navigation, _centers = self._system_init(user)
         my_work = self.env.ref("smart_construction_core.menu_sc_my_work")
         pair, nav_pairs, buckets, denied = self._route_state(navigation, my_work)
-        self.assertIn(pair, nav_pairs)
-        self.assertTrue(buckets)
+        diagnostic = self._entry_diagnostic(
+            user.env, my_work, pair, nav_pairs, buckets, denied
+        )
+        self.assertIn(pair, nav_pairs, diagnostic)
+        self.assertTrue(buckets, diagnostic)
         self.assertFalse(denied)
         enterprise = self.env.ref(
             "smart_construction_core.menu_sc_enterprise_initialization"
