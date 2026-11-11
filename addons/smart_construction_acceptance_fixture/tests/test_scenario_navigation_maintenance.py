@@ -31,6 +31,14 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         policy = self.env["sc.product.policy"].sudo()
         policy.search([("product_key", "in", ["construction.standard", "construction.preview"])]).unlink()
         policy.sync_construction_menu_product_policies()
+        # The test establishes the maintained policy for the current source.
+        # An earlier release snapshot is a historical immutable artifact and
+        # must not silently replace that candidate inside this rollback-only
+        # runtime contract test.
+        self.env["sc.edition.release.snapshot"].sudo().search([
+            ("product_key", "in", ["construction.standard", "construction.preview"]),
+            ("is_active", "=", True),
+        ]).write({"is_active": False})
 
     def _upgrade_seed(self):
         convert_file(self.env, "smart_construction_core", "data/product_scenario_seed.xml", {},
