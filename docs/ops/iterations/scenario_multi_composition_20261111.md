@@ -55,7 +55,8 @@
   当前源码 92 入口策略的 My Work/企业初始化行为由验收事务同步当前策略后验证。
 
 受管验收库 `sc_frontend_acceptance` 升级后执行
-`make acceptance.frontend.fixture_orm`：**49 tests，0 failed，0 errors**。覆盖：
+`make acceptance.frontend.fixture_orm`：**49 tests，0 failed，0 errors**（2026-11-11
+19:38，log `fixture_orm_20261111T113631Z.log`）。覆盖：
 
 - 一菜单多场景、同场景内唯一约束；
 - 租户启用/停用对启动导航和直接路由 authority 的同步裁剪；
@@ -80,11 +81,29 @@
 | `acceptance.frontend.fixture_orm` | PASS，49 tests |
 | fresh `sc_test` direct-entry initialization | PASS，6 tests |
 | `local.dev.upgrade` | PASS，schema/migration/authority readback |
-| `ci.local.iteration` | BLOCKED，旧交付规划器不映射本批新增迁移/数据/测试路径 |
+| `ci.local.iteration` | PASS，23 个受影响目标全部退出 0 |
 
-`ci.local.iteration` 的失败属于 `validation_tool_defect`。当前分支基线早于已经进入最新
-主线的 P4 交付车道修复；本批没有把 P4 修补混入 P0/P1 产品提交。集成最新主线后必须
-重新执行受影响门禁，不能把本次定向通过表述为远端 CI 或交付完成。
+## 最新主线同步与缺口收敛
+
+候选已经通过受管 extended sync 集成 GitHub main
+`19b502b487d0b646a1fc22f269b508d3224c1c3e`，并把 run baseline、完整 104 路径 scope
+和旧 receipt 的失效事实更新到同一结果索引。
+
+同步后迭代暴露并关闭了三类真实缺口：
+
+- 前端增量规划器将本分支 35 个场景迁移、原生导航、角色暴露、验收 fixture 和守卫路径
+  判为未映射。现在均路由到既有职责目标，新增行为锁后 `unmappedPathCount=0`，
+  规划器单测 121 例通过。
+- 发布导航守卫仍从正式产品策略读取 route，和“route 只由场景身份派生”的边界冲突。
+  守卫改为从 `scene_key` 调用唯一 `scene_route()`，发布清单比较 `/s/{scene_key}`；
+  正式策略若维护 route 会 fail-closed。导航策略目标通过。
+- 入口发布和角色首页契约测试夹具仍假定 product policy 持久化 route，或没有注入统一
+  `target_route/derive_entry_route` API。夹具现在消费同一纯路由 API，并验证已解析场景
+  target 覆盖节点残留 action route；入口发布 34 例、角色首页契约 33 例通过。
+
+最终 `make ci.local.iteration` 执行 23 个受影响目标并全部通过，包括 P0/P1 导航交付、
+场景中心、`system.init` 菜单边界、角色 surface、产品菜单契约、前端 lint/严格类型、
+本地 ORM 和 P4 branch-sync 工具。远端 PR、当前 HEAD 的必需 CI、合并和部署尚未执行。
 
 ## 回退
 
