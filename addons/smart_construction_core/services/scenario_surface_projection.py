@@ -360,6 +360,7 @@ def flatten_authorized_nav_leaves(
                     "action_xmlid": _text(entry.get("action_xmlid")),
                     "model": _text(node.get("model") or meta.get("model") or entry.get("model")),
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
+                    "sequence": int(node.get("sequence") or meta.get("sequence") or 1000),
                     "route": route,
                     "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
@@ -411,42 +412,39 @@ def _menu_external_id(env, menu) -> str:
         return ""
 
 
-def _native_center_for_menus(env, menu_ids: Iterable[int]) -> dict[int, dict[str, Any]]:
-    """Map menu id to its native center, or its persisted external placement.
-
-    The center identity is the stable native menu XMLID; its display name is
-    only a projection. The original JSON alias consolidation is intentionally
-    not applied: native centers stay as maintained in ``ir.ui.menu``.
-    """
+def legacy_native_center_seed(env, menu) -> dict[str, Any]:
+    """Read the current native center once for migration/seed initialization."""
     if env is None:
         return {}
-    Menu = env["ir.ui.menu"].sudo()
-    ids = sorted({int(menu_id or 0) for menu_id in menu_ids if int(menu_id or 0) > 0})
-    menus = Menu.browse(ids).exists()
-    result: dict[int, dict[str, Any]] = {}
-    for menu in menus:
-        current = menu
-        center = None
-        for _ in range(32):
-            parent = current.parent_id
-            if not parent:
-                break
-            if _menu_external_id(env, parent) == BUSINESS_ROOT_XMLID:
-                center = current
-                break
-            current = parent
-        if center is None:
-            candidate = getattr(menu, "sc_product_center_id", None)
-            if candidate and candidate.parent_id and _menu_external_id(env, candidate.parent_id) == BUSINESS_ROOT_XMLID:
-                center = candidate
-        if center is not None:
-            result[int(menu.id)] = {
-                "key": _menu_external_id(env, center),
-                "name": _text(center.name),
-                "sequence": int(center.sequence),
-                "entry_sequence": int(menu.sequence),
-            }
-    return result
+    current = menu
+    center = None
+    for _ in range(32):
+        parent = current.parent_id
+        if not parent:
+            break
+        if _menu_external_id(env, parent) == BUSINESS_ROOT_XMLID:
+            center = current
+            break
+        current = parent
+    if center is None:
+        candidate = getattr(menu, "sc_product_center_id", None)
+        if (
+            candidate
+            and candidate.parent_id
+            and _menu_external_id(env, candidate.parent_id) == BUSINESS_ROOT_XMLID
+        ):
+            center = candidate
+    if center is None:
+        return {
+            "center_key": "system.entry",
+            "center_name": "系统入口",
+            "center_sequence": 900,
+        }
+    return {
+        "center_key": _menu_external_id(env, center) or f"center:{center.id}",
+        "center_name": _text(center.name),
+        "center_sequence": int(center.sequence or 10),
+    }
 
 
 def load_runtime_surface(env):
@@ -523,8 +521,42 @@ def _scenario_entries_by_menu(env) -> dict[int, dict[str, Any]]:
             "sequence": int(entry.sequence),
             "intent": intent,
             "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+            "center_key": _text(entry.center_key),
+            "center_name": _text(entry.center_name),
+            "center_sequence": int(entry.center_sequence or 10),
         }
     return result
+
+
+def composition_center_for_leaf(leaf: dict[str, Any], binding: dict[str, Any] | None) -> dict[str, Any]:
+    """Resolve center from scenario composition, then policy grouping fallback."""
+    binding = binding if isinstance(binding, dict) else {}
+    center_key = _text(binding.get("center_key"))
+    if center_key:
+        return {
+            "key": center_key,
+            "name": _text(binding.get("center_name")) or center_key,
+            "sequence": int(binding.get("center_sequence") or 10),
+        }
+    group_key = _text(
+        leaf.get("policy_group_key")
+        or (leaf.get("meta") or {}).get("group_key")
+    )
+    group_label = _text(
+        leaf.get("policy_group_label")
+        or (leaf.get("meta") or {}).get("group_label")
+    )
+    if group_key or group_label:
+        return {
+            "key": group_key or f"policy:{group_label}",
+            "name": group_label or group_key,
+            "sequence": 500,
+        }
+    return {
+        "key": "system.entry",
+        "name": "系统入口",
+        "sequence": 900,
+    }
 
 
 def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
@@ -650,13 +682,14 @@ def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, An
 
 
 def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str, Any]:
-    """Project authorized navigation into native-center -> scenario -> entries.
+    """Project authorized navigation into composed center -> scenario -> entries.
 
     Reads the maintainable ``sc.product.scenario`` bindings server-side and only
     re-attaches already-authorized leaves; it never grants authority and never
     widens the current user's entry set. Entries without an active scenario are
     kept under their center with ``configured=false`` so authorized work does
-    not silently disappear.
+    not silently disappear. Center ownership comes from scenario composition;
+    policy grouping is the explicit fallback for unconfigured entries.
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
@@ -681,7 +714,6 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             },
         }
         leaf["route"] = ""
-    center_by_id = _native_center_for_menus(env, [leaf.get("menu_id") for leaf in leaves])
     scenario_by_menu = _scenario_entries_by_menu(env)
     centers: dict[str, dict[str, Any]] = {}
     for leaf in leaves:
@@ -691,9 +723,8 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         # re-attached as children of themselves.
         if not _text(leaf.get("menu_xmlid")):
             continue
-        center = center_by_id.get(menu_id)
-        if not center:
-            continue
+        binding = scenario_by_menu.get(menu_id)
+        center = composition_center_for_leaf(leaf, binding)
         node = centers.setdefault(center["key"], {
             "key": center["key"],
             "name": center["name"],
@@ -702,8 +733,11 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "entries": [],
         })
         entry = dict(leaf)
-        binding = scenario_by_menu.get(menu_id)
-        entry["sequence"] = binding["sequence"] if binding and binding["scenario_active"] else center["entry_sequence"]
+        entry["sequence"] = (
+            binding["sequence"]
+            if binding and binding["scenario_active"]
+            else int(leaf.get("sequence") or 1000)
+        )
         if binding and binding["scenario_active"]:
             entry["intent"] = binding["intent"]
             entry["intent_label"] = binding["intent_label"]

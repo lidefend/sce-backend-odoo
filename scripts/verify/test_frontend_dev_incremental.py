@@ -304,6 +304,45 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_scenario_center_composition_selects_center_and_navigation_guards(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/models/support/product_scenario.py"
+            ]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+        )
+        for path in (
+            "addons/smart_construction_core/services/scenario_surface_projection.py",
+            "scripts/verify/scenario_center_projection_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.navigation.publication_consumers.unit",
+                        "verify.scenario.center_projection.guard",
+                    ],
+                )
+
+    def test_scenario_center_migration_and_view_select_orm_and_center_guards(self) -> None:
+        for path in (
+            "addons/smart_construction_core/__manifest__.py",
+            "addons/smart_construction_core/migrations/17.0.0.179/post-migrate.py",
+            "addons/smart_construction_core/views/support/product_scenario_views.xml",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.daily.permission_truth.capability.orm",
+                        "verify.scenario.center_projection.guard",
+                    ],
+                )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",
@@ -462,6 +501,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.daily.permission_truth.capability.orm",
                 "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
             ],
         )
         self.assertEqual(

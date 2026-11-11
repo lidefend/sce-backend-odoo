@@ -870,6 +870,22 @@ RULES = (
     ), (
         "verify.daily.permission_truth.capability.orm",
         "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/migrations/17.0.0.179/",
+        "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+        "verify.scenario.center_projection.guard",
     )),
     Rule((
         "scripts/verify/frontend_acceptance_login_probe.py",

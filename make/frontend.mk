@@ -1706,13 +1706,16 @@ verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
 
-.PHONY: verify.nav01.native_authority.unit
-verify.nav01.native_authority.unit: guard.prod.forbid
+.PHONY: verify.nav01.native_authority.unit verify.scenario.center_projection.guard
+verify.nav01.native_authority.unit: guard.prod.forbid verify.scenario.center_projection.guard
 	@$(MAKE) --no-print-directory verify.daily_dev.acceptance_fixture.unit
 	@python3 scripts/verify/fact_layer_authority_guard.py
 	@python3 scripts/verify/scenario_surface_projection_guard.py
-	@python3 scripts/verify/scenario_center_projection_guard.py
 	@python3 -m unittest scripts.ops.test_scene_internal_action_authority
+
+verify.scenario.center_projection.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/scenario_center_projection_guard.py
+	@python3 scripts/verify/scenario_center_projection_guard.py
 
 verify.frontend.quick.gate: verify.frontend.scene_primitive_adapter.unit
 verify.frontend.release.unit: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.all

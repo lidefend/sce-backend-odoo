@@ -3,10 +3,8 @@
 """Pure guard for the scenario-center navigation projection.
 
 Exercises ``project_authorized_nav_with_env`` against a fake Odoo environment:
-centers are derived from the native ``ir.ui.menu`` parent chain (direct child of
-the business root), and scenario bindings come from the maintainable
-``sc.product.scenario`` model. Authorized-but-unconfigured entries stay under
-their center instead of disappearing.
+centers come from scenario-entry composition metadata, with delivery-policy
+grouping as the fallback for unconfigured entries.
 """
 from __future__ import annotations
 
@@ -69,10 +67,22 @@ class _Recordset(list):
 
 
 class _Entry:
-    def __init__(self, menu, scenario, sequence=10):
+    def __init__(
+        self,
+        menu,
+        scenario,
+        sequence=10,
+        *,
+        center_key="",
+        center_name="",
+        center_sequence=10,
+    ):
         self.menu_id = menu
         self.scenario_id = scenario
         self.sequence = sequence
+        self.center_key = center_key
+        self.center_name = center_name
+        self.center_sequence = center_sequence
 
     @property
     def intent(self):
@@ -111,7 +121,15 @@ class _Env:
             201: _Menu(201, project, "未配置入口", "smart_construction_core.menu_sc_unconfigured"),
         }
         payment = _Scenario("payment.capital", "付款与资金办理")
-        self.entries = _Entries([_Entry(self.menus[101], payment)])
+        self.entries = _Entries([
+            _Entry(
+                self.menus[101],
+                payment,
+                center_key="smart_construction_core.menu_sc_finance_center",
+                center_name="财务账款",
+                center_sequence=50,
+            )
+        ])
 
     def __getitem__(self, key):
         if key == "ir.ui.menu":
@@ -129,7 +147,16 @@ class _Env:
         return None
 
 
-def _leaf(menu_id, action_id, label, xmlid):
+def _leaf(
+    menu_id,
+    action_id,
+    label,
+    xmlid,
+    *,
+    policy_group_key="",
+    policy_group_label="",
+    sequence=1000,
+):
     return {
         "menu_id": menu_id,
         "action_id": action_id,
@@ -138,31 +165,47 @@ def _leaf(menu_id, action_id, label, xmlid):
         "menu_xmlid": xmlid,
         "model": "test.model",
         "view_modes": ["tree"],
+        "sequence": sequence,
+        "policy_group_key": policy_group_key,
+        "policy_group_label": policy_group_label,
         "children": [],
     }
 
 
 class ScenarioCenterProjectionGuard(unittest.TestCase):
-    def test_center_derived_from_native_parent_chain(self):
+    def test_center_comes_from_scenario_composition_and_policy_fallback(self):
         env = _Env()
         nav = [
             _leaf(101, 1011, "付款申请", "smart_construction_core.menu_sc_user_payment_apply"),
-            _leaf(201, 2011, "未配置入口", "smart_construction_core.menu_sc_unconfigured"),
+            _leaf(
+                201,
+                2011,
+                "未配置入口",
+                "smart_construction_core.menu_sc_unconfigured",
+                policy_group_key="policy.project_center",
+                policy_group_label="项目中心",
+            ),
         ]
         result = PROJ.project_authorized_nav_with_env(env, nav, {})
         self.assertTrue(result["ok"])
         centers = {center["key"]: center for center in result["tree"]["centers"]}
         self.assertIn("smart_construction_core.menu_sc_finance_center", centers)
-        self.assertIn("smart_construction_core.menu_sc_project_center", centers)
+        self.assertIn("policy.project_center", centers)
         finance = centers["smart_construction_core.menu_sc_finance_center"]
         self.assertEqual(finance["scenarios"][0]["key"], "payment.capital")
         self.assertEqual(finance["scenarios"][0]["entries"][0]["configured"], True)
-        project = centers["smart_construction_core.menu_sc_project_center"]
+        project = centers["policy.project_center"]
         self.assertEqual(project["entries"][0]["configured"], False)
 
     def test_disabled_scenario_keeps_authorized_entry_unconfigured(self):
         env = _Env()
-        env.entries = _Entries([_Entry(env.menus[101], _Scenario("payment.capital", "付款与资金办理", active=False))])
+        env.entries = _Entries([_Entry(
+            env.menus[101],
+            _Scenario("payment.capital", "付款与资金办理", active=False),
+            center_key="smart_construction_core.menu_sc_finance_center",
+            center_name="财务账款",
+            center_sequence=50,
+        )])
         nav = [_leaf(101, 1011, "付款申请", "smart_construction_core.menu_sc_user_payment_apply")]
         result = PROJ.project_authorized_nav_with_env(env, nav, {})
         centers = result["tree"]["centers"]
@@ -180,7 +223,13 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         env.menus[1001] = account_menu
         account_menu.sc_product_center_id = env.menus[10]
         env.menus[10].name = "Renamed accounting center"
-        env.entries = _Entries([_Entry(account_menu, _Scenario("accounting.management", "会计核算"))])
+        env.entries = _Entries([_Entry(
+            account_menu,
+            _Scenario("accounting.management", "会计核算"),
+            center_key="smart_construction_core.menu_sc_finance_center",
+            center_name="财务账款",
+            center_sequence=50,
+        )])
         leaf = dict(_leaf(1001, 10011, "日记账分录", "account.menu_action_move_journal_line_form"))
         center_group = {
             "label": "财务账款",
@@ -193,9 +242,9 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         centers = result["tree"]["centers"]
         finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
         self.assertEqual(finance["scenarios"][0]["key"], "accounting.management")
-        self.assertEqual(finance["name"], "Renamed accounting center")
+        self.assertEqual(finance["name"], "财务账款")
 
-    def test_moved_menu_ignores_stale_delivery_center(self):
+    def test_moved_native_menu_does_not_change_composed_center(self):
         env = _Env()
         env.menus[101].parent_id = env.menus[20]
         env.menus[101].sc_product_center_id = env.menus[10]
@@ -204,13 +253,30 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
             "children": [_leaf(101, 1011, "Payment", env.menus[101].xmlid)],
         }]}]
         centers = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"]
-        self.assertEqual([c["key"] for c in centers], [env.menus[20].xmlid])
+        self.assertEqual([c["key"] for c in centers], [env.menus[10].xmlid])
 
     def test_entry_sequence_and_stable_tie_breaker(self):
         env = _Env()
         env.menus[201].parent_id = env.menus[10]
         scenario = env.entries.entries[0].scenario_id
-        env.entries = _Entries([_Entry(env.menus[101], scenario, 9), _Entry(env.menus[201], scenario, 0)])
+        env.entries = _Entries([
+            _Entry(
+                env.menus[101],
+                scenario,
+                9,
+                center_key=env.menus[10].xmlid,
+                center_name=env.menus[10].name,
+                center_sequence=env.menus[10].sequence,
+            ),
+            _Entry(
+                env.menus[201],
+                scenario,
+                0,
+                center_key=env.menus[10].xmlid,
+                center_name=env.menus[10].name,
+                center_sequence=env.menus[10].sequence,
+            ),
+        ])
         nav = [_leaf(101, 1011, "A", env.menus[101].xmlid), _leaf(201, 2011, "Z", env.menus[201].xmlid)]
         def entries():
             return PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["scenarios"][0]["entries"]
@@ -224,7 +290,25 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         env.entries = _Entries([])
         env.menus[201].parent_id = env.menus[10]
         env.menus[201].sequence = 0
-        nav = [_leaf(101, 1011, "A", env.menus[101].xmlid), _leaf(201, 2011, "Z", env.menus[201].xmlid)]
+        nav = [
+            _leaf(
+                101,
+                1011,
+                "A",
+                env.menus[101].xmlid,
+                policy_group_key=env.menus[10].xmlid,
+                policy_group_label=env.menus[10].name,
+            ),
+            _leaf(
+                201,
+                2011,
+                "Z",
+                env.menus[201].xmlid,
+                policy_group_key=env.menus[10].xmlid,
+                policy_group_label=env.menus[10].name,
+                sequence=0,
+            ),
+        ]
         entries = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["entries"]
         self.assertEqual([e["menu_id"] for e in entries], [201, 101])
 

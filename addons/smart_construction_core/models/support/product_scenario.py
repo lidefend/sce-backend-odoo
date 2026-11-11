@@ -104,7 +104,10 @@ class ScProductScenario(models.Model):
         A versioned migration marks legacy installations initialized before
         this method is called. Future seed changes require explicit migrations.
         """
-        from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_surface
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+            legacy_native_center_seed,
+            load_surface,
+        )
 
         Param = self.env["ir.config_parameter"].sudo()
         if Param.get_param(SCENARIO_SEED_KEY):
@@ -138,11 +141,15 @@ class ScProductScenario(models.Model):
                         [("menu_id", "=", menu.id)], limit=1
                     )
                     if not exists:
+                        center = legacy_native_center_seed(self.env, menu)
                         Entry.create({
                             "scenario_id": record.id,
                             "menu_id": menu.id,
                             "intent": intent_code,
                             "sequence": 10,
+                            "center_key": center["center_key"],
+                            "center_name": center["center_name"],
+                            "center_sequence": center["center_sequence"],
                         })
                         created_entries += 1
         Param.set_param(SCENARIO_SEED_KEY, "1")
@@ -215,6 +222,9 @@ class ScProductScenarioEntry(models.Model):
     menu_xmlid = fields.Char(compute="_compute_menu_xmlid", store=True, readonly=True)
     intent = fields.Selection(SCENARIO_INTENTS, required=True, default="handle")
     sequence = fields.Integer(default=10)
+    center_key = fields.Char(index=True, help="Scenario-composed navigation center identity.")
+    center_name = fields.Char(help="Scenario-composed navigation center label.")
+    center_sequence = fields.Integer(default=10)
 
     _sql_constraints = [
         (
