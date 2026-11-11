@@ -105,6 +105,15 @@
 场景中心、`system.init` 菜单边界、角色 surface、产品菜单契约、前端 lint/严格类型、
 本地 ORM 和 P4 branch-sync 工具。远端 PR、当前 HEAD 的必需 CI、合并和部署尚未执行。
 
+PR [872](https://github.com/lidefend/sce-backend-odoo/pull/872) 发布后，远端
+`frontend_release_gate` 在 `f1858dfbb` 上发现一个复查工具缺陷：
+`frontend_navigation_shell_guard` 仍要求 `system.init` 内联执行 authority filter、
+canonical projection 和 payload seal，而本批已经把该职责收敛到
+`NavigationContractCompiler`。产品相关检查均通过，失败属于 `validation_tool_defect`。
+守卫现已改为验证 `system.init` 只委托并消费封存结果，同时验证编译器内部顺序；
+`verify.frontend.navigation_shell.unit` 26 tests PASS。该修复必须形成新 HEAD 并重新取得
+当前 HEAD 的四项必需检查，旧 `f1858dfbb` 的失败不得被重跑成功覆盖。
+
 ## 回退
 
 代码回退恢复旧的单场景约束和原 authority 链；数据库升级会移除旧唯一约束，

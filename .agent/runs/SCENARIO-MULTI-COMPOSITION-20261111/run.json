@@ -101,6 +101,7 @@
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_navigation_shell_guard.py",
     "scripts/verify/frontend_release_navigation_policy_guard.py",
     "scripts/verify/role_surface_exposure_declaration_guard.py",
     "scripts/verify/scenario_center_projection_guard.py",
@@ -108,6 +109,7 @@
     "scripts/verify/scene_fact_data_boundary_guard.py",
     "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_navigation_shell_guard.py",
     "scripts/verify/test_frontend_release_navigation_policy_guard.py",
     "scripts/verify/test_menu_metadata_batch.py",
     "scripts/verify/test_role_surface_exposure_declaration_guard.py"
@@ -276,14 +278,22 @@
       "status": "passed",
       "tests": 33,
       "notes": "The locked product contract declares scene identity and does not persist a route."
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at f1858dfbb",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "frontend_navigation_shell_guard required the retired inline system.init assembly",
+      "recovery": "guard now verifies the NavigationContractCompiler delegation and compiler ordering",
+      "recovery_check": "make verify.frontend.navigation_shell.unit passed 26 tests"
     }
   ],
   "blockers": [
-    "The current tracked metadata and P4 verification-closure changes are not committed yet, so final exact-head Quick is pending.",
+    "PR 872 requires a new exact head and fresh required-check runs after the navigation-shell guard recovery.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
-    "No GitHub PR, required current-head CI, merge or deployment has been observed yet."
+    "No merge or deployment has been performed."
   ],
-  "next_exact_step": "Commit the verified candidate, run ci.local.quick.full on the resulting clean exact HEAD, obtain independent review, and publish the GitHub PR.",
+  "next_exact_step": "Run ci.local.iteration, commit and freeze the guard recovery, rerun exact-head Quick, then update PR 872 and wait for current-head required checks.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",
