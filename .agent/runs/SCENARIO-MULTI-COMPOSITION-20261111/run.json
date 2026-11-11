@@ -175,7 +175,7 @@
     "The branch is behind GitHub main 19b502b48 and has not been synchronized by request while local product iteration is active.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten."
   ],
-  "next_exact_step": "Run the governed extended main synchronization from the clean 9c2103d7e candidate to 19b502b48, then rerun the affected gates with the integrated P4 planner.",
+  "next_exact_step": "Run the governed extended main synchronization from the current clean HEAD to 19b502b48, then rerun the affected gates with the integrated P4 planner.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",
