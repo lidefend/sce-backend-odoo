@@ -23,12 +23,15 @@
     "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/core_extension_actor_roles.py",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
     "addons/smart_construction_core/data/product_menu_source.json",
     "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
     "addons/smart_construction_core/migrations/17.0.0.179/post-migrate.py",
     "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
     "addons/smart_construction_core/models/support/product_policy_sync.py",
     "addons/smart_construction_core/models/support/product_scenario.py",
     "addons/smart_construction_core/security/sc_capability_groups.xml",
@@ -145,15 +148,19 @@
       "database": "sc_frontend_acceptance",
       "tests": 49,
       "failed": 0,
-      "log": ".runtime/acceptance/fixture_orm_20261111T113631Z.log",
-      "log_sha256": "b4de5f754c117aca6ef382737944cbe5e3a66b86a2458b96ed6d0b2b354036bf",
-      "status": "passed"
+      "errors": 6,
+      "log": ".runtime/acceptance/fixture_orm_20261111T134459Z.log",
+      "log_sha256": "213f39de11d99a58f99c2d11eef8e512f03cb6fb7927c50cd861c71404ea4047",
+      "status": "failed",
+      "failure_owner": "baseline_evidence_defect",
+      "reason": "The acceptance database had not run the 17.0.0.181 pre-migration, so the retired runtime-user scenario binding was still present when the seed tried to declare its explicit exemption.",
+      "next": "Upgrade the clean committed candidate through acceptance.module.upgrade, read back the exemption and binding count, then rerun the 49-test fixture."
     },
     "fresh_install": {
       "database_profile": "sc-local-test/sc_test/test",
       "tests": 6,
-      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries.log",
-      "log_sha256": "54a2922290c66f17d782a3f663cefd80e4d321f0f6fc1da81101a86d39912a6b",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries-final.log",
+      "log_sha256": "43ddcdc09089d4838551e327a37b114fcc50d0c03dff03cf711f169fd658c652",
       "status": "passed"
     }
   },
@@ -244,8 +251,19 @@
       "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization",
       "status": "passed",
       "tests": 6,
-      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries.log",
-      "log_sha256": "54a2922290c66f17d782a3f663cefd80e4d321f0f6fc1da81101a86d39912a6b"
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries-final.log",
+      "log_sha256": "43ddcdc09089d4838551e327a37b114fcc50d0c03dff03cf711f169fd658c652",
+      "receipt": ".runtime/test-baseline/1794405618115736540/receipt.json",
+      "receipt_sha256": "b3bffcd457dd92f20c6cfb059835d99a203f04963bbd71c948efb93006b3ff21"
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestProjectMemberRoleSurface",
+      "status": "passed",
+      "tests": 31,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/project-member-role-surface-final.log",
+      "log_sha256": "73d1ca4387b4b9b438fd6d0cc7039f78553e3d27f528470af0ef7a63010e90cf",
+      "receipt": ".runtime/test-baseline/1794405448483568183/receipt.json",
+      "receipt_sha256": "eee92216fae6f22335864d9271ad631fb2c62b08f04c1f266800cd86b62b05bd"
     },
     {
       "command": "make local.dev.upgrade MODULE=smart_core,smart_construction_core,smart_construction_scene",
@@ -257,10 +275,11 @@
     {
       "command": "make ci.local.iteration",
       "status": "passed",
-      "targets": 23,
+      "targets": 25,
+      "unmapped_paths": 0,
       "reason": "every affected registered target exited zero",
-      "log": ".runtime/frontend-dev-validation/executions/20261111T113438Z-3025303-832022916/receipt.json",
-      "log_sha256": "6189d2b859898632db9a17fd33d92d3b1edab47eae3f0af1058c61af0b565ea7"
+      "log": ".runtime/frontend-dev-validation/executions/20261111T135531Z-4172074-598043006/receipt.json",
+      "log_sha256": "e703a3e5dd1f47f4cc26b733c20ffabdb88a93fe1fbf0573cf866bce8ab7a781"
     },
     {
       "command": "make verify.frontend.navigation_policy.unit",
@@ -295,14 +314,38 @@
       "reason": "platform duty contract test searched for the retired inline surface= callback text",
       "recovery": "test now verifies the compiler callback and platform_duty delegation inputs",
       "recovery_check": "make verify.platform.duty.contract.unit passed 26 Python tests plus 4 Node tests"
+    },
+    {
+      "command": "GitHub backend_suite (0) on PR 872 at 0d719d631",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect + validation_tool_defect",
+      "reason": "The project-member test overwrote the full identity precedence, and runtime user management was incorrectly composed into a tenant business scenario.",
+      "recovery": "Project member resolves through group_sc_cap_project_read and its assertions consume discovery plus blocklist semantics. Runtime user management is an exact fact-layer direct platform entry, with 17.0.0.181 removing its retired tenant-scenario binding.",
+      "recovery_checks": [
+        "TestProjectMemberRoleSurface: 31 tests PASS",
+        "TestScenarioDirectInitialization: 6 tests PASS",
+        "scenario surface projection: 17 tests PASS"
+      ]
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "failed",
+      "failure_owner": "baseline_evidence_defect",
+      "tests": 49,
+      "failed": 0,
+      "errors": 6,
+      "log": ".runtime/acceptance/fixture_orm_20261111T134459Z.log",
+      "log_sha256": "213f39de11d99a58f99c2d11eef8e512f03cb6fb7927c50cd861c71404ea4047",
+      "reason": "The shared acceptance database was not upgraded to 17.0.0.181, so six seed reloads observed the retired runtime-user scenario binding before the migration could remove it."
     }
   ],
   "blockers": [
-    "PR 872 requires a new exact head and fresh required-check runs after both stale-assertion recoveries.",
+    "The shared acceptance database must be upgraded to 17.0.0.181 on a clean committed candidate before the 49-test fixture can pass.",
+    "PR 872 requires a new exact head and fresh required-check runs after the backend-suite recovery.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
     "No merge or deployment has been performed."
   ],
-  "next_exact_step": "Run ci.local.iteration, commit and freeze the guard recovery, rerun exact-head Quick, then update PR 872 and wait for current-head required checks.",
+  "next_exact_step": "Freeze and commit the affected-target recovery, run the governed acceptance.module.upgrade to 17.0.0.181, read back the direct exemption, and rerun acceptance.frontend.fixture_orm.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",

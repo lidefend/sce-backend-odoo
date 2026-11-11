@@ -860,6 +860,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/core_extension_actor_roles.py",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
         "addons/smart_construction_core/data/product_menu_source.json",
@@ -890,7 +891,9 @@ RULES = (
     Rule((
         "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_core/data/product_scenario_seed.xml",
+        "addons/smart_construction_core/data/scenario_product_surface.json",
         "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     ), (
         "verify.daily.permission_truth.capability.orm",

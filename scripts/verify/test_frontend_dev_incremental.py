@@ -911,7 +911,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.navigation.publication_consumers.unit",
                 "verify.scenario.center_projection.guard",
             ],
+            "addons/smart_construction_core/data/scenario_product_surface.json": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
             "addons/smart_construction_core/security/sc_capability_groups.xml": [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
+            "addons/smart_construction_core/core_extension_actor_roles.py": [
                 "verify.frontend.navigation_policy.unit",
                 "verify.frontend.role_surface_exposure_declaration.guard",
                 "verify.role_surface.landing.contract.unit",

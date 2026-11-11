@@ -719,7 +719,7 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_owner",
     },
     "project_member": {
-        "smart_construction_core.group_sc_role_project_user",
+        "smart_construction_core.group_sc_cap_project_read",
     },
     "business_config_admin": {
         "smart_construction_core.group_sc_cap_business_config_admin",

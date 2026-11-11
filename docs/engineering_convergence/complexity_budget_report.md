@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5180`
+- Scanned files: `5181`
 - Files requiring split plan: `78`
 - Files above warning threshold: `146`
 
@@ -43,14 +43,14 @@ Generated from repository source files. This report is informational during the 
 | 2339 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2143 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 2127 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2010 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2013 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -135,6 +135,7 @@ Generated from repository source files. This report is informational during the 
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1184 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
+| 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1159 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
@@ -147,7 +148,6 @@ Generated from repository source files. This report is informational during the 
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
 | 1126 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
-| 1120 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
@@ -277,14 +277,14 @@ Generated from repository source files. This report is informational during the 
 | 2339 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2143 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
-| 2127 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2010 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2013 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |

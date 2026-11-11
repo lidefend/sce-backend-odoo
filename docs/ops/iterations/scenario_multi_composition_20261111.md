@@ -45,7 +45,7 @@
 
 ## 运行时证据
 
-`sc_dev_demo` 已完成 `17.0.0.180` 升级：
+`sc_dev_demo` 已完成 `17.0.0.181` 升级：
 
 - 17 个业务场景、79 条场景入口；数据库约束为 `unique(scenario_id, menu_id)`。
 - 14 个工作区/平台直连入口均有精确豁免，`runtime_menu_scope` 均识别为 `exempt`。
@@ -54,9 +54,14 @@
 - 当前维护中的 dev 产品策略仍是历史 91 入口快照，本批没有覆盖管理员维护策略。
   当前源码 92 入口策略的 My Work/企业初始化行为由验收事务同步当前策略后验证。
 
-受管验收库 `sc_frontend_acceptance` 升级后执行
-`make acceptance.frontend.fixture_orm`：**49 tests，0 failed，0 errors**（2026-11-11
-19:38，log `fixture_orm_20261111T113631Z.log`）。覆盖：
+受管验收库 `sc_frontend_acceptance` 在旧候选上曾执行
+`make acceptance.frontend.fixture_orm`：49 tests，0 failed，0 errors。该结果不适用于当前
+候选。当前候选最近一次执行为 **49 tests，0 failed，6 errors**，失败归因为
+`baseline_evidence_defect`：共享验收库尚未执行 `17.0.0.181` pre-migrate，重载 seed 时
+仍能看到人员档案的旧场景绑定。必须先用受管 `acceptance.module.upgrade` 升级并回读，
+再重新执行用例；不能通过放宽 seed 校验或让场景层覆盖事实来迁就旧库。
+
+这组用例覆盖：
 
 - 一菜单多场景、同场景内唯一约束；
 - 租户启用/停用对启动导航和直接路由 authority 的同步裁剪；
@@ -78,10 +83,11 @@
 | `verify.scenario.center_projection.guard` | PASS，7 tests |
 | `verify.backend.navigation_delivery.unit` | PASS，76 tests |
 | `verify.daily.permission_truth.capability.orm` | PASS，13 tests |
-| `acceptance.frontend.fixture_orm` | PASS，49 tests |
+| `acceptance.frontend.fixture_orm` | FAIL，49 tests 中 0 failed / 6 errors，验收库尚未升级到 17.0.0.181 |
 | fresh `sc_test` direct-entry initialization | PASS，6 tests |
+| fresh `sc_test` `TestProjectMemberRoleSurface` | PASS，31 tests |
 | `local.dev.upgrade` | PASS，schema/migration/authority readback |
-| `ci.local.iteration` | PASS，23 个受影响目标全部退出 0 |
+| `ci.local.iteration` | PASS，25 个受影响目标全部退出 0，110 路径未映射 0 |
 
 ## 最新主线同步与缺口收敛
 
@@ -120,6 +126,22 @@ canonical projection 和 payload seal，而本批已经把该职责收敛到
 `platform_duty_merger=lambda authority, surface: ...` 单一回调；该目标 26 个 Python
 测试和 4 个 Node 测试通过。随后本地直接执行与远端相同的
 `pnpm -C frontend/apps/web test`，完整通过，未再发现同类残留。
+
+更新到 `0d719d631` 后，远端 `backend_suite (0)` 发现两类问题：
+
+- `TestProjectMemberRoleSurface` 把完整 `ROLE_PRECEDENCE` 错误覆盖成测试夹具，导致
+  `project_member` 从最终身份中消失。测试现已消费真实优先级，并分别验证能力发现与
+  blocklist 语义；`group_sc_cap_project_read` 作为 project member 的读取能力组进入
+  事实层映射。隔离新库 31 tests PASS。
+- 人员档案 `menu_sc_runtime_user_management` 被错误放入
+  `governance.organization` 业务场景。它是系统配置入口，当前由事实层精确直连声明，
+  配置管理员 ACL 继续生效；`17.0.0.181` pre-migrate 只删除该菜单的历史场景绑定。
+  场景投影守卫现在明确验证它属于 direct platform，而非 tenant scenario。
+
+隔离新库 `TestScenarioDirectInitialization` 6 tests PASS。最新
+`make ci.local.iteration` 对 110 个变更路径执行 25 个受影响目标，全部退出 0，
+`unmappedPathCount=0`。当前剩余阻断仅为共享验收库升级与 49 例重跑，之后仍需提交新的
+精确 HEAD 并取得当前 HEAD 的远端必需检查。
 
 ## 回退
 

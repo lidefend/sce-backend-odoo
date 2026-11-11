@@ -14,7 +14,6 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     ROLE_GROUPS_CAPABILITY_FALLBACK,
     ROLE_GROUPS_EXPLICIT,
-    ROLE_PRECEDENCE,
     ROLE_SURFACE_OVERRIDES,
 )
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
@@ -39,7 +38,6 @@ class TestProjectMemberRoleSurface(TransactionCase):
         # identity profile.  Forcing the kernel constant here would resolve
         # project_member to the terminal role and make the whole surface empty.
         resolver = IdentityResolver(self.env)
-        resolver._role_precedence = ROLE_PRECEDENCE
         resolver._role_groups_explicit = ROLE_GROUPS_EXPLICIT
         resolver._role_groups_capability_fallback = ROLE_GROUPS_CAPABILITY_FALLBACK
         resolver._role_surface_map = {**resolver._role_surface_map, **ROLE_SURFACE_OVERRIDES}
@@ -268,9 +266,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         for role in ("project_member", "pm"):
             with self.subTest(role=role):
-                primary = set(ROLE_SURFACE_OVERRIDES[role].get("primary_menu_xmlids") or [])
-                self.assertIn(released_contract, primary)
-                self.assertNotIn(unpublished_legacy_contract, primary)
+                policy = ROLE_SURFACE_OVERRIDES[role]
+                exposed = {
+                    xmlid
+                    for field in (
+                        "primary_menu_xmlids",
+                        "role_home_menu_xmlids",
+                        "contextual_menu_xmlids",
+                        "admin_menu_xmlids",
+                    )
+                    for xmlid in policy.get(field) or []
+                }
+                blocked = set(policy.get("menu_blocklist_xmlids") or [])
+                blocked.update(policy.get("denied_menu_xmlids") or [])
+                self.assertTrue(policy.get("discover_installed_capabilities"))
+                self.assertNotIn(released_contract, blocked)
+                self.assertNotIn(unpublished_legacy_contract, exposed)
 
     def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
         history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
@@ -283,15 +294,17 @@ class TestProjectMemberRoleSurface(TransactionCase):
             )
 
     def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
-        primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"].get("primary_menu_xmlids") or [])
-        self.assertTrue(
-            {
-                "smart_construction_core.menu_sc_boq_version",
-                "smart_construction_core.menu_sc_project_boq_root",
-                "smart_construction_core.menu_sc_boq_analysis",
-                "smart_construction_core.menu_sc_p1_project_budget",
-            }.issubset(primary_menu_xmlids)
-        )
+        policy = ROLE_SURFACE_OVERRIDES["pm"]
+        cost_chain = {
+            "smart_construction_core.menu_sc_boq_version",
+            "smart_construction_core.menu_sc_project_boq_root",
+            "smart_construction_core.menu_sc_boq_analysis",
+            "smart_construction_core.menu_sc_p1_project_budget",
+        }
+        blocked = set(policy.get("menu_blocklist_xmlids") or [])
+        blocked.update(policy.get("denied_menu_xmlids") or [])
+        self.assertTrue(policy.get("discover_installed_capabilities"))
+        self.assertFalse(cost_chain & blocked)
 
     def test_target_cost_has_one_stable_product_entry(self):
         action = self.env.ref(
@@ -680,12 +693,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
             node for node in visible_leaves
             if node.get("action_id") or (node.get("meta") if isinstance(node.get("meta"), dict) else {}).get("action_id")
         ]
-        self.assertTrue(
-            all(
-                str(node.get("route") or "").startswith("/a/")
-                for node in action_leaves
+        for node in action_leaves:
+            route = str(node.get("route") or "")
+            entry_target = (
+                node.get("entry_target")
+                if isinstance(node.get("entry_target"), dict)
+                else (node.get("meta") or {}).get("entry_target")
+                if isinstance(node.get("meta"), dict)
+                else {}
             )
-        )
+            expected_prefix = (
+                "/admin/"
+                if isinstance(entry_target, dict)
+                and entry_target.get("type") == "admin_surface"
+                else "/a/"
+            )
+            self.assertTrue(route.startswith(expected_prefix), (node.get("key"), route))
         self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(acl_denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(missing_action_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
@@ -882,7 +905,24 @@ class TestProjectMemberRoleSurface(TransactionCase):
         missing_context_result = RouteAuthorityValidateHandler(self.env(user=pm_user)).handle({
             "params": {"action_id": execution["action_id"]},
         })
-        self.assertTrue(admin_result.ok)
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            build_runtime_route_authority,
+        )
+
+        runtime_authority = build_runtime_route_authority(self.env(user=config_user))
+        runtime_user_rows = [
+            row
+            for row in runtime_authority.get("admin_actions") or []
+            if row.get("action_id") == user_management["action_id"]
+        ]
+        self.assertTrue(
+            admin_result.ok,
+            {
+                "error": admin_result.error,
+                "runtime_user_rows": runtime_user_rows,
+                "scenario_composition": runtime_authority.get("scenario_composition"),
+            },
+        )
         self.assertFalse(denied_result.ok)
         self.assertEqual(denied_result.code, 403)
         self.assertFalse(missing_context_result.ok)

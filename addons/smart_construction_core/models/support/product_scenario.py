@@ -47,6 +47,7 @@ DIRECT_PLATFORM_MENU_XMLIDS = (
     "smart_construction_core.menu_sc_product_scenario_business_config",
     "smart_construction_core.menu_sc_product_system_parameter_v1",
     "smart_construction_core.menu_sc_product_numbering_rule_v1",
+    "smart_construction_core.menu_sc_runtime_user_management",
 )
 SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
 EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
@@ -125,6 +126,18 @@ class ScProductScenario(models.Model):
         can later revoke an exemption without the next upgrade restoring it.
         """
         params = self.env["ir.config_parameter"].sudo()
+        runtime_user_marker = (
+            "smart_construction_core.navigation_entry_scope.runtime_user.v2"
+        )
+        if not params.get_param(runtime_user_marker):
+            runtime_user_xmlid = (
+                "smart_construction_core.menu_sc_runtime_user_management"
+            )
+            menu = self.env.ref(runtime_user_xmlid, raise_if_not_found=False)
+            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu":
+                if not menu.sc_scenario_exempt:
+                    menu.sudo().write({"sc_scenario_exempt": True})
+            params.set_param(runtime_user_marker, "1")
         marker = "smart_construction_core.navigation_entry_scope.v1"
         if params.get_param(marker):
             return
