@@ -2702,8 +2702,15 @@ class MenuService:
             action = menu.sudo().action
             if action:
                 action_groups = action.sudo().groups_id
-                if action_groups and not bool(action_groups & self.env.user.groups_id):
-                    continue
+                if action_groups:
+                    allowed_by_group = False
+                    for group in action_groups:
+                        group_xmlid = self._record_xmlid(group)
+                        if group_xmlid and self.env.user.has_group(group_xmlid):
+                            allowed_by_group = True
+                            break
+                    if not allowed_by_group:
+                        continue
             action_id = int(action.id or 0) if action else 0
             model = (
                 str(getattr(action, "res_model", "") or "").strip()
