@@ -84,6 +84,9 @@ authority for the current candidate.
   Quick shards now freeze their initial ref/OID set and all scanners enumerate
   that immutable set. Sibling iterations can continue without changing the
   current candidate's scan coverage; candidate HEAD/tree drift still fails.
+- The incremental planner now routes the isolated scan tools to
+  `verify.trusted_scan.unit`; its stale zero-reference disposition was removed
+  with the governed audit command after the wiring became live.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`
