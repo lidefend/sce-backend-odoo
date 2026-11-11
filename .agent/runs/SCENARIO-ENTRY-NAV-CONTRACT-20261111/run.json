@@ -145,10 +145,23 @@
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
       ],
       "kind": "offline"
+    },
+    "acceptance_runtime": {
+      "target": "acceptance.frontend.fixture_orm",
+      "inputs": [
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
+      ],
+      "kind": "runtime"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the clean backend candidate, run governed acceptance module upgrade, then execute fixture_orm and read back business_config_admin/business_full final nav and route authority.",
+  "next_exact_step": "Run fixture_orm on the final clean SHA and record the 47-test acceptance receipt.",
   "layer": {
     "formal_product_layer": "P1 product semantics; P0 init consumes the finalized contract without another business decision",
     "layer_target": "single login-role/native-menu authority, composition-only scenario layer, and route projection from final navigation identity",
