@@ -27,4 +27,3 @@ goal:
     - No native-fact duplication in scenario entries.
     - No product publication widening.
     - No mainline integration, remote mutation, deployment or product acceptance claim.
-
