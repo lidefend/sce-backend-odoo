@@ -10,6 +10,7 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "make/frontend.mk",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/verify/test_frontend_release_local_entry.py",
     "scripts/verify/test_frontend_standard_preview.py"

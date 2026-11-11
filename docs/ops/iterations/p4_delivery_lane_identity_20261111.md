@@ -46,6 +46,11 @@ another iteration's backend as a hidden prerequisite.
   0 mutations and 0 errors.
 - The final acceptance integration entry and its ordering are covered by the
   focused orchestration unit before the final clean-candidate run.
+- First `make ci.local.iteration` correctly stopped at verification-lane coverage:
+  the explicit integration entry made two previously zero-reference preview
+  targets live, leaving their old dispositions stale. The governed
+  `--unregister-target` operations removed only those two stale entries; the
+  73-test coverage unit and audited lane check then passed.
 - The repository commit hook refreshed `complexity_budget_report.md` and
   `split_plan_queue.md`; both generated files are included explicitly in the P4 scope.
 - The run declares a runtime environment, so its offline receipt is reported as `stale`
