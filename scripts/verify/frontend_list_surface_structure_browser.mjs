@@ -48,6 +48,23 @@ function pageComparableRoute(value) {
   const url = new URL(value, BASE_URL);
   return `${relativeRoutePath(url.pathname)}${url.search}`;
 }
+async function closeWithin(label, close, timeoutMs = 10_000) {
+  let timer;
+  try {
+    await Promise.race([
+      close(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} exceeded ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]);
+    return true;
+  } catch (error) {
+    process.stderr.write(`[frontend_list_surface_structure_browser] cleanup: ${String(error?.message || error)}\n`);
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 const DATABASE = acceptance.database;
 const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
@@ -170,6 +187,16 @@ function listSourceForTarget(target) {
     throw new Error(`scenario list target has invalid native identity ${nativeRoute}`);
   }
   return { actionId: Number(match[1]), menuId };
+}
+
+function sceneListRouteMatchesTarget(value, target) {
+  const observedUrl = new URL(value, BASE_URL);
+  const targetUrl = new URL(String(target?.route || ''), BASE_URL);
+  if (relativeRoutePath(observedUrl.pathname) !== relativeRoutePath(targetUrl.pathname)) return false;
+  const source = listSourceForTarget(target);
+  if (Number(observedUrl.searchParams.get('menu_id') || 0) !== source.menuId) return false;
+  const observedActionId = observedUrl.searchParams.get('action_id');
+  return observedActionId == null || Number(observedActionId) === source.actionId;
 }
 
 const authenticatedProbes = new WeakMap();
@@ -1345,7 +1372,7 @@ try {
       }
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (pageComparableRoute(page.url()) !== target.route) throw new Error('form-profiles return did not restore source list');
+      if (!sceneListRouteMatchesTarget(page.url(), target)) throw new Error('form-profiles return did not restore source list');
     }
     await page.setViewportSize(VIEWPORTS[0]);
   }
@@ -1431,7 +1458,10 @@ try {
       dailyObservations.push({ surface: profile === 'readonly' ? 'readonly-detail' : 'edit-form-observation-without-save', declaredEntry: expectedDetail, renderProfile: profile, presentation, contractResponses: newContracts.length, url: page.url(), viewport: viewport.key, cards, screenshot });
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (pageComparableRoute(page.url()) !== target.route) throw new Error('daily detail return did not restore source list');
+      const returnedRoute = pageComparableRoute(page.url());
+      if (!sceneListRouteMatchesTarget(page.url(), target)) {
+        throw new Error(`daily detail return did not restore source list: expected=${target.route} observed=${returnedRoute}`);
+      }
       recordChecks.push({ viewport: viewport.key, check: 'return_to_source', passed: true, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
     }
     await page.setViewportSize(VIEWPORTS[0]);
@@ -1550,5 +1580,9 @@ try {
     source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
   process.exitCode = 1;
 } finally {
-  try { await context?.close(); } finally { try { await browser?.close(); } finally { await lease?.release(); } }
+  const cleanup = [];
+  if (context) cleanup.push(await closeWithin('context close', () => context.close()));
+  if (browser) cleanup.push(await closeWithin('browser close', () => browser.close()));
+  if (lease) cleanup.push(await closeWithin('lease release', () => lease.release()));
+  if (cleanup.includes(false)) process.exit(process.exitCode ?? 1);
 }

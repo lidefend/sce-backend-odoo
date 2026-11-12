@@ -127,12 +127,31 @@
       "evidence": ".runtime/final-acceptance/list-surface-structure.json",
       "recovery": "Both form-profile and record walk paths now resolve action/menu identity through one helper backed by the declared nativeRoute; a scene route without native identity fails explicitly.",
       "recovery_check": "node --check PASS; 24 list-surface contract tests PASS."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "5cc092586083698e68b4be8a470ea6f4ad45b805",
+      "reason": "The record contract, approved binding and renderer passed at 1440 and the screenshot showed the source list restored, but the return assertion required byte-identical query text. The frontend canonically adds scene identity to the scene route.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Return checks now require the same scene path plus source menu identity, and require action identity when present; canonical scene/action query additions are accepted while missing or mismatched source identity fails.",
+      "recovery_check": "24 list-surface contract tests PASS, including positive canonical-route and negative missing/mismatched-route cases."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "5cc092586083698e68b4be8a470ea6f4ad45b805",
+      "reason": "After the assertion failure the browser probe remained in teardown for about 18 minutes instead of failing promptly.",
+      "recovery": "Context close, browser close and lease release now each have a bounded 10-second wait; a timed-out cleanup is reported and exits after evidence is written.",
+      "recovery_check": "The cleanup contract is locked by verify.frontend.list_surface_search_contract.unit."
     }
   ],
   "blockers": [
-    "The P4 scene-route identity repair must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+    "The P4 scene-route return and bounded-cleanup repairs must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
   ],
-  "next_exact_step": "Run affected iteration, commit the P4 scene-route identity repair, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
+  "next_exact_step": "Run affected iteration, commit the P4 scene-route return and bounded-cleanup repairs, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",

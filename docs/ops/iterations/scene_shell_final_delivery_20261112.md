@@ -57,6 +57,14 @@ P4 probe parsed the action id from `/s/entry...` rather than the node's retained
 `nativeRoute=/a/881?menu_id=560` identity. Both profile and record paths now use
 one native-identity resolver and fail explicitly when a scene target omits it.
 
+The following run passed the 1440 record contract, approved binding and renderer,
+and the screenshot showed the source list restored. It failed only because the
+probe required byte-identical query text while the router canonicalizes the
+scene route with scene/action identity. Return checks now require the same scene
+path and source menu identity, plus matching action identity when present.
+The same run also exposed an 18-minute Playwright teardown hang after the
+assertion; context, browser and lease cleanup now have bounded waits.
+
 The candidate still requires freeze preparation, clean commit, exact acceptance
 runtime preparation and user-flow verification. No deployment or product
 acceptance is claimed.
