@@ -51,6 +51,12 @@ Native-delegate targets now carry only route/action/menu/model/view mode; action
 identity drives the embedded `ActionView`, while only designed scenes may carry
 scene entry intent.
 
+The next browser run proved the sceneized list rendered and completed its
+18-state structure matrix. It then stopped before the record walk because the
+P4 probe parsed the action id from `/s/entry...` rather than the node's retained
+`nativeRoute=/a/881?menu_id=560` identity. Both profile and record paths now use
+one native-identity resolver and fail explicitly when a scene target omits it.
+
 The candidate still requires freeze preparation, clean commit, exact acceptance
 runtime preparation and user-flow verification. No deployment or product
 acceptance is claimed.

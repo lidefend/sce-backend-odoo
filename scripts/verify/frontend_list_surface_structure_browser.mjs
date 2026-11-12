@@ -160,6 +160,18 @@ function actionable(nodes, parents = []) {
   return result;
 }
 
+function listSourceForTarget(target) {
+  const nativeRoute = String(target?.nativeRoute || '').trim();
+  if (!nativeRoute) throw new Error('scenario list target is missing native action identity');
+  const nativeUrl = new URL(nativeRoute, BASE_URL);
+  const match = /^\/a\/([1-9]\d*)$/.exec(relativeRoutePath(nativeUrl.pathname));
+  const menuId = Number(nativeUrl.searchParams.get('menu_id') || 0);
+  if (!match || !Number.isInteger(menuId) || menuId <= 0) {
+    throw new Error(`scenario list target has invalid native identity ${nativeRoute}`);
+  }
+  return { actionId: Number(match[1]), menuId };
+}
+
 const authenticatedProbes = new WeakMap();
 async function login(page, navigation) {
   authenticatedProbes.delete(page);
@@ -1238,8 +1250,7 @@ try {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
-      const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = listSourceForTarget(target);
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       const listData = listContract.response.data;
@@ -1354,8 +1365,7 @@ try {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
-      const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = listSourceForTarget(target);
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       // Open the contract-approved record through the row authority the list

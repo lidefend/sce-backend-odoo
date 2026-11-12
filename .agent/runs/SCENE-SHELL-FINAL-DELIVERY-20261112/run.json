@@ -24,6 +24,7 @@
     "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/scripts/scene_shell_contract_test.ts",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
@@ -116,12 +117,22 @@
       "reason": "The native-delegate scene-ready target incorrectly declared entry_intent=ui.contract. SceneView therefore selected the scene-block contract path instead of embedding the native action, producing a 400 ui.contract request without action identity.",
       "evidence": ".runtime/final-acceptance/list-surface-structure.json",
       "recovery": "Native-delegate shell targets now expose only route/action/menu/model/view_mode and no scene entry intent; action identity drives native ActionView embedding."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "159c056ace148ba42886ca0fa5ea7b93ec617848",
+      "reason": "The scenarioized list page rendered and completed its 18-state structure matrix, but the record walk still parsed the action id from the /s scene path instead of the navigation node's retained native action identity.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Both form-profile and record walk paths now resolve action/menu identity through one helper backed by the declared nativeRoute; a scene route without native identity fails explicitly.",
+      "recovery_check": "node --check PASS; 24 list-surface contract tests PASS."
     }
   ],
   "blockers": [
-    "The native-delegate entry-intent repair must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+    "The P4 scene-route identity repair must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
   ],
-  "next_exact_step": "Run affected iteration and freeze preparation, commit the native-delegate repair, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
+  "next_exact_step": "Run affected iteration, commit the P4 scene-route identity repair, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",

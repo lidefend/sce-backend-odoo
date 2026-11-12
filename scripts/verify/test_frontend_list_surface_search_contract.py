@@ -237,6 +237,23 @@ assert.equal(relativeRoutePath('/t/test-other/api/v1/intent'), '/t/test-other/ap
         result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_scene_route_targets_resolve_native_list_authority(self):
+        source = self.probe.split('function listSourceForTarget(')[1].split('const authenticatedProbes')[0]
+        program = route_helpers(self.probe, '/t/test') + """
+const assert = require('node:assert/strict');
+const BASE_URL = 'https://acceptance.test/t/test';
+function listSourceForTarget(""" + source + """
+const target = {
+  route: '/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=560',
+  nativeRoute: '/a/881?menu_id=560',
+};
+assert.deepEqual(listSourceForTarget(target), { actionId: 881, menuId: 560 });
+assert.throws(() => listSourceForTarget({ ...target, nativeRoute: '' }), /missing native action identity/);
+assert.throws(() => listSourceForTarget({ ...target, nativeRoute: '/s/entry.scene?menu_id=560' }), /invalid native identity/);
+"""
+        result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def run_record_probe_helpers(self, assertions):
         source = self.probe.split('function dailyActorContext(')[1].split('let browser,')[0]
         result = subprocess.run(['node', '-e', route_helpers(self.probe) + "const assert = require('node:assert/strict');\nfunction dailyActorContext(" + source + assertions], capture_output=True, text=True, cwd=ROOT)
