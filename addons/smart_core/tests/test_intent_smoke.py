@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import json
+import threading
 
 from odoo.tests.common import HttpCase, tagged
 
@@ -301,6 +302,13 @@ class TestIntentSmoke(HttpCase):
         self.assertEqual(route_authority.get("schema_version"), "2.0.0")
         from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs, published_route_authority
         from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        # HttpCase requests share the test transaction.  A timed-out background
+        # request may still own its cursor after the intent response is received.
+        self._wait_remaining_requests(timeout=30)
+        self.assertFalse([
+            thread.name for thread in threading.enumerate()
+            if thread.name.startswith("odoo.service.http.request.")
+        ], "HTTP requests must finish before direct ORM authority comparison")
         direct_env = self.test_user.with_user(self.test_user).env
         fresh = EffectiveDeliveryService(direct_env).resolve().route_authority
         direct = published_route_authority(direct_env)

@@ -1376,10 +1376,18 @@
       "log": ".runtime/backend-effective-review-iteration-final.log",
       "reason": "Identity26 passed. Lifecycle55 has only home root-path compatibility failure (/s/workspace.home vs established /); full setup landing/handler and denial scenarios passed. Preserve home alias while retaining explicit non-home landing.",
       "receipt": ".runtime/test-baseline/1794488946892733573/receipt.json"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "candidate": "bc5cd19e52e034fe8cb115fe54d9724b6ff7f9f1",
+      "status": "failed",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261112T132000Z-2743023-520857566/receipt.json",
+      "log": ".runtime/backend-effective-review-iteration-home.log",
+      "reason": "Identity26 passed. Lifecycle55: zero assertion failures, one shared-cursor error while background HTTP request was still active. Added bounded native HttpCase request synchronization and explicit thread-drain assertion before direct ORM comparison; all authority assertions retained."
     }
   ],
   "blockers": [],
-  "next_exact_step": "Run full mapped iteration on frozen home-compatible projection, then exact-head PR875 update and required remote checks.",
+  "next_exact_step": "Validate synchronized HTTP/lifecycle and remaining publication/workspace coverage in one governed local.test bundle; preserve failed aggregates and reuse only proven unaffected evidence before PR875 publication.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",

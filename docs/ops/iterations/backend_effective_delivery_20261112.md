@@ -45,3 +45,7 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 1c7bec14a 的 bundle 集成32项：31通过，1失败。工作台正反例、瞬时缓存恢复通过；setup共同求解和真实handler role正确，但精简payload因home页面存在重写default_route/home_ref。修复投影仅补缺省首页、保留明确有效路由，新增pure反例及planner映射，定向单元通过，独立源码复核通过；新候选ORM仍待验证。
 
 5d7ea12a5：身份ORM26通过；lifecycle55中仅HTTP首页根路径兼容断言失败（应保持 `/`，不可无故变成 `/s/workspace.home`）。setup正式落点及真实handler、未发布/未选择/原生拒绝均已跑过，其他54项通过。修正首页别名投影并新增纯单元，不改变非首页有效路由。整组通过仍待新候选回执。
+
+### HTTP test synchronization follow-up
+
+Candidate bc5cd19e52e034fe8cb115fe54d9724b6ff7f9f1 retained a failed iteration: identity 26 passed; lifecycle 55 collected with zero assertion failures and one concurrent test-cursor error. The original log shows an unfinished HTTP thread at the direct ORM comparison. The P4 test now waits through the native HttpCase helper and explicitly rejects remaining request threads before comparing HTTP, fresh, and cached authority. No product assertion or permission rule was weakened. Original receipt: `.runtime/test-baseline/1794490082540431497/receipt.json`. Further validation and remote integration remain pending.
