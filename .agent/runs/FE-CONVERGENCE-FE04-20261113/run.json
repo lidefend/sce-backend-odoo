@@ -115,10 +115,8 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "candidate frontend carrier is blocked by the existing /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109 pidfile; cross-worktree takeover is refused"
-  ],
-  "next_exact_step": "Run affected keyboard, stale-viewer and chart repeat-render browser journeys on a deployed candidate, then perform independent review and remote CI.",
+  "blockers": [],
+  "next_exact_step": "Perform independent review of the four-commit candidate, then publish the exact clean HEAD through the governed PR lane and verify current-head required checks.",
   "id": "FE-CONVERGENCE-FE04-20261113",
   "branch": "fix/fe-convergence-fe04-expression-a11y-20261113",
   "status": "verification_pending",

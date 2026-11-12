@@ -51,6 +51,9 @@ Evidence notes:
 - Tree branch buttons expose `aria-expanded` and ArrowRight/ArrowLeft expand/collapse.
 - Generated complexity/component inventories refresh only affected source identities and locations.
 - Candidate frontend carrier startup is environment-blocked by an existing pidfile owned by the detached `sce-backend-odoo-acceptance-scope-20261109` worktree. The governed target correctly refuses cross-worktree takeover; that instance was not stopped.
+- With single-task execution authorized, the stale detached carrier was stopped after exact pid/process-group/port verification. `local.dev` was rebound to the current worktree; candidate health passed for `27c1774bc`.
+- Candidate visual smoke passed for home/my-work and payment-request list/config at 1440/390 with `mutationCount=0`, no errors and no failures.
+- Opening a new `payment.request` form with that verification identity returned 404, so it is recorded as an entry-role limitation rather than a successful form-view journey.
 
 Not run:
 
