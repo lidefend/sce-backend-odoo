@@ -1,22 +1,38 @@
 import copy
 import importlib.util
 import sys
+import types
 import unittest
 from pathlib import Path
 
 
-MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "delivery"
-    / "navigation_contract_compiler.py"
+SMART_CORE_DIR = Path(__file__).resolve().parents[1]
+for package_name, package_path in (
+    ("odoo", SMART_CORE_DIR.parent),
+    ("odoo.addons", SMART_CORE_DIR.parent),
+    ("odoo.addons.smart_core", SMART_CORE_DIR),
+    ("odoo.addons.smart_core.delivery", SMART_CORE_DIR / "delivery"),
+):
+    package = sys.modules.setdefault(package_name, types.ModuleType(package_name))
+    package.__path__ = [str(package_path)]
+
+
+def _load_module(module_name, path):
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_load_module(
+    "odoo.addons.smart_core.delivery.scene_shell_compiler",
+    SMART_CORE_DIR / "delivery" / "scene_shell_compiler.py",
 )
-SPEC = importlib.util.spec_from_file_location(
-    "navigation_contract_compiler_under_test",
-    MODULE_PATH,
+MODULE = _load_module(
+    "odoo.addons.smart_core.delivery.navigation_contract_compiler",
+    SMART_CORE_DIR / "delivery" / "navigation_contract_compiler.py",
 )
-MODULE = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = MODULE
-SPEC.loader.exec_module(MODULE)
 NavigationContractCompiler = MODULE.NavigationContractCompiler
 
 
@@ -241,6 +257,7 @@ class NavigationContractCompilerTests(unittest.TestCase):
             platform_duty=None,
             scene_internal_actions=None,
             company_id=1,
+            designed_scene_keys={"my_work.workspace"},
         )
         self.assertEqual(
             [(row["menu_id"], row["action_id"]) for row in compilation.nav],
@@ -270,6 +287,7 @@ class NavigationContractCompilerTests(unittest.TestCase):
             platform_duty=None,
             scene_internal_actions=None,
             company_id=1,
+            designed_scene_keys={"my_work.workspace"},
         )
         self.assertEqual(compilation.nav[0]["route"], "/s/my_work.workspace")
         self.assertEqual(
@@ -307,6 +325,7 @@ class NavigationContractCompilerTests(unittest.TestCase):
                 platform_duty=None,
                 scene_internal_actions=None,
                 company_id=1,
+                designed_scene_keys={"allowed", "forbidden"},
             )
 
 

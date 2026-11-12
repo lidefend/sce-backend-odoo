@@ -348,6 +348,18 @@ RULES = (
         "verify.runtime_capability_catalog.unit",
     )),
     Rule((
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py",
+    ), (
+        "verify.scene.shell_compiler.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    ), (
+        "verify.frontend.scene_shell_contract.unit",
+    )),
+    Rule((
         "frontend/apps/web/scripts/logger_runtime_test.ts",
         "frontend/apps/web/src/utils/logger.ts",
         "scripts/verify/frontend_console_guard.py",

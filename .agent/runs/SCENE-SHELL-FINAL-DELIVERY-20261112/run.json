@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-SHELL-FINAL-DELIVERY-20261112",
+  "branch": "refactor/scene-shell-final-delivery-20261112",
+  "baseline_sha": "736e4af67037eeeba6532005a4dd8f7c43eec646",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
+  "record": "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
+    ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
+    "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/scene_shell_compiler.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_scene_shell_compiler.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_intent_smoke.py",
+    "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+    "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound compiler and scene contract tests first; governed ORM and acceptance follow"
+  },
+  "checks": {
+    "scene_shell_compiler": {
+      "target": "verify.scene.shell_compiler.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py",
+        "make/frontend.mk"
+      ]
+    },
+    "navigation_integration": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+      ]
+    },
+    "frontend_scene_shell": {
+      "target": "verify.frontend.scene_shell_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "validation_results": [
+    {
+      "command": "make verify.scene.shell_compiler.unit",
+      "status": "passed",
+      "tests": 6,
+      "notes": "Designed scene preservation, ordinary action delegation, directory pruning, deterministic identity and scene-ready shell merge all passed."
+    },
+    {
+      "command": "make verify.navigation_contract_compiler.unit",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 55,
+      "notes": "The target also passed its nested navigation compiler, runtime capability catalog, scene shell and menu authorization suites."
+    },
+    {
+      "command": "make verify.frontend.scene_shell_contract.unit",
+      "status": "passed",
+      "tests": 1,
+      "notes": "The frontend scene registry consumes a generated native-delegate row and resolves its native action target."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_core TEST_TAGS=/smart_core:TestIntentSmoke",
+      "status": "passed",
+      "tests": 10,
+      "log": ".runtime/test-baseline/1794461617664674104/receipt.json",
+      "notes": "Real system.init output contains only /s routes for executable leaves and explicit designed_scene/native_delegate content kinds."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 10,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T053211Z-100257-506657390/receipt.json",
+      "notes": "All affected targets exited zero after correcting the new frontend target path selection."
+    }
+  ],
+  "blockers": [
+    "The scene shell candidate has not yet been committed or verified on the managed acceptance runtime."
+  ],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the clean candidate, prepare the exact acceptance runtime, and verify a designed scene plus one native-delegate ordinary page.",
+  "layer": {
+    "formal_product_layer": "P0 platform mechanism",
+    "layer_target": "final scene shell delivery compiler",
+    "module": "smart_core with generic frontend consumption",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "The final route and client contract are platform compilation responsibilities.",
+    "why_not_elsewhere": "Native facts cannot own product paths, scene composition cannot create native facts, and frontend cannot synthesize scene routes.",
+    "blast_radius": "final navigation routes, generated scene-ready shells, and generic native action embedding."
+  },
+  "completion": {
+    "batch": "verification_pending",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  }
+}

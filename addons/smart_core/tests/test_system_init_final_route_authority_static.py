@@ -32,7 +32,10 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             / "navigation_contract_compiler.py"
         ).read_text(encoding="utf-8")
         self.assertIn("from odoo.addons.smart_core.delivery.navigation_contract_compiler import (", system_init)
+        self.assertIn("from odoo.addons.smart_core.delivery.scene_shell_compiler import SceneShellCompiler", system_init)
         self.assertIn("NavigationContractCompiler(", system_init)
+        self.assertIn("SceneShellCompiler.merge_scene_ready_contract(", system_init)
+        self.assertIn("designed_scene_keys=_designed_scene_keys", system_init)
         self.assertIn(".compile(", system_init)
         self.assertIn('data["nav"] = _compiled_navigation.nav', system_init)
         self.assertIn('data["navigation"] = _compiled_navigation.navigation', system_init)
@@ -70,6 +73,15 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertIn('navigation["product_policy"]', compiler)
         self.assertIn("canonical navigation contains unauthorized", compiler)
         self.assertIn("scenario navigation contains unauthorized", compiler)
+        self.assertIn("self.scene_shell_compiler.compile(", compiler)
+        self.assertLess(
+            compiler.index("scenario_surface = self.scenario_surface_provider(nav, authority)"),
+            compiler.index("self.scene_shell_compiler.compile("),
+        )
+        self.assertLess(
+            compiler.index("self.scene_shell_compiler.compile("),
+            compiler.index("self.menu_service.project_final_navigation_routes("),
+        )
         self.assertIn('"route_authority": authority,', compiler)
         self.assertIn('"missing_authority_count": 0,', compiler)
 
