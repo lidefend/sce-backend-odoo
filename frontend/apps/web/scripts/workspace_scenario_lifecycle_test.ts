@@ -1,9 +1,23 @@
 import assert from 'node:assert/strict';
 import './browser_globals_shim.ts';
 import './scenario_surface_parser_test.ts';
+import { resolveActivityCacheKey } from '../src/app/activityPageCacheIdentity';
 import { parseScenarioSurface } from '../src/app/scenarioSurface';
 import { createPinia, setActivePinia } from 'pinia';
-import { createApp, effectScope, nextTick } from 'vue';
+import {
+  KeepAlive,
+  createApp,
+  createRenderer,
+  computed,
+  defineComponent,
+  effectScope,
+  h,
+  nextTick,
+  onActivated,
+  onDeactivated,
+  ref,
+  watch,
+} from 'vue';
 import { routerKey } from 'vue-router';
 
 setActivePinia(createPinia());
@@ -43,6 +57,234 @@ async function nextRequest(start: () => Promise<unknown>) {
   return { result, request: pending[count] };
 }
 const load = () => nextRequest(() => session.loadWorkspaceScenarioProjection());
+const startupResponse = () => ({
+  user: { id: 1, name: 'Startup test user' },
+  capabilities: [],
+  feature_flags: {},
+  scenes: [],
+  workspace_home: null,
+  record_context: {
+    contract_version: '1.0.0',
+    enabled: true,
+    company_id: 7,
+    company_name: 'Startup test company',
+    selected: null,
+    options: [],
+  },
+  navigation: {
+    nav: [],
+    integrity: {
+      visible_action_count: 0,
+      authorized_action_count: 0,
+      missing_authority_count: 0,
+    },
+    route_authority: {
+      contract_version: '2.0.0',
+      schema_version: '2.0.0',
+      source: 'startup-test',
+      principal_scope: { user_id: 1, company_id: 7, role_code: '' },
+      primary_actions: [],
+      role_home_actions: [],
+      contextual_actions: [],
+      admin_actions: [],
+      denied_actions: [],
+      menu_containers: [],
+    },
+  },
+});
+
+// A response that passes HTTP but fails contract decoding is still a failed
+// initialization transaction and must expose a retry path.
+const malformedStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+malformedStartup.request.settle({
+  user: { id: 1 },
+  capabilities: undefined,
+  navigation: {},
+});
+await assert.rejects(malformedStartup.result, /system\.init\.capabilities/);
+assert.equal(session.initStatus, 'error');
+assert.match(session.initError || '', /system\.init\.capabilities/);
+assert.equal(session.isReady, false);
+
+const recoveredStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+recoveredStartup.request.settle(startupResponse());
+await recoveredStartup.result;
+assert.equal(session.initStatus, 'ready');
+assert.equal(session.initError, null);
+assert.equal(session.isReady, true);
+
+// A superseded initialization cannot publish failure over the ready result
+// that belongs to the newer context.
+const staleStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+beginContextTransition();
+const currentStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+currentStartup.request.settle(startupResponse());
+await currentStartup.result;
+assert.equal(session.initStatus, 'ready');
+staleStartup.request.fail(new Error('stale bootstrap failed'));
+await staleStartup.result;
+assert.equal(session.initStatus, 'ready');
+assert.equal(session.initError, null);
+assert.equal(session.isReady, true);
+console.log('[startup_transaction_test] PASS cases=3 store=actual transport=controlled');
+
+// A committed create retires only after navigation has moved KeepAlive to the
+// saved record. Retiring the old identity must not deactivate the new instance.
+session.registerActivityPage({
+  key: 'record:x.document:66',
+  route: '/f/x.document/66',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '66',
+  record_context: session.currentActivityRecordContextSnapshot(),
+  dirty: true,
+});
+session.registerActivityPage({
+  key: 'new:x.document:page:create-1',
+  route: '/f/x.document/new?activity_page_id=create-1',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: 'new',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+const lifecycleEvents: string[] = [];
+const cacheKeyEvents: string[] = [];
+const activeRoute = ref({
+  name: 'model-form',
+  params: { model: 'x.document', id: 'new' },
+  query: { activity_page_id: 'create-1' },
+  meta: {},
+  fullPath: '/f/x.document/new?activity_page_id=create-1',
+});
+const activeRouteIdentity = () => ({
+  routeName: activeRoute.value.name,
+  params: activeRoute.value.params,
+  query: activeRoute.value.query,
+  meta: activeRoute.value.meta,
+  selectedRecordId: session.recordContext?.selected?.id,
+});
+type HostNode = { children: HostNode[]; parent: HostNode | null; text?: string; type?: string };
+const hostNode = (type?: string): HostNode => ({ children: [], parent: null, type });
+const renderer = createRenderer<HostNode, HostNode>({
+  patchProp: () => {},
+  insert(child, parent, anchor) {
+    child.parent = parent;
+    const index = anchor ? parent.children.indexOf(anchor) : -1;
+    if (index >= 0) parent.children.splice(index, 0, child);
+    else parent.children.push(child);
+  },
+  remove(child) {
+    if (!child.parent) return;
+    const index = child.parent.children.indexOf(child);
+    if (index >= 0) child.parent.children.splice(index, 1);
+    child.parent = null;
+  },
+  createElement: type => hostNode(type),
+  createText: text => ({ ...hostNode('text'), text }),
+  createComment: text => ({ ...hostNode('comment'), text }),
+  setText: (node, text) => { node.text = text; },
+  setElementText: (node, text) => { node.text = text; },
+  parentNode: node => node.parent,
+  nextSibling(node) {
+    if (!node.parent) return null;
+    return node.parent.children[node.parent.children.indexOf(node) + 1] || null;
+  },
+  querySelector: () => null,
+  setScopeId: () => {},
+  cloneNode: node => ({ ...node, children: [...node.children], parent: null }),
+  insertStaticContent: () => {
+    const node = hostNode('static');
+    return [node, node];
+  },
+});
+const FormProbe = defineComponent({
+  setup() {
+    onActivated(() => lifecycleEvents.push('activate'));
+    onDeactivated(() => lifecycleEvents.push('deactivate'));
+    return () => h('div');
+  },
+});
+const ActivityHost = defineComponent({
+  setup() {
+    const cacheKey = computed(() => resolveActivityCacheKey(
+      activeRouteIdentity(),
+      session.activityPageCacheEpochs,
+      session.user?.id,
+    ));
+    watch(cacheKey, value => cacheKeyEvents.push(value), { immediate: true });
+    return () => {
+      const key = cacheKey.value;
+      return h(KeepAlive, { max: 6 }, {
+        default: () => h(FormProbe, { key }),
+      });
+    };
+  },
+});
+const activityApp = renderer.createApp(ActivityHost);
+activityApp.mount(hostNode('root'));
+await nextTick();
+assert.deepEqual(lifecycleEvents, ['activate']);
+const createCacheKey = resolveActivityCacheKey(activeRouteIdentity(), session.activityPageCacheEpochs, session.user?.id);
+session.registerActivityPage({
+  key: 'record:x.document:88',
+  route: '/f/x.document/88',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '88',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+activeRoute.value = {
+  name: 'model-form',
+  params: { model: 'x.document', id: '88' },
+  query: {},
+  meta: {},
+  fullPath: '/f/x.document/88',
+};
+assert.notEqual(resolveActivityCacheKey(activeRouteIdentity(), session.activityPageCacheEpochs, session.user?.id), createCacheKey);
+await nextTick();
+await nextTick();
+assert.equal(cacheKeyEvents.length, 2);
+assert.notEqual(cacheKeyEvents[0], cacheKeyEvents[1]);
+assert.deepEqual(lifecycleEvents, ['activate', 'deactivate', 'activate']);
+assert.equal(session.completeCreatedActivityPage('new:x.document:page:create-1'), true);
+await nextTick();
+assert.deepEqual(lifecycleEvents, ['activate', 'deactivate', 'activate'], 'old-page retirement cannot deactivate the saved instance');
+assert.equal(session.activityPages.some(page => page.key === 'new:x.document:page:create-1'), false);
+assert.equal(session.activityPages.find(page => page.key === 'record:x.document:66')?.dirty, true);
+assert.equal(session.activeActivityPageKey, 'record:x.document:88');
+assert.equal(session.activityPageCacheEpochs['new:x.document:page:create-1'], 1);
+activityApp.unmount();
+console.log('[created_activity_keepalive_test] PASS cases=6 store=actual keepalive=actual');
+
+// Concurrent forced bootstraps queue behind the actual successor. They must not
+// let the later waiter snapshot the activity list the earlier waiter cleared.
+session.registerActivityPage({
+  key: 'record:x.document:77',
+  route: '/f/x.document/77',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '77',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+const queuedFirst = await nextRequest(() => session.loadAppInit({ force: true }));
+const pendingCount = pending.length;
+const queuedSecond = session.loadAppInit({ force: true });
+const queuedThird = session.loadAppInit({ force: true });
+await Promise.resolve();
+assert.equal(pending.length, pendingCount, 'queued forced refreshes wait for the first transaction');
+queuedFirst.request.settle(startupResponse());
+await queuedFirst.result;
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(pending.length, pendingCount + 1, 'the second refresh starts after the first');
+pending.at(-1)!.settle(startupResponse());
+await queuedSecond;
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(pending.length, pendingCount + 2, 'the third refresh waits for the second instead of racing it');
+pending.at(-1)!.settle(startupResponse());
+await queuedThird;
+assert.equal(session.activityPages.some(page => page.key === 'record:x.document:77'), true);
+assert.equal(session.activeActivityPageKey, 'record:x.document:77');
+console.log('[queued_forced_bootstrap_retention_test] PASS cases=3 store=actual transport=controlled');
 
 // A successful read consumes the server result without changing its decisions.
 const initial = await load();

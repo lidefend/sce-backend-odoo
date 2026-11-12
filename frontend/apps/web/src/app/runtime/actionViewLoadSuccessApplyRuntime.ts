@@ -1,58 +1,6 @@
-import { loadActionViewCollectionScopeSnapshot } from './actionViewCollectionScopeRuntime';
 import { mapActionViewGroupSummaryItems, resolveActionViewGroupWindowMetrics } from './actionViewGroupSummaryRuntime';
 import { mapActionViewGroupedRows, resolveActionViewGroupedRowsRaw, resolveActionViewRecords } from './actionViewLoadResultRuntime';
-import { resolveLoadSuccessCollectionScopeState, resolveLoadSuccessWindowState } from './actionViewLoadSuccessRuntime';
-
-type Dict = Record<string, unknown>;
-
-export async function resolveLoadSuccessCollectionScopeApplyState(options: {
-  pageMode: string;
-  hasActiveField: boolean;
-  activeField: string;
-  model: string;
-  baseDomain: unknown[];
-  domainRaw: string;
-  context: Dict;
-  contextRaw: string;
-  searchTerm: string;
-  order: string;
-  fetchScopedTotal: (params: {
-    model: string;
-    domain: unknown[];
-    domainRaw: string;
-    context: Dict;
-    contextRaw: string;
-    searchTerm: string;
-    order: string;
-  }) => Promise<number>;
-  fetchCollectionScopeMetrics: (params: {
-    model: string;
-    domain: unknown[];
-    domainRaw: string;
-    context: Dict;
-    contextRaw: string;
-    searchTerm: string;
-    order: string;
-  }) => Promise<{ warning: number; done: number; amount: number }>;
-}): Promise<{ collectionScopeTotals: unknown; collectionScopeMetrics: unknown }> {
-  const snapshot = await loadActionViewCollectionScopeSnapshot({
-    enabled: options.pageMode === 'list' && options.hasActiveField,
-    activeField: options.activeField,
-    model: options.model,
-    baseDomain: options.baseDomain,
-    domainRaw: options.domainRaw,
-    context: options.context,
-    contextRaw: options.contextRaw,
-    searchTerm: options.searchTerm,
-    order: options.order,
-    fetchScopedTotal: options.fetchScopedTotal,
-    fetchCollectionScopeMetrics: options.fetchCollectionScopeMetrics,
-  });
-  return resolveLoadSuccessCollectionScopeState({
-    totals: snapshot.totals,
-    metrics: snapshot.metrics,
-  });
-}
+import { resolveLoadSuccessWindowState } from './actionViewLoadSuccessRuntime';
 
 export function resolveLoadSuccessRecordsState(options: {
   resultDataRaw: unknown;

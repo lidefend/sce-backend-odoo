@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "c4b07e17516490118a91f7cead655e15af94ef4d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGENCE-FE02-20261112.yaml",
+    ".agent/runs/FE-CONVERGENCE-FE02-20261112/run.json",
+    "docs/ops/iterations/fe_convergence_fe02_read_ownership_20261112.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadSuccessRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadSuccessPhaseInputRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadMainPhaseRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadSuccessDynamicInputRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewLoadLifecycleRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewScopedMetricsRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewCollectionScopeRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadCatchApplyRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadCatchStateApplyRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadErrorRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadStateApplyRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadSuccessApplyRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewLoadSuccessRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+    "scripts/verify/frontend_action_view_route_lease_race.test.mjs"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or remote write"
+  },
+  "checks": {
+    "route_lease": {
+      "target": "verify.frontend.action_view_route_lease_race.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/actionViewRouteLeaseCore.js",
+        "frontend/apps/web/src/app/action_runtime/useActionViewLoadSuccessRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewLoadMainPhaseRuntime.ts",
+        "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "relation_lifecycle": {
+      "target": "verify.frontend.professional_relation_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewLoadSuccessRuntime.ts",
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "form_return": {
+      "target": "verify.frontend.record_form_return.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_smoke": {
+      "target": "verify.action_view_runtime_smoke.behavior",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/action_view_route_runtime_smoke.js",
+        "scripts/verify/action_view_contract_action_runtime_smoke.js",
+        "scripts/verify/navigation_context_smoke.js",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the affected list A-to-B enumeration and retained-form A-to-B browser journeys on a deployed candidate, then perform independent review and remote CI.",
+  "id": "FE-CONVERGENCE-FE02-20261112",
+  "branch": "fix/fe-convergence-fe02-read-ownership-20261112",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONVERGENCE-FE02-20261112.yaml",
+  "record": "docs/ops/iterations/fe_convergence_fe02_read_ownership_20261112.md"
+}

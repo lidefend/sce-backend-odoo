@@ -1,0 +1,63 @@
+schema_version: 1
+goal:
+  id: FE-CONVERGENCE-FE02-20261112
+  title: FE-02 列表读取减负与异步归属收敛
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared frontend collection loading and record-read ownership
+  module: frontend/apps/web
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The formal list must publish only the result owned by the current load, and
+    a retained form instance must not apply a late denial from a record it no
+    longer owns. These are generic asynchronous contract-consumption mechanics.
+  why_not_elsewhere: >
+    No business field, permission rule or record relation is missing. Backend
+    contracts already provide the operation identity, and page/customer
+    special cases would duplicate a generic runtime responsibility.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CONVERGENCE-FE02-20261112.yaml
+      - .agent/runs/FE-CONVERGENCE-FE02-20261112/run.json
+      - docs/ops/iterations/fe_convergence_fe02_read_ownership_20261112.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/decision-authority-inventory-v1.json
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/views/ActionView.vue
+      - frontend/apps/web/src/app/action_runtime/
+      - frontend/apps/web/src/app/runtime/actionViewLoadCatchApplyRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewLoadCatchStateApplyRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewLoadErrorRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewLoadStateApplyRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewLoadSuccessApplyRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewLoadSuccessRuntime.ts
+      - frontend/apps/web/src/app/runtime/actionViewCollectionScopeRuntime.ts
+      - frontend/apps/web/src/app/action_runtime/useActionViewScopedMetricsRuntime.ts
+      - frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts
+      - frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts
+      - frontend/apps/web/scripts/record_form_return_navigation_test.ts
+      - scripts/verify/frontend_action_view_route_lease_race.test.mjs
+    product_behavior: >
+      Formal list loading performs no unconsumed collection-scope totals or
+      full-page metric scans. A superseded success cannot publish records or
+      status after an asynchronous ownership boundary. A late 403 from a record
+      page that is no longer active cannot navigate the current page. Generated
+      complexity and decision inventories refresh only affected source identities.
+  objective: >
+    Remove the unused collection-scope read chain and enforce load ownership at
+    final collection/form state and navigation publication points.
+  acceptance:
+    - formal list load no longer defines, computes or issues collection-scope totals or metric scans
+    - stale list success cannot publish records or status after losing its load lease
+    - stale form 403 cannot redirect after deactivation or record-identity change
+    - current list and form reads still publish and navigate normally
+    - focused tests, lint, strict typecheck, production build and ci.local.iteration pass non-zero
+  exclusions:
+    - retained listAggregates, which have a real renderer consumer
+    - backend contract, ACL or model changes
+    - FE-03 draft/cache/create/attachment work
+    - FE-04 expression and journey-matrix work
+    - database, deployment and browser write journeys
+  rollback: Revert this topic branch; no persistent data or service state is involved.

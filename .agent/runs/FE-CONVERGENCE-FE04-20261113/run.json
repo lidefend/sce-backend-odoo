@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "07fb8879079d127af9c42a881724b8e9e0b37d16",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGENCE-FE04-20261113.yaml",
+    ".agent/runs/FE-CONVERGENCE-FE04-20261113/run.json",
+    "docs/ops/iterations/fe_convergence_fe04_expression_a11y_20261113.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/App.vue",
+    "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+    "frontend/apps/web/src/components/attachment/attachmentViewerRequestLease.ts",
+    "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
+    "frontend/apps/web/src/components/action/hierarchyTreeKeyboard.ts",
+    "frontend/apps/web/src/components/chart/chartAdapter.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+    "frontend/apps/web/src/stores/appInitFailure.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+    "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
+    "frontend/apps/web/scripts/chart_dataset_model_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or remote write"
+  },
+  "checks": {
+    "created_record_retirement": {
+      "target": "verify.frontend.contract_form_save_failure_recovery.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+        "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "created_record_submit": {
+      "target": "verify.frontend.create_record_user_journey.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+        "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_bootstrap": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+        "frontend/apps/web/src/stores/appInitFailure.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "recursive_form": {
+      "target": "verify.frontend.native_form_structure_responsibility.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "viewer_ownership": {
+      "target": "verify.frontend.professional_relation_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/attachment/attachmentViewerRequestLease.ts",
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "tree_keyboard": {
+      "target": "verify.frontend.hierarchical_worksheet.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
+        "frontend/apps/web/src/components/action/hierarchyTreeKeyboard.ts",
+        "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "chart_determinism": {
+      "target": "verify.frontend.chart_dataset.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/chart/chartAdapter.ts",
+        "frontend/apps/web/scripts/chart_dataset_model_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "rich_text_browser": {
+      "target": "verify.frontend.rich_text.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_form_action_browser": {
+      "target": "verify.frontend.native_form_action_presentation.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the deferred create-handoff remediation, publish the clean exact HEAD through the governed PR lane, verify four required checks and wait for fresh independent review.",
+  "id": "FE-CONVERGENCE-FE04-20261113",
+  "branch": "fix/fe-convergence-fe04-expression-a11y-20261113",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONVERGENCE-FE04-20261113.yaml",
+  "record": "docs/ops/iterations/fe_convergence_fe04_expression_a11y_20261113.md"
+}

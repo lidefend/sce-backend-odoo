@@ -857,7 +857,6 @@ import { useActionViewFilterGroupRuntime } from '../app/action_runtime/useAction
 import { useActionViewHeaderRuntime } from '../app/action_runtime/useActionViewHeaderRuntime';
 import { useActionViewNavigationRuntime } from '../app/action_runtime/useActionViewNavigationRuntime';
 import { useActionViewRequestContextRuntime } from '../app/action_runtime/useActionViewRequestContextRuntime';
-import { useActionViewScopedMetricsRuntime } from '../app/action_runtime/useActionViewScopedMetricsRuntime';
 import { useActionViewContractShapeRuntime } from '../app/action_runtime/useActionViewContractShapeRuntime';
 import { useActionViewActionMetaRuntime } from '../app/action_runtime/useActionViewActionMetaRuntime';
 import { useActionViewSceneIdentityRuntime } from '../app/action_runtime/useActionViewSceneIdentityRuntime';
@@ -956,14 +955,12 @@ import {
 import {
   resolveLoadCatchLatencyState,
   resolveLoadCatchListTotalState,
-  resolveLoadCatchCollectionScopeState,
   resolveLoadCatchStatusApplyInput,
   resolveLoadCatchTraceApplyState,
 } from '../app/runtime/actionViewLoadCatchApplyRuntime';
 import {
   resolveLoadSuccessGroupedRowsState,
   resolveLoadSuccessGroupSummaryState,
-  resolveLoadSuccessCollectionScopeApplyState,
   resolveLoadSuccessRecordsState,
   resolveLoadSuccessWindowApplyState,
 } from '../app/runtime/actionViewLoadSuccessApplyRuntime';
@@ -995,7 +992,6 @@ import { applyActionViewLoadResetState } from '../app/runtime/actionViewLoadRese
 import {
   resolveContractFlagApplyState,
   resolveGroupPagingIdentityApplyState,
-  resolveCollectionScopeApplyState,
   resolveRouteSelectionApplyState,
   resolveWindowMetricsApplyState,
 } from '../app/runtime/actionViewLoadStateApplyRuntime';
@@ -1181,8 +1177,6 @@ const listTotalCount = ref<number | null>(null);
 const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);
 const listAggregates = ref<Record<string, Record<string, unknown>>>({});
-const collectionScopeTotals = ref<{ all: number; active: number; archived: number } | null>(null);
-const collectionScopeMetrics = ref<{ warning: number; done: number; amount: number } | null>(null);
 const searchTerm = ref('');
 const toolbarSearchDraft = ref('');
 const toolbarSearchComposing = ref(false);
@@ -2417,19 +2411,6 @@ function openHierarchyAction(action: { key?: string; action_id?: number; menu_id
 }
 
 const {
-  fetchScopedTotal,
-  fetchCollectionScopeMetrics,
-} = useActionViewScopedMetricsRuntime({
-  listRecordsRaw: listActionViewRecordsRaw,
-  resolveCollectionStateCell,
-  isCompletedState,
-  resolveCollectionAmount,
-  resolveCollectionMetricFields,
-  // 指标扫描的取数规模同源契约声明（列表页每页条数声明上界），前端不持有产品常量。
-  resolveDeclaredScopePageLimit: () => resolveActionViewPageSizeRange(actionContract.value).max,
-});
-
-const {
   getActionType,
   isClientAction,
   isUrlAction,
@@ -2596,8 +2577,6 @@ const {
   staticInput: {
     resolveEffectiveFilterDomainRaw,
     pageText,
-    fetchScopedTotal,
-    fetchCollectionScopeMetrics,
     restartLoadWithRouteSync,
     syncRouteListState,
     normalizeGroupedRouteState,
@@ -2614,8 +2593,6 @@ const {
     resolveLoadGroupRouteSyncPatch,
     resolveLoadRouteSyncApplyState,
     resolveLoadListTotalApplyState,
-    resolveLoadSuccessCollectionScopeApplyState,
-    resolveCollectionScopeApplyState,
     resolveLoadSuccessRecordsState,
     resolveLoadGroupSummaryApplyState,
     resolveLoadSuccessGroupSummaryState,
@@ -2639,8 +2616,6 @@ const {
     collapsedGroupKeysRef: collapsedGroupKeys,
     listTotalCountRef: listTotalCount,
     listAggregatesRef: listAggregates,
-    collectionScopeTotalsRef: collectionScopeTotals,
-    collectionScopeMetricsRef: collectionScopeMetrics,
     recordsRef: records,
     groupSummaryItemsRef: groupSummaryItems,
     groupWindowCountRef: groupWindowCount,
@@ -2670,14 +2645,11 @@ const {
     errorTraceId: () => (error.value as { traceId?: string } | null)?.traceId || '',
     resolveLoadCatchState,
     resolveLoadCatchListTotalState,
-    resolveLoadCatchCollectionScopeState,
     resolveLoadCatchTraceApplyState,
     resolveLoadCatchStatusApplyInput,
     resolveLoadCatchLatencyState,
     deriveListStatus,
     listTotalCount,
-    collectionScopeTotals,
-    collectionScopeMetrics,
     traceId,
     lastTraceId,
     status,
@@ -2932,15 +2904,17 @@ const {
   buildLoadSuccessDynamicInput,
 } = useActionViewLoadSuccessDynamicInputRuntime({
   staticInput: () => ({
+    isLoadCurrent: (loadGeneration: number) => isActionViewLoadLeaseCurrent({
+      loadGeneration,
+      latestLoadGeneration,
+      isComponentActive: isComponentActive.value,
+      instanceActivityRouteKey: instanceActivityRouteKey.value,
+      currentActivityRouteKey: currentActionActivityRouteKey(),
+    }),
     routeQueryMap: routeQueryMap.value,
     routeGroupValueRaw: routeQueryMap.value.group_value,
     activeGroupByField: activeGroupByField.value,
     groupSampleLimit: groupSampleLimit.value,
-    searchTerm: searchTerm.value,
-    sortLabel: sortLabel.value,
-    pageMode: pageMode.value,
-    hasActiveField: hasActiveField.value,
-    activeField: activeField.value,
   }),
 });
 const {

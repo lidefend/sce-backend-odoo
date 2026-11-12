@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "615d9e5f9b1f1c847e7f2c0086c9daa7ce1a4bc7",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGENCE-FE03-20261113.yaml",
+    ".agent/runs/FE-CONVERGENCE-FE03-20261113/run.json",
+    "docs/ops/iterations/fe_convergence_fe03_draft_submit_20261113.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    "frontend/apps/web/src/App.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+    "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+    "frontend/apps/web/src/components/editor/restrictedHtmlEditorInput.ts",
+    "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/components/template/attachmentRelationMerge.ts",
+    "frontend/apps/web/scripts/activity_page_retention_test.ts",
+    "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+    "frontend/apps/web/scripts/overview_rich_text_model_test.ts",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "frontend/apps/web/scripts/record_form_return_navigation_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or remote write"
+  },
+  "checks": {
+    "activity_identity": {
+      "target": "verify.frontend.state_dashboard.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/scripts/activity_page_retention_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "created_navigation": {
+      "target": "verify.frontend.record_form_return.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+        "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "create_journey": {
+      "target": "verify.frontend.create_record_user_journey.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+        "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "rich_text": {
+      "target": "verify.frontend.overview_rich_text.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+        "frontend/apps/web/src/components/editor/restrictedHtmlEditorInput.ts",
+        "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+        "frontend/apps/web/scripts/overview_rich_text_model_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "attachment_merge": {
+      "target": "verify.frontend.professional_relation_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/template/attachmentRelationMerge.ts",
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the affected tab-close/reopen, create-while-other-draft-dirty, rich-text save and concurrent attachment browser journeys on a deployed candidate, then perform independent review and remote CI.",
+  "id": "FE-CONVERGENCE-FE03-20261113",
+  "branch": "fix/fe-convergence-fe03-draft-submit-20261113",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONVERGENCE-FE03-20261113.yaml",
+  "record": "docs/ops/iterations/fe_convergence_fe03_draft_submit_20261113.md"
+}

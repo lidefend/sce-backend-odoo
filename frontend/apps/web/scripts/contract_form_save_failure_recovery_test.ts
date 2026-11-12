@@ -28,7 +28,15 @@ type Harness = {
     originalValues: Ref<Record<string, unknown>>;
     validationErrors: Ref<string[]>;
   };
-  calls: { writes: WriteCall[]; creates: CreateCall[]; reloads: number; created: number[]; redirects: unknown[] };
+  calls: {
+    writes: WriteCall[];
+    creates: CreateCall[];
+    reloads: number;
+    created: number[];
+    redirects: unknown[];
+    completedActivities: string[];
+    completionRedirectCounts: number[];
+  };
   failWrite: (error: unknown) => void;
   succeedWrite: () => void;
   failCreate: (error: unknown) => void;
@@ -42,7 +50,10 @@ function buildHarness(options: {
   dirty: string[];
   uploadFails?: boolean;
 }): Harness {
-  const calls: Harness['calls'] = { writes: [], creates: [], reloads: 0, created: [], redirects: [] };
+  const calls: Harness['calls'] = {
+    writes: [], creates: [], reloads: 0, created: [], redirects: [],
+    completedActivities: [], completionRedirectCounts: [],
+  };
 
   let writeBehavior: () => Promise<unknown> = async () => ({});
   let createBehavior: () => Promise<{ id: number }> = async () => ({ id: 900 });
@@ -111,7 +122,19 @@ function buildHarness(options: {
     router,
     sanitizeUiErrorMessage,
     sceneReadyFormSurface: ref({ nextSceneKey: '', nextSceneRoute: '' }),
-    session: { loadAppInit: async () => undefined, logout: async () => undefined, token: 'harness-token', user: { id: 1 }, recordContext: {} },
+    session: {
+      loadAppInit: async () => undefined,
+      logout: async () => undefined,
+      token: 'harness-token',
+      user: { id: 1 },
+      recordContext: {},
+      activeActivityPageKey: 'new:x.document:page:create-1',
+      completeCreatedActivityPage: (key: string) => {
+        calls.completedActivities.push(key);
+        calls.completionRedirectCounts.push(calls.redirects.length);
+        return true;
+      },
+    },
     showOne2manyErrors: ref(false),
     snapshotOriginalFormValues,
     status: ref('ok'),
@@ -225,6 +248,8 @@ const businessRejection = () => new ApiError('金额必须大于零', 422, 'trac
   assert.equal(accepted, true, 'a corrected create must succeed');
   assert.equal(calls.creates.length, 2, 'the retry creates exactly once');
   assert.deepEqual(calls.created, [900], 'no duplicate record is created');
+  assert.deepEqual(calls.completedActivities, ['new:x.document:page:create-1'], 'the committed create page is retired');
+  assert.deepEqual(calls.completionRedirectCounts, [1], 'retirement follows the completed record navigation');
 }
 
 // ---------------------------------------------------------------------------
@@ -246,11 +271,23 @@ const businessRejection = () => new ApiError('金额必须大于零', 422, 'trac
 console.log('[contract-form-save-failure-recovery] PASS: edit-retry, single-flight, create-retry, permission-denial');
 
 {
+  const harness = buildHarness({ recordId: null, formData: { title: 'Create then submit' }, originalValues: {}, dirty: ['title'] });
+  const outcome = await harness.actions.saveRecord(undefined, { navigateAfterCreate: false });
+  assert.equal(outcome, 900, 'create-only mode returns the generated identity');
+  assert.deepEqual(harness.calls.completedActivities, [], 'create-only mode keeps the source instance until the outer submit finishes');
+  assert.equal(harness.actions.completeCreatedActivity(), true);
+  assert.deepEqual(harness.calls.completedActivities, ['new:x.document:page:create-1']);
+}
+console.log('[contract-form-save-failure-recovery] create submit handoff defers source retirement PASS count=2');
+
+{
   const harness = buildHarness({ recordId: null, formData: { title: 'Created before upload failure' }, originalValues: {}, dirty: ['title'], uploadFails: true });
   const outcome = await harness.actions.saveRecord(undefined, { navigateAfterCreate: false });
   assert.equal(outcome, false, 'upload failure must not proceed to submission');
   assert.deepEqual(harness.calls.created, [900]);
   assert.equal(harness.calls.creates.length, 1);
+  assert.deepEqual(harness.calls.completedActivities, ['new:x.document:page:create-1']);
+  assert.deepEqual(harness.calls.completionRedirectCounts, [1]);
   assert.deepEqual(harness.calls.redirects, [{ createdId: 900, nextSceneKey: '', nextSceneRoute: '', refreshPolicy: undefined, recovery: 'upload' }]);
   assert.equal(harness.calls.reloads, 0, 'never reload the empty new route');
 }

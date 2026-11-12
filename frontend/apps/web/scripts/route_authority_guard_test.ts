@@ -3,10 +3,12 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import {
+  buildRouteAuthorityValidationParams,
   findRouteAuthority,
   normalizeRouteAuthorityContract,
   routeAuthorityContextAllowed,
   routeAuthorityForPrincipal,
+  validateRouteAuthorityContext,
 } from '../src/app/routeAuthority';
 
 function assertGap(run: () => unknown) {
@@ -175,6 +177,56 @@ assert.equal(findRouteAuthority(discoveredContract, {
   menuId: 379,
   query: { menu_id: '379', action_id: '506', view_mode: 'tree' },
 })?.route_kind, 'DISCOVERED_PRIMARY_NAV');
+
+const menuBoundValidationAuthority = normalizeRouteAuthorityContract({
+  ...raw,
+  primary_actions: [{
+    action_xmlid: 'test.shared_action',
+    route_kind: 'PRIMARY_NAV',
+    menu_id: 805,
+    menu_xmlid: 'test.menu_805',
+    action_id: 862,
+    model: 'x.shared',
+    context_requirements: {
+      required_query: ['company_id', 'project_id'],
+      company_query: 'company_id',
+      project_query: 'project_id',
+    },
+  }],
+})?.primary_actions[0];
+assert.ok(menuBoundValidationAuthority);
+const validationParams = buildRouteAuthorityValidationParams({
+  actionId: 862,
+  menuId: 805,
+  authority: menuBoundValidationAuthority,
+  query: {
+    action_id: '862',
+    menu_id: '805',
+    company_id: '3',
+    project_id: '17',
+  },
+});
+assert.deepEqual(validationParams, {
+  company_id: '3',
+  project_id: '17',
+  action_id: 862,
+  menu_id: 805,
+});
+let observedValidationParams: Record<string, unknown> | null = null;
+void validateRouteAuthorityContext({
+  actionId: 862,
+  menuId: 805,
+  authority: menuBoundValidationAuthority,
+  query: { company_id: '3', project_id: '17' },
+  request: async (params) => {
+    observedValidationParams = params;
+    return { allowed: true };
+  },
+}).then((allowed) => {
+  assert.equal(allowed, true);
+  assert.deepEqual(observedValidationParams, validationParams);
+  console.log('[shared_action_multi_menu_validation] PASS menu/action identity preserved with required query');
+});
 
 const menuBoundActionWithoutActionXmlid = normalizeRouteAuthorityContract({
   ...raw,

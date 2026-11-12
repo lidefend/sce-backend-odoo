@@ -1,4 +1,5 @@
 import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
 import {
   applyOverviewRichTextResult,
   beginOverviewRichTextSession,
@@ -16,6 +17,7 @@ import {
   updateOverviewRichTextDraft,
   validateOverviewRichTextDraft,
 } from '../src/app/presentation/overviewRichTextPatch';
+import { resolveRestrictedHtmlEditorInput } from '../src/components/editor/restrictedHtmlEditorInput';
 
 // ── 块数据规范化（envelope / 裸 data / 缺字段回退） ─────────
 const envelope = projectOverviewRichTextBlockData({
@@ -153,4 +155,8 @@ assert.ok([OVERVIEW_RICH_TEXT_SESSION_EDITING, OVERVIEW_RICH_TEXT_SESSION_SAVING
   OVERVIEW_RICH_TEXT_SESSION_ERROR, OVERVIEW_RICH_TEXT_SESSION_CONFLICT]
   .every((value) => typeof value === 'string'));
 
+assert.equal(resolveRestrictedHtmlEditorInput({ disabled: true, html: '<p>late input</p>' }), null);
+assert.equal(resolveRestrictedHtmlEditorInput({ disabled: false, html: '<p>draft</p>' }), '<p>draft</p>');
+const editorSource = fs.readFileSync('frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue', 'utf8');
+assert.match(editorSource, /:contenteditable="disabled \? 'false' : 'true'"/);
 console.log('overview_rich_text_model_test: all assertions passed');

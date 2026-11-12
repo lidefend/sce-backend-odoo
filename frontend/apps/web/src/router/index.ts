@@ -12,7 +12,7 @@ import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
-import { findRouteAuthority } from '../app/routeAuthority';
+import { findRouteAuthority, validateRouteAuthorityContext } from '../app/routeAuthority';
 import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
 import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
@@ -21,6 +21,7 @@ import { validateRelationReadRoute } from '../app/relationReadRouteAuthority';
 import { currentContextEpoch } from '../app/contextEpoch';
 import { isAdminRouteAccessDenied } from '../app/adminRouteAccess';
 import { resolveEntryBasePath } from '../services/entryNamespace';
+import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -137,11 +138,6 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
   }
   if (to.name === 'my-work') return '/my-work';
   return String(to.path || to.fullPath || '').trim();
-}
-
-function activityContextPart(session: ReturnType<typeof useSessionStore>): string {
-  const selectedId = Number(session.recordContext?.selected?.id || 0) || 0;
-  return selectedId > 0 ? `record-context:${selectedId}` : 'all';
 }
 
 function currentActionMatches(session: ReturnType<typeof useSessionStore>, actionId: number): boolean {
@@ -262,22 +258,29 @@ function registerRouteActivity(to: RouteLocationNormalized, options: { settling?
   let recordId = '';
   let sceneKey = '';
   let activityRoute = '';
+  const activityKey = resolveActivityRouteKey({
+    routeName: to.name,
+    params: to.params,
+    query: to.query,
+    meta: to.meta,
+    selectedRecordId: session.recordContext?.selected?.id,
+  });
   if (to.name === 'action') {
     actionId = positiveInteger(to.params.actionId || to.query.action_id);
     menuId = positiveInteger(to.query.menu_id);
-    key = `action:${actionId}:menu:${menuId}:${activityContextPart(session)}`;
+    key = activityKey;
     kind = 'menu_action';
   } else if (to.name === 'record' || to.name === 'model-form') {
     model = routeQueryText(to.params.model);
     recordId = routeQueryText(to.params.id);
     const activityInstanceId = routeQueryText(to.query.activity_page_id);
-    key = recordId === 'new'
-      ? `new:${model}:${routeQueryText(to.query.menu_id)}:${activityContextPart(session)}:${activityInstanceId || now}`
-      : `record:${model}:${recordId}`;
+    key = activityKey || (recordId === 'new'
+      ? `new:${model}:${routeQueryText(to.query.menu_id)}:${activityInstanceId || now}`
+      : `record:${model}:${recordId}`);
     kind = 'record_form';
   } else if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
     sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey || to.query.scene_key || to.query.scene);
-    key = `scene:${sceneKey || String(to.name || 'scene')}:${activityContextPart(session)}`;
+    key = activityKey || `scene:${sceneKey || String(to.name || 'scene')}`;
     kind = sceneKey === 'workspace.home' || to.name === 'scene-home' ? 'workspace' : 'scene';
   } else if (to.name === 'home' || to.name === 'my-work') {
     key = `workspace:${String(to.name)}`;
@@ -379,16 +382,16 @@ router.beforeEach(async (to) => {
     if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)
       && routeAuthority.context_requirements.required_query.length > 0) {
       try {
-        const validation = await intentRequest<{ allowed?: boolean }>({
-          intent: 'route.authority.validate',
-          params: {
-            action_id: actionId,
-            ...Object.fromEntries(
-              routeAuthority.context_requirements.required_query.map((key) => [String(key), to.query[String(key)]]),
-            ),
-          },
+        runtimeRouteAuthorized = await validateRouteAuthorityContext({
+          actionId,
+          menuId,
+          authority: routeAuthority,
+          query: to.query as Record<string, unknown>,
+          request: (params) => intentRequest<{ allowed?: boolean }>({
+            intent: 'route.authority.validate',
+            params,
+          }),
         });
-        runtimeRouteAuthorized = validation.allowed === true;
       } catch {
         runtimeRouteAuthorized = false;
       }

@@ -6,12 +6,12 @@ import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta,
 import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
 import { navigationProjectionActions, navigationProjectionState, type NavigationProjectionState } from './navigationProjectionActions';
-import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
 import type { Scene } from '../app/resolvers/sceneRegistry';
 import { logger } from '../utils/logger';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import { advanceActivityPageCacheEpoch } from '../app/activityPageCacheIdentity';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
 import { setActiveDb } from '../services/dbContext';
 import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNamespace';
@@ -40,6 +40,7 @@ import type {
   WorkspaceTodayActionRow,
 } from './sessionWorkspaceTypes';
 import { projectWorkspaceHomeObjectRows } from './sessionWorkspaceObjects';
+import { resolveAppInitFailureState } from './appInitFailure';
 
 export type {
   WorkspaceAdviceRow,
@@ -54,6 +55,7 @@ export type {
 
 let appInitInFlight: Promise<void> | null = null;
 let appInitEpoch = -1;
+let appInitSequence = 0;
 
 function resolveAvailableSceneRoute(rawPath: string): string {
   const normalized = normalizeLegacyWorkbenchPath(String(rawPath || '').trim());
@@ -941,6 +943,7 @@ export const useSessionStore = defineStore('session', {
     clearSession() {
       invalidateContextRequests();
       this.invalidateWorkspaceScenarioProjection();
+      appInitSequence += 1;
       appInitInFlight = null;
       appInitEpoch = -1;
       this.token = null;
@@ -1150,6 +1153,15 @@ export const useSessionStore = defineStore('session', {
       });
       if (changed) this.persist();
     },
+    completeCreatedActivityPage(key: string) {
+      const normalizedKey = asText(key);
+      if (!normalizedKey || this.activityPages.find((page) => page.key === normalizedKey)?.record_id !== 'new') return false;
+      this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
+      this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(this.activityPageCacheEpochs, normalizedKey);
+      if (this.activeActivityPageKey === normalizedKey) this.activeActivityPageKey = '';
+      this.persist();
+      return true;
+    },
     authorizeActivityPageNavigation() {
       activityPageNavigationAuthorized = true;
     },
@@ -1166,14 +1178,10 @@ export const useSessionStore = defineStore('session', {
       if (!normalizedKey) return null;
       const closingActive = this.activeActivityPageKey === normalizedKey;
       this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
-      const cacheRouteKey = activityPageCacheRouteKey(normalizedKey);
-      this.activityPageCacheEpochs = {
-        ...this.activityPageCacheEpochs,
-        [normalizedKey]: Number(this.activityPageCacheEpochs[normalizedKey] || 0) + 1,
-        ...(cacheRouteKey ? {
-          [cacheRouteKey]: Number(this.activityPageCacheEpochs[cacheRouteKey] || 0) + 1,
-        } : {}),
-      };
+      this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(
+        this.activityPageCacheEpochs,
+        normalizedKey,
+      );
       let nextPage: ActivityPage | null = null;
       if (closingActive) {
         nextPage = [...this.activityPages].sort((a, b) => b.last_active_at - a.last_active_at)[0] || null;
@@ -1307,19 +1315,32 @@ export const useSessionStore = defineStore('session', {
     async loadAppInit(options: { force?: boolean; contextEpoch?: number } = {}) {
       const requestEpoch = options.contextEpoch ?? currentContextEpoch();
       if (!isCurrentContextEpoch(requestEpoch)) return;
-      if (appInitInFlight && appInitEpoch === requestEpoch && !options.force) {
-        return appInitInFlight;
-      }
-      if (appInitInFlight && appInitEpoch === requestEpoch && options.force) {
-        try {
-          await appInitInFlight;
-        } catch {
-          // A forced refresh must fetch the latest runtime state even if the
-          // previous bootstrap request failed.
+      const pendingAppInit = () => appInitInFlight && appInitEpoch === requestEpoch ? appInitInFlight : null;
+      const existingInit = pendingAppInit();
+      if (existingInit && !options.force) return existingInit;
+      if (existingInit) {
+        // Forced refreshes are queued. Each waiter must observe the next
+        // in-flight transaction before it can take its own activity snapshot.
+        for (let inFlight: Promise<void> | null = existingInit; inFlight; inFlight = pendingAppInit()) {
+          try {
+            await inFlight;
+          } catch {
+            // A later forced refresh still fetches current runtime state.
+          }
+          if (!isCurrentContextEpoch(requestEpoch)) return;
         }
       }
-      if (!isCurrentContextEpoch(requestEpoch)) return;
+      const requestSequence = ++appInitSequence;
+      const bootstrapIsCurrent = () => isCurrentContextEpoch(requestEpoch)
+        && appInitSequence === requestSequence;
       const run = (async () => {
+      const publishFailure = (err: unknown) => {
+        if (!bootstrapIsCurrent()) return false;
+        Object.assign(this, resolveAppInitFailureState(err));
+        setSceneRegistry([]);
+        return true;
+      };
+      try {
       // Every authoritative bootstrap starts fail-closed. This covers login,
       // Company/record-context/role transitions and policy publish/rollback refreshes.
       this.isReady = false;
@@ -1397,28 +1418,8 @@ export const useSessionStore = defineStore('session', {
         logger.debug('4. Request params:', JSON.stringify(requestParams, null, 2));
       }
 
-      let result: AppInitResponse;
-      try {
-        result = await intentRequest<AppInitResponse>(requestParams);
-      } catch (err) {
-        if (!isCurrentContextEpoch(requestEpoch)) return;
-        if (err instanceof ApiError) {
-          this.initError = err.message;
-          this.initTraceId = err.traceId ?? null;
-        } else {
-          this.initError = err instanceof Error ? err.message : 'init failed';
-        }
-        this.initStatus = 'error';
-        this.isReady = false;
-        this.routeAuthority = null;
-        this.menuTree = [];
-        this.navigationModel = null;
-        this.scenarioSurface = null;
-        this.currentAction = null;
-        setSceneRegistry([]);
-        throw err;
-      }
-      if (!isCurrentContextEpoch(requestEpoch)) return;
+      const result: AppInitResponse = await intentRequest<AppInitResponse>(requestParams);
+      if (!bootstrapIsCurrent()) return;
       // A1: 打印响应诊断信息
       if (debugIntent) {
         logger.debug('1. Response keys:', Object.keys(result));
@@ -1735,9 +1736,14 @@ export const useSessionStore = defineStore('session', {
           : '';
         this.activeActivityPageKey = restoredActiveKey;
       }
+      if (!bootstrapIsCurrent()) return;
       this.isReady = true;
       this.initStatus = 'ready';
       this.persist();
+      } catch (err) {
+        if (!publishFailure(err)) return;
+        throw err;
+      }
       })();
       appInitInFlight = run;
       appInitEpoch = requestEpoch;
@@ -1889,12 +1895,10 @@ export const useSessionStore = defineStore('session', {
         },
       };
       if (scopeChanged) {
-        const nextEpochs = { ...this.activityPageCacheEpochs };
-        this.activityPages.forEach((page) => {
-          nextEpochs[page.key] = Number(nextEpochs[page.key] || 0) + 1;
-          const routeKey = activityPageCacheRouteKey(page.key);
-          if (routeKey) nextEpochs[routeKey] = Number(nextEpochs[routeKey] || 0) + 1;
-        });
+        const nextEpochs = this.activityPages.reduce(
+          (epochs, page) => advanceActivityPageCacheEpoch(epochs, page.key),
+          { ...this.activityPageCacheEpochs },
+        );
         this.activityPages = [];
         this.activeActivityPageKey = '';
         this.activityPageCacheEpochs = nextEpochs;

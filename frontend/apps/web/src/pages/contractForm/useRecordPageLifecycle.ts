@@ -440,6 +440,9 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const run = (async () => {
       const reloadToken = activeReloadToken + 1;
       activeReloadToken = reloadToken;
+      const reloadIsCurrent = () => activeReloadToken === reloadToken
+        && (!isComponentActive || isComponentActive.value)
+        && formRouteIdentity() === reloadIdentity;
       dependencies.clearRelationRuntime();
       if (dependencies.submissionFeedback) dependencies.submissionFeedback.value = null;
       renderErrorMessage.value = '';
@@ -453,14 +456,14 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       showOne2manyErrors.value = false;
       try {
         await loadContract();
-        if (reloadToken !== activeReloadToken) return;
+        if (!reloadIsCurrent()) return;
         await loadRecord();
-        if (reloadToken !== activeReloadToken) return;
+        if (!reloadIsCurrent()) return;
         applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });
         retainedRouteIdentity.value = formRouteIdentity();
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
-        if (reloadToken !== activeReloadToken) return;
+        if (!reloadIsCurrent()) return;
         if (err instanceof ApiError) {
           Object.assign(loadError, {
             status: err.status,

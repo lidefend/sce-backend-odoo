@@ -141,8 +141,7 @@ export function useCreatedRecordNavigationRuntime(params: {
       query: { ...pickContractNavQuery(currentQuery), ...(options.recovery ? { create_recovery: options.recovery } : {}) },
     });
     if (navigate) return await navigate(createdRoute);
-    window.location.replace(new URL(createdRoute.href, window.location.origin).toString());
-    await new Promise<never>(() => {});
+    await params.router.replace(createdRoute);
     return true;
   }
 

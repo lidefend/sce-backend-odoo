@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: FE-CONVERGENCE-FE03-20261113
+  title: FE-03 活动草稿与提交一致性收敛
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared frontend activity identity, created-record navigation and edit-session merge behavior
+  module: frontend/apps/web
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    KeepAlive identity, SPA handoff, rich-text interaction locking and
+    concurrent relation uploads are generic client-session mechanisms. They
+    must preserve already-declared record/action identities and local drafts.
+  why_not_elsewhere: >
+    The defects are client-state ownership and merge errors, not missing model,
+    field, permission or workflow declarations. Page/customer special cases
+    would create parallel cache and write semantics.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CONVERGENCE-FE03-20261113.yaml
+      - .agent/runs/FE-CONVERGENCE-FE03-20261113/run.json
+      - docs/ops/iterations/fe_convergence_fe03_draft_submit_20261113.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/app/activityPageCacheIdentity.ts
+      - frontend/apps/web/src/App.vue
+      - frontend/apps/web/src/router/index.ts
+      - frontend/apps/web/src/stores/session.ts
+      - frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts
+      - frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue
+      - frontend/apps/web/src/components/editor/restrictedHtmlEditorInput.ts
+      - frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue
+      - frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue
+      - frontend/apps/web/src/components/template/attachmentRelationMerge.ts
+      - frontend/apps/web/scripts/activity_page_retention_test.ts
+      - frontend/apps/web/scripts/create_record_user_journey_test.ts
+      - frontend/apps/web/scripts/overview_rich_text_model_test.ts
+      - frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts
+      - frontend/apps/web/scripts/record_form_return_navigation_test.ts
+    product_behavior: >
+      App and router use one activity key; confirmed close advances that exact
+      key so reopening is a clean instance. Ordinary create success uses managed
+      SPA replacement. A saving rich-text editor cannot accept new input that a
+      success response would discard. Concurrent attachment uploads merge
+      against the latest relation IDs without restoring removed links.
+      Generated complexity/component inventories refresh only affected source
+      identities and line locations.
+  objective: >
+    Make tab switching, confirmed close, ordinary create handoff, rich-text save
+    and attachment uploads preserve or discard drafts according to one explicit
+    client ownership contract.
+  acceptance:
+    - App KeepAlive key and router activity key are produced by one shared resolver
+    - confirmed close increments the exact cache-key epoch used by App
+    - ordinary create success uses router replacement and preserves other activity drafts
+    - disabled saving editor is non-editable and suppresses input events
+    - concurrent and mid-upload removal attachment cases preserve latest relation state
+    - targeted tests, lint, strict typecheck, production build and ci.local.iteration pass non-zero
+  exclusions:
+    - backend contracts, models, ACL and workflow
+    - FE-04 tree/viewer/chart expression work
+    - database, deployment and full browser matrix
+  rollback: Revert this topic branch; no persistent data or service state is involved.

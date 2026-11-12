@@ -1,25 +1,19 @@
 type Dict = Record<string, unknown>;
 
 type BuildLoadSuccessPhaseInputOptions = {
+  loadGeneration: number;
   result: Dict;
   contractColumns: string[];
-  baseDomain: unknown[];
-  requestContext: Dict;
-  requestContextRaw: string;
   startedAt: number;
-  resolvedModel: string;
 };
 
 export function useActionViewLoadSuccessPhaseInputRuntime() {
   function buildLoadSuccessPhaseInput(input: BuildLoadSuccessPhaseInputOptions): Dict {
     return {
+      loadGeneration: input.loadGeneration,
       result: input.result,
       contractColumns: input.contractColumns,
-      baseDomain: input.baseDomain,
-      requestContext: input.requestContext,
-      requestContextRaw: input.requestContextRaw,
       startedAt: input.startedAt,
-      resolvedModel: input.resolvedModel,
     };
   }
 

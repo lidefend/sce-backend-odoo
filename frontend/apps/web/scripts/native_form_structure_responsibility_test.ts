@@ -301,7 +301,12 @@ assert.ok(treeSource.includes(':is="isDetailCard(node) ? ScCard'));
 assert.ok(treeSource.includes(':inside-detail-card="insideDetailCard || isDetailCard(node)"'));
 assert.ok(treeSource.includes("nodeType(node) === 'notebook'"));
 assert.ok(treeSource.includes(':model-value="activePageIndex"'));
-assert.ok(treeSource.includes(':nodes="notebookPageChildren(node, activePageIndex)"'));
+assert.ok(treeSource.includes(':nodes="notebookPageChildren(node, Number(item.value))"'));
+assert.equal(
+  (treeSource.match(/<NativeFormTreeRenderer/g) || []).length,
+  (treeSource.match(/:native-action-state-resolver="nativeActionStateResolver"/g) || []).length,
+  'every recursive native form renderer forwards the action-state resolver',
+);
 for (const file of ['CanonicalNativeFormSurface.vue', 'ObjectTaskPage.vue']) {
   assert.ok(source(`pages/contractForm/${file}`).includes('!detailComposition?.adopted.value && sectionLinks.length > 1'));
 }

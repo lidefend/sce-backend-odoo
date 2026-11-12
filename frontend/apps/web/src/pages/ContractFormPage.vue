@@ -1224,6 +1224,7 @@ const {
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
   confirmActionSafety: (action) => confirmActionSafety(action),
+  completeCreatedActivity: () => completeCreatedActivity(),
   errorMessage, hasChanges: () => hasChanges.value,
   modelName: () => model.value,
   navigateActionResponseResult: (result, owner) => navigateActionResponseResult(result, owner),
@@ -2030,7 +2031,8 @@ const {
   onSelectedFormSettingsFieldLabelChange, contractInlineFieldOrderIndex, onContractInlineFieldOrderMove, onContractInlineFieldOrderDragStart, onContractInlineFieldOrderDragOver,
   onContractInlineFieldOrderDragLeave, onContractInlineFieldOrderDrop, onContractInlineFieldOrderGroupDrop, onContractInlineFieldOrderDragEnd, lowCodeApplyBaseParams,
   contractFieldSequence, fieldGroupTitleForDraft, routeQueryText, lowCodeReturnQuery, previewLowCodeConfiguredPage,
-  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, applyProjectionRefreshPolicy, saveRecord: saveRecordRuntime,
+  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, applyProjectionRefreshPolicy,
+  completeCreatedActivity, saveRecord: saveRecordRuntime,
 } = useRecordFormActions({
   ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES,
   BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId,

@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: FE-CONVERGENCE-FE04-20261113
+  title: FE-04 正式表达与公共控件收敛
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared frontend recursive presentation, async viewer ownership, tree keyboard access and deterministic chart semantics
+  module: frontend/apps/web
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    Recursive action state propagation, viewer request ownership, keyboard
+    reachability and data-position color semantics are generic presentation
+    mechanics shared by every contract-driven surface.
+  why_not_elsewhere: >
+    Backend declarations already provide action state, attachment identity and
+    chart data. Page/customer-specific compensations would create parallel
+    state or presentation authorities.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CONVERGENCE-FE04-20261113.yaml
+      - .agent/runs/FE-CONVERGENCE-FE04-20261113/run.json
+      - docs/ops/iterations/fe_convergence_fe04_expression_a11y_20261113.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+      - frontend/apps/web/src/components/attachment/AttachmentViewer.vue
+      - frontend/apps/web/src/components/attachment/attachmentViewerRequestLease.ts
+      - frontend/apps/web/src/components/action/HierarchyTreeNode.vue
+      - frontend/apps/web/src/components/action/hierarchyTreeKeyboard.ts
+      - frontend/apps/web/src/components/chart/chartAdapter.ts
+      - frontend/apps/web/scripts/native_form_structure_responsibility_test.ts
+      - frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts
+      - frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts
+      - frontend/apps/web/scripts/chart_dataset_model_test.ts
+    product_behavior: >
+      Nested buttons consume the same backend action state and disabled reason.
+      A stale attachment response cannot replace a newer viewer request or
+      create resources after close. Tree branches expose keyboard expand/collapse.
+      Chart trend colors are deterministic for a data position, not call history.
+      Generated complexity/component inventories refresh only affected source
+      identities and locations.
+  objective: >
+    Make declared action state and user-facing interaction semantics consistent
+    across recursive forms and shared attachment/tree/chart controls.
+  acceptance:
+    - every recursive NativeFormTreeRenderer branch forwards action state resolver
+    - attachment viewer owns its request sequence and disposes only current resources
+    - branch expand/collapse is keyboard reachable
+    - chart color depends only on data position and values
+    - targeted tests, lint, strict typecheck, production build and ci.local.iteration pass non-zero
+  exclusions:
+    - backend contracts, models, ACL and workflow
+    - full browser journey matrix
+    - database, deployment and write operations
+  rollback: Revert this topic branch; no persistent data or service state is involved.

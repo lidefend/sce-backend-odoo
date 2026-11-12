@@ -5,6 +5,7 @@ import {
   resolveVisibleWorksheetRecordId,
   shouldOpenWorksheetRecordFromKeyboard,
 } from '../src/app/action_runtime/hierarchicalWorksheetInteraction';
+import { resolveHierarchyTreeKeyboardAction } from '../src/components/action/hierarchyTreeKeyboard';
 
 const row = {} as EventTarget;
 const expander = {} as EventTarget;
@@ -27,5 +28,10 @@ assert.equal(clampWorksheetPaneSize('detail', 999), 420);
 assert.equal(resolveVisibleWorksheetRecordId([7, 8], 8), 8);
 assert.equal(resolveVisibleWorksheetRecordId([7, 8], 9), 7);
 assert.equal(resolveVisibleWorksheetRecordId([], 8), null);
+assert.equal(resolveHierarchyTreeKeyboardAction({ key: 'ArrowRight', hasChildren: true, expanded: false }), 'expand');
+assert.equal(resolveHierarchyTreeKeyboardAction({ key: 'ArrowLeft', hasChildren: true, expanded: true }), 'collapse');
+assert.equal(resolveHierarchyTreeKeyboardAction({ key: 'ArrowRight', hasChildren: true, expanded: true }), null);
+assert.equal(resolveHierarchyTreeKeyboardAction({ key: 'ArrowLeft', hasChildren: true, expanded: false }), null);
+assert.equal(resolveHierarchyTreeKeyboardAction({ key: 'ArrowRight', hasChildren: false, expanded: false }), null);
 
-console.log('[hierarchical_worksheet_interaction_test] PASS cases=15');
+console.log('[hierarchical_worksheet_interaction_test] PASS cases=20');

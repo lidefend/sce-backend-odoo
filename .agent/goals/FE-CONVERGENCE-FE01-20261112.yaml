@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: FE-CONVERGENCE-FE01-20261112
+  title: FE-01 入口身份与启动事务收敛
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared frontend entry identity, route authority validation and session bootstrap transaction
+  module: frontend/apps/web
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    A child handling entry must consume its own declared identity, the router
+    must preserve the selected menu/action pair when asking the backend to
+    validate route context, and every authoritative startup response must
+    finish as ready or a visible recoverable error. These are generic frontend
+    contract-consumption mechanics shared by all business surfaces.
+  why_not_elsewhere: >
+    Backend contracts already declare the action, menu, scene and required
+    query identity. P1/P2 scene or customer special cases would create a second
+    identity authority, while backend changes would compensate for frontend
+    consumers that discard declared facts.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CONVERGENCE-FE01-20261112.yaml
+      - .agent/runs/FE-CONVERGENCE-FE01-20261112/run.json
+      - docs/ops/iterations/fe_convergence_fe01_entry_startup_20261112.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/decision-authority-inventory-v1.json
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - frontend/apps/web/src/app/routeAuthority.ts
+      - frontend/apps/web/src/app/sceneActionTarget.ts
+      - frontend/apps/web/src/router/index.ts
+      - frontend/apps/web/src/stores/session.ts
+      - frontend/apps/web/src/views/SceneView.vue
+      - frontend/apps/web/scripts/route_authority_guard_test.ts
+      - frontend/apps/web/scripts/scene_shell_contract_test.ts
+      - frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts
+      - make/frontend.mk
+    product_behavior: >
+      A child handling entry reaches its own action even when the parent scene
+      has a capability hint; an internal scene descriptor wins over that hint;
+      route authority validation carries the selected menu/action plus required
+      query; malformed startup completion enters error state and can retry; a
+      stale initialization cannot publish over a newer ready state. Generated
+      complexity and decision inventories refresh only the changed source
+      identities and line locations.
+  objective: >
+    Close the FE-01 entry and startup defects without changing backend product
+    semantics or introducing page-specific fallbacks.
+  acceptance:
+    - explicit child action identity and internal descriptor outrank a parent scene hint
+    - route.authority.validate receives the selected menu_id, action_id and required query context
+    - HTTP, decode and validation failures leave initStatus=error with a retryable visible message
+    - stale initialization failures cannot overwrite a newer completed initialization
+    - the standard-preview harness validates explicit inputs at the top-level Make and does not misclassify inherited exports as user overrides
+    - targeted tests execute non-zero and lint, strict typecheck and production build pass
+  exclusions:
+    - FE-02 list scope removal and read ownership
+    - FE-03 draft, activity cache, create navigation and attachment concurrency
+    - FE-04 recursive action state, viewer, tree keyboard, chart determinism and journey matrix
+    - backend contract or model change
+    - standard preview runtime mutation or browser execution
+    - database, runtime deployment or business data mutation
+    - PR 875 worktree or detached audit worktree changes
+  rollback: Revert this topic branch; no persistent data or service state is involved.

@@ -33,7 +33,7 @@
       :id="id"
       ref="editorRef"
       class="restricted-html-editor__surface"
-      contenteditable="true"
+      :contenteditable="disabled ? 'false' : 'true'"
       role="textbox"
       aria-multiline="true"
       :data-placeholder="placeholder || copy.placeholder"
@@ -91,6 +91,7 @@ import ScDialog from '../design-system/ScDialog.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import type { ScIconName } from '../design-system/scIcon';
+import { resolveRestrictedHtmlEditorInput } from './restrictedHtmlEditorInput';
 
 const props = defineProps<{
   id?: string;
@@ -170,8 +171,13 @@ watch(
 function onInput() {
   const el = editorRef.value;
   if (!el) return;
-  lastEmitted = el.innerHTML;
-  emit('update:modelValue', lastEmitted);
+  const value = resolveRestrictedHtmlEditorInput({
+    disabled: Boolean(props.disabled),
+    html: el.innerHTML,
+  });
+  if (value === null) return;
+  lastEmitted = value;
+  emit('update:modelValue', value);
 }
 
 /** 链接插入会话：保存选区（对话框聚焦后仍可恢复），确认后执行 createLink */
