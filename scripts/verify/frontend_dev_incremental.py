@@ -86,6 +86,14 @@ class Rule:
 
 RULES = (
     Rule((
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/core/platform_minimum_nav_contract.py",
+        "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
         "frontend/apps/web/scripts/route_authority_guard_test.ts",
         "addons/smart_core/delivery/runtime_route_authority.py",
     ), (

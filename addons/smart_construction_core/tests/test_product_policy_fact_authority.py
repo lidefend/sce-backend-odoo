@@ -22,6 +22,24 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.env['ir.config_parameter'].sudo().set_param('smart_core.release_operator.catalog_source_db', self.env.cr.dbname)
         self.service = EditionReleaseSnapshotService(self.env)
 
+    def test_restricted_principal_keeps_only_platform_home_when_business_delivery_denies(self):
+        from odoo.addons.smart_core.delivery import effective_delivery_service
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Restricted delivery actor", "login": "restricted-delivery-actor",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        service = effective_delivery_service.EffectiveDeliveryService(user.with_user(user).env)
+        for gate in ({}, {"fail_closed": True, "reason": "TEST_RELEASE_DENIED"}):
+            with self.subTest(gate=gate), patch.object(effective_delivery_service, "_load_platform_release_gate", return_value=gate):
+                result = service.resolve()
+                self.assertTrue(result.payload["nav"])
+                self.assertTrue(published_pairs(result.route_authority))
+                self.assertFalse(any(action for _, action in published_pairs(result.route_authority)))
+                self.assertTrue(any(row.get("entry_target", {}).get("scene_key") == "workspace.home"
+                                    for row in result.route_authority["role_home_actions"]))
+                self.assertEqual(result.release_gate, gate)
+
     def test_native_alias_rejects_unresolved_or_contradictory_references(self):
         from odoo.addons.smart_core.delivery import runtime_route_authority
         menu = self.menu

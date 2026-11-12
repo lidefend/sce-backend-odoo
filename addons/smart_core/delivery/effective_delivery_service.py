@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from ..identity.identity_resolver import IdentityResolver
 from ..utils.extension_hooks import call_extension_hook_first
 from ..core.platform_duty_contract import build_platform_duty_surface, merge_platform_duty_route_authority
-from ..core.platform_minimum_nav_contract import is_platform_minimum_surface_mode, build_platform_minimum_nav_contract
+from ..core.platform_minimum_nav_contract import merge_authenticated_safe_landing
 from .delivery_engine import DeliveryEngine
 from .effective_delivery_inputs import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
 
@@ -83,9 +83,6 @@ class EffectiveDeliveryService:
             data={"role_surface": role},
             **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
         )
-        if is_platform_minimum_surface_mode(env, delivery_identity=identity) or not payload["nav"]:
-            payload["nav"] = build_platform_minimum_nav_contract()["nav"]
-            payload["route_authority"] = engine.menu_service.build_route_authority(role, nav=payload["nav"])
         gate = _load_platform_release_gate(env, product_key=payload["product_key"])
 
         def released(nodes):
@@ -108,7 +105,11 @@ class EffectiveDeliveryService:
             authority = finalized
         authority = deepcopy(authority)
         authority.setdefault("principal_scope", {})["company_id"] = int(env.company.id)
-        payload["nav"] = engine.menu_service.filter_nav_by_route_authority(nav, authority)
+        nav = engine.menu_service.filter_nav_by_route_authority(nav, authority)
+        nav, authority = merge_authenticated_safe_landing(
+            nav, authority, authenticated=bool(env.user) and not env.user._is_public(),
+        )
+        payload["nav"] = nav
         payload["route_authority"] = authority
         payload["scene_internal_actions"] = {
             f"{row['scene_key']}:{row['item_key']}": deepcopy(row)
