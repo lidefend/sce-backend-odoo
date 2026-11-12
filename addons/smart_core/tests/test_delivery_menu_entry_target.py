@@ -85,12 +85,14 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 return True
 
         action_record = Action()
+        menu_record = types.SimpleNamespace(id=501, _name="ir.ui.menu", action=action_record, groups_id=GroupSet(set()))
+        menu_record.sudo = lambda: menu_record
 
         class Env(dict):
             user = None
 
             def ref(self, xmlid, raise_if_not_found=False):
-                return action_record if xmlid == 'test.action_expense' else None
+                return {'test.action_expense': action_record, 'test.expense': menu_record}.get(xmlid)
 
         service = menu_service.MenuService(Env({
             'ir.actions.act_window': Model(),
@@ -182,6 +184,15 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             'menu_xmlid': 'test.expense',
             'action_xmlid': 'test.action_expense',
             'allowed_operation': 'read',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+
+        # A valid action cannot authorize a missing or differently bound menu.
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.missing', 'action_xmlid': 'test.action_expense',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+        menu_record.action = Action()
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense', 'action_xmlid': 'test.action_expense',
         }, route_kind='CONTEXTUAL_ROUTE'))
 
     def test_native_configuration_scope_survives_route_publication(self):

@@ -152,181 +152,64 @@ class FakeMenuService:
 
 
 class NavigationContractCompilerTests(unittest.TestCase):
-    def _compiler(self, service, *, scenario_provider=None, authority_finalizer=None):
-        return NavigationContractCompiler(
-            service,
-            scenario_surface_provider=scenario_provider or (lambda nav, authority: None),
-            platform_duty_merger=lambda authority, surface: {
-                **authority,
-                "admin_actions": list(authority.get("admin_actions") or [])
-                + [{"menu_id": 50, "action_id": 60, "source": "platform_duty"}],
-            },
-            release_node_filter=lambda nodes: nodes,
+    def compile(self, authority, nav, *, scenario_provider=None, designed=()):
+        service = FakeMenuService(_authority((999, 999)))
+        def forbidden(*args, **kwargs):
+            self.fail("projection recomputed effective authority")
+        service.build_route_authority = forbidden
+        service.filter_route_authority_by_publication = forbidden
+        result = NavigationContractCompiler(
+            service, scenario_surface_provider=scenario_provider or (lambda nav, authority: None),
             action_pair_walker=_walk_pairs,
-            authority_finalizer=authority_finalizer,
-        )
-
-    def test_all_authority_producers_complete_before_one_nav_filter(self):
-        service = FakeMenuService(_authority((10, 20)))
-        nav = [
-            {"menu_id": 10, "action_id": 20},
-            {"menu_id": 30, "action_id": 40},
-            {"menu_id": 50, "action_id": 60},
-        ]
-        compilation = self._compiler(service).compile(
-            nav=nav,
-            role_surface={"role_code": "project_member"},
-            delivery_payload={"product_key": "construction.standard"},
-            release_gate={},
-            platform_duty={"user_id": 9},
-            scene_internal_actions={
-                "internal": {"menu_id": 30, "action_id": 40, "scene_key": "work"}
-            },
-            company_id=2,
-        )
+        ).compile(nav=nav, effective_authority=authority, company_id=2,
+                  delivery_payload={"product_key": "construction.standard"},
+                  designed_scene_keys=designed)
         self.assertEqual(service.filter_calls, 1)
         self.assertEqual(service.canonical_calls, 1)
-        self.assertEqual(
-            {(row["menu_id"], row["action_id"]) for row in service.authority_at_filter["contextual_actions"]},
-            {(30, 40)},
-        )
-        self.assertEqual(
-            {(row["menu_id"], row["action_id"]) for row in service.authority_at_filter["admin_actions"]},
-            {(50, 60)},
-        )
-        self.assertEqual(
-            [(row["menu_id"], row["action_id"]) for row in compilation.nav],
-            [(10, 20), (30, 40), (50, 60)],
-        )
-        self.assertEqual(
-            compilation.navigation["route_authority"]["principal_scope"]["company_id"],
-            2,
-        )
+        return result
 
-    def test_authority_finalizer_runs_before_the_single_nav_filter(self):
-        service = FakeMenuService(_authority((10, 20), (30, 40)))
-        calls = []
+    def test_shared_qualification_is_not_recomputed_or_mutated(self):
+        shared = _authority((10, 20), (30, 40))
+        original = copy.deepcopy(shared)
+        result = self.compile(shared, [{"menu_id": 10, "action_id": 20}, {"menu_id": 50, "action_id": 60}])
+        self.assertEqual(_walk_pairs(result.nav), [(10, 20)])
+        self.assertEqual(MODULE._authority_pairs(result.route_authority), {(10, 20), (30, 40)})
+        self.assertEqual(shared, original)
 
-        def finalize(authority):
-            calls.append("finalize")
-            result = copy.deepcopy(authority)
-            result["primary_actions"] = [
-                row for row in result["primary_actions"]
-                if (row["menu_id"], row["action_id"]) == (30, 40)
-            ]
-            result["scenario_composition"] = {
-                "selected_by_menu": {"30": {"location": "scenario"}}
-            }
-            return result
+    def test_all_resolved_authority_buckets_are_consumed(self):
+        shared = _authority((10, 20))
+        shared["contextual_actions"] = [{"menu_id": 30, "action_id": 40}]
+        shared["admin_actions"] = [{"menu_id": 50, "action_id": 60}]
+        nav = [{"menu_id": menu, "action_id": action} for menu, action in [(10, 20), (30, 40), (50, 60)]]
+        result = self.compile(shared, nav)
+        self.assertEqual(_walk_pairs(result.nav), [(10, 20), (30, 40), (50, 60)])
+        self.assertEqual(result.route_authority["principal_scope"]["company_id"], 2)
 
-        compilation = self._compiler(
-            service,
-            authority_finalizer=finalize,
-        ).compile(
-            nav=[
-                {"menu_id": 10, "action_id": 20},
-                {"menu_id": 30, "action_id": 40},
-            ],
-            role_surface={"role_code": "business_config_admin"},
-            delivery_payload={"product_key": "construction.standard"},
-            release_gate={},
-            platform_duty=None,
-            scene_internal_actions=None,
-            company_id=7,
-        )
-        self.assertEqual(calls, ["finalize"])
-        self.assertEqual(
-            [(row["menu_id"], row["action_id"]) for row in compilation.nav],
-            [(30, 40)],
-        )
-        self.assertEqual(
-            compilation.navigation["route_authority"]["scenario_composition"],
-            {"selected_by_menu": {"30": {"location": "scenario"}}},
-        )
+    def test_resolved_tenant_selection_precedes_navigation(self):
+        shared = _authority((30, 40))
+        shared["scenario_composition"] = {"selected_by_menu": {"30": {"location": "scenario"}}}
+        result = self.compile(shared, [{"menu_id": 10, "action_id": 20}, {"menu_id": 30, "action_id": 40}])
+        self.assertEqual(_walk_pairs(result.nav), [(30, 40)])
+        self.assertEqual(result.route_authority["scenario_composition"], shared["scenario_composition"])
 
-    def test_authority_finalizer_can_leave_authority_unchanged(self):
-        service = FakeMenuService(_authority((10, 20)))
-        compilation = self._compiler(
-            service,
-            authority_finalizer=lambda authority: None,
-        ).compile(
-            nav=[{"menu_id": 10, "action_id": 20}],
-            role_surface={"role_code": "project_member"},
-            delivery_payload={"product_key": "construction.standard"},
-            release_gate={},
-            platform_duty=None,
-            scene_internal_actions=None,
-            company_id=1,
-            designed_scene_keys={"my_work.workspace"},
-        )
-        self.assertEqual(
-            [(row["menu_id"], row["action_id"]) for row in compilation.nav],
-            [(10, 20)],
-        )
+    def test_missing_authority_cannot_fall_back_to_native_facts(self):
+        with self.assertRaisesRegex(RuntimeError, "effective delivery authority"):
+            self.compile(None, [{"menu_id": 10, "action_id": 20}])
 
-    def test_scenarioization_derives_route_and_product_policy_from_same_nav(self):
-        service = FakeMenuService(_authority((10, 20)))
-        nav = [{"menu_id": 10, "action_id": 20, "label": "My Work"}]
-
-        def scenario_provider(current_nav, authority):
-            scenario_nav = copy.deepcopy(current_nav)
-            scenario_nav[0]["scene_key"] = "my_work.workspace"
-            return {"ok": True, "nav": scenario_nav}
-
-        compilation = self._compiler(
-            service,
-            scenario_provider=scenario_provider,
-        ).compile(
-            nav=nav,
-            role_surface={"role_code": "business_full"},
-            delivery_payload={
-                "product_key": "construction.standard",
-                "role_codes": ["business_full"],
-            },
-            release_gate={},
-            platform_duty=None,
-            scene_internal_actions=None,
-            company_id=1,
-            designed_scene_keys={"my_work.workspace"},
-        )
-        self.assertEqual(compilation.nav[0]["route"], "/s/my_work.workspace")
-        self.assertEqual(
-            compilation.navigation["product_policy"]["entries"][0]["route"],
-            "/s/my_work.workspace",
-        )
-        self.assertEqual(
-            compilation.navigation["route_authority"]["primary_actions"][0]["route"],
-            "/s/my_work.workspace",
-        )
+    def test_designed_scene_route_is_shared_by_final_projections(self):
+        nav = [{"menu_id": 10, "action_id": 20, "scene_key": "my_work.workspace"}]
+        result = self.compile(_authority((10, 20)), nav, designed={"my_work.workspace"})
+        self.assertEqual(result.nav[0]["route"], "/s/my_work.workspace")
+        self.assertEqual(result.navigation["product_policy"]["entries"][0]["route"], "/s/my_work.workspace")
+        self.assertEqual(result.route_authority["primary_actions"][0]["route"], "/s/my_work.workspace")
 
     def test_scenarioization_cannot_add_authority(self):
-        service = FakeMenuService(_authority((10, 20)))
-
-        def scenario_provider(current_nav, authority):
-            return {
-                "nav": [
-                    {"menu_id": 10, "action_id": 20, "scene_key": "allowed"},
-                    {"menu_id": 99, "action_id": 100, "scene_key": "forbidden"},
-                ]
-            }
-
-        with self.assertRaisesRegex(
-            RuntimeError,
-            "scenario navigation contains unauthorized menu/action pairs",
-        ):
-            self._compiler(
-                service,
-                scenario_provider=scenario_provider,
-            ).compile(
-                nav=[{"menu_id": 10, "action_id": 20}],
-                role_surface={"role_code": "business_full"},
-                delivery_payload={"product_key": "construction.standard"},
-                release_gate={},
-                platform_duty=None,
-                scene_internal_actions=None,
-                company_id=1,
-                designed_scene_keys={"allowed", "forbidden"},
-            )
+        def project(nav, authority):
+            return {"nav": [{"menu_id": 10, "action_id": 20, "scene_key": "allowed"},
+                            {"menu_id": 99, "action_id": 100, "scene_key": "forbidden"}]}
+        with self.assertRaisesRegex(RuntimeError, "scenario navigation contains unauthorized"):
+            self.compile(_authority((10, 20)), [{"menu_id": 10, "action_id": 20}],
+                         scenario_provider=project, designed={"allowed", "forbidden"})
 
 
 if __name__ == "__main__":

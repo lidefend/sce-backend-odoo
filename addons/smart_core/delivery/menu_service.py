@@ -389,11 +389,11 @@ class MenuService:
     def _action_is_runtime_allowed(self, action, allowed_operation: str) -> bool:
         if not action or not bool(getattr(action, "active", True)):
             return False
-        # Role authority is declared by stable XML-ID in the role surface. For
-        # menu-backed entries, Odoo menu visibility has already intersected
-        # the current user's groups. Action groups are metadata used by the
-        # native client and are not enforced by ui.contract.v2; model ACL is
-        # the backend execution boundary and must agree with the declaration.
+        # Entry qualification includes the native action's group restriction.
+        # Record rules and write/operation checks remain live at execution.
+        groups = getattr(action, "groups_id", None)
+        if groups and not self._groups_authorize_current_user(groups):
+            return False
         action_model = str(getattr(action, "_name", "") or "").strip()
         # Product navigation never promotes Odoo Web Client actions into the
         # contract-driven runtime. Client actions remain native-Odoo-only;
@@ -521,6 +521,15 @@ class MenuService:
         menu_id = self._positive_int(row.get("menu_id")) or (
             int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
         )
+        if menu_xmlid or menu_id:
+            if menu_xmlid and not menu:
+                return None
+            if not menu:
+                menu = self.env["ir.ui.menu"].sudo().browse(menu_id).exists()
+            if (not menu or menu._name != "ir.ui.menu" or int(menu.id) != menu_id
+                    or menu.sudo().action != action
+                    or (menu.sudo().groups_id and not self._groups_authorize_current_user(menu.sudo().groups_id))):
+                return None
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
         entry = {
             "action_xmlid": action_xmlid,

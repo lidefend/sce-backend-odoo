@@ -91,15 +91,27 @@ def _target(node: dict) -> dict:
     }
 
 
+def _identity_component(value: str) -> str:
+    # Preserve existing lossless routes. The reserved escaped namespace is
+    # injective, including inputs that themselves begin with its prefix.
+    if re.fullmatch(r"[a-z0-9_]+", value) and not value.startswith("x0_"):
+        return value
+    return "x0_" + value.encode("utf-8").hex()
+
+
 def _native_scene_key(target: dict) -> str:
     menu_xmlid = _text(target.get("menu_xmlid"))
     if menu_xmlid:
         owner, _, tail = menu_xmlid.partition(".")
-        return "entry.%s.%s" % (_slug(owner or "odoo"), _slug(tail or menu_xmlid))
+        return "entry.%s.%s" % (_identity_component(owner or "odoo"), _identity_component(tail or menu_xmlid))
     action_xmlid = _text(target.get("action_xmlid"))
+    if action_xmlid and _to_int(target.get("menu_id")):
+        return "entry.runtime.menu_%s.action_%s" % (
+            _to_int(target.get("menu_id")), action_xmlid.encode("utf-8").hex(),
+        )
     if action_xmlid:
         owner, _, tail = action_xmlid.partition(".")
-        return "entry.%s.%s" % (_slug(owner or "odoo"), _slug(tail or action_xmlid))
+        return "entry.%s.%s" % (_identity_component(owner or "odoo"), _identity_component(tail or action_xmlid))
     return "entry.runtime.menu_%s_action_%s" % (
         _to_int(target.get("menu_id")) or 0,
         _to_int(target.get("action_id")) or 0,
@@ -145,6 +157,7 @@ class SceneShellCompiler:
     ) -> SceneShellCompilation:
         designed = {_text(key) for key in designed_scene_keys or [] if _text(key)}
         seen_scene_keys: set[str] = set()
+        native_targets: dict[str, dict] = {}
         shell_rows: list[dict] = []
         designed_keys: list[str] = []
         delegate_keys: list[str] = []
@@ -207,12 +220,18 @@ class SceneShellCompiler:
             if target["action_id"] <= 0:
                 return None
             scene_key = _native_scene_key(target)
-            if scene_key in seen_scene_keys:
-                raise ValueError("duplicate generated scene key: %s" % scene_key)
-            seen_scene_keys.add(scene_key)
-            delegate_keys.append(scene_key)
-            sequence += 1
+            if scene_key in designed:
+                raise ValueError("scene key has conflicting execution kinds: %s" % scene_key)
             native_target = _native_target(candidate, scene_key)
+            existing_target = native_targets.get(scene_key)
+            if existing_target is not None and existing_target != native_target:
+                raise ValueError("scene key has conflicting native targets: %s" % scene_key)
+            new_shell = existing_target is None
+            native_targets[scene_key] = native_target
+            seen_scene_keys.add(scene_key)
+            if new_shell:
+                delegate_keys.append(scene_key)
+                sequence += 1
             candidate["scene_key"] = scene_key
             candidate["route"] = "/s/%s" % scene_key
             candidate["content_kind"] = CONTENT_NATIVE_DELEGATE
@@ -230,19 +249,18 @@ class SceneShellCompiler:
                 "entry_target": deepcopy(candidate["entry_target"]),
             })
             candidate["meta"] = meta
-            shell_rows.append(
-                self._scene_ready_row(
-                    scene_key=scene_key,
-                    label=_text(
-                        candidate.get("label")
-                        or candidate.get("title")
-                        or candidate.get("name")
-                        or scene_key
-                    ),
-                    native_target=native_target,
-                    sequence=sequence,
+            if new_shell:
+                shell_rows.append(
+                    self._scene_ready_row(
+                        scene_key=scene_key,
+                        label=_text(
+                            candidate.get("label") or candidate.get("title")
+                            or candidate.get("name") or scene_key
+                        ),
+                        native_target=native_target,
+                        sequence=sequence,
+                    )
                 )
-            )
             return candidate
 
         compiled_nav = [
@@ -332,7 +350,12 @@ class SceneShellCompiler:
                 continue
             scene = row.get("scene") if isinstance(row.get("scene"), dict) else {}
             scene_key = _text(scene.get("key"))
-            if not scene_key or scene_key in seen:
+            if not scene_key:
+                continue
+            if scene_key in seen:
+                existing = next(item for item in rows if _text((item.get("scene") or {}).get("key")) == scene_key)
+                if (existing.get("meta") or {}).get("content_kind") != CONTENT_NATIVE_DELEGATE or existing.get("target") != row.get("target"):
+                    raise ValueError("scene-ready key has conflicting execution meaning: %s" % scene_key)
                 continue
             rows.append(deepcopy(row))
             seen.add(scene_key)

@@ -306,10 +306,15 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         """
         source = (ROOT / "delivery" / "runtime_route_authority.py").read_text(encoding="utf-8")
         builder = source.split("def _build_runtime_route_authority", 1)[1]
-        self.assertIn("enforce_release=True", builder)
-        self.assertIn("enforce_access=True", builder)
-        self.assertIn("filter_route_authority_by_publication", builder)
-        self.assertIn("fail_closed", builder)
+        self.assertIn("EffectiveDeliveryService(env).resolve", builder)
+        self.assertNotIn("handlers.system_init", builder)
+        shared = (ROOT / "delivery" / "effective_delivery_service.py").read_text(encoding="utf-8")
+        engine = (ROOT / "delivery" / "delivery_engine.py").read_text(encoding="utf-8")
+        self.assertIn("enforce_release=True", engine)
+        self.assertIn("enforce_access=True", engine)
+        self.assertIn("filter_route_authority_by_publication", shared)
+        self.assertIn("fail_closed", shared)
+        self.assertNotIn("load_capabilities", shared)
         published = source.split("def published_route_authority", 1)[1].split(
             "def build_runtime_route_authority", 1
         )[0]

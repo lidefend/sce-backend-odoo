@@ -57,11 +57,12 @@ class _Env:
 
 
 class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
-    def _requested_contract(self, requested, *, mode="full", delivery=None, deep=None):
+    def _requested_contract(self, requested, *, mode="full", delivery=None, deep=None, internal=None):
         catalog = [{"code": key, "target": {"route": f"/s/{key}"}}
                    for key in ("allowed.scene", "excluded.scene", "deep.scene")]
         ctx = context_module.SystemInitSceneRuntimeSurfaceContext(
             env=_Env(), params={"scene_key": requested, "scene_ready_mode": mode},
+            effective_scene_internal_actions=internal,
             data={"nav": [], "nav_meta": {}, "scenes": catalog}, role_surface={},
             contract_mode="user", scene_channel="stable", nav_tree=[],
             platform_minimum_surface_mode=False, build_platform_minimum_nav_contract_fn=lambda: {},
@@ -78,8 +79,18 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
             build_scene_nav_contract_fn=lambda data: {},
         )
         result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=ctx)
-        rows = result["data"]["scene_ready_contract"]["scenes"]
+        self.last_contract = result["data"]["scene_ready_contract"]
+        rows = self.last_contract["scenes"]
         return {row.get("code") or row.get("scene", {}).get("key") for row in rows}
+
+    def test_internal_actions_only_project_common_admission_and_selected_scenes(self):
+        admitted = {"allowed.scene:open": {"scene_key": "allowed.scene", "action_id": 42, "allowed": True},
+                    "excluded.scene:open": {"scene_key": "excluded.scene", "action_id": 43, "allowed": True}}
+        for mode in ("full", "registry"):
+            self._requested_contract("allowed.scene", mode=mode, internal=admitted)
+            self.assertEqual(set(self.last_contract["scene_internal_actions"]), {"allowed.scene:open"})
+            self._requested_contract("allowed.scene", mode=mode, internal={})
+            self.assertEqual(self.last_contract["scene_internal_actions"], {})
 
     def test_requested_excluded_scene_is_not_restored(self):
         for mode in ("full", "registry"):

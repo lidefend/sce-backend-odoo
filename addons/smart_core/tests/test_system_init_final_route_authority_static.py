@@ -43,26 +43,14 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertNotIn("project_final_navigation_routes(", system_init)
         self.assertNotIn("project_navigation_product_policy(", system_init)
 
-        self.assertIn(
-            "self.menu_service.build_route_authority(",
-            compiler,
-        )
-        self.assertIn(
-            "self.menu_service.filter_route_authority_by_publication(",
-            compiler,
-        )
-        self.assertIn(
-            "_add_scene_internal_authority(authority, scene_internal_actions)",
-            compiler,
-        )
-        self.assertIn(
-            "self.authority_finalizer(authority)",
-            compiler,
-        )
-        self.assertIn(
-            "smart_core_navigation_authority_filter",
-            system_init,
-        )
+        shared = (Path(__file__).resolve().parents[1] / "delivery" / "effective_delivery_service.py").read_text()
+        self.assertIn("EffectiveDeliveryService(env).resolve(params)", system_init)
+        self.assertIn("effective_authority=effective_delivery.route_authority", system_init)
+        self.assertIn("smart_core_navigation_authority_filter", shared)
+        self.assertNotIn("handlers.system_init", shared)
+        self.assertNotIn("build_route_authority(", compiler)
+        self.assertNotIn("filter_route_authority_by_publication(", compiler)
+        self.assertNotIn("_delivery_authoritative_nav", system_init)
         self.assertEqual(
             compiler.count("filter_nav_by_route_authority("),
             1,
@@ -85,33 +73,7 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertIn('"route_authority": authority,', compiler)
         self.assertIn('"missing_authority_count": 0,', compiler)
 
-        authority_index = compiler.index("self.menu_service.build_route_authority(")
-        scene_authority_index = compiler.index(
-            "_add_scene_internal_authority(authority, scene_internal_actions)",
-            authority_index,
-        )
-        finalizer_index = compiler.index(
-            "self.authority_finalizer(authority)",
-            scene_authority_index,
-        )
-        reconcile_index = compiler.index(
-            "self.menu_service.filter_nav_by_route_authority(",
-            finalizer_index,
-        )
-        canonical_index = compiler.index(
-            "self.menu_service.project_canonical_navigation(",
-            reconcile_index,
-        )
-        scenario_index = compiler.index(
-            "self.scenario_surface_provider(nav, authority)",
-            canonical_index,
-        )
-        self.assertLess(authority_index, scene_authority_index)
-        self.assertLess(scene_authority_index, finalizer_index)
-        self.assertLess(finalizer_index, reconcile_index)
-        self.assertLess(reconcile_index, canonical_index)
-        self.assertLess(canonical_index, scenario_index)
-
+        self.assertLess(compiler.index("deepcopy(effective_authority)"), compiler.index("self.menu_service.filter_nav_by_route_authority("))
         tail = system_init.split("NavigationContractCompiler(", 1)[1]
         self.assertIn(
             "for _removed_navigation_carrier in (",

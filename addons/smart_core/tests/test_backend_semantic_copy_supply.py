@@ -352,9 +352,19 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
 
         pages = service._extract_user_menu_pages(_FakeSourceEnv(menu_model, model_data_model))
 
-        self.assertEqual([page["menu_xmlid"] for page in pages], ["smart_construction_core.menu_sc_contract_income"])
+        self.assertEqual([page["menu_xmlid"] for page in pages], ["smart_construction_core.menu_sc_contract_income", "smart_construction_core.menu_project_budget"])
 
-    def test_policy_payload_dedupes_same_label_and_model_within_group(self):
+    def test_rebound_menu_does_not_inherit_release_of_another_native_action(self):
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(env=None)
+        old = {"menu_groups": [{"menus": [{"page_key": "m.menu", "menu_xmlid": "m.menu", "action_id": 10, "enabled": True, "release_state": "released"}]}]}
+        new = {"menu_groups": [{"menus": [{"page_key": "native.entry.m.menu.action:11", "menu_xmlid": "m.menu", "action_id": 11, "enabled": False, "release_state": "hidden"}]}]}
+        service._merge_existing_page_controls(new, old)
+        self.assertFalse(new["menu_groups"][0]["menus"][0]["enabled"])
+        new["menu_groups"][0]["menus"][0]["action_id"] = 10
+        service._merge_existing_page_controls(new, old)
+        self.assertTrue(new["menu_groups"][0]["menus"][0]["enabled"])
+
+    def test_policy_payload_preserves_distinct_native_entries_with_same_label_and_model(self):
         service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(env=None)
 
         payload = service._build_catalog_policy_payload_from_menu_pages(
@@ -395,7 +405,10 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         )
 
         menus = payload["menu_groups"][0]["menus"]
-        self.assertEqual(len(menus), 1)
+        self.assertEqual(len(menus), 2)
+        self.assertEqual({row["action_id"] for row in menus}, {714, 798})
+        self.assertTrue(all(not row["enabled"] and row["release_state"] == "hidden" for row in menus))
+        self.assertNotEqual(menus[0]["capability_key"], menus[1]["capability_key"])
         self.assertEqual(menus[0]["menu_xmlid"], "smart_construction_core.menu_a")
 
 

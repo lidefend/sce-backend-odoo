@@ -166,6 +166,48 @@ class SceneShellCompilerTests(unittest.TestCase):
         second = self.compiler.compile(nav, designed_scene_keys=set())
         self.assertEqual(first.nav[0]["scene_key"], second.nav[0]["scene_key"])
 
+    def native_leaf(self, xmlid="module.menu", action_id=20):
+        return _leaf(10, action_id, label="Same label", menu_xmlid=xmlid,
+                     action_xmlid="module.action", route=f"/a/{action_id}")
+
+    def test_lossy_xmlids_have_distinct_stable_routes(self):
+        nodes = [self.native_leaf(value) for value in
+                 ("module.Menu", "module.menu", "module.a-b", "module.a_b", "module.x0_4d")]
+        result = self.compiler.compile(nodes, designed_scene_keys=set())
+        self.assertEqual(len({r["scene_key"] for r in result.nav}), len(nodes))
+        reverse = self.compiler.compile(list(reversed(nodes)), designed_scene_keys=set())
+        self.assertEqual({r["scene_key"] for r in result.nav}, {r["scene_key"] for r in reverse.nav})
+
+    def test_same_native_target_can_be_reused_but_conflicting_target_cannot(self):
+        node = self.native_leaf()
+        result = self.compiler.compile([node, node], designed_scene_keys=set())
+        self.assertEqual(len(result.nav), 2)
+        self.assertEqual(len(result.scene_shell_rows), 1)
+        with self.assertRaisesRegex(ValueError, "conflicting native targets"):
+            self.compiler.compile([node, self.native_leaf(action_id=21)], designed_scene_keys=set())
+
+    def test_database_local_menus_sharing_an_xmlid_action_remain_distinct(self):
+        first = self.native_leaf("")
+        second = self.native_leaf("")
+        second["menu_id"] = 11
+        second["meta"]["menu_id"] = 11
+        result = self.compiler.compile([first, second], designed_scene_keys=set())
+        self.assertEqual(len(set(result.native_delegate_scene_keys)), 2)
+
+    def test_scene_ready_merge_rejects_a_designed_native_collision(self):
+        result = self.compiler.compile([self.native_leaf()], designed_scene_keys=set())
+        key = result.native_delegate_scene_keys[0]
+        with self.assertRaisesRegex(ValueError, "conflicting execution meaning"):
+            self.compiler.merge_scene_ready_contract({"scenes": [{"scene": {"key": key}, "target": {"action_id": 99}}]}, result.scene_shell_rows)
+
+    def test_designed_native_collision_rejected_in_both_orders(self):
+        native = self.native_leaf()
+        designed = self.native_leaf("module.designed")
+        designed["scene_key"] = "entry.module.menu"
+        for nodes in ([native, designed], [designed, native]):
+            with self.assertRaisesRegex(ValueError, "conflicting execution kinds"):
+                self.compiler.compile(nodes, designed_scene_keys={"entry.module.menu"})
+
     def test_generated_shell_rows_merge_into_scene_ready_contract(self):
         nav = [
             _leaf(

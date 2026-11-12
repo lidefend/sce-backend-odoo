@@ -195,38 +195,13 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                     scene_ready_input.append(scene_row)
                     break
 
-        scene_internal_actions: dict = {}
-        if env is not None:
-            from odoo.addons.smart_core.core.scene_internal_action_authority import (
-                build_scene_internal_actions,
-            )
-            from odoo.addons.smart_core.core.scene_ready_contract_builder import (
-                _resolve_scene_provider_payload,
-            )
-
-            _scene_internal_sources = []
-            for _row in scene_ready_input:
-                if not isinstance(_row, dict):
-                    continue
-                _key = str(_row.get("code") or _row.get("key") or "").strip()
-                if not _key:
-                    continue
-                from odoo.addons.smart_core.core.native_handling_entry_catalog import project_native_handling_catalog
-                _native_catalog = project_native_handling_catalog(env, _row)
-                _catalog = _native_catalog if _native_catalog is not None else _row.get("handling_entry_catalog")
-                if _native_catalog is None and (not isinstance(_catalog, dict) or not _catalog.get("groups")):
-                    _provider = _resolve_scene_provider_payload(
-                        _key,
-                        {
-                            "role_code": str(role_surface.get("role_code") or "").strip(),
-                            "company_id": env.company.id if env.company else 0,
-                        },
-                    )
-                    if isinstance(_provider, dict) and isinstance(_provider.get("handling_entry_catalog"), dict):
-                        _catalog = _provider.get("handling_entry_catalog")
-                if isinstance(_catalog, dict):
-                    _scene_internal_sources.append({"code": _key, "handling_entry_catalog": _catalog})
-            scene_internal_actions = build_scene_internal_actions(env, _scene_internal_sources)
+        # Project the common qualification; never grant from provider metadata.
+        selected_scene_keys = {str(row.get("code") or row.get("key") or "")
+                               for row in scene_ready_input if isinstance(row, dict)}
+        scene_internal_actions = {
+            key: dict(row) for key, row in (surface_ctx.effective_scene_internal_actions or {}).items()
+            if row.get("scene_key") in selected_scene_keys
+        }
 
         nav_contract_input = dict(data)
         nav_contract_input["scenes"] = preload_scenes

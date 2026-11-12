@@ -160,56 +160,9 @@ def build_runtime_route_authority(env) -> dict:
 
 
 def _build_runtime_route_authority(env) -> dict:
-    """Build the current principal's publication-filtered route authority.
-
-    Mirrors the startup navigation authority: identity -> product policy ->
-    platform release gate -> delivery navigation -> publication-filtered route
-    authority. Returns ``{}`` when it cannot be established so callers fail
-    closed rather than inferring publication from native menus.
-    """
+    """Read the same effective qualification used by startup navigation."""
     try:
-        from ..handlers.system_init import (
-            _filter_nav_by_release_gate,
-            _load_platform_release_gate,
-            _resolve_startup_delivery_identity,
-        )
-        from ..identity.identity_resolver import IdentityResolver
-        from .delivery_engine import DeliveryEngine
-        from .menu_service import MenuService
-        from .product_policy_service import ProductPolicyService
-
-        resolver = IdentityResolver(env)
-        surface = resolver.build_role_surface(
-            resolver.user_group_xmlids(env.user), [], {"workspace.home"}
-        )
-        identity = _resolve_startup_delivery_identity(env, {})
-        policy = ProductPolicyService(env).get_policy(
-            **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
-            role_code=surface.get("role_code"),
-            enforce_release=True,
-            enforce_access=True,
-        )
-        release_gate = _load_platform_release_gate(env, product_key=policy["product_key"])
-        menu_service = MenuService(env)
-        navigation = menu_service.build_nav(policy=policy, role_surface=surface)
-        navigation = DeliveryEngine(env)._normalize_delivery_nav_refs(navigation)
-        navigation = [] if release_gate.get("fail_closed") else _filter_nav_by_release_gate(
-            navigation, release_gate, env=env
-        )[0]
-        authority = menu_service.build_route_authority(surface, nav=navigation)
-        authority = MenuService.filter_route_authority_by_publication(
-            authority,
-            filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
-                _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
-        )
-        from ..utils.extension_hooks import call_extension_hook_first
-
-        authority = call_extension_hook_first(
-            env,
-            "smart_core_navigation_authority_filter",
-            env,
-            authority,
-        ) or authority
-        return authority if isinstance(authority, dict) else {}
+        from .effective_delivery_service import EffectiveDeliveryService
+        return EffectiveDeliveryService(env).resolve(dict(env.context or {})).route_authority
     except Exception:
         return {}

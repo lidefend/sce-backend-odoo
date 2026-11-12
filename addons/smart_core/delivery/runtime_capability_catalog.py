@@ -2,6 +2,7 @@
 """Read-only projection of installed Odoo capability facts."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -86,7 +87,11 @@ def capability_identity(
     menu_key = _text(menu_xmlid) or f"menu:{int(menu_id or 0)}"
     action_key = _text(action_xmlid) or f"action:{int(action_id or 0)}"
     stable = bool(_text(menu_xmlid) and _text(action_xmlid))
-    return f"native.entry.{menu_key}.{action_key}", stable
+    # Preserve existing ordinary XMLID keys. Encode the entire tuple when a
+    # component has additional separators or uses database-local references.
+    if all(re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9_]+", key) for key in (menu_key, action_key)):
+        return f"native.entry.{menu_key}.{action_key}", stable
+    return f"native.entry.v2.{menu_key.encode('utf-8').hex()}.{action_key.encode('utf-8').hex()}", stable
 
 
 @dataclass(frozen=True)
@@ -118,6 +123,8 @@ class RuntimeCapabilityCatalogService:
             "kind": "runtime_installed_capability_catalog",
             "authorities": list(cls.SOURCE_AUTHORITIES),
             "projection_only": True,
+            "candidate_object": "active_action_menu",
+            "supported_action_types": ["ir.actions.act_window", "ir.actions.client", "ir.actions.server", "ir.actions.report", "ir.actions.act_url"],
             "no_business_fact_authority": True,
             "no_publication_authority": True,
             "no_tenant_authority": True,
@@ -125,7 +132,10 @@ class RuntimeCapabilityCatalogService:
 
     def _candidate_menus(self, module: str):
         if not module:
-            return self.env["ir.ui.menu"].sudo().search([], order="sequence,id")
+            # Fact discovery must not invoke ir.ui.menu.search(), whose
+            # visibility projection depends on the principal's groups/ACLs.
+            self.env.cr.execute("SELECT id FROM ir_ui_menu ORDER BY sequence, id")
+            return self.env["ir.ui.menu"].sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
         rows = self.env["ir.model.data"].sudo().search(
             [
                 ("module", "=", module),
@@ -134,7 +144,7 @@ class RuntimeCapabilityCatalogService:
         )
         menu_ids = [int(row.res_id or 0) for row in rows if int(row.res_id or 0) > 0]
         if not menu_ids:
-            return self.env["ir.ui.menu"].sudo().search([], order="sequence,id")
+            return []
         menus = self.env["ir.ui.menu"].sudo().browse(menu_ids).exists()
         return sorted(
             menus,
@@ -167,6 +177,9 @@ class RuntimeCapabilityCatalogService:
             "root_label": _text(root_label),
             "leaf_actions_only": bool(leaf_actions_only),
             "candidate_menu_count": len(menus),
+            "empty_reason": "MODULE_HAS_NO_MENU_CANDIDATES" if module and not menus else "",
+            "root_label_filter_applied": bool(root_label and not (module or xmlid_prefix)),
+            "skipped_action_type_count": 0,
             "skipped_inactive_count": 0,
             "skipped_prefix_count": 0,
             "skipped_root_count": 0,
@@ -188,13 +201,16 @@ class RuntimeCapabilityCatalogService:
                 diagnostics["skipped_root_count"] += 1
                 continue
             expected_root = _text(root_label)
-            if expected_root and path[0] != expected_root:
+            if expected_root and not (module or prefix) and path[0] != expected_root:
                 diagnostics["skipped_root_count"] += 1
                 continue
             action = getattr(menu, "action", None)
             action_id = _action_id(action)
             if action_id <= 0:
                 diagnostics["skipped_no_action_count"] += 1
+                continue
+            if _text(getattr(action, "_name", "")) not in self.source_authority_contract()["supported_action_types"]:
+                diagnostics["skipped_action_type_count"] += 1
                 continue
             children = getattr(menu, "child_id", None) or []
             if leaf_actions_only and any(
@@ -220,6 +236,7 @@ class RuntimeCapabilityCatalogService:
                 {
                     "capability_key": capability_key,
                     "identity_stable": stable,
+                    "identity_scope": "cross_database_xmlid" if stable else "current_database",
                     "owner_module": owner,
                     "menu_id": int(menu.id or 0),
                     "menu_xmlid": menu_xmlid,

@@ -12,7 +12,7 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 
 from .product_identity import resolve_product_identity
 from .product_policy_service import ProductPolicyService
-from .runtime_capability_catalog import RuntimeCapabilityCatalogService
+from .runtime_capability_catalog import RuntimeCapabilityCatalogService, capability_identity
 
 
 def _text(value: Any) -> str:
@@ -73,7 +73,7 @@ class ProductPolicyCatalogSyncService:
         seen: set[str] = set()
         for capability in projection.rows:
             xmlid = _text(capability.get("menu_xmlid"))
-            page_key = xmlid
+            page_key = _text(capability.get("capability_key"))
             if page_key in seen:
                 continue
             seen.add(page_key)
@@ -105,7 +105,9 @@ class ProductPolicyCatalogSyncService:
                     "root_label": root_label,
                     "menu_id": menu_id,
                     "menu_xmlid": xmlid,
-                    "menu_key": xmlid,
+                    "menu_key": xmlid or page_key,
+                    "identity_scope": capability.get("identity_scope"),
+                    "action_xmlid": _text(capability.get("action_xmlid")),
                     "page_key": page_key,
                     "page_label": page_label,
                     "label": page_label,
@@ -118,8 +120,8 @@ class ProductPolicyCatalogSyncService:
                     "view_modes": view_modes,
                     "visible_menu_path": " / ".join(path),
                     "control_granularity": "user_visible_menu_page",
-                    "enabled": True,
-                    "release_state": "released",
+                    "enabled": False,
+                    "release_state": "hidden",
                     "access_level": "public",
                     "control_object": "用户可见菜单页面",
                     "source_kind": "ir.ui.menu",
@@ -136,7 +138,10 @@ class ProductPolicyCatalogSyncService:
             registry = Registry(source_db)
             with registry.cursor() as cr:
                 source_env = api.Environment(cr, SUPERUSER_ID, {})
-                return self._extract_user_menu_pages(source_env), {
+                candidates = self._extract_user_menu_pages(source_env)
+                portable = [row for row in candidates if row.get("identity_scope") == "cross_database_xmlid"]
+                return portable, {
+                    "nonportable_candidate_count": len(candidates) - len(portable),
                     "source_db": source_db,
                     "source": "external_db_ir_ui_menu",
                 }
@@ -177,6 +182,7 @@ class ProductPolicyCatalogSyncService:
                 "source": _text(menu_source.get("source")) or "menu_fact_unavailable",
                 "menu_page_count": 0,
                 "no_business_fact_authority": self.NO_BUSINESS_FACT_AUTHORITY,
+                "no_publication_authority": True,
             },
         }
 
@@ -203,7 +209,7 @@ class ProductPolicyCatalogSyncService:
         scene_rows: list[dict[str, Any]] = []
         capability_rows: list[dict[str, Any]] = []
         scene_bindings: dict[str, dict[str, str]] = {}
-        emitted_page_signatures: set[tuple[str, str, str]] = set()
+        emitted_native_keys: set[str] = set()
         for index, page in enumerate(menu_pages, start=1):
             group_key = _text(page.get("group_key")) or "catalog.menu"
             group = groups_by_key.setdefault(
@@ -218,12 +224,16 @@ class ProductPolicyCatalogSyncService:
             page_key = _text(page.get("page_key"))
             label = _text(page.get("page_label") or page.get("label")) or page_key
             res_model = _text(page.get("res_model"))
-            page_signature = (group_key, label, res_model)
-            if res_model and page_signature in emitted_page_signatures:
+            capability_key = _text(page.get("capability_key")) or capability_identity(
+                menu_id=int(page.get("menu_id") or 0),
+                menu_xmlid=_text(page.get("menu_xmlid") or page.get("menu_key")),
+                action_id=int(page.get("action_id") or 0),
+                action_xmlid=_text(page.get("action_xmlid")),
+            )[0]
+            if capability_key in emitted_native_keys:
                 continue
-            if res_model:
-                emitted_page_signatures.add(page_signature)
-            capability_key = f"catalog.menu.{_slug(page_key)}"
+            emitted_native_keys.add(capability_key)
+            compatibility_alias = f"catalog.menu.{_slug(page.get('menu_xmlid') or page_key)}"
             target_scene_key = _text(page.get("target_scene_key"))
             menu = {
                 "menu_key": _text(page.get("menu_key")) or page_key,
@@ -233,11 +243,15 @@ class ProductPolicyCatalogSyncService:
                 "scene_key": _text(page.get("scene_key")),
                 "product_key": _text(page.get("app_id")),
                 "capability_key": capability_key,
+                "native_capability_key": capability_key,
+                "compatibility_aliases": [compatibility_alias],
+                "identity_scope": page.get("identity_scope") or "current_database",
+                "action_xmlid": _text(page.get("action_xmlid")),
                 "target_scene_key": target_scene_key,
                 "visible_menu_path": _text(page.get("visible_menu_path")) or label,
                 "control_granularity": "user_visible_menu_page",
-                "enabled": bool(page.get("enabled", True)),
-                "release_state": _text(page.get("release_state")) or "released",
+                "enabled": bool(page.get("enabled", False)),
+                "release_state": _text(page.get("release_state")) or "hidden",
                 "access_level": _text(page.get("access_level")) or "public",
                 "control_object": "用户可见菜单页面",
                 "source_kind": "ir.ui.menu",
@@ -257,6 +271,10 @@ class ProductPolicyCatalogSyncService:
                         "label": label,
                         "product_key": _text(page.get("app_id")),
                         "capability_key": capability_key,
+                "native_capability_key": capability_key,
+                "compatibility_aliases": [compatibility_alias],
+                "identity_scope": page.get("identity_scope") or "current_database",
+                "action_xmlid": _text(page.get("action_xmlid")),
                         "description": "Platform release projection for an industry menu/action page.",
                         "scope": menu["visible_menu_path"],
                         "source_kind": "ir.ui.menu",
@@ -269,6 +287,10 @@ class ProductPolicyCatalogSyncService:
             capability_rows.append(
                 {
                     "capability_key": capability_key,
+                "native_capability_key": capability_key,
+                "compatibility_aliases": [compatibility_alias],
+                "identity_scope": page.get("identity_scope") or "current_database",
+                "action_xmlid": _text(page.get("action_xmlid")),
                     "identity_kind": "entry_compatibility_alias",
                     "business_capability": False,
                     "identity_contract_version": "capability.identity.v1",
@@ -283,8 +305,8 @@ class ProductPolicyCatalogSyncService:
                     "delivery_level": "exclusive",
                     "entry_kind": "user_visible_menu_page",
                     "visible_menu_path": menu["visible_menu_path"],
-                    "enabled": bool(page.get("enabled", True)),
-                    "release_state": _text(page.get("release_state")) or "released",
+                    "enabled": bool(page.get("enabled", False)),
+                    "release_state": _text(page.get("release_state")) or "hidden",
                     "access_level": _text(page.get("access_level")) or "public",
                     "control_object": "用户可见菜单页面",
                     "source_kind": "ir.ui.menu",
@@ -315,6 +337,7 @@ class ProductPolicyCatalogSyncService:
                 "source": _text(menu_source.get("source")),
                 "menu_page_count": len(menu_pages),
                 "no_business_fact_authority": self.NO_BUSINESS_FACT_AUTHORITY,
+                "no_publication_authority": True,
             },
             "control_definition": [
                 {"key": "included", "label": "是否纳入产品", "meaning": "决定该用户菜单页面是否进入当前产品发布包。"},
@@ -380,13 +403,25 @@ class ProductPolicyCatalogSyncService:
                 page_key = _text(menu.get("page_key") or menu.get("scene_key") or menu.get("menu_key"))
                 if page_key:
                     current_controls[page_key] = menu
+                native_ref = _text(menu.get("menu_xmlid") or menu.get("menu_key"))
+                if native_ref:
+                    current_controls[native_ref] = menu
         if not current_controls:
             return
 
         def _apply(row: dict[str, Any]) -> dict[str, Any]:
             page_key = _text(row.get("page_key") or row.get("scene_key") or row.get("target_page_key") or row.get("target_scene_key") or row.get("menu_key"))
-            current_row = current_controls.get(page_key) or {}
+            current_row = current_controls.get(page_key) or current_controls.get(_text(row.get("menu_xmlid") or row.get("menu_key"))) or {}
             if not current_row:
+                return row
+            # Compatibility lookup by menu is not permission to transfer a
+            # release decision to a different action after the menu is rebound.
+            old_action = _text(current_row.get("action_xmlid"))
+            new_action = _text(row.get("action_xmlid"))
+            if old_action and new_action:
+                if old_action != new_action:
+                    return row
+            elif int(current_row.get("action_id") or 0) != int(row.get("action_id") or 0):
                 return row
             next_row = dict(row)
             for key in ("enabled", "release_state", "access_level", "policy_note"):

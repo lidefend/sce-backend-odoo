@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 213,
     "gated": 5,
-    "on_demand": 64,
-    "unwired": 144,
+    "on_demand": 67,
+    "unwired": 141,
     "odoo_tag_declarations": 437,
     "gated_declarations": 101,
     "uncovered_declarations": 336,
@@ -152,7 +152,7 @@
     },
     {
       "group": "smart_core",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 21,
       "files": [
@@ -177,7 +177,9 @@
         "addons/smart_core/tests/test_user_activation.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -319,7 +321,7 @@
     },
     {
       "group": "smoke",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 4,
       "files": [
@@ -329,7 +331,9 @@
         "addons/smart_core/tests/test_intent_smoke.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -1903,7 +1907,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.capability.identity_boundary.orm :: /TestProductPolicyFactAuthority (class selection)"
+        "make:verify.capability.identity_boundary.orm :: /TestProductPolicyFactAuthority (class selection)",
+        "make:verify.daily.permission_truth.capability.orm :: /TestProductPolicyFactAuthority (class selection)"
       ],
       "disposition": "class-selected"
     },
@@ -2821,14 +2826,16 @@
     },
     {
       "group": "user_data_boundary",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_role_surface_project_member.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.capability.orm :: /TestProjectMemberRoleSurface (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {

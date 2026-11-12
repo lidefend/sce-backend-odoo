@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from copy import deepcopy
 from typing import Callable
 
 from .scene_shell_compiler import SceneShellCompiler
@@ -31,26 +32,6 @@ def _authority_pairs(authority: dict) -> set[tuple[int, int]]:
     return pairs
 
 
-def _add_scene_internal_authority(authority: dict, actions: dict | None) -> None:
-    if not isinstance(actions, dict):
-        return
-    bucket = authority.setdefault("contextual_actions", [])
-    for internal_row in actions.values():
-        if not isinstance(internal_row, dict):
-            continue
-        try:
-            action_id = int(internal_row.get("action_id") or 0)
-        except (TypeError, ValueError):
-            action_id = 0
-        if action_id <= 0:
-            continue
-        entry = dict(internal_row)
-        entry["route_kind"] = "CONTEXTUAL_ROUTE"
-        entry["source"] = "scene_internal_action_authority"
-        entry.setdefault("scene_key", str(internal_row.get("scene_key") or ""))
-        bucket.append(entry)
-
-
 @dataclass(frozen=True)
 class NavigationContractCompilation:
     nav: list[dict]
@@ -62,10 +43,9 @@ class NavigationContractCompilation:
 class NavigationContractCompiler:
     """Seal supplied authority into one final navigation contract.
 
-    The compiler does not select menus, grant access, enable tenants or publish
-    products. It combines authority producers that have already run, filters
-    the navigation once, then derives route and final product-policy
-    projections from the same scenarioized tree.
+    The compiler consumes the shared effective delivery authority, filters
+    the navigation once, and derives route and final product-policy projections.
+    It cannot select products, enable tenants or recompute native admission.
     """
 
     def __init__(
@@ -73,52 +53,29 @@ class NavigationContractCompiler:
         menu_service,
         *,
         scenario_surface_provider: Callable[[list[dict], dict], dict | None],
-        platform_duty_merger: Callable[[dict, dict], dict],
-        release_node_filter: Callable[[list[dict]], list[dict]],
         action_pair_walker: Callable[[list[dict]], object],
-        authority_finalizer: Callable[[dict], dict | None] | None = None,
         scene_shell_compiler: SceneShellCompiler | None = None,
     ):
         self.menu_service = menu_service
         self.scenario_surface_provider = scenario_surface_provider
-        self.platform_duty_merger = platform_duty_merger
-        self.release_node_filter = release_node_filter
         self.action_pair_walker = action_pair_walker
-        self.authority_finalizer = authority_finalizer
         self.scene_shell_compiler = scene_shell_compiler or SceneShellCompiler()
 
     def compile(
         self,
         *,
         nav: list[dict],
-        role_surface: dict,
         delivery_payload: dict,
-        release_gate: dict,
-        platform_duty: dict | None,
-        scene_internal_actions: dict | None,
         company_id: int,
         designed_scene_keys=None,
+        effective_authority: dict,
     ) -> NavigationContractCompilation:
         if not isinstance(nav, list):
             raise RuntimeError("canonical navigation is unavailable")
 
-        authority = self.menu_service.build_route_authority(
-            role_surface,
-            nav=nav,
-        )
-        authority = self.menu_service.filter_route_authority_by_publication(
-            authority,
-            filter_nodes=self.release_node_filter,
-        )
-        authority = self.platform_duty_merger(
-            authority,
-            platform_duty if isinstance(platform_duty, dict) else {},
-        )
-        _add_scene_internal_authority(authority, scene_internal_actions)
-        if self.authority_finalizer is not None:
-            finalized = self.authority_finalizer(authority)
-            if isinstance(finalized, dict):
-                authority = finalized
+        if not isinstance(effective_authority, dict):
+            raise RuntimeError("effective delivery authority is unavailable")
+        authority = deepcopy(effective_authority)
         authority = dict(authority)
         authority["principal_scope"] = dict(authority.get("principal_scope") or {})
         authority["principal_scope"]["company_id"] = int(company_id)
