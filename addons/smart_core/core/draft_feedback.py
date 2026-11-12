@@ -14,8 +14,6 @@ import re
 from copy import deepcopy
 from datetime import date
 
-from odoo.exceptions import AccessError
-
 from . import native_advisory
 from .form_configuration_compiler import FormConfigurationError
 from .node_component_validation import walk
@@ -230,6 +228,7 @@ class ControlledDraftProof:
 
 def _native_layout(model, view_id):
     from lxml import etree
+    from odoo.exceptions import AccessError
 
     env = model.env
     try:
@@ -337,6 +336,8 @@ def _binding(model, contract, proof, view_id, container_id, request_id):
 
 
 def _check_source_authorization(model, field, origin):
+    from odoo.exceptions import AccessError
+
     env = model.env
     if env.su:
         fail("FEEDBACK_SOURCE_FORBIDDEN", "feedback_evaluation.context")

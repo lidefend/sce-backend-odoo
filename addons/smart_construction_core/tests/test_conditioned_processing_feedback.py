@@ -18,7 +18,8 @@ class TestConditionedProcessingFeedback(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         groups = cls.env.ref('base.group_user') | cls.env.ref(
-            'smart_construction_core.group_sc_cap_project_manager')
+            'smart_construction_core.group_sc_cap_project_manager') | cls.env.ref(
+            'smart_core.group_smart_core_non_customer_data_user')
         cls.operator = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Conditional feedback operator', 'login': 'conditional_feedback_operator',
             'company_id': cls.env.company.id, 'company_ids': [(6, 0, cls.env.company.ids)],
@@ -159,3 +160,62 @@ class TestConditionedProcessingFeedback(TransactionCase):
                         side_effect=AssertionError('attachment detail read during feedback')))
                 self.assertEqual(self.evaluate(parts, values), '', name)
             self.assertEqual(model.search_count([]), before)
+
+    def test_saved_payroll_contract_accepts_reviewed_relation_inputs(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        model_name, _view_key = self.CASES[2]
+        view = self.env.ref(
+            'smart_construction_core.view_sc_hr_payroll_document_form'
+        )
+        project = self.env['project.project'].create({
+            'name': 'Synthetic payroll feedback project',
+            'company_id': self.env.company.id,
+        })
+        record = self.env[model_name].create({
+            'fact_type': 'bonus',
+            'project_id': project.id,
+            'amount': 100,
+            'occurrence_date': '2026-11-13',
+        })
+        model = self.env[model_name].with_user(self.operator).with_context(
+            allowed_company_ids=self.env.company.ids,
+            lang='en_US',
+        )
+        response = UiContractV2Handler(
+            model.env,
+            su_env=self.env['ir.model'].sudo().env,
+        ).handle({
+            'op': 'model',
+            'model': model_name,
+            'record_id': record.id,
+            'view_id': view.id,
+            'view_type': 'form',
+            'render_profile': 'edit',
+            'client_type': 'web_pc',
+            'delivery_profile': 'full',
+            'client_contract_capabilities': [
+                'container_tree.v2',
+                'data_source.v2',
+                'action_rule.v2',
+                'relation_entry.v2',
+                'status_contract.v2',
+                'form_layout.children_owner.v1',
+                'form.feedback.message.v1',
+                'form.feedback.draft.v1',
+                'form.navigation.anchor.v1',
+            ],
+        })
+        response = (
+            response.to_legacy_dict()
+            if hasattr(response, 'to_legacy_dict')
+            else response
+        )
+        self.assertTrue(response.get('ok'), response.get('error'))
+        hosts = [
+            node for node, _path in native_advisory.walk(
+                response['data']['layoutContract']['containerTree']
+            )
+            if node.get('componentKey') == draft_feedback.COMPONENT_KEY
+        ]
+        self.assertEqual(len(hosts), 1)
