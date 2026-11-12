@@ -24,7 +24,9 @@
 2. Attachment viewer responses are owned by the latest open request and close.
 3. Hierarchy branches expose keyboard expand/collapse.
 4. Chart trend color is deterministic for data position and values.
-5. Focused tests, lint, strict typecheck, build and `ci.local.iteration` pass non-zero.
+5. A committed create retires its original `new` activity while independent drafts remain.
+6. Concurrent forced initializations preserve the activity-page restore snapshot.
+7. Focused tests, lint, strict typecheck, build and `ci.local.iteration` pass non-zero.
 
 ## Evidence
 
@@ -38,10 +40,13 @@ Results are recorded through `make agent.run.begin` and `make agent.run.record`.
 | `verify.frontend.chart_dataset.unit` | passed; repeated/out-of-order color calls are deterministic |
 | `verify.frontend.rich_text.browser` | passed; 10 checks, 0 console errors |
 | `verify.frontend.native_form_action_presentation.browser` | passed; 45 assertions across 1440/390 viewports |
+| `verify.frontend.contract_form_save_failure_recovery.unit` | passed; 5 create/retry/ownership scenarios, including committed-create activity retirement |
+| `verify.frontend.workspace_scenario_lifecycle.unit` | passed; 302 tests including queued forced-bootstrap retention |
 | `verify.frontend.lint.src` | passed; 0 errors, 4 pre-existing warnings |
 | `verify.frontend.typecheck.strict` | passed |
 | `verify.frontend.build` | passed; 5,387 modules transformed |
-| `make ci.local.iteration` | passed; 11 affected targets |
+| `make ci.local.iteration` | passed; 14 affected targets |
+| `make ci.generated_evidence.preflight` | passed; generated reports and component inventory current |
 
 Evidence notes:
 
@@ -50,6 +55,8 @@ Evidence notes:
 - Viewer open/close uses a request lease, so stale responses cannot publish payload/error/loading or create preview resources for a newer/closed dialog.
 - Tree branch buttons expose `aria-expanded` and ArrowRight/ArrowLeft expand/collapse.
 - Generated complexity/component inventories refresh only affected source identities and locations.
+- Independent review on `2e1a3e655` found two functional regressions: a committed create left the original `new` page reusable, and concurrent forced bootstraps could discard the only activity snapshot. The save operation now captures and retires its exact `new` activity after create succeeds; forced refreshes now queue behind the actual successor. Targeted tests cover four create-retirement assertions and three forced-refresh queue assertions.
+- The independent review's CI blocker was also reproduced: `session.ts` was 2011 lines against the 2005-line lock. Failure-state construction moved to `appInitFailure.ts`; the reviewed-candidate result is 2001 lines and `architecture.complexity_baseline_lock` passes.
 - Candidate frontend carrier startup is environment-blocked by an existing pidfile owned by the detached `sce-backend-odoo-acceptance-scope-20261109` worktree. The governed target correctly refuses cross-worktree takeover; that instance was not stopped.
 - With single-task execution authorized, the stale detached carrier was stopped after exact pid/process-group/port verification. `local.dev` was rebound to the current worktree; candidate health passed for `27c1774bc`.
 - Candidate visual smoke passed for home/my-work and payment-request list/config at 1440/390 with `mutationCount=0`, no errors and no failures.
@@ -58,7 +65,8 @@ Evidence notes:
 Not run:
 
 - Deployed browser journeys for keyboard traversal, stale viewer responses and repeated chart rendering.
-- Independent review and remote CI.
+- Browser replay of the two review-discovered activity lifecycle regressions.
+- Remote CI and a fresh independent review for the remediation HEAD.
 
 ## Rollback
 

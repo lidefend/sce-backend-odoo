@@ -15,6 +15,11 @@
     "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
     "frontend/apps/web/src/components/action/hierarchyTreeKeyboard.ts",
     "frontend/apps/web/src/components/chart/chartAdapter.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/stores/appInitFailure.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
     "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
@@ -25,6 +30,25 @@
     "authority": "existing local Make tools; no database, service or remote write"
   },
   "checks": {
+    "created_record_retirement": {
+      "target": "verify.frontend.contract_form_save_failure_recovery.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_bootstrap": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/appInitFailure.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
     "recursive_form": {
       "target": "verify.frontend.native_form_structure_responsibility.unit",
       "inputs": [
@@ -116,7 +140,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Perform independent review of the four-commit candidate, then publish the exact clean HEAD through the governed PR lane and verify current-head required checks.",
+  "next_exact_step": "Commit the review remediation, publish the clean exact HEAD through the governed PR lane, verify four required checks and wait for fresh independent review.",
   "id": "FE-CONVERGENCE-FE04-20261113",
   "branch": "fix/fe-convergence-fe04-expression-a11y-20261113",
   "status": "verification_pending",

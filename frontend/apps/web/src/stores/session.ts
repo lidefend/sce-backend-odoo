@@ -6,7 +6,6 @@ import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta,
 import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
 import { navigationProjectionActions, navigationProjectionState, type NavigationProjectionState } from './navigationProjectionActions';
-import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
 import type { Scene } from '../app/resolvers/sceneRegistry';
@@ -41,6 +40,7 @@ import type {
   WorkspaceTodayActionRow,
 } from './sessionWorkspaceTypes';
 import { projectWorkspaceHomeObjectRows } from './sessionWorkspaceObjects';
+import { resolveAppInitFailureState } from './appInitFailure';
 
 export type {
   WorkspaceAdviceRow,
@@ -1153,6 +1153,15 @@ export const useSessionStore = defineStore('session', {
       });
       if (changed) this.persist();
     },
+    completeCreatedActivityPage(key: string) {
+      const normalizedKey = asText(key);
+      if (!normalizedKey || this.activityPages.find((page) => page.key === normalizedKey)?.record_id !== 'new') return false;
+      this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
+      this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(this.activityPageCacheEpochs, normalizedKey);
+      if (this.activeActivityPageKey === normalizedKey) this.activeActivityPageKey = '';
+      this.persist();
+      return true;
+    },
     authorizeActivityPageNavigation() {
       activityPageNavigationAuthorized = true;
     },
@@ -1306,48 +1315,28 @@ export const useSessionStore = defineStore('session', {
     async loadAppInit(options: { force?: boolean; contextEpoch?: number } = {}) {
       const requestEpoch = options.contextEpoch ?? currentContextEpoch();
       if (!isCurrentContextEpoch(requestEpoch)) return;
-      if (appInitInFlight && appInitEpoch === requestEpoch && !options.force) {
-        return appInitInFlight;
-      }
-      if (appInitInFlight && appInitEpoch === requestEpoch && options.force) {
-        try {
-          await appInitInFlight;
-        } catch {
-          // A forced refresh must fetch the latest runtime state even if the
-          // previous bootstrap request failed.
+      const pendingAppInit = () => appInitInFlight && appInitEpoch === requestEpoch ? appInitInFlight : null;
+      const existingInit = pendingAppInit();
+      if (existingInit && !options.force) return existingInit;
+      if (existingInit) {
+        // Forced refreshes are queued. Each waiter must observe the next
+        // in-flight transaction before it can take its own activity snapshot.
+        for (let inFlight: Promise<void> | null = existingInit; inFlight; inFlight = pendingAppInit()) {
+          try {
+            await inFlight;
+          } catch {
+            // A later forced refresh still fetches current runtime state.
+          }
+          if (!isCurrentContextEpoch(requestEpoch)) return;
         }
       }
-      if (!isCurrentContextEpoch(requestEpoch)) return;
       const requestSequence = ++appInitSequence;
       const bootstrapIsCurrent = () => isCurrentContextEpoch(requestEpoch)
         && appInitSequence === requestSequence;
       const run = (async () => {
       const publishFailure = (err: unknown) => {
         if (!bootstrapIsCurrent()) return false;
-        if (err instanceof ApiError) {
-          this.initError = err.message;
-          this.initTraceId = err.traceId ?? null;
-        } else {
-          this.initError = err instanceof Error ? err.message : String(err || 'init failed');
-          this.initTraceId = null;
-        }
-        this.initStatus = 'error';
-        this.isReady = false;
-        this.routeAuthority = null;
-        this.menuTree = [];
-        this.navigationModel = null;
-        this.scenarioSurface = null;
-        this.currentAction = null;
-        this.featureFlags = {};
-        this.scenes = [];
-        this.sceneVersion = null;
-        this.sceneActionHints = {};
-        this.capabilities = [];
-        this.capabilityCatalog = {};
-        this.capabilityGroups = [];
-        this.sceneReadyContract = null;
-        this.sceneGovernance = null;
-        this.defaultRoute = null;
+        Object.assign(this, resolveAppInitFailureState(err));
         setSceneRegistry([]);
         return true;
       };

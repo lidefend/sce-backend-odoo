@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5191`
+- Scanned files: `5192`
 - Files requiring split plan: `78`
 - Files above warning threshold: `146`
 
@@ -50,7 +50,7 @@ Generated from repository source files. This report is informational during the 
 | 2097 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2011 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 2000 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1959 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1938 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -284,7 +284,7 @@ Generated from repository source files. This report is informational during the 
 | 2097 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2011 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 2000 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1959 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1938 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |

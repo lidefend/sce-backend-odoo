@@ -163,9 +163,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     authorityEpoch.value += 1;
   }, { flush: 'sync' });
 
-  type SaveOperation = { id: number; epoch: number; contextEpoch: number; model: string; recordId: number | null };
+  type SaveOperation = { id: number; epoch: number; contextEpoch: number; model: string; recordId: number | null; activityPageKey: string };
   let saveOperationSequence = 0;
-  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null };
+  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null, activityPageKey: '' };
   let busyOwnerOperationId = 0;
 
   const beginSaveOperation = (): SaveOperation => {
@@ -176,6 +176,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       contextEpoch: currentContextEpoch(),
       model: String(model.value ?? ''),
       recordId: recordId.value ?? null,
+      activityPageKey: String(session.activeActivityPageKey || ''),
     };
     return activeSaveOperation;
   };
@@ -516,6 +517,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       const created = await createContractFormRecord({ model: operation.model, vals: values, context });
       if (!saveOperationOwnsSurface(operation)) return false;
       if (created?.id) {
+        session.completeCreatedActivityPage(operation.activityPageKey);
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
         if (!saveOperationOwnsSurface(operation)) return false;
         if (!attachmentsUploaded) {

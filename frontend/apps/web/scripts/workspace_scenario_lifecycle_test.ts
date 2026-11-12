@@ -114,6 +114,61 @@ assert.equal(session.initError, null);
 assert.equal(session.isReady, true);
 console.log('[startup_transaction_test] PASS cases=3 store=actual transport=controlled');
 
+// A committed create retires the exact new activity and its KeepAlive epoch.
+session.registerActivityPage({
+  key: 'record:x.document:66',
+  route: '/f/x.document/66',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '66',
+  record_context: session.currentActivityRecordContextSnapshot(),
+  dirty: true,
+});
+session.registerActivityPage({
+  key: 'new:x.document:page:create-1',
+  route: '/f/x.document/new?activity_page_id=create-1',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: 'new',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+assert.equal(session.completeCreatedActivityPage('new:x.document:page:create-1'), true);
+assert.equal(session.activityPages.some(page => page.key === 'new:x.document:page:create-1'), false);
+assert.equal(session.activityPages.find(page => page.key === 'record:x.document:66')?.dirty, true);
+assert.equal(session.activeActivityPageKey, '');
+assert.equal(session.activityPageCacheEpochs['new:x.document:page:create-1'], 1);
+console.log('[created_activity_retirement_test] PASS cases=4 store=actual');
+
+// Concurrent forced bootstraps queue behind the actual successor. They must not
+// let the later waiter snapshot the activity list the earlier waiter cleared.
+session.registerActivityPage({
+  key: 'record:x.document:77',
+  route: '/f/x.document/77',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '77',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+const queuedFirst = await nextRequest(() => session.loadAppInit({ force: true }));
+const pendingCount = pending.length;
+const queuedSecond = session.loadAppInit({ force: true });
+const queuedThird = session.loadAppInit({ force: true });
+await Promise.resolve();
+assert.equal(pending.length, pendingCount, 'queued forced refreshes wait for the first transaction');
+queuedFirst.request.settle(startupResponse());
+await queuedFirst.result;
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(pending.length, pendingCount + 1, 'the second refresh starts after the first');
+pending.at(-1)!.settle(startupResponse());
+await queuedSecond;
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(pending.length, pendingCount + 2, 'the third refresh waits for the second instead of racing it');
+pending.at(-1)!.settle(startupResponse());
+await queuedThird;
+assert.equal(session.activityPages.some(page => page.key === 'record:x.document:77'), true);
+assert.equal(session.activeActivityPageKey, 'record:x.document:77');
+console.log('[queued_forced_bootstrap_retention_test] PASS cases=3 store=actual transport=controlled');
+
 // A successful read consumes the server result without changing its decisions.
 const initial = await load();
 initial.request.settle(projection('initial'));
