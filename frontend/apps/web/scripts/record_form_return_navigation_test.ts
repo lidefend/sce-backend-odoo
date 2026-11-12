@@ -9,6 +9,7 @@ import {
   executeRecordFormReturn,
   hasInAppReturnHistory,
   resolveRecordFormReturnFallbackRoute,
+  useCreatedRecordNavigationRuntime,
 } from '../src/pages/contractForm/useCreatedRecordNavigationRuntime.ts';
 
 const cases: Array<{ name: string; run: () => void | Promise<void> }> = [];
@@ -334,6 +335,35 @@ check('late record 403 cannot navigate after the page loses ownership', async ()
         ? 'the active record still navigates on its current 403'
         : 'a deactivated record cannot navigate on its late 403');
   }
+});
+
+check('ordinary create success uses managed SPA replacement', async () => {
+  const replacements: unknown[] = [];
+  const created = {
+    name: 'model-form',
+    params: { model: 'x.document', id: '88' },
+    query: { menu_id: '7', action_id: '9' },
+  };
+  const runtime = useCreatedRecordNavigationRuntime({
+    applyProjectionRefreshPolicy: async () => {},
+    currentQuery: () => ({ menu_id: '7', action_id: '9' }),
+    isQuickIntakeMode: () => false,
+    isStandardIntakeMode: () => false,
+    modelName: () => 'x.document',
+    resolveWorkspaceContextQuery: () => ({}),
+    returnToIntakeList: async () => false,
+    router: {
+      resolve: () => created,
+      replace: async (target: unknown) => { replacements.push(target); },
+    } as never,
+  });
+  assert.equal(await runtime.navigateCreatedRecord({
+    createdId: 88,
+    createdLabel: 'Document',
+    nextSceneKey: '',
+    nextSceneRoute: '',
+  }), true);
+  assert.deepEqual(replacements, [created], 'created record handoff stays inside the SPA');
 });
 
 for (const testCase of cases) {

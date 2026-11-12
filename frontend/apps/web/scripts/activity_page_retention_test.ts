@@ -12,6 +12,10 @@ import {
   type RetainedActivityPageLike,
 } from '../src/app/activityPageRetention';
 import {
+  advanceActivityPageCacheEpoch,
+  resolveActivityRouteKey,
+} from '../src/app/activityPageCacheIdentity';
+import {
   resolveBusinessActivityTitle,
   shouldDeferActivityPageTitle,
 } from '../src/app/activityPageTitle';
@@ -177,6 +181,45 @@ assert.equal(
 );
 
 console.log('[activity_page_title_publication_test] PASS cases=3');
+
+const persistedRecordInput = {
+  routeName: 'record',
+  params: { model: 'payment.request', id: '157' },
+  query: { action_id: '807', menu_id: '558' },
+  selectedRecordId: 9,
+};
+const persistedRecordKey = resolveActivityRouteKey(persistedRecordInput);
+assert.equal(
+  persistedRecordKey,
+  'record:payment.request:157:action:807:menu:558',
+  'persisted record identity includes its action/menu owner',
+);
+assert.equal(
+  resolveActivityRouteKey({ ...persistedRecordInput, selectedRecordId: null }),
+  persistedRecordKey,
+  'a live record-context seat cannot remount the same persisted record page',
+);
+const createKey = resolveActivityRouteKey({
+  routeName: 'model-form',
+  params: { model: 'project.project', id: 'new' },
+  query: { action_id: '722', menu_id: '378', view_id: '91', activity_page_id: 'ap_1' },
+  selectedRecordId: 9,
+});
+assert.equal(
+  createKey,
+  'new:project.project:action:722:menu:378:view:91:record-context:9:ap_1',
+  'create forms keep their action/menu/view and activity occurrence',
+);
+assert.equal(
+  resolveActivityRouteKey({ routeName: 'scene-my-work', params: {}, query: {} }),
+  'workspace:my-work',
+  'my-work is one workspace identity rather than an arbitrary scene cache key',
+);
+const epochs = { [persistedRecordKey]: 0 };
+const advanced = advanceActivityPageCacheEpoch(epochs, persistedRecordKey);
+assert.equal(advanced[persistedRecordKey], 1, 'close advances the exact key App reads');
+assert.equal(epochs[persistedRecordKey], 0, 'epoch advancement does not mutate prior state');
+console.log('[activity_page_cache_identity_test] PASS cases=6');
 
 const actionOwner = { active: true, routeName: 'action', instanceRouteKey: 'action:809:menu:559', currentRouteKey: 'action:809:menu:559' };
 assert.equal(isActionPageIdentityOwner(actionOwner), true, 'active action can publish its own title');

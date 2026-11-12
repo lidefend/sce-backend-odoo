@@ -5,6 +5,7 @@ import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime
 import { useRecordRelationshipFields } from '../src/pages/contractForm/useRecordRelationshipFields';
 import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle';
 import { useActionViewLoadSuccessRuntime } from '../src/app/action_runtime/useActionViewLoadSuccessRuntime';
+import { mergeUploadedAttachmentIds } from '../src/components/template/attachmentRelationMerge';
 import {
   buildProfessionalRelationCancelledMessage,
   buildProfessionalRelationCreatedMessage,
@@ -384,6 +385,23 @@ console.log(`[professional_relation_lifecycle_model_test] PASS shared-record-lif
   stop();
 }
 console.log('persisted child loading: first Vue flush is protected');
+
+assert.deepEqual(
+  mergeUploadedAttachmentIds([10, 101], [102]),
+  [10, 101, 102],
+  'one completed attachment batch cannot replace another concurrent batch',
+);
+assert.deepEqual(
+  mergeUploadedAttachmentIds([10], [101]),
+  [10, 101],
+  'an attachment removed during upload is not resurrected from a stale snapshot',
+);
+assert.deepEqual(
+  mergeUploadedAttachmentIds([10, 101], [101, 102, 102]),
+  [10, 101, 102],
+  'attachment merge remains deterministic and duplicate-free',
+);
+console.log('[attachment_relation_merge_test] PASS cases=3');
 
 // A collection success that lost its route/generation lease cannot publish
 // records, status or trace data. The unused scope probes must not run at all.

@@ -67,6 +67,7 @@
     "fix/fe-action-semantics-01-20261109": ".agent/runs/FE-ACTION-SEMANTICS-01/run.json",
     "fix/fe-convergence-fe01-entry-startup-20261112": ".agent/runs/FE-CONVERGENCE-FE01-20261112/run.json",
     "fix/fe-convergence-fe02-read-ownership-20261112": ".agent/runs/FE-CONVERGENCE-FE02-20261112/run.json",
+    "fix/fe-convergence-fe03-draft-submit-20261113": ".agent/runs/FE-CONVERGENCE-FE03-20261113/run.json",
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
     "fix/fe-iteration-efficiency-20261109": ".agent/runs/FE-ITERATION-EFFICIENCY-20261109/run.json",

@@ -12,6 +12,7 @@ import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract
 import type { Scene } from '../app/resolvers/sceneRegistry';
 import { logger } from '../utils/logger';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import { advanceActivityPageCacheEpoch } from '../app/activityPageCacheIdentity';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
 import { setActiveDb } from '../services/dbContext';
 import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNamespace';
@@ -1168,14 +1169,10 @@ export const useSessionStore = defineStore('session', {
       if (!normalizedKey) return null;
       const closingActive = this.activeActivityPageKey === normalizedKey;
       this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
-      const cacheRouteKey = activityPageCacheRouteKey(normalizedKey);
-      this.activityPageCacheEpochs = {
-        ...this.activityPageCacheEpochs,
-        [normalizedKey]: Number(this.activityPageCacheEpochs[normalizedKey] || 0) + 1,
-        ...(cacheRouteKey ? {
-          [cacheRouteKey]: Number(this.activityPageCacheEpochs[cacheRouteKey] || 0) + 1,
-        } : {}),
-      };
+      this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(
+        this.activityPageCacheEpochs,
+        normalizedKey,
+      );
       let nextPage: ActivityPage | null = null;
       if (closingActive) {
         nextPage = [...this.activityPages].sort((a, b) => b.last_active_at - a.last_active_at)[0] || null;
@@ -1909,12 +1906,10 @@ export const useSessionStore = defineStore('session', {
         },
       };
       if (scopeChanged) {
-        const nextEpochs = { ...this.activityPageCacheEpochs };
-        this.activityPages.forEach((page) => {
-          nextEpochs[page.key] = Number(nextEpochs[page.key] || 0) + 1;
-          const routeKey = activityPageCacheRouteKey(page.key);
-          if (routeKey) nextEpochs[routeKey] = Number(nextEpochs[routeKey] || 0) + 1;
-        });
+        const nextEpochs = this.activityPages.reduce(
+          (epochs, page) => advanceActivityPageCacheEpoch(epochs, page.key),
+          { ...this.activityPageCacheEpochs },
+        );
         this.activityPages = [];
         this.activeActivityPageKey = '';
         this.activityPageCacheEpochs = nextEpochs;

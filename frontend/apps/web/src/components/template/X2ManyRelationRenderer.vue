@@ -456,6 +456,7 @@ import {
   selectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
+import { mergeUploadedAttachmentIds } from './attachmentRelationMerge';
 import { readRecord } from '../../api/data';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 import {
@@ -966,7 +967,6 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File
     return;
   }
   try {
-    const current = props.adapter.relationIds(field.name);
     const newIds: number[] = [];
     const newNames: Record<number, string> = {};
     for (const file of files) {
@@ -975,7 +975,10 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File
       newIds.push(created.id);
       newNames[created.id] = created.name || file.name;
     }
-    props.adapter.setRelationIds(field.name, Array.from(new Set([...current, ...newIds])));
+    props.adapter.setRelationIds(
+      field.name,
+      mergeUploadedAttachmentIds(props.adapter.relationIds(field.name), newIds),
+    );
     attachmentNameMap.value = { ...attachmentNameMap.value, ...newNames };
     uploadTick.value += 1;
   } catch (err) {
