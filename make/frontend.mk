@@ -1443,12 +1443,17 @@ verify.frontend.acceptance.integration: guard.prod.forbid
 # explicit so a current frontend preview can never be paired with a receipt
 # generated from a parent backend revision.
 verify.frontend.list_surface_structure.browser: guard.prod.forbid acceptance.runtime.contract_receipt verify.frontend.list_surface_search_contract.unit
-	@$(MAKE) --no-print-directory verify.frontend.list_surface_structure.browser.internal
-
-verify.frontend.list_surface_structure.browser.internal: guard.prod.forbid
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_FRONTEND_URL)))
 	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_DB)))
 	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),$(SC_LIST_PREVIEW_DB)))
+	@$(MAKE) --no-print-directory SC_LIST_PREVIEW_INPUTS_VALIDATED=1 verify.frontend.list_surface_structure.browser.internal
+
+verify.frontend.list_surface_structure.browser.internal: guard.prod.forbid
+ifneq ($(SC_LIST_PREVIEW_INPUTS_VALIDATED),1)
+	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_FRONTEND_URL)))
+	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_DB)))
+	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),$(SC_LIST_PREVIEW_DB)))
+endif
 	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=$(SC_LIST_PREVIEW_FRONTEND_URL)) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=$(SC_LIST_PREVIEW_DB)) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_EXPECTED_SHA="$(SC_ACCEPTANCE_REQUIRED_SHA)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
 
 .PHONY: verify.daily_dev.list_surface.readonly.browser

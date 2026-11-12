@@ -283,6 +283,37 @@ export function findRouteAuthority(
   return entry && routeAuthorityContextAllowed(entry, input.query, input) ? entry : null;
 }
 
+export function buildRouteAuthorityValidationParams(input: {
+  actionId: number;
+  menuId: number;
+  authority: RouteAuthorityEntry;
+  query: Record<string, unknown>;
+}): Record<string, unknown> {
+  const required = Array.isArray(input.authority.context_requirements.required_query)
+    ? input.authority.context_requirements.required_query
+      .map((key) => String(key || '').trim())
+      .filter(Boolean)
+    : [];
+  const actionId = positiveInteger(input.actionId) || positiveInteger(input.authority.action_id);
+  const menuId = positiveInteger(input.menuId) || positiveInteger(input.authority.menu_id);
+  return {
+    ...Object.fromEntries(required.map((key) => [key, input.query[key]])),
+    action_id: actionId,
+    ...(menuId > 0 ? { menu_id: menuId } : {}),
+  };
+}
+
+export async function validateRouteAuthorityContext(input: {
+  actionId: number;
+  menuId: number;
+  authority: RouteAuthorityEntry;
+  query: Record<string, unknown>;
+  request: (params: Record<string, unknown>) => Promise<{ allowed?: boolean }>;
+}): Promise<boolean> {
+  const validation = await input.request(buildRouteAuthorityValidationParams(input));
+  return validation.allowed === true;
+}
+
 /**
  * Decide whether a login-return target may be proposed to the router.
  *

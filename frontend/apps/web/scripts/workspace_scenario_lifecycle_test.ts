@@ -43,6 +43,76 @@ async function nextRequest(start: () => Promise<unknown>) {
   return { result, request: pending[count] };
 }
 const load = () => nextRequest(() => session.loadWorkspaceScenarioProjection());
+const startupResponse = () => ({
+  user: { id: 1, name: 'Startup test user' },
+  capabilities: [],
+  feature_flags: {},
+  scenes: [],
+  workspace_home: null,
+  record_context: {
+    contract_version: '1.0.0',
+    enabled: true,
+    company_id: 7,
+    company_name: 'Startup test company',
+    selected: null,
+    options: [],
+  },
+  navigation: {
+    nav: [],
+    integrity: {
+      visible_action_count: 0,
+      authorized_action_count: 0,
+      missing_authority_count: 0,
+    },
+    route_authority: {
+      contract_version: '2.0.0',
+      schema_version: '2.0.0',
+      source: 'startup-test',
+      principal_scope: { user_id: 1, company_id: 7, role_code: '' },
+      primary_actions: [],
+      role_home_actions: [],
+      contextual_actions: [],
+      admin_actions: [],
+      denied_actions: [],
+      menu_containers: [],
+    },
+  },
+});
+
+// A response that passes HTTP but fails contract decoding is still a failed
+// initialization transaction and must expose a retry path.
+const malformedStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+malformedStartup.request.settle({
+  user: { id: 1 },
+  capabilities: undefined,
+  navigation: {},
+});
+await assert.rejects(malformedStartup.result, /system\.init\.capabilities/);
+assert.equal(session.initStatus, 'error');
+assert.match(session.initError || '', /system\.init\.capabilities/);
+assert.equal(session.isReady, false);
+
+const recoveredStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+recoveredStartup.request.settle(startupResponse());
+await recoveredStartup.result;
+assert.equal(session.initStatus, 'ready');
+assert.equal(session.initError, null);
+assert.equal(session.isReady, true);
+
+// A superseded initialization cannot publish failure over the ready result
+// that belongs to the newer context.
+const staleStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+beginContextTransition();
+const currentStartup = await nextRequest(() => session.loadAppInit({ force: true }));
+currentStartup.request.settle(startupResponse());
+await currentStartup.result;
+assert.equal(session.initStatus, 'ready');
+staleStartup.request.fail(new Error('stale bootstrap failed'));
+await staleStartup.result;
+assert.equal(session.initStatus, 'ready');
+assert.equal(session.initError, null);
+assert.equal(session.isReady, true);
+console.log('[startup_transaction_test] PASS cases=3 store=actual transport=controlled');
 
 // A successful read consumes the server result without changing its decisions.
 const initial = await load();

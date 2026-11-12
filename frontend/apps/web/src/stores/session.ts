@@ -54,6 +54,7 @@ export type {
 
 let appInitInFlight: Promise<void> | null = null;
 let appInitEpoch = -1;
+let appInitSequence = 0;
 
 function resolveAvailableSceneRoute(rawPath: string): string {
   const normalized = normalizeLegacyWorkbenchPath(String(rawPath || '').trim());
@@ -941,6 +942,7 @@ export const useSessionStore = defineStore('session', {
     clearSession() {
       invalidateContextRequests();
       this.invalidateWorkspaceScenarioProjection();
+      appInitSequence += 1;
       appInitInFlight = null;
       appInitEpoch = -1;
       this.token = null;
@@ -1319,7 +1321,40 @@ export const useSessionStore = defineStore('session', {
         }
       }
       if (!isCurrentContextEpoch(requestEpoch)) return;
+      const requestSequence = ++appInitSequence;
+      const bootstrapIsCurrent = () => isCurrentContextEpoch(requestEpoch)
+        && appInitSequence === requestSequence;
       const run = (async () => {
+      const publishFailure = (err: unknown) => {
+        if (!bootstrapIsCurrent()) return false;
+        if (err instanceof ApiError) {
+          this.initError = err.message;
+          this.initTraceId = err.traceId ?? null;
+        } else {
+          this.initError = err instanceof Error ? err.message : String(err || 'init failed');
+          this.initTraceId = null;
+        }
+        this.initStatus = 'error';
+        this.isReady = false;
+        this.routeAuthority = null;
+        this.menuTree = [];
+        this.navigationModel = null;
+        this.scenarioSurface = null;
+        this.currentAction = null;
+        this.featureFlags = {};
+        this.scenes = [];
+        this.sceneVersion = null;
+        this.sceneActionHints = {};
+        this.capabilities = [];
+        this.capabilityCatalog = {};
+        this.capabilityGroups = [];
+        this.sceneReadyContract = null;
+        this.sceneGovernance = null;
+        this.defaultRoute = null;
+        setSceneRegistry([]);
+        return true;
+      };
+      try {
       // Every authoritative bootstrap starts fail-closed. This covers login,
       // Company/record-context/role transitions and policy publish/rollback refreshes.
       this.isReady = false;
@@ -1397,28 +1432,8 @@ export const useSessionStore = defineStore('session', {
         logger.debug('4. Request params:', JSON.stringify(requestParams, null, 2));
       }
 
-      let result: AppInitResponse;
-      try {
-        result = await intentRequest<AppInitResponse>(requestParams);
-      } catch (err) {
-        if (!isCurrentContextEpoch(requestEpoch)) return;
-        if (err instanceof ApiError) {
-          this.initError = err.message;
-          this.initTraceId = err.traceId ?? null;
-        } else {
-          this.initError = err instanceof Error ? err.message : 'init failed';
-        }
-        this.initStatus = 'error';
-        this.isReady = false;
-        this.routeAuthority = null;
-        this.menuTree = [];
-        this.navigationModel = null;
-        this.scenarioSurface = null;
-        this.currentAction = null;
-        setSceneRegistry([]);
-        throw err;
-      }
-      if (!isCurrentContextEpoch(requestEpoch)) return;
+      const result: AppInitResponse = await intentRequest<AppInitResponse>(requestParams);
+      if (!bootstrapIsCurrent()) return;
       // A1: 打印响应诊断信息
       if (debugIntent) {
         logger.debug('1. Response keys:', Object.keys(result));
@@ -1735,9 +1750,14 @@ export const useSessionStore = defineStore('session', {
           : '';
         this.activeActivityPageKey = restoredActiveKey;
       }
+      if (!bootstrapIsCurrent()) return;
       this.isReady = true;
       this.initStatus = 'ready';
       this.persist();
+      } catch (err) {
+        if (!publishFailure(err)) return;
+        throw err;
+      }
       })();
       appInitInFlight = run;
       appInitEpoch = requestEpoch;

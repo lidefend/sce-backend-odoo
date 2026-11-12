@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        558
+        573
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1419,7 +1419,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1045
+        966
       ],
       "occurrences": 1,
       "classification": "contract-derived",

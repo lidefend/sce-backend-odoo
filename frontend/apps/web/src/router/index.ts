@@ -12,7 +12,7 @@ import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
-import { findRouteAuthority } from '../app/routeAuthority';
+import { findRouteAuthority, validateRouteAuthorityContext } from '../app/routeAuthority';
 import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
 import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
@@ -379,16 +379,16 @@ router.beforeEach(async (to) => {
     if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)
       && routeAuthority.context_requirements.required_query.length > 0) {
       try {
-        const validation = await intentRequest<{ allowed?: boolean }>({
-          intent: 'route.authority.validate',
-          params: {
-            action_id: actionId,
-            ...Object.fromEntries(
-              routeAuthority.context_requirements.required_query.map((key) => [String(key), to.query[String(key)]]),
-            ),
-          },
+        runtimeRouteAuthorized = await validateRouteAuthorityContext({
+          actionId,
+          menuId,
+          authority: routeAuthority,
+          query: to.query as Record<string, unknown>,
+          request: (params) => intentRequest<{ allowed?: boolean }>({
+            intent: 'route.authority.validate',
+            params,
+          }),
         });
-        runtimeRouteAuthorized = validation.allowed === true;
       } catch {
         runtimeRouteAuthorized = false;
       }

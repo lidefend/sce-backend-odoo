@@ -200,7 +200,11 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
 import { ownsSceneRoute, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
-import { findActionMeta, findActionNodeByModel, findMenuNode } from '../app/menu';
+import {
+  resolveSceneActionTarget,
+  resolveSceneHandlingEntryTarget,
+  type ResolvedSceneActionTarget,
+} from '../app/sceneActionTarget';
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
 import type { NavNode } from '@sc/schema';
@@ -227,7 +231,6 @@ const sceneContractEntryIntent = computed(() => resolveSceneContractEntryIntent(
   queryEntryIntent: route.query.entry_intent,
   querySceneIntent: route.query.scene_intent,
 }));
-const findActionNodeByModelRef = findActionNodeByModel;
 const scene = ref<Scene | null>(null);
 const status = ref<'loading' | 'error' | 'forbidden' | 'idle'>('loading');
 const isLoading = computed(() => status.value === 'loading');
@@ -248,6 +251,18 @@ let sceneResolution = 0;
 // Scene chrome must therefore stay neutral for every business collection;
 // key-based exceptions make otherwise identical lists drift across modules.
 const compactSceneControls = computed(() => embeddedActionId.value > 0);
+const isSceneContractNavigation = computed(() => {
+  const navMeta = (session.initMeta as Record<string, unknown> | null)?.nav_meta as Record<string, unknown> | undefined;
+  if (String(navMeta?.nav_source || '') === 'scene_contract') return true;
+  const walk = (nodes: NavNode[]): boolean => {
+    for (const node of nodes || []) {
+      if (String(node.meta?.scene_source || '') === 'scene_contract') return true;
+      if (node.children?.length && walk(node.children)) return true;
+    }
+    return false;
+  };
+  return walk(session.menuTree || []);
+});
 type SceneBlockViewMode = 'form' | 'list' | 'kanban';
 type HandlingEntryItem = {
   key: string;
@@ -508,18 +523,18 @@ function openHandlingEntry(item: HandlingEntryItem) {
     }));
     return;
   }
-  let resolvedAction = resolveVisibleActionTarget(target as SceneTarget, currentSceneKey.value);
-  if (!resolvedAction) {
-    const internalActions = ((session.sceneReadyContract as Record<string, unknown> | null)?.scene_internal_actions
-      || {}) as Record<string, Record<string, unknown>>;
-    const internal = internalActions[`${currentSceneKey.value}:${String(item.key || '').trim()}`];
-    if (internal && Number(internal.action_id || 0) > 0) {
-      resolvedAction = {
-        actionId: Number(internal.action_id),
-        menuId: Number(internal.menu_id || 0) || undefined,
-      };
-    }
-  }
+  const internalActions = ((session.sceneReadyContract as Record<string, unknown> | null)?.scene_internal_actions
+    || {}) as Record<string, Record<string, unknown>>;
+  const internal = internalActions[`${currentSceneKey.value}:${String(item.key || '').trim()}`];
+  const resolvedAction = resolveSceneHandlingEntryTarget(target as SceneTarget, {
+    sceneKey: currentSceneKey.value,
+    menuTree: session.menuTree,
+    sceneActionHints: session.sceneActionHints,
+    isSceneContractNav: isSceneContractNavigation.value,
+    routePath: route.path,
+    routeQuery: route.query as Record<string, unknown>,
+    internalAction: internal || null,
+  });
   if (!resolvedAction) return;
   void router.push({
     path: `/a/${resolvedAction.actionId}`,
@@ -760,114 +775,20 @@ function resolveRecordId(targetRecord: unknown) {
   return targetRecord;
 }
 
-function resolveVisibleActionTarget(target: SceneTarget, sceneKey = '') {
-  const isSceneContractNav = (() => {
-    const navMeta = (session.initMeta as Record<string, unknown> | null)?.nav_meta as Record<string, unknown> | undefined;
-    if (String(navMeta?.nav_source || '') === 'scene_contract') {
-      return true;
-    }
-    const walk = (nodes: NavNode[]): boolean => {
-      for (const node of nodes || []) {
-        if (String(node.meta?.scene_source || '') === 'scene_contract') {
-          return true;
-        }
-        if (node.children?.length && walk(node.children)) {
-          return true;
-        }
-      }
-      return false;
-    };
-    return walk(session.menuTree || []);
-  })();
-
-  const normalizedSceneKey = String(sceneKey || '').trim();
-  if (normalizedSceneKey) {
-    const hinted = session.sceneActionHints?.[normalizedSceneKey];
-    const hintedActionId = Number(hinted?.actionId || 0);
-    if (hintedActionId > 0) {
-      if (!session.menuTree.length || findActionMeta(session.menuTree, hintedActionId) || isSceneContractNav) {
-        return {
-          actionId: hintedActionId,
-          menuId: Number(hinted?.menuId || target.menu_id || 0) || undefined,
-        };
-      }
-    }
-  }
-
-  const actionId = Number(target.action_id || 0);
-  if (actionId > 0) {
-    const targetRoute = String(target.route || '').trim();
-    if (normalizedSceneKey && resolveRoutePathOnly(targetRoute) === `/s/${normalizedSceneKey}`) {
-      return { actionId, menuId: Number(target.menu_id || 0) || undefined };
-    }
-    if (!session.menuTree.length || findActionMeta(session.menuTree, actionId) || isSceneContractNav) {
-      return { actionId, menuId: Number(target.menu_id || 0) || undefined };
-    }
-  }
-
-  const targetMenuId = Number(target.menu_id || 0);
-  if (targetMenuId > 0) {
-    const menuNode = findMenuNode(session.menuTree, targetMenuId);
-    if (menuNode?.meta?.action_id) {
-      return {
-        actionId: menuNode.meta.action_id,
-        menuId: Number(menuNode.menu_id || menuNode.id || targetMenuId) || undefined,
-      };
-    }
-  }
-
-  const menuXmlid = String(target.menu_xmlid || '').trim();
-  if (menuXmlid) {
-    const menuNode = findActionNodeByMenuXmlid(session.menuTree, menuXmlid);
-    if (menuNode?.meta?.action_id) {
-      return {
-        actionId: menuNode.meta.action_id,
-        menuId: Number(menuNode.menu_id || menuNode.id || 0) || undefined,
-      };
-    }
-  }
-
-  const actionXmlid = String(target.action_xmlid || '').trim();
-  if (actionXmlid) {
-    const actionNode = findActionNodeByActionXmlid(session.menuTree, actionXmlid);
-    if (actionNode?.meta?.action_id) {
-      return {
-        actionId: actionNode.meta.action_id,
-        menuId: Number(actionNode.menu_id || actionNode.id || target.menu_id || 0) || undefined,
-      };
-    }
-  }
-
-  const model = String(target.model || '').trim();
-  if (model) {
-    const modelNode = findActionNodeByModelRef(session.menuTree, model);
-    if (modelNode?.meta?.action_id) {
-      return {
-        actionId: modelNode.meta.action_id,
-        menuId: Number(modelNode.menu_id || modelNode.id || target.menu_id || 0) || undefined,
-      };
-    }
-  }
-
-  if (normalizedSceneKey) {
-    const sceneNode = findActionNodeBySceneKey(session.menuTree, normalizedSceneKey);
-    if (sceneNode?.meta?.action_id) {
-      return {
-        actionId: sceneNode.meta.action_id,
-        menuId: Number(sceneNode.menu_id || sceneNode.id || 0) || undefined,
-      };
-    }
-  }
-
-  const routeActionId = Number(route.query.action_id || 0);
-  if (routeActionId > 0) {
-    return {
-      actionId: routeActionId,
-      menuId: Number(route.query.menu_id || 0) || undefined,
-    };
-  }
-
-  return null;
+function resolveVisibleActionTarget(
+  target: SceneTarget,
+  sceneKey = '',
+  options: { includeSceneHint?: boolean; includeRouteQueryFallback?: boolean } = {},
+): ResolvedSceneActionTarget | null {
+  return resolveSceneActionTarget(target, {
+    sceneKey,
+    menuTree: session.menuTree,
+    sceneActionHints: session.sceneActionHints,
+    isSceneContractNav: isSceneContractNavigation.value,
+    routePath: route.path,
+    routeQuery: route.query as Record<string, unknown>,
+    ...options,
+  });
 }
 
 function isSameRouteTarget(targetRoute: string, query: Record<string, unknown>) {
@@ -1350,54 +1271,6 @@ function findActionNodeByMenuXmlid(nodes: NavNode[], menuXmlid: string): NavNode
     for (const node of items) {
       const xmlid = String((node as NavNode & { xmlid?: string }).xmlid || node.meta?.menu_xmlid || '').trim();
       if (xmlid && xmlid === menuXmlid) {
-        return node;
-      }
-      if (node.children?.length) {
-        const found = walk(node.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  return walk(nodes) || null;
-}
-
-function findActionNodeBySceneKey(nodes: NavNode[], sceneKey: string): NavNode | null {
-  if (!sceneKey) return null;
-  const wanted = String(sceneKey || '').trim();
-  const walk = (items: NavNode[]): NavNode | null => {
-    for (const node of items) {
-      const nodeSceneKey = String(
-        (node as NavNode & { scene_key?: string; sceneKey?: string }).scene_key
-          || (node as NavNode & { scene_key?: string; sceneKey?: string }).sceneKey
-          || node.meta?.scene_key
-          || '',
-      ).trim();
-      if (nodeSceneKey === wanted && node.meta?.action_id) {
-        return node;
-      }
-      if (node.children?.length) {
-        const found = walk(node.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  return walk(nodes) || null;
-}
-
-function findActionNodeByActionXmlid(nodes: NavNode[], actionXmlid: string): NavNode | null {
-  if (!actionXmlid) return null;
-  const wanted = String(actionXmlid || '').trim();
-  const walk = (items: NavNode[]): NavNode | null => {
-    for (const node of items) {
-      const nodeActionXmlid = String(
-        (node as NavNode & { action_xmlid?: string; actionXmlid?: string }).action_xmlid
-          || (node as NavNode & { action_xmlid?: string; actionXmlid?: string }).actionXmlid
-          || node.meta?.action_xmlid
-          || '',
-      ).trim();
-      if (nodeActionXmlid === wanted && node.meta?.action_id) {
         return node;
       }
       if (node.children?.length) {

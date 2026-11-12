@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "1dcb22afd91c46c0f60df35d30a8af0ec972375f",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONVERGENCE-FE01-20261112.yaml",
+    ".agent/runs/FE-CONVERGENCE-FE01-20261112/run.json",
+    "docs/ops/iterations/fe_convergence_fe01_entry_startup_20261112.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/app/routeAuthority.ts",
+    "frontend/apps/web/src/app/sceneActionTarget.ts",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/route_authority_guard_test.ts",
+    "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or remote write"
+  },
+  "checks": {
+    "scene_entry": {
+      "target": "verify.frontend.scene_shell_contract.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/app/sceneActionTarget.ts",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/app/menu.ts",
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "route_authority": {
+      "target": "verify.nav.pro01r.route_authority.unit",
+      "inputs": [
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/src/app/buttonNavigationAuthority.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_bootstrap": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/scripts/browser_globals_shim.ts",
+        "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview_boundary": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/vite.config.ts",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the affected browser journeys for scene-to-child entry, direct native delegation and startup error/retry on a deployed candidate; then perform independent review and remote CI.",
+  "id": "FE-CONVERGENCE-FE01-20261112",
+  "branch": "fix/fe-convergence-fe01-entry-startup-20261112",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONVERGENCE-FE01-20261112.yaml",
+  "record": "docs/ops/iterations/fe_convergence_fe01_entry_startup_20261112.md"
+}
