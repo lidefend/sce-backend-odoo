@@ -48,6 +48,23 @@ function pageComparableRoute(value) {
   const url = new URL(value, BASE_URL);
   return `${relativeRoutePath(url.pathname)}${url.search}`;
 }
+async function closeWithin(label, close, timeoutMs = 10_000) {
+  let timer;
+  try {
+    await Promise.race([
+      close(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} exceeded ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]);
+    return true;
+  } catch (error) {
+    process.stderr.write(`[frontend_list_surface_structure_browser] cleanup: ${String(error?.message || error)}\n`);
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 const DATABASE = acceptance.database;
 const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
@@ -148,10 +165,38 @@ function actionable(nodes, parents = []) {
     const label = String(node?.title || node?.label || node?.name || '').trim();
     const labels = [...parents, label].filter(Boolean);
     const route = routeFor(node);
-    if (route) result.push({ label: labels.join(' / '), route });
+    const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
+    const actionId = Number(node?.action_id || node?.actionId || meta.action_id || meta.actionId || 0);
+    const menuId = Number(node?.menu_id || node?.menuId || meta.menu_id || meta.menuId || 0);
+    const nativeRoute = actionId > 0
+      ? `/a/${actionId}${menuId > 0 ? `?menu_id=${menuId}` : ''}`
+      : '';
+    if (route) result.push({ label: labels.join(' / '), route, nativeRoute });
     result.push(...actionable(node?.children, labels));
   }
   return result;
+}
+
+function listSourceForTarget(target) {
+  const nativeRoute = String(target?.nativeRoute || '').trim();
+  if (!nativeRoute) throw new Error('scenario list target is missing native action identity');
+  const nativeUrl = new URL(nativeRoute, BASE_URL);
+  const match = /^\/a\/([1-9]\d*)$/.exec(relativeRoutePath(nativeUrl.pathname));
+  const menuId = Number(nativeUrl.searchParams.get('menu_id') || 0);
+  if (!match || !Number.isInteger(menuId) || menuId <= 0) {
+    throw new Error(`scenario list target has invalid native identity ${nativeRoute}`);
+  }
+  return { actionId: Number(match[1]), menuId };
+}
+
+function sceneListRouteMatchesTarget(value, target) {
+  const observedUrl = new URL(value, BASE_URL);
+  const targetUrl = new URL(String(target?.route || ''), BASE_URL);
+  if (relativeRoutePath(observedUrl.pathname) !== relativeRoutePath(targetUrl.pathname)) return false;
+  const source = listSourceForTarget(target);
+  if (Number(observedUrl.searchParams.get('menu_id') || 0) !== source.menuId) return false;
+  const observedActionId = observedUrl.searchParams.get('action_id');
+  return observedActionId == null || Number(observedActionId) === source.actionId;
 }
 
 const authenticatedProbes = new WeakMap();
@@ -217,8 +262,9 @@ async function submitDeclaredSearch(page, value) {
 async function findPopulatedList(page, navigation) {
   const routes = actionable(navigation.nav());
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
-  if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
-  const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
+  const requestedMatch = (row) => row.route === REQUESTED_ROUTE || row.nativeRoute === REQUESTED_ROUTE;
+  if (REQUESTED_ROUTE && !routes.some(requestedMatch)) throw new Error('requested list route is not in captured released navigation');
+  const candidates = REQUESTED_ROUTE ? routes.filter(requestedMatch) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
   // The declared daily target is an external deployment reached over the
   // network: its first navigation loads the released bundle and menu tree, so
   // the list toolbar can take well over the loopback tuning used for local
@@ -1231,8 +1277,7 @@ try {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
-      const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = listSourceForTarget(target);
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       const listData = listContract.response.data;
@@ -1327,7 +1372,7 @@ try {
       }
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (pageComparableRoute(page.url()) !== target.route) throw new Error('form-profiles return did not restore source list');
+      if (!sceneListRouteMatchesTarget(page.url(), target)) throw new Error('form-profiles return did not restore source list');
     }
     await page.setViewportSize(VIEWPORTS[0]);
   }
@@ -1347,8 +1392,7 @@ try {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
-      const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = listSourceForTarget(target);
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       // Open the contract-approved record through the row authority the list
@@ -1414,7 +1458,10 @@ try {
       dailyObservations.push({ surface: profile === 'readonly' ? 'readonly-detail' : 'edit-form-observation-without-save', declaredEntry: expectedDetail, renderProfile: profile, presentation, contractResponses: newContracts.length, url: page.url(), viewport: viewport.key, cards, screenshot });
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (pageComparableRoute(page.url()) !== target.route) throw new Error('daily detail return did not restore source list');
+      const returnedRoute = pageComparableRoute(page.url());
+      if (!sceneListRouteMatchesTarget(page.url(), target)) {
+        throw new Error(`daily detail return did not restore source list: expected=${target.route} observed=${returnedRoute}`);
+      }
       recordChecks.push({ viewport: viewport.key, check: 'return_to_source', passed: true, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
     }
     await page.setViewportSize(VIEWPORTS[0]);
@@ -1533,5 +1580,9 @@ try {
     source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
   process.exitCode = 1;
 } finally {
-  try { await context?.close(); } finally { try { await browser?.close(); } finally { await lease?.release(); } }
+  const cleanup = [];
+  if (context) cleanup.push(await closeWithin('context close', () => context.close()));
+  if (browser) cleanup.push(await closeWithin('browser close', () => browser.close()));
+  if (lease) cleanup.push(await closeWithin('lease release', () => lease.release()));
+  if (cleanup.includes(false)) process.exit(process.exitCode ?? 1);
 }

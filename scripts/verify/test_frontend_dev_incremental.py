@@ -273,6 +273,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/system_init.py",
             "addons/smart_core/tests/test_navigation_contract_compiler.py",
             "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+            "addons/smart_core/tests/test_intent_smoke.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -303,6 +304,31 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.capability.identity_boundary.unit",
                 "verify.runtime_capability_catalog.unit",
             ],
+        )
+
+    def test_scene_shell_compiler_selects_its_navigation_unit(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/scene_shell_compiler.py",
+            "addons/smart_core/tests/test_scene_shell_compiler.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.scene.shell_compiler.unit"],
+                )
+
+    def test_scene_shell_frontend_contract_selects_its_consumer_unit(self) -> None:
+        self.assertEqual(
+            select_targets(["frontend/apps/web/src/app/resolvers/sceneRegistry.ts"]),
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.scene_shell_contract.unit",
+                "verify.frontend.typecheck.strict",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["frontend/apps/web/scripts/scene_shell_contract_test.ts"]),
+            ["verify.frontend.scene_shell_contract.unit"],
         )
 
     def test_scenario_center_composition_selects_center_and_navigation_guards(self) -> None:

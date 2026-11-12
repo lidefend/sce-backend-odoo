@@ -2,8 +2,10 @@
 """Compile already-produced navigation authority into one client contract."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
+
+from .scene_shell_compiler import SceneShellCompiler
 
 
 def _authority_pairs(authority: dict) -> set[tuple[int, int]]:
@@ -54,6 +56,7 @@ class NavigationContractCompilation:
     nav: list[dict]
     route_authority: dict
     navigation: dict
+    scene_shells: list[dict] = field(default_factory=list)
 
 
 class NavigationContractCompiler:
@@ -74,6 +77,7 @@ class NavigationContractCompiler:
         release_node_filter: Callable[[list[dict]], list[dict]],
         action_pair_walker: Callable[[list[dict]], object],
         authority_finalizer: Callable[[dict], dict | None] | None = None,
+        scene_shell_compiler: SceneShellCompiler | None = None,
     ):
         self.menu_service = menu_service
         self.scenario_surface_provider = scenario_surface_provider
@@ -81,6 +85,7 @@ class NavigationContractCompiler:
         self.release_node_filter = release_node_filter
         self.action_pair_walker = action_pair_walker
         self.authority_finalizer = authority_finalizer
+        self.scene_shell_compiler = scene_shell_compiler or SceneShellCompiler()
 
     def compile(
         self,
@@ -92,6 +97,7 @@ class NavigationContractCompiler:
         platform_duty: dict | None,
         scene_internal_actions: dict | None,
         company_id: int,
+        designed_scene_keys=None,
     ) -> NavigationContractCompilation:
         if not isinstance(nav, list):
             raise RuntimeError("canonical navigation is unavailable")
@@ -162,21 +168,18 @@ class NavigationContractCompiler:
         }
 
         scenario_surface = self.scenario_surface_provider(nav, authority)
-        if not isinstance(scenario_surface, dict):
-            return NavigationContractCompilation(
-                nav=nav,
-                route_authority=authority,
-                navigation=navigation,
-            )
+        scenarioized_nav = nav
+        if isinstance(scenario_surface, dict):
+            navigation["scenario_surface"] = scenario_surface
+            provided_nav = scenario_surface.get("nav")
+            if isinstance(provided_nav, list):
+                scenarioized_nav = provided_nav
 
-        navigation["scenario_surface"] = scenario_surface
-        scenarioized_nav = scenario_surface.get("nav")
-        if not isinstance(scenarioized_nav, list):
-            return NavigationContractCompilation(
-                nav=nav,
-                route_authority=authority,
-                navigation=navigation,
-            )
+        scene_shells = self.scene_shell_compiler.compile(
+            scenarioized_nav,
+            designed_scene_keys=designed_scene_keys,
+        )
+        scenarioized_nav = scene_shells.nav
 
         scenarioized_nav, authority = (
             self.menu_service.project_final_navigation_routes(
@@ -215,4 +218,5 @@ class NavigationContractCompiler:
             nav=scenarioized_nav,
             route_authority=authority,
             navigation=navigation,
+            scene_shells=scene_shells.scene_shell_rows,
         )

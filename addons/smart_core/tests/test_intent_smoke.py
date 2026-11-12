@@ -267,6 +267,34 @@ class TestIntentSmoke(HttpCase):
         navigation = data.get("data", {}).get("navigation") or {}
         self.assertEqual(navigation.get("contract_version"), "2.0.0")
         self.assertEqual(navigation.get("schema_version"), "2.0.0")
+        executable_leaves = []
+
+        def collect_executable_leaves(nodes):
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                children = [child for child in node.get("children") or [] if isinstance(child, dict)]
+                meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+                if not children and (
+                    int(node.get("action_id") or meta.get("action_id") or 0) > 0
+                    or isinstance(node.get("entry_target"), dict)
+                    or isinstance(meta.get("entry_target"), dict)
+                ):
+                    executable_leaves.append(node)
+                collect_executable_leaves(children)
+
+        collect_executable_leaves(navigation.get("nav"))
+        self.assertTrue(executable_leaves)
+        for node in executable_leaves:
+            self.assertTrue(
+                str(node.get("route") or "").startswith("/s/"),
+                node,
+            )
+            self.assertIn(
+                str(node.get("content_kind") or ""),
+                {"designed_scene", "native_delegate"},
+                node,
+            )
         self.assertNotIn("route_authority_v1", navigation)
         route_authority = navigation.get("route_authority") or {}
         self.assertEqual(route_authority.get("contract_version"), "2.0.0")

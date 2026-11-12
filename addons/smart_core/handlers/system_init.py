@@ -91,6 +91,7 @@ from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.delivery.navigation_contract_compiler import (
     NavigationContractCompiler,
 )
+from odoo.addons.smart_core.delivery.scene_shell_compiler import SceneShellCompiler
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_core.delivery.release_audit_trail_service import ReleaseAuditTrailService
 from odoo.addons.smart_core.delivery.product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -2299,6 +2300,30 @@ class SystemInitHandler(BaseIntentHandler):
             (data.get("record_context") or {}).get("company_id")
             or env.company.id
         )
+        _designed_scene_keys = {
+            _text(row.get("code") or row.get("key"))
+            for row in (data.get("scenes") or [])
+            if isinstance(row, dict) and _text(row.get("code") or row.get("key"))
+        }
+        _scene_ready_before_shell = (
+            data.get("scene_ready_contract")
+            if isinstance(data.get("scene_ready_contract"), dict)
+            else {}
+        )
+        _designed_scene_keys.update(
+            _text(
+                (row.get("scene") or {}).get("key")
+                if isinstance(row.get("scene"), dict)
+                else ""
+            )
+            for row in (_scene_ready_before_shell.get("scenes") or [])
+            if isinstance(row, dict)
+            and _text(
+                (row.get("scene") or {}).get("key")
+                if isinstance(row.get("scene"), dict)
+                else ""
+            )
+        )
         _compiled_navigation = NavigationContractCompiler(
             delivery_engine.menu_service,
             scenario_surface_provider=lambda current_nav, current_authority: call_extension_hook_first(
@@ -2333,9 +2358,14 @@ class SystemInitHandler(BaseIntentHandler):
             platform_duty=(data.get("user") or {}).get("platform_duty"),
             scene_internal_actions=_scene_internal_actions,
             company_id=_route_company_id,
+            designed_scene_keys=_designed_scene_keys,
         )
         data["nav"] = _compiled_navigation.nav
         data["navigation"] = _compiled_navigation.navigation
+        data["scene_ready_contract"] = SceneShellCompiler.merge_scene_ready_contract(
+            data.get("scene_ready_contract"),
+            _compiled_navigation.scene_shells,
+        )
         for _removed_navigation_carrier in (
             "nav",
             "nav_role_surface",

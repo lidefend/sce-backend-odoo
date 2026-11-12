@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-SHELL-FINAL-DELIVERY-20261112",
+  "branch": "refactor/scene-shell-final-delivery-20261112",
+  "baseline_sha": "736e4af67037eeeba6532005a4dd8f7c43eec646",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
+  "record": "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
+    ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
+    "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/scene_shell_compiler.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_scene_shell_compiler.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_intent_smoke.py",
+    "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+    "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound compiler and scene contract tests first; governed ORM and acceptance follow"
+  },
+  "checks": {
+    "scene_shell_compiler": {
+      "target": "verify.scene.shell_compiler.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py",
+        "make/frontend.mk"
+      ]
+    },
+    "navigation_integration": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+      ]
+    },
+    "frontend_scene_shell": {
+      "target": "verify.frontend.scene_shell_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "validation_results": [
+    {
+      "command": "make verify.scene.shell_compiler.unit",
+      "status": "passed",
+      "tests": 6,
+      "notes": "Designed scene preservation, ordinary action delegation, directory pruning, deterministic identity and scene-ready shell merge all passed."
+    },
+    {
+      "command": "make verify.navigation_contract_compiler.unit",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 55,
+      "notes": "The target also passed its nested navigation compiler, runtime capability catalog, scene shell and menu authorization suites."
+    },
+    {
+      "command": "make verify.frontend.scene_shell_contract.unit",
+      "status": "passed",
+      "tests": 1,
+      "notes": "The frontend scene registry consumes a generated native-delegate row and resolves its native action target."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_core TEST_TAGS=/smart_core:TestIntentSmoke",
+      "status": "passed",
+      "tests": 10,
+      "log": ".runtime/test-baseline/1794461617664674104/receipt.json",
+      "notes": "Real system.init output contains only /s routes for executable leaves and explicit designed_scene/native_delegate content kinds."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 12,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T054501Z-164293-902023397/receipt.json",
+      "notes": "All affected targets exited zero after correcting frontend target path selection and routing the list-surface probe change to its existing contract lock."
+    },
+    {
+      "command": "make verify.frontend.list_surface_search_contract.unit",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "The released list-surface browser probe required the exact native /a route and could not locate the same entry after navigation was scenarioized to /s.",
+      "recovery": "The probe now retains the native action route as a matching identity while navigating through the delivered scene route.",
+      "recovery_check": "23 tests passed; the probe change is routed to its existing contract lock."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "b207e6e35d4eb707337be06c1235b7284a3544a7",
+      "reason": "The native-delegate scene-ready target incorrectly declared entry_intent=ui.contract. SceneView therefore selected the scene-block contract path instead of embedding the native action, producing a 400 ui.contract request without action identity.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Native-delegate shell targets now expose only route/action/menu/model/view_mode and no scene entry intent; action identity drives native ActionView embedding."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "159c056ace148ba42886ca0fa5ea7b93ec617848",
+      "reason": "The scenarioized list page rendered and completed its 18-state structure matrix, but the record walk still parsed the action id from the /s scene path instead of the navigation node's retained native action identity.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Both form-profile and record walk paths now resolve action/menu identity through one helper backed by the declared nativeRoute; a scene route without native identity fails explicitly.",
+      "recovery_check": "node --check PASS; 24 list-surface contract tests PASS."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "5cc092586083698e68b4be8a470ea6f4ad45b805",
+      "reason": "The record contract, approved binding and renderer passed at 1440 and the screenshot showed the source list restored, but the return assertion required byte-identical query text. The frontend canonically adds scene identity to the scene route.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Return checks now require the same scene path plus source menu identity, and require action identity when present; canonical scene/action query additions are accepted while missing or mismatched source identity fails.",
+      "recovery_check": "24 list-surface contract tests PASS, including positive canonical-route and negative missing/mismatched-route cases."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "source_sha": "5cc092586083698e68b4be8a470ea6f4ad45b805",
+      "reason": "After the assertion failure the browser probe remained in teardown for about 18 minutes instead of failing promptly.",
+      "recovery": "Context close, browser close and lease release now each have a bounded 10-second wait; a timed-out cleanup is reported and exits after evidence is written.",
+      "recovery_check": "The cleanup contract is locked by verify.frontend.list_surface_search_contract.unit."
+    }
+  ],
+  "blockers": [
+    "The P4 scene-route return and bounded-cleanup repairs must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+  ],
+  "next_exact_step": "Run affected iteration, commit the P4 scene-route return and bounded-cleanup repairs, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
+  "layer": {
+    "formal_product_layer": "P0 platform mechanism",
+    "layer_target": "final scene shell delivery compiler",
+    "module": "smart_core with generic frontend consumption",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "The final route and client contract are platform compilation responsibilities.",
+    "why_not_elsewhere": "Native facts cannot own product paths, scene composition cannot create native facts, and frontend cannot synthesize scene routes.",
+    "blast_radius": "final navigation routes, generated scene-ready shells, and generic native action embedding."
+  },
+  "completion": {
+    "batch": "verification_pending",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  }
+}

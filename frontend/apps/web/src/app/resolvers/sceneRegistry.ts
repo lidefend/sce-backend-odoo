@@ -99,6 +99,7 @@ export interface Scene {
   label: string;
   icon?: string;
   route: string;
+  content_kind?: 'designed_scene' | 'native_delegate' | '';
   target: SceneTarget;
   validation_surface?: Record<string, unknown>;
   capabilities?: string[];
@@ -239,6 +240,11 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function asContentKind(value: unknown): 'designed_scene' | 'native_delegate' | '' {
+  const text = asText(value);
+  return text === 'designed_scene' || text === 'native_delegate' ? text : '';
+}
+
 function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
   if (!entry || typeof entry !== 'object') {
     return null;
@@ -340,6 +346,7 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
     key: sceneKey,
     label: asText(sceneRow.title) || sceneKey,
     route,
+    content_kind: asContentKind(metaRow.content_kind),
     target,
     validation_surface: validationRow,
     capabilities: requiredCapabilities,

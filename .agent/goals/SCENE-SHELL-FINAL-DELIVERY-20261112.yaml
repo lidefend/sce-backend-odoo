@@ -1,0 +1,27 @@
+schema_version: 1
+goal:
+  id: SCENE-SHELL-FINAL-DELIVERY-20261112
+  status: active
+  formal_product_layer: P0 platform mechanism
+  title: 最终导航全场景化与原生页面委托
+  layer_target: final scene shell delivery compiler
+  module: smart_core with generic frontend consumption
+  standard_vs_user_specific: platform mechanism
+  objective: >
+    Compile every executable final-navigation leaf into /s/{scene_key}. Preserve
+    explicitly designed scenes as designed_scene. Wrap ordinary action pages in
+    deterministic native_delegate scene shells that embed the original native
+    action/view without changing page facts.
+  acceptance:
+    - No executable final navigation leaf retains /a or /m as its user-facing path.
+    - Explicitly designed scenes retain their scene contract and content.
+    - Ordinary action pages receive deterministic scene shells and native action targets.
+    - The scene-ready contract contains generated native delegate rows.
+    - Directories remain non-clickable containers without published paths.
+    - One designed scene and one ordinary page are behaviorally verified.
+  exclusions:
+    - No redesign of all business scenes.
+    - No changes to native action/view field facts.
+    - No new menu, action, group or ACL facts.
+    - No route fact in Odoo menu/action declarations.
+    - No deployment or user-acceptance claim.

@@ -190,7 +190,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_scene_provider_target_identity_merge.py
 
 .PHONY: verify.backend.navigation_delivery.unit
-verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit
+verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit verify.scene.shell_compiler.unit
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_menu_acl_carrier_authorization.py
@@ -206,6 +206,11 @@ verify.runtime_capability_catalog.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/delivery/runtime_capability_catalog.py addons/smart_core/delivery/product_policy_catalog_sync_service.py addons/smart_core/tests/test_runtime_capability_catalog.py addons/smart_core/tests/test_backend_semantic_copy_supply.py
 	@python3 addons/smart_core/tests/test_runtime_capability_catalog.py
 
+.PHONY: verify.scene.shell_compiler.unit
+verify.scene.shell_compiler.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/delivery/scene_shell_compiler.py addons/smart_core/tests/test_scene_shell_compiler.py
+	@python3 addons/smart_core/tests/test_scene_shell_compiler.py
+
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit verify.backend.navigation_delivery.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
@@ -215,6 +220,11 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_e
 	@python3 addons/smart_construction_core/tests/test_business_category_entry_policy.py
 	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py
+
+.PHONY: verify.frontend.scene_shell_contract.unit
+verify.frontend.scene_shell_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_shell_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-shell-contract-test.mjs >/dev/null
+	@node /tmp/scene-shell-contract-test.mjs
 
 .PHONY: verify.frontend.button_navigation_authority.unit
 verify.frontend.button_navigation_authority.unit: guard.prod.forbid

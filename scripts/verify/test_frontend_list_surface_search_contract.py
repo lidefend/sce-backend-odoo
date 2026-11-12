@@ -237,6 +237,30 @@ assert.equal(relativeRoutePath('/t/test-other/api/v1/intent'), '/t/test-other/ap
         result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_scene_route_targets_resolve_native_list_authority(self):
+        source = self.probe.split('function listSourceForTarget(')[1].split('function sceneListRouteMatchesTarget(')[0]
+        program = route_helpers(self.probe, '/t/test') + """
+const assert = require('node:assert/strict');
+const BASE_URL = 'https://acceptance.test/t/test';
+function listSourceForTarget(""" + source + """
+function sceneListRouteMatchesTarget(""" + self.probe.split('function sceneListRouteMatchesTarget(')[1].split('const authenticatedProbes')[0] + """
+const target = {
+  route: '/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=560',
+  nativeRoute: '/a/881?menu_id=560',
+};
+assert.deepEqual(listSourceForTarget(target), { actionId: 881, menuId: 560 });
+assert.throws(() => listSourceForTarget({ ...target, nativeRoute: '' }), /missing native action identity/);
+assert.throws(() => listSourceForTarget({ ...target, nativeRoute: '/s/entry.scene?menu_id=560' }), /invalid native identity/);
+assert(sceneListRouteMatchesTarget('/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=560', target));
+assert(sceneListRouteMatchesTarget('/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=560&action_id=881&scene_key=entry.smart_construction_core.menu_sc_user_payment_apply', target));
+assert(!sceneListRouteMatchesTarget('/s/entry.smart_construction_core.menu_sc_user_payment_apply', target));
+assert(!sceneListRouteMatchesTarget('/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=561', target));
+assert(!sceneListRouteMatchesTarget('/s/entry.smart_construction_core.menu_sc_user_payment_apply?menu_id=560&action_id=882', target));
+assert(!sceneListRouteMatchesTarget('/s/other.scene?menu_id=560&action_id=881', target));
+"""
+        result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def run_record_probe_helpers(self, assertions):
         source = self.probe.split('function dailyActorContext(')[1].split('let browser,')[0]
         result = subprocess.run(['node', '-e', route_helpers(self.probe) + "const assert = require('node:assert/strict');\nfunction dailyActorContext(" + source + assertions], capture_output=True, text=True, cwd=ROOT)
@@ -392,8 +416,10 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
         self.assertLess(self.probe.index('servedIdentity = await verifyServedIdentity'), self.probe.index('  await login(page, navigation);'))
         self.assertIn('servedIdentity.servedDatabase !== DATABASE', self.probe)
         self.assertIn("mode: 'shared-read'", self.probe)
-        self.assertIn('await lease?.release()', self.probe)
+        self.assertIn("cleanup.push(await closeWithin('lease release', () => lease.release()))", self.probe)
+        self.assertIn('cleanup.includes(false)', self.probe)
         self.assertIn("failure: String(error?.message || error)", self.probe)
+        self.assertIn('expected=${target.route} observed=${returnedRoute}', self.probe)
         self.assertIn('runtime.denied_requests.length', self.probe)
         self.assertIn('DAILY ? acceptance.login', self.probe)
         self.assertIn('DAILY ? acceptance.password', self.probe)
