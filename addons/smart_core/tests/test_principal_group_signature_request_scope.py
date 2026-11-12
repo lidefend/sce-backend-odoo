@@ -13,6 +13,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -74,6 +75,13 @@ class _Env:
 
 
 class TestPrincipalGroupSignatureRequestScope(unittest.TestCase):
+    def test_groups_without_xmlids_change_the_authority_signature(self):
+        env = _Env(_Cursor(), _User(7, [1]))
+        with patch.object(MODULE, "_request_cached_user_group_xmlids", return_value={"base.group_user"}):
+            first = MODULE.principal_group_signature(env)
+            env.user.groups_id.ids = [1, 99]
+            self.assertNotEqual(first, MODULE.principal_group_signature(env))
+
     def test_same_request_resolves_once(self):
         cursor = _Cursor()
         env = _Env(cursor, _User(7, [1, 2, 3]))

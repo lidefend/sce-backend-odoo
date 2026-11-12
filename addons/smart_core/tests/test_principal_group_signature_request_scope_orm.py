@@ -6,6 +6,8 @@ memo logic with a fake cursor; this ORM test proves the same memo works on a
 real Odoo cursor and that ``principal_group_signature`` never silently degrades
 to an empty signature for a grouped principal.
 """
+from unittest.mock import patch
+
 from odoo import api
 from odoo.tests.common import TransactionCase, tagged
 
@@ -18,6 +20,27 @@ from ..identity.identity_resolver import IdentityResolver
 
 @tagged("post_install", "-at_install", "principal_group_request_scope_orm")
 class TestPrincipalGroupSignatureRequestScopeORM(TransactionCase):
+    def test_native_implied_group_without_xmlid_invalidates_cached_authority(self):
+        from ..delivery import runtime_route_authority
+        parent = self.env["res.groups"].create({"name": "Delivery parent without XMLID"})
+        child = self.env["res.groups"].create({"name": "Delivery child without XMLID"})
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Native group cache actor", "login": "native-group-cache-actor",
+            "groups_id": [(6, 0, [parent.id, self.env.ref("base.group_user").id])],
+        })
+        env = user.with_user(user).env
+        before_xmlids = _request_cached_user_group_xmlids(env)
+        before_signature = principal_group_signature(env)
+        self.env.registry.clear_cache()
+        with patch.object(runtime_route_authority, "_build_runtime_route_authority",
+                          side_effect=lambda current: {"native_child_allowed": child.id in current.user.groups_id.ids}):
+            self.assertFalse(runtime_route_authority.published_route_authority(env)["native_child_allowed"])
+            parent.write({"implied_ids": [(4, child.id)]})
+            self.assertIn(child, user.groups_id)
+            self.assertEqual(before_xmlids, _request_cached_user_group_xmlids(env))
+            self.assertNotEqual(before_signature, principal_group_signature(env))
+            self.assertTrue(runtime_route_authority.published_route_authority(env)["native_child_allowed"])
+
     def test_real_cursor_resolves_and_signs_group_xmlids(self):
         env = self.env
         xmlids = _request_cached_user_group_xmlids(env)

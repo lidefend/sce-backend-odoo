@@ -117,7 +117,7 @@ def menu_publication_decision(authority: dict, menu_id, action_id=0):
 
 
 def principal_group_signature(env) -> str:
-    """Stable signature of the principal's effective group xmlids.
+    """Stable signature of native group IDs and their XMLID projection.
 
     Effective groups include implied groups, which this Odoo build does not
     signal through ``registry.clear_cache()`` on their own writes. Binding the
@@ -129,7 +129,9 @@ def principal_group_signature(env) -> str:
         import hashlib
 
         xmlids = _request_cached_user_group_xmlids(env)
-        joined = "\n".join(sorted(str(item) for item in (xmlids or ()) if item))
+        # Native groups without XMLIDs still change ACL/action reachability.
+        group_ids = sorted(int(value) for value in env.user.groups_id.ids)
+        joined = repr((group_ids, sorted(str(item) for item in (xmlids or ()) if item)))
         return hashlib.sha1(joined.encode("utf-8")).hexdigest()
     except Exception:
         return ""
