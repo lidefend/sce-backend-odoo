@@ -103,3 +103,18 @@ freezes and releases a new snapshot from the reconciled policy. Existing policy
 rows and administrator edits are preserved; the migration only adds a formal
 entry absent from the maintained policy. The exact ORM test verifies that the
 newly active snapshot contains the native My Work menu/action pair.
+
+The governed acceptance database was upgraded to `17.0.0.182` on
+`04aa7bd642b44c75e8a08920a72241e354e8ea6e`. Readback then showed:
+
+- `construction.standard` policy: 92 menus;
+- active release snapshot 53: 92 pages;
+- My Work: `release_state=released`, `published_in_runtime_nav=true`.
+
+The My Work browser acceptance passed through the final contract:
+`my_work.workspace` arrived as `designed_scene` at
+`/s/my_work.workspace`, the MyWorkView renderer was present, and ActionView was
+absent. The test also passed counts/detail/submission, company A-B-A scope,
+reviewer approval and readback, reject-reason safety, project-member isolation,
+and 1440/1280/390 responsive views. This closes the batch's behavioral
+acceptance; it does not deploy the candidate or claim user acceptance.

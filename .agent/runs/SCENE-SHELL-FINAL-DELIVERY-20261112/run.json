@@ -216,12 +216,28 @@
       "targets": 11,
       "log": ".runtime/frontend-dev-validation/executions/20261112T073749Z-736606-414250241/receipt.json",
       "notes": "All affected navigation, policy, capability, scenario, P4 probe and coverage targets passed."
+    },
+    {
+      "command": "make acceptance.module.upgrade MODULE=smart_construction_core SC_ACCEPTANCE_RUNTIME_PROFILE=local EXPECTED_HEAD=04aa7bd642b44c75e8a08920a72241e354e8ea6e",
+      "status": "passed",
+      "notes": "17.0.0.182 post-migrate ran in the governed acceptance database and completed registry loading on the exact candidate."
+    },
+    {
+      "command": "make verify.frontend.menu_navigation.diagnostic SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "passed",
+      "notes": "Readback: construction.standard policy has 92 menus; active release snapshot 53 has 92 pages; My Work release_state=released and published_in_runtime_nav=true."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "passed",
+      "report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "notes": "Designed scene resolved from final system.init as my_work.workspace/designed_scene at /s/my_work.workspace; MyWorkView rendered without ActionView. J07 counts/company A-B-A, J08 approval/readback, reject reason safety, project-member isolation and 1440/1280/390 responsive views all passed."
     }
   ],
   "blockers": [
-    "The designed_scene behavior acceptance for my_work.workspace has not yet been executed through the final scene route."
+    "The validated candidate has not yet been published and merged through a protected PR."
   ],
-  "next_exact_step": "Adapt the existing My Work acceptance probe to resolve my_work.workspace from final system.init, assert designed_scene, and verify the rendered MyWorkView without ActionView.",
+  "next_exact_step": "Run freeze preparation, publish the exact candidate, create/reuse the PR, and require current exact-head remote checks before protected merge.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",
@@ -232,8 +248,8 @@
     "blast_radius": "final navigation routes, generated scene-ready shells, and generic native action embedding."
   },
   "completion": {
-    "batch": "verification_pending",
-    "mainline": "PR #873 integrated as 144720c9e3695e382267301ff17b889692474d84",
+    "batch": "passed_local_behavioral_acceptance",
+    "mainline": "PR #873 integrated as 144720c9e3695e382267301ff17b889692474d84; current policy/scene acceptance candidate not yet integrated",
     "deployment": "not_performed",
     "user_acceptance": "not_claimed"
   }
