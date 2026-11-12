@@ -1,9 +1,23 @@
 import assert from 'node:assert/strict';
 import './browser_globals_shim.ts';
 import './scenario_surface_parser_test.ts';
+import { resolveActivityCacheKey } from '../src/app/activityPageCacheIdentity';
 import { parseScenarioSurface } from '../src/app/scenarioSurface';
 import { createPinia, setActivePinia } from 'pinia';
-import { createApp, effectScope, nextTick } from 'vue';
+import {
+  KeepAlive,
+  createApp,
+  createRenderer,
+  computed,
+  defineComponent,
+  effectScope,
+  h,
+  nextTick,
+  onActivated,
+  onDeactivated,
+  ref,
+  watch,
+} from 'vue';
 import { routerKey } from 'vue-router';
 
 setActivePinia(createPinia());
@@ -114,7 +128,8 @@ assert.equal(session.initError, null);
 assert.equal(session.isReady, true);
 console.log('[startup_transaction_test] PASS cases=3 store=actual transport=controlled');
 
-// A committed create retires the exact new activity and its KeepAlive epoch.
+// A committed create retires only after navigation has moved KeepAlive to the
+// saved record. Retiring the old identity must not deactivate the new instance.
 session.registerActivityPage({
   key: 'record:x.document:66',
   route: '/f/x.document/66',
@@ -132,12 +147,114 @@ session.registerActivityPage({
   record_id: 'new',
   record_context: session.currentActivityRecordContextSnapshot(),
 });
+const lifecycleEvents: string[] = [];
+const cacheKeyEvents: string[] = [];
+const activeRoute = ref({
+  name: 'model-form',
+  params: { model: 'x.document', id: 'new' },
+  query: { activity_page_id: 'create-1' },
+  meta: {},
+  fullPath: '/f/x.document/new?activity_page_id=create-1',
+});
+const activeRouteIdentity = () => ({
+  routeName: activeRoute.value.name,
+  params: activeRoute.value.params,
+  query: activeRoute.value.query,
+  meta: activeRoute.value.meta,
+  selectedRecordId: session.recordContext?.selected?.id,
+});
+type HostNode = { children: HostNode[]; parent: HostNode | null; text?: string; type?: string };
+const hostNode = (type?: string): HostNode => ({ children: [], parent: null, type });
+const renderer = createRenderer<HostNode, HostNode>({
+  patchProp: () => {},
+  insert(child, parent, anchor) {
+    child.parent = parent;
+    const index = anchor ? parent.children.indexOf(anchor) : -1;
+    if (index >= 0) parent.children.splice(index, 0, child);
+    else parent.children.push(child);
+  },
+  remove(child) {
+    if (!child.parent) return;
+    const index = child.parent.children.indexOf(child);
+    if (index >= 0) child.parent.children.splice(index, 1);
+    child.parent = null;
+  },
+  createElement: type => hostNode(type),
+  createText: text => ({ ...hostNode('text'), text }),
+  createComment: text => ({ ...hostNode('comment'), text }),
+  setText: (node, text) => { node.text = text; },
+  setElementText: (node, text) => { node.text = text; },
+  parentNode: node => node.parent,
+  nextSibling(node) {
+    if (!node.parent) return null;
+    return node.parent.children[node.parent.children.indexOf(node) + 1] || null;
+  },
+  querySelector: () => null,
+  setScopeId: () => {},
+  cloneNode: node => ({ ...node, children: [...node.children], parent: null }),
+  insertStaticContent: () => {
+    const node = hostNode('static');
+    return [node, node];
+  },
+});
+const FormProbe = defineComponent({
+  setup() {
+    onActivated(() => lifecycleEvents.push('activate'));
+    onDeactivated(() => lifecycleEvents.push('deactivate'));
+    return () => h('div');
+  },
+});
+const ActivityHost = defineComponent({
+  setup() {
+    const cacheKey = computed(() => resolveActivityCacheKey(
+      activeRouteIdentity(),
+      session.activityPageCacheEpochs,
+      session.user?.id,
+    ));
+    watch(cacheKey, value => cacheKeyEvents.push(value), { immediate: true });
+    return () => {
+      const key = cacheKey.value;
+      return h(KeepAlive, { max: 6 }, {
+        default: () => h(FormProbe, { key }),
+      });
+    };
+  },
+});
+const activityApp = renderer.createApp(ActivityHost);
+activityApp.mount(hostNode('root'));
+await nextTick();
+assert.deepEqual(lifecycleEvents, ['activate']);
+const createCacheKey = resolveActivityCacheKey(activeRouteIdentity(), session.activityPageCacheEpochs, session.user?.id);
+session.registerActivityPage({
+  key: 'record:x.document:88',
+  route: '/f/x.document/88',
+  kind: 'record_form',
+  model: 'x.document',
+  record_id: '88',
+  record_context: session.currentActivityRecordContextSnapshot(),
+});
+activeRoute.value = {
+  name: 'model-form',
+  params: { model: 'x.document', id: '88' },
+  query: {},
+  meta: {},
+  fullPath: '/f/x.document/88',
+};
+assert.notEqual(resolveActivityCacheKey(activeRouteIdentity(), session.activityPageCacheEpochs, session.user?.id), createCacheKey);
+await nextTick();
+await nextTick();
+assert.equal(cacheKeyEvents.length, 2);
+assert.notEqual(cacheKeyEvents[0], cacheKeyEvents[1]);
+assert.deepEqual(lifecycleEvents, ['activate', 'deactivate', 'activate']);
 assert.equal(session.completeCreatedActivityPage('new:x.document:page:create-1'), true);
+await nextTick();
+assert.deepEqual(lifecycleEvents, ['activate', 'deactivate', 'activate'], 'old-page retirement cannot deactivate the saved instance');
 assert.equal(session.activityPages.some(page => page.key === 'new:x.document:page:create-1'), false);
 assert.equal(session.activityPages.find(page => page.key === 'record:x.document:66')?.dirty, true);
-assert.equal(session.activeActivityPageKey, '');
+assert.equal(session.activeActivityPageKey, 'record:x.document:88');
 assert.equal(session.activityPageCacheEpochs['new:x.document:page:create-1'], 1);
-console.log('[created_activity_retirement_test] PASS cases=4 store=actual');
+activityApp.unmount();
+console.log('[created_activity_keepalive_test] PASS cases=6 store=actual keepalive=actual');
 
 // Concurrent forced bootstraps queue behind the actual successor. They must not
 // let the later waiter snapshot the activity list the earlier waiter cleared.

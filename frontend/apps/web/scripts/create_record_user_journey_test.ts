@@ -476,6 +476,7 @@ const createdSubmitRuntime = usePrimaryFormActionRuntime({
   executeButtonRequest: async (request: { res_id: number }) => {
     assert.equal(request.res_id, 902); createdSubmitEvents.push('submit'); return { result: { type: 'refresh', res_id: 902 } };
   },
+  completeCreatedActivity: () => { createdSubmitEvents.push('complete-created'); return true; },
   navigateActionResponseResult: async () => false,
   navigateCreatedRecord: async (id: number) => { assert.equal(id, 902); createdSubmitEvents.push('open-created'); },
   applyProjectionRefreshPolicy: async () => { createdSubmitEvents.push('refresh-new'); },
@@ -483,8 +484,26 @@ const createdSubmitRuntime = usePrimaryFormActionRuntime({
   recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
 } as never);
 await createdSubmitRuntime.runPrimaryFormAction();
-assert.deepEqual(createdSubmitEvents, ['create', 'submit', 'open-created']);
+assert.deepEqual(createdSubmitEvents, ['create', 'submit', 'open-created', 'complete-created']);
 console.log('[create-record-user-journey] created submit navigates generated identity PASS count=1');
+
+const navigatedCreateEvents: string[] = [];
+const navigatedCreateRuntime = usePrimaryFormActionRuntime({
+  primaryCreateFooterAction: () => ({ ...requirementAction, enabled: true, context: {}, methodName: 'action_submit' }),
+  saveRecord: async () => { navigatedCreateEvents.push('create'); return 904; },
+  confirmActionSafety: async () => true,
+  busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
+  executeButtonRequest: async () => { navigatedCreateEvents.push('submit'); return { result: { type: 'ir.actions.act_window', res_model: 'x.document', res_id: 904 } }; },
+  navigateActionResponseResult: async () => { navigatedCreateEvents.push('action-navigation'); return 'navigated'; },
+  applyProjectionRefreshPolicy: async () => { navigatedCreateEvents.push('refresh'); },
+  completeCreatedActivity: () => { navigatedCreateEvents.push('complete-created'); return true; },
+  navigateCreatedRecord: async () => { navigatedCreateEvents.push('unexpected-created-navigation'); },
+  reload: async () => {},
+  recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
+} as never);
+await navigatedCreateRuntime.runPrimaryFormAction();
+assert.deepEqual(navigatedCreateEvents, ['create', 'submit', 'action-navigation', 'refresh', 'complete-created']);
+console.log('[create-record-user-journey] created submit retires source after action navigation PASS count=1');
 
 const failedSubmitEvents: string[] = [];
 const failedCreatedSubmitRuntime = usePrimaryFormActionRuntime({
@@ -494,11 +513,12 @@ const failedCreatedSubmitRuntime = usePrimaryFormActionRuntime({
   busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
   executeButtonRequest: async () => { failedSubmitEvents.push('submit-failed'); throw new Error('Temporary refusal'); },
   navigateCreatedRecord: async (id: number, _policy: unknown, recovery: string) => { failedSubmitEvents.push(`recover:${id}:${recovery}`); },
+  completeCreatedActivity: () => { failedSubmitEvents.push('complete-created'); return true; },
   reload: async () => { failedSubmitEvents.push('reload-new'); },
   recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
 } as never);
 await failedCreatedSubmitRuntime.runPrimaryFormAction();
-assert.deepEqual(failedSubmitEvents, ['create', 'submit-failed', 'recover:903:submit']);
+assert.deepEqual(failedSubmitEvents, ['create', 'submit-failed', 'recover:903:submit', 'complete-created']);
 console.log('[create-record-user-journey] failed created submit preserves generated identity PASS count=1');
 
 assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 903, false), 'refresh');

@@ -13,6 +13,7 @@ export function usePrimaryFormActionRuntime(params: {
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
   busyKind: Ref<BusyKind>;
   confirmActionSafety: (action: ContractAction) => Promise<boolean>;
+  completeCreatedActivity?: () => boolean;
   errorMessage: Ref<string>;
   executeButtonRequest?: typeof executeButton;
   hasChanges: () => boolean;
@@ -66,10 +67,12 @@ export function usePrimaryFormActionRuntime(params: {
       if (navigation === 'invalidated') return;
       if (navigation) {
         await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
+        if (created) params.completeCreatedActivity?.();
         return;
       }
       if (created && params.navigateCreatedRecord) {
         await params.navigateCreatedRecord(resId, action.refreshPolicy, undefined, owner ? { result, owner } : undefined);
+        params.completeCreatedActivity?.();
         return;
       }
       await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
@@ -87,6 +90,7 @@ export function usePrimaryFormActionRuntime(params: {
       });
       if (created && params.navigateCreatedRecord) {
         await params.navigateCreatedRecord(resId, action.refreshPolicy, 'submit');
+        params.completeCreatedActivity?.();
       }
     } finally {
       if (!owner || owner.owns()) params.busyKind.value = null;

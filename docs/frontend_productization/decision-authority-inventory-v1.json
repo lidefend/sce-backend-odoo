@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        553
+        564
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        557
+        568
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -922,7 +922,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1366
+        1367
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -938,7 +938,7 @@
       "lines": [
         71,
         77,
-        1366
+        1367
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -955,7 +955,7 @@
         42,
         79,
         81,
-        1366
+        1367
       ],
       "occurrences": 4,
       "classification": "excluded-render-interaction",
@@ -969,7 +969,7 @@
       "literal": "success",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1366
+        1367
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

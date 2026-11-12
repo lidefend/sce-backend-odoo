@@ -9,16 +9,21 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/App.vue",
+    "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
     "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
     "frontend/apps/web/src/components/attachment/attachmentViewerRequestLease.ts",
     "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
     "frontend/apps/web/src/components/action/hierarchyTreeKeyboard.ts",
     "frontend/apps/web/src/components/chart/chartAdapter.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
     "frontend/apps/web/src/stores/appInitFailure.ts",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+    "frontend/apps/web/scripts/create_record_user_journey_test.ts",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
@@ -34,7 +39,17 @@
       "target": "verify.frontend.contract_form_save_failure_recovery.unit",
       "inputs": [
         "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
         "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "created_record_submit": {
+      "target": "verify.frontend.create_record_user_journey.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+        "frontend/apps/web/scripts/create_record_user_journey_test.ts",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -42,6 +57,8 @@
     "session_bootstrap": {
       "target": "verify.frontend.workspace_scenario_lifecycle.unit",
       "inputs": [
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
         "frontend/apps/web/src/stores/appInitFailure.ts",
         "frontend/apps/web/src/stores/session.ts",
         "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
@@ -140,7 +157,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the review remediation, publish the clean exact HEAD through the governed PR lane, verify four required checks and wait for fresh independent review.",
+  "next_exact_step": "Commit the deferred create-handoff remediation, publish the clean exact HEAD through the governed PR lane, verify four required checks and wait for fresh independent review.",
   "id": "FE-CONVERGENCE-FE04-20261113",
   "branch": "fix/fe-convergence-fe04-expression-a11y-20261113",
   "status": "verification_pending",

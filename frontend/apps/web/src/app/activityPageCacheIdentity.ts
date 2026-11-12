@@ -1,4 +1,4 @@
-type RouteIdentityInput = {
+export type ActivityRouteIdentityInput = {
   routeName: string | symbol | null | undefined;
   params?: Record<string, unknown>;
   query?: Record<string, unknown>;
@@ -22,7 +22,7 @@ export function activityContextPart(selectedRecordId: unknown): string {
 }
 
 /** One identity shared by router registration and App's KeepAlive cache key. */
-export function resolveActivityRouteKey(input: RouteIdentityInput): string {
+export function resolveActivityRouteKey(input: ActivityRouteIdentityInput): string {
   const routeName = text(input.routeName);
   const params = input.params || {};
   const query = input.query || {};
@@ -53,6 +53,17 @@ export function resolveActivityRouteKey(input: RouteIdentityInput): string {
     return `scene:${sceneKey}:${context}`;
   }
   return '';
+}
+
+export function resolveActivityCacheKey(
+  input: ActivityRouteIdentityInput,
+  epochs: Record<string, number>,
+  actorUserId: unknown,
+): string {
+  const routeKey = resolveActivityRouteKey(input);
+  if (!routeKey) return '';
+  const epoch = Number(epochs[routeKey] || 0);
+  return `activity:user:${positiveInteger(actorUserId)}:${routeKey}:${epoch}`;
 }
 
 export function advanceActivityPageCacheEpoch(

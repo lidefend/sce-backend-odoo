@@ -167,6 +167,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   let saveOperationSequence = 0;
   let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null, activityPageKey: '' };
   let busyOwnerOperationId = 0;
+  let pendingCreatedActivityPageKey = '';
 
   const beginSaveOperation = (): SaveOperation => {
     saveOperationSequence += 1;
@@ -188,6 +189,13 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     && surfaceEpoch.value === operation.epoch
     && String(model.value ?? '') === operation.model
     && (recordId.value ?? null) === operation.recordId;
+
+  function completeCreatedActivity() {
+    const activityPageKey = pendingCreatedActivityPageKey;
+    if (!activityPageKey) return false;
+    pendingCreatedActivityPageKey = '';
+    return session.completeCreatedActivityPage(activityPageKey);
+  }
 
   if (getCurrentScope()) onScopeDispose(() => { disposed = true; surfaceEpoch.value += 1; });
 
@@ -517,16 +525,17 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       const created = await createContractFormRecord({ model: operation.model, vals: values, context });
       if (!saveOperationOwnsSurface(operation)) return false;
       if (created?.id) {
-        session.completeCreatedActivityPage(operation.activityPageKey);
+        pendingCreatedActivityPageKey = operation.activityPageKey;
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
         if (!saveOperationOwnsSurface(operation)) return false;
         if (!attachmentsUploaded) {
           // Creation already committed. Continue on that record rather than
           // leave a new-form surface whose next save would create again.
-          await navigateCreatedRecord({
+          const navigated = await navigateCreatedRecord({
             createdId: created.id,
             nextSceneKey: '', nextSceneRoute: '', refreshPolicy, recovery: 'upload',
           });
+          if (navigated) completeCreatedActivity();
           return false;
         }
         const title = String(v2ContractStore.value?.snapshot.pageInfo.pageName || '').trim();
@@ -535,13 +544,15 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         if (options.navigateAfterCreate === false) {
           return Number(created.id);
         }
-        return await navigateCreatedRecord({
+        const navigated = await navigateCreatedRecord({
           createdId: created.id,
           createdLabel: String(formData.display_name || formData.name || title || '').trim(),
           nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
           nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
           refreshPolicy,
         });
+        if (navigated) completeCreatedActivity();
+        return navigated;
       }
     } catch (err) {
       // A rejection that names a page the user has left must not mark the
@@ -646,6 +657,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     previewCurrentFormConfiguration,
     returnToBusinessConfigDesigner,
     applyProjectionRefreshPolicy,
+    completeCreatedActivity,
     saveRecord: singleFlightSaveRecord,
   };
 }

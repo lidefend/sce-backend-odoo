@@ -44,7 +44,7 @@ import ScButton from './components/design-system/ScButton.vue';
 import { useSessionStore } from './stores/session';
 import { tdesignGlobalConfig } from './styles/tdesignGlobalConfig';
 import { useThemeApplicationRuntime } from './styles/themeApplicationRuntime';
-import { resolveActivityRouteKey } from './app/activityPageCacheIdentity';
+import { resolveActivityCacheKey } from './app/activityPageCacheIdentity';
 
 const session = useSessionStore();
 const pageIdentity = usePageIdentityRuntime();
@@ -101,24 +101,13 @@ function positiveInteger(value: unknown): number {
   return Math.trunc(parsed);
 }
 
-function activityActorPart(): string {
-  return `user:${retainedActivityActorId.value || 0}`;
-}
-
-function activityRouteKey(route: RouteLocationNormalizedLoaded): string {
-  return resolveActivityRouteKey({
+function activityCacheKey(route: RouteLocationNormalizedLoaded): string {
+  return resolveActivityCacheKey({
     routeName: route.name,
     params: route.params,
     query: route.query,
     meta: route.meta,
     selectedRecordId: session.recordContext?.selected?.id,
-  });
-}
-
-function activityCacheKey(route: RouteLocationNormalizedLoaded): string {
-  const routeKey = activityRouteKey(route);
-  if (!routeKey) return '';
-  const epoch = Number(session.activityPageCacheEpochs[routeKey] || 0);
-  return `activity:${activityActorPart()}:${routeKey}:${epoch}`;
+  }, session.activityPageCacheEpochs, retainedActivityActorId.value);
 }
 </script>
