@@ -589,6 +589,16 @@ def smart_core_critical_scene_target_route_overrides(env):
     return dict(CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES)
 
 
+def smart_core_delivery_scene_declarations(env):
+    """Raw scene references for qualification; never invoke capability consumers."""
+    entries = scene_registry._load_scene_registry_content_entries()
+    native_config = scene_registry._derive_native_config_scene(env)
+    if native_config:
+        entries = [row for row in entries if row.get("code") != native_config["code"]]
+        entries.append(native_config)
+    return entries
+
+
 def smart_core_navigation_authority_filter(env, authority):
     """Apply tenant-selected scenario composition to route authority.
 

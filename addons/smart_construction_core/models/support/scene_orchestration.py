@@ -163,26 +163,46 @@ class ScCapability(models.Model):
             })
         seen.add(cap_key)
 
-        # Role/group mismatch: hide from directory.
-        role_scope_items = self._csv_items(self.role_scope)
-        if role_scope_items:
-            role_codes = self._role_codes_for_user(user)
-            if not (set(role_scope_items) & role_codes):
+        payload = self._resolve_payload(self.default_payload)
+        native_bound = any(payload.get(key) for key in ("action_id", "menu_id", "action_xmlid", "menu_xmlid"))
+        if native_bound:
+            from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
+            authority = published_route_authority(user.with_user(user).env) if user else {}
+            menu_id = 0 if payload.get("native_reference_error") else int(payload.get("menu_id") or 0)
+            action_id = 0 if payload.get("native_reference_error") else int(payload.get("action_id") or 0)
+            allowed_pairs = published_pairs(authority)
+            admitted = any(
+                (not menu_id or menu_id == pair[0]) and (not action_id or action_id == pair[1])
+                for pair in allowed_pairs
+            ) if (menu_id or action_id) else False
+            if not admitted:
+                return self._normalize_access_result({
+                    "visible": True, "allowed": False, "state": "LOCKED",
+                    "reason_code": "NAVIGATION_AUTHORITY_DENIED",
+                    "reason": _("原生入口未获当前有效交付准入"),
+                    "decision_source": "effective_delivery",
+                })
+        else:
+            # Role/group mismatch: hide from directory.
+            role_scope_items = self._csv_items(self.role_scope)
+            if role_scope_items:
+                role_codes = self._role_codes_for_user(user)
+                if not (set(role_scope_items) & role_codes):
+                    return self._normalize_access_result({
+                        "visible": False,
+                        "allowed": False,
+                        "state": "LOCKED",
+                        "reason_code": "ROLE_SCOPE_MISMATCH",
+                        "reason": self._reason_message("ROLE_SCOPE_MISMATCH"),
+                    })
+            if self.required_group_ids and not bool(self.required_group_ids & user.groups_id):
                 return self._normalize_access_result({
                     "visible": False,
                     "allowed": False,
                     "state": "LOCKED",
-                    "reason_code": "ROLE_SCOPE_MISMATCH",
-                    "reason": self._reason_message("ROLE_SCOPE_MISMATCH"),
+                    "reason_code": "PERMISSION_DENIED",
+                    "reason": self._reason_message("PERMISSION_DENIED"),
                 })
-        if self.required_group_ids and not bool(self.required_group_ids & user.groups_id):
-            return self._normalize_access_result({
-                "visible": False,
-                "allowed": False,
-                "state": "LOCKED",
-                "reason_code": "PERMISSION_DENIED",
-                "reason": self._reason_message("PERMISSION_DENIED"),
-            })
 
         reason_code = ""
         reason = ""
@@ -228,14 +248,20 @@ class ScCapability(models.Model):
 
     def _resolve_payload(self, payload):
         resolved = dict(payload or {})
-        if resolved.get("action_xmlid") and not resolved.get("action_id"):
-            action_ref = self.env.ref(resolved.get("action_xmlid"), raise_if_not_found=False)
-            if action_ref:
-                resolved["action_id"] = action_ref.id
-        if resolved.get("menu_xmlid") and not resolved.get("menu_id"):
-            menu_ref = self.env.ref(resolved.get("menu_xmlid"), raise_if_not_found=False)
-            if menu_ref:
-                resolved["menu_id"] = menu_ref.id
+        for kind, model in (("menu", "ir.ui.menu"), ("action", "ir.actions.actions")):
+            xmlid = resolved.get(f"{kind}_xmlid")
+            raw_id = resolved.get(f"{kind}_id")
+            if not xmlid and not raw_id:
+                continue
+            try:
+                record_id = int(raw_id or 0)
+                ref = self.env.ref(xmlid, raise_if_not_found=False) if xmlid else self.env[model].browse(record_id).exists()
+                valid_type = bool(ref) and (ref._name == model if kind == "menu" else ref._name.startswith("ir.actions."))
+                if not valid_type or (raw_id and (record_id <= 0 or ref.id != record_id)):
+                    raise ValueError("invalid native reference")
+                resolved[f"{kind}_id"] = ref.id
+            except (TypeError, ValueError, KeyError):
+                resolved["native_reference_error"] = "NATIVE_REFERENCE_INVALID"
         return resolved
 
     def _is_readonly_semantic(self) -> bool:

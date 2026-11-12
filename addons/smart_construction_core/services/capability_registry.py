@@ -253,12 +253,8 @@ def _capability_access(
         action = user.env.ref(access_action).with_user(user)
         if action._name != "ir.actions.act_window" or not action.res_model:
             raise ValueError("Query capability requires a native window action")
-        group_allowed = user._is_admin() or not action.groups_id or bool(action.groups_id & user.groups_id)
-        model = user.env[action.res_model].with_user(user)
-        allowed = bool(group_allowed and model.check_access_rights("read", raise_exception=False))
-        if allowed and not _published_query_pair(user, action.id, published_pairs_by_action_id):
-            return True, False, "NAVIGATION_AUTHORITY_DENIED", _("该入口未在当前账号的导航权限中发布")
-        return True, allowed, "" if allowed else "PERMISSION_DENIED", "" if allowed else _("没有该查询入口的访问权限")
+        allowed = bool(_published_query_pair(user, action.id, published_pairs_by_action_id))
+        return True, allowed, "" if allowed else "NAVIGATION_AUTHORITY_DENIED", "" if allowed else _("该原生入口未获当前有效交付准入")
 
     if required_roles and not (set(required_roles) & role_codes):
         return False, False, "ROLE_SCOPE_MISMATCH", _("角色范围不匹配")

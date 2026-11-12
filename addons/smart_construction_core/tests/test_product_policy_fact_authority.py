@@ -22,6 +22,52 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.env['ir.config_parameter'].sudo().set_param('smart_core.release_operator.catalog_source_db', self.env.cr.dbname)
         self.service = EditionReleaseSnapshotService(self.env)
 
+    def test_native_alias_rejects_unresolved_or_contradictory_references(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        menu = self.menu
+        action = menu.action
+        self.assertTrue(action)
+        other_action = self.env.ref("smart_construction_core.action_sc_project_list")
+        alias = self.env["sc.capability"].create({"key": "test.native.alias", "name": "Native alias"})
+        authority = {"primary_actions": [{"menu_id": menu.id, "action_id": action.id}]}
+        cases = [
+            {"menu_id": menu.id, "action_xmlid": "missing.action"},
+            {"action_id": action.id, "action_xmlid": other_action.get_external_id()[other_action.id]},
+            {"menu_id": "invalid", "action_id": action.id},
+            {"menu_xmlid": "base.group_user", "action_id": action.id},
+        ]
+        with patch.object(runtime_route_authority, "published_route_authority", return_value=authority):
+            for payload in cases:
+                with self.subTest(payload=payload):
+                    alias.default_payload = payload
+                    decision = alias._access_context(self.env.user)
+                    self.assertFalse(decision["allowed"])
+                    self.assertEqual(decision["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
+
+    def test_candidate_catalog_never_publishes_discovered_entries(self):
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+        service = ProductPolicyCatalogSyncService(self.env)
+        catalog = service.build_catalog_policy_payload(product_key="construction.candidate_only")
+        menus = [row for group in catalog["menu_groups"] for row in group["menus"]]
+        self.assertTrue(menus)
+        self.assertTrue(all(not row["enabled"] and row["release_state"] == "hidden" for row in menus))
+        with patch.object(ProductPolicyService, "_catalog_backed_policy", side_effect=AssertionError("runtime read discovery")):
+            ProductPolicyService(self.env).get_policy(product_key="construction.candidate_only", enforce_release=True, enforce_access=True)
+
+    def test_shared_resolution_matches_direct_authority_and_company_roundtrip(self):
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
+        company_a = self.env.company
+        company_b = self.env["res.company"].create({"name": "Effective delivery test B"})
+        self.env.user.write({"company_ids": [(4, company_b.id)]})
+        for company in (company_a, company_b, company_a):
+            env = self.env(context=dict(self.env.context, allowed_company_ids=[company.id]))
+            solved = EffectiveDeliveryService(env).resolve()
+            direct = published_route_authority(env)
+            self.assertEqual(published_pairs(direct), published_pairs(solved.route_authority))
+            self.assertEqual(direct["principal_scope"]["company_id"], company.id)
+
     def _maintain(self):
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'released')
         return self.service.build_policy_draft_contract(product_key=self.policy.product_key)
