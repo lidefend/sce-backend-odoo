@@ -897,6 +897,7 @@ refresh.generated_reports: guard.prod.forbid
 	@python3 scripts/ci/generate_github_remote_execution_plan.py --write
 	@python3 scripts/ci/generate_contract_structure_fingerprint.py --write
 	@python3 scripts/verify/test_coverage_registry_audit.py --export
+	@python3 scripts/verify/frontend_decision_authority.py --export
 	@echo "[OK] tracked generated reports refreshed; review and commit any changes before push"
 
 # The single refresh-only surface. Auto-refresh before commit; the Quick and

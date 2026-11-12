@@ -41,7 +41,7 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.assertEqual(self._artifact_state()["formal_action"], 1)
         self.assertEqual(self._artifact_state()["legacy_model"], 0)
 
-    def test_historical_payment_readonly_entry_is_in_locked_products(self):
+    def test_historical_payment_readonly_entry_is_not_republished(self):
         menu_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
         for product_key in ("construction.standard", "construction.preview"):
             self.env["sc.product.policy"].synchronize_locked_formal_menu_policy(product_key)
@@ -54,13 +54,11 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                 for menu in group.get("menus", [])
                 if menu.get("menu_xmlid") == menu_xmlid
             ]
-            self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0].get("res_model"), "sc.historical.payment.fact")
-            self.assertEqual(rows[0].get("entry_intent"), "inquiry")
-            self.assertGreater(rows[0].get("menu_id"), 0)
+            self.assertEqual(rows, [])
 
     def test_policy_migration_adds_my_work_without_overwriting_existing_rows(self):
         policy_model = self.env["sc.product.policy"]
+        self.assertFalse(hasattr(policy_model, "merge_locked_formal_menu_additions"))
         policy_model.synchronize_locked_formal_menu_policy("construction.standard")
         policy = policy_model.search(
             [("product_key", "=", "construction.standard")], limit=1
@@ -72,26 +70,68 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         groups = deepcopy(policy.menu_groups)
         retained = []
         removed = False
+        unrelated = None
         for group in groups:
             menus = []
             for menu in group.get("menus") or []:
                 if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_my_work":
                     removed = True
                     continue
+                if (
+                    unrelated is None
+                    and menu.get("enabled")
+                    and menu.get("release_state") == "released"
+                ):
+                    unrelated = (menu["menu_xmlid"], menu["release_state"])
                 menus.append(menu)
             group["menus"] = menus
             if menus:
                 retained.append(group)
         self.assertTrue(removed)
-        policy.write({"menu_groups": retained})
+        self.assertTrue(unrelated)
+        custom_capability = {
+            "capability_key": "test.admin.capability",
+            "identity_kind": "test",
+            "label": "Admin maintained capability",
+            "enabled": True,
+            "release_state": "released",
+        }
+        policy.write({
+            "menu_groups": retained,
+            "capabilities": [custom_capability],
+        })
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        snapshot_service = EditionReleaseSnapshotService(self.env)
+        baseline = snapshot_service.freeze_release_surface(
+            product_key="construction.standard",
+            version="test-baseline",
+            replace_active=True,
+            note="test active baseline without My Work",
+        )
+        baseline_payload = deepcopy(
+            self.env["sc.edition.release.snapshot"].sudo().browse(
+                baseline["id"]
+            ).snapshot_json
+        )
+        draft_groups = deepcopy(policy.menu_groups)
+        for group in draft_groups:
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == unrelated[0]:
+                    menu["release_state"] = "hidden"
+                    menu["enabled"] = False
+        policy.write({"menu_groups": draft_groups})
 
-        result = policy_model.merge_locked_formal_menu_additions(
+        result = policy_model._reconcile_locked_menu_release(
             "construction.standard",
-            menu_xmlids=["smart_construction_core.menu_sc_my_work"],
+            menu_xmlid="smart_construction_core.menu_sc_my_work",
+            version="test-my-work-delta",
         )
         self.assertEqual(
             result["added"], ["smart_construction_core.menu_sc_my_work"]
         )
+        self.assertTrue(result["snapshot_created"])
         rows = [
             menu
             for group in policy.menu_groups
@@ -103,34 +143,42 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.assertEqual(rows[0].get("menu_id"), menu.id)
         self.assertEqual(rows[0].get("action_id"), menu.action.id)
         self.assertEqual(rows[0].get("release_state"), "released")
-        again = policy_model.merge_locked_formal_menu_additions(
-            "construction.standard",
-            menu_xmlids=["smart_construction_core.menu_sc_my_work"],
+        self.assertIn(custom_capability, policy.capabilities)
+        old = self.env["sc.edition.release.snapshot"].sudo().browse(
+            baseline["id"]
         )
-        self.assertEqual(again["added"], [])
-        self.assertEqual(
-            again["skipped"], ["smart_construction_core.menu_sc_my_work"]
-        )
-        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
-            EditionReleaseSnapshotService,
-        )
-        snapshot = EditionReleaseSnapshotService(self.env).freeze_release_surface(
-            product_key="construction.standard",
-            replace_active=True,
-            note="test policy and release coherence",
-        )
+        self.assertEqual(old.snapshot_json, baseline_payload)
         active = self.env["sc.edition.release.snapshot"].sudo().search([
             ("product_key", "=", "construction.standard"),
             ("state", "=", "released"),
             ("is_active", "=", True),
             ("active", "=", True),
         ], limit=1)
-        self.assertEqual(active.id, snapshot["id"])
+        self.assertNotEqual(active.id, old.id)
+        self.assertEqual(active.rollback_target_snapshot_id.id, old.id)
         payload = active.snapshot_json
         pairs = {
-            (menu.get("menu_id"), menu.get("action_id"))
+            (row.get("menu_id"), row.get("action_id"))
             for group in payload["policy"]["menu_groups"]
-            for menu in group.get("menus") or []
-            if menu.get("enabled") and menu.get("release_state") == "released"
+            for row in group.get("menus") or []
+            if row.get("enabled") and row.get("release_state") == "released"
         }
         self.assertIn((menu.id, menu.action.id), pairs)
+        snapshot_policy = payload["policy"]
+        unrelated_snapshot_rows = [
+            row
+            for group in snapshot_policy["menu_groups"]
+            for row in group.get("menus") or []
+            if row.get("menu_xmlid") == unrelated[0]
+        ]
+        self.assertEqual(
+            unrelated_snapshot_rows[0].get("release_state"), unrelated[1]
+        )
+        again = policy_model._reconcile_locked_menu_release(
+            "construction.standard",
+            menu_xmlid="smart_construction_core.menu_sc_my_work",
+            version="test-my-work-delta-second",
+        )
+        self.assertEqual(again["added"], [])
+        self.assertFalse(again["snapshot_created"])
+        self.assertEqual(again["snapshot_id"], active.id)

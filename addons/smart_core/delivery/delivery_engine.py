@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from copy import deepcopy
+
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_core.core.navigation_entry_target import (
     build_web_surface_entry_target,
@@ -243,17 +245,22 @@ class DeliveryEngine:
         base_product_key: str | None = None,
         native_nav: list[dict] | None = None,
         use_published_policy: bool = True,
+        policy_override: dict | None = None,
     ) -> dict:
         runtime = data if isinstance(data, dict) else {}
         role_surface = self._runtime_role_surface(runtime)
-        policy = self.product_policy_service.get_policy(
-            product_key=product_key,
-            edition_key=edition_key,
-            base_product_key=base_product_key,
-            role_code=str(role_surface.get("role_code") or "").strip(),
-            enforce_release=True,
-            enforce_access=True,
-            use_published_policy=use_published_policy,
+        policy = (
+            deepcopy(policy_override)
+            if isinstance(policy_override, dict)
+            else self.product_policy_service.get_policy(
+                product_key=product_key,
+                edition_key=edition_key,
+                base_product_key=base_product_key,
+                role_code=str(role_surface.get("role_code") or "").strip(),
+                enforce_release=True,
+                enforce_access=True,
+                use_published_policy=use_published_policy,
+            )
         )
         nav = self.menu_service.build_nav(
             policy=policy,

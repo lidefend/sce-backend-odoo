@@ -124,3 +124,21 @@ scope. `generated_evidence_paths.py` is the single canonical ownership list used
 by both run resolution and branch synchronization. Generated changes are
 reported as `derived_scope`; unlisted or unowned files still make the run
 `reconcile` and fail closed.
+
+Independent review rejected the first PR #874 candidate because its migration
+could overwrite an active `v1` snapshot, republish unrelated draft policy edits,
+expose a public sudo-backed merge method, and rebuild the full capability field.
+
+The corrected migration:
+
+- creates a versioned snapshot from the active released policy plus only the
+  My Work delta;
+- leaves the previous snapshot byte-for-byte unchanged and records it as the new
+  rollback target;
+- treats an active release already containing My Work as a no-op;
+- preserves unrelated draft policy edits and administrator capabilities;
+- uses private model methods so no RPC write entry is introduced.
+
+The stale historical-payment assertion that failed the first remote backend
+suite was also aligned with the current formal policy, which does not publish
+that retired entry.

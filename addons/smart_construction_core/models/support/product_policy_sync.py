@@ -110,7 +110,7 @@ class ScProductPolicy(models.Model):
         return row
 
     @api.model
-    def merge_locked_formal_menu_additions(self, product_key, *, menu_xmlids):
+    def _merge_locked_formal_menu_additions(self, product_key, *, menu_xmlids):
         """Add newly shipped formal menu rows without replacing maintained policy.
 
         Existing rows and operator edits win. This migration seam only adds
@@ -129,6 +129,16 @@ class ScProductPolicy(models.Model):
         if not isinstance(product, dict):
             raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", product_key)
         groups = [dict(group) for group in rec.menu_groups or [] if isinstance(group, dict)]
+        capabilities = [
+            dict(capability)
+            for capability in rec.capabilities or []
+            if isinstance(capability, dict)
+        ]
+        capability_keys = {
+            _text(capability.get("capability_key"))
+            for capability in capabilities
+            if _text(capability.get("capability_key"))
+        }
         existing = {
             _text(menu.get("menu_xmlid") or menu.get("page_key") or menu.get("menu_key"))
             for group in groups
@@ -183,11 +193,128 @@ class ScProductPolicy(models.Model):
             existing.add(menu_xmlid)
             added.append(menu_xmlid)
         if added:
+            added_capabilities = self._capabilities_from_user_confirmed_menu_groups(groups)
+            for capability in added_capabilities:
+                if _text(capability.get("menu_xmlid")) not in added:
+                    continue
+                capability_key = _text(capability.get("capability_key"))
+                if capability_key and capability_key in capability_keys:
+                    continue
+                capabilities.append(capability)
+                if capability_key:
+                    capability_keys.add(capability_key)
             rec.write({
                 "menu_groups": groups,
-                "capabilities": self._capabilities_from_user_confirmed_menu_groups(groups),
+                "capabilities": capabilities,
             })
         return {"policy": rec, "added": sorted(added), "skipped": sorted(skipped)}
+
+    @staticmethod
+    def _policy_menu_row(policy, menu_xmlid):
+        for group in policy.get("menu_groups") or []:
+            for menu in group.get("menus") or []:
+                if _text(menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key")) == menu_xmlid:
+                    return group, menu
+        return None, None
+
+    @api.model
+    def _reconcile_locked_menu_release(
+        self,
+        product_key,
+        *,
+        menu_xmlid,
+        version,
+    ):
+        """Apply one formal menu delta on top of the active released snapshot.
+
+        Maintained policy edits unrelated to this menu remain drafts. If the
+        active snapshot already contains the menu's native anchor, its existing
+        release decision is preserved and no snapshot is created.
+        """
+        product_key = _text(product_key)
+        menu_xmlid = _text(menu_xmlid)
+        version = _text(version)
+        rec = self.sudo().with_context(active_test=False).search([
+            ("product_key", "=", product_key),
+        ], limit=1)
+        if not rec or not menu_xmlid or not version:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_RELEASE_RECONCILIATION_INVALID", product_key
+            )
+        merge = self._merge_locked_formal_menu_additions(
+            product_key,
+            menu_xmlids=[menu_xmlid],
+        )
+        snapshot_model = self.env["sc.edition.release.snapshot"].sudo()
+        active = snapshot_model.search([
+            ("product_key", "=", product_key),
+            ("state", "=", "released"),
+            ("is_active", "=", True),
+            ("active", "=", True),
+        ], order="released_at desc, activated_at desc, id desc", limit=1)
+        active_policy = (
+            dict(active.snapshot_json.get("policy") or {})
+            if active and isinstance(active.snapshot_json, dict)
+            else {}
+        )
+        if self._policy_menu_row(active_policy, menu_xmlid)[1]:
+            return {
+                "policy": rec,
+                "added": merge["added"],
+                "snapshot_id": int(active.id),
+                "snapshot_created": False,
+                "release_present": True,
+            }
+        target_policy = deepcopy(active_policy) if active_policy else rec.to_runtime_dict()
+        group, row = self._policy_menu_row(rec.to_runtime_dict(), menu_xmlid)
+        if not group or not row:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_RELEASE_MENU_MISSING", f"{product_key} {menu_xmlid}"
+            )
+        groups = [deepcopy(item) for item in target_policy.get("menu_groups") or []]
+        group_key = _text(group.get("group_key"))
+        target_group = next(
+            (item for item in groups if _text(item.get("group_key")) == group_key),
+            None,
+        )
+        if target_group is None:
+            target_group = {**deepcopy(group), "menus": []}
+            groups.append(target_group)
+        target_group.setdefault("menus", []).append(deepcopy(row))
+        target_policy["menu_groups"] = groups
+        capabilities = [
+            deepcopy(item)
+            for item in target_policy.get("capabilities") or []
+            if isinstance(item, dict)
+        ]
+        if not any(_text(item.get("menu_xmlid")) == menu_xmlid for item in capabilities):
+            declared = next(
+                (
+                    item for item in rec.capabilities or []
+                    if isinstance(item, dict) and _text(item.get("menu_xmlid")) == menu_xmlid
+                ),
+                None,
+            )
+            if declared:
+                capabilities.append(deepcopy(declared))
+        target_policy["capabilities"] = capabilities
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        snapshot = EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key=product_key,
+            version=version,
+            replace_active=True,
+            note="reconcile formal menu %s" % menu_xmlid,
+            policy_override=target_policy,
+        )
+        return {
+            "policy": rec,
+            "added": merge["added"],
+            "snapshot_id": int(snapshot.get("id") or 0),
+            "snapshot_created": True,
+            "release_present": True,
+        }
 
     def set_native_menu_publication(self, menu_id, group_key, release_state="preview"):
         """Maintain an entry in the existing policy draft; never publish it.

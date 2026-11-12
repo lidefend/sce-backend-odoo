@@ -12,6 +12,8 @@
     ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
     "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/delivery/scene_shell_compiler.py",
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/tests/test_navigation_contract_compiler.py",
@@ -35,6 +37,7 @@
     "scripts/ops/safe_branch_sync_main.py",
     "scripts/verify/test_agent_run_context.py",
     "make/frontend.mk",
+    "make/ci.mk",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
@@ -252,12 +255,41 @@
       "targets": 12,
       "log": ".runtime/frontend-dev-validation/executions/20261112T081211Z-926426-379144519/receipt.json",
       "notes": "All affected P4 targets passed; generated reports appeared under derived_scope without manual run-scope edits."
+    },
+    {
+      "command": "gh pr checks 874",
+      "status": "failed",
+      "failure_owner": "baseline_evidence_defect",
+      "source_sha": "5dcf65ec003aa7f1c21545b6e26ab397e64232f4",
+      "reason": "The changed test file activated an old assertion that still expected a historical payment entry removed from the current formal product policy. One of 531 backend tests failed and cascaded into coverage and merge gates."
+    },
+    {
+      "command": "independent review of PR #874",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect",
+      "source_sha": "5dcf65ec003aa7f1c21545b6e26ab397e64232f4",
+      "reason": "Snapshot reconciliation reused version v1 and could overwrite the active snapshot without a rollback pointer; it republished all draft policy changes, exposed a public sudo write method, and rebuilt capabilities wholesale.",
+      "recovery": "Use a unique migration version; build the target snapshot from the active snapshot plus only the My Work delta; no-op when the active release already contains the entry; make the merge operation private; preserve existing capabilities."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "status": "passed",
+      "tests": 3,
+      "log": ".runtime/test-baseline/1794472902396051684/receipt.json",
+      "notes": "Covers active-snapshot immutability, rollback lineage, target-only publication, no-op repeat, private merge entry, preserved capabilities, and corrected historical-entry absence."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 17,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T084529Z-1102613-389828689/receipt.json",
+      "notes": "All affected backend, policy, generated-evidence, branch-sync, scenario and acceptance-tool targets passed on the corrected candidate scope."
     }
   ],
   "blockers": [
-    "The validated candidate has not yet been published and merged through a protected PR."
+    "The corrected candidate must replace the current head of PR #874 and pass fresh exact-head remote checks."
   ],
-  "next_exact_step": "Run freeze preparation, publish the exact candidate, create/reuse the PR, and require current exact-head remote checks before protected merge.",
+  "next_exact_step": "Commit the corrected migration, push it to PR #874 through the governed entry, and require fresh exact-head checks.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",
