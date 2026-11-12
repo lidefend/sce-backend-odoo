@@ -49,3 +49,11 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 ### HTTP test synchronization follow-up
 
 Candidate bc5cd19e52e034fe8cb115fe54d9724b6ff7f9f1 retained a failed iteration: identity 26 passed; lifecycle 55 collected with zero assertion failures and one concurrent test-cursor error. The original log shows an unfinished HTTP thread at the direct ORM comparison. The P4 test now waits through the native HttpCase helper and explicitly rejects remaining request threads before comparing HTTP, fresh, and cached authority. No product assertion or permission rule was weakened. Original receipt: `.runtime/test-baseline/1794490082540431497/receipt.json`. Further validation and remote integration remain pending.
+
+### Verified checkpoint and integration candidate
+
+Code candidate `9013ea92d9df030d4461bc43527fff42137c2a65` passed 68 governed ORM cases in one `local.test` bundle run: all 55 lifecycle cases (including the six company/cache cases), plus 13 publication/workspace cases. Source, profile and image were unchanged; transient application carrier cleanup was confirmed. Original receipt: `.runtime/test-baseline/1794491114231661058/receipt.json`. Fresh readback and explicit case coverage: `.runtime/backend-effective-closeout-runtime-readback.json`. The seven identity-only cases retain the earlier passing identity receipt: the only source delta is the HTTP test synchronization, which those cases do not import or execute. This is scoped coverage evidence, not automatic ledger reuse and not a claim that separate Make targets were executed.
+
+The ten remaining offline targets passed in `.runtime/backend-effective-review-closeout-offline.log`; unchanged earlier offline prefix results remain in the failed aggregate receipt. Independent source review binds the clean code candidate with no unresolved S0–S2 findings.
+
+Following `.agent/README.md`, the run validation baseline advances to this verified code checkpoint; original PR baseline `45cd5c6714a54339a8f073019a8604ffb71e7046`, full scope, original logs and every failed attempt remain recorded. The old failed aggregate remains failed. Subsequent documentation delta requires `ci.local.iteration`; remote checks still evaluate the full PR. Mainline integration, deployment and user acceptance remain pending.

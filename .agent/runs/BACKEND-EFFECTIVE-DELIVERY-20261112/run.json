@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "BACKEND-EFFECTIVE-DELIVERY-20261112",
   "branch": "refactor/backend-effective-delivery-20261112",
-  "baseline_sha": "45cd5c6714a54339a8f073019a8604ffb71e7046",
+  "baseline_sha": "9013ea92d9df030d4461bc43527fff42137c2a65",
   "status": "verification_pending",
   "goal": ".agent/goals/BACKEND-EFFECTIVE-DELIVERY-20261112.yaml",
   "record": "docs/ops/iterations/backend_effective_delivery_20261112.md",
@@ -1384,10 +1384,27 @@
       "receipt": ".runtime/frontend-dev-validation/executions/20261112T132000Z-2743023-520857566/receipt.json",
       "log": ".runtime/backend-effective-review-iteration-home.log",
       "reason": "Identity26 passed. Lifecycle55: zero assertion failures, one shared-cursor error while background HTTP request was still active. Added bounded native HttpCase request synchronization and explicit thread-drain assertion before direct ORM comparison; all authority assertions retained."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_bundle TEST_TAGS=(full lifecycle, workspace classes and scene_publish_usage_backend)",
+      "candidate": "9013ea92d9df030d4461bc43527fff42137c2a65",
+      "status": "passed",
+      "tests": 68,
+      "receipt": ".runtime/test-baseline/1794491114231661058/receipt.json",
+      "log": ".runtime/backend-effective-review-closeout-orm.log",
+      "coverage": "All 55 lifecycle cases plus 13 publication/workspace cases; company/cache subset included. No individual Make target pass inferred from the combined run.",
+      "source_unchanged": true,
+      "cleanup": "absent"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit verify.nav.pro01r.route_authority.unit verify.navigation.publication_consumers.unit verify.platform.duty.contract.unit verify.product.entry_publication.unit verify.runtime_capability_catalog.unit verify.scenario.center_projection.guard verify.scene.shell_compiler.unit verify.system_init.menu_boundary.guard verify.verification.lane_coverage",
+      "candidate": "9013ea92d9df030d4461bc43527fff42137c2a65",
+      "status": "passed",
+      "log": ".runtime/backend-effective-review-closeout-offline.log"
     }
   ],
   "blockers": [],
-  "next_exact_step": "Validate synchronized HTTP/lifecycle and remaining publication/workspace coverage in one governed local.test bundle; preserve failed aggregates and reuse only proven unaffected evidence before PR875 publication.",
+  "next_exact_step": "Run checkpoint delta ci.local.iteration, bind final independent identity, publish PR875 and verify required remote checks on exact candidate.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",
@@ -1442,6 +1459,11 @@
         "S2 landing scene set forced workspace.home"
       ],
       "resolution": "Owning code and regression assertions implemented; independent delta review and actual governed ORM pending."
+    },
+    "current_code_review": {
+      "head": "9013ea92d9df030d4461bc43527fff42137c2a65",
+      "artifact": ".runtime/backend-effective-independent-review-9013.json",
+      "verdict": "No unresolved S0-S2 source findings; final documentation identity delta pending."
     }
   },
   "remote_pr": {
@@ -1449,5 +1471,20 @@
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/875",
     "head": "1656cb8a79b153fe76eea8c4abf1529d67b48446",
     "status": "CI repair in progress"
+  },
+  "original_baseline_sha": "45cd5c6714a54339a8f073019a8604ffb71e7046",
+  "validation_checkpoint": {
+    "head": "9013ea92d9df030d4461bc43527fff42137c2a65",
+    "reason": "All scoped coverage completed; advance batch checkpoint per .agent/README.md to validate subsequent documentation delta without rebuilding covered ORM databases. Original PR baseline and failed aggregate receipts retained.",
+    "runtime_readback": ".runtime/backend-effective-closeout-runtime-readback.json",
+    "runtime_receipt": ".runtime/test-baseline/1794491114231661058/receipt.json",
+    "runtime_cases": 68,
+    "lifecycle_cases_missing": [],
+    "identity_prior_receipt": ".runtime/test-baseline/1794489609719641972/receipt.json",
+    "identity_retained_cases": 7,
+    "identity_reuse_limit": "Manual scoped coverage only. Only HTTP test synchronization and documentation changed since prior identity run; retained cases do not import or execute that test. No automatic ledger reuse or individual combined-target execution claimed.",
+    "offline_prefix_receipt": ".runtime/frontend-dev-validation/executions/20261112T132000Z-2743023-520857566/receipt.json",
+    "offline_remaining_log": ".runtime/backend-effective-review-closeout-offline.log",
+    "prior_aggregate_status": "failed; not rewritten as passed"
   }
 }
