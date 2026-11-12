@@ -352,6 +352,7 @@ RULES = (
         "addons/smart_core/handlers/system_init.py",
         "addons/smart_core/core/delivery_menu_defaults.py",
         "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/tests/test_navigation_entry_target.py",
         "addons/smart_core/delivery/delivery_engine.py",
         "addons/smart_core/tests/test_navigation_contract_compiler.py",
         "addons/smart_core/tests/test_native_config_menu_projection.py",

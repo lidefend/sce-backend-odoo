@@ -213,8 +213,7 @@ def build_runtime_route_authority(env) -> dict:
 
 def _build_runtime_route_authority(env) -> dict:
     """Read the same effective qualification used by startup navigation."""
-    try:
-        from .effective_delivery_service import EffectiveDeliveryService
-        return EffectiveDeliveryService(env).resolve(dict(env.context or {})).route_authority
-    except Exception:
-        return {}
+    # Let the outer consumer fail closed. An exception must not become an
+    # apparently valid empty result stored by the principal's ormcache.
+    from .effective_delivery_service import EffectiveDeliveryService
+    return EffectiveDeliveryService(env).resolve(dict(env.context or {})).route_authority

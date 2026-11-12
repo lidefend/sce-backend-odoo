@@ -39,3 +39,5 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 5486a5f74 的受管 lifecycle：54 项中 1 项失败（落点正例未冻结正式发布事实，53 项通过），完整回执 `.runtime/test-baseline/1794485214694278724/receipt.json`；未记为整组通过。补齐正式发布前置后复验。新 workspace 目标自身四份测试的 planner 映射也已补齐。
 
 01f67e709 增量检查在 lifecycle 阶段停止：身份 ORM26通过；lifecycle54中2失败。落点测试还需显式发布原生 setup 候选（仅冻结既有策略不会授予候选资格），最终准入导航中的 scene 标记也应纳入落点集合。另 HTTP startup 与直接缓存 authority 的无 action 首页 pair 不一致，增加 fresh/cached 诊断，尚未定因，不能宣称修复完成。
+
+6a5424300 的 bundle 定向26项：1失败/1错误。setup候选显式发布后被旧 resolve_scene_key 的逐行 model/view 回退映射成enterprise.company，已按原生 menu/action 身份优先修复并补纯单元。班组项目经办正例缺失菜单原生 entry_p03 组，补正例并保留撤销入口后拒绝的负例。此次HTTP启动/fresh/cached一致性通过；另修复求解异常不应被ormcache持久缓存为空authority，新增瞬时失败恢复用例。当前仍verification_pending。

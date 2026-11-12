@@ -7,6 +7,7 @@ real Odoo cursor and that ``principal_group_signature`` never silently degrades
 to an empty signature for a grouped principal.
 """
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from odoo import api
 from odoo.tests.common import TransactionCase, tagged
@@ -20,6 +21,18 @@ from ..identity.identity_resolver import IdentityResolver
 
 @tagged("post_install", "-at_install", "principal_group_request_scope_orm")
 class TestPrincipalGroupSignatureRequestScopeORM(TransactionCase):
+    def test_transient_resolution_failure_is_not_cached_as_denial(self):
+        from ..delivery import runtime_route_authority
+        from ..delivery.effective_delivery_service import EffectiveDeliveryService
+        self.env.registry.clear_cache()
+        authority = {"role_home_actions": [{"menu_id": 123, "action_id": 0}]}
+        with patch.object(EffectiveDeliveryService, "resolve", side_effect=[
+            RuntimeError("transient resolution"), RuntimeError("transient fallback"),
+            SimpleNamespace(route_authority=authority),
+        ]):
+            self.assertEqual(runtime_route_authority.published_route_authority(self.env), {})
+            self.assertEqual(runtime_route_authority.published_route_authority(self.env), authority)
+
     def test_native_implied_group_without_xmlid_invalidates_cached_authority(self):
         from ..delivery import runtime_route_authority
         parent = self.env["res.groups"].create({"name": "Delivery parent without XMLID"})

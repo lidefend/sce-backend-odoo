@@ -32,6 +32,8 @@ class TestTeamLoanDeductionWorkspace(BusinessTransactionCase):
             "team_entry_project_user",
             "smart_construction_core.group_sc_cap_project_user",
         )
+        # Native entry exposure and data capability are separate prerequisites.
+        self.project_user.groups_id |= self.env.ref("smart_construction_core.group_sc_entry_p03")
         self.finance_manager = self._user(
             "team_entry_finance_manager",
             "smart_construction_core.group_sc_cap_finance_manager",
@@ -53,6 +55,14 @@ class TestTeamLoanDeductionWorkspace(BusinessTransactionCase):
         workspace = self.env["sc.team.loan.deduction.workspace"].with_user(self.project_user).create(
             {"project_id": self.project.id, "partner_id": self.partner.id, "note": "现场办理"}
         )
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs, published_route_authority
+        delivery = EffectiveDeliveryService(workspace.env).resolve()
+        target = self.env.ref("smart_construction_core.action_sc_financing_loan_contractor_project_borrow")
+        menu = self.env.ref(workspace._sc_dispatch_menu_xmlid)
+        self.assertIn((menu.id, target.id), published_pairs(delivery.route_authority),
+                      {"role": delivery.role_surface, "authority": delivery.route_authority, "release": delivery.release_gate})
+        self.assertIn((menu.id, target.id), published_pairs(published_route_authority(workspace.env)))
         expected = (("action_register_loan", "sc.financing.loan"), ("action_register_deduction", "sc.expense.claim"), ("action_view_account", "sc.finance.project.counterparty.position"))
         for method, model in expected:
             action = getattr(workspace, method)()
@@ -80,6 +90,14 @@ class TestTeamLoanDeductionWorkspace(BusinessTransactionCase):
         account_values = workspace.action_view_account()
         self.assertEqual(account_values["res_model"], "sc.finance.project.counterparty.position")
         self.assertIn(("project_id", "=", self.project.id), account_values["domain"])
+
+    def test_data_capability_alone_does_not_grant_workspace_entry(self):
+        self.project_user.groups_id -= self.env.ref("smart_construction_core.group_sc_entry_p03")
+        self.assertTrue(self.project_user.has_group("smart_construction_core.group_sc_cap_project_user"))
+        workspace = self.env["sc.team.loan.deduction.workspace"].with_user(self.project_user).create(
+            {"project_id": self.project.id, "partner_id": self.partner.id})
+        with self.assertRaises(UserError):
+            workspace.action_register_loan()
 
     def test_project_scope_and_finance_completion_authority_are_enforced(self):
         with self.assertRaises(AccessError):

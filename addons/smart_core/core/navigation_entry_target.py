@@ -533,19 +533,45 @@ def resolve_scene_key(env, *, menu_id=None, action_id=None, model: str = "", vie
     normalized_view_modes = [_normalize_view_mode(item) for item in _view_modes(view_modes)]
     normalized_view_modes = [item for item in normalized_view_modes if item]
 
-    for row in _load_scene_configs(env):
-        scene_key = _text(row.get("scene_key") or row.get("code") or row.get("key"))
-        if not scene_key:
+    rows = _load_scene_configs(env)
+
+    def native_id(target, row, kind):
+        value = _to_int(target.get(kind + "_id") or row.get(kind + "_id"))
+        if value:
+            return value
+        xmlid = _text(target.get(kind + "_xmlid") or row.get(kind + "_xmlid"))
+        if xmlid and env is not None:
+            record = env.ref(xmlid, raise_if_not_found=False)
+            expected = "ir.ui.menu" if kind == "menu" else "ir.actions.act_window"
+            if record and getattr(record, "_name", "") == expected:
+                return _to_int(record.id)
+        return 0
+
+    # Native identity outranks model/view similarity across the entire catalog.
+    # A known entry must never acquire a different scene merely by sharing a model.
+    for kind, requested in (("menu", normalized_menu_id), ("action", normalized_action_id)):
+        if not requested:
             continue
+        for row in rows:
+            scene_key = _text(row.get("scene_key") or row.get("code") or row.get("key"))
+            target = row.get("target") if isinstance(row.get("target"), dict) else {}
+            if not scene_key or native_id(target, row, kind) != requested:
+                continue
+            target_action = native_id(target, row, "action")
+            target_menu = native_id(target, row, "menu")
+            if normalized_action_id and target_action and target_action != normalized_action_id:
+                continue
+            if normalized_menu_id and target_menu and target_menu != normalized_menu_id:
+                continue
+            return scene_key
+    if normalized_menu_id or normalized_action_id:
+        return ""
+    for row in rows:
         target = row.get("target") if isinstance(row.get("target"), dict) else {}
-        if normalized_menu_id and _to_int(target.get("menu_id") or row.get("menu_id")) == normalized_menu_id:
-            return scene_key
-        if normalized_action_id and _to_int(target.get("action_id") or row.get("action_id")) == normalized_action_id:
-            return scene_key
         target_model = _text(target.get("model") or row.get("model"))
         target_view = _normalize_view_mode(target.get("view_mode") or target.get("view_type") or row.get("view_mode"))
         if normalized_model and target_model == normalized_model and target_view in normalized_view_modes:
-            return scene_key
+            return _text(row.get("scene_key") or row.get("code") or row.get("key"))
     return ""
 
 

@@ -193,6 +193,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 
 .PHONY: verify.backend.navigation_delivery.unit
 verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit verify.scene.shell_compiler.unit
+	@python3 addons/smart_core/tests/test_navigation_entry_target.py
 	@python3 addons/smart_core/tests/test_platform_minimum_nav_contract.py
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py

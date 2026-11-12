@@ -1077,6 +1077,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.backend.navigation_delivery.unit", "verify.workspace.entry_authority.orm"],
                 )
 
+    def test_native_scene_identity_test_selects_navigation_checks(self):
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_navigation_entry_target.py"]), [
+            "verify.backend.navigation_delivery.unit", "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+        ])
+
     def test_workspace_authority_tests_select_their_orm(self):
         for path in (
             "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
