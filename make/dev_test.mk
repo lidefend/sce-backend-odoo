@@ -2780,11 +2780,7 @@ PERMISSION_TRUTH_ENV_FILE ?= $(LOCAL_DEV_ENV_FILE)
 
 .PHONY: verify.daily.permission_truth.capability.orm verify.daily.permission_truth.payment.orm
 verify.daily.permission_truth.capability.orm: guard.prod.forbid
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
-	  ENV=dev ENV_FILE="$(PERMISSION_TRUTH_ENV_FILE)" \
-	  MODULE=smart_construction_core \
-	  TEST_TAGS="/smart_construction_core:TestQueryCapabilityNativeAcl" \
-	  test.safe
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_scene TEST_TAGS=/smart_core:TestIntentSmoke,/smart_core:TestPrincipalGroupSignatureRequestScopeORM,/smart_construction_core:TestQueryCapabilityNativeAcl,/smart_construction_core:TestProductPolicyFactAuthority,/smart_construction_scene:TestCompanyRouteScopeCache,/smart_construction_core:TestProjectMemberRoleSurface.test_project_contract_entry_keeps_project_domain_and_acl
 
 verify.daily.permission_truth.payment.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \

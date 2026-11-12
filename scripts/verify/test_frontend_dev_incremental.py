@@ -273,7 +273,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/system_init.py",
             "addons/smart_core/tests/test_navigation_contract_compiler.py",
             "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
-            "addons/smart_core/tests/test_intent_smoke.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -282,8 +281,39 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.backend.navigation_delivery.unit",
                         "verify.scenario.center_projection.guard",
                         "verify.system_init.menu_boundary.guard",
+                    ] if path != "addons/smart_core/handlers/system_init.py" else [
+                        "verify.backend.navigation_delivery.unit",
+                        "verify.platform.duty.contract.unit",
+                        "verify.scenario.center_projection.guard",
+                        "verify.system_init.menu_boundary.guard",
                     ],
                 )
+
+    def test_platform_duty_dependencies_select_contract(self) -> None:
+        for path in (
+            "addons/smart_core/core/platform_duty_contract.py",
+            "addons/smart_core/core/system_init_identity_payload.py",
+            "addons/smart_core/security/platform_admin.py",
+            "addons/smart_core/controllers/platform_duty_controller.py",
+            "addons/smart_core/controllers/platform_ops_controller.py",
+            "addons/smart_core/delivery/effective_delivery_service.py",
+            "addons/smart_core/handlers/system_init.py",
+            "addons/smart_core/views/platform_company_access_views.xml",
+            "addons/smart_core/data/sc_platform_namespace_seed.xml",
+            "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+            "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+            "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.platform.duty.contract.unit", select_targets([path]))
+
+    def test_startup_smoke_selects_real_lifecycle_orm(self) -> None:
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_intent_smoke.py"]), [
+            "verify.backend.navigation_delivery.unit",
+            "verify.daily.permission_truth.capability.orm",
+            "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+        ])
 
     def test_runtime_capability_catalog_selects_its_projection_unit(self) -> None:
         for path in (
@@ -981,6 +1011,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/tests/test_platform_admin_duty_contract.py": [
                 "verify.platform.duty.contract.unit",
             ],
+            "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py": [
+                "verify.navigation.publication_consumers.unit",
+            ],
             "config/product_menu_contract_v1.json": [
                 "verify.product.menu.contract_v1.guard",
             ],
@@ -1041,8 +1074,28 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.backend.navigation_delivery.unit"],
+                    ["verify.backend.navigation_delivery.unit", "verify.workspace.entry_authority.orm"],
                 )
+
+    def test_native_scene_identity_test_selects_navigation_checks(self):
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_navigation_entry_target.py"]), [
+            "verify.backend.navigation_delivery.unit", "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+        ])
+
+    def test_startup_payload_projection_selects_navigation_checks(self):
+        for path in ("addons/smart_core/core/system_init_payload_builder.py", "addons/smart_core/tests/test_system_init_payload_builder_semantics.py"):
+            self.assertEqual(select_targets([path]), ["verify.backend.navigation_delivery.unit", "verify.scenario.center_projection.guard", "verify.system_init.menu_boundary.guard"])
+
+    def test_workspace_authority_tests_select_their_orm(self):
+        for path in (
+            "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+            "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+            "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+            "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.workspace.entry_authority.orm"])
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         self.assertEqual(

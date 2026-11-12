@@ -389,11 +389,11 @@ class MenuService:
     def _action_is_runtime_allowed(self, action, allowed_operation: str) -> bool:
         if not action or not bool(getattr(action, "active", True)):
             return False
-        # Role authority is declared by stable XML-ID in the role surface. For
-        # menu-backed entries, Odoo menu visibility has already intersected
-        # the current user's groups. Action groups are metadata used by the
-        # native client and are not enforced by ui.contract.v2; model ACL is
-        # the backend execution boundary and must agree with the declaration.
+        # Entry qualification includes the native action's group restriction.
+        # Record rules and write/operation checks remain live at execution.
+        groups = getattr(action, "groups_id", None)
+        if groups and not self._groups_authorize_current_user(groups):
+            return False
         action_model = str(getattr(action, "_name", "") or "").strip()
         # Product navigation never promotes Odoo Web Client actions into the
         # contract-driven runtime. Client actions remain native-Odoo-only;
@@ -504,7 +504,9 @@ class MenuService:
                 entry["delivery_bucket"] = "delivery_business_config"
         return entry
 
-    def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
+    def _route_entry_from_action_spec(
+        self, spec: dict, *, route_kind: str, allow_declared_carrier: bool = False,
+    ) -> dict | None:
         row = spec if isinstance(spec, dict) else {}
         action_xmlid = str(row.get("action_xmlid") or "").strip()
         action = self.env.ref(action_xmlid, raise_if_not_found=False) if action_xmlid else None
@@ -521,6 +523,25 @@ class MenuService:
         menu_id = self._positive_int(row.get("menu_id")) or (
             int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
         )
+        if menu_xmlid or menu_id:
+            if menu_xmlid and not menu:
+                return None
+            if not menu:
+                menu = self.env["ir.ui.menu"].sudo().browse(menu_id).exists()
+            if (not menu or menu._name != "ir.ui.menu" or int(menu.id) != menu_id
+                    or (menu.sudo().groups_id and not self._groups_authorize_current_user(menu.sudo().groups_id))):
+                return None
+            carrier_action = menu.sudo().action
+            if carrier_action != action:
+                # Only trusted role declarations may bind a contextual target
+                # to another native menu. Both ends still require native access.
+                if not allow_declared_carrier or not carrier_action:
+                    return None
+                carrier_groups = getattr(carrier_action, "groups_id", None)
+                if carrier_groups and not self._groups_authorize_current_user(carrier_groups):
+                    return None
+                if not self._action_is_runtime_allowed(carrier_action, "read"):
+                    return None
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
         entry = {
             "action_xmlid": action_xmlid,
@@ -1442,7 +1463,9 @@ class MenuService:
         )
         for field, bucket, route_kind in action_fields:
             for spec in surface.get(field) or []:
-                entry = self._route_entry_from_action_spec(spec, route_kind=route_kind)
+                entry = self._route_entry_from_action_spec(
+                    spec, route_kind=route_kind, allow_declared_carrier=True,
+                )
                 if entry:
                     buckets[bucket].append(entry)
 

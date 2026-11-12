@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import json
+import threading
 
 from odoo.tests.common import HttpCase, tagged
 
@@ -299,9 +300,28 @@ class TestIntentSmoke(HttpCase):
         route_authority = navigation.get("route_authority") or {}
         self.assertEqual(route_authority.get("contract_version"), "2.0.0")
         self.assertEqual(route_authority.get("schema_version"), "2.0.0")
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs, published_route_authority
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        # HttpCase requests share the test transaction.  A timed-out background
+        # request may still own its cursor after the intent response is received.
+        self._wait_remaining_requests(timeout=30)
+        self.assertFalse([
+            thread.name for thread in threading.enumerate()
+            if thread.name.startswith("odoo.service.http.request.")
+        ], "HTTP requests must finish before direct ORM authority comparison")
+        direct_env = self.test_user.with_user(self.test_user).env
+        fresh = EffectiveDeliveryService(direct_env).resolve().route_authority
+        direct = published_route_authority(direct_env)
+        self.assertEqual(published_pairs(fresh), published_pairs(direct), {"fresh": fresh, "cached": direct})
+        self.assertEqual(published_pairs(route_authority), published_pairs(direct))
+        self.assertTrue(any((node.get("entry_target") or {}).get("scene_key") == "workspace.home"
+                            for node in executable_leaves))
         scene_ready_contract = data.get("data", {}).get("scene_ready_contract") or {}
         self.assertEqual(scene_ready_contract.get("contract_version"), "2.0.0")
         self.assertEqual(scene_ready_contract.get("schema_version"), "2.0.0")
+        self.assertTrue(any((row.get("scene") or {}).get("key") == "workspace.home"
+                            or row.get("code") == "workspace.home" or row.get("key") == "workspace.home"
+                            for row in scene_ready_contract.get("scenes") or []))
         self.assertIn("page_contracts", data.get("data", {}))
         self.assertIn("workspace_home_ref", data.get("data", {}))
         self.assertNotIn("workspace_home", data.get("data", {}))

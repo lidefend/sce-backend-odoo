@@ -561,7 +561,7 @@ class ProductPolicyService:
             edition_key=resolved_edition_key,
         )
         catalog_fallback_applied = False
-        if self._is_catalog_backed_product(base_product_key=resolved_base_product_key):
+        if not (enforce_release or enforce_access) and self._is_catalog_backed_product(base_product_key=resolved_base_product_key):
             catalog_payload = self._catalog_backed_policy(product_key=key)
             if catalog_payload:
                 fallback = catalog_payload

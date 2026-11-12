@@ -381,17 +381,20 @@ def _apply_scene_defaults(scene, drift=None, source="registry"):
     return scene
 
 
-def _load_from_db(env, drift=None):
+def _published_db_scenes(env):
     if env is None:
         return []
     try:
         Scene = env["sc.scene"].sudo()
     except Exception:
         return []
-    scenes = Scene.search([("active", "=", True), ("state", "=", "published")], order="sequence, id")
+    return Scene.search([("active", "=", True), ("state", "=", "published")], order="sequence, id")
+
+
+def _load_from_db(env, drift=None):
     out = []
-    for scene in scenes:
-        payload = scene.to_public_dict(env.user)
+    for scene in _published_db_scenes(env):
+        payload = scene.to_effective_definition_dict()
         normalized = _normalize_scene(payload, drift=drift, source="db")
         if normalized:
             out.append(normalized)
@@ -433,6 +436,24 @@ def load_scene_configs(env, drift=None):
 
 
 def load_scene_configs_with_timings(env, drift=None):
+    scenes, timings_ms = _load_scene_declarations_with_timings(env, drift=drift)
+    # Only the consumer projection evaluates tile access. The common declaration
+    # reader is also used by route qualification and must never recurse into it.
+    records = {scene.code: scene for scene in _published_db_scenes(env)}
+    for scene in scenes:
+        record = records.get(scene.get("code"))
+        if record is not None:
+            scene["tiles"] = record._filter_payload_tiles(scene.get("tiles") or [], env.user)
+    return scenes, timings_ms
+
+
+def load_effective_scene_declarations(env, drift=None):
+    """DB, imported, registry and asset declarations in existing precedence."""
+    scenes, _timings = _load_scene_declarations_with_timings(env, drift=drift)
+    return scenes
+
+
+def _load_scene_declarations_with_timings(env, drift=None):
     timings_ms = {}
 
     def _mark(stage, started_at):

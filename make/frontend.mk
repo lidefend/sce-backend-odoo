@@ -160,6 +160,8 @@ verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navi
 
 verify.navigation.publication_consumers.unit: guard.prod.forbid verify.nav01.native_authority.unit
 	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+	@python3 addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py
+	@python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py
 
 .PHONY: verify.frontend.official_icon.unit
 verify.frontend.official_icon.unit: guard.prod.forbid
@@ -191,6 +193,9 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 
 .PHONY: verify.backend.navigation_delivery.unit
 verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit verify.scene.shell_compiler.unit
+	@python3 addons/smart_core/tests/test_navigation_entry_target.py
+	@python3 addons/smart_core/tests/test_system_init_payload_builder_semantics.py
+	@python3 addons/smart_core/tests/test_platform_minimum_nav_contract.py
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_menu_acl_carrier_authorization.py
@@ -205,6 +210,7 @@ verify.navigation_contract_compiler.unit: guard.prod.forbid
 verify.runtime_capability_catalog.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/delivery/runtime_capability_catalog.py addons/smart_core/delivery/product_policy_catalog_sync_service.py addons/smart_core/tests/test_runtime_capability_catalog.py addons/smart_core/tests/test_backend_semantic_copy_supply.py
 	@python3 addons/smart_core/tests/test_runtime_capability_catalog.py
+	@python3 addons/smart_core/tests/test_backend_semantic_copy_supply.py
 
 .PHONY: verify.scene.shell_compiler.unit
 verify.scene.shell_compiler.unit: guard.prod.forbid

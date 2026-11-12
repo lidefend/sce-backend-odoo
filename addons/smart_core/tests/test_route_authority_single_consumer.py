@@ -138,6 +138,51 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
 
         return call
 
+    def test_multi_scene_references_share_one_direct_execution_meaning(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("effective_authority_test", ROOT / "delivery" / "runtime_route_authority.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        base = {"menu_id": 0, "action_id": 777, "model": "sc.financing.loan",
+                "route_kind": "CONTEXTUAL_ROUTE", "allowed_operation": "read"}
+        for selected in (("A", "B"), ("B",), ()):
+            with self.subTest(selected=selected):
+                raw = {"contextual_actions": [{**base, "scene_key": scene, "item_key": "open"} for scene in selected]}
+                self.published = module.coalesce_effective_route_authority(raw)
+                result = self._handler()({"action_id": 777})
+                self.assertEqual(bool(result.ok), bool(selected))
+                if selected:
+                    references = self.published["contextual_actions"][0]["scene_references"]
+                    self.assertEqual({row["scene_key"] for row in references}, set(selected))
+                self.assertEqual(len(raw["contextual_actions"]), len(selected))
+        for difference in ({"context_requirements": {"required_query": ["project_id"]}},
+                           {"allowed_operation": "write"}, {"domain": "[('active','=',True)]"},
+                           {"context": "{'default_kind':'other'}"}):
+            with self.subTest(difference=difference):
+                self.published = module.coalesce_effective_route_authority({
+                    "contextual_actions": [dict(base), {**base, **difference}]})
+                self.assertFalse(self._handler()({"action_id": 777}).ok)
+
+    def test_coalescing_retains_contextual_action_only_admission_across_buckets(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("effective_authority_test", ROOT / "delivery" / "runtime_route_authority.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        base = {"action_id": 777, "model": "sc.financing.loan", "allowed_operation": "read"}
+        self.published = module.coalesce_effective_route_authority({
+            "primary_actions": [{**base, "menu_id": 1, "route_kind": "PRIMARY_NAV"},
+                                {**base, "menu_id": 2, "route_kind": "PRIMARY_NAV"}],
+            "contextual_actions": [{**base, "menu_id": 1, "route_kind": "CONTEXTUAL_ROUTE"}],
+        })
+        result = self._handler()({"action_id": 777})
+        self.assertTrue(result.ok)
+        self.assertEqual(result.data["menu_id"], 1)
+        self.assertTrue(self._handler()({"action_id": 777, "menu_id": 1}).ok)
+        self.assertTrue(self._handler()({"action_id": 777, "menu_id": 2}).ok)
+        rows = self.published["primary_actions"] + self.published["contextual_actions"]
+        # Existing browser resolver requires this marker for action-only links.
+        self.assertEqual(len([row for row in rows if row["route_kind"] == "CONTEXTUAL_ROUTE"]), 1)
+
     def test_the_validate_gate_reads_the_published_authority(self):
         call = self._handler()
         result = call({"action_id": 777})
@@ -306,10 +351,15 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         """
         source = (ROOT / "delivery" / "runtime_route_authority.py").read_text(encoding="utf-8")
         builder = source.split("def _build_runtime_route_authority", 1)[1]
-        self.assertIn("enforce_release=True", builder)
-        self.assertIn("enforce_access=True", builder)
-        self.assertIn("filter_route_authority_by_publication", builder)
-        self.assertIn("fail_closed", builder)
+        self.assertIn("EffectiveDeliveryService(env).resolve", builder)
+        self.assertNotIn("handlers.system_init", builder)
+        shared = (ROOT / "delivery" / "effective_delivery_service.py").read_text(encoding="utf-8")
+        engine = (ROOT / "delivery" / "delivery_engine.py").read_text(encoding="utf-8")
+        self.assertIn("enforce_release=True", engine)
+        self.assertIn("enforce_access=True", engine)
+        self.assertIn("filter_route_authority_by_publication", shared)
+        self.assertIn("fail_closed", shared)
+        self.assertNotIn("load_capabilities", shared)
         published = source.split("def published_route_authority", 1)[1].split(
             "def build_runtime_route_authority", 1
         )[0]

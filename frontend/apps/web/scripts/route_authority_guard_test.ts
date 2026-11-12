@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   findRouteAuthority,
@@ -365,3 +367,34 @@ assertGap(() => normalizeRouteAuthorityContract({
 }));
 
 console.log('[login_return_authority] PASS cases=16 source=contract_route_authority');
+
+// Consume the actual Python qualification projection, including cross-bucket
+// references. This catches producer/consumer schema drift before ORM startup.
+const nativeEntry = { action_id: 77, action_xmlid: 'test.shared', model: 'x.execution', allowed_operation: 'read' };
+const sharedRaw = { ...raw, admin_actions: [],
+  primary_actions: [
+    { ...nativeEntry, menu_id: 1, route_kind: 'PRIMARY_NAV' },
+    { ...nativeEntry, menu_id: 2, route_kind: 'PRIMARY_NAV' },
+  ],
+  contextual_actions: [
+    { ...nativeEntry, menu_id: 1, route_kind: 'CONTEXTUAL_ROUTE', scene_key: 'A', item_key: 'open' },
+    { ...nativeEntry, menu_id: 1, route_kind: 'CONTEXTUAL_ROUTE', scene_key: 'B', item_key: 'open' },
+  ],
+};
+const projected = JSON.parse(execFileSync('python3', ['-c', `
+import importlib.util,json,sys
+spec=importlib.util.spec_from_file_location('authority',sys.argv[1])
+module=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps(module.coalesce_effective_route_authority(json.load(sys.stdin))))
+`, resolve('addons/smart_core/delivery/runtime_route_authority.py')], {
+  input: JSON.stringify(sharedRaw), encoding: 'utf8',
+}));
+const sharedContract = normalizeRouteAuthorityContract(projected);
+assert.ok(sharedContract);
+assert.equal(sharedContract.contextual_actions.length, 1);
+assert.equal(sharedContract.primary_actions.length, 1);
+for (const menuId of [0, 1, 2]) {
+  assert.ok(findRouteAuthority(sharedContract, { actionId: 77, menuId, query: {}, companyId: 3 }));
+}
+console.log('[effective_delivery] PASS actual Python projection -> strict frontend normalization and direct lookup');

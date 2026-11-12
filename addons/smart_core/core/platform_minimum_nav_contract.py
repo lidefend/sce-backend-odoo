@@ -139,3 +139,63 @@ def build_platform_minimum_nav_contract() -> dict:
             "nav_source": SOURCE,
         },
     }
+
+
+def merge_authenticated_safe_landing(nav, authority, *, authenticated):
+    """Add only the declared actionless platform home after business selection.
+
+    This is the platform's authenticated landing guarantee, independent of
+    product exposure and tenant business enablement; it grants no native action.
+    """
+    from copy import deepcopy
+
+    nav, authority = deepcopy(nav), deepcopy(authority)
+    if not authenticated:
+        return nav, authority
+    buckets = ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+
+    def is_home(row):
+        target = row.get("entry_target") or (row.get("meta") or {}).get("entry_target") or {}
+        return (not int(row.get("action_id") or (row.get("meta") or {}).get("action_id") or 0)
+                and target.get("type") == "scene" and target.get("scene_key") == WORKSPACE_SCENE_KEY)
+
+    allowed = {int(row.get("menu_id") or 0) for bucket in buckets
+               for row in authority.get(bucket, []) if is_home(row)}
+
+    def has_home(nodes):
+        return any((is_home(row) and int(row.get("menu_id") or 0) in allowed)
+                   or has_home(row.get("children") or []) for row in nodes)
+
+    if has_home(nav):
+        return nav, authority
+    minimum = build_platform_minimum_nav_contract()["nav"]
+    leaf = minimum[0]["children"][0]["children"][0]
+    entry = {
+        "menu_id": leaf["menu_id"], "menu_xmlid": leaf["menu_xmlid"], "action_id": 0,
+        "route_kind": "ROLE_HOME_ACTION", "scene_key": WORKSPACE_SCENE_KEY,
+        "entry_target": dict(leaf["entry_target"]), "route": leaf["route"],
+        "name": leaf["label"], "allowed_operation": "read", "context_requirements": {},
+        "required_capability": "menu_container_visible", "source": SOURCE,
+    }
+    existing = [row for bucket in buckets for row in authority.get(bucket, [])
+                if int(row.get("menu_id") or 0) == leaf["menu_id"]]
+    if any(not is_home(row) for row in existing):
+        raise ValueError("PLATFORM_HOME_IDENTITY_CONFLICT")
+    if not existing:
+        authority.setdefault("role_home_actions", []).append(entry)
+
+    def merge(nodes, additions):
+        for addition in additions:
+            matches = [row for row in nodes if row.get("key") == addition["key"]]
+            if not matches:
+                nodes.append(addition)
+                continue
+            current = matches[0]
+            if len(matches) != 1 or current.get("menu_id") != addition["menu_id"]:
+                raise ValueError("PLATFORM_HOME_CONTAINER_CONFLICT")
+            if addition.get("children"):
+                merge(current.setdefault("children", []), addition["children"])
+            elif not is_home(current):
+                raise ValueError("PLATFORM_HOME_TARGET_CONFLICT")
+    merge(nav, minimum)
+    return nav, authority

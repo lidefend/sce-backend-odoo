@@ -207,6 +207,26 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         for key in keys:
             self.assertEqual(capability_registry.capability_authorization_for_user(user, key), before[key])
 
+    def test_admitted_entry_still_enforces_live_record_and_write_checks(self):
+        from odoo.exceptions import AccessError
+        from unittest.mock import patch
+        user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
+        project = self.env['project.project'].create({'name': 'Execution boundary', 'code': 'EFFECTIVE-BOUNDARY'})
+        action = self.env.ref('smart_construction_core.action_sc_project_list')
+        menu = self.env.ref('smart_construction_core.menu_sc_project_project')
+        with patch.object(capability_registry, '_published_query_pairs_by_action_id',
+                          return_value={action.id: (menu.id, action.id)}):
+            self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'allow')
+        with self.assertRaises(AccessError):
+            project.with_user(user).write({'name': 'Forbidden write'})
+        self.env['ir.rule'].create({
+            'name': 'Effective delivery test record exclusion',
+            'model_id': self.env['ir.model']._get_id('project.project'),
+            'domain_force': str([('id', '!=', project.id)]),
+        })
+        with self.assertRaises(AccessError):
+            project.with_user(user).read(['name'])
+
     def test_record_rules_still_bound_project_queries(self):
         user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
         model = self.env['project.project'].with_user(user)
@@ -331,6 +351,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
 
     def test_action_model_change_is_not_hidden_by_copied_model_binding(self):
         from unittest.mock import patch
+        from odoo.addons.smart_core.delivery.menu_service import MenuService
 
         user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
         action = self.env.ref('smart_construction_core.action_sc_project_list')
@@ -338,7 +359,8 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         with patch.object(
             capability_registry,
             '_published_query_pairs_by_action_id',
-            return_value={action.id: (menu.id, action.id)},
+            side_effect=lambda actor: ({action.id: (menu.id, action.id)}
+                if MenuService(actor.with_user(actor).env)._action_is_runtime_allowed(action.with_user(actor), "read") else {}),
         ):
             self.assertEqual(capability_registry.capability_authorization_for_user(user, 'project.list.open')['state'], 'allow')
             # Transactional test change is rolled back by TransactionCase.

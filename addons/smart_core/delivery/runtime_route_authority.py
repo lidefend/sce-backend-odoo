@@ -86,6 +86,56 @@ def published_pairs(authority: dict) -> set:
     return set(iter_published_pairs(authority))
 
 
+def coalesce_effective_route_authority(authority: dict) -> dict:
+    """One route per native target and execution meaning after tenant selection.
+
+    Multiple scene references are provenance, not ambiguous execution. Different
+    context requirements or native execution payloads remain separate so direct
+    validation can still reject a genuinely ambiguous request.
+    """
+    from copy import deepcopy
+    import json
+
+    result = deepcopy(authority)
+    seen = {}
+    for bucket in ROUTE_AUTHORITY_BUCKETS:
+        kept = []
+        for row in result.get(bucket) or []:
+            menu_id, action_id = _positive_int(row.get("menu_id")), _positive_int(row.get("action_id"))
+            if not action_id:
+                kept.append(row)
+                continue
+            meaning = [menu_id, action_id, row.get("model") or "",
+                       row.get("allowed_operation") or "read", row.get("context_requirements") or {},
+                       row.get("domain") or "[]", row.get("context") or "{}",
+                       row.get("entry_target") or {}, row.get("delivery_scope") or ""]
+            key = json.dumps(meaning, sort_keys=True, ensure_ascii=False, default=str)
+            reference = {"scene_key": row.get("scene_key"), "item_key": row.get("item_key")}
+            existing = seen.get(key)
+            if existing is None:
+                seen[key] = row
+                kept.append(row)
+                existing = row
+            # Contextual admission also permits an action-only URL. Preserve
+            # that existing grant when the same pair occupies primary nav.
+            if row.get("route_kind") == "CONTEXTUAL_ROUTE":
+                existing["route_kind"] = "CONTEXTUAL_ROUTE"
+            if reference["scene_key"]:
+                references = existing.setdefault("scene_references", [])
+                if reference not in references:
+                    references.append(reference)
+        result[bucket] = kept
+    # A contextual representative must also satisfy the client's strict bucket
+    # schema. Moving it retains primary navigation by the same native pair.
+    buckets = {bucket: [] for bucket in ROUTE_AUTHORITY_BUCKETS}
+    for bucket in ROUTE_AUTHORITY_BUCKETS:
+        for row in result.get(bucket) or []:
+            target = "contextual_actions" if row.get("route_kind") == "CONTEXTUAL_ROUTE" else bucket
+            buckets[target].append(row)
+    result.update(buckets)
+    return result
+
+
 def published_menu_ids(authority: dict) -> set:
     """Published menu carriers: action entries plus authorised containers."""
     menu_ids = {menu_id for menu_id, _action_id in published_pairs(authority) if menu_id}
@@ -117,7 +167,7 @@ def menu_publication_decision(authority: dict, menu_id, action_id=0):
 
 
 def principal_group_signature(env) -> str:
-    """Stable signature of the principal's effective group xmlids.
+    """Stable signature of native group IDs and their XMLID projection.
 
     Effective groups include implied groups, which this Odoo build does not
     signal through ``registry.clear_cache()`` on their own writes. Binding the
@@ -129,7 +179,9 @@ def principal_group_signature(env) -> str:
         import hashlib
 
         xmlids = _request_cached_user_group_xmlids(env)
-        joined = "\n".join(sorted(str(item) for item in (xmlids or ()) if item))
+        # Native groups without XMLIDs still change ACL/action reachability.
+        group_ids = sorted(int(value) for value in env.user.groups_id.ids)
+        joined = repr((group_ids, sorted(str(item) for item in (xmlids or ()) if item)))
         return hashlib.sha1(joined.encode("utf-8")).hexdigest()
     except Exception:
         return ""
@@ -160,56 +212,8 @@ def build_runtime_route_authority(env) -> dict:
 
 
 def _build_runtime_route_authority(env) -> dict:
-    """Build the current principal's publication-filtered route authority.
-
-    Mirrors the startup navigation authority: identity -> product policy ->
-    platform release gate -> delivery navigation -> publication-filtered route
-    authority. Returns ``{}`` when it cannot be established so callers fail
-    closed rather than inferring publication from native menus.
-    """
-    try:
-        from ..handlers.system_init import (
-            _filter_nav_by_release_gate,
-            _load_platform_release_gate,
-            _resolve_startup_delivery_identity,
-        )
-        from ..identity.identity_resolver import IdentityResolver
-        from .delivery_engine import DeliveryEngine
-        from .menu_service import MenuService
-        from .product_policy_service import ProductPolicyService
-
-        resolver = IdentityResolver(env)
-        surface = resolver.build_role_surface(
-            resolver.user_group_xmlids(env.user), [], {"workspace.home"}
-        )
-        identity = _resolve_startup_delivery_identity(env, {})
-        policy = ProductPolicyService(env).get_policy(
-            **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
-            role_code=surface.get("role_code"),
-            enforce_release=True,
-            enforce_access=True,
-        )
-        release_gate = _load_platform_release_gate(env, product_key=policy["product_key"])
-        menu_service = MenuService(env)
-        navigation = menu_service.build_nav(policy=policy, role_surface=surface)
-        navigation = DeliveryEngine(env)._normalize_delivery_nav_refs(navigation)
-        navigation = [] if release_gate.get("fail_closed") else _filter_nav_by_release_gate(
-            navigation, release_gate, env=env
-        )[0]
-        authority = menu_service.build_route_authority(surface, nav=navigation)
-        authority = MenuService.filter_route_authority_by_publication(
-            authority,
-            filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
-                _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
-        )
-        from ..utils.extension_hooks import call_extension_hook_first
-
-        authority = call_extension_hook_first(
-            env,
-            "smart_core_navigation_authority_filter",
-            env,
-            authority,
-        ) or authority
-        return authority if isinstance(authority, dict) else {}
-    except Exception:
-        return {}
+    """Read the same effective qualification used by startup navigation."""
+    # Let the outer consumer fail closed. An exception must not become an
+    # apparently valid empty result stored by the principal's ormcache.
+    from .effective_delivery_service import EffectiveDeliveryService
+    return EffectiveDeliveryService(env).resolve(dict(env.context or {})).route_authority

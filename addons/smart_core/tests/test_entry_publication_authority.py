@@ -174,7 +174,7 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(target["menu_key"], "published.aggregate")
         self.assertEqual(target["business_category_options"], node["meta"]["business_category_options"])
         # Execute the real publication key reader after route projection.
-        path = ROOT / "handlers/system_init.py"
+        path = ROOT / "delivery/effective_delivery_inputs.py"
         key_reader = next(n for n in ast.parse(path.read_text()).body
                           if isinstance(n, ast.FunctionDef) and n.name == "_node_release_gate_keys")
         scope = {"_text": lambda value: str(value or "").strip()}

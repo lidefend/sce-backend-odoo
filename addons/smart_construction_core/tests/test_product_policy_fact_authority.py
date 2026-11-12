@@ -22,6 +22,122 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.env['ir.config_parameter'].sudo().set_param('smart_core.release_operator.catalog_source_db', self.env.cr.dbname)
         self.service = EditionReleaseSnapshotService(self.env)
 
+    def test_restricted_principal_keeps_only_platform_home_when_business_delivery_denies(self):
+        from odoo.addons.smart_core.delivery import effective_delivery_service
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Restricted delivery actor", "login": "restricted-delivery-actor",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        service = effective_delivery_service.EffectiveDeliveryService(user.with_user(user).env)
+        for gate in ({}, {"fail_closed": True, "reason": "TEST_RELEASE_DENIED"}):
+            with self.subTest(gate=gate), patch.object(effective_delivery_service, "_load_platform_release_gate", return_value=gate):
+                result = service.resolve()
+                self.assertTrue(result.payload["nav"])
+                self.assertTrue(published_pairs(result.route_authority))
+                self.assertFalse(any(action for _, action in published_pairs(result.route_authority)))
+                self.assertTrue(any(row.get("entry_target", {}).get("scene_key") == "workspace.home"
+                                    for row in result.route_authority["role_home_actions"]))
+                self.assertEqual(result.release_gate, gate)
+
+    def test_native_alias_rejects_unresolved_or_contradictory_references(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        menu = self.menu
+        action = menu.action
+        self.assertTrue(action)
+        other_action = self.env.ref("smart_construction_core.action_sc_project_list")
+        alias = self.env["sc.capability"].create({"key": "test.native.alias", "name": "Native alias"})
+        authority = {"primary_actions": [{"menu_id": menu.id, "action_id": action.id}]}
+        cases = [
+            {"menu_id": menu.id, "action_xmlid": "missing.action"},
+            {"action_id": action.id, "action_xmlid": other_action.get_external_id()[other_action.id]},
+            {"menu_id": "invalid", "action_id": action.id},
+            {"menu_xmlid": "base.group_user", "action_id": action.id},
+        ]
+        with patch.object(runtime_route_authority, "published_route_authority", return_value=authority):
+            for payload in cases:
+                with self.subTest(payload=payload):
+                    alias.default_payload = payload
+                    decision = alias._access_context(self.env.user)
+                    self.assertFalse(decision["allowed"])
+                    self.assertEqual(decision["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
+
+    def test_tile_qualifies_its_consumed_target_in_both_directions(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        action_a = self.menu.action
+        action_b = self.env.ref("smart_construction_core.action_sc_project_list")
+        self.assertNotEqual(action_a.id, action_b.id)
+        cap = self.env["sc.capability"].create({
+            "key": "test.tile.effective", "name": "Effective tile target",
+            "intent": "ui.contract", "status": "ga", "default_payload": {"action_id": action_a.id},
+        })
+        scene = self.env["sc.scene"].create({
+            "code": "test.tile.effective", "name": "Effective tile target", "is_test": True,
+            "tile_ids": [(0, 0, {"capability_id": cap.id, "payload_override": {"action_id": action_b.id}})],
+        })
+        tile = scene.tile_ids
+        for allowed_action, expected in ((action_b, True), (action_a, False)):
+            authority = {"contextual_actions": [{"menu_id": 0, "action_id": allowed_action.id}]}
+            with self.subTest(allowed_action=allowed_action.id), patch.object(
+                runtime_route_authority, "published_route_authority", return_value=authority,
+            ):
+                self.assertEqual(cap._access_context(self.env.user)["allowed"], not expected)
+                row = tile.to_public_dict(self.env.user)
+                self.assertEqual(row["payload"]["action_id"], action_b.id)
+                self.assertEqual(row["allowed"], expected)
+                projected = scene.to_public_dict(self.env.user)["tiles"][0]
+                self.assertEqual(projected["allowed"], expected)
+                if not expected:
+                    self.assertEqual(projected["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
+
+    def test_published_tile_qualifies_frozen_target_after_draft_changes(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        action_a = self.menu.action
+        action_b = self.env.ref("smart_construction_core.action_sc_project_list")
+        cap = self.env["sc.capability"].create({
+            "key": "test.tile.frozen", "name": "Frozen tile target",
+            "intent": "ui.contract", "status": "ga", "default_payload": {"action_id": action_b.id},
+        })
+        scene = self.env["sc.scene"].create({
+            "code": "test.tile.frozen", "name": "Frozen tile target", "is_test": True,
+            "tile_ids": [(0, 0, {"capability_id": cap.id})],
+        })
+        scene.action_publish()
+        cap.default_payload = {"action_id": action_a.id}
+        authority = {"contextual_actions": [{"menu_id": 0, "action_id": action_b.id}]}
+        with patch.object(runtime_route_authority, "published_route_authority", return_value=authority):
+            self.assertFalse(cap._access_context(self.env.user)["allowed"])
+            row = scene.to_public_dict(self.env.user)["tiles"][0]
+            self.assertEqual(row["payload"]["action_id"], action_b.id)
+            self.assertTrue(row["allowed"])
+        # Reading the declaration for qualification must not call a consumer.
+        with patch.object(type(cap), "_access_context", side_effect=AssertionError("recursive access consumer")):
+            self.assertEqual(scene.to_effective_definition_dict()["tiles"][0]["payload"]["action_id"], action_b.id)
+
+    def test_candidate_catalog_never_publishes_discovered_entries(self):
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+        service = ProductPolicyCatalogSyncService(self.env)
+        catalog = service.build_catalog_policy_payload(product_key="construction.candidate_only")
+        menus = [row for group in catalog["menu_groups"] for row in group["menus"]]
+        self.assertTrue(menus)
+        self.assertTrue(all(not row["enabled"] and row["release_state"] == "hidden" for row in menus))
+        with patch.object(ProductPolicyService, "_catalog_backed_policy", side_effect=AssertionError("runtime read discovery")):
+            ProductPolicyService(self.env).get_policy(product_key="construction.candidate_only", enforce_release=True, enforce_access=True)
+
+    def test_shared_resolution_matches_direct_authority_and_company_roundtrip(self):
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
+        company_a = self.env.company
+        company_b = self.env["res.company"].create({"name": "Effective delivery test B"})
+        self.env.user.write({"company_ids": [(4, company_b.id)]})
+        for company in (company_a, company_b, company_a):
+            env = self.env(context=dict(self.env.context, allowed_company_ids=[company.id]))
+            solved = EffectiveDeliveryService(env).resolve()
+            direct = published_route_authority(env)
+            self.assertEqual(published_pairs(direct), published_pairs(solved.route_authority))
+            self.assertEqual(direct["principal_scope"]["company_id"], company.id)
+
     def _maintain(self):
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'released')
         return self.service.build_policy_draft_contract(product_key=self.policy.product_key)

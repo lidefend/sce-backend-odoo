@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -32,6 +33,19 @@ navigation_entry_target = _load_module(
 
 
 class TestNavigationEntryTarget(unittest.TestCase):
+    def test_native_identity_precedes_same_model_scene(self):
+        rows = [
+            {"code": "company", "target": {"action_id": 10, "model": "res.company", "view_type": "form"}},
+            {"code": "setup", "target": {"menu_xmlid": "test.setup", "action_id": 20, "model": "res.company", "view_type": "form"}},
+        ]
+        env = types.SimpleNamespace(ref=lambda xmlid, **kwargs: types.SimpleNamespace(id=30, _name="ir.ui.menu"))
+        with patch.object(navigation_entry_target, "_load_scene_configs", return_value=rows):
+            self.assertEqual(navigation_entry_target.resolve_scene_key(env, menu_id=30, action_id=20, model="res.company", view_modes=["form"]), "setup")
+            self.assertEqual(navigation_entry_target.resolve_scene_key(env, action_id=20, model="res.company", view_modes=["form"]), "setup")
+            self.assertEqual(navigation_entry_target.resolve_scene_key(env, action_id=99, model="res.company", view_modes=["form"]), "")
+            self.assertEqual(navigation_entry_target.resolve_scene_key(env, menu_id=30, action_id=99, model="res.company", view_modes=["form"]), "")
+            self.assertEqual(navigation_entry_target.resolve_scene_key(env, model="res.company", view_modes=["form"]), "company")
+
     def test_scene_entry_target_carries_native_refs(self):
         entry = navigation_entry_target.normalize_entry_target(
             scene_key="projects.list",

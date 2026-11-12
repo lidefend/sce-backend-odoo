@@ -55,6 +55,9 @@ class ScProductPolicy(models.Model):
         "self.env.cr.dbname",
         "self.env.user.id",
         "self.env.company.id",
+        "tuple(self.env.context.get('allowed_company_ids') or ())",
+        "self.env.su",
+        "tuple((key, str(self.env.context.get(key) or '')) for key in ('product_key', 'base_product_key', 'edition_key', 'delivery_product_key', 'delivery_base_product_key', 'delivery_edition_key'))",
         "self._sc_route_authority_cache_key()",
     )
     def published_route_authority(self):

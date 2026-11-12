@@ -1,0 +1,5 @@
+goal:
+  id: BACKEND-EFFECTIVE-DELIVERY-20261112
+  status: active
+  objective: Unify native entry identity, effective delivery resolution and capability consumers.
+  exclusions: [frontend_features, customer_data, deployment]

@@ -46,6 +46,7 @@ scene_pkg.__path__ = [str(SCENE_DIR)]
 
 scene_registry_mod = types.ModuleType("odoo.addons.smart_construction_scene.scene_registry")
 scene_registry_mod.load_scene_configs = lambda env: []
+scene_registry_mod.load_effective_scene_declarations = lambda env: []
 scene_registry_mod.load_scene_configs_with_timings = lambda env: ([], {})
 sys.modules["odoo.addons.smart_construction_scene.scene_registry"] = scene_registry_mod
 scene_pkg.scene_registry = scene_registry_mod
@@ -202,7 +203,6 @@ class _DummyRegistry:
 
 
 def _reset_caches():
-    target_core_extension._DERIVED_NAV_SCENE_MAP_CACHE.clear()
     target_capability._SCENE_CONFIGS_CACHE.clear()
     target_capability._SCENE_MAP_CACHE.clear()
     target_capability._TARGET_SCENE_LOOKUP_CACHE.clear()
@@ -406,7 +406,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_finance_menu_scene_maps_keep_payment_list_and_approval_split(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
@@ -824,7 +824,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_nav_scene_maps_drop_root_carrier_and_aliases(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
@@ -992,7 +992,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_smart_core_nav_scene_maps_derives_missing_action_and_menu_mappings(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: [
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: [
             {
                 "code": "finance.operating_metrics",
                 "target": {
@@ -1064,7 +1064,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_projects_detail_remains_route_plus_record_context_authority_not_shared_action_owner(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
@@ -1086,7 +1086,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_smart_core_nav_scene_maps_include_enterprise_bootstrap_registry_targets(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
@@ -1219,7 +1219,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_smart_core_nav_scene_maps_include_material_resource_targets(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(
@@ -1273,7 +1273,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_smart_core_nav_scene_maps_include_construction_quality_safety_targets(self):
         _reset_caches()
-        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        target_core_extension.scene_registry.load_effective_scene_declarations = lambda env: list(scene_registry_content.list_scene_entries())
         maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
 
         self.assertEqual(

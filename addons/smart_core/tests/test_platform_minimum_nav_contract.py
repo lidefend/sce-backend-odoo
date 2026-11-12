@@ -116,6 +116,8 @@ class _Env:
 class PlatformMinimumNavContractTests(unittest.TestCase):
     def _load(self):
         _install_stubs()
+        _load_module("odoo.addons.smart_core.core.navigation_entry_target",
+                     SMART_CORE_DIR / "core" / "navigation_entry_target.py")
         contract = _load_module(
             "odoo.addons.smart_core.core.platform_minimum_nav_contract",
             SMART_CORE_DIR / "core" / "platform_minimum_nav_contract.py",
@@ -129,6 +131,25 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             SMART_CORE_DIR / "delivery" / "menu_service.py",
         )
         return contract, service_module, menu_service_module
+
+    def test_authenticated_home_is_actionless_and_idempotent_after_business_denial(self):
+        contract, _service, menu_service = self._load()
+        denied = {"denied_actions": [{"menu_id": 4, "action_id": 8, "reason_code": "PRODUCT_ENTRY_NOT_RELEASED"}],
+                  "principal_scope": {"user_id": 7, "company_id": 3}}
+        nav, authority = contract.merge_authenticated_safe_landing([], denied, authenticated=True)
+        self.assertEqual(authority["denied_actions"], denied["denied_actions"])
+        self.assertEqual(authority["principal_scope"], denied["principal_scope"])
+        self.assertTrue(menu_service.MenuService.filter_nav_by_route_authority(nav, authority))
+        self.assertEqual([row["action_id"] for row in authority["role_home_actions"]], [0])
+        self.assertEqual(contract.merge_authenticated_safe_landing(nav, authority, authenticated=True), (nav, authority))
+        self.assertEqual(contract.merge_authenticated_safe_landing([], denied, authenticated=False), ([], denied))
+        # Existing declared containers are reused, never duplicated.
+        empty_tree = contract.build_platform_minimum_nav_contract()["nav"]
+        empty_tree[0]["children"][0]["children"] = []
+        merged, _ = contract.merge_authenticated_safe_landing(empty_tree, denied, authenticated=True)
+        self.assertEqual(len(merged), 1)
+        self.assertEqual(len(merged[0]["children"]), 1)
+        self.assertEqual(len(merged[0]["children"][0]["children"]), 1)
 
     def test_platform_mode_contract_is_non_empty_and_scene_isolated(self):
         contract, _service, _menu_service = self._load()

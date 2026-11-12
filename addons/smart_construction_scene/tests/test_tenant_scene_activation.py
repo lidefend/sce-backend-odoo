@@ -946,6 +946,25 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             self.authority if authority is None else authority, surface_index=self.index,
             enabled=enabled, entries=self.entries, menu_xmlids_by_id={1: "test.project"})
 
+    def test_shared_internal_target_survives_either_selected_scene(self):
+        index = {"menu.A": {"location": "scenario", "scenario_key": "A"},
+                 "menu.B": {"location": "scenario", "scenario_key": "B"}}
+        entries = [{"code": key, "target": {"menu_xmlid": "menu." + key}} for key in ("A", "B")]
+        authority = {"contextual_actions": [
+            {"menu_id": 0, "action_id": 88, "scene_key": key, "item_key": "open",
+             "source": "scene_internal_action_authority", "allowed": True}
+            for key in ("A", "B")]}
+        for enabled, expected in (({"A": True, "B": True}, {"A", "B"}),
+                                  ({"A": False, "B": True}, {"B"}),
+                                  ({"A": False, "B": False}, set())):
+            with self.subTest(enabled=enabled):
+                filtered = business_enablement.filter_business_authority(
+                    authority, surface_index=index, enabled=enabled, entries=entries, menu_xmlids_by_id={})
+                self.assertEqual({row["scene_key"] for row in filtered["contextual_actions"]}, expected)
+                normalized = route_authority.coalesce_effective_route_authority(filtered)
+                self.assertEqual(len(normalized["contextual_actions"]), int(bool(expected)))
+                self.assertEqual(route_authority.published_pairs(normalized), {(0, 88)} if expected else set())
+
     def test_initialization_preserves_only_existing_authorized_internal_routes(self):
         self.entries.append({"code": "test.setup", "enablement_scope": "enterprise_initialization"})
         row = {"action_id": 88, "menu_id": 0, "scene_key": "test.setup",

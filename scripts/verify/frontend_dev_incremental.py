@@ -86,6 +86,34 @@ class Rule:
 
 RULES = (
     Rule((
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/core/platform_minimum_nav_contract.py",
+        "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+    ), (
+        "verify.nav.pro01r.route_authority.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+    ), (
+        "verify.system_init.menu_boundary.guard",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "make/dev_test.mk",
+    ), (
+        "verify.frontend.dev.incremental.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
         "contracts/registry/",
     ), (
         "verify.semantic.registry.lint",
@@ -324,6 +352,9 @@ RULES = (
         "addons/smart_core/handlers/system_init.py",
         "addons/smart_core/core/delivery_menu_defaults.py",
         "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/core/system_init_payload_builder.py",
+        "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+        "addons/smart_core/tests/test_navigation_entry_target.py",
         "addons/smart_core/delivery/delivery_engine.py",
         "addons/smart_core/tests/test_navigation_contract_compiler.py",
         "addons/smart_core/tests/test_native_config_menu_projection.py",
@@ -337,6 +368,18 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "addons/smart_core/data/sc_platform_namespace_seed.xml",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+        "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
     ), (
         "verify.platform.duty.contract.unit",
     )),
@@ -693,6 +736,15 @@ RULES = (
         "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     ), (
         "verify.backend.navigation_delivery.unit",
+        "verify.workspace.entry_authority.orm",
+    )),
+    Rule((
+        "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+        "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+        "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+        "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    ), (
+        "verify.workspace.entry_authority.orm",
     )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
@@ -872,6 +924,11 @@ RULES = (
         "addons/smart_core/core/capability_provider.py",
     ), (
         "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
     )),
     Rule((
         "addons/smart_construction_scene/models/product_policy.py",
@@ -1099,6 +1156,11 @@ RULES = (
     # identity or principal-signature change.
     Rule((
         "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/delivery/effective_delivery_inputs.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/models/release_management.py",
+        "addons/smart_core/tests/test_route_authority_single_consumer.py",
         "addons/smart_core/tests/__init__.py",
         "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/tests/test_principal_group_signature_request_scope.py",

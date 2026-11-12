@@ -33,7 +33,6 @@ from odoo.addons.smart_core.core.scene_diagnostics_builder import SceneDiagnosti
 from odoo.addons.smart_core.core.system_init_diagnostics_helper import SystemInitDiagnosticsHelper
 from odoo.addons.smart_core.core.platform_duty_contract import (
     build_capability_rows as build_platform_duty_capability_rows,
-    merge_platform_duty_route_authority,
 )
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
@@ -87,6 +86,7 @@ from odoo.addons.smart_core.core.scene_nav_contract_builder import build_scene_n
 from odoo.addons.smart_core.core.scene_ready_contract_builder import build_scene_ready_contract
 from odoo.addons.smart_core.core.ui_base_contract_asset_repository import bind_scene_assets
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
+from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
 from odoo.addons.smart_core.delivery.menu_service import MenuService
 from odoo.addons.smart_core.delivery.navigation_contract_compiler import (
     NavigationContractCompiler,
@@ -111,6 +111,24 @@ from odoo.addons.smart_core.utils.contract_governance import (
 )
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 from odoo.addons.smart_core.core.extension_loader import run_extension_hooks
+
+from odoo.addons.smart_core.delivery.effective_delivery_inputs import (
+    _acceptance_surface_matchers,
+    _filter_nav_by_release_gate,
+    _int_set,
+    _load_platform_release_gate,
+    _node_is_protected_runtime_business_config_menu,
+    _node_is_runtime_business_config_entry,
+    _node_is_user_acceptance_surface,
+    _node_release_gate_keys,
+    _release_gate_page_contract_from_snapshot,
+    _resolve_startup_delivery_identity,
+    _resolve_user_acceptance_nav_contract,
+    _runtime_business_config_productization_sources,
+    _runtime_business_config_protected_menu_refs,
+    _string_set,
+    _text,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -176,94 +194,6 @@ def _bind_scene_assets(*args, **kwargs):
 
 def _resolve_industry_extension_modules(env) -> list[str]:
     return resolve_shared_industry_extension_modules(env)
-
-
-def _resolve_user_acceptance_nav_contract(env) -> dict:
-    hook_payload = call_extension_hook_first(env, "smart_core_user_data_acceptance_nav_contract", env)
-    if isinstance(hook_payload, dict):
-        return hook_payload
-    return {}
-
-
-def _string_set(value) -> set[str]:
-    if isinstance(value, (list, tuple, set)):
-        return {_text(item) for item in value if _text(item)}
-    if isinstance(value, str) and value.strip():
-        return {_text(value)}
-    return set()
-
-
-def _int_set(value) -> set[int]:
-    values = value if isinstance(value, (list, tuple, set)) else [value]
-    out = set()
-    for item in values:
-        try:
-            parsed = int(item or 0)
-        except Exception:
-            parsed = 0
-        if parsed > 0:
-            out.add(parsed)
-    return out
-
-
-def _acceptance_surface_matchers(contract: dict | None) -> dict:
-    contract = contract if isinstance(contract, dict) else {}
-    tokens = set()
-    for key in (
-        "acceptance_surface_tokens",
-        "old_acceptance_group_labels",
-        "direct_acceptance_group_labels",
-        "joint_acceptance_group_labels",
-        "acceptance_root_labels",
-    ):
-        tokens.update(_string_set(contract.get(key)))
-    return {
-        "tokens": tokens,
-        "menu_ids": _int_set(contract.get("acceptance_surface_menu_ids")),
-        "action_ids": _int_set(contract.get("acceptance_surface_action_ids")),
-    }
-
-
-def _resolve_startup_delivery_identity(env, params: dict | None) -> dict:
-    raw_params = params if isinstance(params, dict) else {}
-    edition_key = str(
-        raw_params.get("delivery_edition_key")
-        or raw_params.get("edition_key")
-        or "standard"
-    ).strip() or "standard"
-    explicit_product_key = str(
-        raw_params.get("delivery_product_key")
-        or raw_params.get("product_key")
-        or ""
-    ).strip()
-    explicit_base_product_key = str(
-        raw_params.get("delivery_base_product_key")
-        or raw_params.get("base_product_key")
-        or ""
-    ).strip()
-    hook_payload = None
-    if not explicit_product_key and not explicit_base_product_key:
-        hook_result = call_extension_hook_first(env, "smart_core_resolve_startup_delivery_identity", env, raw_params)
-        hook_payload = hook_result if isinstance(hook_result, dict) else None
-    if not (raw_params.get("delivery_edition_key") or raw_params.get("edition_key")):
-        edition_key = str((hook_payload or {}).get("edition_key") or edition_key).strip() or edition_key
-    source = "params" if (explicit_product_key or explicit_base_product_key) else "extension_hook" if hook_payload else "legacy_default"
-    base_product_key = (
-        explicit_base_product_key
-        or str((hook_payload or {}).get("base_product_key") or LEGACY_DEFAULT_BASE_PRODUCT_KEY).strip()
-        or LEGACY_DEFAULT_BASE_PRODUCT_KEY
-    )
-    product_key = explicit_product_key or str((hook_payload or {}).get("product_key") or f"{base_product_key}.{edition_key}").strip()
-    if "." in product_key and not explicit_base_product_key:
-        base_product_key = product_key.split(".", 1)[0] or base_product_key
-    return {
-        "product_key": product_key,
-        "base_product_key": base_product_key,
-        "edition_key": edition_key,
-        "source": source,
-        "projection_only": True,
-        "no_business_fact_authority": True,
-    }
 
 
 def _is_platform_minimum_surface_mode(env, delivery_identity: dict | None = None) -> bool:
@@ -440,77 +370,6 @@ def _filter_startup_scenes_for_preload(scenes, allowed_scene_keys: list[str] | N
     return filtered
 
 
-def _text(value) -> str:
-    return str(value or "").strip()
-
-
-def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
-    meta_json = snapshot.get("meta_json") if isinstance(snapshot.get("meta_json"), dict) else {}
-    release_draft = meta_json.get("release_draft") if isinstance(meta_json.get("release_draft"), dict) else {}
-    pages = release_draft.get("pages") if isinstance(release_draft.get("pages"), list) else []
-    frozen = snapshot.get("snapshot_json") if isinstance(snapshot.get("snapshot_json"), dict) else {}
-    if "policy_snapshot_schema" in frozen:
-        if frozen["policy_snapshot_schema"] != "maintained_product_policy.v1":
-            raise ValueError("PUBLISHED_PRODUCT_POLICY_SCHEMA_UNSUPPORTED")
-        import hashlib
-        policy = frozen.get("policy")
-        if not isinstance(policy, dict) or policy.get("product_key") != snapshot.get("product_key"):
-            raise ValueError("PUBLISHED_PRODUCT_POLICY_INVALID")
-        digest = hashlib.sha256(json.dumps(policy, ensure_ascii=False, sort_keys=True, default=str,
-                                           separators=(",", ":")).encode("utf-8")).hexdigest()
-        if digest != frozen.get("policy_sha256"):
-            raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
-        if EditionReleaseSnapshotService._draft_fingerprint(policy=policy, pages=pages) != release_draft.get("fingerprint"):
-            raise ValueError("PUBLISHED_PRODUCT_PAGES_FINGERPRINT_MISMATCH")
-    allowed = {
-        "page_keys": set(),
-        "menu_keys": set(),
-        "menu_xmlids": set(),
-        "routes": set(),
-        "models": set(),
-        "menu_ids": set(),
-        "action_ids": set(),
-    }
-    effective_count = 0
-    release_states = {}
-    for page in pages:
-        if not isinstance(page, dict):
-            continue
-        enabled = bool(page.get("enabled", True))
-        release_state = _text(page.get("release_state")) or ("released" if enabled else "hidden")
-        if not enabled or release_state not in {"released", "preview"}:
-            continue
-        effective_count += 1
-        if _text(page.get("menu_xmlid")):
-            release_states[_text(page["menu_xmlid"])] = release_state
-        for bucket, key in (
-            ("page_keys", "page_key"),
-            ("menu_keys", "menu_key"),
-            ("menu_xmlids", "menu_xmlid"),
-            ("routes", "route"),
-            ("models", "res_model"),
-        ):
-            value = _text(page.get(key))
-            if value:
-                allowed[bucket].add(value)
-        menu_id = int(page.get("menu_id") or 0)
-        action_id = int(page.get("action_id") or 0)
-        if menu_id:
-            allowed["menu_ids"].add(f"system.menu_{menu_id}")
-        if action_id:
-            allowed["action_ids"].add(f"/a/{action_id}")
-    return {
-        "snapshot_id": int(snapshot.get("id") or 0),
-        "version": _text(snapshot.get("version")),
-        "product_key": _text(snapshot.get("product_key")),
-        "page_count": effective_count,
-        "total_page_count": len(pages),
-        "menu_release_states": release_states,
-        "fingerprint": _text(release_draft.get("fingerprint")),
-        "allowed": allowed,
-    }
-
-
 def _count_nav_nodes(nodes) -> int:
     total = 0
     for node in nodes if isinstance(nodes, list) else []:
@@ -519,353 +378,6 @@ def _count_nav_nodes(nodes) -> int:
         total += 1
         total += _count_nav_nodes(node.get("children"))
     return total
-
-
-def _load_platform_release_gate(env, *, product_key: str) -> dict:
-    requested_product_key = _text(product_key)
-    if not requested_product_key:
-        return {}
-    current_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
-    production = os.environ.get("SC_ENVIRONMENT") == "production"
-    try:
-        platform_db = resolve_platform_database(env)
-    except PlatformDatabaseContractError as exc:
-        return {
-            "applied": False,
-            "fail_closed": production,
-            "product_key": requested_product_key,
-            "platform_db": "",
-            "reason": _text(exc),
-        }
-
-    def _read_from(read_env) -> dict:
-        try:
-            model = read_env["sc.edition.release.snapshot"].sudo()
-        except Exception:
-            return {}
-        snapshot = model.search(
-            [
-                ("product_key", "=", requested_product_key),
-                ("state", "=", "released"),
-                ("is_active", "=", True),
-                ("active", "=", True),
-            ],
-            order="released_at desc, activated_at desc, id desc",
-            limit=1,
-        )
-        return snapshot.to_runtime_dict() if snapshot else {}
-
-    if platform_db == current_db:
-        snapshot = _read_from(env)
-    else:
-        snapshot = {}
-        try:
-            registry = Registry(platform_db)
-            with registry.cursor() as cr:
-                read_env = api.Environment(cr, SUPERUSER_ID, dict(env.context or {}))
-                snapshot = _read_from(read_env)
-        except Exception as exc:
-            return {
-                "applied": False,
-                "fail_closed": production,
-                "product_key": requested_product_key,
-                "platform_db": platform_db,
-                "reason": "PLATFORM_RELEASE_DB_UNAVAILABLE",
-                "error": _text(exc),
-            }
-    if not snapshot:
-        return {
-            "applied": False,
-            "fail_closed": production,
-            "product_key": requested_product_key,
-            "platform_db": platform_db,
-            "reason": "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND",
-        }
-    contract = _release_gate_page_contract_from_snapshot(snapshot)
-    if int(contract.get("page_count") or 0) <= 0:
-        return {
-            "applied": False,
-            "fail_closed": production,
-            "product_key": requested_product_key,
-            "platform_db": platform_db,
-            "reason": "ACTIVE_RELEASE_HAS_NO_PAGES",
-            "snapshot_id": contract.get("snapshot_id"),
-            "version": contract.get("version"),
-        }
-    contract["applied"] = True
-    contract["platform_db"] = platform_db
-    contract["reason"] = "OK"
-    return contract
-
-
-def _node_release_gate_keys(node: dict) -> set[str]:
-    meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
-    compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
-    values = {
-        _text(node.get("key")),
-        _text(node.get("route")),
-        _text(node.get("scene_key")),
-        _text(node.get("menu_xmlid")),
-        _text(node.get("model")),
-        _text(meta.get("route")),
-        _text(meta.get("scene_key")),
-        _text(meta.get("menu_key")),
-        _text(meta.get("menu_xmlid")),
-        _text(meta.get("model")),
-        _text(entry_target.get("route")),
-        _text(entry_target.get("scene_key")),
-        _text(compatibility_refs.get("model")),
-    }
-    menu_id = node.get("menu_id") or meta.get("menu_id") or compatibility_refs.get("menu_id")
-    action_id = meta.get("action_id") or compatibility_refs.get("action_id")
-    if menu_id:
-        values.add(f"system.menu_{menu_id}")
-    if action_id:
-        values.add(f"/a/{action_id}")
-    for option in meta.get("business_category_options") or []:
-        if not isinstance(option, dict):
-            continue
-        option_menu_xmlid = _text(option.get("menu_xmlid"))
-        if option_menu_xmlid:
-            values.add(option_menu_xmlid)
-        option_menu_id = option.get("menu_id")
-        if option_menu_id:
-            values.add(f"system.menu_{option_menu_id}")
-    return {item for item in values if item}
-
-
-def _node_is_user_acceptance_surface(node: dict, *, acceptance_matchers: dict | None = None) -> bool:
-    matchers = acceptance_matchers if isinstance(acceptance_matchers, dict) else {}
-    surface_tokens = matchers.get("tokens") if isinstance(matchers.get("tokens"), set) else set()
-    surface_menu_ids = matchers.get("menu_ids") if isinstance(matchers.get("menu_ids"), set) else set()
-    surface_action_ids = matchers.get("action_ids") if isinstance(matchers.get("action_ids"), set) else set()
-    meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
-    compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
-    menu_id = node.get("menu_id") or meta.get("menu_id") or compatibility_refs.get("menu_id")
-    action_id = meta.get("action_id") or compatibility_refs.get("action_id")
-    try:
-        normalized_menu_id = int(menu_id or 0)
-    except Exception:
-        normalized_menu_id = 0
-    try:
-        normalized_action_id = int(action_id or 0)
-    except Exception:
-        normalized_action_id = 0
-    if normalized_menu_id in surface_menu_ids or normalized_action_id in surface_action_ids:
-        return True
-    text = "/".join(
-        _text(value)
-        for value in (
-            node.get("key"),
-            node.get("name"),
-            node.get("label"),
-            node.get("title"),
-            node.get("path"),
-            node.get("complete_name"),
-            node.get("menu_xmlid"),
-            node.get("model"),
-            meta.get("menu_xmlid"),
-            meta.get("model"),
-            compatibility_refs.get("model"),
-        )
-        if _text(value)
-    )
-    if surface_tokens and any(token in text for token in surface_tokens):
-        return True
-    return False
-
-
-def _runtime_business_config_productization_sources(env) -> set[str]:
-    payload = call_extension_hook_first(env, "smart_core_runtime_business_config_productization_sources", env)
-    if not isinstance(payload, (list, tuple, set)):
-        return set()
-    return {_text(item) for item in payload if _text(item)}
-
-
-def _runtime_business_config_protected_menu_refs(env) -> dict:
-    refs = {"menu_ids": set(), "menu_xmlids": set()}
-    if env is None:
-        return refs
-    try:
-        from odoo.addons.smart_core.model.ui_menu_config_policy import _lowcode_system_config_menu_xmlids
-
-        xmlids = {_text(xmlid) for xmlid in _lowcode_system_config_menu_xmlids(env) if _text(xmlid)}
-    except Exception:
-        xmlids = set()
-    refs["menu_xmlids"] = xmlids
-    if not xmlids:
-        return refs
-    try:
-        ModelData = env["ir.model.data"].sudo()
-        modules = {xmlid.split(".", 1)[0] for xmlid in xmlids if "." in xmlid}
-        names = {xmlid.split(".", 1)[1] for xmlid in xmlids if "." in xmlid}
-        rows = ModelData.search([
-            ("model", "=", "ir.ui.menu"),
-            ("module", "in", list(modules)),
-            ("name", "in", list(names)),
-        ])
-    except Exception:
-        rows = []
-    for row in rows or []:
-        xmlid = "%s.%s" % (_text(getattr(row, "module", "")), _text(getattr(row, "name", "")))
-        try:
-            menu_id = int(getattr(row, "res_id", 0) or 0)
-        except Exception:
-            menu_id = 0
-        if xmlid in xmlids and menu_id:
-            refs["menu_ids"].add(menu_id)
-    return refs
-
-
-def _node_is_protected_runtime_business_config_menu(node: dict, protected_refs: dict | None = None) -> bool:
-    if not isinstance(protected_refs, dict):
-        return False
-    protected_menu_ids = protected_refs.get("menu_ids") if isinstance(protected_refs.get("menu_ids"), set) else set()
-    protected_xmlids = protected_refs.get("menu_xmlids") if isinstance(protected_refs.get("menu_xmlids"), set) else set()
-    if not protected_menu_ids and not protected_xmlids:
-        return False
-    meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
-    compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
-    menu_id = node.get("menu_id") or meta.get("menu_id") or compatibility_refs.get("menu_id")
-    try:
-        normalized_menu_id = int(menu_id or 0)
-    except Exception:
-        normalized_menu_id = 0
-    if normalized_menu_id and normalized_menu_id in protected_menu_ids:
-        return True
-    xmlid = _text(node.get("menu_xmlid") or meta.get("menu_xmlid") or compatibility_refs.get("menu_xmlid"))
-    return bool(xmlid and xmlid in protected_xmlids)
-
-
-def _node_is_runtime_business_config_entry(
-    node: dict,
-    *,
-    env=None,
-    productization_sources: set[str] | None = None,
-    protected_menu_refs: dict | None = None,
-    acceptance_matchers: dict | None = None,
-) -> bool:
-    """Keep already-authorized runtime configuration entries available."""
-    if _node_is_user_acceptance_surface(node, acceptance_matchers=acceptance_matchers):
-        return False
-    if _node_is_protected_runtime_business_config_menu(node, protected_refs=protected_menu_refs):
-        return True
-    meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    productization_source = _text(meta.get("productization_source"))
-    sources = productization_sources if isinstance(productization_sources, set) else _runtime_business_config_productization_sources(env)
-    if productization_source and productization_source in sources:
-        return True
-    if _text(node.get("delivery_bucket")) == "delivery_business_config":
-        return True
-    if _text(meta.get("delivery_bucket")) == "delivery_business_config":
-        return True
-    model = _text(node.get("model") or meta.get("model"))
-    if model in {MENU_CONFIG_POLICY_MODEL}:
-        return True
-    return False
-
-
-def _filter_nav_by_release_gate(nav: list[dict], gate: dict, *, env=None) -> tuple[list[dict], dict]:
-    if not isinstance(nav, list) or not gate.get("applied"):
-        return nav if isinstance(nav, list) else [], {"applied": False}
-    allowed = gate.get("allowed") if isinstance(gate.get("allowed"), dict) else {}
-    allowed_values = set()
-    for bucket in ("page_keys", "menu_keys", "menu_xmlids", "routes", "menu_ids", "action_ids"):
-        values = allowed.get(bucket)
-        if isinstance(values, set):
-            allowed_values.update(values)
-        elif isinstance(values, list):
-            allowed_values.update(_text(item) for item in values if _text(item))
-    kept_leaf_count = 0
-    removed_leaf_count = 0
-    runtime_business_config_count = 0
-    runtime_business_config_sources = _runtime_business_config_productization_sources(env)
-    protected_menu_refs = _runtime_business_config_protected_menu_refs(env)
-    acceptance_matchers = _acceptance_surface_matchers(_resolve_user_acceptance_nav_contract(env))
-
-    def _node_has_entry_target(node: dict) -> bool:
-        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-        entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
-        route = _text(node.get("route") or meta.get("route") or entry_target.get("route"))
-        target_type = _text(entry_target.get("type"))
-        return bool(
-            node.get("action_id")
-            or meta.get("action_id")
-            or node.get("scene_key")
-            or meta.get("scene_key")
-            or entry_target.get("scene_key")
-            or node.get("model")
-            or meta.get("model")
-            or target_type == "scene"
-            or (route and not route.startswith("/m/"))
-        )
-
-    def _filter_node(node: dict):
-        nonlocal kept_leaf_count, removed_leaf_count, runtime_business_config_count
-        if not isinstance(node, dict):
-            return None
-        if _node_is_user_acceptance_surface(node, acceptance_matchers=acceptance_matchers):
-            removed_leaf_count += 1
-            return None
-        children = node.get("children") if isinstance(node.get("children"), list) else []
-        next_node = dict(node)
-        runtime_business_config_entry = _node_is_runtime_business_config_entry(
-            node,
-            env=env,
-            productization_sources=runtime_business_config_sources,
-            protected_menu_refs=protected_menu_refs,
-            acceptance_matchers=acceptance_matchers,
-        )
-        released_entry = bool(_node_release_gate_keys(node) & allowed_values)
-        if children:
-            next_children = []
-            for child in children:
-                filtered = _filter_node(child)
-                if filtered:
-                    next_children.append(filtered)
-            if next_children:
-                next_node["children"] = next_children
-                return next_node
-            # A released product entry may also be a tree parent. If every
-            # child is filtered out, preserve the parent's own executable
-            # target as a leaf instead of silently deleting a released page.
-            if _node_has_entry_target(node) and (runtime_business_config_entry or released_entry):
-                next_node["children"] = []
-                kept_leaf_count += 1
-                if runtime_business_config_entry:
-                    runtime_business_config_count += 1
-                return next_node
-            if _node_has_entry_target(node):
-                removed_leaf_count += 1
-            return None
-
-        if runtime_business_config_entry:
-            kept_leaf_count += 1
-            runtime_business_config_count += 1
-            return next_node
-        if released_entry:
-            kept_leaf_count += 1
-            return next_node
-        removed_leaf_count += 1
-        return None
-
-    filtered = [_filter_node(node) for node in nav]
-    filtered = [node for node in filtered if node]
-    return filtered, {
-        "applied": True,
-        "product_key": _text(gate.get("product_key")),
-        "platform_db": _text(gate.get("platform_db")),
-        "snapshot_id": int(gate.get("snapshot_id") or 0),
-        "snapshot_version": _text(gate.get("version")),
-        "fingerprint": _text(gate.get("fingerprint")),
-        "allowed_page_count": int(gate.get("page_count") or 0),
-        "kept_leaf_count": kept_leaf_count,
-        "removed_leaf_count": removed_leaf_count,
-        "runtime_business_config_passthrough_count": runtime_business_config_count,
-    }
 
 
 def _apply_user_menu_config_to_delivery_nav(env, nav: list[dict]) -> tuple[list[dict], dict]:
@@ -1699,8 +1211,12 @@ class SystemInitHandler(BaseIntentHandler):
         except Exception:
             trace_id = ""
 
-        env = self.env
-        su_env = self.su_env or api.Environment(env.cr, SUPERUSER_ID, dict(env.context or {}))
+        delivery_context = dict(self.env.context or {})
+        for key in ("product_key", "base_product_key", "edition_key", "delivery_product_key", "delivery_base_product_key", "delivery_edition_key"):
+            if key in params:
+                delivery_context[key] = params[key]
+        env = self.env(context=delivery_context)
+        su_env = api.Environment(env.cr, SUPERUSER_ID, delivery_context)
 
         stage_ts = time.perf_counter()
         scene_channel, channel_selector, channel_source_ref = _resolve_scene_channel(env, env.user, params)
@@ -1986,18 +1502,17 @@ class SystemInitHandler(BaseIntentHandler):
         mirror_workspace_home_role_context(data)
         stage_ts = _mark("build_workspace_home", stage_ts)
         role_surface = data.get("role_surface") if isinstance(data, dict) else {}
-        role_pruned = False
-        if isinstance(role_surface, dict) and isinstance(data.get("nav"), list):
-            pruned_nav = identity_resolver.filter_nav_for_role_surface(data.get("nav") or [], role_surface)
-            role_pruned = pruned_nav != (data.get("nav") or [])
-            data["nav"] = pruned_nav
-            data["default_route"] = identity_resolver.infer_default_route_from_nav(pruned_nav)
-            if isinstance(data.get("nav_meta"), dict):
-                data["nav_meta"]["role_surface_pruned"] = role_pruned
-                data["nav_meta"]["role_surface_code"] = role_surface.get("role_code")
-        stage_ts = _mark("prune_nav_for_role", stage_ts)
-
-        delivery_identity = _resolve_startup_delivery_identity(env, params)
+        effective_delivery = EffectiveDeliveryService(env).resolve(params)
+        role_surface = effective_delivery.role_surface
+        data["nav"] = effective_delivery.payload["nav"]
+        data["role_surface"] = role_surface
+        data["default_route"] = SystemInitPayloadBuilder._normalize_default_route({
+            "scene_key": role_surface["landing_scene_key"],
+            "route": role_surface["landing_path"],
+            "menu_id": role_surface.get("landing_menu_id"),
+            "reason": "effective_delivery",
+        })
+        delivery_identity = effective_delivery.identity
         platform_minimum_surface_mode = _is_platform_minimum_surface_mode(env, delivery_identity=delivery_identity)
         scene_runtime_surface_ctx = SystemInitSceneRuntimeSurfaceContext(
             env=env,
@@ -2008,6 +1523,7 @@ class SystemInitHandler(BaseIntentHandler):
             scene_channel=scene_channel,
             nav_tree=nav_tree,
             platform_minimum_surface_mode=platform_minimum_surface_mode,
+            effective_scene_internal_actions=effective_delivery.payload["scene_internal_actions"],
             build_platform_minimum_nav_contract_fn=_build_platform_minimum_nav_contract,
             resolve_delivery_policy_runtime_fn=resolve_delivery_policy_runtime,
             filter_delivery_scenes_fn=filter_delivery_scenes,
@@ -2042,16 +1558,10 @@ class SystemInitHandler(BaseIntentHandler):
         delivery_edition_key = str(delivery_identity.get("edition_key") or "standard").strip() or "standard"
         requested_product_key = str(delivery_identity.get("product_key") or "").strip()
         requested_base_product_key = str(delivery_identity.get("base_product_key") or "").strip()
-        delivery_payload = delivery_engine.build(
-            data=data if isinstance(data, dict) else {},
-            product_key=requested_product_key,
-            edition_key=delivery_edition_key,
-            base_product_key=requested_base_product_key,
-            native_nav=nav_tree,
-        )
+        delivery_payload = effective_delivery.payload
+        role_surface = effective_delivery.role_surface
         release_snapshot_service = EditionReleaseSnapshotService(env)
         release_audit_service = ReleaseAuditTrailService(env)
-        _delivery_authoritative_nav = list(delivery_payload.get("nav") or [])
         edition_diagnostics = (
             delivery_payload.get("product_policy", {}).get("edition_diagnostics")
             if isinstance(delivery_payload.get("product_policy"), dict)
@@ -2060,44 +1570,14 @@ class SystemInitHandler(BaseIntentHandler):
         effective_base_product_key = str(delivery_payload.get("base_product_key") or requested_base_product_key).strip() or requested_base_product_key
         effective_edition_key = str(delivery_payload.get("edition_key") or "standard").strip() or "standard"
         effective_product_key = str(delivery_payload.get("product_key") or f"{effective_base_product_key}.{effective_edition_key}").strip()
-        release_gate = _load_platform_release_gate(env, product_key=effective_product_key)
-        if release_gate.get("applied"):
-            gated_nav, gate_meta = _filter_nav_by_release_gate(
-                delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else [],
-                release_gate,
-                env=env,
-            )
-            gated_nav, user_menu_config_meta = _apply_constrained_user_menu_config_to_released_nav(env, gated_nav)
-            gated_nav, post_overlay_gate_meta = _filter_nav_by_release_gate(gated_nav, release_gate, env=env)
-            delivery_payload["nav"] = gated_nav
-            meta = delivery_payload.get("meta")
-            if not isinstance(meta, dict):
-                meta = {}
-                delivery_payload["meta"] = meta
-            meta["platform_release_gate"] = gate_meta
-            meta["platform_release_gate_after_user_menu_config"] = post_overlay_gate_meta
-            meta["user_menu_config"] = user_menu_config_meta
-        else:
-            if release_gate.get("fail_closed"):
-                delivery_payload["nav"] = []
-                user_menu_config_meta = {"applied": False, "reason": "PLATFORM_RELEASE_GATE_FAIL_CLOSED"}
-            else:
-                delivery_nav, user_menu_config_meta = _apply_user_menu_config_to_delivery_nav(
-                    env,
-                    delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else [],
-                )
-                delivery_payload["nav"] = delivery_nav
-            meta = delivery_payload.get("meta")
-            if not isinstance(meta, dict):
-                meta = {}
-                delivery_payload["meta"] = meta
-            meta["platform_release_gate"] = {
-                "applied": False,
-                "product_key": effective_product_key,
-                "platform_db": _text(release_gate.get("platform_db")),
-                "reason": _text(release_gate.get("reason")) or "NOT_APPLIED",
-            }
-            meta["user_menu_config"] = user_menu_config_meta
+        release_gate = effective_delivery.release_gate
+        delivery_nav, user_menu_config_meta = _apply_constrained_user_menu_config_to_released_nav(
+            env, delivery_payload.get("nav") or [],
+        )
+        # Overlays are display preferences. The shared authority remains intact;
+        # an overlay cannot introduce a new executable target.
+        delivery_payload["nav"] = delivery_nav
+        delivery_payload.setdefault("meta", {})["user_menu_config"] = user_menu_config_meta
         released_snapshot_lineage = release_snapshot_service.resolve_active_snapshot_lineage(product_key=effective_product_key)
         release_audit_trail_summary = release_audit_service.build_runtime_summary(product_key=effective_product_key)
         runtime_diagnostics = dict(edition_diagnostics) if isinstance(edition_diagnostics, dict) else {}
@@ -2138,13 +1618,6 @@ class SystemInitHandler(BaseIntentHandler):
         }
         delivery_nav = delivery_payload.get("nav") if isinstance(delivery_payload.get("nav"), list) else []
         if delivery_nav and not platform_minimum_surface_mode:
-            # Delivery and user-menu overlays must remain inside the resolved
-            # role projection. Re-apply the authoritative role surface after
-            # those stages so blocked configuration routes cannot be reintroduced.
-            delivery_nav = MenuService._filter_role_surface_nodes(
-                delivery_nav,
-                role_surface if isinstance(role_surface, dict) else {},
-            )
             delivery_nav, user_data_acceptance_meta = _filter_nav_for_user_data_acceptance_only(env, delivery_nav)
             if not user_data_acceptance_meta.get("applied"):
                 user_data_acceptance_meta = {
@@ -2185,14 +1658,9 @@ class SystemInitHandler(BaseIntentHandler):
             }
             delivery_payload["meta"] = delivery_meta
             delivery_payload["nav"] = delivery_nav
-            data["nav_role_surface"] = data.get("nav") if isinstance(data.get("nav"), list) else []
             data["nav"] = delivery_nav
-            # Any later startup-surface restoration must use this fully
-            # filtered projection, never the pre-role/pre-overlay snapshot.
-            _delivery_authoritative_nav = list(delivery_nav)
             nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
             nav_meta["nav_source"] = "navigation"
-            nav_meta["role_surface_nav_preserved"] = True
             nav_meta["platform_release_gate"] = (
                 delivery_payload.get("meta", {}).get("platform_release_gate")
                 if isinstance(delivery_payload.get("meta"), dict)
@@ -2267,23 +1735,13 @@ class SystemInitHandler(BaseIntentHandler):
             }
         if contract_mode == "hud" and isinstance(scene_diagnostics, dict):
             data["scene_diagnostics"] = scene_diagnostics
-        _delivery_policy_meta = delivery_payload.get("product_policy") if isinstance(delivery_payload, dict) else {}
-        _can_restore_delivery_nav = (
-            not platform_minimum_surface_mode
-            and bool(_delivery_authoritative_nav)
-            and isinstance(_delivery_policy_meta, dict)
-            and not bool(_delivery_policy_meta.get("policy_empty"))
-            and str(delivery_payload.get("product_key") or "").strip()
-        )
-        _delivery_authoritative = _delivery_authoritative_nav if _can_restore_delivery_nav else []
         data = SystemInitPayloadBuilder.build_startup_surface(
             data,
             params=params,
             build_mode=build_mode,
             inspect_payload=startup_inspect,
         )
-        if _delivery_authoritative:
-            data["nav"] = _delivery_authoritative
+        data["nav"] = delivery_payload.get("nav") or []
         SystemInitPayloadBuilder.attach_product_identity(data)
         try:
             data = apply_dictionary_startup_data(env, data)
@@ -2291,11 +1749,6 @@ class SystemInitHandler(BaseIntentHandler):
             pass
         data = _normalize_access_suggested_action(data)
         data["record_context"] = build_record_context_contract(env, params)
-        _scene_internal_actions = (
-            data.get("scene_ready_contract", {}).get("scene_internal_actions")
-            if isinstance(data.get("scene_ready_contract"), dict)
-            else {}
-        )
         _route_company_id = int(
             (data.get("record_context") or {}).get("company_id")
             or env.company.id
@@ -2333,32 +1786,13 @@ class SystemInitHandler(BaseIntentHandler):
                 current_nav,
                 current_authority,
             ),
-            platform_duty_merger=lambda authority, surface: merge_platform_duty_route_authority(
-                authority,
-                env=env,
-                surface=surface,
-            ),
-            release_node_filter=lambda nodes: (
-                []
-                if release_gate.get("fail_closed")
-                else _filter_nav_by_release_gate(nodes, release_gate, env=env)[0]
-            ),
             action_pair_walker=MenuService._walk_nav_action_refs,
-            authority_finalizer=lambda authority: call_extension_hook_first(
-                env,
-                "smart_core_navigation_authority_filter",
-                env,
-                authority,
-            ),
         ).compile(
             nav=data.get("nav"),
-            role_surface=role_surface,
             delivery_payload=delivery_payload,
-            release_gate=release_gate,
-            platform_duty=(data.get("user") or {}).get("platform_duty"),
-            scene_internal_actions=_scene_internal_actions,
             company_id=_route_company_id,
             designed_scene_keys=_designed_scene_keys,
+            effective_authority=effective_delivery.route_authority,
         )
         data["nav"] = _compiled_navigation.nav
         data["navigation"] = _compiled_navigation.navigation

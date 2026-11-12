@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from copy import deepcopy
 import logging
 import re
 
@@ -68,6 +69,17 @@ class ScCapability(models.Model):
     _sql_constraints = [
         ("sc_capability_key_uniq", "unique(key)", "Capability key must be unique."),
     ]
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"default_payload", "active"} & set(vals):
+            self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
     @api.model
     def source_authority_contract(self):
@@ -146,10 +158,10 @@ class ScCapability(models.Model):
         data["reason"] = reason
         return data
 
-    def _access_context(self, user):
-        return self._normalize_access_result(self._access_context_inner(user, seen=set()))
+    def _access_context(self, user, *, payload=None):
+        return self._normalize_access_result(self._access_context_inner(user, seen=set(), payload=payload))
 
-    def _access_context_inner(self, user, seen):
+    def _access_context_inner(self, user, seen, *, payload=None):
         self.ensure_one()
         seen = set(seen or set())
         cap_key = str(self.key or f"id:{self.id}")
@@ -163,26 +175,46 @@ class ScCapability(models.Model):
             })
         seen.add(cap_key)
 
-        # Role/group mismatch: hide from directory.
-        role_scope_items = self._csv_items(self.role_scope)
-        if role_scope_items:
-            role_codes = self._role_codes_for_user(user)
-            if not (set(role_scope_items) & role_codes):
+        payload = self._resolve_payload(self.default_payload if payload is None else payload)
+        native_bound = any(payload.get(key) for key in ("action_id", "menu_id", "action_xmlid", "menu_xmlid"))
+        if native_bound:
+            from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
+            authority = published_route_authority(user.with_user(user).env) if user else {}
+            menu_id = 0 if payload.get("native_reference_error") else int(payload.get("menu_id") or 0)
+            action_id = 0 if payload.get("native_reference_error") else int(payload.get("action_id") or 0)
+            allowed_pairs = published_pairs(authority)
+            admitted = any(
+                (not menu_id or menu_id == pair[0]) and (not action_id or action_id == pair[1])
+                for pair in allowed_pairs
+            ) if (menu_id or action_id) else False
+            if not admitted:
+                return self._normalize_access_result({
+                    "visible": True, "allowed": False, "state": "LOCKED",
+                    "reason_code": "NAVIGATION_AUTHORITY_DENIED",
+                    "reason": _("原生入口未获当前有效交付准入"),
+                    "decision_source": "effective_delivery",
+                })
+        else:
+            # Role/group mismatch: hide from directory.
+            role_scope_items = self._csv_items(self.role_scope)
+            if role_scope_items:
+                role_codes = self._role_codes_for_user(user)
+                if not (set(role_scope_items) & role_codes):
+                    return self._normalize_access_result({
+                        "visible": False,
+                        "allowed": False,
+                        "state": "LOCKED",
+                        "reason_code": "ROLE_SCOPE_MISMATCH",
+                        "reason": self._reason_message("ROLE_SCOPE_MISMATCH"),
+                    })
+            if self.required_group_ids and not bool(self.required_group_ids & user.groups_id):
                 return self._normalize_access_result({
                     "visible": False,
                     "allowed": False,
                     "state": "LOCKED",
-                    "reason_code": "ROLE_SCOPE_MISMATCH",
-                    "reason": self._reason_message("ROLE_SCOPE_MISMATCH"),
+                    "reason_code": "PERMISSION_DENIED",
+                    "reason": self._reason_message("PERMISSION_DENIED"),
                 })
-        if self.required_group_ids and not bool(self.required_group_ids & user.groups_id):
-            return self._normalize_access_result({
-                "visible": False,
-                "allowed": False,
-                "state": "LOCKED",
-                "reason_code": "PERMISSION_DENIED",
-                "reason": self._reason_message("PERMISSION_DENIED"),
-            })
 
         reason_code = ""
         reason = ""
@@ -228,14 +260,20 @@ class ScCapability(models.Model):
 
     def _resolve_payload(self, payload):
         resolved = dict(payload or {})
-        if resolved.get("action_xmlid") and not resolved.get("action_id"):
-            action_ref = self.env.ref(resolved.get("action_xmlid"), raise_if_not_found=False)
-            if action_ref:
-                resolved["action_id"] = action_ref.id
-        if resolved.get("menu_xmlid") and not resolved.get("menu_id"):
-            menu_ref = self.env.ref(resolved.get("menu_xmlid"), raise_if_not_found=False)
-            if menu_ref:
-                resolved["menu_id"] = menu_ref.id
+        for kind, model in (("menu", "ir.ui.menu"), ("action", "ir.actions.actions")):
+            xmlid = resolved.get(f"{kind}_xmlid")
+            raw_id = resolved.get(f"{kind}_id")
+            if not xmlid and not raw_id:
+                continue
+            try:
+                record_id = int(raw_id or 0)
+                ref = self.env.ref(xmlid, raise_if_not_found=False) if xmlid else self.env[model].browse(record_id).exists()
+                valid_type = bool(ref) and (ref._name == model if kind == "menu" else ref._name.startswith("ir.actions."))
+                if not valid_type or (raw_id and (record_id <= 0 or ref.id != record_id)):
+                    raise ValueError("invalid native reference")
+                resolved[f"{kind}_id"] = ref.id
+            except (TypeError, ValueError, KeyError):
+                resolved["native_reference_error"] = "NATIVE_REFERENCE_INVALID"
         return resolved
 
     def _is_readonly_semantic(self) -> bool:
@@ -464,6 +502,22 @@ class ScScene(models.Model):
         ("sc_scene_code_uniq", "unique(code)", "Scene code must be unique."),
     ]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
+
     @api.model
     def source_authority_contract(self):
         return {
@@ -478,28 +532,18 @@ class ScScene(models.Model):
             return True
         return bool(self.target_group_ids & user.groups_id)
 
-    def to_public_dict(self, user):
+    def to_effective_definition_dict(self):
+        """Read the effective declaration without evaluating capability access."""
         self.ensure_one()
         version_payload = self.active_version_id.payload_json if self.active_version_id else None
         if self.state == "published" and isinstance(version_payload, dict):
-            payload = dict(version_payload)
-            payload["tiles"] = self._filter_payload_tiles(payload.get("tiles") or [], user)
-            return payload
-        tiles = []
-        for tile in self.tile_ids.filtered(lambda t: t.active and t.visible):
-            if tile.capability_id and not tile.capability_id._user_visible(user):
-                continue
-            tiles.append(tile.to_public_dict(user))
-        return {
-            "code": self.code,
-            "name": self.name,
-            "layout": self.layout,
-            "is_default": bool(self.is_default),
-            "is_test": bool(self.is_test),
-            "version": self.version,
-            "tiles": tiles,
-            "source_authority": self.source_authority_contract(),
-        }
+            return deepcopy(version_payload)
+        return self._build_version_payload()
+
+    def to_public_dict(self, user):
+        payload = self.to_effective_definition_dict()
+        payload["tiles"] = self._filter_payload_tiles(payload.get("tiles") or [], user)
+        return payload
 
     def _build_version_payload(self):
         """Freeze the product definition, never one publisher's access view."""
@@ -531,9 +575,9 @@ class ScScene(models.Model):
             cap = cap_map.get(key)
             if not cap:
                 continue
-            if not cap._user_visible(user):
+            access = cap._access_context(user, payload=tile.get("payload") or {})
+            if not access.get("visible"):
                 continue
-            access = cap._access_context(user)
             item = dict(tile)
             item["status"] = cap.status
             item["role_scope"] = cap._csv_items(cap.role_scope)
@@ -729,6 +773,22 @@ class ScSceneTile(models.Model):
     payload_override = fields.Json()
     version = fields.Char(default="v0.1")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
+
     def _merge_payload(self, base_payload, override_payload):
         payload = dict(base_payload or {})
         if isinstance(override_payload, dict):
@@ -774,8 +834,8 @@ class ScSceneTile(models.Model):
     def to_public_dict(self, user):
         self.ensure_one()
         cap = self.capability_id
-        access = cap._access_context(user)
         row = self.to_definition_dict()
+        access = cap._access_context(user, payload=row["payload"])
         row.update({
             "allowed": bool(access.get("allowed")),
             "user_visible": bool(access.get("visible")),
@@ -815,6 +875,22 @@ class ScSceneVersion(models.Model):
     release_approval_ref = fields.Char()
     create_date = fields.Datetime(readonly=True)
     create_uid = fields.Many2one("res.users", readonly=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
 
 class ScUserPreference(models.Model):

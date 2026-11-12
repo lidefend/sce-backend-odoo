@@ -122,6 +122,11 @@ class RuntimeCapabilityCatalogTests(unittest.TestCase):
         options.update(overrides)
         return self.service.collect(**options)
 
+    def test_native_identity_tuple_cannot_collide_at_xmlid_separator(self):
+        left = MODULE.capability_identity(menu_id=1, menu_xmlid="m.a.b", action_id=2, action_xmlid="c.d")[0]
+        right = MODULE.capability_identity(menu_id=3, menu_xmlid="m.a", action_id=4, action_xmlid="b.c.d")[0]
+        self.assertNotEqual(left, right)
+
     def test_capability_identity_uses_native_entry_identity_without_route(self):
         projection = self.collect()
         self.assertEqual(len(projection.rows), 1)
@@ -205,6 +210,38 @@ class RuntimeCapabilityCatalogTests(unittest.TestCase):
         self.assertTrue(
             row["source_authority"]["no_tenant_authority"]
         )
+
+    def test_same_label_and_model_keep_distinct_native_entries(self):
+        other = FakeMenu(5, self.leaf.name, parent=self.group,
+                         action=FakeAction(21))
+        self.leaf._xmlid = ""
+        self.action._xmlid = ""
+        rows = self.collect(xmlid_prefix="", candidate_menus=[self.leaf, other]).rows
+        self.assertEqual(len(rows), 2)
+        self.assertNotEqual(rows[0]["capability_key"], rows[1]["capability_key"])
+        self.assertEqual({r["identity_scope"] for r in rows}, {"current_database"})
+
+    def test_module_scope_does_not_depend_on_root_title(self):
+        before = self.collect(module="smart_construction_core").rows
+        self.root.name = "Renamed root"
+        after = self.collect(module="smart_construction_core").rows
+        self.assertEqual([r["capability_key"] for r in before],
+                         [r["capability_key"] for r in after])
+
+    def test_missing_module_never_queries_all_menus(self):
+        class Data:
+            def sudo(self):
+                return self
+            def search(self, domain):
+                return []
+        class Env:
+            def __getitem__(self, model):
+                if model != "ir.model.data":
+                    raise AssertionError("module lookup expanded to all menus")
+                return Data()
+        projection = RuntimeCapabilityCatalogService(Env()).collect(module="missing")
+        self.assertEqual(projection.rows, [])
+        self.assertEqual(projection.diagnostics["empty_reason"], "MODULE_HAS_NO_MENU_CANDIDATES")
 
     def test_product_policy_catalog_reuses_the_runtime_capability_projection(self):
         source = (

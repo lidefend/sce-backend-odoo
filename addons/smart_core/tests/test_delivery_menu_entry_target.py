@@ -85,12 +85,14 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 return True
 
         action_record = Action()
+        menu_record = types.SimpleNamespace(id=501, _name="ir.ui.menu", action=action_record, groups_id=GroupSet(set()))
+        menu_record.sudo = lambda: menu_record
 
         class Env(dict):
             user = None
 
             def ref(self, xmlid, raise_if_not_found=False):
-                return action_record if xmlid == 'test.action_expense' else None
+                return {'test.action_expense': action_record, 'test.expense': menu_record}.get(xmlid)
 
         service = menu_service.MenuService(Env({
             'ir.actions.act_window': Model(),
@@ -183,6 +185,30 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             'action_xmlid': 'test.action_expense',
             'allowed_operation': 'read',
         }, route_kind='CONTEXTUAL_ROUTE'))
+
+        # A valid action cannot authorize a missing or differently bound menu.
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.missing', 'action_xmlid': 'test.action_expense',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+        menu_record.action = Action()
+        self.assertIsNone(service._route_entry_from_action_spec({
+            'menu_xmlid': 'test.expense', 'action_xmlid': 'test.action_expense',
+        }, route_kind='CONTEXTUAL_ROUTE'))
+
+        spec = {'menu_xmlid': 'test.expense', 'action_xmlid': 'test.action_expense'}
+        self.assertIsNotNone(service._route_entry_from_action_spec(
+            spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+        ))
+        menu_record.action.groups_id = GroupSet({9})
+        self.assertIsNone(service._route_entry_from_action_spec(
+            spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+        ))
+        menu_record.action.groups_id = GroupSet({7})
+        with patch.object(service, '_action_is_runtime_allowed',
+                          side_effect=lambda action, operation: action is action_record):
+            self.assertIsNone(service._route_entry_from_action_spec(
+                spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+            ))
 
     def test_native_configuration_scope_survives_route_publication(self):
         action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
