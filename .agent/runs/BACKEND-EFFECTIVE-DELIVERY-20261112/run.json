@@ -1090,10 +1090,26 @@
       "status": "passed",
       "tests": 125,
       "log": ".runtime/backend-effective-home-mapping-2.log"
+    },
+    {
+      "command": "make verify.daily.permission_truth.capability.orm",
+      "status": "passed",
+      "tests": 49,
+      "head": "78a4aeae1aa035653904e20c8c69111af9a1ac4b",
+      "source_unchanged": true,
+      "cleanup": "absent",
+      "receipt": ".runtime/test-baseline/1794480752660025578/receipt.json",
+      "log": ".runtime/backend-effective-lifecycle-orm-3.log"
+    },
+    {
+      "command": "make ci.delivery.freeze.prepare",
+      "status": "passed",
+      "log": ".runtime/backend-effective-freeze-prepare.log",
+      "generated_changes": "none"
     }
   ],
   "blockers": [],
-  "next_exact_step": "Run governed lifecycle ORM with source unchanged, then complete mapped iteration and exact-candidate review/publication.",
+  "next_exact_step": "Execute full mapped ci.local.iteration on frozen documented candidate, record receipts, then governed PR publication. No merge or deployment claimed.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",
@@ -1128,6 +1144,12 @@
     },
     "additional_finding": "S1 equivalent scene references duplicated direct route rows. Fixed after tenant filtering with execution-semantic coalescing and all alias descriptors retained; A/B lifecycle and real validator-body regressions added.",
     "cross_bucket_resolution": "Contextual reachability preserved and representative moved to contextual_actions. Independent dirty-delta review found no remaining defect; actual Python JSON -> strict TypeScript normalization/lookup passed. Final clean identity and ORM pending.",
-    "safe_home_resolution": "Dirty code review passed: authenticated P0 actionless home after business filters; publication/tenant denials unchanged; final scenario projection retains declared home. Final clean identity and runtime pending."
+    "safe_home_resolution": "Dirty code review passed: authenticated P0 actionless home after business filters; publication/tenant denials unchanged; final scenario projection retains declared home. Final clean identity and runtime pending.",
+    "final_code_review": {
+      "head": "78a4aeae1aa035653904e20c8c69111af9a1ac4b",
+      "candidate_fingerprint": "c2bca031df4196d9029057d0014e1cff417607c7902b36e52ee2afe223a1a121",
+      "full_source_fingerprint": "322712915268a08761d09d88f38ae3b9603e0776b3d735c43843bd35f3837eb2",
+      "verdict": "Code review passed; no unresolved proven S0-S2. Runtime evidence subsequently passed; complete incremental and remote gates remain pending."
+    }
   }
 }
