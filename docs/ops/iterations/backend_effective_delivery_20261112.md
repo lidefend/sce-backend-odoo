@@ -29,3 +29,5 @@ Earlier failures and interrupted attempts remain in the run index, including the
 This is scoped backend acceptance, not a claim that every installed action or frontend workflow was exercised. A full browser matrix was intentionally not run; representative existing consumption was sufficient for backend-only contract changes. Mainline integration, deployment and user acceptance are separate and are not claimed. Roll back owned topic commits in reverse dependency order; no production migration or data restoration is required. The run index holds the next exact step and final check results.
 
 P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.route_authority.unit` 仍在零引用处置表。通过现有 `--unregister-target` 校验实际引用后移除该条登记，冻结阈值不变。原始失败日志：`.runtime/backend-effective-iteration-final.log`。新登记文件自动映射到 `verify.verification.lane_coverage`。
+
+候选 `1656cb8a79b153fe76eea8c4abf1529d67b48446` 已通过完整本地增量门禁的 18 个目标，四组 ORM 为 24/49/3/2，源码和受管环境未变且清理完成；公共秘密/个人数据扫描及生成证据预检通过。PR #875 已创建。远端 frontend_release_gate 暴露旧职责测试仍要求 handler 直接合并平台职责授权；实际调用已迁至共享求解器。本次仅迁移接线断言并补增量映射，保留原有行为断言。原始主线 baseline 保持不变，不因本次修正推定未登记的 ORM 复用。最终候选及远端结果以 PR 和 `.runtime` 原始回执为准。

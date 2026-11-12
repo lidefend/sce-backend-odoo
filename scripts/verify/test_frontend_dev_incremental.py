@@ -281,8 +281,31 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.backend.navigation_delivery.unit",
                         "verify.scenario.center_projection.guard",
                         "verify.system_init.menu_boundary.guard",
+                    ] if path != "addons/smart_core/handlers/system_init.py" else [
+                        "verify.backend.navigation_delivery.unit",
+                        "verify.platform.duty.contract.unit",
+                        "verify.scenario.center_projection.guard",
+                        "verify.system_init.menu_boundary.guard",
                     ],
                 )
+
+    def test_platform_duty_dependencies_select_contract(self) -> None:
+        for path in (
+            "addons/smart_core/core/platform_duty_contract.py",
+            "addons/smart_core/core/system_init_identity_payload.py",
+            "addons/smart_core/security/platform_admin.py",
+            "addons/smart_core/controllers/platform_duty_controller.py",
+            "addons/smart_core/controllers/platform_ops_controller.py",
+            "addons/smart_core/delivery/effective_delivery_service.py",
+            "addons/smart_core/handlers/system_init.py",
+            "addons/smart_core/views/platform_company_access_views.xml",
+            "addons/smart_core/data/sc_platform_namespace_seed.xml",
+            "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+            "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+            "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.platform.duty.contract.unit", select_targets([path]))
 
     def test_startup_smoke_selects_real_lifecycle_orm(self) -> None:
         self.assertEqual(select_targets(["addons/smart_core/tests/test_intent_smoke.py"]), [

@@ -319,15 +319,14 @@ class ProjectionAndRouteTests(unittest.TestCase):
         that route authority for the verified platform audience.
         """
         source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
-        self.assertIn("merge_platform_duty_route_authority", source)
-        self.assertIn(
-            "platform_duty_merger=lambda authority, surface: merge_platform_duty_route_authority",
-            source,
-        )
-        self.assertIn(
-            'platform_duty=(data.get("user") or {}).get("platform_duty")',
-            source,
-        )
+        # Startup consumes the same qualified authority as direct validation.
+        # The merger belongs to the shared solver, not the startup handler.
+        self.assertIn("effective_authority=effective_delivery.route_authority", source)
+        self.assertNotIn("merge_platform_duty_route_authority", source)
+        solver = (ROOT / "delivery" / "effective_delivery_service.py").read_text(encoding="utf-8")
+        self.assertIn("authority = merge_platform_duty_route_authority(authority, env=env, surface=duty)", solver)
+        self.assertIn('is_platform_control_admin=bool(role.get("is_platform_admin"))', solver)
+        self.assertIn('is_tenant_config_admin=bool(role.get("is_tenant_config_admin"))', solver)
 
         contract = _load_contract()
         surface = contract.build_platform_duty_surface(

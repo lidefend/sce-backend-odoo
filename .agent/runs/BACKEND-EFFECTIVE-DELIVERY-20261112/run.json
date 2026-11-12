@@ -37,6 +37,7 @@
     "addons/smart_core/tests/test_entry_publication_authority.py",
     "addons/smart_core/tests/test_intent_smoke.py",
     "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
     "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
     "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
     "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py",
@@ -969,6 +970,29 @@
         "scripts/verify/frontend_dev_incremental.py",
         "make/guards.mk"
       ]
+    },
+    "verify_platform_duty_contract_unit": {
+      "target": "verify.platform.duty.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/data/sc_platform_namespace_seed.xml",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/ci.mk"
+      ]
     }
   },
   "validation_results": [
@@ -1128,10 +1152,68 @@
       "log": ".runtime/backend-effective-iteration-final.log",
       "failure_owner": "P4 verification registry",
       "reason": "Newly wired verify.nav.pro01r.route_authority.unit retained stale zero-reference disposition. Removed through existing guarded unregister operation; frozen baseline unchanged."
+    },
+    {
+      "command": "make verify.verification.lane_coverage",
+      "status": "passed",
+      "tests": 73,
+      "log": ".runtime/backend-effective-lane-coverage-unit.log"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "head": "1656cb8a79b153fe76eea8c4abf1529d67b48446",
+      "targets": 18,
+      "log": ".runtime/backend-effective-iteration-final-2.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261112T110818Z-1996971-226030610/receipt.json",
+      "orm_counts": [
+        24,
+        49,
+        3,
+        2
+      ],
+      "source_unchanged": true,
+      "cleanup": "absent"
+    },
+    {
+      "command": "GitHub frontend_release_gate PR875",
+      "status": "failed",
+      "head": "1656cb8a79b153fe76eea8c4abf1529d67b48446",
+      "failure_owner": "P4 stale architecture assertion",
+      "log": ".runtime/backend-effective-frontend-ci.log",
+      "reason": "Duty contract test still required handler-owned merger; actual merger moved to common solver. Preserved all executable action-only and tenant-denial behavior assertions; updated wiring assertions and incremental dependency mapping."
+    },
+    {
+      "command": "make verify.platform.duty.contract.unit",
+      "status": "passed",
+      "tests": 30,
+      "log": ".runtime/backend-effective-duty-ci-fix.log"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "failed",
+      "log": ".runtime/backend-effective-duty-ci-fix.log",
+      "reason": "Mapping regression still expected old handler target set; updated required platform-duty target."
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "tests": 126,
+      "log": ".runtime/backend-effective-duty-mapping.log"
+    },
+    {
+      "command": "make verify.platform.duty.contract.unit verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "log": ".runtime/backend-effective-duty-dependencies.log",
+      "tests_by_suite": [
+        26,
+        4,
+        126
+      ]
     }
   ],
   "blockers": [],
-  "next_exact_step": "Verify P4 disposition removal, then full mapped ci.local.iteration on clean candidate. No merge or deployment claimed.",
+  "next_exact_step": "Review test/mapping-only CI repair, collect remaining same-layer CI outcomes, freeze and execute mapped gates without changing main baseline or claiming undeclared ORM reuse; update PR875 through pr.push.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",
@@ -1172,6 +1254,17 @@
       "candidate_fingerprint": "c2bca031df4196d9029057d0014e1cff417607c7902b36e52ee2afe223a1a121",
       "full_source_fingerprint": "322712915268a08761d09d88f38ae3b9603e0776b3d735c43843bd35f3837eb2",
       "verdict": "Code review passed; no unresolved proven S0-S2. Runtime evidence subsequently passed; complete incremental and remote gates remain pending."
+    },
+    "duty_ci_repair": {
+      "verdict": "Test wiring and complete declared dependencies reviewed; no new findings",
+      "scope": "Test and mapping only; product code unchanged; original main baseline retained",
+      "final_identity": "pending"
     }
+  },
+  "remote_pr": {
+    "number": 875,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/875",
+    "head": "1656cb8a79b153fe76eea8c4abf1529d67b48446",
+    "status": "CI repair in progress"
   }
 }

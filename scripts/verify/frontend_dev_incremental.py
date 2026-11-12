@@ -365,6 +365,18 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "addons/smart_core/data/sc_platform_namespace_seed.xml",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+        "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
     ), (
         "verify.platform.duty.contract.unit",
     )),
