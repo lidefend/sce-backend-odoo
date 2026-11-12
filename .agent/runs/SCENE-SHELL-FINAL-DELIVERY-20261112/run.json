@@ -21,14 +21,20 @@
     "addons/smart_core/tests/test_scene_shell_compiler.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
     "addons/smart_core/tests/test_intent_smoke.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
     "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/scripts/scene_shell_contract_test.ts",
     "scripts/verify/frontend_my_work_approval_browser.mjs",
     "scripts/verify/frontend_my_work_approval_guard.py",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/test_frontend_list_surface_search_contract.py",
     "scripts/audit/verification_lane_dispositions.json",
     "make/frontend.mk",
+    "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -187,6 +193,29 @@
       "targets": 6,
       "log": ".runtime/frontend-dev-validation/executions/20261112T070057Z-550851-455033408/receipt.json",
       "notes": "All required P4 targets for the probe, guard, mapping, standard preview and lane coverage passed."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "86179f439472e99e2e73241eca10d89ea4db642e",
+      "reason": "Final navigation had no My Work node. Read-only runtime diagnosis proved the native menu was visible and ACL-authorized, but persisted construction.standard policy and active release snapshot each contained 91 entries instead of the shipped contract's 92; menu_sc_my_work was absent from both.",
+      "evidence": ".runtime/final-acceptance/my-work-approval/failure.json",
+      "recovery": "Migration 17.0.0.182 adds the missing formal My Work row only when absent, preserves existing policy edits, and freezes/releases a new snapshot from the reconciled policy."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization.test_policy_migration_adds_my_work_without_overwriting_existing_rows",
+      "status": "passed",
+      "tests": 1,
+      "log": ".runtime/test-baseline/1794468874348634817/receipt.json",
+      "notes": "Real ORM verifies add-only policy reconciliation, idempotency, native menu/action identity, and a newly active released snapshot containing My Work."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 11,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T073749Z-736606-414250241/receipt.json",
+      "notes": "All affected navigation, policy, capability, scenario, P4 probe and coverage targets passed."
     }
   ],
   "blockers": [

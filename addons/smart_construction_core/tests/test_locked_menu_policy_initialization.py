@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from copy import deepcopy
+
 from odoo.tests.common import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "r11c_locked_menu")
@@ -56,3 +58,79 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             self.assertEqual(rows[0].get("res_model"), "sc.historical.payment.fact")
             self.assertEqual(rows[0].get("entry_intent"), "inquiry")
             self.assertGreater(rows[0].get("menu_id"), 0)
+
+    def test_policy_migration_adds_my_work_without_overwriting_existing_rows(self):
+        policy_model = self.env["sc.product.policy"]
+        policy_model.synchronize_locked_formal_menu_policy("construction.standard")
+        policy = policy_model.search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        self.env["sc.edition.release.snapshot"].sudo().search([
+            ("product_key", "=", "construction.standard"),
+            ("is_active", "=", True),
+        ]).write({"is_active": False})
+        groups = deepcopy(policy.menu_groups)
+        retained = []
+        removed = False
+        for group in groups:
+            menus = []
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_my_work":
+                    removed = True
+                    continue
+                menus.append(menu)
+            group["menus"] = menus
+            if menus:
+                retained.append(group)
+        self.assertTrue(removed)
+        policy.write({"menu_groups": retained})
+
+        result = policy_model.merge_locked_formal_menu_additions(
+            "construction.standard",
+            menu_xmlids=["smart_construction_core.menu_sc_my_work"],
+        )
+        self.assertEqual(
+            result["added"], ["smart_construction_core.menu_sc_my_work"]
+        )
+        rows = [
+            menu
+            for group in policy.menu_groups
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_my_work"
+        ]
+        self.assertEqual(len(rows), 1)
+        menu = self.env.ref("smart_construction_core.menu_sc_my_work")
+        self.assertEqual(rows[0].get("menu_id"), menu.id)
+        self.assertEqual(rows[0].get("action_id"), menu.action.id)
+        self.assertEqual(rows[0].get("release_state"), "released")
+        again = policy_model.merge_locked_formal_menu_additions(
+            "construction.standard",
+            menu_xmlids=["smart_construction_core.menu_sc_my_work"],
+        )
+        self.assertEqual(again["added"], [])
+        self.assertEqual(
+            again["skipped"], ["smart_construction_core.menu_sc_my_work"]
+        )
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        snapshot = EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard",
+            replace_active=True,
+            note="test policy and release coherence",
+        )
+        active = self.env["sc.edition.release.snapshot"].sudo().search([
+            ("product_key", "=", "construction.standard"),
+            ("state", "=", "released"),
+            ("is_active", "=", True),
+            ("active", "=", True),
+        ], limit=1)
+        self.assertEqual(active.id, snapshot["id"])
+        payload = active.snapshot_json
+        pairs = {
+            (menu.get("menu_id"), menu.get("action_id"))
+            for group in payload["policy"]["menu_groups"]
+            for menu in group.get("menus") or []
+            if menu.get("enabled") and menu.get("release_state") == "released"
+        }
+        self.assertIn((menu.id, menu.action.id), pairs)

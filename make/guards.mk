@@ -84,7 +84,7 @@ verify.capability.identity_boundary.unit: guard.prod.forbid
 
 .PHONY: verify.capability.identity_boundary.orm
 verify.capability.identity_boundary.orm: guard.prod.forbid
-	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority,/smart_construction_core:TestLockedMenuPolicyInitialization.test_policy_migration_adds_my_work_without_overwriting_existing_rows
 
 .PHONY: verify.scene.publication_authority.orm
 verify.scene.publication_authority.orm: guard.prod.forbid

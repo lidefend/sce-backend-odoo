@@ -642,6 +642,8 @@ RULES = (
     Rule((
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+        "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py",
     ), (
         "verify.capability.identity_boundary.orm",
     )),

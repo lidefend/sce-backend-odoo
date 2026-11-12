@@ -929,6 +929,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_scenario_composition_paths_keep_their_responsibility_targets(self) -> None:
         expected = {
+            "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py": [
+                "verify.capability.identity_boundary.orm",
+            ],
+            "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py": [
+                "verify.capability.identity_boundary.orm",
+            ],
             "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py": [
                 "verify.daily_dev.acceptance_fixture.unit",
             ],

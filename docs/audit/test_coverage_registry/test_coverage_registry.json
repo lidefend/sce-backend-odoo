@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 213,
     "gated": 5,
-    "on_demand": 63,
-    "unwired": 145,
+    "on_demand": 64,
+    "unwired": 144,
     "odoo_tag_declarations": 437,
     "gated_declarations": 101,
     "uncovered_declarations": 336,
@@ -2069,14 +2069,16 @@
     },
     {
       "group": "r11c_locked_menu",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {

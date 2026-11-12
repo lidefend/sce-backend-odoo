@@ -91,3 +91,15 @@ The former dead-surface disposition for
 `verify.frontend.my_work_approval.guard` was removed after its exact path mapping
 made the target live in `ci.local.iteration`; the reason is recorded in the
 disposition audit trail.
+
+The first designed-scene browser run found a product publication defect before
+rendering: the native My Work menu was visible and ACL-authorized, but the
+persisted `construction.standard` policy and active release snapshot each had
+91 entries while the shipped P1 contract has 92. `menu_sc_my_work` was the
+missing entry.
+
+Migration `17.0.0.182` now performs an add-only policy reconciliation and then
+freezes and releases a new snapshot from the reconciled policy. Existing policy
+rows and administrator edits are preserved; the migration only adds a formal
+entry absent from the maintained policy. The exact ORM test verifies that the
+newly active snapshot contains the native My Work menu/action pair.
