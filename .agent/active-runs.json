@@ -54,6 +54,7 @@
     "fix/daily-main-receipt-preserve-20261110": ".agent/runs/DAILY-MAIN-RECEIPT-PRESERVE-20261110/run.json",
     "fix/daily-permission-truth-20261022": ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
     "fix/daily-platform-job-status-20261018": ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",
+    "fix/daily-payroll-full-principal-20261113": ".agent/runs/DAILY-PAYROLL-FULL-PRINCIPAL-20261113/run.json",
     "fix/daily-published-face-action-target-20261109": ".agent/runs/DAILY-PUBLISHED-FACE-ACTION-TARGET-20261109/run.json",
     "fix/daily-published-face-merged-entry-identity-20261109": ".agent/runs/DAILY-PUBLISHED-FACE-MERGED-ENTRY-IDENTITY-20261109/run.json",
     "fix/daily-release-orchestration-digest-derivation": ".agent/runs/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION/run.json",

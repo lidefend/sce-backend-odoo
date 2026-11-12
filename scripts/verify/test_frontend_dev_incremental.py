@@ -704,6 +704,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_administration_wave_paths_select_their_release_guard(self) -> None:
+        for path in (
+            "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+            "scripts/verify/product_administration_center_wave1_guard.py",
+            "scripts/verify/test_product_administration_center_wave1_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.product.administration_center.wave1.guard"],
+                )
+
     def test_scene_publication_paths_select_their_owning_check(self) -> None:
         for path in (
             "addons/smart_construction_core/models/support/scene_orchestration.py",

@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: DAILY-PAYROLL-FULL-PRINCIPAL-20261113
+  title: Restore the released payroll entry for the business-full principal
+  status: verification_pending
+  formal_product_layer: P1 construction industry standard product
+  layer_target: released administration-center payroll action authorization
+  module: smart_construction_core
+  standard_vs_user_specific: construction_product_standard
+  why_here: >
+    The payroll menu is a standard P1 released entry and is rebound to the
+    business-full entry visibility group. Its target action still excludes the
+    business-full principal, so the delivery projection correctly removes the
+    menu and the standard published face cannot converge. The action's native
+    group declaration is the owning source of that execution authorization.
+  why_not_elsewhere: >
+    The frontend already consumes the published menu and must not infer access.
+    The daily runtime database is a deployment carrier, not a durable source for
+    permission repair. Demo-seed membership changes would special-case one
+    account instead of fixing the standard product action contract.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/DAILY-PAYROLL-FULL-PRINCIPAL-20261113.yaml
+      - .agent/runs/DAILY-PAYROLL-FULL-PRINCIPAL-20261113/run.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/ops/iterations/daily_payroll_full_principal_20261113.md
+      - addons/smart_construction_core/views/menu_product_administration_wave1.xml
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/product_administration_center_wave1_guard.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/test_product_administration_center_wave1_guard.py
+    product_behavior: >
+      The released payroll page remains visible to its existing initiator and
+      business-configuration audiences and is also executable by the standard
+      business-full principal. Other configuration-only administration entries
+      and all model ACLs and record rules remain unchanged.
+  objective: >
+    Make the native payroll action authorize the business-full principal so the
+    published standard face preserves the already-declared menu entry.
+  acceptance:
+    - the static administration-center guard fails on an action that omits business-full
+    - the focused guard tests and executable guard pass non-zero
+    - the current daily runtime can converge both published product faces
+    - the daily entry verifier reads back the exact deployed source and frontend identities
+    - runtime navigation shows the payroll entry for the declared full-product principal
+    - generated complexity reports reflect the two changed verification tools
+  exclusions:
+    - frontend source changes
+    - platform-kernel permission semantics
+    - demo-user direct database edits
+    - model ACL, record-rule, or business-data changes
+    - unrelated released-entry repairs
+  rollback: >
+    Revert the P1 action and guard commit. No business data is changed. A later
+    runtime upgrade returns the action to its previous group declaration.

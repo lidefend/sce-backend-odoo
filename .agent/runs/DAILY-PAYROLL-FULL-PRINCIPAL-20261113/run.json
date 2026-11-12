@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-PAYROLL-FULL-PRINCIPAL-20261113",
+  "branch": "fix/daily-payroll-full-principal-20261113",
+  "baseline_sha": "413e791d3c317808ef13fd2dd6a688405c66ecfe",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DAILY-PAYROLL-FULL-PRINCIPAL-20261113.yaml",
+  "record": "docs/ops/iterations/daily_payroll_full_principal_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-PAYROLL-FULL-PRINCIPAL-20261113.yaml",
+    ".agent/runs/DAILY-PAYROLL-FULL-PRINCIPAL-20261113/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/daily_payroll_full_principal_20261113.md",
+    "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/product_administration_center_wave1_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_product_administration_center_wave1_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository Make targets and the registered daily demo duty for post-merge verification"
+  },
+  "checks": {
+    "administration_wave": {
+      "target": "verify.product.administration_center.wave1.guard",
+      "inputs": [
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+        "scripts/verify/product_administration_center_wave1_guard.py",
+        "scripts/verify/test_product_administration_center_wave1_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified P1 action and planner-routing fix, publish the protected PR, and obtain independent exact-head review."
+}
