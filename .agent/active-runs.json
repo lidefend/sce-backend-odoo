@@ -132,6 +132,7 @@
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
     "refactor/navigation-contract-compiler-20261111": ".agent/runs/SCENARIO-MULTI-COMPOSITION-20261111/run.json",
     "refactor/scene-shell-designed-scene-acceptance-20261112": ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
-    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json"
+    "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
+    "refactor/backend-effective-delivery-20261112": ".agent/runs/BACKEND-EFFECTIVE-DELIVERY-20261112/run.json"
   }
 }

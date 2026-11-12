@@ -149,7 +149,7 @@ local.dev.test: guard.prod.forbid local.dev.ready local.dev.demo_credentials.pre
 
 .PHONY: verify.scene.company_route_scope_cache.orm
 verify.scene.company_route_scope_cache.orm: guard.prod.forbid
-	@$(MAKE) --no-print-directory local.dev.test \
+	@$(MAKE) --no-print-directory local.test.test \
 	  MODULE=smart_construction_scene TEST_TAGS=company_route_scope_cache
 
 .PHONY: verify.company_project_refund.feedback.orm verify.company_project_refund.feedback.http verify.company_project_refund.feedback.http.evidence verify.company_project_refund.feedback.restore

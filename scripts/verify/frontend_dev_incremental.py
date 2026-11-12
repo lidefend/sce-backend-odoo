@@ -86,6 +86,20 @@ class Rule:
 
 RULES = (
     Rule((
+        "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+    ), (
+        "verify.system_init.menu_boundary.guard",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "make/dev_test.mk",
+    ), (
+        "verify.frontend.dev.incremental.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
         "contracts/registry/",
     ), (
         "verify.semantic.registry.lint",
@@ -1099,6 +1113,11 @@ RULES = (
     # identity or principal-signature change.
     Rule((
         "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/delivery/effective_delivery_inputs.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/models/release_management.py",
+        "addons/smart_core/tests/test_route_authority_single_consumer.py",
         "addons/smart_core/tests/__init__.py",
         "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
