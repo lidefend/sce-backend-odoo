@@ -41,3 +41,5 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 01f67e709 增量检查在 lifecycle 阶段停止：身份 ORM26通过；lifecycle54中2失败。落点测试还需显式发布原生 setup 候选（仅冻结既有策略不会授予候选资格），最终准入导航中的 scene 标记也应纳入落点集合。另 HTTP startup 与直接缓存 authority 的无 action 首页 pair 不一致，增加 fresh/cached 诊断，尚未定因，不能宣称修复完成。
 
 6a5424300 的 bundle 定向26项：1失败/1错误。setup候选显式发布后被旧 resolve_scene_key 的逐行 model/view 回退映射成enterprise.company，已按原生 menu/action 身份优先修复并补纯单元。班组项目经办正例缺失菜单原生 entry_p03 组，补正例并保留撤销入口后拒绝的负例。此次HTTP启动/fresh/cached一致性通过；另修复求解异常不应被ormcache持久缓存为空authority，新增瞬时失败恢复用例。当前仍verification_pending。
+
+1c7bec14a 的 bundle 集成32项：31通过，1失败。工作台正反例、瞬时缓存恢复通过；setup共同求解和真实handler role正确，但精简payload因home页面存在重写default_route/home_ref。修复投影仅补缺省首页、保留明确有效路由，新增pure反例及planner映射，定向单元通过，独立源码复核通过；新候选ORM仍待验证。

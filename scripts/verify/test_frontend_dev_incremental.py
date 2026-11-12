@@ -1083,6 +1083,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.system_init.menu_boundary.guard",
         ])
 
+    def test_startup_payload_projection_selects_navigation_checks(self):
+        for path in ("addons/smart_core/core/system_init_payload_builder.py", "addons/smart_core/tests/test_system_init_payload_builder_semantics.py"):
+            self.assertEqual(select_targets([path]), ["verify.backend.navigation_delivery.unit", "verify.scenario.center_projection.guard", "verify.system_init.menu_boundary.guard"])
+
     def test_workspace_authority_tests_select_their_orm(self):
         for path in (
             "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
