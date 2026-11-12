@@ -1301,6 +1301,17 @@
       "command": "make verify.backend.navigation_delivery.unit verify.navigation.publication_consumers.unit verify.platform.duty.contract.unit",
       "status": "passed",
       "log": ".runtime/backend-effective-review-cheap.log"
+    },
+    {
+      "command": "make verify.daily.permission_truth.capability.orm",
+      "status": "failed",
+      "candidate": "5486a5f74f9bfe34153c16303627a235c1dff182",
+      "tests": 54,
+      "failed": 1,
+      "failure_owner": "validation_tool_defect",
+      "reason": "Landing positive fixture omitted formal release freeze; only workspace.home was correctly admitted. Import override/cache lifecycle and effective/frozen tile regressions passed. Added explicit governed test release prerequisites.",
+      "receipt": ".runtime/test-baseline/1794485214694278724/receipt.json",
+      "log": ".runtime/backend-effective-review-lifecycle.log"
     }
   ],
   "blockers": [],

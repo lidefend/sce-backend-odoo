@@ -1077,6 +1077,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.backend.navigation_delivery.unit", "verify.workspace.entry_authority.orm"],
                 )
 
+    def test_workspace_authority_tests_select_their_orm(self):
+        for path in (
+            "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+            "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+            "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+            "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.workspace.entry_authority.orm"])
+
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
         self.assertEqual(
             select_targets(["scripts/verify/frontend_my_work_approval_guard.py"]),

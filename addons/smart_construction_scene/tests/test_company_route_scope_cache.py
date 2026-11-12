@@ -170,6 +170,12 @@ class TestCompanyRouteScopeCache(TransactionCase):
             self.assertNotIn(actions[0], mapping)
 
     def test_declared_landing_uses_final_admitted_scenes(self):
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+        config = self.env["ir.config_parameter"].sudo()
+        config.set_param("smart_core.platform_release_db", self.env.cr.dbname)
+        config.set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
+        EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard", version="effective-landing-test", replace_active=True)
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
