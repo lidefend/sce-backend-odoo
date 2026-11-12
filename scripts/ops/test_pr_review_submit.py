@@ -108,6 +108,7 @@ class SubmitReviewTest(unittest.TestCase):
         client = FakeClient()
         result = submit_review(client, **review_kwargs())
         self.assertEqual(result["status"], "DRY_RUN")
+        self.assertEqual(result["review_id"], 0)
         self.assertFalse(any(method == "POST" for method, _path, _payload in client.calls))
 
     def test_approve_posts_exact_head(self):

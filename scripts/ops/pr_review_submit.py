@@ -291,6 +291,7 @@ def submit_review(
         return {
             "status": "DRY_RUN",
             "idempotent": False,
+            "review_id": 0,
             "reviewer": reviewer,
             "author": author,
             "head": expected_head,
