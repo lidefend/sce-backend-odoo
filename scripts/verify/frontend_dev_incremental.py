@@ -329,6 +329,7 @@ RULES = (
         "addons/smart_core/tests/test_native_config_menu_projection.py",
         "addons/smart_core/tests/test_relation_entry_contract.py",
         "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.system_init.menu_boundary.guard",

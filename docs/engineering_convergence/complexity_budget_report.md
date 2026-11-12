@@ -43,14 +43,14 @@ Generated from repository source files. This report is informational during the 
 | 2339 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2168 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2169 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2025 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2026 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -79,8 +79,8 @@ Generated from repository source files. This report is informational during the 
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
+| 1544 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1537 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
@@ -277,14 +277,14 @@ Generated from repository source files. This report is informational during the 
 | 2339 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2168 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2169 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2025 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2026 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1996 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1938 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -314,9 +314,9 @@ Generated from repository source files. This report is informational during the 
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
+| 1544 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1538 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
-| 1537 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |

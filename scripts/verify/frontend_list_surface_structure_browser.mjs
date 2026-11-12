@@ -148,7 +148,13 @@ function actionable(nodes, parents = []) {
     const label = String(node?.title || node?.label || node?.name || '').trim();
     const labels = [...parents, label].filter(Boolean);
     const route = routeFor(node);
-    if (route) result.push({ label: labels.join(' / '), route });
+    const meta = node?.meta && typeof node.meta === 'object' ? node.meta : {};
+    const actionId = Number(node?.action_id || node?.actionId || meta.action_id || meta.actionId || 0);
+    const menuId = Number(node?.menu_id || node?.menuId || meta.menu_id || meta.menuId || 0);
+    const nativeRoute = actionId > 0
+      ? `/a/${actionId}${menuId > 0 ? `?menu_id=${menuId}` : ''}`
+      : '';
+    if (route) result.push({ label: labels.join(' / '), route, nativeRoute });
     result.push(...actionable(node?.children, labels));
   }
   return result;
@@ -217,8 +223,9 @@ async function submitDeclaredSearch(page, value) {
 async function findPopulatedList(page, navigation) {
   const routes = actionable(navigation.nav());
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
-  if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
-  const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
+  const requestedMatch = (row) => row.route === REQUESTED_ROUTE || row.nativeRoute === REQUESTED_ROUTE;
+  if (REQUESTED_ROUTE && !routes.some(requestedMatch)) throw new Error('requested list route is not in captured released navigation');
+  const candidates = REQUESTED_ROUTE ? routes.filter(requestedMatch) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
   // The declared daily target is an external deployment reached over the
   // network: its first navigation loads the released bundle and menu tree, so
   // the list toolbar can take well over the loopback tuning used for local

@@ -273,6 +273,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/system_init.py",
             "addons/smart_core/tests/test_navigation_contract_compiler.py",
             "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+            "addons/smart_core/tests/test_intent_smoke.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

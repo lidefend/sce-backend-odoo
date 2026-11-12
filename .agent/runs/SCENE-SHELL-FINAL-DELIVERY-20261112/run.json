@@ -11,6 +11,9 @@
     ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
     ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
     "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
     "addons/smart_core/delivery/scene_shell_compiler.py",
     "addons/smart_core/handlers/system_init.py",
@@ -20,6 +23,7 @@
     "addons/smart_core/tests/test_intent_smoke.py",
     "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
@@ -92,15 +96,23 @@
     {
       "command": "make ci.local.iteration",
       "status": "passed",
-      "targets": 10,
-      "log": ".runtime/frontend-dev-validation/executions/20261112T053211Z-100257-506657390/receipt.json",
-      "notes": "All affected targets exited zero after correcting the new frontend target path selection."
+      "targets": 12,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T054501Z-164293-902023397/receipt.json",
+      "notes": "All affected targets exited zero after correcting frontend target path selection and routing the list-surface probe change to its existing contract lock."
+    },
+    {
+      "command": "make verify.frontend.list_surface_search_contract.unit",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "The released list-surface browser probe required the exact native /a route and could not locate the same entry after navigation was scenarioized to /s.",
+      "recovery": "The probe now retains the native action route as a matching identity while navigating through the delivered scene route.",
+      "recovery_check": "23 tests passed; the probe change is routed to its existing contract lock."
     }
   ],
   "blockers": [
-    "The scene shell candidate has not yet been committed or verified on the managed acceptance runtime."
+    "The repair to the list-surface probe must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
   ],
-  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the clean candidate, prepare the exact acceptance runtime, and verify a designed scene plus one native-delegate ordinary page.",
+  "next_exact_step": "Commit the accepted-scope probe repair, prepare the exact new acceptance runtime, and rerun the list-surface browser journey.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",
