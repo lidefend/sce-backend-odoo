@@ -1092,6 +1092,17 @@ RULES = (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
+        "addons/smart_core/core/native_advisory.py",
+        "addons/smart_core/core/draft_feedback.py",
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/tests/test_native_advisory.py",
+        "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+    ), (
+        "verify.native_advisory.unit",
+        "verify.node_component_validation.unit",
+        "verify.local.dev.conditioned.feedback.orm",
+    )),
+    Rule((
         "frontend/apps/web/src/app/contracts/v2/schema.ts",
         "frontend/apps/web/src/app/contracts/v2/types.ts",
     ), (

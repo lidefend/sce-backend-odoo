@@ -1,7 +1,9 @@
 """Conditional native advice: selection authority and nonzero-only numeric inputs."""
+import os
 from contextlib import ExitStack
 from unittest.mock import patch
 
+from odoo import Command, SUPERUSER_ID
 from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_core.core import draft_feedback, native_advisory
 
@@ -159,3 +161,93 @@ class TestConditionedProcessingFeedback(TransactionCase):
                         side_effect=AssertionError('attachment detail read during feedback')))
                 self.assertEqual(self.evaluate(parts, values), '', name)
             self.assertEqual(model.search_count([]), before)
+
+    def test_saved_payroll_contract_accepts_reviewed_relation_inputs(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        secret = 'f' * 64
+        with patch.dict(
+            os.environ,
+            {'SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY': secret},
+        ):
+            registration = self.env[
+                'sc.tenant.company.registration'
+            ].with_user(SUPERUSER_ID).with_context(
+                sc_tenant_payload_import=True,
+                sc_tenant_payload_maintenance_capability=secret,
+            )
+            space = registration._create_non_customer_space(
+                tenant_key='conditioned-feedback-payroll',
+                purpose='test',
+                company_name='Conditional feedback payroll',
+            )
+        company = space.company_id
+        groups = (
+            self.env.ref('base.group_user')
+            | self.env.ref('smart_construction_core.group_sc_cap_project_manager')
+            | self.env.ref('smart_core.group_smart_core_non_customer_data_user')
+        )
+        operator = self.env['res.users'].with_context(
+            no_reset_password=True,
+        ).create({
+            'name': 'Conditional feedback saved payroll operator',
+            'login': 'conditional_feedback_saved_payroll',
+            'company_id': company.id,
+            'company_ids': [Command.set([company.id])],
+            'groups_id': [Command.set(groups.ids)],
+        })
+        model_name, _view_key = self.CASES[2]
+        view = self.env.ref(
+            'smart_construction_core.view_sc_hr_payroll_document_form'
+        )
+        project = self.env['project.project'].create({
+            'name': 'Synthetic payroll feedback project',
+            'company_id': company.id,
+        })
+        record = self.env[model_name].create({
+            'fact_type': 'bonus',
+            'project_id': project.id,
+            'amount': 100,
+            'occurrence_date': '2026-11-13',
+        })
+        model = self.env[model_name].with_user(operator).with_context(
+            allowed_company_ids=company.ids,
+            lang='en_US',
+        )
+        response = UiContractV2Handler(
+            model.env,
+            su_env=self.env['ir.model'].sudo().env,
+        ).handle({
+            'op': 'model',
+            'model': model_name,
+            'record_id': record.id,
+            'view_id': view.id,
+            'view_type': 'form',
+            'render_profile': 'edit',
+            'client_type': 'web_pc',
+            'delivery_profile': 'full',
+            'client_contract_capabilities': [
+                'container_tree.v2',
+                'data_source.v2',
+                'action_rule.v2',
+                'relation_entry.v2',
+                'status_contract.v2',
+                'form_layout.children_owner.v1',
+                'form.feedback.message.v1',
+                'form.feedback.draft.v1',
+                'form.navigation.anchor.v1',
+            ],
+        })
+        response = (
+            response.to_legacy_dict()
+            if hasattr(response, 'to_legacy_dict')
+            else response
+        )
+        self.assertTrue(response.get('ok'), response.get('error'))
+        hosts = [
+            node for node, _path in native_advisory.walk(
+                response['data']['layoutContract']['containerTree']
+            )
+            if node.get('componentKey') == draft_feedback.COMPONENT_KEY
+        ]
+        self.assertEqual(len(hosts), 1)

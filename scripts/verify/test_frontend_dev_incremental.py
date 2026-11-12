@@ -911,6 +911,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
+    def test_controlled_feedback_chain_routes_to_unit_and_orm_owners(self) -> None:
+        for path in (
+            "addons/smart_core/core/native_advisory.py",
+            "addons/smart_core/core/draft_feedback.py",
+            "addons/smart_core/core/node_component_validation.py",
+            "addons/smart_core/tests/test_native_advisory.py",
+            "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.native_advisory.unit", targets)
+                self.assertIn("verify.node_component_validation.unit", targets)
+                self.assertIn(
+                    "verify.local.dev.conditioned.feedback.orm",
+                    targets,
+                )
+
     def test_presentation_vocabulary_change_routes_to_the_parity_guard(self) -> None:
         # The projection publishes declared presentation tokens and the renderer
         # implements them.  Editing either side (or the parity guard) must route to

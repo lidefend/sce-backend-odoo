@@ -7,6 +7,7 @@ import types
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -14,7 +15,7 @@ from test_native_view_parser_surfaces import _TreeFormParserProbe, _parse_test_x
 from test_record_error_proof import Record, field
 from core.native_advisory import project
 from core.unified_page_contract_v2_assembler import assemble_unified_page_contract_v2
-from core.node_component_validation import validate_final_nodes, walk
+from core.node_component_validation import read_facts, validate_final_nodes, walk
 from core.node_component_capabilities import validate_component_capabilities
 from core.field_presentation_usage import assert_field_body_usage, field_presentation_usage
 from core.form_configuration_compiler import FormConfigurationError
@@ -80,6 +81,11 @@ class NativeAdvisoryTests(unittest.TestCase):
                      'business_date': {'type': 'date'}, 'note': {'type': 'text'},
                      'project_id': {'type': 'many2one', 'relation': 'project.project'},
                      'partner_id': {'type': 'many2one', 'relation': 'res.partner'}}
+        self.record._fields[NAME].store = False
+        self.record._fields[NAME].get_depends = lambda _model: (
+            ('business_date', 'note'),
+            (),
+        )
         self.layout = _TreeFormParserProbe()._extract_form_layout_dom(_parse_test_xml(self.arch), self.meta)
         self.source = {'model': self.record._name, 'view_type': 'form', 'view_id': VIEW,
                        'record': {'id': RECORD}, 'fields': self.meta,
@@ -156,6 +162,46 @@ class NativeAdvisoryTests(unittest.TestCase):
                 'form.feedback.draft.v1',
             ],
         })
+
+    def test_persisted_reviewed_relation_input_checks_permission_without_reading_content(self):
+        content = self.record._fields[NAME]
+        content.get_depends = lambda _model: (
+            ('business_date', 'note', 'project_id'),
+            (),
+        )
+        self.record._fields['project_id'] = field('many2one')
+        review = {
+            'purpose': 'advisory',
+            'inputs': [
+                {'field': 'business_date', 'type': 'date'},
+                {'field': 'note', 'type': 'text'},
+                {'field': 'project_id', 'type': 'many2one_presence'},
+            ],
+        }
+        function = AdvisoryRecord._compute_advisory
+        function._sc_feedback_evaluation_review = review
+        self.addCleanup(lambda: delattr(function, '_sc_feedback_evaluation_review'))
+        checks = []
+        native_check = AdvisoryRecord.check_field_access_rights
+
+        def check(record, mode, names):
+            checks.append((mode, tuple(names)))
+            return native_check(record, mode, names)
+
+        with patch.object(AdvisoryRecord, 'check_field_access_rights', check):
+            facts = read_facts(self.record, {NAME}, 'layoutContract.feedback')
+        self.assertEqual(self.record.reads, [(NAME,)])
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(checks[0][0], 'read')
+        self.assertEqual(
+            set(checks[0][1]),
+            {'business_date', 'note', NAME, 'project_id'},
+        )
+        self.assertIn('建议补充办理日期', facts[NAME])
+
+        self.record.denied = {'project_id'}
+        with self.assertRaisesRegex(FormConfigurationError, 'FEEDBACK_SOURCE_FORBIDDEN'):
+            read_facts(self.record, {NAME}, 'layoutContract.feedback')
 
     def test_unknown_purpose_properties_and_empty(self):
         for value in ({**BINDING, 'purpose': 'warning'}, {**BINDING, 'extra': True},

@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: DAILY-PAYROLL-NATIVE-FEEDBACK-20261113
+  title: Restore persisted-record rendering for reviewed native payroll feedback
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: controlled native feedback fact validation
+  module: smart_core
+  standard_vs_user_specific: platform_mechanism
+  why_here: >
+    The failing path is the generic node-component validator. It recursively
+    treats every compute dependency as content that must be a scalar, so a
+    reviewed native advisory with relation-presence inputs is rejected after
+    the form, binding, locator and condition have already been proven. The
+    platform validator owns both the accepted dependency proof and the actor
+    permission check for that proof.
+  why_not_elsewhere: >
+    The payroll declaration is already the reviewed P1 source: its locator
+    matches the compiled view and its explicit inputs distinguish relation
+    presence from relation contents. Changing the frontend would hide a server
+    contract rejection. Removing the P1 declaration would disable the native
+    interaction field and duplicate product semantics in layout code.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/DAILY-PAYROLL-NATIVE-FEEDBACK-20261113.yaml
+      - .agent/runs/DAILY-PAYROLL-NATIVE-FEEDBACK-20261113/run.json
+      - addons/smart_core/core/node_component_validation.py
+      - addons/smart_core/tests/test_native_advisory.py
+      - addons/smart_construction_core/tests/test_conditioned_processing_feedback.py
+      - docs/ops/iterations/daily_payroll_native_feedback_20261113.md
+    product_behavior: >
+      Persisted forms may render a declared native advisory whose reviewed
+      compute inputs include relation presence. The validator checks actor read
+      access to the output field and every reviewed dependency without reading
+      relation contents. Unreviewed, related, sudo-computed and mismatched
+      declarations remain rejected.
+  objective: >
+    Make persisted payroll detail rendering accept the already-native reviewed
+    processing advisory binding, while preserving the strict rejection boundary
+    for unreviewed custom feedback declarations.
+  acceptance:
+    - a persisted payroll model contract is rejected before the fix
+    - the same contract renders after the fix with the processing advisory in place
+    - relation dependency read denial still fails closed
+    - focused platform and payroll behavior tests pass non-zero
+    - the daily payroll detail opens in a fresh browser run
+  exclusions:
+    - payroll field, view, action or menu semantics
+    - frontend source changes
+    - database data repair
+    - unreviewed advisory declarations
+    - unrelated published entries
+  rollback: >
+    Revert the P0 validator and regression-test commit. No business rows are
+    changed by the implementation or tests.

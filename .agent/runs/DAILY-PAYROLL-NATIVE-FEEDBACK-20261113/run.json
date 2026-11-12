@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-PAYROLL-NATIVE-FEEDBACK-20261113",
+  "branch": "fix/daily-payroll-native-feedback-20261113",
+  "baseline_sha": "8c2cb2c463fbb6890335936e16e75d8c7b84fb11",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DAILY-PAYROLL-NATIVE-FEEDBACK-20261113.yaml",
+  "record": "docs/ops/iterations/daily_payroll_native_feedback_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-PAYROLL-NATIVE-FEEDBACK-20261113.yaml",
+    ".agent/runs/DAILY-PAYROLL-NATIVE-FEEDBACK-20261113/run.json",
+    "addons/smart_core/core/node_component_validation.py",
+    "addons/smart_core/core/draft_feedback.py",
+    "addons/smart_core/tests/test_native_advisory.py",
+    "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/daily_payroll_native_feedback_20261113.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.dev runtime for ORM behavior and the existing daily demo duty for targeted browser acceptance"
+  },
+  "checks": {
+    "native_advisory": {
+      "target": "verify.native_advisory.unit",
+      "inputs": [
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/tests/test_native_advisory.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "node_component_validation": {
+      "target": "verify.node_component_validation.unit",
+      "inputs": [
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "conditioned_feedback_orm": {
+      "target": "verify.local.dev.conditioned.feedback.orm",
+      "inputs": [
+        "addons/smart_core/core/draft_feedback.py",
+        "addons/smart_core/core/native_advisory.py",
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+        "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+        "make/dev.mk"
+      ],
+      "kind": "runtime"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Prepare and commit the verified candidate, publish a protected GitHub PR, and submit the exact-head independent review."
+}

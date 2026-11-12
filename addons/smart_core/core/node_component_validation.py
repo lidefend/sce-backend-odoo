@@ -123,7 +123,7 @@ def native_source(node, originals, path, code="FEEDBACK_SOURCE_INVALID"):
 def read_facts(record, names, path):
     if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
         fail("FEEDBACK_SOURCE_FORBIDDEN", path)
-    needed, pending = set(), list(names)
+    needed, pending, reviewed_dependencies = set(), list(names), set()
     while pending:
         name = pending.pop()
         if name in needed:
@@ -136,20 +136,47 @@ def read_facts(record, names, path):
             if getattr(field, "compute_sudo", True):
                 fail("FEEDBACK_SOURCE_FORBIDDEN", path)
             method = getattr(record, field.compute, None) if isinstance(field.compute, str) else field.compute
+            review = getattr(
+                getattr(method, "__func__", method),
+                "_sc_feedback_evaluation_review",
+                None,
+            )
+            if getattr(field, "sc_feedback_usage", None) is not None and review is not None:
+                # Controlled feedback already has an exact native view, locator
+                # and condition proof. Its reviewed inputs may include relation
+                # presence, which is not scalar content and must never be read
+                # recursively as if it were. Revalidate the review declaration
+                # and permission-check every reviewed input while reading only
+                # the output fact requested by the contract.
+                from .draft_feedback import DraftFeedbackError, reviewed_content_field
+                try:
+                    resolved = reviewed_content_field(record, field)
+                except DraftFeedbackError as exc:
+                    fail(exc.code, path)
+                reviewed_dependencies.update(
+                    item["field"] for item in resolved["inputs"]
+                )
+                continue
             dependencies = getattr(method, "_depends", None)
             if not isinstance(dependencies, tuple) or any(not isinstance(d, str) or not d.isidentifier() for d in dependencies):
                 fail("FEEDBACK_SOURCE_INVALID", path)
             pending.extend(dependencies)
-    return _read_actor_facts(record, needed, path)
+    return _read_actor_facts(
+        record,
+        needed,
+        path,
+        permission_names=reviewed_dependencies,
+    )
 
 
-def _read_actor_facts(record, names, path):
+def _read_actor_facts(record, names, path, *, permission_names=()):
     context = _context(record)
+    checked_names = set(names) | set(permission_names)
     try:
         record.check_access_rights("read")
         record.check_access_rule("read")
-        allowed = record.check_field_access_rights("read", sorted(names))
-        if allowed is None or not names.issubset(allowed):
+        allowed = record.check_field_access_rights("read", sorted(checked_names))
+        if allowed is None or not checked_names.issubset(allowed):
             fail("FEEDBACK_SOURCE_FORBIDDEN", path)
         values = record.read(sorted(names))
     except Exception as exc:
