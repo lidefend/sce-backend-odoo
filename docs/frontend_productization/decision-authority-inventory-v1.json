@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1441
+        1448
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1431
+        1438
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -828,7 +828,7 @@
       "literal": "ready",
       "path": "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
       "lines": [
-        137
+        138
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -922,7 +922,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1354
+        1366
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -938,7 +938,7 @@
       "lines": [
         71,
         77,
-        1354
+        1366
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -955,7 +955,7 @@
         42,
         79,
         81,
-        1354
+        1366
       ],
       "occurrences": 4,
       "classification": "excluded-render-interaction",
@@ -969,7 +969,7 @@
       "literal": "success",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1354
+        1366
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1179,7 +1179,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3050
+        3063
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

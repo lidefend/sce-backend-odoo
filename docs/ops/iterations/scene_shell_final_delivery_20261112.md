@@ -68,3 +68,92 @@ assertion; context, browser and lease cleanup now have bounded waits.
 The candidate still requires freeze preparation, clean commit, exact acceptance
 runtime preparation and user-flow verification. No deployment or product
 acceptance is claimed.
+
+## Designed-scene behavior closure
+
+PR #873 integrated the scene shell compiler and validated the ordinary
+`native_delegate` list/detail path. The remaining goal condition is one
+designed-scene browser proof.
+
+The existing My Work approval acceptance now resolves
+`smart_construction_core.menu_sc_my_work` from final `system.init`, requiring:
+
+- `scene_key=my_work.workspace`;
+- `content_kind=designed_scene`;
+- route path `/s/my_work.workspace`;
+- the product `MyWorkView` renderer marker;
+- no `ActionView` in the rendered designed scene.
+
+This changes only P4 acceptance consumption. It does not add or maintain native
+menu/action facts and does not alter the scene or product contract.
+
+The former dead-surface disposition for
+`verify.frontend.my_work_approval.guard` was removed after its exact path mapping
+made the target live in `ci.local.iteration`; the reason is recorded in the
+disposition audit trail.
+
+The first designed-scene browser run found a product publication defect before
+rendering: the native My Work menu was visible and ACL-authorized, but the
+persisted `construction.standard` policy and active release snapshot each had
+91 entries while the shipped P1 contract has 92. `menu_sc_my_work` was the
+missing entry.
+
+Migration `17.0.0.182` now performs an add-only policy reconciliation and then
+freezes and releases a new snapshot from the reconciled policy. Existing policy
+rows and administrator edits are preserved; the migration only adds a formal
+entry absent from the maintained policy. The exact ORM test verifies that the
+newly active snapshot contains the native My Work menu/action pair.
+
+The governed acceptance database was upgraded to `17.0.0.182` on
+`04aa7bd642b44c75e8a08920a72241e354e8ea6e`. Readback then showed:
+
+- `construction.standard` policy: 92 menus;
+- active release snapshot 53: 92 pages;
+- My Work: `release_state=released`, `published_in_runtime_nav=true`.
+
+The My Work browser acceptance passed through the final contract:
+`my_work.workspace` arrived as `designed_scene` at
+`/s/my_work.workspace`, the MyWorkView renderer was present, and ActionView was
+absent. The test also passed counts/detail/submission, company A-B-A scope,
+reviewer approval and readback, reject-reason safety, project-member isolation,
+and 1440/1280/390 responsive views. This closes the batch's behavioral
+acceptance; it does not deploy the candidate or claim user acceptance.
+
+Generated tracked reports no longer require manual insertion into each run's
+scope. `generated_evidence_paths.py` is the single canonical ownership list used
+by both run resolution and branch synchronization. Generated changes are
+reported as `derived_scope`; unlisted or unowned files still make the run
+`reconcile` and fail closed.
+
+Independent review rejected the first PR #874 candidate because its migration
+could overwrite an active `v1` snapshot, republish unrelated draft policy edits,
+expose a public sudo-backed merge method, and rebuild the full capability field.
+
+The corrected migration:
+
+- creates a versioned snapshot from the active released policy plus only the
+  My Work delta;
+- leaves the previous snapshot byte-for-byte unchanged and records it as the new
+  rollback target;
+- treats an active release already containing My Work as a no-op;
+- preserves unrelated draft policy edits and administrator capabilities;
+- uses private model methods so no RPC write entry is introduced.
+
+The stale historical-payment assertion that failed the first remote backend
+suite was also aligned with the current formal policy, which does not publish
+that retired entry.
+
+The second independent review found two migration lifecycle branches. With no
+active snapshot, the reconciled maintained policy already contained My Work and
+the targeted publisher appended it again. Replaying the same migration version
+after a rollback could also hit and rewrite the historical migration snapshot.
+
+Both paths are now covered:
+
+- the target baseline is checked before appending, so first publication has one
+  native identity;
+- release versions include the target policy digest;
+- an identical active release is reused;
+- an identical non-active historical version causes a new suffixed version
+  instead of rewriting history;
+- rollback lineage points to the prior active release.

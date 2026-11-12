@@ -642,6 +642,8 @@ RULES = (
     Rule((
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+        "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py",
     ), (
         "verify.capability.identity_boundary.orm",
     )),
@@ -700,6 +702,7 @@ RULES = (
         "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/ops/incremental_execution.py",
         "scripts/ops/agent_run_context.py",
+        "scripts/ops/generated_evidence_paths.py",
         "scripts/verify/test_agent_run_context.py",
         "make/frontend.mk",
     ), (
@@ -708,6 +711,7 @@ RULES = (
     )),
     Rule((
         "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/generated_evidence_paths.py",
         "scripts/ops/test_safe_branch_sync_main.py",
     ), (
         "verify.workspace.branch.sync-main",
@@ -779,6 +783,11 @@ RULES = (
         "scripts/verify/test_frontend_standard_preview.py",
     ), (
         "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_my_work_approval_guard.py",
+    ), (
+        "verify.frontend.my_work_approval.guard",
     )),
     Rule((
         "scripts/verify/frontend_authenticated_intent.mjs",

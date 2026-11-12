@@ -929,6 +929,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_scenario_composition_paths_keep_their_responsibility_targets(self) -> None:
         expected = {
+            "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py": [
+                "verify.capability.identity_boundary.orm",
+            ],
+            "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py": [
+                "verify.capability.identity_boundary.orm",
+            ],
             "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py": [
                 "verify.daily_dev.acceptance_fixture.unit",
             ],
@@ -1039,6 +1045,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_my_work_approval_guard.py"]),
+            ["verify.frontend.my_work_approval.guard"],
+        )
         for path in (
             "scripts/dev/frontend_cached_dependencies_restore.sh",
             "scripts/dev/frontend_standard_preview.py",
@@ -1441,6 +1451,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.frontend.dev.incremental.unit",
                     ],
                 )
+
+    def test_generated_evidence_registry_routes_to_both_consumers(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/ops/generated_evidence_paths.py"]),
+            [
+                "verify.agent.resume.unit",
+                "verify.frontend.dev.incremental.unit",
+                "verify.workspace.branch.sync-main",
+            ],
+        )
 
     def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(

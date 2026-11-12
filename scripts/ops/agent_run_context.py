@@ -16,6 +16,11 @@ import subprocess
 import time
 from pathlib import Path
 
+try:
+    from scripts.ops.generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
+except ModuleNotFoundError:
+    from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
+
 
 class RunError(ValueError):
     pass
@@ -467,7 +472,12 @@ def summary(root: Path) -> dict:
         return {'status': 'unregistered', 'next_exact_step': 'Select/register one goal; do not infer completion or scan all historical goals.'}
     relative, run = selected
     paths = delta_paths(root, run['baseline_sha'])
-    outside = [p for p in paths if not any(p == s or (s.endswith('/') and p.startswith(s)) for s in run['scope'])]
+    derived_scope = [p for p in paths if p in GENERATED_EVIDENCE_PATH_SET and p not in run['scope']]
+    outside = [
+        p for p in paths
+        if p not in GENERATED_EVIDENCE_PATH_SET
+        and not any(p == s or (s.endswith('/') and p.startswith(s)) for s in run['scope'])
+    ]
     checks = check_states(root, run)
     reuse: dict[str, int] = {}
     for value in checks.values():
@@ -477,7 +487,8 @@ def summary(root: Path) -> dict:
             'branch': run['branch'], 'head': git(root, 'rev-parse', 'HEAD'),
             'dirty': git(root, 'status', '--porcelain=v1', '--untracked-files=all'),
             'baseline_sha': run['baseline_sha'], 'run_status': run['status'], 'record': run['record'],
-            'changed_paths': paths, 'outside_scope': outside, 'checks': checks,
+            'changed_paths': paths, 'derived_scope': derived_scope,
+            'outside_scope': outside, 'checks': checks,
             'registered_check_targets': sorted(declared_check_targets(run)),
             'blockers': run.get('blockers', []), 'next_exact_step': run['next_exact_step'],
             'write_replay_authorized': False,

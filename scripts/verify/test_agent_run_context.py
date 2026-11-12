@@ -381,6 +381,15 @@ class RunContextTest(unittest.TestCase):
         self.assertFalse(result['write_replay_authorized'])
         with self.assertRaises(RunError): self.receipt()
 
+    def test_generated_evidence_is_derived_scope_without_manual_declaration(self):
+        generated = 'docs/engineering_convergence/module_dependency_map.md'
+        self.write(generated, 'generated')
+        result = summary(self.root)
+        self.assertEqual(result['status'], 'resolved')
+        self.assertEqual(result['outside_scope'], [])
+        self.assertEqual(result['derived_scope'], [generated])
+        self.assertNotIn(generated, self.run['scope'])
+
     def test_path_traversal_rejected(self):
         self.run['record'] = '../other'; self.save()
         with self.assertRaises(RunError): resolve_run(self.root)

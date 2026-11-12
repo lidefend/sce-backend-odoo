@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "SCENE-SHELL-FINAL-DELIVERY-20261112",
-  "branch": "refactor/scene-shell-final-delivery-20261112",
-  "baseline_sha": "736e4af67037eeeba6532005a4dd8f7c43eec646",
+  "branch": "refactor/scene-shell-designed-scene-acceptance-20261112",
+  "baseline_sha": "144720c9e3695e382267301ff17b889692474d84",
   "status": "verification_pending",
   "goal": ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
   "record": "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
@@ -11,21 +11,34 @@
     ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
     ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
     "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
-    "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/delivery/scene_shell_compiler.py",
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/tests/test_navigation_contract_compiler.py",
     "addons/smart_core/tests/test_scene_shell_compiler.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
     "addons/smart_core/tests/test_intent_smoke.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
     "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/verify/frontend_my_work_approval_guard.py",
+    "scripts/verify/frontend_menu_navigation_diagnostic.py",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ops/agent_run_context.py",
+    "scripts/ops/generated_evidence_paths.py",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/verify/test_agent_run_context.py",
     "make/frontend.mk",
+    "make/ci.mk",
+    "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -61,6 +74,19 @@
         "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
         "make/frontend.mk"
       ]
+    },
+    "designed_scene_browser": {
+      "target": "verify.frontend.my_work_approval.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/runtime_ops.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/final-acceptance/my-work-approval/report.json"
+      }
     }
   },
   "validation_results": [
@@ -146,12 +172,146 @@
       "reason": "After the assertion failure the browser probe remained in teardown for about 18 minutes instead of failing promptly.",
       "recovery": "Context close, browser close and lease release now each have a bounded 10-second wait; a timed-out cleanup is reported and exits after evidence is written.",
       "recovery_check": "The cleanup contract is locked by verify.frontend.list_surface_search_contract.unit."
+    },
+    {
+      "command": "gh pr merge 873",
+      "status": "passed",
+      "source_sha": "0c6899bb92013008ee5c15e7cd156108d169b9be",
+      "merge_sha": "144720c9e3695e382267301ff17b889692474d84",
+      "notes": "Protected squash merge completed; main tree matches the candidate tree. All four required gates and backend/ORM checks passed on the exact source SHA."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.guard",
+      "status": "passed",
+      "tests": 5,
+      "notes": "The probe consumes the released My Work menu identity, requires designed_scene and /s/my_work.workspace, and rejects ActionView or /my-work entry."
+    },
+    {
+      "command": "python3 scripts/audit/verification_lane_coverage.py --check",
+      "status": "passed",
+      "notes": "The formerly dead My Work guard target is now wired through ci.local.iteration; its stale dead-surface disposition was removed with an audit reason."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 6,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T070057Z-550851-455033408/receipt.json",
+      "notes": "All required P4 targets for the probe, guard, mapping, standard preview and lane coverage passed."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "86179f439472e99e2e73241eca10d89ea4db642e",
+      "reason": "Final navigation had no My Work node. Read-only runtime diagnosis proved the native menu was visible and ACL-authorized, but persisted construction.standard policy and active release snapshot each contained 91 entries instead of the shipped contract's 92; menu_sc_my_work was absent from both.",
+      "evidence": ".runtime/final-acceptance/my-work-approval/failure.json",
+      "recovery": "Migration 17.0.0.182 adds the missing formal My Work row only when absent, preserves existing policy edits, and freezes/releases a new snapshot from the reconciled policy."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization.test_policy_migration_adds_my_work_without_overwriting_existing_rows",
+      "status": "passed",
+      "tests": 1,
+      "log": ".runtime/test-baseline/1794468874348634817/receipt.json",
+      "notes": "Real ORM verifies add-only policy reconciliation, idempotency, native menu/action identity, and a newly active released snapshot containing My Work."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 11,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T073749Z-736606-414250241/receipt.json",
+      "notes": "All affected navigation, policy, capability, scenario, P4 probe and coverage targets passed."
+    },
+    {
+      "command": "make acceptance.module.upgrade MODULE=smart_construction_core SC_ACCEPTANCE_RUNTIME_PROFILE=local EXPECTED_HEAD=04aa7bd642b44c75e8a08920a72241e354e8ea6e",
+      "status": "passed",
+      "notes": "17.0.0.182 post-migrate ran in the governed acceptance database and completed registry loading on the exact candidate."
+    },
+    {
+      "command": "make verify.frontend.menu_navigation.diagnostic SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "passed",
+      "notes": "Readback: construction.standard policy has 92 menus; active release snapshot 53 has 92 pages; My Work release_state=released and published_in_runtime_nav=true."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "status": "passed",
+      "report": ".runtime/final-acceptance/my-work-approval/report.json",
+      "notes": "Designed scene resolved from final system.init as my_work.workspace/designed_scene at /s/my_work.workspace; MyWorkView rendered without ActionView. J07 counts/company A-B-A, J08 approval/readback, reject reason safety, project-member isolation and 1440/1280/390 responsive views all passed."
+    },
+    {
+      "command": "make verify.agent.resume.unit",
+      "status": "passed",
+      "tests": 57,
+      "notes": "Generated tracked evidence is now derived scope automatically; ordinary undeclared files still remain fail-closed."
+    },
+    {
+      "command": "make verify.workspace.branch.sync-main",
+      "status": "passed",
+      "tests": 52,
+      "notes": "The canonical generated-evidence path registry is shared by run scope and branch-sync generated evidence handling."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 12,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T081211Z-926426-379144519/receipt.json",
+      "notes": "All affected P4 targets passed; generated reports appeared under derived_scope without manual run-scope edits."
+    },
+    {
+      "command": "gh pr checks 874",
+      "status": "failed",
+      "failure_owner": "baseline_evidence_defect",
+      "source_sha": "5dcf65ec003aa7f1c21545b6e26ab397e64232f4",
+      "reason": "The changed test file activated an old assertion that still expected a historical payment entry removed from the current formal product policy. One of 531 backend tests failed and cascaded into coverage and merge gates."
+    },
+    {
+      "command": "independent review of PR #874",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect",
+      "source_sha": "5dcf65ec003aa7f1c21545b6e26ab397e64232f4",
+      "reason": "Snapshot reconciliation reused version v1 and could overwrite the active snapshot without a rollback pointer; it republished all draft policy changes, exposed a public sudo write method, and rebuilt capabilities wholesale.",
+      "recovery": "Use a unique migration version; build the target snapshot from the active snapshot plus only the My Work delta; no-op when the active release already contains the entry; make the merge operation private; preserve existing capabilities."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "status": "passed",
+      "tests": 3,
+      "log": ".runtime/test-baseline/1794472902396051684/receipt.json",
+      "notes": "Covers active-snapshot immutability, rollback lineage, target-only publication, no-op repeat, private merge entry, preserved capabilities, and corrected historical-entry absence."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 17,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T084529Z-1102613-389828689/receipt.json",
+      "notes": "All affected backend, policy, generated-evidence, branch-sync, scenario and acceptance-tool targets passed on the corrected candidate scope."
+    },
+    {
+      "command": "independent re-review of PR #874 at 3b75a49d",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect",
+      "source_sha": "3b75a49d82387f8fda7a042ba56a18f37545b462",
+      "reason": "With no active snapshot, the target policy already contained My Work after policy reconciliation and was appended a second time, producing DUPLICATE_PAGE_IDENTITY. Replaying the same migration version after rollback could also overwrite a historical migration snapshot.",
+      "recovery": "Skip the append when the target baseline already contains the menu. Use a content-addressed release version and, when an identical historical version exists but is not active, allocate a new suffix rather than rewriting history."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "status": "passed",
+      "tests": 4,
+      "log": ".runtime/test-baseline/1794474488190289566/receipt.json",
+      "notes": "Adds no-active-snapshot first publication and rollback/replay coverage: exactly one target row, historical snapshot immutable, new replay version allocated, and rollback lineage retained."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 17,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T091135Z-1250643-552099791/receipt.json",
+      "notes": "All affected backend, policy migration, generated-evidence, branch-sync, scenario and acceptance-tool targets passed after the second review fixes."
     }
   ],
   "blockers": [
-    "The P4 scene-route return and bounded-cleanup repairs must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+    "The corrected candidate must replace the current head of PR #874 and pass fresh exact-head remote checks."
   ],
-  "next_exact_step": "Run affected iteration, commit the P4 scene-route return and bounded-cleanup repairs, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
+  "next_exact_step": "Commit the corrected migration, push it to PR #874 through the governed entry, and require fresh exact-head checks.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",
@@ -162,8 +322,8 @@
     "blast_radius": "final navigation routes, generated scene-ready shells, and generic native action embedding."
   },
   "completion": {
-    "batch": "verification_pending",
-    "mainline": "not_integrated",
+    "batch": "passed_local_behavioral_acceptance",
+    "mainline": "PR #873 integrated as 144720c9e3695e382267301ff17b889692474d84; current policy/scene acceptance candidate not yet integrated",
     "deployment": "not_performed",
     "user_acceptance": "not_claimed"
   }

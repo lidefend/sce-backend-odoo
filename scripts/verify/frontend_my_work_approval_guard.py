@@ -9,6 +9,7 @@ SERVICE = ROOT / "addons/smart_construction_core/services/payment_request_work_i
 COMPONENT = ROOT / "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue"
 FORM = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 CONTRACT = ROOT / "addons/smart_construction_core/services/financial_workspace_contract.py"
+PROBE = ROOT / "scripts/verify/frontend_my_work_approval_browser.mjs"
 
 
 def require(text: str, needles: list[str], label: str) -> None:
@@ -22,6 +23,7 @@ def main() -> int:
     component = COMPONENT.read_text(encoding="utf-8")
     form = FORM.read_text(encoding="utf-8")
     contract = CONTRACT.read_text(encoding="utf-8")
+    probe = PROBE.read_text(encoding="utf-8")
     if ".sudo(" in service:
         raise SystemExit("[FAIL] payment work projection must not use sudo")
     require(
@@ -89,6 +91,21 @@ def main() -> int:
     )
     if "model === 'payment.request'" in form or 'model === "payment.request"' in form:
         raise SystemExit("[FAIL] generic form contains a payment-request title/render special case")
+    require(
+        probe,
+        [
+            "smart_construction_core.menu_sc_my_work",
+            "contentKind === 'designed_scene'",
+            "new URL(route, BASE_URL).pathname === '/s/my_work.workspace'",
+            "data-semantic-component=\"MyWorkView\"",
+            "data-my-work-renderer=\"product-workspace\"",
+            "data-semantic-component=\"ActionView\"",
+            "designed My Work scene rendered through ActionView",
+        ],
+        "My Work designed scene browser consumption",
+    )
+    if "page.goto(`${BASE_URL}/my-work`" in probe:
+        raise SystemExit("[FAIL] My Work acceptance must enter through the released scene route, not /my-work")
     print("[OK] FE-B05 authoritative work/form/approval guard")
     return 0
 

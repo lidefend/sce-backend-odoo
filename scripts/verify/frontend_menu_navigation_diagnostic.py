@@ -136,10 +136,44 @@ try:
         'uid': finance.id, 'company_id': finance.company_id.id,
         'menu_id': menu.id, 'action_id': menu.action.id,
         'published': menu_publication_decision(authority, menu.id, menu.action.id),
+        'my_work': _target_menu_diagnostic(
+            env,
+            finance_actor,
+            'smart_construction_core.menu_sc_my_work',
+        ),
         'denials': [row for row in authority.get('denied_actions', [])
                     if row.get('menu_id') == menu.id or row.get('action_id') == menu.action.id],
         'company_states': states,
     }, ensure_ascii=False))
+    from odoo.addons.smart_core.handlers.system_init import _load_platform_release_gate
+    my_work = env.ref('smart_construction_core.menu_sc_my_work')
+    policy = env['sc.product.policy'].sudo().with_context(active_test=False).search([
+        ('product_key', '=', 'construction.standard'),
+    ], limit=1)
+    policy_rows = [
+        row for group in (policy.menu_groups or []) for row in (group.get('menus') or [])
+    ]
+    policy_my_work = next(
+        (row for row in policy_rows
+         if row.get('menu_xmlid') == 'smart_construction_core.menu_sc_my_work'),
+        None,
+    )
+    release_gate = _load_platform_release_gate(env, product_key='construction.standard')
+    print('MY_WORK_POLICY_DIAGNOSTIC', json.dumps({
+        'policy_id': int(policy.id or 0),
+        'policy_active': bool(policy.active),
+        'policy_state': policy.state,
+        'policy_menu_count': len(policy_rows),
+        'policy_my_work': policy_my_work,
+        'snapshot': {
+            key: release_gate.get(key)
+            for key in ('applied', 'reason', 'snapshot_id', 'version', 'page_count', 'total_page_count')
+        },
+        'snapshot_my_work_release_state': (
+            release_gate.get('menu_release_states') or {}
+        ).get('smart_construction_core.menu_sc_my_work'),
+        'menu': {'menu_id': my_work.id, 'action_id': my_work.action.id},
+    }, ensure_ascii=False, default=str))
     user = env.ref('smart_construction_acceptance_fixture.fe_user_config_admin')
     assert user.login == 'fixture_role_config_admin'
     actor = api.Environment(env.cr, user.id, dict(env.context, allowed_company_ids=[user.company_id.id]))

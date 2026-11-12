@@ -2117,11 +2117,6 @@
       "owner": "platform-team",
       "reason": "前端诊断/验收 CLI，未被任何门禁消费。"
     },
-    "verify.frontend.my_work_approval.guard": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/goals/CONTRACT-COLLECTION-WORK-ITEM-READING-EFFICIENCY.yaml。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.navigation_initialization_race.browser": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

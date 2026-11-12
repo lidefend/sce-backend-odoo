@@ -162,6 +162,7 @@ class EditionReleaseSnapshotService:
         edition_key: str | None = None,
         base_product_key: str | None = None,
         role_code: str = "",
+        policy_override: dict | None = None,
     ) -> dict[str, Any]:
         requested_product_key, requested_base_product_key, requested_edition_key = self.policy_service.resolve_policy_identity(
             product_key=product_key,
@@ -173,14 +174,18 @@ class EditionReleaseSnapshotService:
             explicit_role_code=role_code,
         )
         requested_role_code = _text(requested_role_context.get("role_code"))
-        policy = self.policy_service.get_policy(
-            product_key=requested_product_key,
-            edition_key=requested_edition_key,
-            base_product_key=requested_base_product_key,
-            role_code=requested_role_code,
-            enforce_release=True,
-            enforce_access=True,
-            use_published_policy=False,
+        policy = (
+            deepcopy(policy_override)
+            if isinstance(policy_override, dict)
+            else self.policy_service.get_policy(
+                product_key=requested_product_key,
+                edition_key=requested_edition_key,
+                base_product_key=requested_base_product_key,
+                role_code=requested_role_code,
+                enforce_release=True,
+                enforce_access=True,
+                use_published_policy=False,
+            )
         )
         freeze_role_code = self._freeze_role_code(policy, explicit_role_code=requested_role_code)
         delivery = self.delivery_engine.build(
@@ -189,6 +194,7 @@ class EditionReleaseSnapshotService:
             edition_key=requested_edition_key,
             base_product_key=requested_base_product_key,
             use_published_policy=False,
+            policy_override=policy,
         )
         resolved_policy = _dict(policy)
         resolved_delivery = _dict(delivery)
@@ -199,7 +205,9 @@ class EditionReleaseSnapshotService:
         if self._model_registered("sc.product.policy"):
             policy_rec = self.env["sc.product.policy"].sudo().search([("product_key", "=", effective_product_key), ("active", "=", True)], limit=1)
         declared_scene_bindings = (
-            deepcopy(policy_rec.scene_version_bindings)
+            deepcopy(_dict(resolved_policy.get("scene_version_bindings")))
+            if isinstance(policy_override, dict)
+            else deepcopy(policy_rec.scene_version_bindings)
             if policy_rec and isinstance(policy_rec.scene_version_bindings, dict)
             else deepcopy(_dict(resolved_policy.get("scene_version_bindings")))
         )
@@ -552,11 +560,22 @@ class EditionReleaseSnapshotService:
             "sample_changed_pages": changed[:5],
         }
 
-    def build_policy_draft_contract(self, *, product_key: str) -> dict[str, Any]:
+    def build_policy_draft_contract(
+        self,
+        *,
+        product_key: str,
+        policy_override: dict | None = None,
+    ) -> dict[str, Any]:
         policy_rec = None
         if self._model_registered("sc.product.policy"):
             policy_rec = self.env["sc.product.policy"].sudo().search([("product_key", "=", _text(product_key)), ("active", "=", True)], limit=1)
-        policy = policy_rec.to_runtime_dict() if policy_rec else {}
+        policy = (
+            deepcopy(policy_override)
+            if isinstance(policy_override, dict)
+            else policy_rec.to_runtime_dict()
+            if policy_rec
+            else {}
+        )
         pages = self._draft_pages_from_policy(policy)
         effective_pages = [row for row in pages if bool(row.get("enabled")) and _text(row.get("release_state")) in {"released", "preview"}]
         active = None
@@ -634,12 +653,14 @@ class EditionReleaseSnapshotService:
         role_code: str = "",
         note: str = "",
         replace_active: bool = True,
+        policy_override: dict | None = None,
     ) -> dict[str, Any]:
         payload = self.build_freeze_surface(
             product_key=product_key,
             edition_key=edition_key,
             base_product_key=base_product_key,
             role_code=role_code,
+            policy_override=policy_override,
         )
         identity = _dict(payload.get("identity"))
         resolved_product_key = _text(identity.get("product_key"))
@@ -665,7 +686,10 @@ class EditionReleaseSnapshotService:
         policy_rec = None
         if self._model_registered("sc.product.policy"):
             policy_rec = self.env["sc.product.policy"].sudo().search([("product_key", "=", resolved_product_key), ("active", "=", True)], limit=1)
-        draft_contract = self.build_policy_draft_contract(product_key=resolved_product_key)
+        draft_contract = self.build_policy_draft_contract(
+            product_key=resolved_product_key,
+            policy_override=policy_override,
+        )
         if int(draft_contract.get("blocking_issue_count") or 0) > 0:
             raise ValueError("RELEASE_PREFLIGHT_BLOCKED")
         payload["release_draft"] = {
