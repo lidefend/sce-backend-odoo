@@ -42,7 +42,7 @@ Generated from repository source files. This report is informational during the 
 | 2339 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2189 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2196 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
@@ -276,7 +276,7 @@ Generated from repository source files. This report is informational during the 
 | 2339 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2189 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2196 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2127 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |

@@ -53,7 +53,8 @@
     "make/dev.mk",
     "make/dev_test.mk",
     "make/frontend.mk",
-    "scripts/verify/frontend_dev_incremental.py"
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
@@ -67,7 +68,8 @@
         "addons/smart_core/delivery",
         "addons/smart_core/handlers/system_init.py",
         "addons/smart_core/tests",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_agent_ledger_unit": {
@@ -118,7 +120,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_agent_resume_unit": {
@@ -169,7 +172,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_backend_navigation_delivery_unit": {
@@ -220,7 +224,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_capability_identity_boundary_orm": {
@@ -271,7 +276,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_capability_identity_boundary_unit": {
@@ -322,7 +328,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_daily_permission_truth_capability_orm": {
@@ -373,7 +380,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_frontend_dev_incremental_unit": {
@@ -424,7 +432,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_product_entry_publication_unit": {
@@ -475,7 +484,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_runtime_capability_catalog_unit": {
@@ -526,7 +536,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_scenario_center_projection_guard": {
@@ -577,7 +588,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_scene_publication_authority_orm": {
@@ -628,7 +640,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_scene_shell_compiler_unit": {
@@ -679,7 +692,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_system_init_menu_boundary_guard": {
@@ -730,7 +744,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_baseline_iteration_execution_policy": {
@@ -781,7 +796,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_navigation_publication_consumers_unit": {
@@ -832,7 +848,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_scene_company_route_scope_cache_orm": {
@@ -883,7 +900,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "verify_nav_pro01r_route_authority_unit": {
@@ -934,7 +952,8 @@
         "make/guards.mk",
         "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     }
   },
@@ -1059,6 +1078,18 @@
       "status": "passed",
       "tests": 5,
       "log": ".runtime/backend-effective-group-pure.log"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "failed",
+      "log": ".runtime/backend-effective-home-mapping.log",
+      "reason": "Planner test expected old static-only mapping for modified HTTP smoke. Updated assertion to require lifecycle ORM."
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "tests": 125,
+      "log": ".runtime/backend-effective-home-mapping-2.log"
     }
   ],
   "blockers": [],

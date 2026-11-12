@@ -273,7 +273,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/system_init.py",
             "addons/smart_core/tests/test_navigation_contract_compiler.py",
             "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
-            "addons/smart_core/tests/test_intent_smoke.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -284,6 +283,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.system_init.menu_boundary.guard",
                     ],
                 )
+
+    def test_startup_smoke_selects_real_lifecycle_orm(self) -> None:
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_intent_smoke.py"]), [
+            "verify.backend.navigation_delivery.unit",
+            "verify.daily.permission_truth.capability.orm",
+            "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+        ])
 
     def test_runtime_capability_catalog_selects_its_projection_unit(self) -> None:
         for path in (
