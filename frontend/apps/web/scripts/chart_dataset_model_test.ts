@@ -212,6 +212,9 @@ assert.equal(typeof colorFn, 'function');
 assert.equal(colorFn({ dataIndex: 0, value: 1200 }), 'NEUTRAL');
 assert.equal(colorFn({ dataIndex: 1, value: 1500 }), 'UP');
 assert.equal(colorFn({ dataIndex: 2, value: 900 }), 'DOWN');
+assert.equal(colorFn({ dataIndex: 1, value: 1500 }), 'UP', 'repeated position keeps deterministic color');
+assert.equal(colorFn({ dataIndex: 0, value: 1200 }), 'NEUTRAL', 'out-of-order calls do not use call history');
+assert.equal(colorFn({ dataIndex: 2, value: 900 }), 'DOWN', 'later position remains stable after repeats');
 
 // ── option 构建：多系列 bar 用系列色序 + 类目对齐补 null ────
 const multiBarOption = buildChartOption(ready, palette) as {

@@ -38,6 +38,7 @@ import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
 import ScErrorState from '../design-system/ScErrorState.vue';
 import ScLoading from '../design-system/ScLoading.vue';
+import { createAttachmentViewerRequestLease } from './attachmentViewerRequestLease';
 
 const INLINE_MIMETYPE_PREFIXES = ['image/', 'text/'];
 const INLINE_MIMETYPES = new Set(['application/pdf']);
@@ -48,6 +49,7 @@ const errorMessage = ref('');
 const payload = ref<FileDownloadResponse | null>(null);
 const fallbackName = ref('');
 const previewUrl = ref('');
+const requestLease = createAttachmentViewerRequestLease();
 
 const displayName = computed(() => payload.value?.name || fallbackName.value || '附件');
 const mimetype = computed(() => payload.value?.mimetype || 'application/octet-stream');
@@ -91,12 +93,14 @@ function resetPayload() {
 }
 
 async function open(params: FileDownloadRequest, name?: string) {
+  const requestToken = requestLease.begin();
   fallbackName.value = name || '';
   visible.value = true;
   loading.value = true;
   resetPayload();
   try {
     const result = await downloadFile(params);
+    if (!visible.value || !requestLease.owns(requestToken)) return;
     payload.value = result;
     const data = result.datas || '';
     const type = result.mimetype || 'application/octet-stream';
@@ -106,13 +110,15 @@ async function open(params: FileDownloadRequest, name?: string) {
       previewUrl.value = result.url;
     }
   } catch (error) {
+    if (!visible.value || !requestLease.owns(requestToken)) return;
     errorMessage.value = error instanceof Error ? error.message : '附件打开失败';
   } finally {
-    loading.value = false;
+    if (visible.value && requestLease.owns(requestToken)) loading.value = false;
   }
 }
 
 function close() {
+  requestLease.invalidate();
   visible.value = false;
   loading.value = false;
   resetPayload();
@@ -140,6 +146,7 @@ function downloadCurrent() {
 }
 
 onBeforeUnmount(() => {
+  requestLease.invalidate();
   resetPayload();
 });
 

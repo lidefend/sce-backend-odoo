@@ -88,20 +88,15 @@ export function resolveChartPalette(read: (cssVar: string) => string): ChartPale
 }
 
 /** 逐柱环比的涨红跌绿着色函数（echarts itemStyle.color 回调签名） */
-function barTrendColor(palette: ChartPalette): (params: {
+function barTrendColor(palette: ChartPalette, data: Array<number | null>): (params: {
   dataIndex: number;
   value?: number | string | null;
 }) => string {
-  // 闭包持有上一柱数值，逐柱推进（echarts 按序调用）。
-  let previous: number | null = null;
   return (params) => {
-    const current = typeof params.value === 'number' && Number.isFinite(params.value)
-      ? params.value
-      : Number(params.value);
+    const current = data[Number(params.dataIndex)];
     if (!Number.isFinite(current)) return palette.neutral;
-    const base = previous;
-    previous = current;
-    if (base === null) return palette.neutral;
+    const base = Number(params.dataIndex) > 0 ? data[Number(params.dataIndex) - 1] : null;
+    if (base === null || !Number.isFinite(base)) return palette.neutral;
     if (current > base) return palette.up;
     if (current < base) return palette.down;
     return palette.neutral;
@@ -166,7 +161,7 @@ export function buildChartOption(
         name: entry.name || entry.metricLabel || model.title,
         type: 'bar',
         data,
-        itemStyle: { color: barTrendColor(palette) },
+        itemStyle: { color: barTrendColor(palette, data) },
       };
     }
     return {

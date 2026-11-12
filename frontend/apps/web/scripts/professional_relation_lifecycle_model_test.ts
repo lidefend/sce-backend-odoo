@@ -6,6 +6,7 @@ import { useRecordRelationshipFields } from '../src/pages/contractForm/useRecord
 import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle';
 import { useActionViewLoadSuccessRuntime } from '../src/app/action_runtime/useActionViewLoadSuccessRuntime';
 import { mergeUploadedAttachmentIds } from '../src/components/template/attachmentRelationMerge';
+import { createAttachmentViewerRequestLease } from '../src/components/attachment/attachmentViewerRequestLease';
 import {
   buildProfessionalRelationCancelledMessage,
   buildProfessionalRelationCreatedMessage,
@@ -402,6 +403,15 @@ assert.deepEqual(
   'attachment merge remains deterministic and duplicate-free',
 );
 console.log('[attachment_relation_merge_test] PASS cases=3');
+
+const viewerLease = createAttachmentViewerRequestLease();
+const viewerA = viewerLease.begin();
+const viewerB = viewerLease.begin();
+assert.equal(viewerLease.owns(viewerA), false, 'an older viewer response is stale after a newer open');
+assert.equal(viewerLease.owns(viewerB), true, 'the latest viewer response owns the dialog');
+viewerLease.invalidate();
+assert.equal(viewerLease.owns(viewerB), false, 'closing invalidates the in-flight viewer response');
+console.log('[attachment_viewer_request_lease_test] PASS cases=3');
 
 // A collection success that lost its route/generation lease cannot publish
 // records, status or trace data. The unused scope probes must not run at all.
