@@ -53,6 +53,7 @@
     "make/dev.mk",
     "make/dev_test.mk",
     "make/frontend.mk",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -955,6 +956,19 @@
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ]
+    },
+    "verify_verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/guards.mk"
+      ]
     }
   },
   "validation_results": [
@@ -1106,10 +1120,18 @@
       "status": "passed",
       "log": ".runtime/backend-effective-freeze-prepare.log",
       "generated_changes": "none"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "head": "c8bb4d544a7e4a6cbba40072ca3629e5fdb6dbb8",
+      "status": "failed",
+      "log": ".runtime/backend-effective-iteration-final.log",
+      "failure_owner": "P4 verification registry",
+      "reason": "Newly wired verify.nav.pro01r.route_authority.unit retained stale zero-reference disposition. Removed through existing guarded unregister operation; frozen baseline unchanged."
     }
   ],
   "blockers": [],
-  "next_exact_step": "Execute full mapped ci.local.iteration on frozen documented candidate, record receipts, then governed PR publication. No merge or deployment claimed.",
+  "next_exact_step": "Verify P4 disposition removal, then full mapped ci.local.iteration on clean candidate. No merge or deployment claimed.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",
