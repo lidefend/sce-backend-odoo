@@ -11,25 +11,15 @@ type StatusInput = { error: string; recordsLength: number };
 
 type ApplyLoadSuccessOptions = {
   result: Dict;
+  loadGeneration: number;
+  isLoadCurrent: (loadGeneration: number) => boolean;
   contractColumns: string[];
-  baseDomain: unknown[];
-  requestContext: Dict;
-  requestContextRaw: string;
   startedAt: number;
   routeQueryMap: Dict;
   routeGroupValueRaw: unknown;
   activeGroupByField: string;
   groupSampleLimit: number;
-  searchTerm: string;
-  sortLabel: string;
-  pageMode: string;
-  hasActiveField: boolean;
-  activeField: string;
-  resolvedModel: string;
-  resolveEffectiveFilterDomainRaw: () => string;
   pageText: (key: string, fallback: string) => string;
-  fetchScopedTotal: (input: Dict) => Promise<number>;
-  fetchCollectionScopeMetrics: (input: Dict) => Promise<Array<Record<string, unknown>>>;
   restartLoadWithRouteSync: (patch: Dict) => Promise<void>;
   syncRouteListState: (patch: Dict) => void;
   normalizeGroupedRouteState: () => void;
@@ -63,11 +53,6 @@ type ApplyLoadSuccessOptions = {
   resolveLoadGroupRouteSyncPatch: (input: Dict) => Dict;
   resolveLoadRouteSyncApplyState: (input: Dict) => { shouldSync: boolean; patch?: Dict };
   resolveLoadListTotalApplyState: (input: Dict) => { listTotalCount: number | null };
-  resolveLoadSuccessCollectionScopeApplyState: (input: Dict) => Promise<Dict>;
-  resolveCollectionScopeApplyState: (input: Dict) => {
-    collectionScopeTotals: Record<string, number>;
-    collectionScopeMetrics: Array<Record<string, unknown>>;
-  };
   resolveLoadSuccessRecordsState: (input: Dict) => Array<Record<string, unknown>>;
   resolveLoadGroupSummaryApplyState: (input: Dict) => {
     groupSummaryItems: Array<Record<string, unknown>>;
@@ -115,8 +100,6 @@ type ApplyLoadSuccessOptions = {
   collapsedGroupKeysRef: { value: string[] };
   listTotalCountRef: { value: number | null };
   listAggregatesRef?: { value: Record<string, Record<string, unknown>> };
-  collectionScopeTotalsRef: { value: Record<string, number> };
-  collectionScopeMetricsRef: { value: Array<Record<string, unknown>> };
   recordsRef: { value: Array<Record<string, unknown>> };
   groupSummaryItemsRef: { value: Array<Record<string, unknown>> };
   groupWindowCountRef: { value: number };
@@ -137,6 +120,7 @@ type ApplyLoadSuccessOptions = {
 
 export function useActionViewLoadSuccessRuntime() {
   async function applyLoadSuccess(options: ApplyLoadSuccessOptions): Promise<void> {
+    if (!options.isLoadCurrent(options.loadGeneration)) return;
     const pagingState = options.resolveActionViewGroupPagingState({
       resultDataRaw: options.result.data,
       fallbackGroupWindowOffset: options.groupWindowOffsetRef.value,
@@ -191,24 +175,6 @@ export function useActionViewLoadSuccessRuntime() {
         : {};
       options.listAggregatesRef.value = aggregates;
     }
-
-    const collectionScopeState = await options.resolveLoadSuccessCollectionScopeApplyState({
-      pageMode: options.pageMode,
-      hasActiveField: options.hasActiveField,
-      activeField: options.activeField,
-      model: options.resolvedModel,
-      baseDomain: options.baseDomain,
-      domainRaw: options.resolveEffectiveFilterDomainRaw(),
-      context: options.requestContext,
-      contextRaw: options.requestContextRaw,
-      searchTerm: options.searchTerm,
-      order: options.sortLabel,
-      fetchScopedTotal: options.fetchScopedTotal,
-      fetchCollectionScopeMetrics: options.fetchCollectionScopeMetrics,
-    });
-    const collectionScopeApplyState = options.resolveCollectionScopeApplyState({ collectionScopeState });
-    options.collectionScopeTotalsRef.value = collectionScopeApplyState.collectionScopeTotals;
-    options.collectionScopeMetricsRef.value = collectionScopeApplyState.collectionScopeMetrics;
 
     options.recordsRef.value = options.resolveLoadSuccessRecordsState({ resultDataRaw: resultData });
     const groupSummaryState = options.resolveLoadGroupSummaryApplyState({

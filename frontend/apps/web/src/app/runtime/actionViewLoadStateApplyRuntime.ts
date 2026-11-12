@@ -17,11 +17,6 @@ type GroupPagingState = {
   groupWindowIdentityKey: string;
 };
 
-type CollectionScopeState = {
-  collectionScopeTotals: Record<string, number>;
-  collectionScopeMetrics: Record<string, unknown>;
-};
-
 type WindowMetricsState = {
   groupWindowCount: number;
   groupWindowStart: number;
@@ -67,15 +62,6 @@ export function resolveGroupPagingIdentityApplyState(options: {
     groupQueryFingerprint: options.responseGroupFingerprint,
     groupWindowDigest: options.pagingState.groupWindowDigest,
     groupWindowIdentityKey: options.pagingState.groupWindowIdentityKey,
-  };
-}
-
-export function resolveCollectionScopeApplyState(options: {
-  collectionScopeState: CollectionScopeState;
-}): CollectionScopeState {
-  return {
-    collectionScopeTotals: options.collectionScopeState.collectionScopeTotals,
-    collectionScopeMetrics: options.collectionScopeState.collectionScopeMetrics,
   };
 }
 

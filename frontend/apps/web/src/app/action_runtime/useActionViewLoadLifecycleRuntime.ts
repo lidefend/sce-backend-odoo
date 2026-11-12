@@ -24,14 +24,11 @@ type CatchLoadOptions = {
   errorTraceId: () => string;
   resolveLoadCatchState: (input: { errorMessage: string; traceId: string; startedAt: number }) => Dict;
   resolveLoadCatchListTotalState: (input: { catchState: Dict }) => number | null;
-  resolveLoadCatchCollectionScopeState: (input: { catchState: Dict }) => Dict;
   resolveLoadCatchTraceApplyState: (input: { catchState: Dict }) => { traceId: string };
   resolveLoadCatchStatusApplyInput: (input: { catchState: Dict }) => string;
   resolveLoadCatchLatencyState: (input: { catchState: Dict }) => number | null;
   deriveListStatus: (statusInput: string) => 'idle' | 'loading' | 'ok' | 'empty' | 'error';
   listTotalCount: { value: number | null };
-  collectionScopeTotals: { value: Record<string, number> };
-  collectionScopeMetrics: { value: Array<Record<string, unknown>> };
   traceId: { value: string };
   lastTraceId: { value: string };
   status: { value: 'idle' | 'loading' | 'ok' | 'empty' | 'error' };
@@ -67,10 +64,6 @@ export function useActionViewLoadLifecycleRuntime() {
     });
 
     options.listTotalCount.value = options.resolveLoadCatchListTotalState({ catchState });
-
-    const scopeState = options.resolveLoadCatchCollectionScopeState({ catchState });
-    options.collectionScopeTotals.value = (scopeState.collectionScopeTotals as Record<string, number>) || {};
-    options.collectionScopeMetrics.value = (scopeState.collectionScopeMetrics as Array<Record<string, unknown>>) || [];
 
     const traceState = options.resolveLoadCatchTraceApplyState({ catchState });
     const statusInput = options.resolveLoadCatchStatusApplyInput({ catchState });

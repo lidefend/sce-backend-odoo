@@ -296,6 +296,46 @@ check('action contract errors retain their authority without a model fallback', 
   }
 });
 
+check('late record 403 cannot navigate after the page loses ownership', async () => {
+  for (const activeAtFailure of [false, true]) {
+    let rejectLoad!: (error: unknown) => void;
+    const pending = new Promise<never>((_resolve, reject) => { rejectLoad = reject; });
+    let replaceCalls = 0;
+    const active = ref(true);
+    class ApiDenied extends Error {
+      status = 403;
+      reasonCode = 'PERMISSION_DENIED';
+      traceId = 'late-denied';
+    }
+    const lifecycle = useRecordPageLifecycle({
+      ApiError: ApiDenied,
+      ContractAccessPolicyError: class extends Error {},
+      ErrorCodes: { CAPABILITY_MISSING: 'CAPABILITY_MISSING' },
+      actionId: ref(0), recordId: ref(1), menuId: ref(0), model: ref('x.document'),
+      contract: ref(null), v2ContractStore: ref(null), v2ContractDecodeError: ref(''),
+      contractAccessPolicy: ref({ mode: 'allow' }), coreFieldNames: ref([]), advancedExpanded: ref(false),
+      renderProfile: ref('edit'), route: { query: {}, fullPath: '/r/x.document/1' },
+      router: { replace: async () => { replaceCalls += 1; }, push: async () => {} },
+      buildRouteContractContext: () => ({}), toPositiveInt: (value: unknown) => Number(value || 0),
+      loadActionContractV2: async () => { throw new Error('unexpected action contract read'); },
+      loadModelContractV2: () => pending,
+      requestedSurface: ref(''), requestedSourceMode: ref(''),
+      applyPageStatusEvent: () => {}, validationErrors: ref([]), validationFieldErrors: ref({}),
+      showOne2manyErrors: ref(false), recordMissing: ref(false), loadError: {},
+      renderErrorMessage: ref(''), isComponentActive: active,
+      formRouteIdentity: () => 'x.document:1', clearRelationRuntime: () => {},
+    });
+    const reload = lifecycle.reload();
+    active.value = activeAtFailure;
+    rejectLoad(new ApiDenied('record access was revoked'));
+    await reload;
+    assert.equal(replaceCalls, activeAtFailure ? 1 : 0,
+      activeAtFailure
+        ? 'the active record still navigates on its current 403'
+        : 'a deactivated record cannot navigate on its late 403');
+  }
+});
+
 for (const testCase of cases) {
   await testCase.run();
   passed += 1;

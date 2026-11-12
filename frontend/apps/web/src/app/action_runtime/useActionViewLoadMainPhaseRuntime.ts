@@ -121,13 +121,10 @@ export function useActionViewLoadMainPhaseRuntime() {
       await options.executeLoadSuccessPhase({
         input: options.buildLoadSuccessDynamicInput({
           ...options.buildLoadSuccessPhaseInput({
+            loadGeneration: options.loadGeneration,
             result: loadRequestPhaseResult.result || {},
             contractColumns: Array.isArray(loadRequestPhaseResult.contractColumns) ? loadRequestPhaseResult.contractColumns : [],
-            baseDomain: Array.isArray(loadRequestPhaseResult.baseDomain) ? loadRequestPhaseResult.baseDomain : [],
-            requestContext: (loadRequestPhaseResult.requestContext || {}) as Dict,
-            requestContextRaw: String(loadRequestPhaseResult.requestContextRaw || ''),
             startedAt: options.startedAt,
-            resolvedModel: String(preflightPhaseResult.resolvedModel || ''),
           }),
         }),
       });

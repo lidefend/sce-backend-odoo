@@ -4,6 +4,7 @@ import { effectScope, reactive, ref, watch, nextTick } from 'vue';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { useRecordRelationshipFields } from '../src/pages/contractForm/useRecordRelationshipFields';
 import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle';
+import { useActionViewLoadSuccessRuntime } from '../src/app/action_runtime/useActionViewLoadSuccessRuntime';
 import {
   buildProfessionalRelationCancelledMessage,
   buildProfessionalRelationCreatedMessage,
@@ -383,3 +384,119 @@ console.log(`[professional_relation_lifecycle_model_test] PASS shared-record-lif
   stop();
 }
 console.log('persisted child loading: first Vue flush is protected');
+
+// A collection success that lost its route/generation lease cannot publish
+// records, status or trace data. The unused scope probes must not run at all.
+{
+  const records = ref<Array<Record<string, unknown>>>([{ id: 99, name: 'newer result' }]);
+  const status = ref<'idle' | 'loading' | 'ok' | 'empty' | 'error'>('loading');
+  const traceId = ref('newer-trace');
+  const lastTraceId = ref('newer-trace');
+  let scopeProbeCalls = 0;
+  const success = useActionViewLoadSuccessRuntime();
+  await success.applyLoadSuccess({
+    loadGeneration: 2,
+    isLoadCurrent: () => false,
+    result: { data: { records: [{ id: 1, name: 'stale result' }] }, meta: {} },
+    contractColumns: ['name'],
+    baseDomain: [],
+    requestContext: {},
+    requestContextRaw: '',
+    startedAt: Date.now(),
+    routeQueryMap: {},
+    routeGroupValueRaw: '',
+    activeGroupByField: '',
+    groupSampleLimit: 0,
+    searchTerm: '',
+    sortLabel: '',
+    pageMode: 'list',
+    hasActiveField: true,
+    activeField: 'active',
+    resolvedModel: 'x.document',
+    resolveEffectiveFilterDomainRaw: () => '',
+    pageText: (_key: string, fallback: string) => fallback,
+    fetchScopedTotal: async () => { scopeProbeCalls += 1; return 10; },
+    fetchCollectionScopeMetrics: async () => { scopeProbeCalls += 1; return []; },
+    restartLoadWithRouteSync: async () => {},
+    syncRouteListState: () => {},
+    normalizeGroupedRouteState: () => {},
+    hydrateGroupedRowsByOffset: () => {},
+    deriveListStatus: () => 'ok',
+    readTotalFromListResult: () => 1,
+    buildGroupKey: () => '',
+    normalizeGroupPageOffset: () => 0,
+    resolveActionViewGroupPagingState: () => ({
+      resultData: { records: [{ id: 1 }] }, groupPaging: {}, effectiveGroupOffset: 0, responseGroupFingerprint: '',
+    }),
+    resolveGroupPagingIdentityApplyState: () => ({
+      groupWindowOffset: 0, groupWindowId: '', groupQueryFingerprint: '', groupWindowDigest: '', groupWindowIdentityKey: '',
+    }),
+    resolveActionViewRouteSnapshot: () => ({}),
+    resolveLoadGroupRouteSyncPlan: () => ({}),
+    resolveLoadRouteResetApplyState: () => ({
+      shouldReset: false, groupWindowOffset: 0, groupPageOffsets: {}, collapsedGroupKeys: [],
+    }),
+    resolveLoadGroupRouteSyncPatch: () => ({}),
+    resolveLoadRouteSyncApplyState: () => ({ shouldSync: false }),
+    resolveLoadListTotalApplyState: () => ({ listTotalCount: 1 }),
+    resolveLoadSuccessCollectionScopeApplyState: async () => {
+      scopeProbeCalls += 1;
+      return {};
+    },
+    resolveCollectionScopeApplyState: () => ({ collectionScopeTotals: {}, collectionScopeMetrics: [] }),
+    resolveLoadSuccessRecordsState: () => [{ id: 1, name: 'stale result' }],
+    resolveLoadGroupSummaryApplyState: () => ({ groupSummaryItems: [] }),
+    resolveLoadSuccessGroupSummaryState: () => [],
+    resolveLoadSuccessWindowApplyState: () => ({}),
+    resolveWindowMetricsApplyState: () => ({
+      groupWindowCount: 0, groupWindowStart: 0, groupWindowEnd: 0,
+      groupWindowTotal: 0, groupWindowNextOffset: 0, groupWindowPrevOffset: 0,
+    }),
+    resolveLoadGroupedRowsApplyState: () => ({ groupedRows: [] }),
+    resolveLoadSuccessGroupedRowsState: () => [],
+    resolveLoadFinalizeApplyState: () => ({
+      activeGroupSummaryKey: '', selectedIds: [], columns: ['name'],
+      statusInput: { error: '', recordsLength: 1 },
+    }),
+    resolveLoadFinalizeSummaryKeyState: () => '',
+    resolveLoadFinalizeSelectedIdsState: () => [],
+    resolveLoadFinalizeColumnsState: () => ['name'],
+    resolveLoadFinalizeStatusState: () => ({ error: '', recordsLength: 1 }),
+    resolveLoadTraceApplyState: () => ({ traceId: 'stale-trace', lastTraceId: 'stale-trace', lastLatencyMs: 1 }),
+    resolveLoadFinalizeTraceTimingState: () => ({ traceId: 'stale-trace', lastTraceId: 'stale-trace', lastLatencyMs: 1 }),
+    groupWindowOffsetRef: ref(0),
+    groupWindowIdRef: ref(''),
+    groupQueryFingerprintRef: ref(''),
+    groupWindowDigestRef: ref(''),
+    groupWindowIdentityKeyRef: ref(''),
+    groupPageOffsetsRef: ref({}),
+    collapsedGroupKeysRef: ref([]),
+    listTotalCountRef: ref<number | null>(null),
+    listAggregatesRef: ref({}),
+    collectionScopeTotalsRef: ref({}),
+    collectionScopeMetricsRef: ref([]),
+    recordsRef: records,
+    groupSummaryItemsRef: ref([]),
+    groupWindowCountRef: ref(0),
+    groupWindowStartRef: ref(0),
+    groupWindowEndRef: ref(0),
+    groupWindowTotalRef: ref(0),
+    groupWindowNextOffsetRef: ref(0),
+    groupWindowPrevOffsetRef: ref(0),
+    groupedRowsRef: ref([]),
+    activeGroupSummaryKeyRef: ref(''),
+    selectedIdsRef: ref([]),
+    columnsRef: ref([]),
+    statusRef: status,
+    traceIdRef: traceId,
+    lastTraceIdRef: lastTraceId,
+    lastLatencyMsRef: ref<number | null>(1),
+  } as never);
+  assert.deepEqual(records.value, [{ id: 99, name: 'newer result' }], 'stale list success cannot replace current records');
+  assert.equal(status.value, 'loading', 'stale list success cannot settle current status');
+  assert.equal(traceId.value, 'newer-trace', 'stale list success cannot replace current trace');
+  assert.equal(scopeProbeCalls, 0, 'formal list success must not issue collection-scope probes');
+  const actionSource = fs.readFileSync('frontend/apps/web/src/views/ActionView.vue', 'utf8');
+  assert.doesNotMatch(actionSource, /collectionScopeTotals|collectionScopeMetrics|useActionViewScopedMetricsRuntime/);
+  console.log('[professional_relation_lifecycle_model_test] PASS stale-list-success=1 scope-probes=0');
+}

@@ -1,16 +1,3 @@
-export function resolveLoadSuccessCollectionScopeState(options: {
-  totals: unknown;
-  metrics: unknown;
-}): {
-  collectionScopeTotals: unknown;
-  collectionScopeMetrics: unknown;
-} {
-  return {
-    collectionScopeTotals: options.totals,
-    collectionScopeMetrics: options.metrics,
-  };
-}
-
 export function resolveLoadSuccessWindowState(options: {
   groupWindowCount: number;
   groupWindowStart: number;

@@ -8,21 +8,6 @@ export function resolveLoadCatchListApplyState(options: {
   };
 }
 
-export function resolveLoadCatchScopeApplyState(options: {
-  catchState: {
-    collectionScopeTotals: Record<string, number>;
-    collectionScopeMetrics: Record<string, unknown>;
-  };
-}): {
-  collectionScopeTotals: Record<string, number>;
-  collectionScopeMetrics: Record<string, unknown>;
-} {
-  return {
-    collectionScopeTotals: options.catchState.collectionScopeTotals,
-    collectionScopeMetrics: options.catchState.collectionScopeMetrics,
-  };
-}
-
 export function resolveLoadCatchTraceStatusApplyState(options: {
   catchState: {
     traceId: string;
