@@ -63,6 +63,26 @@
       ],
       "kind": "offline"
     },
+    "rich_text_browser": {
+      "target": "verify.frontend.rich_text.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+        "frontend/apps/web/scripts/rich_text_component_browser_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_form_action_browser": {
+      "target": "verify.frontend.native_form_action_presentation.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
     "lint": {
       "target": "verify.frontend.lint.src",
       "inputs": [
@@ -95,7 +115,9 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
+  "blockers": [
+    "candidate frontend carrier is blocked by the existing /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109 pidfile; cross-worktree takeover is refused"
+  ],
   "next_exact_step": "Run affected keyboard, stale-viewer and chart repeat-render browser journeys on a deployed candidate, then perform independent review and remote CI.",
   "id": "FE-CONVERGENCE-FE04-20261113",
   "branch": "fix/fe-convergence-fe04-expression-a11y-20261113",

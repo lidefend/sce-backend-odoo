@@ -36,6 +36,8 @@ Results are recorded through `make agent.run.begin` and `make agent.run.record`.
 | `verify.frontend.professional_relation_lifecycle.unit` | passed; 64 checks including attachment viewer request lease |
 | `verify.frontend.hierarchical_worksheet.unit` | passed; 54 checks including keyboard expand/collapse |
 | `verify.frontend.chart_dataset.unit` | passed; repeated/out-of-order color calls are deterministic |
+| `verify.frontend.rich_text.browser` | passed; 10 checks, 0 console errors |
+| `verify.frontend.native_form_action_presentation.browser` | passed; 45 assertions across 1440/390 viewports |
 | `verify.frontend.lint.src` | passed; 0 errors, 4 pre-existing warnings |
 | `verify.frontend.typecheck.strict` | passed |
 | `verify.frontend.build` | passed; 5,387 modules transformed |
@@ -48,6 +50,7 @@ Evidence notes:
 - Viewer open/close uses a request lease, so stale responses cannot publish payload/error/loading or create preview resources for a newer/closed dialog.
 - Tree branch buttons expose `aria-expanded` and ArrowRight/ArrowLeft expand/collapse.
 - Generated complexity/component inventories refresh only affected source identities and locations.
+- Candidate frontend carrier startup is environment-blocked by an existing pidfile owned by the detached `sce-backend-odoo-acceptance-scope-20261109` worktree. The governed target correctly refuses cross-worktree takeover; that instance was not stopped.
 
 Not run:
 
