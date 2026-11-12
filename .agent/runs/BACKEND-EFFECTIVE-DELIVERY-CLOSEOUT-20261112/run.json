@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112",
+  "branch": "fix/backend-effective-delivery-closeout-20261112",
+  "baseline_sha": "ae148ecd29dba9461877c62abe742406573d6340",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112.yaml",
+  "record": "docs/ops/iterations/backend_effective_delivery_closeout_20261112.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BACKEND-EFFECTIVE-DELIVERY-20261112.yaml",
+    ".agent/runs/BACKEND-EFFECTIVE-DELIVERY-20261112/run.json",
+    "docs/ops/iterations/backend_effective_delivery_20261112.md",
+    ".agent/goals/BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112.yaml",
+    ".agent/runs/BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112/run.json",
+    "docs/ops/iterations/backend_effective_delivery_closeout_20261112.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing repository metadata checks and protected GitHub publication; no database writes"
+  },
+  "checks": {
+    "verify_agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "verify_agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish metadata-only closeout after independent review and incremental gate; merge protected PR then delete original exact-head merged branch.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "layer_target": "task lifecycle records",
+    "module": ".agent and delivery documentation",
+    "standard_vs_user_specific": "repository delivery governance",
+    "why_here": "Records describe completed integration, not product behavior",
+    "why_not_elsewhere": "No runtime/product semantic changes",
+    "blast_radius": "Exact PR875 task and its closeout records"
+  },
+  "validation_results": [
+    {
+      "command": "make verify.agent.ledger.unit verify.agent.resume.unit",
+      "status": "passed",
+      "counts": [
+        18,
+        57
+      ],
+      "log": ".runtime/backend-effective-task-closeout-tests.log"
+    }
+  ]
+}

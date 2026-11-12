@@ -57,3 +57,7 @@ Code candidate `9013ea92d9df030d4461bc43527fff42137c2a65` passed 68 governed ORM
 The ten remaining offline targets passed in `.runtime/backend-effective-review-closeout-offline.log`; unchanged earlier offline prefix results remain in the failed aggregate receipt. Independent source review binds the clean code candidate with no unresolved S0–S2 findings.
 
 Following `.agent/README.md`, the run validation baseline advances to this verified code checkpoint; original PR baseline `45cd5c6714a54339a8f073019a8604ffb71e7046`, full scope, original logs and every failed attempt remain recorded. The old failed aggregate remains failed. Subsequent documentation delta requires `ci.local.iteration`; remote checks still evaluate the full PR. Mainline integration, deployment and user acceptance remain pending.
+
+### Final task closure
+
+PR [#875](https://github.com/lidefend/sce-backend-odoo/pull/875) was squash-merged on 2026-11-12 at `ae148ecd29dba9461877c62abe742406573d6340`, from reviewed candidate `22ab5487dcf60497d26d40647dce415cbab37303`. All four required checks, managed ORM, four backend suites and coverage passed for that candidate. Final local checkpoint iteration passed; independent review had no unresolved S0–S2 findings. Mainline identity was read back and local main synchronized. The owner confirmed the task achieved. Goal/run are completed and the old branch binding is removed; exact-head branch retirement follows this metadata integration. Deployment and user acceptance were not performed or claimed. Historical failures remain intact.
