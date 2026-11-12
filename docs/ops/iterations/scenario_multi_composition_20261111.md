@@ -156,6 +156,35 @@ canonical projection 和 payload seal，而本批已经把该职责收敛到
 `environment_defect`，不是产品断言失败。该测试修复会形成新的精确 HEAD，依赖安装与全部
 必需检查必须在新 SHA 上重新取得；旧 SHA 的失败和环境错误不得混入新结果。
 
+## 合并证据复验发现的最终契约缺口
+
+在 `5dc59203e9bc9cfa293f4500bb7ca275ce1ec5ef` 上按 Runbook 切接受管验收运行时后，
+`list_surface_structure` 的登录和 `system.init` 都返回成功，但前端以
+`CANONICAL_NAVIGATION_ROUTE_MISMATCH` 停机。原始证据显示：场景化后的“项目中心”
+目录节点 `menu_id=305` 发布了 `/m/305`，但最终
+`route_authority.menu_containers` 中没有 `menu_id=305` 的精确 container 授权。
+前端根据最终 contract fail-closed 是正确的，缺口属于 P0 最终契约编译，不属于前端，
+也不属于场景事实层。
+
+修复位于 `MenuService.project_final_navigation_routes`：
+
+- 纯目录节点只有在最终 authority 精确包含同一 `menu_id` 的 container 时才发布
+  `/m/{menu_id}`；没有授权的目录保留为不可点击容器，不制造菜单、动作、权限或路由事实。
+- 已授权 container 的最终路由仍按节点身份统一更新到导航与 authority。
+- 场景节点的 `/s/{scene_key}` 仍由最终场景化身份派生，并同步更新对应 authority。
+- 回归用例覆盖项目中心 `menu_id=305` 的无授权目录和已授权 container 两条路径。
+
+本地验证：
+
+- 修复前新增用例失败；修复后 `verify.backend.navigation_delivery.unit` 核心套件 55 tests PASS。
+- `verify.navigation.publication_consumers.unit` 共 174 tests PASS。
+- `ci.local.iteration` 执行 25 个受影响目标全部退出 0，`unmappedPathCount=0`，
+  `blockedTargets` 与 `notRunTargets` 为空。
+
+该修复仍须形成 clean 精确 HEAD，切换验收运行时并重新执行 `list_surface_structure`，
+再重录 merge-stage evidence 和取得当前 SHA 的远端必需检查。主线集成、部署和产品交付
+均尚未完成。
+
 ## 回退
 
 代码回退恢复旧的单场景约束和原 authority 链；数据库升级会移除旧唯一约束，

@@ -334,6 +334,123 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(product_policy["entries"][0]["route"], "/s/my_work.workspace")
         self.assertEqual(product_policy["entries"][0]["scene_key"], "my_work.workspace")
 
+    def test_final_routes_do_not_publish_unbacked_directory_routes(self):
+        nav = [{
+            "key": "group:smart_construction_core.menu_sc_project_center",
+            "label": "项目中心",
+            "menu_id": 305,
+            "config_menu_id": 305,
+            "route": "/m/305",
+            "meta": {
+                "menu_id": 305,
+                "route": "/m/305",
+            },
+            "canonical_navigation": {
+                "schema_version": "1.0",
+                "route": "/m/305",
+                "authority": {
+                    "state": "container",
+                    "source": "system.init.navigation.nav",
+                    "key": "container:305",
+                },
+            },
+            "children": [{
+                "key": "scenario.entry.469.676",
+                "label": "项目看板",
+                "menu_id": 469,
+                "action_id": 676,
+                "scene_key": "project.dashboard",
+                "route": "/a/676?menu_id=469",
+                "meta": {
+                    "menu_id": 469,
+                    "action_id": 676,
+                    "scene_key": "project.dashboard",
+                    "route": "/a/676?menu_id=469",
+                },
+                "canonical_navigation": {
+                    "schema_version": "1.0",
+                    "route": "/a/676?menu_id=469",
+                },
+                "children": [],
+            }],
+        }]
+        authority = {
+            "primary_actions": [{
+                "menu_id": 469,
+                "action_id": 676,
+                "route": "/a/676?menu_id=469",
+            }],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "menu_containers": [],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        project_center = projected_nav[0]
+        self.assertNotIn("route", project_center)
+        self.assertNotIn("route", project_center["meta"])
+        self.assertIsNone(project_center["canonical_navigation"]["route"])
+        self.assertEqual(
+            project_center["canonical_navigation"]["authority"],
+            {
+                "state": "container",
+                "source": "system.init.navigation.nav",
+                "key": "container:305",
+            },
+        )
+        self.assertEqual(project_center["children"][0]["route"], "/s/project.dashboard")
+        self.assertEqual(projected_authority["menu_containers"], [])
+
+    def test_final_route_keeps_an_exactly_authorized_container(self):
+        nav = [{
+            "key": "group:test.project_center",
+            "label": "项目中心",
+            "menu_id": 305,
+            "route": "/m/stale",
+            "meta": {"menu_id": 305, "route": "/m/stale"},
+            "canonical_navigation": {
+                "schema_version": "1.0",
+                "route": "/m/stale",
+            },
+            "children": [{
+                "key": "menu_469",
+                "label": "项目看板",
+                "menu_id": 469,
+                "action_id": 676,
+                "children": [],
+            }],
+        }]
+        authority = {
+            "primary_actions": [{"menu_id": 469, "action_id": 676}],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "menu_containers": [{
+                "menu_id": 305,
+                "route_kind": "PRIMARY_NAV",
+                "route": "/m/stale",
+                "source": "role_surface.menu_xmlids",
+            }],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        self.assertEqual(projected_nav[0]["route"], "/m/305")
+        self.assertEqual(
+            projected_nav[0]["canonical_navigation"]["route"],
+            "/m/305",
+        )
+        self.assertEqual(
+            projected_authority["menu_containers"][0]["route"],
+            "/m/305",
+        )
+
     def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
         class DeniedModel:
             def check_access_rights(self, operation, raise_exception=False):

@@ -385,15 +385,46 @@
       "failure_owner": "environment_defect",
       "reason": "The GitHub-hosted runner could not resolve azure.archive.ubuntu.com and failed while installing Chromium OS dependencies.",
       "recovery": "The source tree is being updated for the independent backend-suite recovery, so a new exact head will receive fresh dependency installation and required checks."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "5dc59203e9bc9cfa293f4500bb7ca275ce1ec5ef",
+      "reason": "The scenarioized project-center directory menu 305 published /m/305, but final route_authority.menu_containers contained no exact authorization for menu 305. The frontend correctly rejected the contract with CANONICAL_NAVIGATION_ROUTE_MISMATCH.",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/list-surface-structure-5dc59203e-retry.log",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 55,
+      "notes": "The affected navigation target passed after the final-route projection stopped publishing an unbacked directory route. Direct nested suites also passed 5 + 10 + 3 tests.",
+      "failure_owner": "product_defect",
+      "recovery": "project_final_navigation_routes now publishes a directory route only when final authority contains its exact menu container, and keeps child scene routes unchanged."
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 174,
+      "notes": "Scenario center 7, publication consumers 40, scenario surface 17, intent 21 and runtime capability 89 tests all passed."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 25,
+      "unmapped_paths": 0,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T032009Z-3674503-995755266/receipt.json",
+      "notes": "All 25 affected targets exited zero; blockedTargets and notRunTargets are empty."
     }
   ],
   "blockers": [
-    "The pure-Python test fix requires a new exact head and fresh required-check runs.",
-    "The previous exact head's professional and frontend jobs failed only at GitHub-runner dependency downloads due DNS resolution failure.",
+    "The final-contract route repair requires a clean exact head, refreshed merge-stage evidence and fresh required-check runs.",
+    "list_surface_structure must be rerun on the repaired candidate after acceptance runtime preparation.",
     "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
     "No merge or deployment has been performed."
   ],
-  "next_exact_step": "Freeze and commit the mixed-Python test recovery, push PR 872, and verify every required check on the new exact head.",
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the repaired final-contract projection, prepare the exact candidate acceptance runtime, and rerun list_surface_structure.",
   "layer": {
     "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
     "layer_target": "tenant-selected scenario composition over native capability references",

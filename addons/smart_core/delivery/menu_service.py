@@ -1053,6 +1053,38 @@ class MenuService:
         """
         authority = route_authority if isinstance(route_authority, dict) else {}
         targets: dict[tuple[int, int], dict] = {}
+        container_authority_by_menu: dict[int, dict] = {}
+        declared_authority_by_menu: dict[int, dict] = {}
+        for row in authority.get("menu_containers") or []:
+            if not isinstance(row, dict):
+                continue
+            try:
+                menu_id = int(row.get("menu_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = 0
+            if menu_id > 0 and str(row.get("route") or "").strip():
+                container_authority_by_menu[menu_id] = row
+        for bucket in (
+            "primary_actions",
+            "role_home_actions",
+            "contextual_actions",
+            "admin_actions",
+        ):
+            for row in authority.get(bucket) or []:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    menu_id = int(row.get("menu_id") or 0)
+                    action_id = int(row.get("action_id") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if (
+                    menu_id > 0
+                    and action_id <= 0
+                    and isinstance(row.get("entry_target"), dict)
+                    and row.get("entry_target")
+                ):
+                    declared_authority_by_menu.setdefault(menu_id, row)
 
         def walk(node: dict) -> dict:
             candidate = dict(node)
@@ -1076,12 +1108,38 @@ class MenuService:
                 or ""
             ).strip()
             surface = str(entry_target.get("surface") or "").strip()
-            route = derive_entry_route(
-                scene_key=scene_key,
-                action_id=action_id,
-                menu_id=menu_id,
-                surface=surface,
+            container = (
+                container_authority_by_menu.get(menu_id)
+                if action_id <= 0 and menu_id > 0
+                else None
             )
+            declared = (
+                declared_authority_by_menu.get(menu_id)
+                if action_id <= 0 and menu_id > 0
+                else None
+            )
+            if scene_key:
+                route = derive_entry_route(scene_key=scene_key)
+            elif action_id > 0:
+                route = derive_entry_route(
+                    action_id=action_id,
+                    menu_id=menu_id,
+                )
+            elif container is not None:
+                route = derive_entry_route(menu_id=menu_id)
+                container["route"] = route
+            elif declared is not None:
+                route = str(declared.get("route") or "").strip()
+                if not route and surface:
+                    route = derive_entry_route(
+                        menu_id=menu_id,
+                        surface=surface,
+                    )
+            else:
+                # A directory grouping can contain authorized children without
+                # owning a navigable target itself. Publishing /m/<id> here
+                # would create a route that the sealed authority never granted.
+                route = ""
             if scene_key:
                 next_target = build_scene_entry_target(
                     scene_key=scene_key,
@@ -1117,6 +1175,24 @@ class MenuService:
                 if canonical:
                     canonical["route"] = route
                     candidate["canonical_navigation"] = canonical
+            else:
+                candidate.pop("route", None)
+                meta.pop("route", None)
+                if isinstance(candidate.get("entry_target"), dict):
+                    candidate["entry_target"] = {
+                        key: value
+                        for key, value in candidate["entry_target"].items()
+                        if key != "route"
+                    }
+                    meta["entry_target"] = dict(candidate["entry_target"])
+                canonical = (
+                    dict(candidate.get("canonical_navigation"))
+                    if isinstance(candidate.get("canonical_navigation"), dict)
+                    else {}
+                )
+                if canonical:
+                    canonical["route"] = None
+                    candidate["canonical_navigation"] = canonical
             if scene_key:
                 candidate["scene_key"] = scene_key
                 meta["scene_key"] = scene_key
@@ -1126,7 +1202,9 @@ class MenuService:
                 for child in candidate.get("children") or []
                 if isinstance(child, dict)
             ]
-            if menu_id > 0 and action_id > 0:
+            if menu_id > 0 and (
+                action_id > 0 or (declared is not None and scene_key)
+            ):
                 targets[(menu_id, action_id)] = {
                     "route": route,
                     "scene_key": scene_key,
