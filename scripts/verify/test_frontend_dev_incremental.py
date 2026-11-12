@@ -1452,6 +1452,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_generated_evidence_registry_routes_to_both_consumers(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/ops/generated_evidence_paths.py"]),
+            [
+                "verify.agent.resume.unit",
+                "verify.frontend.dev.incremental.unit",
+                "verify.workspace.branch.sync-main",
+            ],
+        )
+
     def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(
             select_targets([

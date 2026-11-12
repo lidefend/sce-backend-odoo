@@ -18,6 +18,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+try:
+    from scripts.ops.generated_evidence_paths import GENERATED_EVIDENCE_PATHS
+except ModuleNotFoundError:
+    from generated_evidence_paths import GENERATED_EVIDENCE_PATHS
+
 
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -78,23 +83,7 @@ SEMANTIC_UNION_REQUIRED_MARKERS = {
         ),
     ),
 }
-GENERATED_EVIDENCE_CONFLICT_PATHS = (
-    "contracts/generated/contract_structure_fingerprint.json",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/e2e_journey_matrix.md",
-    "docs/engineering_convergence/github_remote_execute.sh",
-    "docs/engineering_convergence/github_remote_execution_plan.md",
-    "docs/engineering_convergence/module_dependency_map.md",
-    "docs/engineering_convergence/split_plan_queue.md",
-    "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
-    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
-    "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
-    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
-)
+GENERATED_EVIDENCE_CONFLICT_PATHS = GENERATED_EVIDENCE_PATHS
 # Generator and governance source changes may come from the candidate only
 # after they have passed the responsibility path/patch checks above. The
 # refresh itself is still restricted to the exact generated-output allowlist.

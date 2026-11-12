@@ -702,6 +702,7 @@ RULES = (
         "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/ops/incremental_execution.py",
         "scripts/ops/agent_run_context.py",
+        "scripts/ops/generated_evidence_paths.py",
         "scripts/verify/test_agent_run_context.py",
         "make/frontend.mk",
     ), (
@@ -710,6 +711,7 @@ RULES = (
     )),
     Rule((
         "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/generated_evidence_paths.py",
         "scripts/ops/test_safe_branch_sync_main.py",
     ), (
         "verify.workspace.branch.sync-main",

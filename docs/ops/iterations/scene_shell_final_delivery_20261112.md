@@ -118,3 +118,9 @@ absent. The test also passed counts/detail/submission, company A-B-A scope,
 reviewer approval and readback, reject-reason safety, project-member isolation,
 and 1440/1280/390 responsive views. This closes the batch's behavioral
 acceptance; it does not deploy the candidate or claim user acceptance.
+
+Generated tracked reports no longer require manual insertion into each run's
+scope. `generated_evidence_paths.py` is the single canonical ownership list used
+by both run resolution and branch synchronization. Generated changes are
+reported as `derived_scope`; unlisted or unowned files still make the run
+`reconcile` and fail closed.

@@ -11,11 +11,6 @@
     ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
     ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
     "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
-    "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/module_dependency_map.md",
-    "docs/engineering_convergence/split_plan_queue.md",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
     "addons/smart_core/delivery/scene_shell_compiler.py",
     "addons/smart_core/handlers/system_init.py",
@@ -35,6 +30,10 @@
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/test_frontend_list_surface_search_contract.py",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ops/agent_run_context.py",
+    "scripts/ops/generated_evidence_paths.py",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/verify/test_agent_run_context.py",
     "make/frontend.mk",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
@@ -234,6 +233,25 @@
       "status": "passed",
       "report": ".runtime/final-acceptance/my-work-approval/report.json",
       "notes": "Designed scene resolved from final system.init as my_work.workspace/designed_scene at /s/my_work.workspace; MyWorkView rendered without ActionView. J07 counts/company A-B-A, J08 approval/readback, reject reason safety, project-member isolation and 1440/1280/390 responsive views all passed."
+    },
+    {
+      "command": "make verify.agent.resume.unit",
+      "status": "passed",
+      "tests": 57,
+      "notes": "Generated tracked evidence is now derived scope automatically; ordinary undeclared files still remain fail-closed."
+    },
+    {
+      "command": "make verify.workspace.branch.sync-main",
+      "status": "passed",
+      "tests": 52,
+      "notes": "The canonical generated-evidence path registry is shared by run scope and branch-sync generated evidence handling."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 12,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T081211Z-926426-379144519/receipt.json",
+      "notes": "All affected P4 targets passed; generated reports appeared under derived_scope without manual run-scope edits."
     }
   ],
   "blockers": [
