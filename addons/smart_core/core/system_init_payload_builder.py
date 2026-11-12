@@ -431,8 +431,9 @@ class SystemInitPayloadBuilder:
             minimal["page_contracts"] = minimal_page_contracts
         if isinstance((minimal.get("page_contracts") or {}).get("pages"), dict) and "home" in (minimal.get("page_contracts") or {}).get("pages", {}):
             current_route = minimal.get("default_route") or {}
+            # Keep the established root-path alias for platform home, while
+            # never replacing a qualified business landing with that home.
             if (not (minimal.get("nav_meta") or {}).get("platform_minimum_surface")
-                    and not current_route.get("route")
                     and current_route.get("scene_key") in (None, "", "workspace.home")):
                 minimal["default_route"] = cls._build_workspace_home_default_route()
             minimal["workspace_home_ref"] = cls._build_workspace_home_ref(row)

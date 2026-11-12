@@ -43,3 +43,5 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 6a5424300 的 bundle 定向26项：1失败/1错误。setup候选显式发布后被旧 resolve_scene_key 的逐行 model/view 回退映射成enterprise.company，已按原生 menu/action 身份优先修复并补纯单元。班组项目经办正例缺失菜单原生 entry_p03 组，补正例并保留撤销入口后拒绝的负例。此次HTTP启动/fresh/cached一致性通过；另修复求解异常不应被ormcache持久缓存为空authority，新增瞬时失败恢复用例。当前仍verification_pending。
 
 1c7bec14a 的 bundle 集成32项：31通过，1失败。工作台正反例、瞬时缓存恢复通过；setup共同求解和真实handler role正确，但精简payload因home页面存在重写default_route/home_ref。修复投影仅补缺省首页、保留明确有效路由，新增pure反例及planner映射，定向单元通过，独立源码复核通过；新候选ORM仍待验证。
+
+5d7ea12a5：身份ORM26通过；lifecycle55中仅HTTP首页根路径兼容断言失败（应保持 `/`，不可无故变成 `/s/workspace.home`）。setup正式落点及真实handler、未发布/未选择/原生拒绝均已跑过，其他54项通过。修正首页别名投影并新增纯单元，不改变非首页有效路由。整组通过仍待新候选回执。

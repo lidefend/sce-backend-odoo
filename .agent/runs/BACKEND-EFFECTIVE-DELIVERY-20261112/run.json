@@ -1368,10 +1368,18 @@
       "receipt": ".runtime/test-baseline/1794487724550249397/receipt.json",
       "log": ".runtime/backend-effective-review-integrated-2.log",
       "reason": "31 passed including workspace native exposure withdrawal and transient cache recovery. Setup qualification/role output correct, but minimal payload overwrites explicit default_route with home; repaired projection and added pure counterexample without weakening ORM assertions."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "candidate": "5d7ea12a5e3a3e9d669cda30814cf9f8fc6f6f4a",
+      "status": "failed",
+      "log": ".runtime/backend-effective-review-iteration-final.log",
+      "reason": "Identity26 passed. Lifecycle55 has only home root-path compatibility failure (/s/workspace.home vs established /); full setup landing/handler and denial scenarios passed. Preserve home alias while retaining explicit non-home landing.",
+      "receipt": ".runtime/test-baseline/1794488946892733573/receipt.json"
     }
   ],
   "blockers": [],
-  "next_exact_step": "Run full mapped ci.local.iteration on frozen corrected startup projection; require nonzero lifecycle/company/workspace ORM, clean generated evidence, final read-only review and exact-head PR875 update.",
+  "next_exact_step": "Run full mapped iteration on frozen home-compatible projection, then exact-head PR875 update and required remote checks.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",

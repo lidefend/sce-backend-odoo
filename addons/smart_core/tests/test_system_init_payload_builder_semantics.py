@@ -357,6 +357,16 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertEqual(payload["workspace_home_ref"]["scene_key"], "enterprise.setup")
         self.assertIn("enterprise.setup", target.SystemInitPayloadBuilder.resolve_startup_scene_subset(payload))
 
+    def test_effective_home_preserves_root_path_compatibility(self):
+        payload = target.SystemInitPayloadBuilder.build_startup_surface({
+            "user": {"id": 1}, "nav": [], "nav_meta": {},
+            "default_route": {"scene_key": "workspace.home", "route": "/s/workspace.home", "reason": "effective_delivery"},
+            "intents": [], "feature_flags": {}, "role_surface": {"landing_scene_key": "workspace.home"},
+            "page_contracts": {"pages": {"home": {"schema_version": "v1"}}},
+        })
+        self.assertEqual(payload["default_route"]["route"], "/")
+        self.assertEqual(payload["default_route"]["scene_key"], "workspace.home")
+
     def test_build_startup_surface_keeps_platform_minimum_default_route_reason(self):
         payload = target.SystemInitPayloadBuilder.build_startup_surface(
             {
