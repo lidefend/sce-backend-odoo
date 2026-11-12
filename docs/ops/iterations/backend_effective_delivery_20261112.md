@@ -37,3 +37,5 @@ P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.
 修复候选补充：有效声明共用 DB/导入/代码优先级；tile 按实际或冻结 payload 准入；落点从最终 authority 选择。移除 dbname 派生映射缓存，场景/版本事实变化清 registry。远端 bundle 分片另暴露正式 contextual 工作台承载 menu 与目标 action 不同，被新增严格绑定误拒绝；仅可信角色声明允许 carrier，并分别检查两端原生权限。55 项菜单单元、63 项场景语义及三组定向 Make 单元通过；新增导入和版本生命周期 ORM 尚待执行，旧候选结果不能覆盖本轮。
 
 5486a5f74 的受管 lifecycle：54 项中 1 项失败（落点正例未冻结正式发布事实，53 项通过），完整回执 `.runtime/test-baseline/1794485214694278724/receipt.json`；未记为整组通过。补齐正式发布前置后复验。新 workspace 目标自身四份测试的 planner 映射也已补齐。
+
+01f67e709 增量检查在 lifecycle 阶段停止：身份 ORM26通过；lifecycle54中2失败。落点测试还需显式发布原生 setup 候选（仅冻结既有策略不会授予候选资格），最终准入导航中的 scene 标记也应纳入落点集合。另 HTTP startup 与直接缓存 authority 的无 action 首页 pair 不一致，增加 fresh/cached 诊断，尚未定因，不能宣称修复完成。

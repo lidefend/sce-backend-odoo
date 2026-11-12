@@ -1312,10 +1312,18 @@
       "reason": "Landing positive fixture omitted formal release freeze; only workspace.home was correctly admitted. Import override/cache lifecycle and effective/frozen tile regressions passed. Added explicit governed test release prerequisites.",
       "receipt": ".runtime/test-baseline/1794485214694278724/receipt.json",
       "log": ".runtime/backend-effective-review-lifecycle.log"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "failed",
+      "candidate": "01f67e7099bd9f2d3cbc08a278c853681e218857",
+      "log": ".runtime/backend-effective-review-iteration.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261112T121714Z-2411084-662178936/receipt.json",
+      "reason": "Identity ORM26 passed. Lifecycle54 has two failures: setup candidate absent from formal policy despite snapshot, and HTTP startup versus cached direct authority differs on actionless home. Added explicit publication fixture and fresh-vs-cached diagnostic; final admitted nav contributes scene identities to landing."
     }
   ],
   "blockers": [],
-  "next_exact_step": "Validate frozen S2 correction candidate with governed lifecycle and workspace ORM, then full selected iteration and exact-head PR update; no merge authorized.",
+  "next_exact_step": "Run focused governed bundle startup/lifecycle/workspace tests on frozen candidate to diagnose HTTP-vs-direct home mismatch and validate explicit released landing; then affected iteration.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",

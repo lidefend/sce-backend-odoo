@@ -300,7 +300,11 @@ class TestIntentSmoke(HttpCase):
         self.assertEqual(route_authority.get("contract_version"), "2.0.0")
         self.assertEqual(route_authority.get("schema_version"), "2.0.0")
         from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs, published_route_authority
-        direct = published_route_authority(self.test_user.with_user(self.test_user).env)
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        direct_env = self.test_user.with_user(self.test_user).env
+        fresh = EffectiveDeliveryService(direct_env).resolve().route_authority
+        direct = published_route_authority(direct_env)
+        self.assertEqual(published_pairs(fresh), published_pairs(direct), {"fresh": fresh, "cached": direct})
         self.assertEqual(published_pairs(route_authority), published_pairs(direct))
         self.assertTrue(any((node.get("entry_target") or {}).get("scene_key") == "workspace.home"
                             for node in executable_leaves))

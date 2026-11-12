@@ -174,6 +174,18 @@ class TestCompanyRouteScopeCache(TransactionCase):
         config = self.env["ir.config_parameter"].sudo()
         config.set_param("smart_core.platform_release_db", self.env.cr.dbname)
         config.set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
+        # Discovery alone is intentionally unpublished. Explicitly release the
+        # native setup entry for this positive landing scenario.
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        catalog = ProductPolicyCatalogSyncService(self.env).build_catalog_policy_payload(product_key="construction.standard")
+        setup = next(deepcopy(row) for group in catalog["menu_groups"] for row in group["menus"]
+                     if row.get("menu_xmlid") == "smart_construction_core.menu_sc_enterprise_initialization")
+        setup.update(enabled=True, release_state="released", access_level="public")
+        policy = self.env["sc.product.policy"].search([("product_key", "=", "construction.standard")], limit=1)
+        self.assertTrue(policy)
+        groups = deepcopy(policy.menu_groups)
+        groups.append({"group_key": "test_setup", "group_label": "Setup", "menus": [setup]})
+        policy.menu_groups = groups
         EditionReleaseSnapshotService(self.env).freeze_release_surface(
             product_key="construction.standard", version="effective-landing-test", replace_active=True)
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
@@ -191,7 +203,7 @@ class TestCompanyRouteScopeCache(TransactionCase):
         service = delivery.EffectiveDeliveryService(env)
         admitted = service.resolve()
         self.assertEqual(admitted.role_surface["scene_candidates"][0], "enterprise.setup")
-        self.assertIn("enterprise.setup", service._scene_keys([], admitted.route_authority))
+        self.assertIn("enterprise.setup", service._scene_keys(admitted.payload["nav"], admitted.route_authority))
         self.assertEqual(admitted.role_surface["landing_scene_key"], "enterprise.setup")
         self.assertEqual(admitted.role_surface["landing_path"], "/s/enterprise.setup")
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler

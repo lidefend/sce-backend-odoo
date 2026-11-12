@@ -121,7 +121,7 @@ class EffectiveDeliveryService:
         # It cannot make an unpublished, unselected or natively denied entry
         # available merely because the role declares it as a candidate.
         role = engine._runtime_role_surface({"role_surface": resolver.build_role_surface(
-            user_xmlids, nav, self._scene_keys([], authority),
+            user_xmlids, nav, self._scene_keys(nav, authority),
         )})
         payload["nav"] = nav
         payload["route_authority"] = authority
