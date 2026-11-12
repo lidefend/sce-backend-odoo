@@ -86,6 +86,44 @@ def published_pairs(authority: dict) -> set:
     return set(iter_published_pairs(authority))
 
 
+def coalesce_effective_route_authority(authority: dict) -> dict:
+    """One route per native target and execution meaning after tenant selection.
+
+    Multiple scene references are provenance, not ambiguous execution. Different
+    context requirements or native execution payloads remain separate so direct
+    validation can still reject a genuinely ambiguous request.
+    """
+    from copy import deepcopy
+    import json
+
+    result = deepcopy(authority)
+    seen = {}
+    for bucket in ROUTE_AUTHORITY_BUCKETS:
+        kept = []
+        for row in result.get(bucket) or []:
+            menu_id, action_id = _positive_int(row.get("menu_id")), _positive_int(row.get("action_id"))
+            if not action_id:
+                kept.append(row)
+                continue
+            meaning = [menu_id, action_id, row.get("model") or "",
+                       row.get("allowed_operation") or "read", row.get("context_requirements") or {},
+                       row.get("domain") or "[]", row.get("context") or "{}",
+                       row.get("entry_target") or {}, row.get("delivery_scope") or ""]
+            key = json.dumps(meaning, sort_keys=True, ensure_ascii=False, default=str)
+            reference = {"scene_key": row.get("scene_key"), "item_key": row.get("item_key")}
+            existing = seen.get(key)
+            if existing is None:
+                seen[key] = row
+                kept.append(row)
+                existing = row
+            if reference["scene_key"]:
+                references = existing.setdefault("scene_references", [])
+                if reference not in references:
+                    references.append(reference)
+        result[bucket] = kept
+    return result
+
+
 def published_menu_ids(authority: dict) -> set:
     """Published menu carriers: action entries plus authorised containers."""
     menu_ids = {menu_id for menu_id, _action_id in published_pairs(authority) if menu_id}

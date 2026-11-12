@@ -115,6 +115,9 @@ class EffectiveDeliveryService:
             for row in authority.get("contextual_actions", [])
             if row.get("source") == "scene_internal_action_authority" and row.get("allowed") is True
         }
+        from .runtime_route_authority import coalesce_effective_route_authority
+        authority = coalesce_effective_route_authority(authority)
+        payload["route_authority"] = authority
         payload.setdefault("meta", {})["platform_release_gate"] = {
             key: value for key, value in gate.items() if key != "allowed"
         }

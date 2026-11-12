@@ -138,6 +138,31 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
 
         return call
 
+    def test_multi_scene_references_share_one_direct_execution_meaning(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("effective_authority_test", ROOT / "delivery" / "runtime_route_authority.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        base = {"menu_id": 0, "action_id": 777, "model": "sc.financing.loan",
+                "route_kind": "CONTEXTUAL_ROUTE", "allowed_operation": "read"}
+        for selected in (("A", "B"), ("B",), ()):
+            with self.subTest(selected=selected):
+                raw = {"contextual_actions": [{**base, "scene_key": scene, "item_key": "open"} for scene in selected]}
+                self.published = module.coalesce_effective_route_authority(raw)
+                result = self._handler()({"action_id": 777})
+                self.assertEqual(bool(result.ok), bool(selected))
+                if selected:
+                    references = self.published["contextual_actions"][0]["scene_references"]
+                    self.assertEqual({row["scene_key"] for row in references}, set(selected))
+                self.assertEqual(len(raw["contextual_actions"]), len(selected))
+        for difference in ({"context_requirements": {"required_query": ["project_id"]}},
+                           {"allowed_operation": "write"}, {"domain": "[('active','=',True)]"},
+                           {"context": "{'default_kind':'other'}"}):
+            with self.subTest(difference=difference):
+                self.published = module.coalesce_effective_route_authority({
+                    "contextual_actions": [dict(base), {**base, **difference}]})
+                self.assertFalse(self._handler()({"action_id": 777}).ok)
+
     def test_the_validate_gate_reads_the_published_authority(self):
         call = self._handler()
         result = call({"action_id": 777})

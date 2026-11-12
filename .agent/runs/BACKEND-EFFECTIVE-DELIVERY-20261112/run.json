@@ -17,6 +17,7 @@
     "addons/smart_construction_scene/__init__.py",
     "addons/smart_construction_scene/core_extension.py",
     "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
     "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
     "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -76,6 +77,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -120,6 +122,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -164,6 +167,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -208,6 +212,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -252,6 +257,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -296,6 +302,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -340,6 +347,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -384,6 +392,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -428,6 +437,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -472,6 +482,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -516,6 +527,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -560,6 +572,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -604,6 +617,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -648,6 +662,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -692,6 +707,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -736,6 +752,7 @@
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/delivery/effective_delivery_inputs.py",
@@ -816,6 +833,38 @@
       "command": "make verify.frontend.scene_shell_contract.unit",
       "status": "passed",
       "log": ".runtime/backend-effective-frontend-consumer.log"
+    },
+    {
+      "command": "make verify.capability.identity_boundary.orm",
+      "status": "passed",
+      "head": "eeaf302fb140b1c45d55409ed176812f59e93407",
+      "tests": 23,
+      "receipt": ".runtime/test-baseline/1794479077846826080/receipt.json",
+      "source_unchanged": true,
+      "scope": "Native alias, catalog publication separation and maintained policy; later shared-route coalescing requires affected revalidation."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "interrupted",
+      "log": ".runtime/backend-effective-iteration-5.log",
+      "reason": "First ORM passed. Stopped next cold runner for confirmed multi-scene duplicate route ambiguity repair."
+    },
+    {
+      "command": "make verify.product.entry_publication.unit verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "log": ".runtime/backend-effective-multiscene.log"
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "failed",
+      "log": ".runtime/backend-effective-multiscene-consumers.log",
+      "reason": "New regression omitted required menu_xmlids_by_id argument; corrected test invocation, no production behavior changed."
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "log": ".runtime/backend-effective-multiscene-consumers-2.log",
+      "tests": 90
     }
   ],
   "blockers": [],
@@ -851,6 +900,7 @@
       "fingerprint": "985de0180e59d53c8b87f04e0529f50dfa191b603c9b3f44b59f74c6a9778778",
       "code_findings": "No remaining proven S0-S2; previous four fixed",
       "uncovered": "Native group without XMLID cache now explicitly keyed/tested; candidate update requires delta review. Runtime/remote evidence still pending."
-    }
+    },
+    "additional_finding": "S1 equivalent scene references duplicated direct route rows. Fixed after tenant filtering with execution-semantic coalescing and all alias descriptors retained; A/B lifecycle and real validator-body regressions added."
   }
 }
