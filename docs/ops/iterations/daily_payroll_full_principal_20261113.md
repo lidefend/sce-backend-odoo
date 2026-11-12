@@ -93,6 +93,46 @@ Still not run at this point: module upgrade on the daily duty, published-face
 convergence, entry verification, independent exact-head review and browser
 business acceptance. These remain required after the protected merge.
 
+## Independent review transport
+
+The code review returned APPROVE, but the existing connected GitHub integration
+could not submit a formal review (`403 Resource not accessible by integration`).
+The repository also had no governed Make entry for an independent review
+account. The batch therefore adds `make pr.review`, which:
+
+- requires an explicit dedicated GitHub configuration directory;
+- rejects credentials that resolve to any identity other than the declared reviewer;
+- rejects approval by the PR author;
+- requires clean local and remote exact-head identity plus the current main base;
+- requires the four merge-critical remote checks to succeed;
+- defaults to dry-run and requires an explicit confirmation for the API write;
+- is idempotent when the same reviewer already approved the same head.
+
+The local reviewer configuration is:
+
+```text
+config_dir=/home/lidefend/.config/gh-independent-review
+login=Leedefend
+directory_mode=0700
+credential_mode=0600
+repository_permission=pull
+```
+
+Focused P4 validation after implementation:
+
+- `make verify.pr.review.unit`: PASS, 9 tests
+- `make verify.pr.push.unit`: PASS, 18 isolated safe-push scenarios and 6 tests
+- `make verify.frontend.dev.incremental.unit`: PASS, 130 tests
+- `make verify.agent.ledger.unit`: PASS, 18 tests
+- `make verify.agent.resume.unit`: PASS, 57 tests
+
+The planner route was corrected while testing: `make/codex.mk` selects both the
+existing publication contract and the new review-entry contract, while the two
+new review-tool files select only `verify.pr.review.unit`.
+
+`ci.delivery.freeze.prepare` subsequently passed and registered the new review
+test in the tracked inventory, bringing the current inventory to 1697 entries.
+
 ## Rollback
 
 Revert the P1 action and guard commit. No business rows, user memberships, model

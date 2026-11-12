@@ -3,9 +3,9 @@ goal:
   id: DAILY-PAYROLL-FULL-PRINCIPAL-20261113
   title: Restore the released payroll entry for the business-full principal
   status: verification_pending
-  formal_product_layer: P1 construction industry standard product
-  layer_target: released administration-center payroll action authorization
-  module: smart_construction_core
+  formal_product_layer: P1 construction industry standard product; P4 governed delivery tooling
+  layer_target: released payroll entry authorization and exact-head independent review submission
+  module: smart_construction_core; repository delivery tooling
   standard_vs_user_specific: construction_product_standard
   why_here: >
     The payroll menu is a standard P1 released entry and is rebound to the
@@ -17,7 +17,9 @@ goal:
     The frontend already consumes the published menu and must not infer access.
     The daily runtime database is a deployment carrier, not a durable source for
     permission repair. Demo-seed membership changes would special-case one
-    account instead of fixing the standard product action contract.
+    account instead of fixing the standard product action contract. The review
+    submission entry is delivery tooling because it only authenticates and
+    publishes an independent decision; it must not alter product semantics.
   blast_radius:
     paths:
       - .agent/active-runs.json
@@ -25,8 +27,14 @@ goal:
       - .agent/runs/DAILY-PAYROLL-FULL-PRINCIPAL-20261113/run.json
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/ops/codex_execution_allowlist.md
       - docs/ops/iterations/daily_payroll_full_principal_20261113.md
       - addons/smart_construction_core/views/menu_product_administration_wave1.xml
+      - make/codex.mk
+      - scripts/ops/pr_review_submit.py
+      - scripts/ops/test_pr_review_submit.py
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/product_administration_center_wave1_guard.py
       - scripts/verify/test_frontend_dev_incremental.py
@@ -46,6 +54,7 @@ goal:
     - the daily entry verifier reads back the exact deployed source and frontend identities
     - runtime navigation shows the payroll entry for the declared full-product principal
     - generated complexity reports reflect the two changed verification tools
+    - an independently authenticated reviewer can submit a formal APPROVE against the exact PR head
   exclusions:
     - frontend source changes
     - platform-kernel permission semantics

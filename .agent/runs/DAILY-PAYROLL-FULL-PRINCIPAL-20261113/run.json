@@ -12,8 +12,14 @@
     ".agent/runs/DAILY-PAYROLL-FULL-PRINCIPAL-20261113/run.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/codex_execution_allowlist.md",
     "docs/ops/iterations/daily_payroll_full_principal_20261113.md",
     "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+    "make/codex.mk",
+    "scripts/ops/pr_review_submit.py",
+    "scripts/ops/test_pr_review_submit.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/product_administration_center_wave1_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py",
@@ -62,8 +68,17 @@
         "make/codex.mk"
       ],
       "kind": "offline"
+    },
+    "pr_review_submission": {
+      "target": "verify.pr.review.unit",
+      "inputs": [
+        "scripts/ops/pr_review_submit.py",
+        "scripts/ops/test_pr_review_submit.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the verified P1 action and planner-routing fix, publish the protected PR, and obtain independent exact-head review."
+  "next_exact_step": "Run the consolidated incremental gate, commit and publish the P4 review entry, then dry-run and submit the Leedefend APPROVE against the new exact head."
 }

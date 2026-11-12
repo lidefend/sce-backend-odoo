@@ -337,6 +337,19 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 更新 PR 标题 / 描述 / labels / assignees / reviewers
   * 不允许修改 base 分支
 
+* `make pr.review`
+
+  * 只从显式提供的 `PR_REVIEW_CONFIG_DIR` 读取一个独立 reviewer 账户，
+    禁止回退到作者账户或工作区默认 GitHub 配置；
+  * 必须同时提供 `PR`、`EXPECTED_HEAD`、`GITHUB_EXPECTED_MAIN`、
+    `PR_REVIEW_EXPECTED_LOGIN`、`PR_REVIEW_BODY_FILE`；
+  * 提交前校验 clean worktree、合规分支、本地／远端 exact HEAD、PR base、
+    reviewer 与作者不同、专用目录和凭据文件权限，以及四个必需远端检查；
+  * 默认只做预演；实际写入要求 `APPLY=1` 和
+    `PR_REVIEW_CONFIRM=SUBMIT_EXACT_HEAD_INDEPENDENT_REVIEW`；
+  * 不修改 PR 代码、base、标签或合并状态，只新增一次绑定 exact HEAD
+    的正式 review。
+
 * `make pr.status`
 
   * 查询 PR 状态（只读，允许任何分支）

@@ -1179,11 +1179,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.baseline.iteration.execution.policy",
                 "verify.ci.path_ownership.unit",
                 "verify.pr.push.unit",
+                "verify.pr.review.unit",
             ],
         )
         self.assertEqual(
             select_targets(["scripts/verify/test_pr_publish_preflight.py"]),
             ["verify.pr.push.unit"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/ops/pr_review_submit.py"]),
+            ["verify.pr.review.unit"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/ops/test_pr_review_submit.py"]),
+            ["verify.pr.review.unit"],
         )
 
     def test_path_ownership_and_agent_files_route_to_their_own_checks(self) -> None:

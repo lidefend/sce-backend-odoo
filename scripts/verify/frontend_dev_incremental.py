@@ -788,6 +788,13 @@ RULES = (
         "verify.pr.push.unit",
     )),
     Rule((
+        "make/codex.mk",
+        "scripts/ops/pr_review_submit.py",
+        "scripts/ops/test_pr_review_submit.py",
+    ), (
+        "verify.pr.review.unit",
+    )),
+    Rule((
         "scripts/ci/secret_scan.py",
         "scripts/ci/personal_data_scan.py",
         "scripts/ci/trusted_scan_scope.py",
