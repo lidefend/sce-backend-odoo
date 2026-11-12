@@ -77,17 +77,19 @@ Unreviewed computations retain the previous recursive scalar-only rule.
 The consolidated receipt is:
 
 ```text
-.runtime/frontend-dev-validation/executions/20261112T224920Z-2148928-995468935/receipt.json
+.runtime/frontend-dev-validation/executions/20261112T230226Z-2245146-286839489/receipt.json
 ```
 
-The ORM regression creates a same-company synthetic project and payroll record,
-keeps the real project-manager payroll record rule active, calls the actual
+The ORM regression creates its own rollback-only non-customer data space and
+operator, then a same-company synthetic project and payroll record. It keeps the
+real project-manager payroll record rule active, calls the actual
 `UiContractV2Handler`, and asserts that the persisted form now contains one
 native feedback host. A first failed run without the project relation was
-correctly denied by that record rule; a second attempted workaround was rejected
-as insufficient, and the final test uses a valid project relation. A platform
-test also denies read access to the reviewed relation and verifies that the
-result still fails closed with `FEEDBACK_SOURCE_FORBIDDEN`.
+correctly denied by that record rule; the second run relied on ambient local
+registration, so independent review required the final self-contained test-space
+setup. A platform test also denies read access to the reviewed relation and
+verifies that the result still fails closed with
+`FEEDBACK_SOURCE_FORBIDDEN`.
 
 The repo's run evaluator reports these receipts as `stale` because this run
 declares `environment.kind=runtime`; that pre-existing evaluator behaviour marks
