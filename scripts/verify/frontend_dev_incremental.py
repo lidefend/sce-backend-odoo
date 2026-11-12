@@ -86,6 +86,12 @@ class Rule:
 
 RULES = (
     Rule((
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+    ), (
+        "verify.nav.pro01r.route_authority.unit",
+    )),
+    Rule((
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",

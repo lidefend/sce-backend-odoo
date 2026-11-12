@@ -163,6 +163,26 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
                     "contextual_actions": [dict(base), {**base, **difference}]})
                 self.assertFalse(self._handler()({"action_id": 777}).ok)
 
+    def test_coalescing_retains_contextual_action_only_admission_across_buckets(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("effective_authority_test", ROOT / "delivery" / "runtime_route_authority.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        base = {"action_id": 777, "model": "sc.financing.loan", "allowed_operation": "read"}
+        self.published = module.coalesce_effective_route_authority({
+            "primary_actions": [{**base, "menu_id": 1, "route_kind": "PRIMARY_NAV"},
+                                {**base, "menu_id": 2, "route_kind": "PRIMARY_NAV"}],
+            "contextual_actions": [{**base, "menu_id": 1, "route_kind": "CONTEXTUAL_ROUTE"}],
+        })
+        result = self._handler()({"action_id": 777})
+        self.assertTrue(result.ok)
+        self.assertEqual(result.data["menu_id"], 1)
+        self.assertTrue(self._handler()({"action_id": 777, "menu_id": 1}).ok)
+        self.assertTrue(self._handler()({"action_id": 777, "menu_id": 2}).ok)
+        rows = self.published["primary_actions"] + self.published["contextual_actions"]
+        # Existing browser resolver requires this marker for action-only links.
+        self.assertEqual(len([row for row in rows if row["route_kind"] == "CONTEXTUAL_ROUTE"]), 1)
+
     def test_the_validate_gate_reads_the_published_authority(self):
         call = self._handler()
         result = call({"action_id": 777})

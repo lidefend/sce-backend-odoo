@@ -116,11 +116,23 @@ def coalesce_effective_route_authority(authority: dict) -> dict:
                 seen[key] = row
                 kept.append(row)
                 existing = row
+            # Contextual admission also permits an action-only URL. Preserve
+            # that existing grant when the same pair occupies primary nav.
+            if row.get("route_kind") == "CONTEXTUAL_ROUTE":
+                existing["route_kind"] = "CONTEXTUAL_ROUTE"
             if reference["scene_key"]:
                 references = existing.setdefault("scene_references", [])
                 if reference not in references:
                     references.append(reference)
         result[bucket] = kept
+    # A contextual representative must also satisfy the client's strict bucket
+    # schema. Moving it retains primary navigation by the same native pair.
+    buckets = {bucket: [] for bucket in ROUTE_AUTHORITY_BUCKETS}
+    for bucket in ROUTE_AUTHORITY_BUCKETS:
+        for row in result.get(bucket) or []:
+            target = "contextual_actions" if row.get("route_kind") == "CONTEXTUAL_ROUTE" else bucket
+            buckets[target].append(row)
+    result.update(buckets)
     return result
 
 
