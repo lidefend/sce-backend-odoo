@@ -107,12 +107,21 @@
       "reason": "The released list-surface browser probe required the exact native /a route and could not locate the same entry after navigation was scenarioized to /s.",
       "recovery": "The probe now retains the native action route as a matching identity while navigating through the delivered scene route.",
       "recovery_check": "23 tests passed; the probe change is routed to its existing contract lock."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "b207e6e35d4eb707337be06c1235b7284a3544a7",
+      "reason": "The native-delegate scene-ready target incorrectly declared entry_intent=ui.contract. SceneView therefore selected the scene-block contract path instead of embedding the native action, producing a 400 ui.contract request without action identity.",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json",
+      "recovery": "Native-delegate shell targets now expose only route/action/menu/model/view_mode and no scene entry intent; action identity drives native ActionView embedding."
     }
   ],
   "blockers": [
-    "The repair to the list-surface probe must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+    "The native-delegate entry-intent repair must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
   ],
-  "next_exact_step": "Commit the accepted-scope probe repair, prepare the exact new acceptance runtime, and rerun the list-surface browser journey.",
+  "next_exact_step": "Run affected iteration and freeze preparation, commit the native-delegate repair, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",

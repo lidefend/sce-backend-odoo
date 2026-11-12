@@ -39,7 +39,6 @@ setSceneRegistryFromSceneReadyContract({
         menu_id: 379,
         model: 'project.project',
         view_mode: 'list,form',
-        entry_intent: 'ui.contract',
       },
     },
   }],

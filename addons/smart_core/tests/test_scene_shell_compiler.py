@@ -108,6 +108,7 @@ class SceneShellCompilerTests(unittest.TestCase):
         shell = result.scene_shell_rows[0]
         self.assertEqual(shell["target"]["action_id"], 506)
         self.assertEqual(shell["target"]["menu_id"], 379)
+        self.assertNotIn("entry_intent", shell["target"])
         self.assertEqual(shell["meta"]["content_kind"], "native_delegate")
 
     def test_directory_has_no_published_path(self):

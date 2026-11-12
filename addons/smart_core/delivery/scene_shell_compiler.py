@@ -277,7 +277,6 @@ class SceneShellCompiler:
             "menu_id": native_target.get("menu_id"),
             "model": native_target.get("model"),
             "view_mode": ",".join(native_target.get("view_modes") or []),
-            "entry_intent": "ui.contract",
         }
         return {
             "scene": {

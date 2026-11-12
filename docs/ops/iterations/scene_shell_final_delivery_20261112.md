@@ -42,6 +42,15 @@ navigating through the delivered scene route. Its contract lock passes 23 tests;
 the rerun of `ci.local.iteration` executes 12 affected targets with no unmapped
 paths.
 
+The next managed browser run reached the sceneized payment-request route and then
+failed with a `400` response for `ui.contract`. Backend logs showed the request
+carried only company/context and no action identity. The generated shell target
+had incorrectly declared `entry_intent=ui.contract`, which made `SceneView`
+choose the scene-block contract path instead of embedding the native action.
+Native-delegate targets now carry only route/action/menu/model/view mode; action
+identity drives the embedded `ActionView`, while only designed scenes may carry
+scene entry intent.
+
 The candidate still requires freeze preparation, clean commit, exact acceptance
 runtime preparation and user-flow verification. No deployment or product
 acceptance is claimed.
