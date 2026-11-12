@@ -2,6 +2,7 @@
 """Static guard for administration-center P1 wave-one navigation."""
 from __future__ import annotations
 
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -10,6 +11,13 @@ ROOT = Path(__file__).resolve().parents[2]
 WAVE = ROOT / "addons/smart_construction_core/views/menu_product_administration_wave1.xml"
 MANIFEST = ROOT / "addons/smart_construction_core/__manifest__.py"
 ADMIN_PARENT = "smart_construction_core.menu_sc_hr_admin_center"
+PAYROLL_ACTION_GROUPS = frozenset(
+    {
+        "smart_construction_core.group_sc_cap_business_initiator",
+        "smart_construction_core.group_sc_cap_business_config_admin",
+        "smart_construction_core.group_sc_business_full",
+    }
+)
 EXPECTED_RECORD_MENUS = {
     "menu_sc_organization_department": ("部门管理", "10"),
     "menu_sc_runtime_user_management": ("人员档案", "30"),
@@ -25,6 +33,27 @@ UNPUBLISHED = {
 
 def _fields(node: ET.Element) -> dict[str, str]:
     return {field.attrib.get("name", ""): (field.text or "").strip() for field in node.findall("field")}
+
+
+def validate_payroll_action_groups(node: ET.Element | None) -> list[str]:
+    if node is None:
+        return ["工资薪酬 action is required"]
+    groups_field = next(
+        (
+            field
+            for field in node.findall("field")
+            if field.attrib.get("name") == "groups_id"
+        ),
+        None,
+    )
+    values = set(re.findall(r"ref\('([^']+)'\)", groups_field.attrib.get("eval", "") if groups_field is not None else ""))
+    missing = sorted(PAYROLL_ACTION_GROUPS - values)
+    if not missing:
+        return []
+    return [
+        "工资薪酬 action must authorize business-full, initiator and business-configuration principals; "
+        f"missing={missing}"
+    ]
 
 
 def validate() -> list[str]:
@@ -51,6 +80,7 @@ def validate() -> list[str]:
     if payroll_action is None or payroll_menu is None:
         errors.append("工资薪酬 requires one secured aggregate action and direct L2 menu")
     else:
+        errors.extend(validate_payroll_action_groups(payroll_action))
         action = _fields(payroll_action)
         domain = action.get("domain", "")
         if action.get("res_model") != "sc.hr.payroll.document" or any(item not in domain for item in ("salary_registration", "subsidy", "bonus")):

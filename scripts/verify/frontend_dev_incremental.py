@@ -708,6 +708,13 @@ RULES = (
         "verify.product.menu.contract_v1.guard",
     )),
     Rule((
+        "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+        "scripts/verify/product_administration_center_wave1_guard.py",
+        "scripts/verify/test_product_administration_center_wave1_guard.py",
+    ), (
+        "verify.product.administration_center.wave1.guard",
+    )),
+    Rule((
         "addons/smart_construction_core/models/support/scene_orchestration.py",
         "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
     ), (
@@ -779,6 +786,13 @@ RULES = (
         "scripts/verify/test_pr_publish_preflight.py",
     ), (
         "verify.pr.push.unit",
+    )),
+    Rule((
+        "make/codex.mk",
+        "scripts/ops/pr_review_submit.py",
+        "scripts/ops/test_pr_review_submit.py",
+    ), (
+        "verify.pr.review.unit",
     )),
     Rule((
         "scripts/ci/secret_scan.py",

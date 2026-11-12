@@ -272,7 +272,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
+.PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.review pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit verify.pr.review.unit
 
 PR_BASE ?= main
 PR_PUBLISH_MODE ?= merge
@@ -344,6 +344,35 @@ pr.update: guard.prod.forbid
 	echo "[pr.update] branch=$$BR ENV=$$ENV_NAME PR=$$PR"; \
 	eval "gh pr edit $$PR $$ARGS"; \
 	'
+
+PR_REVIEW_CONFIG_DIR ?=
+PR_REVIEW_EXPECTED_LOGIN ?=
+PR_REVIEW_ACTION ?= APPROVE
+PR_REVIEW_BODY_FILE ?=
+PR_REVIEW_REQUIRE_CI ?= 1
+PR_REVIEW_CONFIRM ?=
+
+# Submit one exact-head review with a dedicated reviewer identity. The
+# credential comes only from PR_REVIEW_CONFIG_DIR; this target never falls back
+# to the author account from the workspace delivery-auth directory.
+pr.review: guard.prod.forbid verify.pr.review.unit
+	@test -n "$(PR)" || { echo "[DENY] pr.review: PR is required"; exit 2; }
+	@test -n "$(EXPECTED_HEAD)" || { echo "[DENY] pr.review: EXPECTED_HEAD is required"; exit 2; }
+	@test -n "$(GITHUB_EXPECTED_MAIN)" || { echo "[DENY] pr.review: GITHUB_EXPECTED_MAIN is required"; exit 2; }
+	@test -n "$(PR_REVIEW_CONFIG_DIR)" || { echo "[DENY] pr.review: PR_REVIEW_CONFIG_DIR is required"; exit 2; }
+	@test -n "$(PR_REVIEW_EXPECTED_LOGIN)" || { echo "[DENY] pr.review: PR_REVIEW_EXPECTED_LOGIN is required"; exit 2; }
+	@test -f "$(PR_REVIEW_BODY_FILE)" || { echo "[DENY] pr.review: PR_REVIEW_BODY_FILE not found"; exit 2; }
+	@python3 scripts/ops/pr_review_submit.py \
+		--root "$(CURDIR)" \
+		--pr "$(PR)" \
+		--expected-head "$(EXPECTED_HEAD)" \
+		--expected-main "$(GITHUB_EXPECTED_MAIN)" \
+		--expected-login "$(PR_REVIEW_EXPECTED_LOGIN)" \
+		--config-dir "$(PR_REVIEW_CONFIG_DIR)" \
+		--action "$(PR_REVIEW_ACTION)" \
+		--body-file "$(PR_REVIEW_BODY_FILE)" \
+		$(if $(filter 0,$(PR_REVIEW_REQUIRE_CI)),--skip-ci-check,) \
+		$(if $(filter 1,$(APPLY)),--apply --confirm "$(PR_REVIEW_CONFIRM)",)
 
 pr.ready: guard.prod.forbid
 	@bash -c '\
@@ -442,6 +471,10 @@ verify.gitee.publication_gate.unit: guard.prod.forbid
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
 	@python3 scripts/verify/test_pr_publish_preflight.py
+
+verify.pr.review.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/pr_review_submit.py scripts/ops/test_pr_review_submit.py
+	@python3 -m unittest scripts.ops.test_pr_review_submit
 
 # Exact-head local quick evidence gate before pr.merge.
 #

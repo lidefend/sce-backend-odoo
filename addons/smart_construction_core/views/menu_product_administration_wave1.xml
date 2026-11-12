@@ -51,7 +51,7 @@
             <field name="search_view_id" ref="smart_construction_core.view_sc_hr_payroll_document_search"/>
             <field name="domain">[('fact_type', 'in', ['salary_registration', 'subsidy', 'bonus'])]</field>
             <field name="context">{}</field>
-            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_initiator'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_initiator'), ref('smart_construction_core.group_sc_cap_business_config_admin'), ref('smart_construction_core.group_sc_business_full')])]"/>
         </record>
         <menuitem id="menu_sc_payroll_management"
                   name="工资薪酬"
