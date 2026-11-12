@@ -1,0 +1,5 @@
+goal:
+  id: BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112
+  status: active
+  objective: Retire the completed PR875 task binding and its merged branch through protected integration.
+  exclusions: [product_code, runtime_changes, deployment, unrelated_branches]
