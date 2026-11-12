@@ -372,17 +372,6 @@ CRITICAL_SCENE_TARGET_OVERRIDES = {
 
 CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES = {}
 
-_DERIVED_NAV_SCENE_MAP_CACHE: dict[str, dict[str, dict[Any, str]]] = {}
-
-
-def _scene_cache_key(env) -> str:
-    try:
-        dbname = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
-    except Exception:
-        dbname = ""
-    return dbname or "__default__"
-
-
 def _normalize_view_mode(raw: Any) -> str:
     value = str(raw or "").strip().lower()
     if value in {"tree", "list", "kanban"}:
@@ -393,17 +382,14 @@ def _normalize_view_mode(raw: Any) -> str:
 
 
 def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
-    cache_key = _scene_cache_key(env)
-    cached = _DERIVED_NAV_SCENE_MAP_CACHE.get(cache_key)
-    if isinstance(cached, dict):
-        return cached
-
+    # Effective declarations change with imports and published DB versions.
+    # The shared result uses registry caching; no independent dbname cache.
     menu_scene_map: dict[str, str] = {}
     action_xmlid_scene_map: dict[str, str] = {}
     model_view_scene_map: dict[tuple[str, str], str] = {}
 
     try:
-        scenes = scene_registry.load_scene_configs(env)
+        scenes = scene_registry.load_effective_scene_declarations(env)
     except Exception:
         scenes = []
 
@@ -443,7 +429,6 @@ def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
         "action_xmlid_scene_map": action_xmlid_scene_map,
         "model_view_scene_map": model_view_scene_map,
     }
-    _DERIVED_NAV_SCENE_MAP_CACHE[cache_key] = derived
     return derived
 
 
@@ -590,13 +575,8 @@ def smart_core_critical_scene_target_route_overrides(env):
 
 
 def smart_core_delivery_scene_declarations(env):
-    """Raw scene references for qualification; never invoke capability consumers."""
-    entries = scene_registry._load_scene_registry_content_entries()
-    native_config = scene_registry._derive_native_config_scene(env)
-    if native_config:
-        entries = [row for row in entries if row.get("code") != native_config["code"]]
-        entries.append(native_config)
-    return entries
+    """Effective declarations shared with pages, without capability consumers."""
+    return scene_registry.load_effective_scene_declarations(env)
 
 
 def smart_core_navigation_authority_filter(env, authority):
@@ -612,9 +592,6 @@ def smart_core_navigation_authority_filter(env, authority):
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
         load_runtime_surface,
         runtime_menu_scope,
-    )
-    from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
-        list_scene_entries,
     )
     from odoo.addons.smart_construction_scene.services.business_scene_enablement import (
         business_key,
@@ -638,7 +615,7 @@ def smart_core_navigation_authority_filter(env, authority):
         authority,
         surface_index=index,
         enabled=business_states(stored),
-        entries=list_scene_entries(),
+        entries=scene_registry.load_effective_scene_declarations(env),
         menu_xmlids_by_id=menu_xmlids_by_id,
         menu_xmlids_by_action=menu_xmlids_by_action,
         company_id=company_id,

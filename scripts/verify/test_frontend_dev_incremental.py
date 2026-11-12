@@ -1011,6 +1011,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/tests/test_platform_admin_duty_contract.py": [
                 "verify.platform.duty.contract.unit",
             ],
+            "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py": [
+                "verify.navigation.publication_consumers.unit",
+            ],
             "config/product_menu_contract_v1.json": [
                 "verify.product.menu.contract_v1.guard",
             ],
@@ -1071,7 +1074,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.backend.navigation_delivery.unit"],
+                    ["verify.backend.navigation_delivery.unit", "verify.workspace.entry_authority.orm"],
                 )
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:

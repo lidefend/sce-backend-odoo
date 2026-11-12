@@ -31,3 +31,7 @@ This is scoped backend acceptance, not a claim that every installed action or fr
 P4 验证登记修正：完整增量门禁发现已接线的 `verify.nav.pro01r.route_authority.unit` 仍在零引用处置表。通过现有 `--unregister-target` 校验实际引用后移除该条登记，冻结阈值不变。原始失败日志：`.runtime/backend-effective-iteration-final.log`。新登记文件自动映射到 `verify.verification.lane_coverage`。
 
 候选 `1656cb8a79b153fe76eea8c4abf1529d67b48446` 已通过完整本地增量门禁的 18 个目标，四组 ORM 为 24/49/3/2，源码和受管环境未变且清理完成；公共秘密/个人数据扫描及生成证据预检通过。PR #875 已创建。远端 frontend_release_gate 暴露旧职责测试仍要求 handler 直接合并平台职责授权；实际调用已迁至共享求解器。本次仅迁移接线断言并补增量映射，保留原有行为断言。原始主线 baseline 保持不变，不因本次修正推定未登记的 ORM 复用。最终候选及远端结果以 PR 和 `.runtime` 原始回执为准。
+
+用户对1656候选独立评审发现三处S2：导入场景目录与内部准入声明分叉、tile按默认而非最终payload授权、落点集合固定首页。已停止a0a790的重验并确认临时测试载体移除。修复保持P0/P1边界：共同数据声明读取保留原合并优先级且不调用能力消费者；tile显式提交合并/冻结目标，权益与依赖仍归capability；落点在最终准入过滤后按原声明优先级选择。新增离线及ORM回归，当前仍待运行验收与复审，不能沿用此前无S2结论宣布完成。
+
+修复候选补充：有效声明共用 DB/导入/代码优先级；tile 按实际或冻结 payload 准入；落点从最终 authority 选择。移除 dbname 派生映射缓存，场景/版本事实变化清 registry。远端 bundle 分片另暴露正式 contextual 工作台承载 menu 与目标 action 不同，被新增严格绑定误拒绝；仅可信角色声明允许 carrier，并分别检查两端原生权限。55 项菜单单元、63 项场景语义及三组定向 Make 单元通过；新增导入和版本生命周期 ORM 尚待执行，旧候选结果不能覆盖本轮。

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from copy import deepcopy
 import logging
 import re
 
@@ -68,6 +69,17 @@ class ScCapability(models.Model):
     _sql_constraints = [
         ("sc_capability_key_uniq", "unique(key)", "Capability key must be unique."),
     ]
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"default_payload", "active"} & set(vals):
+            self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
     @api.model
     def source_authority_contract(self):
@@ -146,10 +158,10 @@ class ScCapability(models.Model):
         data["reason"] = reason
         return data
 
-    def _access_context(self, user):
-        return self._normalize_access_result(self._access_context_inner(user, seen=set()))
+    def _access_context(self, user, *, payload=None):
+        return self._normalize_access_result(self._access_context_inner(user, seen=set(), payload=payload))
 
-    def _access_context_inner(self, user, seen):
+    def _access_context_inner(self, user, seen, *, payload=None):
         self.ensure_one()
         seen = set(seen or set())
         cap_key = str(self.key or f"id:{self.id}")
@@ -163,7 +175,7 @@ class ScCapability(models.Model):
             })
         seen.add(cap_key)
 
-        payload = self._resolve_payload(self.default_payload)
+        payload = self._resolve_payload(self.default_payload if payload is None else payload)
         native_bound = any(payload.get(key) for key in ("action_id", "menu_id", "action_xmlid", "menu_xmlid"))
         if native_bound:
             from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
@@ -490,6 +502,22 @@ class ScScene(models.Model):
         ("sc_scene_code_uniq", "unique(code)", "Scene code must be unique."),
     ]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
+
     @api.model
     def source_authority_contract(self):
         return {
@@ -504,28 +532,18 @@ class ScScene(models.Model):
             return True
         return bool(self.target_group_ids & user.groups_id)
 
-    def to_public_dict(self, user):
+    def to_effective_definition_dict(self):
+        """Read the effective declaration without evaluating capability access."""
         self.ensure_one()
         version_payload = self.active_version_id.payload_json if self.active_version_id else None
         if self.state == "published" and isinstance(version_payload, dict):
-            payload = dict(version_payload)
-            payload["tiles"] = self._filter_payload_tiles(payload.get("tiles") or [], user)
-            return payload
-        tiles = []
-        for tile in self.tile_ids.filtered(lambda t: t.active and t.visible):
-            if tile.capability_id and not tile.capability_id._user_visible(user):
-                continue
-            tiles.append(tile.to_public_dict(user))
-        return {
-            "code": self.code,
-            "name": self.name,
-            "layout": self.layout,
-            "is_default": bool(self.is_default),
-            "is_test": bool(self.is_test),
-            "version": self.version,
-            "tiles": tiles,
-            "source_authority": self.source_authority_contract(),
-        }
+            return deepcopy(version_payload)
+        return self._build_version_payload()
+
+    def to_public_dict(self, user):
+        payload = self.to_effective_definition_dict()
+        payload["tiles"] = self._filter_payload_tiles(payload.get("tiles") or [], user)
+        return payload
 
     def _build_version_payload(self):
         """Freeze the product definition, never one publisher's access view."""
@@ -557,9 +575,9 @@ class ScScene(models.Model):
             cap = cap_map.get(key)
             if not cap:
                 continue
-            if not cap._user_visible(user):
+            access = cap._access_context(user, payload=tile.get("payload") or {})
+            if not access.get("visible"):
                 continue
-            access = cap._access_context(user)
             item = dict(tile)
             item["status"] = cap.status
             item["role_scope"] = cap._csv_items(cap.role_scope)
@@ -755,6 +773,22 @@ class ScSceneTile(models.Model):
     payload_override = fields.Json()
     version = fields.Char(default="v0.1")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
+
     def _merge_payload(self, base_payload, override_payload):
         payload = dict(base_payload or {})
         if isinstance(override_payload, dict):
@@ -800,8 +834,8 @@ class ScSceneTile(models.Model):
     def to_public_dict(self, user):
         self.ensure_one()
         cap = self.capability_id
-        access = cap._access_context(user)
         row = self.to_definition_dict()
+        access = cap._access_context(user, payload=row["payload"])
         row.update({
             "allowed": bool(access.get("allowed")),
             "user_visible": bool(access.get("visible")),
@@ -841,6 +875,22 @@ class ScSceneVersion(models.Model):
     release_approval_ref = fields.Char()
     create_date = fields.Datetime(readonly=True)
     create_uid = fields.Many2one("res.users", readonly=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
 
 class ScUserPreference(models.Model):

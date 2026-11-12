@@ -16,7 +16,10 @@
     "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
     "addons/smart_construction_scene/__init__.py",
     "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
     "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "addons/smart_core/core/platform_minimum_nav_contract.py",
     "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -344,7 +347,10 @@
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/scene_package_service.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -812,7 +818,11 @@
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/scene_package_service.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -864,7 +874,10 @@
         "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/scene_package_service.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -992,6 +1005,66 @@
         "frontend/package.json",
         "frontend/pnpm-lock.yaml",
         "make/ci.mk"
+      ]
+    },
+    "verify_workspace_entry_authority_orm": {
+      "target": "verify.workspace.entry_authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_bundle",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/models",
+        "addons/smart_construction_core/models/support/scene_orchestration.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+        "addons/smart_construction_portal",
+        "addons/smart_construction_scene/__init__.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/scene_package_service.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_core/core/platform_minimum_nav_contract.py",
+        "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
+        "addons/smart_core/delivery/effective_delivery_inputs.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/models/release_management.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+        "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
+        "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py",
+        "addons/smart_core/tests/test_route_authority_single_consumer.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+        "addons/smart_license_core",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "make/dev.mk",
+        "make/dev_test.mk",
+        "make/frontend.mk",
+        "make/guards.mk",
+        "make/runtime_ops.mk",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     }
   },
@@ -1210,10 +1283,28 @@
         4,
         126
       ]
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "interrupted",
+      "head": "a0a790421f8590e5d82ce644fa5a98f7b112a9b1",
+      "log": ".runtime/backend-effective-iteration-duty-final.log",
+      "reason": "Stopped owned local.test runner upon user independent review identifying three S2 behavior regressions; carrier removed, only registered db/redis remain. No ORM pass claimed."
+    },
+    {
+      "command": "python3 addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+      "status": "passed",
+      "tests": 5,
+      "log": ".runtime/backend-effective-review-scene-pure.log"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit verify.navigation.publication_consumers.unit verify.platform.duty.contract.unit",
+      "status": "passed",
+      "log": ".runtime/backend-effective-review-cheap.log"
     }
   ],
   "blockers": [],
-  "next_exact_step": "Review test/mapping-only CI repair, collect remaining same-layer CI outcomes, freeze and execute mapped gates without changing main baseline or claiming undeclared ORM reuse; update PR875 through pr.push.",
+  "next_exact_step": "Validate frozen S2 correction candidate with governed lifecycle and workspace ORM, then full selected iteration and exact-head PR update; no merge authorized.",
   "layer": {
     "formal_product_layer": "P0 platform and P1 industry consumers",
     "layer_target": "effective native entry delivery",
@@ -1259,6 +1350,15 @@
       "verdict": "Test wiring and complete declared dependencies reviewed; no new findings",
       "scope": "Test and mapping only; product code unchanged; original main baseline retained",
       "final_identity": "pending"
+    },
+    "user_review_1656": {
+      "verdict": "REQUEST_CHANGES",
+      "findings": [
+        "S2 effective imported scene declarations diverged from internal qualification",
+        "S2 tile access used default rather than consumed/frozen target",
+        "S2 landing scene set forced workspace.home"
+      ],
+      "resolution": "Owning code and regression assertions implemented; independent delta review and actual governed ORM pending."
     }
   },
   "remote_pr": {

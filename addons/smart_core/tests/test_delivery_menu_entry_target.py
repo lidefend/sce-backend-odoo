@@ -195,6 +195,21 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             'menu_xmlid': 'test.expense', 'action_xmlid': 'test.action_expense',
         }, route_kind='CONTEXTUAL_ROUTE'))
 
+        spec = {'menu_xmlid': 'test.expense', 'action_xmlid': 'test.action_expense'}
+        self.assertIsNotNone(service._route_entry_from_action_spec(
+            spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+        ))
+        menu_record.action.groups_id = GroupSet({9})
+        self.assertIsNone(service._route_entry_from_action_spec(
+            spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+        ))
+        menu_record.action.groups_id = GroupSet({7})
+        with patch.object(service, '_action_is_runtime_allowed',
+                          side_effect=lambda action, operation: action is action_record):
+            self.assertIsNone(service._route_entry_from_action_spec(
+                spec, route_kind='CONTEXTUAL_ROUTE', allow_declared_carrier=True,
+            ))
+
     def test_native_configuration_scope_survives_route_publication(self):
         action = types.SimpleNamespace(id=601, name='Setup', _name='ir.actions.act_window')
         model = types.SimpleNamespace(sudo=lambda: model, browse=lambda value: model, exists=lambda: action)

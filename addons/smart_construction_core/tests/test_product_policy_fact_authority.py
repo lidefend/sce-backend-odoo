@@ -62,6 +62,58 @@ class TestProductPolicyFactAuthority(TransactionCase):
                     self.assertFalse(decision["allowed"])
                     self.assertEqual(decision["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
 
+    def test_tile_qualifies_its_consumed_target_in_both_directions(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        action_a = self.menu.action
+        action_b = self.env.ref("smart_construction_core.action_sc_project_list")
+        self.assertNotEqual(action_a.id, action_b.id)
+        cap = self.env["sc.capability"].create({
+            "key": "test.tile.effective", "name": "Effective tile target",
+            "intent": "ui.contract", "status": "ga", "default_payload": {"action_id": action_a.id},
+        })
+        scene = self.env["sc.scene"].create({
+            "code": "test.tile.effective", "name": "Effective tile target", "is_test": True,
+            "tile_ids": [(0, 0, {"capability_id": cap.id, "payload_override": {"action_id": action_b.id}})],
+        })
+        tile = scene.tile_ids
+        for allowed_action, expected in ((action_b, True), (action_a, False)):
+            authority = {"contextual_actions": [{"menu_id": 0, "action_id": allowed_action.id}]}
+            with self.subTest(allowed_action=allowed_action.id), patch.object(
+                runtime_route_authority, "published_route_authority", return_value=authority,
+            ):
+                self.assertEqual(cap._access_context(self.env.user)["allowed"], not expected)
+                row = tile.to_public_dict(self.env.user)
+                self.assertEqual(row["payload"]["action_id"], action_b.id)
+                self.assertEqual(row["allowed"], expected)
+                projected = scene.to_public_dict(self.env.user)["tiles"][0]
+                self.assertEqual(projected["allowed"], expected)
+                if not expected:
+                    self.assertEqual(projected["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
+
+    def test_published_tile_qualifies_frozen_target_after_draft_changes(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        action_a = self.menu.action
+        action_b = self.env.ref("smart_construction_core.action_sc_project_list")
+        cap = self.env["sc.capability"].create({
+            "key": "test.tile.frozen", "name": "Frozen tile target",
+            "intent": "ui.contract", "status": "ga", "default_payload": {"action_id": action_b.id},
+        })
+        scene = self.env["sc.scene"].create({
+            "code": "test.tile.frozen", "name": "Frozen tile target", "is_test": True,
+            "tile_ids": [(0, 0, {"capability_id": cap.id})],
+        })
+        scene.action_publish()
+        cap.default_payload = {"action_id": action_a.id}
+        authority = {"contextual_actions": [{"menu_id": 0, "action_id": action_b.id}]}
+        with patch.object(runtime_route_authority, "published_route_authority", return_value=authority):
+            self.assertFalse(cap._access_context(self.env.user)["allowed"])
+            row = scene.to_public_dict(self.env.user)["tiles"][0]
+            self.assertEqual(row["payload"]["action_id"], action_b.id)
+            self.assertTrue(row["allowed"])
+        # Reading the declaration for qualification must not call a consumer.
+        with patch.object(type(cap), "_access_context", side_effect=AssertionError("recursive access consumer")):
+            self.assertEqual(scene.to_effective_definition_dict()["tiles"][0]["payload"]["action_id"], action_b.id)
+
     def test_candidate_catalog_never_publishes_discovered_entries(self):
         from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
         from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService

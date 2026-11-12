@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 213,
     "gated": 5,
-    "on_demand": 67,
-    "unwired": 141,
+    "on_demand": 70,
+    "unwired": 138,
     "odoo_tag_declarations": 437,
     "gated_declarations": 101,
     "uncovered_declarations": 336,
@@ -852,14 +852,16 @@
     },
     {
       "group": "company_project_refund_workspace",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.workspace.entry_authority.orm :: /smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -994,14 +996,16 @@
     },
     {
       "group": "current_account_workspace",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_bundle/tests/test_current_account_workspace.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.workspace.entry_authority.orm :: /smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -2656,14 +2660,16 @@
     },
     {
       "group": "team_loan_deduction_workspace",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.workspace.entry_authority.orm :: /smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_"
+      ],
       "disposition": "wire-pending"
     },
     {

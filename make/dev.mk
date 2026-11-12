@@ -1887,3 +1887,8 @@ acceptance.artifact.verify: guard.prod.forbid acceptance.artifact.build
 	@python3 scripts/dev/acceptance_artifact.py verify --source-sha "$(ACCEPTANCE_ARTIFACT_SHA)"
 verify.acceptance.artifact.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_acceptance_artifact
+
+.PHONY: verify.workspace.entry_authority.orm
+verify.workspace.entry_authority.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_bundle \
+	  TEST_TAGS=/smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_bundle:TestPublishedRoleReplacementMenus,company_project_refund_workspace,current_account_workspace,team_loan_deduction_workspace

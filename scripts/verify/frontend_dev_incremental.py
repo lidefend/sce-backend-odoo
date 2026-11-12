@@ -733,6 +733,7 @@ RULES = (
         "addons/smart_core/tests/test_delivery_menu_entry_target.py",
     ), (
         "verify.backend.navigation_delivery.unit",
+        "verify.workspace.entry_authority.orm",
     )),
     # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
     # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
@@ -912,6 +913,11 @@ RULES = (
         "addons/smart_core/core/capability_provider.py",
     ), (
         "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
     )),
     Rule((
         "addons/smart_construction_scene/models/product_policy.py",

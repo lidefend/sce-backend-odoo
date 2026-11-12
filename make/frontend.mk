@@ -160,6 +160,8 @@ verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navi
 
 verify.navigation.publication_consumers.unit: guard.prod.forbid verify.nav01.native_authority.unit
 	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+	@python3 addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py
+	@python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py
 
 .PHONY: verify.frontend.official_icon.unit
 verify.frontend.official_icon.unit: guard.prod.forbid

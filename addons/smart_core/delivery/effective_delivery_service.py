@@ -29,13 +29,13 @@ class EffectiveDeliveryService:
     def __init__(self, env):
         self.env = env
 
-    def _internal_actions(self, nav, authority, menu_service, role):
-        sources = call_extension_hook_first(self.env, "smart_core_delivery_scene_declarations", self.env)
-        if not isinstance(sources, list):
-            return []
+    @staticmethod
+    def _scene_keys(nav, authority):
         scene_keys = set()
         def walk(nodes):
             for node in nodes:
+                if node.get("allowed") is False or node.get("allowed_operation") == "none":
+                    continue
                 meta = node.get("meta") or {}
                 target = node.get("entry_target") or meta.get("entry_target") or {}
                 key = node.get("scene_key") or meta.get("scene_key") or target.get("scene_key")
@@ -45,6 +45,13 @@ class EffectiveDeliveryService:
         walk(nav)
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
             walk(authority.get(bucket) or [])
+        return scene_keys
+
+    def _internal_actions(self, nav, authority, menu_service, role):
+        sources = call_extension_hook_first(self.env, "smart_core_delivery_scene_declarations", self.env)
+        if not isinstance(sources, list):
+            return []
+        scene_keys = self._scene_keys(nav, authority)
         from ..core.native_handling_entry_catalog import project_native_handling_catalog
         from ..core.scene_internal_action_authority import build_scene_internal_actions
         qualified = []
@@ -76,7 +83,8 @@ class EffectiveDeliveryService:
         env = self.env
         identity = _resolve_startup_delivery_identity(env, {**dict(env.context or {}), **(params or {})})
         resolver = IdentityResolver(env)
-        role = resolver.build_role_surface(resolver.user_group_xmlids(env.user), [], {"workspace.home"})
+        user_xmlids = resolver.user_group_xmlids(env.user)
+        role = resolver.build_role_surface(user_xmlids, [], set())
         engine = DeliveryEngine(env)
         role = engine._runtime_role_surface({"role_surface": role})
         payload = engine.build(
@@ -109,6 +117,12 @@ class EffectiveDeliveryService:
         nav, authority = merge_authenticated_safe_landing(
             nav, authority, authenticated=bool(env.user) and not env.user._is_public(),
         )
+        # Landing preference is a projection of the final admitted scenes.
+        # It cannot make an unpublished, unselected or natively denied entry
+        # available merely because the role declares it as a candidate.
+        role = engine._runtime_role_surface({"role_surface": resolver.build_role_surface(
+            user_xmlids, nav, self._scene_keys([], authority),
+        )})
         payload["nav"] = nav
         payload["route_authority"] = authority
         payload["scene_internal_actions"] = {

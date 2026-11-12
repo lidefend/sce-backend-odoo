@@ -1506,6 +1506,12 @@ class SystemInitHandler(BaseIntentHandler):
         role_surface = effective_delivery.role_surface
         data["nav"] = effective_delivery.payload["nav"]
         data["role_surface"] = role_surface
+        data["default_route"] = SystemInitPayloadBuilder._normalize_default_route({
+            "scene_key": role_surface["landing_scene_key"],
+            "route": role_surface["landing_path"],
+            "menu_id": role_surface.get("landing_menu_id"),
+            "reason": "effective_delivery",
+        })
         delivery_identity = effective_delivery.identity
         platform_minimum_surface_mode = _is_platform_minimum_surface_mode(env, delivery_identity=delivery_identity)
         scene_runtime_surface_ctx = SystemInitSceneRuntimeSurfaceContext(
