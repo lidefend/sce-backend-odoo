@@ -284,6 +284,28 @@
       "targets": 17,
       "log": ".runtime/frontend-dev-validation/executions/20261112T084529Z-1102613-389828689/receipt.json",
       "notes": "All affected backend, policy, generated-evidence, branch-sync, scenario and acceptance-tool targets passed on the corrected candidate scope."
+    },
+    {
+      "command": "independent re-review of PR #874 at 3b75a49d",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect",
+      "source_sha": "3b75a49d82387f8fda7a042ba56a18f37545b462",
+      "reason": "With no active snapshot, the target policy already contained My Work after policy reconciliation and was appended a second time, producing DUPLICATE_PAGE_IDENTITY. Replaying the same migration version after rollback could also overwrite a historical migration snapshot.",
+      "recovery": "Skip the append when the target baseline already contains the menu. Use a content-addressed release version and, when an identical historical version exists but is not active, allocate a new suffix rather than rewriting history."
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "status": "passed",
+      "tests": 4,
+      "log": ".runtime/test-baseline/1794474488190289566/receipt.json",
+      "notes": "Adds no-active-snapshot first publication and rollback/replay coverage: exactly one target row, historical snapshot immutable, new replay version allocated, and rollback lineage retained."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 17,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T091135Z-1250643-552099791/receipt.json",
+      "notes": "All affected backend, policy migration, generated-evidence, branch-sync, scenario and acceptance-tool targets passed after the second review fixes."
     }
   ],
   "blockers": [

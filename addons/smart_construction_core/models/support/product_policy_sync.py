@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import hashlib
+import json
 from copy import deepcopy
 
 from odoo import api, models
@@ -217,6 +219,19 @@ class ScProductPolicy(models.Model):
                     return group, menu
         return None, None
 
+    @staticmethod
+    def _release_version_for_policy(version, policy):
+        digest = hashlib.sha256(
+            json.dumps(
+                policy,
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()[:12]
+        return "%s-%s" % (_text(version), digest)
+
     @api.model
     def _reconcile_locked_menu_release(
         self,
@@ -280,7 +295,8 @@ class ScProductPolicy(models.Model):
         if target_group is None:
             target_group = {**deepcopy(group), "menus": []}
             groups.append(target_group)
-        target_group.setdefault("menus", []).append(deepcopy(row))
+        if not self._policy_menu_row(target_policy, menu_xmlid)[1]:
+            target_group.setdefault("menus", []).append(deepcopy(row))
         target_policy["menu_groups"] = groups
         capabilities = [
             deepcopy(item)
@@ -298,12 +314,42 @@ class ScProductPolicy(models.Model):
             if declared:
                 capabilities.append(deepcopy(declared))
         target_policy["capabilities"] = capabilities
+        release_version = self._release_version_for_policy(version, target_policy)
+        existing_versions = snapshot_model.search([
+            ("product_key", "=", product_key),
+            ("version", "=", release_version),
+            ("active", "=", True),
+        ], order="id")
+        if existing_versions:
+            current = next(
+                (
+                    item for item in existing_versions
+                    if item.state == "released" and item.is_active
+                ),
+                None,
+            )
+            if current:
+                return {
+                    "policy": rec,
+                    "added": merge["added"],
+                    "snapshot_id": int(current.id),
+                    "snapshot_created": False,
+                    "release_present": True,
+                }
+            suffix = len(existing_versions) + 1
+            while snapshot_model.search_count([
+                ("product_key", "=", product_key),
+                ("version", "=", "%s-r%s" % (release_version, suffix)),
+                ("active", "=", True),
+            ]):
+                suffix += 1
+            release_version = "%s-r%s" % (release_version, suffix)
         from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
             EditionReleaseSnapshotService,
         )
         snapshot = EditionReleaseSnapshotService(self.env).freeze_release_surface(
             product_key=product_key,
-            version=version,
+            version=release_version,
             replace_active=True,
             note="reconcile formal menu %s" % menu_xmlid,
             policy_override=target_policy,

@@ -182,3 +182,65 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.assertEqual(again["added"], [])
         self.assertFalse(again["snapshot_created"])
         self.assertEqual(again["snapshot_id"], active.id)
+        first_reconciled_payload = deepcopy(active.snapshot_json)
+        # Simulate a governed rollback to the baseline. Replaying the migration
+        # must not rewrite the already-published historical migration snapshot.
+        active.write({
+            "state": "superseded",
+            "is_active": False,
+            "superseded_at": "2026-11-12 00:00:00",
+        })
+        old.write({
+            "state": "released",
+            "is_active": True,
+            "superseded_at": False,
+        })
+        replay = policy_model._reconcile_locked_menu_release(
+            "construction.standard",
+            menu_xmlid="smart_construction_core.menu_sc_my_work",
+            version="test-my-work-delta",
+        )
+        self.assertTrue(replay["snapshot_created"])
+        self.assertNotEqual(replay["snapshot_id"], active.id)
+        self.assertEqual(active.snapshot_json, first_reconciled_payload)
+        replay_snapshot = self.env["sc.edition.release.snapshot"].sudo().browse(
+            replay["snapshot_id"]
+        )
+        self.assertEqual(replay_snapshot.rollback_target_snapshot_id.id, old.id)
+
+    def test_policy_reconciliation_without_active_snapshot_has_one_target_row(self):
+        policy_model = self.env["sc.product.policy"]
+        policy_model.synchronize_locked_formal_menu_policy("construction.standard")
+        policy = policy_model.search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        self.env["sc.edition.release.snapshot"].sudo().search([
+            ("product_key", "=", "construction.standard"),
+            ("is_active", "=", True),
+        ]).write({"is_active": False})
+        groups = deepcopy(policy.menu_groups)
+        for group in groups:
+            group["menus"] = [
+                menu for menu in group.get("menus") or []
+                if menu.get("menu_xmlid") != "smart_construction_core.menu_sc_my_work"
+            ]
+        policy.write({
+            "menu_groups": [group for group in groups if group["menus"]],
+            "capabilities": [],
+        })
+        result = policy_model._reconcile_locked_menu_release(
+            "construction.standard",
+            menu_xmlid="smart_construction_core.menu_sc_my_work",
+            version="test-first-publication",
+        )
+        self.assertTrue(result["snapshot_created"])
+        snapshot = self.env["sc.edition.release.snapshot"].sudo().browse(
+            result["snapshot_id"]
+        )
+        rows = [
+            menu
+            for group in snapshot.snapshot_json["policy"]["menu_groups"]
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_my_work"
+        ]
+        self.assertEqual(len(rows), 1)

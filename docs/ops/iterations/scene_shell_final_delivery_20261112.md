@@ -142,3 +142,18 @@ The corrected migration:
 The stale historical-payment assertion that failed the first remote backend
 suite was also aligned with the current formal policy, which does not publish
 that retired entry.
+
+The second independent review found two migration lifecycle branches. With no
+active snapshot, the reconciled maintained policy already contained My Work and
+the targeted publisher appended it again. Replaying the same migration version
+after a rollback could also hit and rewrite the historical migration snapshot.
+
+Both paths are now covered:
+
+- the target baseline is checked before appending, so first publication has one
+  native identity;
+- release versions include the target policy digest;
+- an identical active release is reused;
+- an identical non-active historical version causes a new suffixed version
+  instead of rewriting history;
+- rollback lineage points to the prior active release.
