@@ -1039,6 +1039,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
 
     def test_acceptance_fixture_and_browser_tools_select_owned_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_my_work_approval_guard.py"]),
+            ["verify.frontend.my_work_approval.guard"],
+        )
         for path in (
             "scripts/dev/frontend_cached_dependencies_restore.sh",
             "scripts/dev/frontend_standard_preview.py",

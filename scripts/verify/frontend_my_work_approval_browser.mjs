@@ -16,6 +16,7 @@ const PREVIEW_ENTRY = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY || '').trim
 const PREVIEW_ENTRY_SHA256 = String(process.env.SC_ACCEPTANCE_PREVIEW_ENTRY_SHA256 || '').trim();
 const SCRIPT_SHA = String(process.env.SC_ACCEPTANCE_TEST_SCRIPT_SHA || '').trim();
 const APPROVAL_REVIEWER_LOGIN = String(process.env.FRONTEND_APPROVAL_REVIEWER_LOGIN || 'fixture_role_finance_reviewer').trim();
+const MY_WORK_MENU_XMLID = 'smart_construction_core.menu_sc_my_work';
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 function check(value, message) { if (!value) throw new Error(message); }
@@ -53,6 +54,37 @@ function captureRuntime(page) {
   return state;
 }
 
+function findNavigationNodeByMenuXmlid(nodes, menuXmlid) {
+  const pending = Array.isArray(nodes) ? [...nodes] : [];
+  while (pending.length) {
+    const node = pending.shift();
+    if (!node || typeof node !== 'object') continue;
+    const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
+    if (String(node.menu_xmlid || node.xmlid || meta.menu_xmlid || '') === menuXmlid) return node;
+    if (Array.isArray(node.children)) pending.push(...node.children);
+  }
+  return null;
+}
+
+async function resolveDesignedMyWorkScene(page, releasedNavigation) {
+  const started = Date.now();
+  while (Date.now() - started < 45_000) {
+    const node = findNavigationNodeByMenuXmlid(releasedNavigation.nav(), MY_WORK_MENU_XMLID);
+    if (node) {
+      const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
+      const route = String(node.route || meta.route || '').trim();
+      const sceneKey = String(node.scene_key || node.sceneKey || meta.scene_key || '').trim();
+      const contentKind = String(node.content_kind || meta.content_kind || '').trim();
+      check(sceneKey === 'my_work.workspace', `My Work scene key invalid: ${sceneKey || 'missing'}`);
+      check(contentKind === 'designed_scene', `My Work content kind invalid: ${contentKind || 'missing'}`);
+      check(new URL(route, BASE_URL).pathname === '/s/my_work.workspace', `My Work route is not scenarioized: ${route || 'missing'}`);
+      return { route, scene_key: sceneKey, content_kind: contentKind };
+    }
+    await page.waitForTimeout(50);
+  }
+  throw new Error(`released navigation designed scene target missing: ${MY_WORK_MENU_XMLID}`);
+}
+
 function resetRuntime(state) { state.consoleErrors.length = 0; state.pageErrors.length = 0; state.responses.length = 0; }
 function assertClean(state, step, allowed = []) {
   const unexpected = state.responses.filter((row) => row.status >= 400 && !allowed.includes(row.status));
@@ -84,8 +116,12 @@ async function logout(page) {
   await page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 30000 });
 }
 
-async function openMyWork(page) {
-  await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+async function openMyWork(page, sceneTarget) {
+  check(sceneTarget?.content_kind === 'designed_scene', 'My Work must be delivered as a designed scene');
+  await page.goto(`${BASE_URL}${sceneTarget.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  check(new URL(page.url()).pathname === '/s/my_work.workspace', `My Work left its scene route: ${page.url()}`);
+  await page.locator('[data-semantic-component="MyWorkView"][data-my-work-renderer="product-workspace"]').waitFor({ timeout: 45000 });
+  check(await page.locator('[data-semantic-component="ActionView"]').count() === 0, 'designed My Work scene rendered through ActionView');
   await page.locator('.product-work').waitFor({ timeout: 45000 });
   check((await page.title()).startsWith('我的工作 - '), `My Work document title invalid: ${await page.title()}`);
 }
@@ -224,10 +260,12 @@ async function main() {
       ['draft', 'approval', 'reject', 'completed'],
       await releasedNavigation.targetByMenuXmlid(TARGETS.draft.menu_xmlid),
     );
+    const myWorkScene = await resolveDesignedMyWorkScene(page, releasedNavigation);
+    report.provenance.my_work_scene = myWorkScene;
     resetRuntime(runtime);
 
     // J07: authoritative counts, detail round-trip, submit and company A/B/A invalidation.
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     const todoBefore = await assertCountMatches(page, 'todo');
     const initiatedBefore = await assertCountMatches(page, 'initiated');
     check(todoBefore > 0 && initiatedBefore > 0, 'J07 finance work sections are empty');
@@ -255,14 +293,14 @@ async function main() {
     await page.locator('.count-card[data-section-key="initiated"]').click();
     check(await page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-PAYMENT-001' }).count() === 1, 'J07 submitted item left initiated section');
     await selectCompany(page, 'FE Company B');
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     check(!(await page.locator('body').innerText()).includes('FE-JOURNEY-PAYMENT-001'), 'J07 company B retained company A item');
     await page.locator('.count-card[data-section-key="initiated"]').click();
     await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
     check((await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company B work item missing');
     await selectCompany(page, 'FE Company A');
     report.provenance.project_context = await selectProjectContext(page, TARGETS.draft);
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     check(!(await page.locator('body').innerText()).includes('FE-C-PR-001'), 'J07 company A retained company B item');
     assertClean(runtime, 'J07');
     report.j07 = { status: 'PASS', todo_before: todoBefore, initiated_before: initiatedBefore, company_a_b_a: 'PASS' };
@@ -273,7 +311,7 @@ async function main() {
     await logout(page);
     await login(page, APPROVAL_REVIEWER_LOGIN);
     report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const reviewerTodoBefore = await sectionCount(page, 'todo');
     const approvalCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' }).first();
@@ -308,7 +346,7 @@ async function main() {
     check(approvalResponse.ok() && approvalPayload?.ok, 'approval page action was rejected');
     await waitForWorkflowState(page, 'approved');
     await capture('approval-result');
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     const approvedTodo = page.locator('.work-section[data-section-key="todo"] .work-card').filter({ hasText: 'FE-JOURNEY-APPROVAL-001' });
     await approvedTodo.waitFor({ state: 'detached', timeout: 45000 });
     check(await approvedTodo.count() === 0, 'J08 approved item remained in todo');
@@ -379,7 +417,7 @@ async function main() {
     await logout(page);
     await login(page, APPROVAL_REVIEWER_LOGIN);
     report.provenance.project_context = await selectProjectContext(page, TARGETS.reject);
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     await page.locator('.count-card[data-section-key="todo"]').click();
     const rejectCard = page.locator('.work-card').filter({ hasText: 'FE-JOURNEY-REJECT-001' });
     await rejectCard.getByRole('button', { name: '打开详情' }).click();
@@ -439,7 +477,7 @@ async function main() {
     await rejectDialog.waitFor({ state: 'hidden', timeout: 45000 });
     await waitForWorkflowState(page, 'rejected');
     await capture('reject-result');
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     const rejectedTodo = page.locator('.work-section[data-section-key="todo"] .work-card[data-record-id="' + Number(TARGETS.reject.record_id) + '"]').filter({ hasText: 'FE-JOURNEY-REJECT-001' });
     await rejectedTodo.waitFor({ timeout: 45000 });
     check(await rejectedTodo.getAttribute('data-work-item-state') === 'rejected', 'rejected payment work item did not expose the authoritative rejected state');
@@ -450,7 +488,7 @@ async function main() {
 
     await login(page, 'fixture_role_project_a_member');
     report.provenance.project_context = await selectProjectContext(page, TARGETS.approval);
-    await openMyWork(page);
+    await openMyWork(page, myWorkScene);
     const memberText = await page.locator('body').innerText();
     check(!/FE-JOURNEY-(?:PAYMENT|APPROVAL|REJECT)|¥|￥/.test(memberText), 'project member My Work leaked payment facts');
     await page.goto(`${BASE_URL}${route(TARGETS.approval)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -461,7 +499,7 @@ async function main() {
 
     for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
-      await openMyWork(page);
+      await openMyWork(page, myWorkScene);
       await noOverflow(page, `${viewport.width}x${viewport.height}`);
       const screenshot = path.join(OUTPUT_DIR, `my-work-${viewport.width}x${viewport.height}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });

@@ -781,6 +781,11 @@ RULES = (
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
+        "scripts/verify/frontend_my_work_approval_guard.py",
+    ), (
+        "verify.frontend.my_work_approval.guard",
+    )),
+    Rule((
         "scripts/verify/frontend_authenticated_intent.mjs",
     ), (
         "verify.frontend.delivery_hardening.guard",

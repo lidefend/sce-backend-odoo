@@ -68,3 +68,26 @@ assertion; context, browser and lease cleanup now have bounded waits.
 The candidate still requires freeze preparation, clean commit, exact acceptance
 runtime preparation and user-flow verification. No deployment or product
 acceptance is claimed.
+
+## Designed-scene behavior closure
+
+PR #873 integrated the scene shell compiler and validated the ordinary
+`native_delegate` list/detail path. The remaining goal condition is one
+designed-scene browser proof.
+
+The existing My Work approval acceptance now resolves
+`smart_construction_core.menu_sc_my_work` from final `system.init`, requiring:
+
+- `scene_key=my_work.workspace`;
+- `content_kind=designed_scene`;
+- route path `/s/my_work.workspace`;
+- the product `MyWorkView` renderer marker;
+- no `ActionView` in the rendered designed scene.
+
+This changes only P4 acceptance consumption. It does not add or maintain native
+menu/action facts and does not alter the scene or product contract.
+
+The former dead-surface disposition for
+`verify.frontend.my_work_approval.guard` was removed after its exact path mapping
+made the target live in `ci.local.iteration`; the reason is recorded in the
+disposition audit trail.

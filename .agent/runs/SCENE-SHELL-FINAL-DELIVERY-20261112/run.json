@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "SCENE-SHELL-FINAL-DELIVERY-20261112",
-  "branch": "refactor/scene-shell-final-delivery-20261112",
-  "baseline_sha": "736e4af67037eeeba6532005a4dd8f7c43eec646",
+  "branch": "refactor/scene-shell-designed-scene-acceptance-20261112",
+  "baseline_sha": "144720c9e3695e382267301ff17b889692474d84",
   "status": "verification_pending",
   "goal": ".agent/goals/SCENE-SHELL-FINAL-DELIVERY-20261112.yaml",
   "record": "docs/ops/iterations/scene_shell_final_delivery_20261112.md",
@@ -23,8 +23,11 @@
     "addons/smart_core/tests/test_intent_smoke.py",
     "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+    "scripts/verify/frontend_my_work_approval_browser.mjs",
+    "scripts/verify/frontend_my_work_approval_guard.py",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "scripts/audit/verification_lane_dispositions.json",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
@@ -61,6 +64,19 @@
         "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
         "make/frontend.mk"
       ]
+    },
+    "designed_scene_browser": {
+      "target": "verify.frontend.my_work_approval.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/runtime_ops.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/final-acceptance/my-work-approval/report.json"
+      }
     }
   },
   "validation_results": [
@@ -146,12 +162,37 @@
       "reason": "After the assertion failure the browser probe remained in teardown for about 18 minutes instead of failing promptly.",
       "recovery": "Context close, browser close and lease release now each have a bounded 10-second wait; a timed-out cleanup is reported and exits after evidence is written.",
       "recovery_check": "The cleanup contract is locked by verify.frontend.list_surface_search_contract.unit."
+    },
+    {
+      "command": "gh pr merge 873",
+      "status": "passed",
+      "source_sha": "0c6899bb92013008ee5c15e7cd156108d169b9be",
+      "merge_sha": "144720c9e3695e382267301ff17b889692474d84",
+      "notes": "Protected squash merge completed; main tree matches the candidate tree. All four required gates and backend/ORM checks passed on the exact source SHA."
+    },
+    {
+      "command": "make verify.frontend.my_work_approval.guard",
+      "status": "passed",
+      "tests": 5,
+      "notes": "The probe consumes the released My Work menu identity, requires designed_scene and /s/my_work.workspace, and rejects ActionView or /my-work entry."
+    },
+    {
+      "command": "python3 scripts/audit/verification_lane_coverage.py --check",
+      "status": "passed",
+      "notes": "The formerly dead My Work guard target is now wired through ci.local.iteration; its stale dead-surface disposition was removed with an audit reason."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 6,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T070057Z-550851-455033408/receipt.json",
+      "notes": "All required P4 targets for the probe, guard, mapping, standard preview and lane coverage passed."
     }
   ],
   "blockers": [
-    "The P4 scene-route return and bounded-cleanup repairs must be committed, and the managed acceptance runtime must be reprepared on the new clean SHA."
+    "The designed_scene behavior acceptance for my_work.workspace has not yet been executed through the final scene route."
   ],
-  "next_exact_step": "Run affected iteration, commit the P4 scene-route return and bounded-cleanup repairs, prepare the exact acceptance runtime, and rerun the list-surface browser journey.",
+  "next_exact_step": "Adapt the existing My Work acceptance probe to resolve my_work.workspace from final system.init, assert designed_scene, and verify the rendered MyWorkView without ActionView.",
   "layer": {
     "formal_product_layer": "P0 platform mechanism",
     "layer_target": "final scene shell delivery compiler",
@@ -163,7 +204,7 @@
   },
   "completion": {
     "batch": "verification_pending",
-    "mainline": "not_integrated",
+    "mainline": "PR #873 integrated as 144720c9e3695e382267301ff17b889692474d84",
     "deployment": "not_performed",
     "user_acceptance": "not_claimed"
   }
