@@ -1,6 +1,10 @@
 from odoo.tests.common import TransactionCase, tagged
 
-from ..models.support.product_scenario import DIRECT_CONFIGURATION_MENU_XMLIDS
+from ..models.support.product_scenario import (
+    DIRECT_CONFIGURATION_MENU_XMLIDS,
+    DIRECT_PLATFORM_MENU_XMLIDS,
+    DIRECT_WORKSPACE_MENU_XMLIDS,
+)
 from ..services.scenario_surface_projection import runtime_menu_scope
 
 
@@ -47,6 +51,34 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertFalse(unknown.sc_scenario_exempt)
         Scenario.initialize_direct_entry_exemptions()
         self.assertFalse(self.env.ref(DIRECT_CONFIGURATION_MENU_XMLIDS[0]).sc_scenario_exempt)
+
+    def test_fresh_install_declares_shell_and_platform_direct_entries(self):
+        index, by_id, _ = runtime_menu_scope(self.env)
+        for xmlid in DIRECT_WORKSPACE_MENU_XMLIDS + DIRECT_PLATFORM_MENU_XMLIDS:
+            with self.subTest(xmlid=xmlid):
+                menu = self.env.ref(xmlid)
+                self.assertTrue(menu.action)
+                self.assertTrue(menu.sc_scenario_exempt)
+                self.assertEqual(index[by_id[menu.id]]["location"], "exempt")
+
+    def test_navigation_exemption_is_one_time_and_binding_wins(self):
+        Scenario = self.env["sc.product.scenario"]
+        Entry = self.env["sc.product.scenario.entry"]
+        Param = self.env["ir.config_parameter"].sudo()
+        menu = self.env.ref(DIRECT_WORKSPACE_MENU_XMLIDS[0])
+        scenario = Scenario.create({"code": "test.shell.binding", "name": "Shell binding"})
+        Entry.create({"scenario_id": scenario.id, "menu_id": menu.id})
+        Param.set_param("smart_construction_core.navigation_entry_scope.v1", False)
+        Scenario.initialize_navigation_entry_exemptions()
+        self.assertFalse(menu.sc_scenario_exempt)
+        self.assertTrue(Entry.search_count([
+            ("scenario_id", "=", scenario.id),
+            ("menu_id", "=", menu.id),
+        ]))
+        Entry.search([("scenario_id", "=", scenario.id)]).unlink()
+        menu.sc_scenario_exempt = False
+        Scenario.initialize_navigation_entry_exemptions()
+        self.assertFalse(menu.sc_scenario_exempt)
 
     def test_completed_install_does_not_restore_revoked_declaration(self):
         menu = self.env.ref(DIRECT_CONFIGURATION_MENU_XMLIDS[0])

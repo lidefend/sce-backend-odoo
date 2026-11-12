@@ -28,6 +28,11 @@
           "release_state": "released"
         },
         {
+          "name": "我的工作",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
           "name": "数据总览",
           "delivery": "RELEASED_FOUNDATION",
           "release_state": "released"

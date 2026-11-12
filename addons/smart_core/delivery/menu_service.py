@@ -9,7 +9,12 @@ from odoo.addons.smart_core.core.delivery_menu_defaults import (
     build_delivery_menu_root,
     synthetic_menu_id,
 )
-from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
+from odoo.addons.smart_core.core.navigation_entry_target import (
+    build_scene_entry_target,
+    build_web_surface_entry_target,
+    derive_entry_route,
+    target_route,
+)
 from odoo.addons.smart_core.delivery.menu_delivery_convergence_service import MenuDeliveryConvergenceService
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
@@ -35,6 +40,33 @@ def register_customer_acceptance_group_label(label: str) -> None:
 
 class MenuService:
     ROUTE_AUTHORITY_CONTRACT_VERSION = "2.0.0"
+
+    def _groups_authorize_current_user(self, groups) -> bool:
+        """Apply Odoo group closure, including implied groups."""
+        if not groups:
+            return True
+        if self.env is None:
+            return False
+        resolved_groups = groups.sudo() if hasattr(groups, "sudo") else groups
+        try:
+            group_iter = iter(resolved_groups)
+        except TypeError:
+            user_groups = getattr(self.env.user, "groups_id", None)
+            return bool(user_groups is not None and resolved_groups & user_groups)
+        for group in group_iter:
+            try:
+                group_xmlid = self._record_xmlid(group)
+            except Exception:
+                group_xmlid = ""
+            if group_xmlid and self.env.user.has_group(group_xmlid):
+                return True
+        user_groups = getattr(self.env.user, "groups_id", None)
+        if user_groups is None:
+            return False
+        try:
+            return bool(set(resolved_groups) & set(user_groups))
+        except TypeError:
+            return False
 
     @staticmethod
     def _role_surface_menu_allowed(menu: dict, role_surface: dict | None) -> bool:
@@ -152,7 +184,7 @@ class MenuService:
                 for item in str(action_meta.get("view_mode") or "").split(",")
                 if item.strip()
             ]
-            route = f"/a/{action_id}?menu_id={menu_id}" if action_id and menu_id else (f"/m/{menu_id}" if menu_id else "")
+            route = derive_entry_route(action_id=action_id, menu_id=menu_id)
             meta = {
                 "menu_id": menu_id,
                 "menu_xmlid": menu_xmlid,
@@ -207,8 +239,6 @@ class MenuService:
         acting user's closure. An actionless node remains a declared container or
         scene anchor and is retained for the normal role projection.
         """
-        user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
-
         def walk(node: dict) -> dict | None:
             if not isinstance(node, dict):
                 return None
@@ -230,7 +260,7 @@ class MenuService:
             allowed = True
             if action:
                 action_groups = getattr(action, "groups_id", None)
-                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                if action_groups and not self._groups_authorize_current_user(action_groups):
                     allowed = False
 
             children = [
@@ -317,7 +347,7 @@ class MenuService:
                 "view_id": action_meta.get("view_id"),
                 "domain": str(action_meta.get("domain") or "").strip(),
                 "context": str(action_meta.get("context") or "").strip(),
-                "route": f"/a/{action_id}?menu_id={menu_id}",
+                "route": derive_entry_route(action_id=action_id, menu_id=menu_id),
             })
         return routes
 
@@ -397,7 +427,7 @@ class MenuService:
             if bool(getattr(menu_record, "active", True)):
                 return False
             menu_groups = getattr(menu_record.sudo(), "groups_id", self.env["res.groups"])
-            if menu_groups and not bool(menu_groups & self.env.user.groups_id):
+            if menu_groups and not self._groups_authorize_current_user(menu_groups):
                 return False
         else:
             menu_record = None
@@ -412,7 +442,7 @@ class MenuService:
         if not action:
             return False
         action_groups = getattr(action.sudo(), "groups_id", self.env["res.groups"])
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return False
         return self._action_is_runtime_allowed(action, allowed_operation)
 
@@ -431,7 +461,7 @@ class MenuService:
         if not action or not self._action_is_runtime_allowed(action, "read"):
             return None
         action_groups = getattr(action, "groups_id", None)
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return None
         action_meta = row.get("action_meta") if isinstance(row.get("action_meta"), dict) else {}
         model_name = str(action_meta.get("res_model") or "").strip()
@@ -455,7 +485,7 @@ class MenuService:
             "view_id": action_meta.get("view_id"),
             "domain": str(action_meta.get("domain") or "").strip(),
             "context": str(action_meta.get("context") or "").strip(),
-            "route": f"/a/{action_id}?menu_id={menu_id}",
+            "route": derive_entry_route(action_id=action_id, menu_id=menu_id),
             "allowed_operation": "read",
             "required_capability": "menu_action_read",
             "context_requirements": {},
@@ -481,7 +511,7 @@ class MenuService:
         if not action or str(getattr(action, "_name", "") or "") != "ir.actions.act_window":
             return None
         action_groups = getattr(action, "groups_id", None)
-        if action_groups and not bool(action_groups & self.env.user.groups_id):
+        if action_groups and not self._groups_authorize_current_user(action_groups):
             return None
         allowed_operation = str(row.get("allowed_operation") or "read").strip().lower() or "read"
         if not self._action_is_runtime_allowed(action, allowed_operation):
@@ -505,7 +535,7 @@ class MenuService:
             "view_id": int(action.view_id.id) if action.view_id else None,
             "domain": str(action.domain or "").strip(),
             "context": str(action.context or "").strip(),
-            "route": f"/a/{int(action.id)}" + (f"?menu_id={menu_id}" if menu_id else ""),
+            "route": derive_entry_route(action_id=action.id, menu_id=menu_id),
             "allowed_operation": allowed_operation,
             "required_capability": str(row.get("required_capability") or "").strip(),
             "context_requirements": dict(row.get("context_requirements") or {}),
@@ -542,7 +572,7 @@ class MenuService:
             "name": str(action.name or "").strip(),
             "model": str(action.res_model or "").strip(),
             "view_modes": [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()],
-            "route": f"/a/{int(action.id)}?menu_id={int(menu.id)}",
+            "route": derive_entry_route(action_id=action.id, menu_id=menu.id),
             "allowed_operation": "none",
             "required_capability": "product_denied",
             "context_requirements": {},
@@ -647,8 +677,22 @@ class MenuService:
                     else meta.get("entry_target") if isinstance(meta.get("entry_target"), dict)
                     else {}
                 )
-                scene_key = str(node.get("scene_key") or meta.get("scene_key") or entry_target.get("scene_key") or "").strip()
-                route = str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip()
+                scene_key = str(
+                    node.get("scene_key")
+                    or meta.get("scene_key")
+                    or entry_target.get("scene_key")
+                    or ""
+                ).strip()
+                surface = str(entry_target.get("surface") or "").strip()
+                route = (
+                    target_route(entry_target)
+                    or derive_entry_route(
+                        scene_key=scene_key,
+                        action_id=pair[1],
+                        menu_id=pair[0],
+                        surface=surface,
+                    )
+                )
                 targets[pair] = {
                     "scene_key": scene_key, "route": route, "entry_target": entry_target,
                     "menu_key": str(meta.get("menu_key") or node.get("key") or "").strip(),
@@ -996,6 +1040,298 @@ class MenuService:
 
         return [walk(node, [], index) for index, node in enumerate(nav or [])]
 
+    @staticmethod
+    def project_final_navigation_routes(
+        nav: list[dict],
+        route_authority: dict | None,
+    ) -> tuple[list[dict], dict]:
+        """Derive routes from the final scenario-composed navigation identity.
+
+        This is a pure projection over the already-authorized tree and
+        authority. It does not add, remove or re-authorize an entry. The same
+        scene/action/menu identity updates both carriers.
+        """
+        authority = route_authority if isinstance(route_authority, dict) else {}
+        targets: dict[tuple[int, int], dict] = {}
+        container_authority_by_menu: dict[int, dict] = {}
+        declared_authority_by_menu: dict[int, dict] = {}
+        for row in authority.get("menu_containers") or []:
+            if not isinstance(row, dict):
+                continue
+            try:
+                menu_id = int(row.get("menu_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = 0
+            if menu_id > 0 and str(row.get("route") or "").strip():
+                container_authority_by_menu[menu_id] = row
+        for bucket in (
+            "primary_actions",
+            "role_home_actions",
+            "contextual_actions",
+            "admin_actions",
+        ):
+            for row in authority.get(bucket) or []:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    menu_id = int(row.get("menu_id") or 0)
+                    action_id = int(row.get("action_id") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if (
+                    menu_id > 0
+                    and action_id <= 0
+                    and isinstance(row.get("entry_target"), dict)
+                    and row.get("entry_target")
+                ):
+                    declared_authority_by_menu.setdefault(menu_id, row)
+
+        def walk(node: dict) -> dict:
+            candidate = dict(node)
+            meta = dict(candidate.get("meta") if isinstance(candidate.get("meta"), dict) else {})
+            entry_target = (
+                candidate.get("entry_target")
+                if isinstance(candidate.get("entry_target"), dict)
+                else meta.get("entry_target")
+                if isinstance(meta.get("entry_target"), dict)
+                else {}
+            )
+            try:
+                menu_id = MenuService._node_route_menu_id(candidate)
+                action_id = int(candidate.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                menu_id, action_id = 0, 0
+            scene_key = str(
+                candidate.get("scene_key")
+                or meta.get("scene_key")
+                or entry_target.get("scene_key")
+                or ""
+            ).strip()
+            surface = str(entry_target.get("surface") or "").strip()
+            container = (
+                container_authority_by_menu.get(menu_id)
+                if action_id <= 0 and menu_id > 0
+                else None
+            )
+            declared = (
+                declared_authority_by_menu.get(menu_id)
+                if action_id <= 0 and menu_id > 0
+                else None
+            )
+            if scene_key:
+                route = derive_entry_route(scene_key=scene_key)
+            elif action_id > 0:
+                route = derive_entry_route(
+                    action_id=action_id,
+                    menu_id=menu_id,
+                )
+            elif container is not None:
+                route = derive_entry_route(menu_id=menu_id)
+                container["route"] = route
+            elif declared is not None:
+                route = str(declared.get("route") or "").strip()
+                if not route and surface:
+                    route = derive_entry_route(
+                        menu_id=menu_id,
+                        surface=surface,
+                    )
+            else:
+                # A directory grouping can contain authorized children without
+                # owning a navigable target itself. Publishing /m/<id> here
+                # would create a route that the sealed authority never granted.
+                route = ""
+            if scene_key:
+                next_target = build_scene_entry_target(
+                    scene_key=scene_key,
+                    menu_id=menu_id,
+                    action_id=action_id,
+                    model=str(candidate.get("model") or meta.get("model") or "").strip(),
+                    view_modes=(
+                        candidate.get("view_modes")
+                        if isinstance(candidate.get("view_modes"), list)
+                        else meta.get("view_modes")
+                        if isinstance(meta.get("view_modes"), list)
+                        else []
+                    ),
+                )
+                for keep in ("delivery_scope", "root_menu_xmlid", "record_entry", "presentation"):
+                    if entry_target.get(keep) not in (None, "", [], {}):
+                        next_target[keep] = entry_target[keep]
+                candidate["entry_target"] = next_target
+                meta["entry_target"] = next_target
+            elif surface and entry_target:
+                next_target = dict(entry_target)
+                next_target["route"] = route
+                candidate["entry_target"] = next_target
+                meta["entry_target"] = next_target
+            if route:
+                candidate["route"] = route
+                meta["route"] = route
+                canonical = (
+                    dict(candidate.get("canonical_navigation"))
+                    if isinstance(candidate.get("canonical_navigation"), dict)
+                    else {}
+                )
+                if canonical:
+                    canonical["route"] = route
+                    candidate["canonical_navigation"] = canonical
+            else:
+                candidate.pop("route", None)
+                meta.pop("route", None)
+                if isinstance(candidate.get("entry_target"), dict):
+                    candidate["entry_target"] = {
+                        key: value
+                        for key, value in candidate["entry_target"].items()
+                        if key != "route"
+                    }
+                    meta["entry_target"] = dict(candidate["entry_target"])
+                canonical = (
+                    dict(candidate.get("canonical_navigation"))
+                    if isinstance(candidate.get("canonical_navigation"), dict)
+                    else {}
+                )
+                if canonical:
+                    canonical["route"] = None
+                    candidate["canonical_navigation"] = canonical
+            if scene_key:
+                candidate["scene_key"] = scene_key
+                meta["scene_key"] = scene_key
+            candidate["meta"] = meta
+            candidate["children"] = [
+                walk(child)
+                for child in candidate.get("children") or []
+                if isinstance(child, dict)
+            ]
+            if menu_id > 0 and (
+                action_id > 0 or (declared is not None and scene_key)
+            ):
+                targets[(menu_id, action_id)] = {
+                    "route": route,
+                    "scene_key": scene_key,
+                    "entry_target": dict(candidate.get("entry_target") or {}),
+                }
+            return candidate
+
+        projected_nav = [walk(node) for node in nav or [] if isinstance(node, dict)]
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            for entry in authority.get(bucket) or []:
+                if not isinstance(entry, dict):
+                    continue
+                try:
+                    pair = (int(entry.get("menu_id") or 0), int(entry.get("action_id") or 0))
+                except (TypeError, ValueError):
+                    continue
+                target = targets.get(pair)
+                if not target:
+                    continue
+                if target.get("route"):
+                    entry["route"] = target["route"]
+                if target.get("scene_key"):
+                    entry["scene_key"] = target["scene_key"]
+                if target.get("entry_target"):
+                    entry["entry_target"] = dict(target["entry_target"])
+        return projected_nav, authority
+
+    @staticmethod
+    def project_navigation_product_policy(
+        nav: list[dict],
+        *,
+        product_key: str = "",
+        edition_key: str = "",
+        role_code: str = "",
+        role_codes: list[str] | None = None,
+    ) -> dict:
+        """Project the final P1 product policy from scenarioized navigation.
+
+        Product release selection is an input to authorization. It is not the
+        user-facing product policy. This projection is the final policy result:
+        every menu/action/scene/route identity below comes from the same tree
+        returned to the client.
+        """
+        entries: list[dict] = []
+        node_count = 0
+        directory_count = 0
+
+        def walk(nodes: list[dict], parent_path: list[str]) -> None:
+            nonlocal node_count, directory_count
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                node_count += 1
+                meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+                label = str(node.get("label") or node.get("title") or node.get("name") or "").strip()
+                path = [*parent_path, label] if label else list(parent_path)
+                children = [child for child in node.get("children") or [] if isinstance(child, dict)]
+                menu_id = MenuService._node_route_menu_id(node)
+                try:
+                    action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+                except (TypeError, ValueError):
+                    action_id = 0
+                entry_target = (
+                    node.get("entry_target")
+                    if isinstance(node.get("entry_target"), dict)
+                    else meta.get("entry_target")
+                    if isinstance(meta.get("entry_target"), dict)
+                    else {}
+                )
+                scene_key = str(
+                    node.get("scene_key")
+                    or meta.get("scene_key")
+                    or entry_target.get("scene_key")
+                    or ""
+                ).strip()
+                route = str(
+                    node.get("route")
+                    or meta.get("route")
+                    or entry_target.get("route")
+                    or ""
+                ).strip()
+                if children:
+                    directory_count += 1
+                elif menu_id > 0 and (action_id > 0 or scene_key or route):
+                    entries.append({
+                        "menu_id": menu_id,
+                        "menu_xmlid": str(
+                            node.get("menu_xmlid")
+                            or node.get("xmlid")
+                            or meta.get("menu_xmlid")
+                            or ""
+                        ).strip(),
+                        "action_id": action_id,
+                        "action_xmlid": str(meta.get("action_xmlid") or "").strip(),
+                        "scene_key": scene_key,
+                        "route": route,
+                        "label": label,
+                        "group_path": path[:-1],
+                        "delivery_bucket": str(
+                            node.get("delivery_bucket") or meta.get("delivery_bucket") or ""
+                        ).strip(),
+                    })
+                walk(children, path)
+
+        walk(nav or [], [])
+        normalized_roles = [
+            str(item or "").strip()
+            for item in (role_codes or [role_code])
+            if str(item or "").strip()
+        ]
+        return {
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
+            "source": "scenarioized_navigation.nav",
+            "projection_only": True,
+            "product_key": str(product_key or "").strip(),
+            "edition_key": str(edition_key or "").strip(),
+            "role_code": str(role_code or "").strip(),
+            "role_codes": normalized_roles,
+            "node_count": node_count,
+            "directory_count": directory_count,
+            "entry_count": len(entries),
+            "action_entry_count": sum(1 for entry in entries if entry["action_id"] > 0),
+            "scene_entry_count": sum(1 for entry in entries if entry["scene_key"]),
+            "entries": entries,
+        }
+
     @classmethod
     def _intersect_primary_authority_with_nav(cls, buckets: dict, nav: list[dict]) -> None:
         """Primary authority follows delivered membership; admin/context stay independent."""
@@ -1093,7 +1429,7 @@ class MenuService:
                         "route_kind": route_kind,
                         "menu_id": int(fact["menu_id"]),
                         "menu_xmlid": str(fact.get("menu_xmlid") or "").strip(),
-                        "route": f"/m/{int(fact['menu_id'])}",
+                        "route": derive_entry_route(menu_id=fact["menu_id"]),
                         "allowed_operation": "navigate",
                         "required_capability": "menu_container_visible",
                         "context_requirements": {},
@@ -1196,7 +1532,7 @@ class MenuService:
                 "action_id": 0,
                 "name": str(spec.get("name") or "").strip(),
                 "scene_key": str(spec.get("scene_key") or "").strip(),
-                "route": str(spec.get("route") or "").strip() or f"/s/{str(spec.get('scene_key') or '').strip()}",
+                "route": derive_entry_route(scene_key=spec.get("scene_key")),
                 "entry_target": dict(spec.get("entry_target") or {}),
                 "allowed_operation": "read",
                 "required_capability": "menu_container_visible",
@@ -1257,7 +1593,7 @@ class MenuService:
                     "name": str(menu.name or "").strip(),
                     "model": "",
                     "view_modes": [],
-                    "route": "/m/%d" % int(menu.id),
+                    "route": derive_entry_route(menu_id=menu.id),
                     "allowed_operation": "none",
                     "required_capability": "product_denied",
                     "context_requirements": {},
@@ -1318,7 +1654,7 @@ class MenuService:
                     "name": str(action.name or "").strip(),
                     "model": str(action.res_model or "").strip(),
                     "view_modes": [],
-                    "route": "/a/%d" % int(action.id),
+                    "route": derive_entry_route(action_id=action.id),
                     "allowed_operation": "none",
                     "required_capability": "product_denied",
                     "context_requirements": {},
@@ -1702,7 +2038,26 @@ class MenuService:
             return 0
         return number if number > 0 else 0
 
+    def _declared_sequence(self, node: dict):
+        for carrier in (
+            node,
+            node.get("meta") if isinstance(node.get("meta"), dict) else {},
+        ):
+            raw = carrier.get("sequence")
+            if raw in (None, ""):
+                continue
+            try:
+                number = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if number >= 0:
+                return number
+        return None
+
     def _node_sequence(self, node: dict) -> int:
+        declared = self._declared_sequence(node)
+        if declared is not None:
+            return declared
         sequence = self._positive_int(node.get("sequence"))
         if sequence:
             return sequence
@@ -1745,10 +2100,16 @@ class MenuService:
         def sort_key(item):
             index, node = item
             label = str(node.get("label") or node.get("title") or "").strip()
+            declared_sequence = self._declared_sequence(node)
+            sequence = (
+                declared_sequence
+                if declared_sequence is not None
+                else self._node_sequence(node) or 9999
+            )
             if top_level:
                 group_rank = self._business_group_display_order.get(label, 500)
-                return (group_rank, self._node_sequence(node) or 9999, index)
-            return (self._node_followup_rank(node), self._node_sequence(node) or 9999, index)
+                return (group_rank, sequence, index)
+            return (self._node_followup_rank(node), sequence, index)
 
         return [node for _index, node in sorted(decorated, key=sort_key)]
 
@@ -1841,8 +2202,7 @@ class MenuService:
                     action = None
             if action:
                 action_groups = getattr(action.sudo(), "groups_id", None)
-                user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
-                if action_groups and user_groups is not None and not bool(action_groups & user_groups):
+                if action_groups and not self._groups_authorize_current_user(action_groups):
                     return False
             elif action_xmlid:
                 return False
@@ -1908,9 +2268,19 @@ class MenuService:
                 index += 1
                 scene_key = str(menu.get("scene_key") or "").strip()
                 menu_id = menu.get("menu_id")
-                route = str(menu.get("route") or "").strip()
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
+                declared_target = (
+                    menu.get("entry_target")
+                    if isinstance(menu.get("entry_target"), dict)
+                    else {}
+                )
+                route = derive_entry_route(
+                    scene_key=scene_key,
+                    action_id=action_id,
+                    menu_id=menu_id,
+                    surface=declared_target.get("surface"),
+                )
                 native_visible_menu_path = (native_paths[menu_xmlid] if menu_xmlid in native_paths
                                             else self._native_visible_menu_path(menu_xmlid))
                 if route.startswith("/a/") and scene_key == menu_xmlid:
@@ -2445,14 +2815,6 @@ class MenuService:
         preview_menus_by_group = {}
         group_order = []
         emitted_menu_ids = set()
-        scene_route_map = {}
-        for scene in policy.get("scenes") or []:
-            if not isinstance(scene, dict):
-                continue
-            scene_key = str(scene.get("scene_key") or "").strip()
-            route = str(scene.get("route") or "").strip()
-            if scene_key and route:
-                scene_route_map[scene_key] = route
         entries = (
             self._iter_declared_entry_nodes(native_nav, entry_xmlids)
             if entry_xmlids is not None
@@ -2515,7 +2877,11 @@ class MenuService:
                     "menu_key": f"system.menu_{normalized_menu_id}",
                     "label": label,
                     "menu_id": normalized_menu_id,
-                    "route": str(meta.get("route") or leaf.get("route") or scene_route_map.get(scene_key) or ""),
+                    "route": derive_entry_route(
+                        scene_key=scene_key,
+                        action_id=meta.get("action_id") or leaf.get("action_id"),
+                        menu_id=normalized_menu_id,
+                    ),
                     "scene_key": scene_key,
                     "product_key": "",
                     "capability_key": "",
@@ -2749,6 +3115,10 @@ class MenuService:
                 ]) for group in config_groups]
                 config_groups = [group for group in config_groups if group["menus"]]
             grouped_native = config_groups + list(grouped_native or [])
+        # A closed product policy selects product entries, not the complete
+        # internal role surface. Explicit role-home/shell carriers still come
+        # from the native ACL-visible tree and are authorized by the same role
+        # projection as every other route.
         groups_by_key = {}
         group_order = []
         scene_group_map = {}

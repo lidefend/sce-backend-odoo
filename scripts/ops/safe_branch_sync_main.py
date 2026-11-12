@@ -32,19 +32,52 @@ PERSONAL_DATA_FALSE_POSITIVES_PATH = "scripts/ci/personal_data_false_positives.j
 SEMANTIC_UNION_CONFLICT_PATH = (
     "scripts/verify/frontend_my_work_approval_browser.mjs"
 )
+SEMANTIC_UNION_CONFLICT_PATHS = (
+    SEMANTIC_UNION_CONFLICT_PATH,
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+)
 ADDITIVE_MERGE_EQUIVALENCE_PATHS = (
     "scripts/verify/frontend_dev_incremental.py",
 )
-SEMANTIC_UNION_REQUIRED_MARKERS = (
-    (
-        "upstream approval-detail readback",
-        ("const approvedForm", "approvedAmountField", "cross_page_readout"),
+SEMANTIC_UNION_REQUIRED_MARKERS = {
+    SEMANTIC_UNION_CONFLICT_PATH: (
+        (
+            "upstream approval-detail readback",
+            ("const approvedForm", "approvedAmountField", "cross_page_readout"),
+        ),
+        (
+            "U06 approval-page decision flow",
+            ("rejectSafetyDialog", "action_approval_reject", "action_params?.reason"),
+        ),
     ),
-    (
-        "U06 approval-page decision flow",
-        ("rejectSafetyDialog", "action_approval_reject", "action_params?.reason"),
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py": (
+        (
+            "business-config-admin precedence",
+            (
+                "business_config_admin",
+                '"business_full",\n            "executive"',
+                '"operation_user",',
+            ),
+        ),
     ),
-)
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py": (
+        (
+            "business-config-admin precedence",
+            (
+                "test_mainline_operation_user_precedence_is_locked",
+                '"business_config_admin",\n            "business_full"',
+            ),
+        ),
+        (
+            "native route derivation regressions",
+            (
+                "test_hardcoded_runtime_route_is_rejected",
+                "derive the scene route",
+            ),
+        ),
+    ),
+}
 GENERATED_EVIDENCE_CONFLICT_PATHS = (
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -567,7 +600,7 @@ def verify_semantic_union_text(path: str, text: str) -> None:
     """Require both reviewed behaviours before preserving the prepared file."""
     if "<<<<<<<" in text or ">>>>>>>" in text:
         raise SyncError(f"semantic union source still contains conflict markers: {path}")
-    for label, markers in SEMANTIC_UNION_REQUIRED_MARKERS:
+    for label, markers in SEMANTIC_UNION_REQUIRED_MARKERS.get(path, ()):
         missing = [marker for marker in markers if marker not in text]
         if missing:
             raise SyncError(
@@ -626,22 +659,19 @@ def resolve_semantic_union_conflict(
     present.  Aggregate path and patch identity still prove that no stable
     responsibility disappeared, and the journey must be rerun after the sync.
     """
-    resolved = tuple(
-        path for path in conflicts if path == SEMANTIC_UNION_CONFLICT_PATH
-    )
+    resolved = tuple(path for path in conflicts if path in SEMANTIC_UNION_CONFLICT_PATHS)
     if not resolved:
         return ()
     if not plan.extended_history:
         raise SyncError("semantic union conflicts require the extended frozen sync")
-    text = text_at_revision(plan.root, plan.head, SEMANTIC_UNION_CONFLICT_PATH)
-    verify_semantic_union_text(SEMANTIC_UNION_CONFLICT_PATH, text)
-    verify_semantic_union_preserves_main(
-        plan, SEMANTIC_UNION_CONFLICT_PATH, text
-    )
-    target = generated_output_path(plan.root, SEMANTIC_UNION_CONFLICT_PATH)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(text, encoding="utf-8")
-    run(plan.root, "add", "--", SEMANTIC_UNION_CONFLICT_PATH)
+    for path in resolved:
+        text = text_at_revision(plan.root, plan.head, path)
+        verify_semantic_union_text(path, text)
+        verify_semantic_union_preserves_main(plan, path, text)
+        target = generated_output_path(plan.root, path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        run(plan.root, "add", "--", path)
     return resolved
 
 
@@ -812,7 +842,7 @@ def run_rebase(
         if plan.extended_history or plan.regenerate_evidence:
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
         if plan.extended_history:
-            allowed.add(SEMANTIC_UNION_CONFLICT_PATH)
+            allowed.update(SEMANTIC_UNION_CONFLICT_PATHS)
             allowed.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         if not conflicts or any(path not in allowed for path in conflicts):
             diagnostic = plan.recovery_bundle.with_suffix(".conflict.json")
@@ -841,12 +871,33 @@ def run_rebase(
             merge_personal_data_false_positives(plan)
             metadata_conflicts.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
+    semantic_conflicts.update(collect_prepared_semantic_unions(plan))
     return (
         append_only_log_resolved,
         tuple(sorted(generated_evidence_conflicts)),
         tuple(sorted(metadata_conflicts)),
         tuple(sorted(semantic_conflicts)),
     )
+
+
+def collect_prepared_semantic_unions(plan: SyncPlan) -> tuple[str, ...]:
+    """Recognize reviewed union paths even when Git merged them without conflict."""
+    if not plan.extended_history:
+        return ()
+    current_head = git_output(plan.root, "rev-parse", "HEAD")
+    prepared = []
+    for path in SEMANTIC_UNION_CONFLICT_PATHS:
+        if path not in set(plan.paths):
+            continue
+        if not path_equals_revision(plan.root, current_head, plan.head, path):
+            raise SyncError(
+                f"prepared semantic union path changed during rebase: {path}"
+            )
+        text = text_at_revision(plan.root, current_head, path)
+        verify_semantic_union_text(path, text)
+        verify_semantic_union_preserves_main(plan, path, text)
+        prepared.append(path)
+    return tuple(prepared)
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:

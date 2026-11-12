@@ -3,8 +3,9 @@
 """Static guard for the scenario product surface projection.
 
 Pure Python (no Odoo). Loads the P1 scenario surface contract and the released
-91 menu identities from product_menu_source, then proves the projection regroups
-all 91 into domain -> scenario -> intent without re-authoring identity.
+92 menu identities from product_menu_source, then proves the projection regroups
+all 92 into scenario/horizontal/direct-platform surfaces without re-authoring
+identity.
 """
 from __future__ import annotations
 
@@ -41,6 +42,7 @@ def released_menu_xmlids():
 
 HORIZONTAL_MENUS = [
     "smart_construction_core.menu_sc_workspace_home",
+    "smart_construction_core.menu_sc_my_work",
     "smart_construction_core.menu_sc_operating_metrics_project",
     "smart_construction_core.menu_sc_project_kanban",
     "smart_construction_core.menu_sc_workbench_my_todo_fact",
@@ -54,6 +56,7 @@ PLATFORM_MENUS = [
     "smart_construction_core.menu_sc_product_data_permission_v1",
     "smart_construction_core.menu_sc_product_system_parameter_v1",
     "smart_construction_core.menu_sc_product_numbering_rule_v1",
+    "smart_construction_core.menu_sc_runtime_user_management",
 ]
 HORIZONTAL_ROOT = "smart_construction_core.menu_sc_workspace_center"
 PLATFORM_ROOT = "smart_construction_core.menu_sc_business_config_center"
@@ -155,12 +158,21 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         cls.parent_by_menu = native_parent_by_menu()
         cls.leaves = synthetic_leaves(cls.released, cls.parent_by_menu)
 
-    def test_released_universe_is_exactly_91(self):
-        self.assertEqual(len(self.released), 91)
+    def test_released_universe_is_exactly_92(self):
+        self.assertEqual(len(self.released), 92)
 
-    def test_surface_maps_all_91_and_only_them(self):
+    def test_surface_maps_all_92_and_only_them(self):
         index = PROJ.build_menu_index(self.surface, parent_by_menu=self.parent_by_menu)
         self.assertEqual(set(index), set(self.released))
+
+    def test_runtime_user_management_is_direct_platform_not_scenario(self):
+        assignments = PROJ.build_menu_assignments(
+            self.surface,
+            parent_by_menu=self.parent_by_menu,
+        )
+        rows = assignments["smart_construction_core.menu_sc_runtime_user_management"]
+        self.assertEqual([row["location"] for row in rows], ["platform"])
+        self.assertFalse(any(row["location"] == "scenario" for row in rows))
 
     def test_surface_declares_17_scenarios_under_6_domains(self):
         self.assertEqual(len(self.surface["scenarios"]), 17)
@@ -169,21 +181,21 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         domain_keys = {k for d in self.surface["domains"] for k in d["scenarios"]}
         self.assertEqual(scenario_keys, domain_keys)
 
-    def test_projection_groups_all_91_with_no_unmapped(self):
+    def test_projection_groups_all_92_with_no_unmapped(self):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves)
         self.assertTrue(result["ok"])
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 91)
-        self.assertEqual(result["diagnostics"]["grouped_leaf_count"], 91)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 92)
+        self.assertEqual(result["diagnostics"]["grouped_leaf_count"], 92)
 
     def test_projection_preserves_leaf_identity(self):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves, include_platform=True)
         domain_entries = [e for d in result["tree"]["domains"] for s in d["scenarios"] for i in s["intents"] for e in i["entries"]]
         horizontal = result["tree"]["horizontal"]
         platform = result["tree"]["platform"]
-        self.assertEqual(len(domain_entries), 79)
-        self.assertEqual(len(horizontal), 5)
-        self.assertEqual(len(platform), 7)
+        self.assertEqual(len(domain_entries), 78)
+        self.assertEqual(len(horizontal), 6)
+        self.assertEqual(len(platform), 8)
         by_menu = {e["menu_xmlid"]: e for e in domain_entries + horizontal + platform}
         first = self.released[0]
         self.assertEqual(by_menu[first]["menu_xmlid"], first)
@@ -201,7 +213,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves + [extra])
         self.assertEqual(result["diagnostics"]["unmapped_count"], 1)
         self.assertIn("smart_construction_core.menu_not_in_surface", result["diagnostics"]["unmapped_menu_xmlids"])
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 91)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 92)
 
     def test_invalid_surface_returns_fallback_contract(self):
         result = PROJ.project_scenario_navigation(surface={"schema": "wrong"}, authorized_leaves=self.leaves)
@@ -245,18 +257,18 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         authority = synthetic_route_authority(self.released)
         result = PROJ.project_authorized_nav(nav=nav, route_authority=authority, surface=self.surface)
         self.assertTrue(result["ok"])
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 91)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 92)
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(len(result["tree"]["platform"]), 7)
-        self.assertEqual(len(result["tree"]["horizontal"]), 5)
+        self.assertEqual(len(result["tree"]["platform"]), 8)
+        self.assertEqual(len(result["tree"]["horizontal"]), 6)
 
     def test_zero_business_scenes_keep_only_authorized_management_entries(self):
         subset = HORIZONTAL_MENUS + PLATFORM_MENUS
         result = PROJ.project_authorized_nav(nav=synthetic_nav(subset, native_parent_by_menu()),
             route_authority=synthetic_route_authority(subset), surface=self.surface)
         self.assertEqual(result["tree"]["domains"], [])
-        self.assertEqual(len(result["tree"]["horizontal"]), 5)
-        self.assertEqual(len(result["tree"]["platform"]), 7)
+        self.assertEqual(len(result["tree"]["horizontal"]), 6)
+        self.assertEqual(len(result["tree"]["platform"]), 8)
         self.assertEqual(result["tree"]["platform_label"], "产品配置")
         authority = synthetic_route_authority(subset)
         authority["primary_actions"] = authority["primary_actions"][:5]

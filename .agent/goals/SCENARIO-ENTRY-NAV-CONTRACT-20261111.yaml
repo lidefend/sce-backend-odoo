@@ -1,0 +1,27 @@
+schema_version: 1
+goal:
+  id: SCENARIO-ENTRY-NAV-CONTRACT-20261111
+  status: active
+  formal_product_layer: P1 product semantics with P0 initialization consumption cleanup
+  title: 初始化最终导航唯一权威与业务配置管理员能力闭包
+  layer_target: single login-role/native-menu runtime authority, initialization consumption, and role capability closure
+  module: smart_construction_core
+  standard_vs_user_specific: construction_industry_standard
+  objective: >
+    Make login role plus native menu/action/ACL facts the single runtime
+    navigation authority. Business-scene activation remains configuration and
+    catalog state, and must not re-filter the final initialization result.
+    Business Config Admin becomes the full-business superset of Business Full.
+  acceptance:
+    - An internal Business Full principal receives My Work in the final system.init navigation without receiving the enterprise initialization configuration menu.
+    - A Business Config Admin principal receives My Work and the persistent enterprise initialization entry from the final system.init navigation under native group authority.
+    - Changing or deleting company scene enablement does not add a second route decision or remove a role/native-authorized navigation entry.
+    - Business Config Admin inherits Business Full; Business Full does not inherit Business Config Admin; role projection prefers Business Config Admin when both apply.
+    - Native actions, P1 product-entry sources and scene carriers maintain no URL route.
+    - Final navigation and route authority derive URLs from the final scene/action/menu identity, and system.init returns that same result.
+  exclusions:
+    - No frontend menu synthesis or sidebar fallback.
+    - No sc_web_route or maintained URL field in native actions, product-entry sources, or scene composition carriers.
+    - No new scenario binding or menu exemption fact for My Work or enterprise initialization.
+    - No P4 delivery-lane repair in this product branch.
+    - No ACL, record-rule, publication, customer-preference, low-code, deployment, or production-data change.

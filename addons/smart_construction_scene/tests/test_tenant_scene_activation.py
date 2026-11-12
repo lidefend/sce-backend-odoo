@@ -973,6 +973,144 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         self.assertEqual(route_authority.published_pairs(result), {(3, 33), (4, 44)})
         self.assertEqual(len(result["denied_actions"]), 3)
 
+    def test_shared_menu_survives_through_any_selected_scenario(self):
+        location = {
+            "location": "scenario",
+            "scenario_key": "scenario.a",
+            "scenario_locations": [
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.a",
+                    "scenario_active": True,
+                    "scenario_sequence": 20,
+                    "sequence": 10,
+                    "intent": "handle",
+                    "entry_id": 1,
+                },
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.b",
+                    "scenario_active": True,
+                    "scenario_sequence": 10,
+                    "sequence": 20,
+                    "intent": "view",
+                    "entry_id": 2,
+                },
+            ],
+            "menu_id": 1,
+        }
+        source = {"primary_actions": [
+            {"menu_id": 1, "action_id": 11, "menu_xmlid": "test.shared"}
+        ]}
+        for enabled, expected_scene in (
+            ({"scenario.a": True}, "scenario.a"),
+            ({"scenario.b": True}, "scenario.b"),
+            ({"scenario.a": True, "scenario.b": True}, "scenario.b"),
+        ):
+            with self.subTest(enabled=enabled):
+                result = business_enablement.filter_business_authority(
+                    source,
+                    surface_index={"test.shared": location},
+                    enabled=enabled,
+                    entries=[],
+                    menu_xmlids_by_id={1: "test.shared"},
+                    company_id=9,
+                )
+                self.assertEqual(result["primary_actions"], source["primary_actions"])
+                self.assertFalse(result["denied_actions"])
+                composition = result["scenario_composition"]
+                self.assertEqual(composition["company_id"], 9)
+                self.assertEqual(
+                    composition["selected_by_menu"]["1"]["scenario_key"],
+                    expected_scene,
+                )
+
+    def test_unselected_shared_menu_is_denied_without_losing_composition(self):
+        location = {
+            "location": "scenario",
+            "scenario_key": "scenario.b",
+            "scenario_locations": [
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.a",
+                    "scenario_active": True,
+                    "scenario_sequence": 10,
+                },
+                {
+                    "location": "scenario",
+                    "menu_id": 1,
+                    "scenario_key": "scenario.b",
+                    "scenario_active": True,
+                    "scenario_sequence": 20,
+                },
+            ],
+            "menu_id": 1,
+        }
+        result = business_enablement.filter_business_authority(
+            {"primary_actions": [
+                {"menu_id": 1, "action_id": 11, "menu_xmlid": "test.shared"}
+            ]},
+            surface_index={"test.shared": location},
+            enabled={"scenario.a": False, "scenario.b": False},
+            entries=[],
+            menu_xmlids_by_id={1: "test.shared"},
+            company_id=9,
+        )
+        self.assertFalse(result["primary_actions"])
+        self.assertEqual(
+            result["denied_actions"][0]["reason_code"],
+            "BUSINESS_SCENARIO_NOT_ENABLED",
+        )
+        selected = result["scenario_composition"]["selected_by_menu"]["1"]
+        self.assertNotEqual(selected.get("location"), "scenario")
+        self.assertEqual(
+            selected["available_scenario_keys"],
+            ["scenario.a", "scenario.b"],
+        )
+
+    def test_one_menu_can_be_declared_in_multiple_scenarios_but_not_twice_in_one(self):
+        surface = {
+            "scenarios": [
+                {
+                    "key": "scenario.a",
+                    "sequence": 20,
+                    "bindings": [{
+                        "menu_id": 1,
+                        "menu_key": "test.shared",
+                        "intent": "handle",
+                        "sequence": 10,
+                    }],
+                },
+                {
+                    "key": "scenario.b",
+                    "sequence": 0,
+                    "bindings": [{
+                        "menu_id": 1,
+                        "menu_key": "test.shared",
+                        "intent": "view",
+                        "sequence": 0,
+                    }],
+                },
+            ]
+        }
+        index = scenario_surface.build_menu_index(surface)
+        self.assertEqual(
+            [row["scenario_key"] for row in index["test.shared"]["scenario_locations"]],
+            ["scenario.b", "scenario.a"],
+        )
+        self.assertEqual(index["test.shared"]["scenario_locations"][0]["sequence"], 0)
+        self.assertEqual(index["test.shared"]["scenario_locations"][0]["scenario_sequence"], 0)
+        surface["scenarios"][1]["bindings"].append({
+            "menu_id": 1,
+            "menu_key": "test.shared",
+            "intent": "handle",
+        })
+        with self.assertRaisesRegex(ValueError, "duplicate menu assignment"):
+            scenario_surface.build_menu_index(surface)
+
     def test_explicit_enable_then_disable_narrows_all_alias_routes(self):
         original = copy.deepcopy(self.authority)
         enabled = business_enablement.business_states({"business.v1:project.management": True})
@@ -1076,57 +1214,6 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             self.assertEqual([row["scene_key"] for row in result["rows"] if row["workspace_candidate"]],
                              ["legacy.project"] if enabled.get("project.management") else [])
 
-    def test_p1_model_reads_current_company_and_preserves_native_principal(self):
-        class Parent:
-            def _apply_company_route_scope(self, authority):
-                return authority
-        with patch.object(odoo_mod, "api", types.SimpleNamespace(model=lambda fn: fn), create=True), \
-             patch.object(odoo_mod, "models", types.SimpleNamespace(Model=Parent), create=True), \
-             patch.object(
-                 odoo_mod,
-                 "tools",
-                 types.SimpleNamespace(ormcache=lambda *args, **kwargs: lambda fn: fn),
-                 create=True,
-             ):
-            module = _load("nav01_business_policy_model", SCENE_DIR / "models/product_policy.py")
-        fixture = self
-        states = {1: {"business.v1:project.management": True}, 2: {}}
-        surface = {"scenarios": [{"key": "project.management"}, {"key": "finance"}]}
-        queries = []
-        class Env:
-            user = types.SimpleNamespace(id=7)
-            def __init__(self, company_id):
-                self.company = types.SimpleNamespace(id=company_id)
-            def __getitem__(self, name):
-                runtime = _runtime_model(name, self)
-                if runtime is not None:
-                    return runtime
-                if name != "ir.config_parameter":
-                    raise AssertionError(name)
-                def get_param(key, default="0"):
-                    queries.append((self.company.id, self.user.id, key))
-                    rest = key[len("sc.scene.tenant.enablement."):]
-                    scene_key = rest.split(".", 1)[1] if "." in rest else rest
-                    return "1" if states[self.company.id].get(scene_key) else "0"
-                return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(get_param=get_param))
-            def ref(self, xmlid, raise_if_not_found=False):
-                return types.SimpleNamespace(id=list(fixture.index).index(xmlid) + 1, _name="ir.ui.menu",
-                                             action=types.SimpleNamespace(id=11 if xmlid == "test.project" else 99))
-        record = module.ScProductPolicy()
-        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface), \
-             patch.object(scenario_surface, "runtime_menu_scope", return_value=(self.index, {1: "test.project"}, {11: ["test.project"]})), \
-             patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries):
-            for company_id, expected in ((1, True), (2, False), (1, True)):
-                record.env = Env(company_id)
-                source = copy.deepcopy(self.authority)
-                source["contextual_actions"].append({"action_id": 11})
-                authority = record._apply_company_route_scope(source)
-                self.assertEqual((0, 11) in route_authority.published_pairs(authority), expected)
-                self.assertIs(route_authority.menu_publication_decision(authority, 1, 11), expected)
-            states[1].clear()
-            self.assertFalse(route_authority.menu_publication_decision(record._apply_company_route_scope(self.authority), 1, 11))
-        self.assertTrue(all(q[1] == 7 and q[2].startswith("sc.scene.tenant.enablement.") for q in queries))
-
     def test_business_mutation_cannot_overwrite_same_named_legacy_record(self):
         fixture = TestActualPublicationConsumers()
         fixture.setUp()
@@ -1223,21 +1310,18 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                             self.assertIs(actions[0]["enabled"], not enabled)
                             self.assertEqual(actions[0]["label"], "停用" if enabled else "启用")
 
-    def test_live_company_filter_runs_even_when_publication_is_cached(self):
-        state = {"project.management": True}
-        calls = []
+    def test_published_authority_is_final_without_company_refilter(self):
         policy = types.SimpleNamespace(published_route_authority=lambda: self.authority)
-        def live(authority):
-            calls.append("read-company-state")
-            return self.filtered(state, authority)
-        policy._apply_company_route_scope = live
+        policy._apply_company_route_scope = lambda authority: (_ for _ in ()).throw(
+            AssertionError("company scene state was applied a second time")
+        )
         env = {"sc.product.policy": policy}
-        self.assertTrue(route_authority.menu_publication_decision(route_authority.published_route_authority(env), 1, 11))
-        state.clear()
-        self.assertFalse(route_authority.menu_publication_decision(route_authority.published_route_authority(env), 1, 11))
-        self.assertEqual(calls, ["read-company-state", "read-company-state"])
-        policy._apply_company_route_scope = lambda authority: (_ for _ in ()).throw(PermissionError("denied"))
-        self.assertEqual(route_authority.published_route_authority(env), {})
+        for _attempt in range(2):
+            self.assertTrue(
+                route_authority.menu_publication_decision(
+                    route_authority.published_route_authority(env), 1, 11
+                )
+            )
 
 
 class TestEnablementModelLifecycle(unittest.TestCase):

@@ -81,7 +81,15 @@ def _load_authorization_native_nav():
             node.decorator_list = []
             body.append(node)
     assert {node.name for node in body} == wanted, "menu_service authorization methods drifted"
-    scope = {"MenuFactService": _FactServiceDouble}
+    def derive_entry_route(*, action_id=0, menu_id=0, **_kwargs):
+        if action_id:
+            return f"/a/{action_id}" + (f"?menu_id={menu_id}" if menu_id else "")
+        return f"/m/{menu_id}" if menu_id else ""
+
+    scope = {
+        "MenuFactService": _FactServiceDouble,
+        "derive_entry_route": derive_entry_route,
+    }
     exec(compile(ast.Module(body=body, type_ignores=[]), str(path), "exec"), scope)
     return type("_Authorization", (), {name: scope[name] for name in wanted})
 

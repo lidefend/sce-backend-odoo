@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-CENTER-COMPOSITION-20261111",
+  "branch": "refactor/navigation-contract-compiler-20261111",
+  "baseline_sha": "cd99a18cd83d549e4a50280b40b356f0245c441b",
+  "status": "completed",
+  "goal": ".agent/goals/SCENARIO-CENTER-COMPOSITION-20261111.yaml",
+  "record": "docs/ops/iterations/scenario_center_composition_20261111.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENARIO-CENTER-COMPOSITION-20261111.yaml",
+    ".agent/runs/SCENARIO-CENTER-COMPOSITION-20261111/run.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/migrations/17.0.0.179/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/scenario_center_composition_20261111.md",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound navigation and migration checks; runtime observation recorded separately"
+  },
+  "runtime_observation": {
+    "database": "sc_dev_demo",
+    "upgrade_command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+    "migration": "17.0.0.179 post-migrate",
+    "scenario_entry_count": 79,
+    "missing_center_count": 0,
+    "center_count": 8,
+    "artifact": "artifacts/backend/scenario_center_composition_inventory_current.json",
+    "artifact_sha256": "d99dfa4d93f4759b274434abfdb88ec3a451320357f1664584fbca5edae93efe",
+    "behavior_identity": "all seven measured principals have identical final navigation, route authority, product policy and targeted capability observations",
+    "status": "passed"
+  },
+  "checks": {
+    "center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py"
+      ]
+    },
+    "backend_navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "make/frontend.mk"
+      ]
+    },
+    "navigation_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "daily_permission_truth": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/SCENARIO-CENTER-COMPOSITION-20261111/daily-permission-truth.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/views/support/product_scenario_views.xml"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Continue with multi-scenario capability reuse and tenant composition selection using the catalog and composed center output now in place.",
+  "layer": {
+    "formal_product_layer": "P1 construction product orchestration",
+    "layer_target": "scenario navigation center composition",
+    "module": "smart_construction_core",
+    "standard_vs_user_specific": "construction industry standard",
+    "why_here": "Center membership and ordering are product scenario composition, not native menu facts or frontend presentation decisions.",
+    "why_not_elsewhere": "P0 only compiles the final contract; native menu hierarchy describes capability ownership, not the delivered product's center layout.",
+    "blast_radius": "Scenario entry metadata, its initial migration seed, scenario center projection and the config-admin scenario editor."
+  },
+  "validation_results": [
+    {
+      "command": "make verify.scenario.center_projection.guard",
+      "status": "passed",
+      "tests": 6,
+      "log": ".runtime/scenario-center-composition/center.log"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 73,
+      "log": ".runtime/scenario-center-composition/backend-navigation.log"
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 175,
+      "log": ".runtime/scenario-center-composition/navigation-consumers.log"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "tests": 117,
+      "log": ".runtime/scenario-center-composition/incremental-planner.log"
+    },
+    {
+      "command": "make verify.daily.permission_truth.capability.orm",
+      "status": "passed",
+      "tests": 13,
+      "log": ".runtime/agent-runs/SCENARIO-CENTER-COMPOSITION-20261111/daily-permission-truth.log"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "head": "cd99a18cd83d549e4a50280b40b356f0245c441b"
+    }
+  ],
+  "completion": {
+    "batch": "scenario_center_composition_migrated_and_runtime_equivalent",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "The current scenario entry uniqueness still allows one scenario per menu; multi-scenario reuse is the next slice.",
+    "Tenant composition selection and release-version selection are not changed in this batch.",
+    "No remote PR, CI, merge or deployment was performed."
+  ]
+}

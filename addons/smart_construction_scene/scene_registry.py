@@ -19,6 +19,11 @@ _SCENE_REGISTRY_CONTENT_MODULE = None
 _SCENE_REGISTRY_ENGINE_MODULE = None
 
 
+def _scene_route(scene_key) -> str:
+    key = str(scene_key or "").strip()
+    return f"/s/{key}" if key else ""
+
+
 def _load_scene_registry_engine_module():
     global _SCENE_REGISTRY_ENGINE_MODULE
     if _SCENE_REGISTRY_ENGINE_MODULE is not None:
@@ -207,7 +212,6 @@ def _derive_native_config_scene(env):
         "name": str(action.name or "企业初始化").strip(),
         "tags": [],
         "target": {
-            "route": "/s/enterprise.setup",
             "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
             "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
             "model": str(action.res_model or "").strip(),
@@ -240,6 +244,14 @@ def _normalize_scene(scene, drift=None, source="registry"):
             scene["tags"].append("internal")
         if "smoke" not in scene["tags"]:
             scene["tags"].append("smoke")
+    code = str(scene.get("code") or "").strip()
+    target = dict(scene.get("target") or {}) if isinstance(scene.get("target"), dict) else {}
+    target["route"] = _scene_route(code)
+    scene["target"] = target
+    page = dict(scene.get("page") or {}) if isinstance(scene.get("page"), dict) else {}
+    if page:
+        page["route"] = _scene_route(code)
+        scene["page"] = page
     scene = _apply_scene_defaults(scene, drift=drift, source=source)
     return scene
 
@@ -271,11 +283,12 @@ def _normalize_scene_asset_payload(payload):
         out["zones"] = list(zones)
 
     target = dict(payload.get("target") or {}) if isinstance(payload.get("target"), dict) else {}
-    route = str(page.get("route") or target.get("route") or "").strip()
-    if route:
-        target["route"] = route
+    target["route"] = _scene_route(scene_key)
     if target:
         out["target"] = target
+    if page:
+        page["route"] = _scene_route(scene_key)
+        out["page"] = page
 
     for key in ("blocks", "search_surface", "permission_surface", "actions"):
         value = payload.get(key)
@@ -314,6 +327,9 @@ def _load_scene_asset_entries_with_timings():
 
 def _apply_scene_defaults(scene, drift=None, source="registry"):
     code = scene.get("code") or scene.get("key") or ""
+    target = dict(scene.get("target") or {}) if isinstance(scene.get("target"), dict) else {}
+    target["route"] = _scene_route(code)
+    scene["target"] = target
     if code == "projects.intake":
         required_caps = scene.get("required_capabilities")
         if not isinstance(required_caps, list) or not [str(x).strip() for x in required_caps if str(x).strip()]:
@@ -326,7 +342,6 @@ def _apply_scene_defaults(scene, drift=None, source="registry"):
                     fields=["required_capabilities"],
                     severity="warn",
                 )
-        target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
         if not str(target.get("model") or "").strip():
             target["model"] = "project.project"
             if source == "db":
@@ -347,29 +362,13 @@ def _apply_scene_defaults(scene, drift=None, source="registry"):
                     fields=["target.view_type"],
                     severity="warn",
                 )
-        route = str(target.get("route") or "").strip()
-        if "TARGET_MISSING" in route:
-            # 历史导出可能遗留 workbench 过渡路由，强制收敛到稳定语义路由。
-            target["route"] = "/s/projects.intake"
-            scene["target"] = target
-            if source == "db":
-                _append_drift(
-                    drift,
-                    scene_key=code,
-                    kind="fallback_override",
-                    fields=["target.route"],
-                    severity="warn",
-                )
         if not (
             target.get("menu_xmlid")
             or target.get("menu_id")
             or target.get("action_xmlid")
             or target.get("action_id")
             or target.get("model")
-            or target.get("route")
         ):
-            # Keep intake scene executable without leaking workbench fallback.
-            target["route"] = "/s/projects.intake"
             scene["target"] = target
             if source == "db":
                 _append_drift(
@@ -456,14 +455,14 @@ def load_scene_configs_with_timings(env, drift=None):
             "name": "默认场景",
             "is_test": True,
             "tags": ["internal"],
-            "target": {"route": "/workbench?scene=default"},
+            "target": {},
         },
         {
             "code": "scene_smoke_default",
             "name": "Scene Smoke Default",
             "is_test": True,
             "tags": ["internal", "smoke"],
-            "target": {"route": "/workbench?scene=scene_smoke_default"},
+            "target": {},
         },
     ]
 

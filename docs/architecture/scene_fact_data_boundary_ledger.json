@@ -1,8 +1,8 @@
 {
   "schema": "scene_fact_data_boundary.v1",
-  "rule": "fact_layer_is_the_single_maintenance_source",
+  "rule": "fact_layer_is_the_single_maintenance_source; scene_layer_composes_only",
   "decision": "ARCH-DECISION-010",
-  "note": "Scenario entries, workspace layout and enablement must be read-only projections of native model/view/permission/group facts. Carriers below hold scene configuration fact data and are bound by exact content SHA until the governed convergence retires them.",
+  "note": "Scenario entries, workspace layout and enablement must be read-only projections of native model/view/permission/group facts. First classify fact insufficiency versus composition insufficiency; fact insufficiency returns to its owning fact layer. Scene carriers are bound by exact content SHA until the governed convergence retires them.",
   "violations": {
     "hardcoded_scene_registry_enterprise_entries": {
       "file": "addons/smart_construction_scene/profiles/scene_registry_content.py",
@@ -37,6 +37,26 @@
       "sha256": null,
       "converged": true,
       "converged_by": "horizontal and platform groups derive from native menu-tree roots"
+    },
+    "scene_route_fact_declarations": {
+      "files": [
+        "addons/smart_construction_scene/data/",
+        "addons/smart_construction_scene/profiles/"
+      ],
+      "sha256": null,
+      "converged": true,
+      "converged_by": "routes are derived from final scene/action/menu identity during navigation projection; scene carriers hold only composition identities"
+    },
+    "legacy_route_fact_maintenance": {
+      "files": [
+        "addons/*/views/**/*.xml",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/data/product_menu_source.json"
+      ],
+      "sha256": null,
+      "converged": true,
+      "converged_by": "native actions and product-entry facts no longer maintain URL routes; navigation projection derives them from scene/action/menu identity"
     }
   }
 }

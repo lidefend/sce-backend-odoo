@@ -149,9 +149,7 @@ def published_route_authority(env) -> dict:
             authority = policy.published_route_authority()
         except Exception:
             authority = _build_runtime_route_authority(env)
-        # Apply volatile company restrictions outside the process cache. A stale
-        # browser or cached publication cannot bypass a committed revocation.
-        return policy._apply_company_route_scope(authority)
+        return authority
     except Exception:
         return {}
 
@@ -204,6 +202,14 @@ def _build_runtime_route_authority(env) -> dict:
             filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
                 _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
         )
+        from ..utils.extension_hooks import call_extension_hook_first
+
+        authority = call_extension_hook_first(
+            env,
+            "smart_core_navigation_authority_filter",
+            env,
+            authority,
+        ) or authority
         return authority if isinstance(authority, dict) else {}
     except Exception:
         return {}

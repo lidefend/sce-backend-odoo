@@ -6,11 +6,22 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-ROOT = Path(__file__).resolve().parents[3]
+SOURCE_FILE = Path(__file__).resolve()
+ADDONS_ROOT = next(
+    parent
+    for parent in SOURCE_FILE.parents
+    if (parent / "smart_core").is_dir()
+    and (parent / "smart_construction_core").is_dir()
+)
 
 
 def _load_module(module_name: str, relative_path: str):
-    target = ROOT / relative_path
+    path = Path(relative_path)
+    target = (
+        ADDONS_ROOT / path.relative_to("addons")
+        if path.parts[0] == "addons"
+        else SOURCE_FILE.parents[3] / path
+    )
     spec = importlib.util.spec_from_file_location(module_name, target)
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
@@ -29,9 +40,14 @@ def _ensure_stub_packages():
     registry_module = sys.modules.setdefault("odoo.modules.registry", types.ModuleType("odoo.modules.registry"))
     registry_module.Registry = lambda *args, **kwargs: None
     smart_core_pkg = sys.modules.setdefault("odoo.addons.smart_core", types.ModuleType("odoo.addons.smart_core"))
-    smart_core_pkg.__path__ = [str(ROOT / "addons/smart_core")]
+    smart_core_pkg.__path__ = [str(ADDONS_ROOT / "smart_core")]
     core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
-    core_pkg.__path__ = [str(ROOT / "addons/smart_core/core")]
+    core_pkg.__path__ = [str(ADDONS_ROOT / "smart_core/core")]
+    delivery_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.delivery",
+        types.ModuleType("odoo.addons.smart_core.delivery"),
+    )
+    delivery_pkg.__path__ = [str(ADDONS_ROOT / "smart_core/delivery")]
     sys.modules.setdefault("odoo.exceptions", types.ModuleType("odoo.exceptions"))
     sys.modules["odoo.exceptions"].AccessError = type("AccessError", (Exception,), {})
 
@@ -59,13 +75,17 @@ PRODUCT_POLICY_SERVICE = _load_module(
     "smart_core_product_policy_service_test",
     "addons/smart_core/delivery/product_policy_service.py",
 )
+_load_module(
+    "odoo.addons.smart_core.delivery.runtime_capability_catalog",
+    "addons/smart_core/delivery/runtime_capability_catalog.py",
+)
 PRODUCT_POLICY_CATALOG_SYNC_SERVICE = _load_module(
     "odoo.addons.smart_core.delivery.product_policy_catalog_sync_service",
     "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
 )
-CORE_EXTENSION = _load_module(
-    "smart_construction_core_extension_test",
-    "addons/smart_construction_core/core_extension.py",
+SYSTEM_INIT_ROWS = _load_module(
+    "smart_construction_core_system_init_rows_test",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
 )
 
 
@@ -170,6 +190,18 @@ class _FakeSourceEnv:
         raise KeyError(key)
 
 
+class _PolicyServiceEnv:
+    registry = SimpleNamespace(models={})
+    cr = SimpleNamespace(dbname="sc_test")
+
+    def __getitem__(self, key):
+        if key == "ir.config_parameter":
+            return SimpleNamespace(
+                sudo=lambda: SimpleNamespace(get_param=lambda *args: "")
+            )
+        raise KeyError(key)
+
+
 class TestBackendSemanticCopySupply(unittest.TestCase):
     def test_release_surface_contract_keeps_backend_description_and_scope(self):
         contract = SCENE_CONTRACT_BUILDER.build_release_surface_scene_contract_from_delivery_entry(
@@ -189,13 +221,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         self.assertEqual(identity.get("scope"), "项目执行 -> 成本 -> 付款记录 -> 付款汇总。")
 
     def test_missing_construction_policy_uses_empty_platform_shell(self):
-        class _Env:
-            registry = SimpleNamespace(models={})
-
-            def __getitem__(self, key):
-                raise KeyError(key)
-
-        service = PRODUCT_POLICY_SERVICE.ProductPolicyService(_Env())
+        service = PRODUCT_POLICY_SERVICE.ProductPolicyService(_PolicyServiceEnv())
         policy = service.get_policy(product_key="construction.standard")
 
         self.assertEqual(policy.get("product_key"), "construction.standard")
@@ -205,13 +231,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         self.assertEqual(policy.get("capabilities") or [], [])
 
     def test_default_product_policy_fallback_is_provider_scoped_and_parameterized(self):
-        class _Env:
-            registry = SimpleNamespace(models={})
-
-            def __getitem__(self, key):
-                raise KeyError(key)
-
-        service = PRODUCT_POLICY_SERVICE.ProductPolicyService(_Env())
+        service = PRODUCT_POLICY_SERVICE.ProductPolicyService(_PolicyServiceEnv())
         source = service.default_policy_source_authority_contract()
         policy = service.get_policy(product_key="platform.preview")
 
@@ -226,7 +246,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
 
     def test_enterprise_enablement_contract_supplies_status_label(self):
         user = SimpleNamespace(company_id=SimpleNamespace(id=3, name="Demo Co"))
-        payload = CORE_EXTENSION._build_enterprise_enablement_contract(env=None, user=user)
+        payload = SYSTEM_INIT_ROWS.build_enterprise_enablement_contract(env=None, user=user)
         steps = (((payload or {}).get("mainline") or {}).get("steps")) or []
         self.assertTrue(steps)
         self.assertTrue(all(isinstance(row, dict) and row.get("status_label") for row in steps))

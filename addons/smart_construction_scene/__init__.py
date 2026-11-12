@@ -21,6 +21,7 @@ else:
         smart_core_load_scene_configs,
         smart_core_identity_profile,
         smart_core_nav_scene_maps,
+        smart_core_navigation_authority_filter,
         smart_core_surface_nav_allowlist,
         smart_core_surface_deep_link_allowlist,
         smart_core_surface_policy_default_name,

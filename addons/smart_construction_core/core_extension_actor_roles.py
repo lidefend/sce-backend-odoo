@@ -22,7 +22,10 @@ def resolve_release_actor_role_codes(user) -> list[str]:
     try:
         if user.has_group("smart_construction_core.group_sc_cap_project_manager"):
             roles.add("pm")
-        elif user.has_group("smart_construction_core.group_sc_role_project_user"):
+        elif (
+            user.has_group("smart_construction_core.group_sc_cap_project_read")
+            or user.has_group("smart_construction_core.group_sc_role_project_user")
+        ):
             roles.add("project_member")
         if user.has_group("smart_construction_core.group_sc_super_admin") or user.has_group("smart_construction_core.group_sc_business_full"):
             roles.add("executive")

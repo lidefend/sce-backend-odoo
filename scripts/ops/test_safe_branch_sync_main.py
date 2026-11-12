@@ -473,6 +473,28 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         with self.assertRaisesRegex(syncer.SyncError, "conflict markers"):
             syncer.verify_semantic_union_text(path, "<<<<<<< HEAD\n>>>>>>> topic\n")
 
+    def test_native_route_semantic_union_markers_fail_closed(self) -> None:
+        path = (
+            "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py"
+        )
+        self.assertIn(path, syncer.SEMANTIC_UNION_CONFLICT_PATHS)
+        with self.assertRaisesRegex(syncer.SyncError, "business-config-admin"):
+            syncer.verify_semantic_union_text(
+                path,
+                "test_hardcoded_runtime_route_is_rejected\n"
+                "derive the scene route\n",
+            )
+        guard_path = (
+            "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
+        )
+        self.assertIn(guard_path, syncer.SEMANTIC_UNION_CONFLICT_PATHS)
+        with self.assertRaisesRegex(syncer.SyncError, "business-config-admin"):
+            syncer.verify_semantic_union_text(
+                guard_path,
+                '"business_full",\n            "executive",\n'
+                '"operation_user",\n',
+            )
+
     def test_extended_sync_unions_exact_personal_data_exemptions(self) -> None:
         path = syncer.PERSONAL_DATA_FALSE_POSITIVES_PATH
         target = self.root / path

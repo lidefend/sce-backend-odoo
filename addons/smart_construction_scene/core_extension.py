@@ -589,6 +589,52 @@ def smart_core_critical_scene_target_route_overrides(env):
     return dict(CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES)
 
 
+def smart_core_navigation_authority_filter(env, authority):
+    """Apply tenant-selected scenario composition to route authority.
+
+    This is a scene-layer authority producer, not an initialization rule. It
+    consumes native menu/action identities already released by P0, removes
+    routes from unselected scenarios, and leaves an explicit composition
+    selection for the final scenarioized navigation projection.
+    """
+    if not isinstance(authority, dict):
+        return None
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+        load_runtime_surface,
+        runtime_menu_scope,
+    )
+    from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
+        list_scene_entries,
+    )
+    from odoo.addons.smart_construction_scene.services.business_scene_enablement import (
+        business_key,
+        business_states,
+        filter_business_authority,
+    )
+    from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+        read_tenant_enablement,
+    )
+
+    surface = load_runtime_surface(env)
+    index, menu_xmlids_by_id, menu_xmlids_by_action = runtime_menu_scope(env, surface)
+    company_id = int(env.company.id or 0)
+    stored = {
+        business_key(scene["key"]): read_tenant_enablement(
+            env, company_id, business_key(scene["key"])
+        )
+        for scene in surface.get("scenarios") or []
+    }
+    return filter_business_authority(
+        authority,
+        surface_index=index,
+        enabled=business_states(stored),
+        entries=list_scene_entries(),
+        menu_xmlids_by_id=menu_xmlids_by_id,
+        menu_xmlids_by_action=menu_xmlids_by_action,
+        company_id=company_id,
+    )
+
+
 def smart_core_extend_system_init(data, env, user):
     del user
     try:

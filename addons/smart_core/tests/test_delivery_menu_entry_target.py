@@ -192,7 +192,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 'action_model': 'ir.actions.act_window', 'menu_xmlid': 'test.setup', 'name': 'Setup'}
         for scope, expected in [('', False), ("'sc_delivery_scope': 'configuration',", True),
                                 ("'sc_delivery_scope': 'unknown',", False)]:
-            context = "{" + scope + "'sc_web_surface': 'test', 'sc_web_route': '/s/test.setup'}"
+            context = "{" + scope + "'sc_web_surface': 'business_config'}"
             with patch.object(service, '_action_is_runtime_allowed', return_value=True):
                 entry = service._route_entry_from_menu(dict(base, action_meta={'context': context}),
                     route_kind='PRIMARY_NAV', source='native', action_xmlids={('ir.actions.act_window', 601): 'test.action'})
@@ -207,9 +207,9 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
     def test_closed_edition_retains_only_declared_native_config_surfaces(self):
         service = menu_service.MenuService(object())
         declared = {'menu_id': 501, 'action_id': 601, 'menu_xmlid': 'test.setup',
-                    'menu_key': 'test.setup', 'label': 'Setup', 'route': '/s/test.setup',
+                    'menu_key': 'test.setup', 'label': 'Setup',
                     'scene_source': 'native_business_config_menu_projection',
-                    'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.setup', 'delivery_scope': 'configuration'}}
+                    'entry_target': {'type': 'admin_surface', 'surface': 'business_config', 'delivery_scope': 'configuration'}}
         ordinary = dict(declared, menu_id=502, action_id=602, menu_xmlid='test.other', menu_key='test.other', entry_target={})
         groups = [{'group_key': 'platform.config', 'group_label': 'Configuration', 'menus': [declared, ordinary]}]
         with patch.object(menu_service, 'native_config_delivery_groups', return_value=groups), \
@@ -220,7 +220,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
 
     def test_web_surface_entry_target_projects_only_declared_fields(self):
         target = menu_service.build_web_surface_entry_target(
-            "{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config',"
+            "{'sc_web_surface': 'business_config',"
             " 'business_config_root_menu_xmlid': 'smart_construction_core.menu_sc_root'}",
             menu_id=431,
             action_id=737,
@@ -240,32 +240,216 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(menu_service.build_web_surface_entry_target({}), {})
 
     def test_partial_web_surface_declaration_is_an_explicit_gap_target(self):
-        # A route spelling alone is not a surface declaration: the declaration
-        # is incomplete, so it must surface as an explicit ``admin_surface``
-        # target with the missing field empty (consumer fails closed) instead of
-        # silently degrading to ``compatibility``.
-        route_only = menu_service.build_web_surface_entry_target(
-            "{'sc_web_route': '/admin/business-config'}"
-        )
-        self.assertEqual(route_only["type"], "admin_surface")
-        self.assertEqual(route_only["surface"], "")
-        self.assertEqual(route_only["route"], "/admin/business-config")
+        # A route spelling is no longer a declaration source at all.
+        with self.assertRaisesRegex(ValueError, "ROUTE_FACT_DECLARATION_FORBIDDEN"):
+            menu_service.build_web_surface_entry_target(
+                "{'sc_web_route': '/admin/business-config'}"
+            )
 
         surface_only = menu_service.build_web_surface_entry_target(
             "{'sc_web_surface': 'business_config'}"
         )
         self.assertEqual(surface_only["type"], "admin_surface")
         self.assertEqual(surface_only["surface"], "business_config")
-        self.assertEqual(surface_only["route"], "")
+        self.assertEqual(surface_only["route"], "/admin/business-config")
+
+        config_scope = menu_service.build_web_surface_entry_target(
+            "{'sc_delivery_scope': 'configuration'}",
+            menu_id=713,
+            action_id=961,
+            model="res.company",
+            view_modes=["form"],
+        )
+        self.assertEqual(config_scope["type"], "compatibility")
+        self.assertEqual(config_scope["route"], "/a/961?menu_id=713")
+        self.assertEqual(config_scope["delivery_scope"], "configuration")
 
         # A declaration the static parser cannot read must not be dropped
         # either: the keys are present, so the target stays explicit.
         unparsed = menu_service.build_web_surface_entry_target(
-            "{'sc_web_surface': MODEL_SURFACE, 'sc_web_route': '/admin/business-config'}"
+            "{'sc_web_surface': MODEL_SURFACE}"
         )
         self.assertEqual(unparsed["type"], "admin_surface")
         self.assertEqual(unparsed["surface"], "")
         self.assertEqual(unparsed["route"], "")
+
+    def test_final_routes_are_derived_from_the_scenario_composed_identity(self):
+        nav = [{
+            "key": "menu_714",
+            "label": "我的工作",
+            "menu_id": 714,
+            "action_id": 962,
+            "route": "/a/962?menu_id=714",
+            "scene_key": "my_work.workspace",
+            "entry_target": {
+                "type": "scene",
+                "scene_key": "my_work.workspace",
+                "route": "/a/962?menu_id=714",
+            },
+            "meta": {
+                "menu_id": 714,
+                "action_id": 962,
+                "route": "/a/962?menu_id=714",
+                "scene_key": "my_work.workspace",
+            },
+        }]
+        authority = {
+            "primary_actions": [{
+                "menu_id": 714,
+                "action_id": 962,
+                "route": "/a/962?menu_id=714",
+            }],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        node = projected_nav[0]
+        self.assertEqual(node["route"], "/s/my_work.workspace")
+        self.assertEqual(node["meta"]["route"], "/s/my_work.workspace")
+        self.assertEqual(node["entry_target"]["route"], "/s/my_work.workspace")
+        self.assertEqual(
+            projected_authority["primary_actions"][0]["route"],
+            "/s/my_work.workspace",
+        )
+        self.assertEqual(
+            projected_authority["primary_actions"][0]["entry_target"]["scene_key"],
+            "my_work.workspace",
+        )
+        product_policy = menu_service.MenuService.project_navigation_product_policy(
+            projected_nav,
+            product_key="construction.standard",
+            edition_key="standard",
+            role_code="business_full",
+            role_codes=["business_full"],
+        )
+        self.assertEqual(product_policy["source"], "scenarioized_navigation.nav")
+        self.assertEqual(product_policy["entry_count"], 1)
+        self.assertEqual(product_policy["action_entry_count"], 1)
+        self.assertEqual(product_policy["scene_entry_count"], 1)
+        self.assertEqual(product_policy["entries"][0]["route"], "/s/my_work.workspace")
+        self.assertEqual(product_policy["entries"][0]["scene_key"], "my_work.workspace")
+
+    def test_final_routes_do_not_publish_unbacked_directory_routes(self):
+        nav = [{
+            "key": "group:smart_construction_core.menu_sc_project_center",
+            "label": "项目中心",
+            "menu_id": 305,
+            "config_menu_id": 305,
+            "route": "/m/305",
+            "meta": {
+                "menu_id": 305,
+                "route": "/m/305",
+            },
+            "canonical_navigation": {
+                "schema_version": "1.0",
+                "route": "/m/305",
+                "authority": {
+                    "state": "container",
+                    "source": "system.init.navigation.nav",
+                    "key": "container:305",
+                },
+            },
+            "children": [{
+                "key": "scenario.entry.469.676",
+                "label": "项目看板",
+                "menu_id": 469,
+                "action_id": 676,
+                "scene_key": "project.dashboard",
+                "route": "/a/676?menu_id=469",
+                "meta": {
+                    "menu_id": 469,
+                    "action_id": 676,
+                    "scene_key": "project.dashboard",
+                    "route": "/a/676?menu_id=469",
+                },
+                "canonical_navigation": {
+                    "schema_version": "1.0",
+                    "route": "/a/676?menu_id=469",
+                },
+                "children": [],
+            }],
+        }]
+        authority = {
+            "primary_actions": [{
+                "menu_id": 469,
+                "action_id": 676,
+                "route": "/a/676?menu_id=469",
+            }],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "menu_containers": [],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        project_center = projected_nav[0]
+        self.assertNotIn("route", project_center)
+        self.assertNotIn("route", project_center["meta"])
+        self.assertIsNone(project_center["canonical_navigation"]["route"])
+        self.assertEqual(
+            project_center["canonical_navigation"]["authority"],
+            {
+                "state": "container",
+                "source": "system.init.navigation.nav",
+                "key": "container:305",
+            },
+        )
+        self.assertEqual(project_center["children"][0]["route"], "/s/project.dashboard")
+        self.assertEqual(projected_authority["menu_containers"], [])
+
+    def test_final_route_keeps_an_exactly_authorized_container(self):
+        nav = [{
+            "key": "group:test.project_center",
+            "label": "项目中心",
+            "menu_id": 305,
+            "route": "/m/stale",
+            "meta": {"menu_id": 305, "route": "/m/stale"},
+            "canonical_navigation": {
+                "schema_version": "1.0",
+                "route": "/m/stale",
+            },
+            "children": [{
+                "key": "menu_469",
+                "label": "项目看板",
+                "menu_id": 469,
+                "action_id": 676,
+                "children": [],
+            }],
+        }]
+        authority = {
+            "primary_actions": [{"menu_id": 469, "action_id": 676}],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "menu_containers": [{
+                "menu_id": 305,
+                "route_kind": "PRIMARY_NAV",
+                "route": "/m/stale",
+                "source": "role_surface.menu_xmlids",
+            }],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        self.assertEqual(projected_nav[0]["route"], "/m/305")
+        self.assertEqual(
+            projected_nav[0]["canonical_navigation"]["route"],
+            "/m/305",
+        )
+        self.assertEqual(
+            projected_authority["menu_containers"][0]["route"],
+            "/m/305",
+        )
 
     def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
         class DeniedModel:
@@ -758,6 +942,29 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         )
 
         self.assertEqual(node["meta"]["entry_target"], entry_target)
+
+    def test_zero_sequence_is_an_explicit_navigation_order(self):
+        child = delivery_menu_defaults.build_delivery_menu_child(
+            {
+                "menu_key": "system.menu_first",
+                "label": "First",
+                "menu_id": 10,
+                "action_id": 20,
+                "sequence": 0,
+            }
+        )
+        later = delivery_menu_defaults.build_delivery_menu_child(
+            {
+                "menu_key": "system.menu_later",
+                "label": "Later",
+                "menu_id": 30,
+                "action_id": 40,
+                "sequence": 10,
+            }
+        )
+        self.assertEqual(child["sequence"], 0)
+        ordered = menu_service.MenuService(env={})._sort_delivery_nodes([later, child])
+        self.assertEqual([node["menu_id"] for node in ordered], [10, 30])
 
     def test_project_ledger_query_menu_uses_current_project_scope(self):
         delivery_menu_defaults.register_current_project_scope_model("project.project")

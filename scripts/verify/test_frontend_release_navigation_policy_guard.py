@@ -103,7 +103,7 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         menu = "x.home"
         target = {"menu_xmlid": menu, "action_xmlid": "", "model": "", "enabled": True,
                   "release_state": "released", "entry_target_policy": "scene_entry",
-                  "scene_key": "workspace.home", "route": "/s/workspace.home"}
+                  "scene_key": "workspace.home"}
         product = {"menu_groups": [{"menus": [target]}]}
         manifest = {"roles": {"owner": {"browser_leaf_keys": [menu + "||"]}},
                     "scene_targets": {menu: {"scene_key": "workspace.home", "route": "/s/workspace.home"}}}
@@ -111,6 +111,13 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         self.assertTrue(validate_formal_targets(manifest, product, {menu: "other"}))
         manifest["scene_targets"][menu]["route"] = "/s/other"
         self.assertTrue(validate_formal_targets(manifest, product, {menu: "workspace.home"}))
+
+        manifest["scene_targets"][menu]["route"] = "/s/workspace.home"
+        target["route"] = "/s/workspace.home"
+        self.assertIn(
+            f"scene target must not maintain a route fact: {menu}",
+            validate_formal_targets(manifest, product, {menu: "workspace.home"}),
+        )
 
 
 class RoleProjectionComparatorTest(unittest.TestCase):

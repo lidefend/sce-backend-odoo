@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-MULTI-COMPOSITION-20261111",
+  "branch": "refactor/navigation-contract-compiler-20261111",
+  "baseline_sha": "19b502b487d0b646a1fc22f269b508d3224c1c3e",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
+  "record": "docs/ops/iterations/scenario_multi_composition_20261111.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/decisions/ARCH-DECISION-010.yaml",
+    ".agent/goals/NAVIGATION-CONTRACT-COMPILER-20261111.yaml",
+    ".agent/goals/RUNTIME-CAPABILITY-CATALOG-20261111.yaml",
+    ".agent/goals/SCENARIO-CENTER-COMPOSITION-20261111.yaml",
+    ".agent/goals/SCENARIO-ENTRY-NAV-CONTRACT-20261111.yaml",
+    ".agent/goals/SCENARIO-MULTI-COMPOSITION-20261111.yaml",
+    ".agent/runs/NAVIGATION-CONTRACT-COMPILER-20261111/run.json",
+    ".agent/runs/RUNTIME-CAPABILITY-CATALOG-20261111/run.json",
+    ".agent/runs/SCENARIO-CENTER-COMPOSITION-20261111/run.json",
+    ".agent/runs/SCENARIO-ENTRY-NAV-CONTRACT-20261111/run.json",
+    ".agent/runs/SCENARIO-MULTI-COMPOSITION-20261111/run.json",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/core_extension_actor_roles.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/migrations/17.0.0.179/post-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+    "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    "addons/smart_construction_core/views/support/my_work_views.xml",
+    "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/data/project_management_scene.xml",
+    "addons/smart_construction_scene/data/sc_scene_finance_payment_ledger.xml",
+    "addons/smart_construction_scene/data/sc_scene_layout.xml",
+    "addons/smart_construction_scene/data/sc_scene_list_profile.xml",
+    "addons/smart_construction_scene/data/sc_scene_orchestration.xml",
+    "addons/smart_construction_scene/data/sc_scene_tiles.xml",
+    "addons/smart_construction_scene/models/__init__.py",
+    "addons/smart_construction_scene/models/product_policy.py",
+    "addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/core/delivery_menu_defaults.py",
+    "addons/smart_core/core/navigation_entry_target.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+    "addons/smart_core/delivery/runtime_capability_catalog.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+    "addons/smart_core/tests/test_native_config_menu_projection.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "addons/smart_core/tests/test_runtime_capability_catalog.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/views/ui_menu_config_policy_views.xml",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "config/product_menu_contract_v1.json",
+    "docs/architecture/backend-owned-page-composition/335-bnva-03-identity-resolver-role-projection.md",
+    "docs/architecture/backend_authority_closure_map_v1.json",
+    "docs/architecture/scene_fact_data_boundary_ledger.json",
+    "docs/architecture/scene_layer_responsibility_20261105.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/navigation_contract_compiler_20261111.md",
+    "docs/ops/iterations/runtime_capability_catalog_20261111.md",
+    "docs/ops/iterations/scenario_center_composition_20261111.md",
+    "docs/ops/iterations/scenario_entry_nav_contract_20261111.md",
+    "docs/ops/iterations/scenario_multi_composition_20261111.md",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "frontend/apps/web/src/router/index.ts",
+    "make/frontend.mk",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_navigation_shell_guard.py",
+    "scripts/verify/frontend_release_navigation_policy_guard.py",
+    "scripts/verify/role_surface_exposure_declaration_guard.py",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/scene_fact_data_boundary_guard.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+    "scripts/verify/test_menu_metadata_batch.py",
+    "scripts/verify/test_role_surface_exposure_declaration_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound pure tests first; governed local.dev runtime follows affected schema and navigation changes"
+  },
+  "runtime_observation": {
+    "local_dev": {
+      "database": "sc_dev_demo",
+      "upgrade_log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/local-dev-upgrade-final.log",
+      "upgrade_log_sha256": "ff2e46d206bd9555d1c30c8d7ced8a558d535662d1d47d98c46653a8b6a8b0dd",
+      "scenario_count": 17,
+      "entry_count": 79,
+      "explicit_exemption_count": 14,
+      "constraint": "unique(scenario_id, menu_id)",
+      "tenant_enabled_scenarios": ["payment.capital"],
+      "business_config_admin": {
+        "enterprise_setup": true,
+        "selected_scenarios": ["payment.capital"]
+      },
+      "business_full": {
+        "enterprise_setup": false,
+        "selected_scenarios": ["payment.capital"]
+      },
+      "status": "passed_for_schema_exemption_and_tenant_selection",
+      "limit": "The maintained dev product policy is still the historical 91-entry snapshot; current 92-entry product behavior is proven in the acceptance transaction, not by overwriting maintained dev policy."
+    },
+    "acceptance_orm": {
+      "target": "acceptance.frontend.fixture_orm",
+      "database": "sc_frontend_acceptance",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
+      "tests": 49,
+      "failed": 0,
+      "errors": 0,
+      "log": ".runtime/acceptance/fixture_orm_20261111T141056Z.log",
+      "log_sha256": "f59399b78a249515d7b0ed2708ae4d780a409338552afb7e18cfed2c31dabc93",
+      "upgrade_log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/acceptance-upgrade-17.0.0.181.log",
+      "upgrade_log_sha256": "5c6e10184c5cf3db39f5b7e318c68f422ed7b496c8794007281b25e7760b12b9",
+      "status": "passed"
+    },
+    "fresh_install": {
+      "database_profile": "sc-local-test/sc_test/test",
+      "tests": 6,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries-final.log",
+      "log_sha256": "43ddcdc09089d4838551e327a37b114fcc50d0c03dff03cf711f169fd658c652",
+      "status": "passed"
+    }
+  },
+  "checks": {
+    "contract_compiler": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
+      ]
+    },
+    "scenario_center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py"
+      ]
+    },
+    "backend_navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "make/frontend.mk"
+      ]
+    },
+    "daily_permission_truth": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/daily-permission-truth.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py"
+      ]
+    }
+  },
+  "validation_results": [
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 173,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/navigation-consumers-final.log",
+      "log_sha256": "41d38391d5dd1086adf88394b1005ef304a398e9895f0b8d863b1270159251ad"
+    },
+    {
+      "command": "make verify.scenario.center_projection.guard",
+      "status": "passed",
+      "tests": 7,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/center-projection-final.log",
+      "log_sha256": "fec8330a2c0b6b9f7dd7f8846fe97fe7fba14c86cda944f965f658919008c793"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 76,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/backend-navigation-final.log",
+      "log_sha256": "d7f8537e1f7d1ab92bfd6e2e230b12155785a70d02acb51a468a3b4409752ab9"
+    },
+    {
+      "command": "make verify.daily.permission_truth.capability.orm",
+      "status": "passed",
+      "tests": 13,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/daily-permission-truth.log",
+      "log_sha256": "463f040a3a512b5f35524160b7a5fe43fd7dc617ba8bbd01c8555473dfa8dadf"
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "tests": 49,
+      "log": ".runtime/acceptance/fixture_orm_20261111T113631Z.log",
+      "log_sha256": "b4de5f754c117aca6ef382737944cbe5e3a66b86a2458b96ed6d0b2b354036bf"
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization",
+      "status": "passed",
+      "tests": 6,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/fresh-install-direct-entries-final.log",
+      "log_sha256": "43ddcdc09089d4838551e327a37b114fcc50d0c03dff03cf711f169fd658c652",
+      "receipt": ".runtime/test-baseline/1794405618115736540/receipt.json",
+      "receipt_sha256": "b3bffcd457dd92f20c6cfb059835d99a203f04963bbd71c948efb93006b3ff21"
+    },
+    {
+      "command": "make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestProjectMemberRoleSurface",
+      "status": "passed",
+      "tests": 31,
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/project-member-role-surface-final.log",
+      "log_sha256": "73d1ca4387b4b9b438fd6d0cc7039f78553e3d27f528470af0ef7a63010e90cf",
+      "receipt": ".runtime/test-baseline/1794405448483568183/receipt.json",
+      "receipt_sha256": "eee92216fae6f22335864d9271ad631fb2c62b08f04c1f266800cd86b62b05bd"
+    },
+    {
+      "command": "make local.dev.upgrade MODULE=smart_core,smart_construction_core,smart_construction_scene",
+      "status": "passed",
+      "stage_identity": "51acb153f8a9ffc26805f2f4c5a2716c2a11020b plus owned dirty scope",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/local-dev-upgrade-final.log",
+      "log_sha256": "ff2e46d206bd9555d1c30c8d7ced8a558d535662d1d47d98c46653a8b6a8b0dd"
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 25,
+      "unmapped_paths": 0,
+      "reason": "every affected registered target exited zero",
+      "log": ".runtime/frontend-dev-validation/executions/20261111T135531Z-4172074-598043006/receipt.json",
+      "log_sha256": "e703a3e5dd1f47f4cc26b733c20ffabdb88a93fe1fbf0573cf866bce8ab7a781"
+    },
+    {
+      "command": "make verify.frontend.navigation_policy.unit",
+      "status": "passed",
+      "tests": 59,
+      "notes": "The route guard derives /s/{scene_key}; a maintained route fact fails closed."
+    },
+    {
+      "command": "make verify.product.entry_publication.unit",
+      "status": "passed",
+      "tests": 34,
+      "notes": "A resolved scene target owns the final route over a stale node action route."
+    },
+    {
+      "command": "make verify.role_surface.landing.contract.unit",
+      "status": "passed",
+      "tests": 33,
+      "notes": "The locked product contract declares scene identity and does not persist a route."
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at f1858dfbb",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "frontend_navigation_shell_guard required the retired inline system.init assembly",
+      "recovery": "guard now verifies the NavigationContractCompiler delegation and compiler ordering",
+      "recovery_check": "make verify.frontend.navigation_shell.unit passed 26 tests"
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at f320d2e40",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "platform duty contract test searched for the retired inline surface= callback text",
+      "recovery": "test now verifies the compiler callback and platform_duty delegation inputs",
+      "recovery_check": "make verify.platform.duty.contract.unit passed 26 Python tests plus 4 Node tests"
+    },
+    {
+      "command": "GitHub backend_suite (0) on PR 872 at 0d719d631",
+      "status": "failed_then_fixed",
+      "failure_owner": "product_defect + validation_tool_defect",
+      "reason": "The project-member test overwrote the full identity precedence, and runtime user management was incorrectly composed into a tenant business scenario.",
+      "recovery": "Project member resolves through group_sc_cap_project_read and its assertions consume discovery plus blocklist semantics. Runtime user management is an exact fact-layer direct platform entry, with 17.0.0.181 removing its retired tenant-scenario binding.",
+      "recovery_checks": [
+        "TestProjectMemberRoleSurface: 31 tests PASS",
+        "TestScenarioDirectInitialization: 6 tests PASS",
+        "scenario surface projection: 17 tests PASS"
+      ]
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "failed",
+      "failure_owner": "baseline_evidence_defect",
+      "tests": 49,
+      "failed": 0,
+      "errors": 6,
+      "log": ".runtime/acceptance/fixture_orm_20261111T134459Z.log",
+      "log_sha256": "213f39de11d99a58f99c2d11eef8e512f03cb6fb7927c50cd861c71404ea4047",
+      "reason": "The shared acceptance database was not upgraded to 17.0.0.181, so six seed reloads observed the retired runtime-user scenario binding before the migration could remove it."
+    },
+    {
+      "command": "make acceptance.module.upgrade EXPECTED_HEAD=04c35ec231391e7c2cb42aa9b4644bb88fd47b44 MODULE=smart_construction_core",
+      "status": "passed",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/acceptance-upgrade-17.0.0.181.log",
+      "log_sha256": "5c6e10184c5cf3db39f5b7e318c68f422ed7b496c8794007281b25e7760b12b9",
+      "notes": "The governed pre-migrate ran before the module update; writers were left stopped for the same-SHA backend restart."
+    },
+    {
+      "command": "make acceptance.frontend.fixture_orm",
+      "status": "passed",
+      "source_sha": "04c35ec231391e7c2cb42aa9b4644bb88fd47b44",
+      "tests": 49,
+      "failed": 0,
+      "errors": 0,
+      "log": ".runtime/acceptance/fixture_orm_20261111T141056Z.log",
+      "log_sha256": "f59399b78a249515d7b0ed2708ae4d780a409338552afb7e18cfed2c31dabc93",
+      "recovery": "The clean committed candidate ran acceptance.module.upgrade to 17.0.0.181 and then the same 49-test fixture, which passed."
+    },
+    {
+      "command": "GitHub backend_suite (0) on PR 872 at 15ef35f06",
+      "status": "passed",
+      "notes": "The shard that previously exposed the project-member precedence and runtime-user scene misclassification now passes."
+    },
+    {
+      "command": "GitHub backend_suite (1) on PR 872 at 15ef35f06",
+      "status": "failed_then_fixed",
+      "failure_owner": "validation_tool_defect",
+      "reason": "The mixed-Python runner executed test_backend_semantic_copy_supply.py in bare Python, but the test imported the full core_extension module and therefore required the Odoo runtime.",
+      "recovery": "The test now exercises the owning core_extension_system_init_rows implementation and provides the platform-database policy environment explicitly, so it remains a real pure-Python test.",
+      "recovery_check": "scripts/ci/run_mixed_python_tests.py addons/smart_core/tests/test_backend_semantic_copy_supply.py passed 8 tests",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/semantic-copy-supply-final.log",
+      "log_sha256": "dd952ff5c00e966c9927949ce7c030c2f8360248d766f37c6e116110569d6081"
+    },
+    {
+      "command": "GitHub professional_quality_checks on PR 872 at 15ef35f06",
+      "status": "failed",
+      "failure_owner": "environment_defect",
+      "reason": "The GitHub-hosted runner could not resolve azure.archive.ubuntu.com and failed while apt-installing bubblewrap and ripgrep in the dependency-preparation step.",
+      "recovery": "The source tree is being updated for the independent backend-suite recovery, so a new exact head will receive fresh dependency installation and required checks."
+    },
+    {
+      "command": "GitHub frontend_release_gate on PR 872 at 15ef35f06",
+      "status": "failed",
+      "failure_owner": "environment_defect",
+      "reason": "The GitHub-hosted runner could not resolve azure.archive.ubuntu.com and failed while installing Chromium OS dependencies.",
+      "recovery": "The source tree is being updated for the independent backend-suite recovery, so a new exact head will receive fresh dependency installation and required checks."
+    },
+    {
+      "command": "make verify.frontend.list_surface_structure.browser",
+      "status": "failed",
+      "failure_owner": "product_defect",
+      "source_sha": "5dc59203e9bc9cfa293f4500bb7ca275ce1ec5ef",
+      "reason": "The scenarioized project-center directory menu 305 published /m/305, but final route_authority.menu_containers contained no exact authorization for menu 305. The frontend correctly rejected the contract with CANONICAL_NAVIGATION_ROUTE_MISMATCH.",
+      "log": ".runtime/agent-runs/SCENARIO-MULTI-COMPOSITION-20261111/list-surface-structure-5dc59203e-retry.log",
+      "evidence": ".runtime/final-acceptance/list-surface-structure.json"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 55,
+      "notes": "The affected navigation target passed after the final-route projection stopped publishing an unbacked directory route. Direct nested suites also passed 5 + 10 + 3 tests.",
+      "failure_owner": "product_defect",
+      "recovery": "project_final_navigation_routes now publishes a directory route only when final authority contains its exact menu container, and keeps child scene routes unchanged."
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 174,
+      "notes": "Scenario center 7, publication consumers 40, scenario surface 17, intent 21 and runtime capability 89 tests all passed."
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "targets": 25,
+      "unmapped_paths": 0,
+      "log": ".runtime/frontend-dev-validation/executions/20261112T032009Z-3674503-995755266/receipt.json",
+      "notes": "All 25 affected targets exited zero; blockedTargets and notRunTargets are empty."
+    }
+  ],
+  "blockers": [
+    "The final-contract route repair requires a clean exact head, refreshed merge-stage evidence and fresh required-check runs.",
+    "list_surface_structure must be rerun on the repaired candidate after acceptance runtime preparation.",
+    "The maintained dev product policy remains a historical 91-entry snapshot; no maintained policy was overwritten.",
+    "No merge or deployment has been performed."
+  ],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the repaired final-contract projection, prepare the exact candidate acceptance runtime, and rerun list_surface_structure.",
+  "layer": {
+    "formal_product_layer": "P1 construction product orchestration with a generic P0 hook",
+    "layer_target": "tenant-selected scenario composition over native capability references",
+    "module": "smart_construction_core + smart_construction_scene; generic compiler hook in smart_core",
+    "standard_vs_user_specific": "construction industry standard composition plus tenant enablement selection",
+    "why_here": "The scene layer owns scenario references, center placement and tenant scenario selection; the platform compiler only seals completed authority into one contract.",
+    "why_not_elsewhere": "system.init must not re-judge business selection, native menus must not carry scenario keys, and the frontend must not deduplicate or infer composition.",
+    "blast_radius": "Scenario-entry schema, business enablement authority filtering, final canonical navigation deduplication, direct-route authority and system.init contract integration."
+  },
+  "completion": {
+    "batch": "verification_pending",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "Local validation does not substitute for current-head GitHub required checks, merge or deployment.",
+    "No deployment or product-acceptance completion is claimed.",
+    "Existing native actions and menus remain the only executable fact carriers."
+  ]
+}

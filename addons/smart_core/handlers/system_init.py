@@ -88,6 +88,9 @@ from odoo.addons.smart_core.core.scene_ready_contract_builder import build_scene
 from odoo.addons.smart_core.core.ui_base_contract_asset_repository import bind_scene_assets
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.menu_service import MenuService
+from odoo.addons.smart_core.delivery.navigation_contract_compiler import (
+    NavigationContractCompiler,
+)
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_core.delivery.release_audit_trail_service import ReleaseAuditTrailService
 from odoo.addons.smart_core.delivery.product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -2287,124 +2290,52 @@ class SystemInitHandler(BaseIntentHandler):
             pass
         data = _normalize_access_suggested_action(data)
         data["record_context"] = build_record_context_contract(env, params)
-        # Product baseline: one navigation contract owns both the rendered
-        # tree and its route authority. No client-facing fallback carriers are
-        # allowed because independently selected trees and authorities can
-        # expose a menu that the SPA must then deny.
-        if not isinstance(data.get("nav"), list):
-            raise RuntimeError("canonical navigation is unavailable")
-        _final_navigation = data["nav"]
-        _final_route_authority = delivery_engine.menu_service.build_route_authority(
-            role_surface,
-            nav=_final_navigation,
-        )
-        _final_route_authority = delivery_engine.menu_service.filter_route_authority_by_publication(
-            _final_route_authority,
-            filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
-                _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
-        )
-        # A platform duty can open a window action that intentionally has no
-        # navigation menu (the platform-control surface is deliberately
-        # minimal).  The duty declaration is that route's authority; publish it
-        # only for the verified platform audience so the SPA and the API gate
-        # consume the same executable contract.
-        _final_route_authority = merge_platform_duty_route_authority(
-            _final_route_authority,
-            env=env,
-            surface=(data.get("user") or {}).get("platform_duty"),
-        )
-        # Startup overlays can reintroduce compatibility action nodes after
-        # DeliveryEngine performed its first role-scoped projection. Reconcile
-        # the final tree with this response-local authority before sealing the
-        # single navigation contract. Authorized action and scene routes
-        # are preserved; action-bearing nodes without matching authority are
-        # removed because the SPA cannot execute either target without it.
-        _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
-            _final_navigation,
-            _final_route_authority,
-        )
-        data["nav"] = _final_navigation
-        _visible_navigation_pairs = set(MenuService._walk_nav_action_refs(_final_navigation))
-        _authorized_navigation_pairs = {
-            (int(_entry.get("menu_id") or 0), int(_entry.get("action_id") or 0))
-            for _bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
-            for _entry in _final_route_authority.get(_bucket) or []
-            if isinstance(_entry, dict)
-        }
-        _missing_navigation_authority = sorted(
-            _visible_navigation_pairs - _authorized_navigation_pairs
-        )
-        if _missing_navigation_authority:
-            raise RuntimeError(
-                "canonical navigation contains unauthorized menu/action pairs: %s"
-                % _missing_navigation_authority[:20]
-            )
-        _route_company_id = int((data.get("record_context") or {}).get("company_id") or env.company.id)
-        _final_route_authority["principal_scope"] = dict(
-            _final_route_authority.get("principal_scope") or {}
-        )
-        _final_route_authority["principal_scope"]["company_id"] = _route_company_id
         _scene_internal_actions = (
             data.get("scene_ready_contract", {}).get("scene_internal_actions")
             if isinstance(data.get("scene_ready_contract"), dict)
             else {}
         )
-        if isinstance(_scene_internal_actions, dict):
-            _scene_internal_bucket = _final_route_authority.setdefault("contextual_actions", [])
-            for _internal_key, _internal_row in _scene_internal_actions.items():
-                if not isinstance(_internal_row, dict):
-                    continue
-                if int(_internal_row.get("action_id") or 0) <= 0:
-                    continue
-                _entry = dict(_internal_row)
-                _entry["route_kind"] = "CONTEXTUAL_ROUTE"
-                _entry["source"] = "scene_internal_action_authority"
-                _entry.setdefault("scene_key", str(_internal_row.get("scene_key") or ""))
-                _scene_internal_bucket.append(_entry)
-        # Narrow after all authority producers (including scene internal routes),
-        # using the same live company scope as request-time route admission.
-        _final_route_authority = env["sc.product.policy"]._apply_company_route_scope(_final_route_authority)
-        _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
-            _final_navigation, _final_route_authority,
+        _route_company_id = int(
+            (data.get("record_context") or {}).get("company_id")
+            or env.company.id
         )
-        _final_navigation = delivery_engine.menu_service.project_canonical_navigation(
-            _final_navigation,
-            _final_route_authority,
+        _compiled_navigation = NavigationContractCompiler(
+            delivery_engine.menu_service,
+            scenario_surface_provider=lambda current_nav, current_authority: call_extension_hook_first(
+                env,
+                "smart_core_scenario_surface_projection",
+                env,
+                current_nav,
+                current_authority,
+            ),
+            platform_duty_merger=lambda authority, surface: merge_platform_duty_route_authority(
+                authority,
+                env=env,
+                surface=surface,
+            ),
+            release_node_filter=lambda nodes: (
+                []
+                if release_gate.get("fail_closed")
+                else _filter_nav_by_release_gate(nodes, release_gate, env=env)[0]
+            ),
+            action_pair_walker=MenuService._walk_nav_action_refs,
+            authority_finalizer=lambda authority: call_extension_hook_first(
+                env,
+                "smart_core_navigation_authority_filter",
+                env,
+                authority,
+            ),
+        ).compile(
+            nav=data.get("nav"),
+            role_surface=role_surface,
+            delivery_payload=delivery_payload,
+            release_gate=release_gate,
+            platform_duty=(data.get("user") or {}).get("platform_duty"),
+            scene_internal_actions=_scene_internal_actions,
+            company_id=_route_company_id,
         )
-        data["nav"] = _final_navigation
-        _navigation_meta = dict(delivery_payload.get("meta") or {})
-        _navigation_meta.update({
-            "product_key": str(delivery_payload.get("product_key") or ""),
-            "edition_key": str(delivery_payload.get("edition_key") or ""),
-            "role_code": str(delivery_payload.get("role_code") or ""),
-            "system_init_nav_boundary": {
-                "authority": "navigation",
-                "semantic_post_processing": False,
-            },
-        })
-        data["navigation"] = {
-            "contract_version": "2.0.0",
-            "schema_version": "2.0.0",
-            "source": "system_init.navigation",
-            "nav": _final_navigation,
-            "route_authority": _final_route_authority,
-            "contextual_routes": list(delivery_payload.get("contextual_routes") or []),
-            "integrity": {
-                "visible_action_count": len(_visible_navigation_pairs),
-                "authorized_action_count": len(_authorized_navigation_pairs),
-                "missing_authority_count": 0,
-            },
-            "meta": _navigation_meta,
-        }
-        _scenario_surface = call_extension_hook_first(
-            env,
-            "smart_core_scenario_surface_projection",
-            env,
-            _final_navigation,
-            _final_route_authority,
-        )
-        if isinstance(_scenario_surface, dict):
-            data["navigation"]["scenario_surface"] = _scenario_surface
+        data["nav"] = _compiled_navigation.nav
+        data["navigation"] = _compiled_navigation.navigation
         for _removed_navigation_carrier in (
             "nav",
             "nav_role_surface",

@@ -14,7 +14,6 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     ROLE_GROUPS_CAPABILITY_FALLBACK,
     ROLE_GROUPS_EXPLICIT,
-    ROLE_PRECEDENCE,
     ROLE_SURFACE_OVERRIDES,
 )
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
@@ -166,8 +165,34 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "smart_construction_core.group_sc_cap_business_config_admin",
             "smart_construction_core.group_sc_cap_project_manager",
         })
-        self.assertEqual(role_codes, ["business_full"])
-        self.assertEqual(evidence["surface_roles"], ["business_full"])
+        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
+
+    def test_business_config_admin_is_full_superset(self):
+        config_admin = self.env.ref(
+            "smart_construction_core.group_sc_cap_business_config_admin"
+        )
+        business_full = self.env.ref(
+            "smart_construction_core.group_sc_business_full"
+        )
+        self.assertIn(business_full, config_admin.trans_implied_ids)
+        self.assertNotIn(config_admin, business_full.trans_implied_ids)
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Business config full closure",
+            "login": "business.config.full.closure",
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                config_admin.id,
+            ])],
+        })
+        self.assertTrue(user.has_group("smart_construction_core.group_sc_business_full"))
+        self.assertTrue(user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
+        role_codes, evidence = self._resolver().resolve_role_codes_with_evidence({
+            "smart_construction_core.group_sc_business_full",
+            "smart_construction_core.group_sc_cap_business_config_admin",
+        })
+        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
         resolver = self._resolver()
@@ -241,9 +266,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         for role in ("project_member", "pm"):
             with self.subTest(role=role):
-                primary = set(ROLE_SURFACE_OVERRIDES[role].get("primary_menu_xmlids") or [])
-                self.assertIn(released_contract, primary)
-                self.assertNotIn(unpublished_legacy_contract, primary)
+                policy = ROLE_SURFACE_OVERRIDES[role]
+                exposed = {
+                    xmlid
+                    for field in (
+                        "primary_menu_xmlids",
+                        "role_home_menu_xmlids",
+                        "contextual_menu_xmlids",
+                        "admin_menu_xmlids",
+                    )
+                    for xmlid in policy.get(field) or []
+                }
+                blocked = set(policy.get("menu_blocklist_xmlids") or [])
+                blocked.update(policy.get("denied_menu_xmlids") or [])
+                self.assertTrue(policy.get("discover_installed_capabilities"))
+                self.assertNotIn(released_contract, blocked)
+                self.assertNotIn(unpublished_legacy_contract, exposed)
 
     def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
         history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
@@ -256,15 +294,17 @@ class TestProjectMemberRoleSurface(TransactionCase):
             )
 
     def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
-        primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"].get("primary_menu_xmlids") or [])
-        self.assertTrue(
-            {
-                "smart_construction_core.menu_sc_boq_version",
-                "smart_construction_core.menu_sc_project_boq_root",
-                "smart_construction_core.menu_sc_boq_analysis",
-                "smart_construction_core.menu_sc_p1_project_budget",
-            }.issubset(primary_menu_xmlids)
-        )
+        policy = ROLE_SURFACE_OVERRIDES["pm"]
+        cost_chain = {
+            "smart_construction_core.menu_sc_boq_version",
+            "smart_construction_core.menu_sc_project_boq_root",
+            "smart_construction_core.menu_sc_boq_analysis",
+            "smart_construction_core.menu_sc_p1_project_budget",
+        }
+        blocked = set(policy.get("menu_blocklist_xmlids") or [])
+        blocked.update(policy.get("denied_menu_xmlids") or [])
+        self.assertTrue(policy.get("discover_installed_capabilities"))
+        self.assertFalse(cost_chain & blocked)
 
     def test_target_cost_has_one_stable_product_entry(self):
         action = self.env.ref(
@@ -362,6 +402,9 @@ class TestProjectMemberRoleSurface(TransactionCase):
             if isinstance(menu, dict) and str(menu.get("menu_xmlid") or "").strip()
         }
         formal_xmlids.update(lowcode_system_config_menu_xmlids())
+        formal_xmlids.add(
+            "smart_construction_core.menu_sc_enterprise_initialization"
+        )
         leaves = list(self._iter_renderable_leaves(delivery.get("nav") or []))
         released_xmlids = {self._leaf_xmlid(node) for node in leaves if self._leaf_xmlid(node)}
         labels = {
@@ -650,12 +693,22 @@ class TestProjectMemberRoleSurface(TransactionCase):
             node for node in visible_leaves
             if node.get("action_id") or (node.get("meta") if isinstance(node.get("meta"), dict) else {}).get("action_id")
         ]
-        self.assertTrue(
-            all(
-                str(node.get("route") or "").startswith("/a/")
-                for node in action_leaves
+        for node in action_leaves:
+            route = str(node.get("route") or "")
+            entry_target = (
+                node.get("entry_target")
+                if isinstance(node.get("entry_target"), dict)
+                else (node.get("meta") or {}).get("entry_target")
+                if isinstance(node.get("meta"), dict)
+                else {}
             )
-        )
+            expected_prefix = (
+                "/admin/"
+                if isinstance(entry_target, dict)
+                and entry_target.get("type") == "admin_surface"
+                else "/a/"
+            )
+            self.assertTrue(route.startswith(expected_prefix), (node.get("key"), route))
         self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(acl_denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
         self.assertNotIn(missing_action_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
@@ -852,7 +905,24 @@ class TestProjectMemberRoleSurface(TransactionCase):
         missing_context_result = RouteAuthorityValidateHandler(self.env(user=pm_user)).handle({
             "params": {"action_id": execution["action_id"]},
         })
-        self.assertTrue(admin_result.ok)
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            build_runtime_route_authority,
+        )
+
+        runtime_authority = build_runtime_route_authority(self.env(user=config_user))
+        runtime_user_rows = [
+            row
+            for row in runtime_authority.get("admin_actions") or []
+            if row.get("action_id") == user_management["action_id"]
+        ]
+        self.assertTrue(
+            admin_result.ok,
+            {
+                "error": admin_result.error,
+                "runtime_user_rows": runtime_user_rows,
+                "scenario_composition": runtime_authority.get("scenario_composition"),
+            },
+        )
         self.assertFalse(denied_result.ok)
         self.assertEqual(denied_result.code, 403)
         self.assertFalse(missing_context_result.ok)

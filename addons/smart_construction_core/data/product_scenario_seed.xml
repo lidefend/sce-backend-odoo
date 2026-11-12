@@ -6,5 +6,6 @@
     <function model="sc.product.scenario" name="import_scenario_product_surface"/>
     <function model="sc.product.scenario" name="initialize_external_navigation_centers"/>
     <function model="sc.product.scenario" name="initialize_direct_entry_exemptions"/>
+    <function model="sc.product.scenario" name="initialize_navigation_entry_exemptions"/>
   </data>
 </odoo>

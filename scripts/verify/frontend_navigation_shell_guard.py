@@ -42,6 +42,7 @@ def validate(root: Path = ROOT) -> list[str]:
     canonical = read(root, "frontend/apps/web/src/app/canonicalNavigation.ts")
     menu_service = read(root, "addons/smart_core/delivery/menu_service.py")
     system_init = read(root, "addons/smart_core/handlers/system_init.py")
+    navigation_compiler = read(root, "addons/smart_core/delivery/navigation_contract_compiler.py")
     component_root = root / "frontend/apps/web/src/components/product-shell"
 
     for component in COMPONENTS:
@@ -198,11 +199,18 @@ def validate(root: Path = ROOT) -> list[str]:
 
     if "def project_canonical_navigation(" not in menu_service:
         errors.append("backend canonical navigation projection is missing")
-    filter_index = system_init.find("filter_nav_by_route_authority(")
-    project_index = system_init.find("project_canonical_navigation(")
-    payload_index = system_init.find('data["navigation"] = {')
+    if (
+        "NavigationContractCompiler(" not in system_init
+        or ").compile(" not in system_init
+        or 'data["nav"] = _compiled_navigation.nav' not in system_init
+        or 'data["navigation"] = _compiled_navigation.navigation' not in system_init
+    ):
+        errors.append("system.init must delegate navigation compilation and consume its sealed result")
+    filter_index = navigation_compiler.find("filter_nav_by_route_authority(")
+    project_index = navigation_compiler.find("project_canonical_navigation(")
+    payload_index = navigation_compiler.find("navigation = {")
     if min(filter_index, project_index, payload_index) < 0 or not filter_index < project_index < payload_index:
-        errors.append("system.init must filter authority, project canonical navigation, then seal payload")
+        errors.append("navigation compiler must filter authority, project canonical navigation, then seal payload")
 
     return errors
 

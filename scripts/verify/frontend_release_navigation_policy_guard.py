@@ -3,10 +3,15 @@ from __future__ import annotations
 
 import ast
 import json
+import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from addons.smart_core.core.navigation_entry_target import scene_route
+
+
 MANIFEST = ROOT / "config/frontend/authoritative_navigation.json"
 POLICY = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 ROLE_MAP = {
@@ -168,15 +173,23 @@ def validate_formal_targets(manifest: dict, product: dict, scenes: dict) -> list
                 errors.append(f"{role}: formal target identity differs: {menu}")
             if not action or not model:
                 scene = manifest.get("scene_targets", {}).get(menu)
-                expected = {"scene_key": target.get("scene_key"), "route": target.get("route")}
+                expected = {
+                    "scene_key": target.get("scene_key"),
+                    "route": scene_route(target.get("scene_key")),
+                }
                 if (target.get("entry_target_policy") != "scene_entry" or not scenes.get(menu)
                         or scenes[menu] != expected["scene_key"] or scene != expected):
                     errors.append(f"{role}: scene declaration differs: {menu}")
     for menu, scene in manifest.get("scene_targets", {}).items():
         target = targets.get(menu, {})
-        if (scene != {"scene_key": target.get("scene_key"), "route": target.get("route")}
-                or target.get("entry_target_policy") != "scene_entry"):
+        expected = {
+            "scene_key": target.get("scene_key"),
+            "route": scene_route(target.get("scene_key")),
+        }
+        if (scene != expected or target.get("entry_target_policy") != "scene_entry"):
             errors.append(f"scene target outside formal authority: {menu}")
+        elif target.get("route"):
+            errors.append(f"scene target must not maintain a route fact: {menu}")
     return errors
 
 

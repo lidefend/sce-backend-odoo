@@ -456,7 +456,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         payload_expr = str(default_payload.get("eval") or "")
 
         self.assertIn("'scene_key': 'contract.center'", payload_expr)
-        self.assertIn("'route': '/s/contract.center'", payload_expr)
+        self.assertNotIn("'route':", payload_expr)
         self.assertIn("'menu_xmlid': 'smart_construction_core.menu_sc_contract_center'", payload_expr)
         self.assertNotIn("action_xmlid", payload_expr)
 
@@ -968,7 +968,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         page = payload.get("page") if isinstance(payload.get("page"), dict) else {}
 
         self.assertEqual(page.get("key"), "project.management.dashboard")
-        self.assertEqual(page.get("route"), "/s/project.management")
+        self.assertNotIn("route", page)
         self.assertEqual(page.get("page_type"), "dashboard")
         self.assertEqual(page.get("layout_mode"), "dashboard")
 

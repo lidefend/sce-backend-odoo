@@ -8,6 +8,11 @@ from typing import Any, Dict
 SOURCE_KIND = "navigation_entry_target_projection"
 SOURCE_AUTHORITIES = ("scene_registry", "ir.ui.menu", "ir.actions", "odoo_action_result")
 NO_BUSINESS_FACT_AUTHORITY = True
+SCENE_ROUTE_PREFIX = "/s/"
+ADMIN_SURFACE_ROUTES = {
+    "business_config": "/admin/business-config",
+    "menu_config": "/admin/menu-config",
+}
 
 
 def _text(value) -> str:
@@ -20,6 +25,60 @@ def _to_int(value) -> int:
     except Exception:
         return 0
     return parsed if parsed > 0 else 0
+
+
+def scene_route(scene_key) -> str:
+    """Derive the only route shape owned by the scene projection."""
+    key = _text(scene_key)
+    return f"{SCENE_ROUTE_PREFIX}{key}" if key else ""
+
+
+def action_route(action_id, menu_id=None) -> str:
+    """Derive a native window-action route from its stable identities."""
+    normalized_action_id = _to_int(action_id)
+    optional_menu_id = _to_int(menu_id)
+    if not normalized_action_id:
+        return ""
+    route = f"/a/{normalized_action_id}"
+    return f"{route}?menu_id={optional_menu_id}" if optional_menu_id else route
+
+
+def menu_container_route(menu_id) -> str:
+    """Derive a directory/container route from its native menu identity."""
+    normalized_menu_id = _to_int(menu_id)
+    return f"/m/{normalized_menu_id}" if normalized_menu_id else ""
+
+
+def admin_surface_route(surface) -> str:
+    """Derive a registered P0 administration route from its surface identity."""
+    return ADMIN_SURFACE_ROUTES.get(_text(surface), "")
+
+
+def derive_entry_route(
+    *,
+    scene_key="",
+    action_id=None,
+    menu_id=None,
+    surface="",
+) -> str:
+    """Return a route from entry identity, never from maintained route data."""
+    return (
+        scene_route(scene_key)
+        or action_route(action_id, menu_id)
+        or menu_container_route(menu_id)
+        or admin_surface_route(surface)
+    )
+
+
+def target_route(entry_target) -> str:
+    """Derive a route from an explicit target identity."""
+    target = entry_target if isinstance(entry_target, dict) else {}
+    target_type = _text(target.get("type"))
+    if target_type == "scene":
+        return scene_route(target.get("scene_key"))
+    if target_type == "admin_surface":
+        return admin_surface_route(target.get("surface"))
+    return ""
 
 
 def _view_modes(value) -> list[str]:
@@ -52,7 +111,10 @@ def _mentions_web_surface(context) -> bool:
     consumer's point of view and must not degrade to the compatibility path.
     """
     text = context if isinstance(context, str) else ""
-    return bool(text) and ("sc_web_surface" in text or "sc_web_route" in text)
+    return bool(text) and (
+        "sc_web_surface" in text
+        or "sc_web_route" in text
+    )
 
 
 def build_web_surface_entry_target(
@@ -63,16 +125,18 @@ def build_web_surface_entry_target(
     model: str = "",
     view_modes=None,
 ) -> dict:
-    """Project a declared web-surface action into one explicit entry target.
+    """Project a declared target identity into one explicit entry target.
 
-    The action declaration owns ``sc_web_surface`` / ``sc_web_route``. This
-    projection only normalizes those declared values; it never infers a
-    surface from a model, a route spelling or an Odoo context key that the
-    declaration did not publish.
+    Native declarations may publish a surface or target scene identity. The
+    route is always derived by the navigation projection; ``sc_web_route`` is a
+    forbidden second source and fails closed if a legacy declaration remains.
     """
     declared = _context_mapping(context)
     surface = _text(declared.get("sc_web_surface"))
-    route = _text(declared.get("sc_web_route"))
+    if "sc_web_route" in declared or (
+        isinstance(context, str) and "sc_web_route" in context
+    ):
+        raise ValueError("ROUTE_FACT_DECLARATION_FORBIDDEN: sc_web_route")
     # A plain action may declare no web surface at all; it stays on the
     # compatibility path.  A *partial* surface declaration is a contract defect,
     # not an absent declaration: project it as an explicit ``admin_surface``
@@ -80,16 +144,29 @@ def build_web_surface_entry_target(
     # gap instead of silently degrading to ``compatibility``.
     declared_any = (
         "sc_web_surface" in declared
-        or "sc_web_route" in declared
+        or "sc_delivery_scope" in declared
         or _mentions_web_surface(context)
     )
-    if not surface and not route and not declared_any:
+    if not surface and not declared_any:
         return {}
-    entry_target = {
-        "type": "admin_surface",
-        "surface": surface,
-        "route": route,
-    }
+    compatibility_refs = _build_compatibility_refs(
+        menu_id=menu_id,
+        action_id=action_id,
+        model=model,
+        view_modes=view_modes,
+    )
+    if surface or "sc_web_surface" in declared or _mentions_web_surface(context):
+        entry_target = {
+            "type": "admin_surface",
+            "surface": surface,
+            "route": admin_surface_route(surface),
+        }
+    else:
+        entry_target = {
+            "type": "compatibility",
+            "route": action_route(action_id, menu_id),
+            "compatibility_refs": compatibility_refs,
+        }
     # Presentation is not admission. Only an explicit native action scope
     # declares a configuration workspace independent of business publication.
     if declared.get("sc_delivery_scope") == "configuration":
@@ -97,12 +174,6 @@ def build_web_surface_entry_target(
     root_menu_xmlid = _text(declared.get("business_config_root_menu_xmlid"))
     if root_menu_xmlid:
         entry_target["root_menu_xmlid"] = root_menu_xmlid
-    compatibility_refs = _build_compatibility_refs(
-        menu_id=menu_id,
-        action_id=action_id,
-        model=model,
-        view_modes=view_modes,
-    )
     if compatibility_refs:
         entry_target["compatibility_refs"] = compatibility_refs
     return entry_target
@@ -126,7 +197,7 @@ def build_scene_entry_target(
         normalized_scene_key = normalized_route.replace("/s/", "", 1).strip("/")
     if not normalized_scene_key:
         return {}
-    normalized_route = normalized_route or f"/s/{normalized_scene_key}"
+    normalized_route = scene_route(normalized_scene_key)
     entry_target = {
         "type": "scene",
         "scene_key": normalized_scene_key,

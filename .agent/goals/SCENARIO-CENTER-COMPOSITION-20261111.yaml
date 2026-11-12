@@ -1,0 +1,27 @@
+schema_version: 1
+goal:
+  id: SCENARIO-CENTER-COMPOSITION-20261111
+  status: completed
+  formal_product_layer: P1 construction product orchestration
+  title: 场景入口决定中心菜单，停止原生树重组
+  layer_target: scenario navigation center composition
+  module: smart_construction_core
+  standard_vs_user_specific: construction industry standard
+  objective: >
+    Move navigation center ownership from the native ir.ui.menu ancestor chain
+    into scenario-entry composition metadata. Existing data receives a one-time
+    migration seed; runtime navigation uses the persisted composition fields or
+    the delivery-policy group fallback, never native center ancestry.
+  acceptance:
+    - Scenario entries persist center identity, label and sequence.
+    - Existing entries receive an idempotent one-time composition seed on upgrade.
+    - Runtime center grouping no longer calls the native-parent center resolver.
+    - Unconfigured authorized entries use policy grouping as an explicit fallback.
+    - Existing final navigation remains behaviorally equivalent after migration.
+    - Focused unit and navigation checks execute with non-zero counts.
+  exclusions:
+    - No menu/action/view/group/ACL fact change.
+    - No route persistence.
+    - No frontend change.
+    - No multi-scenario reuse change in this slice.
+    - No deployment, PR or remote mutation.

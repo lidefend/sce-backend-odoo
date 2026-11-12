@@ -16,6 +16,7 @@ _ENTRY_TARGET_SPEC.loader.exec_module(ENTRY_TARGET_MODULE)
 namespace = {
     'MenuFactService': SimpleNamespace(ACTION_MODELS={'ir.actions.act_window', 'ir.actions.server'}),
     'build_web_surface_entry_target': ENTRY_TARGET_MODULE.build_web_surface_entry_target,
+    'derive_entry_route': ENTRY_TARGET_MODULE.derive_entry_route,
 }
 exec(compile(ast.Module(body=[node for node in CLASS.body if isinstance(node, ast.FunctionDef) and node.name in METHODS], type_ignores=[]), str(SOURCE), 'exec'), namespace)
 

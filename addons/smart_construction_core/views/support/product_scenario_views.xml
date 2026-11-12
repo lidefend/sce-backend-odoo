@@ -43,6 +43,9 @@
             <field name="entry_ids" nolabel="1">
               <tree string="导航入口" editable="bottom">
                 <field name="sequence" widget="handle"/>
+                <field name="center_sequence"/>
+                <field name="center_key"/>
+                <field name="center_name"/>
                 <field name="menu_id"/>
                 <field name="menu_xmlid"/>
                 <field name="intent"/>

@@ -98,8 +98,7 @@
       "intents": {
         "master_data": [
           "smart_construction_core.menu_sc_organization_department",
-          "smart_construction_core.menu_sc_product_job_management_v1",
-          "smart_construction_core.menu_sc_runtime_user_management"
+          "smart_construction_core.menu_sc_product_job_management_v1"
         ]
       }
     },

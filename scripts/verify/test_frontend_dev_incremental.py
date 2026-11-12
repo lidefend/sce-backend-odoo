@@ -267,6 +267,83 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.evidence_bundle.unit"],
                 )
 
+    def test_navigation_contract_compiler_selects_navigation_and_boundary(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/navigation_contract_compiler.py",
+            "addons/smart_core/handlers/system_init.py",
+            "addons/smart_core/tests/test_navigation_contract_compiler.py",
+            "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.backend.navigation_delivery.unit",
+                        "verify.scenario.center_projection.guard",
+                        "verify.system_init.menu_boundary.guard",
+                    ],
+                )
+
+    def test_runtime_capability_catalog_selects_its_projection_unit(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/runtime_capability_catalog.py",
+            "addons/smart_core/tests/test_runtime_capability_catalog.py",
+            "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.runtime_capability_catalog.unit"],
+                )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/delivery/product_policy_catalog_sync_service.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.runtime_capability_catalog.unit",
+            ],
+        )
+
+    def test_scenario_center_composition_selects_center_and_navigation_guards(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/models/support/product_scenario.py"
+            ]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+        )
+        for path in (
+            "addons/smart_construction_core/services/scenario_surface_projection.py",
+            "scripts/verify/scenario_center_projection_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.navigation.publication_consumers.unit",
+                        "verify.scenario.center_projection.guard",
+                    ],
+                )
+
+    def test_scenario_center_migration_and_view_select_orm_and_center_guards(self) -> None:
+        for path in (
+            "addons/smart_construction_core/__manifest__.py",
+            "addons/smart_construction_core/migrations/17.0.0.179/post-migrate.py",
+            "addons/smart_construction_core/views/support/product_scenario_views.xml",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.daily.permission_truth.capability.orm",
+                        "verify.scenario.center_projection.guard",
+                    ],
+                )
+
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
         for path in (
             "scripts/ci/backend_impact_plan.py",
@@ -425,6 +502,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.daily.permission_truth.capability.orm",
                 "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
             ],
         )
         self.assertEqual(
@@ -822,6 +900,66 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.frontend.dev.incremental.unit",
                     ],
                 )
+
+    def test_scenario_composition_paths_keep_their_responsibility_targets(self) -> None:
+        expected = {
+            "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py": [
+                "verify.daily_dev.acceptance_fixture.unit",
+            ],
+            "addons/smart_construction_core/data/product_scenario_seed.xml": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "addons/smart_construction_core/data/scenario_product_surface.json": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "addons/smart_construction_core/security/sc_capability_groups.xml": [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
+            "addons/smart_construction_core/core_extension_actor_roles.py": [
+                "verify.frontend.navigation_policy.unit",
+                "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_surface.landing.contract.unit",
+                "verify.workflow_action_semantics.guard",
+            ],
+            "addons/smart_construction_scene/services/business_scene_enablement.py": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "addons/smart_core/core/navigation_entry_target.py": [
+                "verify.backend.navigation_delivery.unit",
+                "verify.scenario.center_projection.guard",
+                "verify.system_init.menu_boundary.guard",
+            ],
+            "addons/smart_core/tests/test_entry_publication_authority.py": [
+                "verify.product.entry_publication.unit",
+            ],
+            "addons/smart_core/tests/test_platform_admin_duty_contract.py": [
+                "verify.platform.duty.contract.unit",
+            ],
+            "config/product_menu_contract_v1.json": [
+                "verify.product.menu.contract_v1.guard",
+            ],
+            "scripts/verify/scene_fact_data_boundary_guard.py": [
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+        }
+        for path, targets in expected.items():
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), targets)
 
     def test_governed_make_lane_change_routes_to_the_iteration_policy_guard(self) -> None:
         # The baseline iteration policy guard declares which targets each

@@ -320,6 +320,34 @@ RULES = (
         "verify.backend.navigation_delivery.unit",
     )),
     Rule((
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/core/delivery_menu_defaults.py",
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_native_config_menu_projection.py",
+        "addons/smart_core/tests/test_relation_entry_contract.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+        "verify.system_init.menu_boundary.guard",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    ), (
+        "verify.platform.duty.contract.unit",
+    )),
+    Rule((
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    ), (
+        "verify.runtime_capability_catalog.unit",
+    )),
+    Rule((
         "frontend/apps/web/scripts/logger_runtime_test.ts",
         "frontend/apps/web/src/utils/logger.ts",
         "scripts/verify/frontend_console_guard.py",
@@ -614,8 +642,10 @@ RULES = (
     Rule((
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "config/product_menu_contract_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/test_menu_metadata_batch.py",
     ), (
         "verify.product.menu.contract_v1.guard",
     )),
@@ -753,6 +783,7 @@ RULES = (
     Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
@@ -829,13 +860,22 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/core_extension_actor_roles.py",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
         "addons/smart_construction_core/data/product_menu_source.json",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
         "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+        "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+        "addons/smart_construction_core/views/support/my_work_views.xml",
+        "addons/smart_core/views/ui_menu_config_policy_views.xml",
         "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/release/test_locked_menu_policy_contract.py",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
     ), (
         "verify.role_surface.landing.contract.unit",
         "verify.frontend.role_surface_exposure_declaration.guard",
@@ -850,9 +890,52 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/data/product_scenario_seed.xml",
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     ), (
         "verify.daily.permission_truth.capability.orm",
         "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/verify/scene_fact_data_boundary_guard.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_construction_scene/__init__.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/data/project_management_scene.xml",
+        "addons/smart_construction_scene/data/sc_scene_finance_payment_ledger.xml",
+        "addons/smart_construction_scene/data/sc_scene_layout.xml",
+        "addons/smart_construction_scene/data/sc_scene_list_profile.xml",
+        "addons/smart_construction_scene/data/sc_scene_orchestration.xml",
+        "addons/smart_construction_scene/data/sc_scene_tiles.xml",
+        "addons/smart_construction_scene/models/__init__.py",
+        "addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+        "addons/smart_construction_scene/profiles/scene_registry_content.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+        "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/migrations/17.0.0.179/",
+        "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    ), (
+        "verify.daily.permission_truth.capability.orm",
+        "verify.scenario.center_projection.guard",
     )),
     Rule((
         "scripts/verify/frontend_acceptance_login_probe.py",
@@ -995,6 +1078,7 @@ RULES = (
     Rule((
         "addons/smart_core/delivery/runtime_route_authority.py",
         "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/tests/test_principal_group_signature_request_scope.py",
         "addons/smart_core/tests/test_principal_group_signature_request_scope_orm.py",
     ), (

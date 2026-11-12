@@ -26,7 +26,15 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
     rows = []
     for scene in surface.get("scenarios") or []:
         key = scene["key"].strip()
-        menus = [menu for menu, location in index.items() if location["location"] == "scenario" and location["scenario_key"] == key]
+        menus = [
+            menu
+            for menu, location in index.items()
+            if any(
+                candidate.get("location") == "scenario"
+                and candidate.get("scenario_key") == key
+                for candidate in _scenario_locations(location)
+            )
+        ]
         released = [menu for menu in menus if release_states.get(menu) == "released"]
         is_enabled = bool(scene.get("active", True)) and enabled.get(key, False)
         if not scene.get("active", True):
@@ -45,11 +53,53 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
     return rows
 
 
+def _scenario_locations(location):
+    if not isinstance(location, dict):
+        return []
+    candidates = location.get("scenario_locations")
+    if isinstance(candidates, list) and candidates:
+        return [row for row in candidates if isinstance(row, dict)]
+    if location.get("location") == "scenario":
+        return [location]
+    return []
+
+
+def _int_or(value, default):
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _location_sort_key(location):
+    return (
+        _int_or(location.get("scenario_sequence"), 10),
+        _int_or(location.get("sequence"), 10),
+        str(location.get("scenario_key") or ""),
+        str(location.get("intent") or ""),
+        _int_or(location.get("entry_id"), 0),
+    )
+
+
+def enabled_scenario_locations(location, enabled):
+    """Return enabled scenario placements in declared composition order."""
+    rows = [
+        candidate
+        for candidate in _scenario_locations(location)
+        if candidate.get("scenario_active", True)
+        and enabled.get(candidate.get("scenario_key")) is True
+    ]
+    return sorted(rows, key=_location_sort_key)
+
+
 def location_business_enabled(location, enabled):
     if not location or location["location"] == "missing":
         return False
-    if location["location"] == "scenario":
-        return location.get("scenario_active", True) and enabled.get(location["scenario_key"]) is True
+    scenario_locations = _scenario_locations(location)
+    if scenario_locations:
+        return bool(enabled_scenario_locations(location, enabled))
     return location["location"] in ("exempt", "horizontal", "platform")
 
 
@@ -58,8 +108,47 @@ def entry_business_enabled(entry, surface_index, enabled):
     return location_business_enabled(surface_index.get(menu), enabled)
 
 
+def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu_keys=None):
+    """Project enabled scenario references for one final menu placement.
+
+    A native menu may be referenced by multiple scenarios. The final navigation
+    carries one node per native menu, while the remaining enabled placements are
+    retained as diagnostics. Ordering is part of the scenario composition
+    declaration, never ORM/query order.
+    """
+    selected_by_menu = {}
+    shared_by_menu = {}
+    allowed_menu_keys = set(menu_keys) if menu_keys is not None else None
+    for menu_key, location in sorted((surface_index or {}).items()):
+        if allowed_menu_keys is not None and menu_key not in allowed_menu_keys:
+            continue
+        candidates = sorted(_scenario_locations(location), key=_location_sort_key)
+        if not candidates:
+            continue
+        enabled_locations = enabled_scenario_locations(location, enabled)
+        menu_id = int(location.get("menu_id") or 0)
+        if menu_id <= 0:
+            continue
+        selected = dict(enabled_locations[0]) if enabled_locations else {}
+        selected["menu_key"] = menu_key
+        selected["available_scenario_keys"] = [
+            str(candidate.get("scenario_key") or "") for candidate in candidates
+        ]
+        selected_by_menu[str(menu_id)] = selected
+        alternatives = [dict(candidate) for candidate in enabled_locations[1:]]
+        if alternatives:
+            shared_by_menu[str(menu_id)] = alternatives
+    return {
+        "authority": "sc.product.scenario.entry + tenant business scenario selection",
+        "company_id": int(company_id or 0),
+        "selection_order": "scenario.sequence, entry.sequence, scenario_key, intent, entry.id",
+        "selected_by_menu": selected_by_menu,
+        "shared_by_menu": shared_by_menu,
+    }
+
+
 def filter_business_authority(authority, *, surface_index, enabled, entries, menu_xmlids_by_id,
-                              menu_xmlids_by_action=None):
+                              menu_xmlids_by_action=None, company_id=0):
     """Only remove existing authority; never manufacture allowed routes.
 
     Legacy aliases resolve through their menu binding, never textual key equality.
@@ -71,13 +160,24 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
     # A bare action shared by multiple delivery surfaces remains usable through
     # any enabled surface; an explicit menu/legacy route retains its own scope.
     action_menus = menu_xmlids_by_action or {}
+    authority_menu_keys = set()
     published_menu_pairs = set()
     for bucket in AUTHORITY_BUCKETS:
         for row in authority.get(bucket) or []:
             menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
+            if menu:
+                authority_menu_keys.add(menu)
+            elif row.get("action_id"):
+                authority_menu_keys.update(action_menus.get(row["action_id"], ()))
             if menu and row.get("action_id") and row.get("allowed") is not False:
                 published_menu_pairs.add((row["action_id"], menu))
     result = deepcopy(authority)
+    result["scenario_composition"] = scenario_composition_selection(
+        surface_index,
+        enabled,
+        company_id=company_id,
+        menu_keys=authority_menu_keys,
+    )
     entry_by_key = {entry["code"]: entry for entry in entries if entry.get("code")}
     denied = result.setdefault("denied_actions", [])
     for bucket in AUTHORITY_BUCKETS:

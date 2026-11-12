@@ -245,7 +245,8 @@ ROLE_SURFACE_OVERRIDES = {
         ],
     },
     "business_config_admin": {
-        "label": "业务配置管理员",
+        "label": "业务配置管理员（全功能）",
+        "exclusive_surface": True,
         "landing_scene_candidates": ["enterprise.setup", "workspace.home", "projects.list", "projects.ledger", "projects.intake"],
         # The primary role owns the landing surface, while the released
         # construction catalogue is still intersected with the user's native
@@ -718,7 +719,7 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_owner",
     },
     "project_member": {
-        "smart_construction_core.group_sc_role_project_user",
+        "smart_construction_core.group_sc_cap_project_read",
     },
     "business_config_admin": {
         "smart_construction_core.group_sc_cap_business_config_admin",
@@ -759,7 +760,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "operation_user", "finance", "cost", "accounting")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_config_admin", "business_full", "executive", "owner", "pm", "operation_user", "finance", "cost", "accounting")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

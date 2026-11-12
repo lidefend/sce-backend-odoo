@@ -11,7 +11,7 @@
                 'name': '默认场景',
                 'version': 'v2',
                 'layout': {'kind': 'workspace', 'sidebar': 'fixed', 'header': 'full'},
-                'target': {'route': '/workbench?scene=default'},
+                'target': {},
                 'tiles': [
                     {
                         'key': 'project.board.open',
@@ -33,8 +33,7 @@
                         'icon': 'M',
                         'payload': {
                             'scene_key': 'portal.capability_matrix',
-                            'route': '/s/portal.capability_matrix'
-                        },
+                                                    },
                         'required_capabilities': ['governance.capability.matrix']
                     },
                     {

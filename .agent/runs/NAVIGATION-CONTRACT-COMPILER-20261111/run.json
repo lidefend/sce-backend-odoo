@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "id": "NAVIGATION-CONTRACT-COMPILER-20261111",
+  "branch": "refactor/navigation-contract-compiler-20261111",
+  "baseline_sha": "cb769bd0e7004ab8cff9b3d533ce02987d923f35",
+  "status": "completed",
+  "goal": ".agent/goals/NAVIGATION-CONTRACT-COMPILER-20261111.yaml",
+  "record": "docs/ops/iterations/navigation_contract_compiler_20261111.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NAVIGATION-CONTRACT-COMPILER-20261111.yaml",
+    ".agent/runs/NAVIGATION-CONTRACT-COMPILER-20261111/run.json",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/navigation_contract_compiler_20261111.md",
+    "make/frontend.mk",
+    "make/runtime_ops.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source-bound unit and static contract checks; no runtime write"
+  },
+  "runtime_observation": {
+    "database": "sc_dev_demo",
+    "candidate": "cb769bd0e7004ab8cff9b3d533ce02987d923f35 plus owned worktree changes",
+    "upgrade_command": "make local.dev.upgrade MODULE=smart_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core",
+    "inventory_command": "make odoo.shell.exec ENV=dev ENV_FILE=<primary .env.dev> DB_NAME=sc_dev_demo < audit/navigation-fact-inventory-20261111:scripts/verify/navigation_fact_inventory.py",
+    "artifact": "artifacts/backend/navigation_contract_compiler_inventory_v1.json",
+    "artifact_sha256": "06dd16ba66a1cd8a8349d7d10ed69ce8dd03fa9bed8e30ca710f9071ff6bbe09",
+    "behavior_identity": "all seven measured principals have identical native visibility, final navigation, route authority, final product policy, targeted-capability and tenant observations",
+    "status": "passed"
+  },
+  "checks": {
+    "contract_compiler": {
+      "target": "verify.navigation_contract_compiler.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "make/frontend.mk",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "backend_navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "make/frontend.mk"
+      ]
+    },
+    "system_init_menu_boundary": {
+      "target": "verify.system_init.menu_boundary.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/system_init.py",
+        "scripts/verify/system_init_menu_boundary_guard.py"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Continue the next architecture-reduction slice: replace central capability enumeration and native-center regrouping with capability-catalog projection plus scenario-composition output.",
+  "layer": {
+    "formal_product_layer": "P0 platform kernel",
+    "layer_target": "final navigation contract compilation",
+    "module": "smart_core",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "System startup is a generic platform boundary: it seals already-authorized carriers into one contract for every product.",
+    "why_not_elsewhere": "P1 scenario composition supplies the tree but must not own the final response; frontend cannot assemble or re-authorize it.",
+    "blast_radius": "The final system.init navigation block only; current menu, role, tenant, publication and scenario semantics remain unchanged."
+  },
+  "validation_results": [
+    {
+      "command": "make verify.navigation_contract_compiler.unit",
+      "status": "passed",
+      "tests": 3,
+      "log": ".runtime/navigation-contract-compiler/contract-compiler.log"
+    },
+    {
+      "command": "make verify.backend.navigation_delivery.unit",
+      "status": "passed",
+      "tests": 68,
+      "log": ".runtime/navigation-contract-compiler/backend-navigation-delivery.log"
+    },
+    {
+      "command": "make verify.system_init.menu_boundary.guard",
+      "status": "passed",
+      "tests": 7,
+      "log": ".runtime/navigation-contract-compiler/system-init-boundary.log"
+    },
+    {
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "tests": 114,
+      "log": ".runtime/navigation-contract-compiler/incremental-planner.log"
+    },
+    {
+      "command": "make verify.navigation.publication_consumers.unit",
+      "status": "passed",
+      "tests": 169
+    },
+    {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "head": "19f9a72a145e17f233b133a506a521c3a9f6a5a5"
+    }
+  ],
+  "completion": {
+    "batch": "navigation_contract_compiler_extracted_and_runtime_equivalence_proven",
+    "mainline": "not_integrated",
+    "deployment": "not_performed",
+    "user_acceptance": "not_claimed"
+  },
+  "limits": [
+    "The current scenario composition still regroups authorized leaves by native center; replacing that adapter is the next slice.",
+    "Capability catalog discovery and multi-scenario composition were not changed in this batch.",
+    "No remote PR, CI, merge or deployment was performed."
+  ]
+}
