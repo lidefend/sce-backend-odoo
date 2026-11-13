@@ -80,8 +80,8 @@
     }
   },
   "blockers": [
-    "candidate is not committed or frozen",
-    "independent review and remote required checks have not run"
+    "independent review has not run for this candidate",
+    "remote required checks have not run for this candidate"
   ],
-  "next_exact_step": "Review the P1/guard diff, run freeze preparation, commit and publish the exact candidate."
+  "next_exact_step": "Publish the clean P1 candidate and wait for independent review plus all required checks on the exact head."
 }
