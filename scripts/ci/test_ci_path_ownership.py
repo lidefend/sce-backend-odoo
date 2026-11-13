@@ -114,6 +114,62 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             "config/ci/path_ownership_v1.json",
         )
 
+    def test_known_toolchain_config_paths_have_exact_nonruntime_owners(self):
+        probe = "config/frontend/probe_toolchain_registry.json"
+        secrets = "config/security/secret_scan_false_positives.v1.json"
+        result = ownership.classify_paths([probe, secrets])
+
+        self.assertEqual(result.assignments[probe], "frontend_probe_toolchain_config")
+        self.assertEqual(result.assignments[secrets], "security_scan_exception_config")
+        self.assertEqual(result.unknown_paths, ())
+        self.assertTrue(result.frontend_changed)
+        self.assertFalse(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertTrue(result.control_plane_changed)
+        self.assertEqual(
+            result.category_for(probe).tool_checks,
+            ("verify.local.dev.project_profile_write.unit",),
+        )
+        self.assertEqual(
+            result.category_for(secrets).tool_checks,
+            ("security.secrets.scan",),
+        )
+
+    def test_database_lifecycle_tooling_selects_backend_runtime(self):
+        path = "scripts/db/create.sh"
+        registry = ownership.classify_paths([path])
+        risk = classify([path], event_name="pull_request")
+        backend = planner.select(
+            [path],
+            {"kernel": module(), "bundle": module(["kernel"])},
+            {"kernel": module(), "bundle": module(["kernel"])},
+        )
+
+        self.assertEqual(registry.assignments[path], "database_lifecycle_tooling")
+        self.assertTrue(risk.backend_changed)
+        self.assertTrue(risk.backend_runtime_changed)
+        self.assertTrue(risk.orm_required)
+        self.assertEqual(backend["mode"], "full")
+        self.assertEqual(backend["modules"], ["bundle", "kernel"])
+        self.assertIn("shared_runtime:" + path, backend["reasons"])
+        self.assertIn(
+            "verify.frontend.acceptance.db_preparation.unit",
+            backend["tool_checks"],
+        )
+
+    def test_ownership_tool_checks_name_registered_make_targets(self):
+        makefiles = sorted((Path(__file__).resolve().parents[2] / "make").glob("*.mk"))
+        targets_text = "\n".join(path.read_text(encoding="utf-8") for path in makefiles)
+        checks = {
+            target
+            for category in ownership.load_registry().values()
+            for target in category.tool_checks
+        }
+        self.assertTrue(checks)
+        for target in sorted(checks):
+            with self.subTest(target=target):
+                self.assertIn(f"{target}:", targets_text)
+
 
 class FiveCiScenarioTest(unittest.TestCase):
     def setUp(self):
@@ -278,6 +334,56 @@ class FiveCiScenarioTest(unittest.TestCase):
             "verify.agent.ledger.unit",
             self.plan(".agent/runs/FE-LOOP-02/run.json")["tool_checks"],
         )
+
+    def test_known_880_tooling_paths_do_not_expand_to_backend_or_orm(self):
+        paths = [
+            ".agent/active-runs.json",
+            ".agent/goals/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113.yaml",
+            ".agent/runs/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113/run.json",
+            "config/frontend/probe_toolchain_registry.json",
+            "config/security/secret_scan_false_positives.v1.json",
+            "docs/engineering_convergence/complexity_budget_report.md",
+            "docs/engineering_convergence/split_plan_queue.md",
+            "docs/engineering_convergence/test_inventory.csv",
+            "docs/engineering_convergence/test_inventory_summary.md",
+            "docs/ops/iterations/delivered_entry_coverage_project_save_20261113.md",
+            "make/dev.mk",
+            "make/frontend.mk",
+            "scripts/ops/dev_acceptance_release_probe.py",
+            "scripts/verify/business_entry_matrix_browser.mjs",
+            "scripts/verify/business_entry_matrix_incremental.py",
+            "scripts/verify/business_entry_matrix_model.mjs",
+            "scripts/verify/business_entry_matrix_overlay.json",
+            "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+            "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+            "scripts/verify/business_entry_matrix_scope.mjs",
+            "scripts/verify/business_entry_negative_closures.mjs",
+            "scripts/verify/frontend_dev_incremental.py",
+            "scripts/verify/local_dev_project_profile_write_browser.mjs",
+            "scripts/verify/local_dev_project_profile_write_contract.mjs",
+            "scripts/verify/local_dev_project_profile_write_contract.test.mjs",
+            "scripts/verify/released_navigation_target.mjs",
+            "scripts/verify/test_business_entry_matrix_incremental.py",
+            "scripts/verify/test_daily_acceptance_fixture_lane.py",
+            "scripts/verify/test_dev_acceptance_release_identity.py",
+            "scripts/verify/test_frontend_dev_incremental.py",
+            "scripts/verify/test_local_dev_project_profile_write_fixture.py",
+        ]
+        registry = ownership.classify_paths(paths)
+        risk = self.classify(*paths)
+        backend = self.plan(*paths)
+
+        self.assertEqual(registry.unknown_paths, ())
+        self.assertFalse(risk.backend_runtime_changed)
+        self.assertFalse(risk.orm_required)
+        self.assertEqual(backend["mode"], "incremental")
+        self.assertEqual(backend["modules"], [])
+        self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
+        self.assertEqual(backend["reasons"], [])
+        self.assertIn("verify.local.dev.project_profile_write.unit", backend["tool_checks"])
+        self.assertIn("security.secrets.scan", backend["tool_checks"])
+        self.assertEqual(risk.managed_orm_required, False)
+        self.assertEqual(risk.outputs()["payment_orm_required"], "false")
 
 
 if __name__ == "__main__":

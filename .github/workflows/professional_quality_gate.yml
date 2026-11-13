@@ -309,6 +309,16 @@ jobs:
           esac
           echo "ran=true" >> "${GITHUB_OUTPUT}"
 
+      # These checks are cheap and have failed independently of backend
+      # runtime. Run them before any container or persistent environment
+      # preparation so a static regression cannot wait behind a long ORM lane.
+      - name: Run early static quality owners
+        run: |
+          set -euo pipefail
+          python3 scripts/verify/frontend_product_page_header_guard.py
+          python3 scripts/verify/frontend_delivery_hardening_guard.py
+          make verify.unified_page_contract.v2.assembler
+
       - name: Bind code evolution to acceptance impact
         run: |
           set -euo pipefail

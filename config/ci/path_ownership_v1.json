@@ -2,6 +2,48 @@
   "schema_version": "ci-path-ownership/v1",
   "categories": [
     {
+      "id": "frontend_probe_toolchain_config",
+      "patterns": [
+        "config/frontend/probe_toolchain_registry.json"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": false,
+      "tool_checks": [
+        "verify.local.dev.project_profile_write.unit"
+      ]
+    },
+    {
+      "id": "security_scan_exception_config",
+      "patterns": [
+        "config/security/secret_scan_false_positives.v1.json"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "security.secrets.scan"
+      ]
+    },
+    {
+      "id": "database_lifecycle_tooling",
+      "patterns": [
+        "scripts/db/**"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": true,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.acceptance.db_preparation.unit"
+      ]
+    },
+    {
       "id": "backend_runtime",
       "patterns": [
         "addons/**",

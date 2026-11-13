@@ -773,7 +773,16 @@ def validate() -> list[str]:
             failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     router = source("frontend/apps/web/src/router/index.ts")
-    for page_route in ("home", "scene-home", "my-work", "scene-my-work", "api-key-management", "action", "record", "model-form", "not-found"):
+    my_work_redirect = next(
+        (line for line in router.splitlines() if "path: '/my-work'" in line),
+        "",
+    )
+    if "redirect: '/s/my_work.workspace'" not in my_work_redirect:
+        failures.append(
+            "my-work compatibility route must redirect to the delivered scene route: "
+            "path: '/my-work' -> redirect: '/s/my_work.workspace'",
+        )
+    for page_route in ("home", "scene-home", "scene-my-work", "api-key-management", "action", "record", "model-form", "not-found"):
         route_declaration = next(
             (line for line in router.splitlines() if f"name: '{page_route}'" in line),
             "",

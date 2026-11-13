@@ -15,7 +15,22 @@ source "$ROOT_DIR/scripts/common/compose.sh"
 if compose_dev ps db >/dev/null 2>&1; then
   if compose_dev exec -T db psql -U "${DB_USER}" -d postgres -At \
     -c "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1; then
-    echo "[db] exists: ${DB_NAME}"
+    application_state="$(
+      compose_dev exec -T db psql -U "${DB_USER}" -d "${DB_NAME}" -At \
+        -c "SELECT CASE WHEN to_regclass('public.ir_module_module') IS NULL THEN 'empty' ELSE 'initialized' END"
+    )"
+    case "$application_state" in
+      empty)
+        echo "[db] exists-empty: ${DB_NAME}"
+        ;;
+      initialized)
+        echo "[db] exists: ${DB_NAME}"
+        ;;
+      *)
+        echo "[db] unexpected application state for ${DB_NAME}: ${application_state}" >&2
+        exit 2
+        ;;
+    esac
     exit 0
   fi
   compose_dev exec -T db createdb -U "${DB_USER}" "${DB_NAME}"

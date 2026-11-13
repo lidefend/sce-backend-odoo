@@ -2142,14 +2142,14 @@ async function main() {
     const roleValue = normalize(await roleInput.inputValue());
     if (!roleValue || roleValue === 'false') {
       await roleInput.click();
-      await page.locator('.t-select-option:visible').filter({ hasText: '项目经理' }).first().click();
+      await page.getByText('项目经理', { exact: true }).last().click();
     }
     const userInput = createdRow.locator('input:visible[aria-label="责任人"]').first();
     const userValue = normalize(await userInput.inputValue());
     if (!userValue) {
       await userInput.click();
       await userInput.fill('张建国');
-      await page.locator('.t-select-option:visible').filter({ hasText: '张建国' }).first().click();
+      await page.getByText('张建国', { exact: true }).last().click();
     }
     const rowInputs = createdRow.locator('input:visible');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');

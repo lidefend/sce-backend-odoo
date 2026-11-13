@@ -16,6 +16,7 @@
     "codex/cap01b-capability-reconciliation-20261104": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
     "codex/cap01c-c1-project-initiation-20261104": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",
     "codex/cap02c-authority-boundary-20261105": ".agent/runs/CAP02C-RUNTIME-AUTHORITY-20261105/run.json",
+    "codex/ci-main-recovery-incremental-efficiency-20261113": ".agent/runs/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113/run.json",
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",

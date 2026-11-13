@@ -95,6 +95,7 @@
     "customer_addons/**",
     "migrations/**",
     "tests/**",
+    "scripts/db/**",
     "scripts/test/**",
     "scripts/ci/orm_*",
     "scripts/ci/*_orm_*",

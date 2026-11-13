@@ -256,11 +256,17 @@ require(
 )
 require(
     "frontend/apps/web/src/App.vue",
-    "function activityActorPart()",
+    "import { resolveActivityCacheKey } from './app/activityPageCacheIdentity';",
     "session.user?.id",
     "retainedActivityActorId",
     "if (userId > 0) retainedActivityActorId.value = userId;",
-    "activity:${activityActorPart()}:${routeKey}:${epoch}",
+    "return resolveActivityCacheKey({",
+    "}, session.activityPageCacheEpochs, retainedActivityActorId.value);",
+)
+require(
+    "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    "export function resolveActivityCacheKey(",
+    "activity:user:${positiveInteger(actorUserId)}:${routeKey}:${epoch}",
 )
 require(
     "frontend/apps/web/src/layouts/AppShell.vue",

@@ -1,0 +1,77 @@
+schema_version: 1
+goal:
+  id: CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113
+  title: Restore mainline guards and align incremental CI ownership
+  status: active
+  formal_product_layer: P4 operations delivery tooling
+  layer_target: CI path ownership, static guard correctness and clean database preparation
+  module: governed CI and verification tooling
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The observed failures are in CI path routing, static guards and the
+    acceptance database preparation tool. They must be fixed in delivery
+    tooling before any product or runtime acceptance evidence is interpreted.
+  why_not_elsewhere: >
+    Product source changes would compensate for guards that still encode old
+    implementation shapes. Broad backend or ORM runs would hide missing path
+    ownership rather than fix the selection dependency.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113.yaml
+      - .agent/runs/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113/run.json
+      - config/ci/path_ownership_v1.json
+      - config/ci/risk_tiering_v1.json
+      - scripts/ci/ci_path_ownership.py
+      - scripts/ci/test_ci_path_ownership.py
+      - .github/workflows/professional_quality_gate.yml
+      - make/dev.mk
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - scripts/verify/frontend_product_page_header_guard.py
+      - scripts/verify/test_frontend_product_page_header_guard.py
+      - scripts/verify/frontend_delivery_hardening_guard.py
+      - scripts/verify/test_frontend_delivery_hardening_guard.py
+      - scripts/verify/unified_page_contract_v2_assembler_guard.py
+      - scripts/verify/registry.yaml
+      - scripts/verify/local_dev_project_profile_write_browser.mjs
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/personal_data_false_positives.json
+      - scripts/db/create.sh
+      - scripts/ops/quick_input_scope.py
+      - scripts/ops/test_quick_input_scope.py
+      - scripts/test/frontend_acceptance_db_ensure.sh
+      - scripts/verify/test_frontend_release_local_entry.py
+      - scripts/verify/test_local_dev_project_profile_write_fixture.py
+      - scripts/verify/test_frontend_acceptance_runtime_profile.py
+      - scripts/verify/test_frontend_acceptance_carrier_discard.py
+      - docs/demo/product_gap_registry_v1.md
+      - docs/ops/iterations/ci_main_recovery_incremental_efficiency_20261113.md
+    product_behavior: >
+      No product business semantics change. CI chooses the exact owning checks
+      for known tooling paths, static guards inspect the current runtime
+      implementation shape, and clean acceptance databases avoid persistent
+      upgrade work only after equivalent clean-install assertions are proven.
+  objective: >
+    Restore the three known scheduled-main static checks, classify the two
+    known #880 tooling paths without backend-runtime expansion, and split clean
+    database preparation from persistent upgrade preparation.
+  acceptance:
+    - page-header guard validates the live my-work redirect and final page declaration
+    - activity cache guard validates the shared helper and App consumption relationship
+    - assembler cache input change is reviewed and its pin/version updated with evidence
+    - probe registry and secret false-positive config have exact non-backend-runtime ownership
+    - unchanged unknown paths still fail closed
+    - clean database preparation avoids persistent upgrade passes while proving the clean-install baseline
+    - static checks execute before expensive environment preparation
+    - #880 path set replays without backend runtime or ORM selection
+  exclusions:
+    - product model, contract, ACL or workflow changes
+    - business-entry acceptance and browser journeys
+    - production deployment
+    - full historical worktree or database cleanup
+  rollback: >
+    Revert the P4 path ownership, guard, workflow-order and database preparation
+    changes. No business data or persistent database is intentionally mutated.

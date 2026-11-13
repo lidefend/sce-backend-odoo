@@ -244,6 +244,18 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=0", browser_make)
         self.assertLess(BROWSER_MJS.index("const WRITE_AUTHORITY"), BROWSER_MJS.index("const { chromium }"))
 
+    def test_responsibility_selects_target_the_rendered_option_rows(self):
+        self.assertIn(
+            "page.getByText('项目经理', { exact: true }).last()",
+            BROWSER_MJS,
+        )
+        self.assertIn(
+            "page.getByText('张建国', { exact: true }).last()",
+            BROWSER_MJS,
+        )
+        self.assertNotIn("getByRole('option', { name: '项目经理'", BROWSER_MJS)
+        self.assertNotIn("getByRole('option', { name: '张建国'", BROWSER_MJS)
+
     def test_browser_runner_uses_the_tenant_namespace_contract(self):
         self.assertNotIn("probe_toolchain_blocked", BROWSER_MJS)
         self.assertIn("const ENTRY_BASE_PATH = '/t/demo'", BROWSER_MJS)

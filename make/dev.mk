@@ -329,6 +329,11 @@ verify.local.dev.user_view_preference.runtime.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS="/smart_core:TestUserViewPreferenceRuntime" local.dev.test
 
+.PHONY: verify.frontend.acceptance.db_preparation.unit
+verify.frontend.acceptance.db_preparation.unit: guard.prod.forbid
+	@bash -n scripts/db/create.sh scripts/test/frontend_acceptance_db_ensure.sh
+	@python3 -m unittest scripts.verify.test_frontend_release_local_entry
+
 local.dev.project_profile_write_fixture: guard.prod.forbid local.dev.ready
 	@test -n "$(P4_PROJECT_PROFILE_MODE)" || (echo "P4_PROJECT_PROFILE_MODE is required" >&2; exit 2)
 	@test -n "$(P4_PROJECT_PROFILE_BATCH)" || (echo "P4_PROJECT_PROFILE_BATCH is required" >&2; exit 2)

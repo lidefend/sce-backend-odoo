@@ -815,6 +815,12 @@ RULES = (
         "verify.branch.governance.consistency",
     )),
     Rule((
+        "scripts/ops/quick_input_scope.py",
+        "scripts/ops/test_quick_input_scope.py",
+    ), (
+        "verify.quick.input_scope.unit",
+    )),
+    Rule((
         "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
         "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
     ), (
@@ -851,9 +857,31 @@ RULES = (
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
+        "scripts/db/create.sh",
+        "scripts/test/frontend_acceptance_db_ensure.sh",
+    ), (
+        "verify.frontend.acceptance.db_preparation.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_my_work_approval_guard.py",
     ), (
         "verify.frontend.my_work_approval.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/MyWorkView.vue",
+    ), (
+        "verify.frontend.product_page_header.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    ), (
+        "verify.frontend.delivery_hardening.guard",
     )),
     Rule((
         "scripts/verify/frontend_authenticated_intent.mjs",
@@ -1449,6 +1477,9 @@ RULES = (
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
+DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
+    "verify.quick.input_scope.unit",
+})
 # Run bookkeeping and narrative documentation carry no frontend source input:
 # reconciling `.agent/` state or writing an iteration record must never be reported
 # as an unmapped product path, otherwise every continuation or record update would
@@ -1482,7 +1513,12 @@ def select_targets(paths: list[str]) -> list[str]:
             path_targets.update(BASE_FRONTEND_TARGETS)
         selected.update(path_targets)
     targets = sorted(selected)
-    if any(part in target for target in targets for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS):
+    if any(
+        part in target
+        for target in targets
+        if target not in DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS
+        for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS
+    ):
         raise RuntimeError("development validation selected a candidate-only target")
     return targets
 

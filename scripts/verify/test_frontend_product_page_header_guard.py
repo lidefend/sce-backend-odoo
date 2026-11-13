@@ -8,6 +8,41 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(), [])
 
+    def test_my_work_redirect_must_target_the_delivered_scene(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "index.ts":
+                return value.replace(
+                    "redirect: '/s/my_work.workspace'",
+                    "redirect: '/my-work-retired'",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertTrue(any("my-work compatibility route" in item for item in failures), failures)
+
+    def test_delivered_my_work_scene_must_own_content_heading(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "index.ts":
+                return value.replace(
+                    "name: 'scene-my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', sceneKey: 'my_work.workspace', shellDensity: 'minimal', pageHeadingOwner: 'content' }",
+                    "name: 'scene-my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', sceneKey: 'my_work.workspace', shellDensity: 'minimal' }",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertIn(
+            "page-header route does not declare content heading authority: scene-my-work",
+            failures,
+        )
+
     def test_configuration_preview_must_disable_status_writes(self):
         real = Path.read_text
 

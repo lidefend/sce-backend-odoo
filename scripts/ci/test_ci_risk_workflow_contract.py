@@ -710,6 +710,26 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertNotIn('  schedule:', backend)
         self.assertIn('if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then', backend)
 
+    def test_static_quality_owners_run_before_expensive_orm_preparation(self):
+        steps = self.jobs()['professional_quality_checks']['steps']
+        static = next(step for step in steps if step['name'] == 'Run early static quality owners')
+        static_run = static['run']
+        for guard in (
+            'scripts/verify/frontend_product_page_header_guard.py',
+            'scripts/verify/frontend_delivery_hardening_guard.py',
+        ):
+            self.assertIn(guard, static_run)
+        self.assertIn('make verify.unified_page_contract.v2.assembler', static_run)
+        positions = {step['name']: index for index, step in enumerate(steps)}
+        self.assertLess(
+            positions['Run early static quality owners'],
+            positions['Prove settlement component profile with real ORM'],
+        )
+        self.assertLess(
+            positions['Run early static quality owners'],
+            positions['Report ORM verification selection'],
+        )
+
     def test_actual_aggregate_script_rejects_missing_failed_cancelled_and_skipped(self):
         steps = self.jobs()['professional_quality_gate']['steps']
         step = next(s for s in steps if s['name'] == 'Enforce quality and compatibility execution')
