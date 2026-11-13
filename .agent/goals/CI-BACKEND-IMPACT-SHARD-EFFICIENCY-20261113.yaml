@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113
+  title: Narrow backend impact for acceptance DB tools and balance shards by historical duration
+  status: active
+  formal_product_layer: P4 operations delivery tooling
+  layer_target: backend impact selection and backend suite shard scheduling
+  module: governed CI planning tools
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >
+    The observed cost comes from CI selecting unrelated business modules for
+    acceptance database tooling changes and from name-based shard assignment
+    that does not use the historical durations already present in the remote
+    execution plan. Both decisions are owned by P4 CI planning.
+  why_not_elsewhere: >
+    Product modules must not be changed to make CI faster. Reducing test
+    assertions or reusing unauthenticated ORM results would weaken the gate;
+    the correct fix is to select the real consumers and preserve the complete
+    selected-module scope while balancing its execution.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113.yaml
+      - .agent/runs/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113/run.json
+      - config/ci/path_ownership_v1.json
+      - scripts/ci/backend_impact_plan.py
+      - scripts/ci/backend_suite_plan.py
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_backend_impact_plan.py
+      - scripts/ci/test_backend_suite_plan.py
+      - scripts/ci/test_ci_path_ownership.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - docs/ops/iterations/ci_backend_impact_sharding_efficiency_20261113.md
+    product_behavior: >
+      No product model, contract, workflow, database state or test assertion is
+      changed. Acceptance database lifecycle tooling is routed to its owning
+      tool suite and the real managed ORM consumer instead of every business
+      module shard. Selected backend modules remain complete and each keeps its
+      isolated database, but deterministic duration-weighted scheduling reduces
+      the slowest shard.
+  objective: >
+    Remove unrelated backend module shards from acceptance database tooling
+    changes and replace alphabetical round-robin shard assignment with
+    deterministic longest-processing-time scheduling using existing historical
+    execution durations.
+  acceptance:
+    - acceptance database lifecycle files select zero business module shards
+    - acceptance database lifecycle files still run their owning tool checks and real managed ORM consumer
+    - generic scripts/test runner changes and unknown paths still fail closed to the full backend scope
+    - duration-weighted sharding preserves the exact selected module union and deterministic output
+    - missing or invalid historical durations fall back safely without dropping modules
+    - focused CI planning tests execute with non-zero collection
+  exclusions:
+    - changes to Odoo modules, contracts, permissions or business semantics
+    - core installation hotspot code changes
+    - general ORM receipt reuse expansion
+    - browser acceptance, deployment or database writes
+  rollback: >
+    Revert the P4 path ownership, risk routing and shard scheduling changes.
+    No business data or persistent runtime resource is modified.

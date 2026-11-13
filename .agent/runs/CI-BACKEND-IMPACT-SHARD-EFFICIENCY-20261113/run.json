@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113",
+  "branch": "codex/ci-backend-impact-sharding-efficiency-20261113",
+  "baseline_sha": "fa09c289374252420fbf6082b5ed794bc789292b",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113.yaml",
+  "record": "docs/ops/iterations/ci_backend_impact_sharding_efficiency_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113.yaml",
+    ".agent/runs/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113/run.json",
+    "config/ci/path_ownership_v1.json",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "docs/ops/iterations/ci_backend_impact_sharding_efficiency_20261113.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local source and offline CI planning tests; no database or service access"
+  },
+  "checks": {
+    "path_ownership": {
+      "target": "verify.ci.path_ownership.unit",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/test_ci_risk_classifier.py"
+      ],
+      "kind": "offline"
+    },
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "config/ci/risk_tiering_v1.json",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/frontend_release_gate.yml"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "independent re-review has not run for the fixed candidate",
+    "remote required checks have not run for this candidate"
+  ],
+  "next_exact_step": "Publish the zero-duration sharding fix and wait for independent re-review plus all required checks on the new exact head."
+}

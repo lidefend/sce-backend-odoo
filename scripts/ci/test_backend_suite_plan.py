@@ -20,6 +20,81 @@ class ShardPlanTest(unittest.TestCase):
     def test_order_is_deterministic(self):
         self.assertEqual(planner.partition(['c', 'b', 'a']), planner.partition(['a', 'b', 'c']))
 
+    def test_historical_durations_balance_without_changing_scope(self):
+        modules = [f'module_{index}' for index in range(14)]
+        durations = {
+            'module_0': 900,
+            'module_1': 300,
+            'module_2': 280,
+            'module_3': 240,
+            'module_4': 180,
+            'module_5': 120,
+            'module_6': 90,
+            'module_7': 60,
+        }
+        weighted = planner.partition(modules, durations=durations)
+        ordered = sorted(modules)
+        round_robin_loads = [
+            sum(durations.get(name, 1) for name in ordered[index::4])
+            for index in range(4)
+        ]
+        all_modules = [name for shard in weighted for name in shard['modules']]
+        self.assertEqual(sorted(all_modules), sorted(modules))
+        self.assertEqual(len(all_modules), len(set(all_modules)))
+        self.assertLess(
+            max(shard['estimated_duration_seconds'] for shard in weighted),
+            max(round_robin_loads),
+        )
+        self.assertEqual(
+            weighted,
+            planner.partition(list(reversed(modules)), durations=dict(reversed(list(durations.items())))),
+        )
+
+    def test_invalid_duration_weights_fail_closed(self):
+        for durations in (
+            {'missing': 1},
+            {'a': -1},
+            {'a': float('nan')},
+            {'a': float('inf')},
+            {'a': True},
+        ):
+            with self.subTest(durations=durations), self.assertRaises(ValueError):
+                planner.partition(['a', 'b'], durations=durations)
+
+    def test_zero_duration_weights_seed_every_shard_and_pass_plan_validation(self):
+        for modules, durations in (
+            (['a', 'b'], {'a': 0, 'b': 0}),
+            (['a', 'b', 'c'], {'a': 10, 'b': 0, 'c': 0}),
+            (['a', 'b', 'c', 'd'], {'a': 0, 'b': 0, 'c': 0, 'd': 0}),
+        ):
+            with self.subTest(modules=modules, durations=durations):
+                required = {
+                    'base': 'b' * 40,
+                    'head': 'a' * 40,
+                    'modules': sorted(modules),
+                    'changed_test_coverage': [],
+                }
+                decisions = [
+                    {
+                        'target': module,
+                        'decision': 'RUN',
+                        'previous_actual_duration': durations[module],
+                    }
+                    for module in modules
+                ]
+                plan = planner.apply_reuse_decision(required, decisions)
+                shards = plan['shards']
+                self.assertTrue(all(shard['modules'] for shard in shards))
+                flattened = [
+                    module for shard in shards for module in shard['modules']
+                ]
+                self.assertEqual(sorted(flattened), sorted(modules))
+                self.assertEqual(len(flattened), len(set(flattened)))
+                self.assertEqual(
+                    plan,
+                    planner.validate_execution_plan(plan, required),
+                )
+
     def test_invalid_scope_is_not_a_green_empty_matrix(self):
         for names in ([], ['a', 'a'], ['../a'], ['a;exit'], ['a\nb']):
             with self.subTest(names=names), self.assertRaises(ValueError):
@@ -434,12 +509,14 @@ class HistoricalReceiptSelectionTest(unittest.TestCase):
         self.assertEqual(0,result['decisions'][0]['estimated_saved_time'])
 
     def test_apply_reuse_decision_partitions_only_run_and_validates_coverage(self):
-        decisions=[{'target':'core','decision':'REUSE'},{'target':'scene','decision':'RUN'}]
+        decisions=[{'target':'core','decision':'REUSE'},
+                   {'target':'scene','decision':'RUN','previous_actual_duration':20}]
         result=planner.apply_reuse_decision(self.plan,decisions)
         self.assertEqual(['scene'],[m for shard in result['shards'] for m in shard['modules']])
         self.assertEqual(['scene'],result['reuse_decision']['run'])
         self.assertEqual(['core'],result['reuse_decision']['reuse'])
         self.assertTrue(result['reuse_decision']['execution_required'])
+        self.assertEqual(['scene'],result['shard_scheduling']['weighted_modules'])
 
     def test_apply_reuse_decision_all_reuse_has_zero_shards(self):
         decisions=[{'target':'core','decision':'REUSE'},{'target':'scene','decision':'REUSE'}]

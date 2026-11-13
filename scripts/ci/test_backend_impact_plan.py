@@ -66,6 +66,26 @@ class ImpactSelectionTest(unittest.TestCase):
         self.assertEqual(plan['modules'], sorted(self.graph))
         self.assertEqual(plan['mode'], 'full')
 
+    def test_acceptance_database_tools_select_owning_check_without_module_shards(self):
+        for path in (
+            'scripts/db/create.sh',
+            'scripts/test/frontend_acceptance_db_ensure.sh',
+        ):
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual(plan['modules'], [])
+                self.assertEqual(plan['mode'], 'incremental')
+                self.assertEqual(
+                    plan['tool_checks'],
+                    ['verify.frontend.acceptance.db_preparation.unit'],
+                )
+                self.assertEqual(plan['scope_status'], 'NOT_APPLICABLE')
+
+    def test_other_scripts_test_runner_remains_full(self):
+        plan = planner.select(['scripts/test/unrelated_runner.sh'], self.graph, self.graph)
+        self.assertEqual(plan['mode'], 'full')
+        self.assertEqual(plan['modules'], sorted(self.graph))
+
     def test_unknown_path_is_not_a_skip(self):
         self.assertEqual(planner.select(['new_runtime/loader.py'], self.graph, self.graph)['mode'], 'full')
 

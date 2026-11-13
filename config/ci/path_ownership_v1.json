@@ -32,12 +32,13 @@
     {
       "id": "database_lifecycle_tooling",
       "patterns": [
-        "scripts/db/**"
+        "scripts/db/**",
+        "scripts/test/frontend_acceptance_db_ensure.sh"
       ],
       "risk": "high",
       "frontend": false,
-      "backend": true,
-      "backend_runtime": true,
+      "backend": false,
+      "backend_runtime": false,
       "control_plane": true,
       "tool_checks": [
         "verify.frontend.acceptance.db_preparation.unit"

@@ -37,6 +37,7 @@ class Classification:
     ownership_categories: tuple[str, ...]
     frontend_full_required: bool
     orm_required: bool = True
+    database_lifecycle_paths: tuple[str, ...] = ()
 
     @property
     def frontend_mode(self) -> str:
@@ -63,8 +64,13 @@ class Classification:
     def orm_scopes(self) -> tuple[str, ...]:
         if not self.orm_required:
             return ()
-        # Preserve the whole-PR module suite; dedicated regressions are additive.
-        scopes = {'module_suite'}
+        # Acceptance database tools are exercised by their owning tool suite
+        # and isolated managed ORM chain. They are not business runtime inputs.
+        scopes = set()
+        if not self.database_lifecycle_paths or self.backend_runtime_changed:
+            scopes.add('module_suite')
+        if self.database_lifecycle_paths:
+            scopes.add('managed_acceptance')
         shared = ('addons/smart_core/**', 'Dockerfile*', 'docker-compose*',
                   'requirements*', 'config/requirements*', 'scripts/test/**',
                   'scripts/ci/orm_*', 'scripts/ci/*_orm_*',
@@ -78,8 +84,11 @@ class Classification:
                       'addons/smart_construction_scene/models/scene_company_enablement.py',
                       'addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py',
                       'addons/smart_construction_scene/services/tenant_scene_activation.py')
+        database_paths = set(self.database_lifecycle_paths)
+        shared_runtime_paths = [path for path in self.paths if path not in database_paths]
         expand = (self.lane == 'RELEASE' or 'unknown_path_fail_closed' in self.reasons
-                  or 'invalid_path' in self.reasons or any(_matches(p, shared) for p in self.paths))
+                  or 'invalid_path' in self.reasons
+                  or any(_matches(p, shared) for p in shared_runtime_paths))
         if expand or any(_matches(p, payment) for p in self.paths):
             scopes.add('payment_settlement')
         if expand or any(_matches(p, navigation) for p in self.paths):
@@ -88,7 +97,8 @@ class Classification:
 
     @property
     def managed_orm_required(self) -> bool:
-        return ('navigation_maintenance' in self.orm_scopes or any(
+        return (bool(self.database_lifecycle_paths)
+                or 'navigation_maintenance' in self.orm_scopes or any(
             path.startswith('addons/smart_construction_acceptance_fixture/tests/') for path in self.paths))
 
     def outputs(self) -> dict[str, str]:
@@ -274,6 +284,7 @@ def classify(
     control_plane = ownership.control_plane_changed
     backend_runtime = ownership.backend_runtime_changed
     ownership_categories = tuple(sorted(set(ownership.assignments.values())))
+    database_lifecycle_paths = ownership.paths_for("database_lifecycle_tooling")
     high_risk_override = tuple(
         path for path in changed
         if _matches(path, policy.get("high_risk_override_paths", ()))
@@ -324,6 +335,7 @@ def classify(
             ownership_categories,
             frontend_full,
             orm_required,
+            database_lifecycle_paths,
         )
     if frontend or backend:
         return Classification(
@@ -337,6 +349,7 @@ def classify(
             ownership_categories,
             frontend_full,
             orm_required,
+            database_lifecycle_paths,
         )
     return Classification(
         "FAST",
@@ -349,6 +362,7 @@ def classify(
         ownership_categories,
         frontend_full,
         False,
+        database_lifecycle_paths,
     )
 
 

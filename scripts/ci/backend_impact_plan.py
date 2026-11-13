@@ -46,6 +46,8 @@ CONTROL_PLANE = {
     'scripts/ci/backend_test_receipt.py': 'verify.ci.workflow.contract',
     'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',
     'scripts/ci/select_authoritative_workflow_run.py': 'verify.ci.workflow.contract',
+    'scripts/db/create.sh': 'verify.frontend.acceptance.db_preparation.unit',
+    'scripts/test/frontend_acceptance_db_ensure.sh': 'verify.frontend.acceptance.db_preparation.unit',
     'scripts/ops/daily_runtime_release_orchestration.py': 'verify.daily.runtime.release_orchestration.unit',
     'scripts/ops/daily_runtime_database_duty.py': 'verify.daily.runtime.database.duty',
     'scripts/ops/daily_runtime_source_revision_align.py': 'verify.daily.runtime.source_revision.align',

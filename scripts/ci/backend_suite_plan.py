@@ -6,6 +6,7 @@ import argparse
 import fnmatch
 import hashlib
 import json
+import math
 import re
 import sys
 import functools
@@ -21,16 +22,50 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ops'))
 import evidence_scope
 
 
-def partition(modules: list[str], limit: int = 4) -> list[dict]:
+def partition(
+    modules: list[str],
+    limit: int = 4,
+    durations: dict[str, float] | None = None,
+) -> list[dict]:
     if not modules or len(set(modules)) != len(modules):
         raise ValueError('scope must be nonempty and unique')
     if not 1 <= limit <= 4:
         raise ValueError('parallelism must be between one and four')
     if any(not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) for name in modules):
         raise ValueError('invalid module name')
+    if durations is None:
+        durations = {}
+    if not isinstance(durations, dict) or any(name not in modules for name in durations):
+        raise ValueError('duration weights must be keyed by selected modules')
+    for duration in durations.values():
+        if (type(duration) not in (int, float) or not math.isfinite(duration)
+                or duration < 0):
+            raise ValueError('duration weights must be finite non-negative numbers')
     ordered = sorted(modules)
     count = min(limit, len(ordered))
-    shards = [{'index': index, 'modules': ordered[index::count]} for index in range(count)]
+    # LPT scheduling uses actual prior durations when available and unit
+    # weights otherwise. Name and shard index break ties deterministically.
+    weighted = sorted(ordered, key=lambda name: (-float(durations.get(name, 1)), name))
+    buckets = [[] for _ in range(count)]
+    loads = [0.0 for _ in range(count)]
+    for name in weighted:
+        # A zero-duration target must not leave a newly opened shard empty.
+        # Prefer an empty shard before adding a second zero-weight target,
+        # otherwise validate_execution_plan rejects the resulting partition.
+        index = min(
+            range(count),
+            key=lambda candidate: (loads[candidate], len(buckets[candidate]), candidate),
+        )
+        buckets[index].append(name)
+        loads[index] += float(durations.get(name, 1))
+    shards = [
+        {
+            'index': index,
+            'modules': sorted(buckets[index]),
+            'estimated_duration_seconds': loads[index],
+        }
+        for index in range(count)
+    ]
     flattened = [name for shard in shards for name in shard['modules']]
     if sorted(flattened) != ordered or len(set(flattened)) != len(ordered):
         raise ValueError('shard union differs from selected scope')
@@ -383,7 +418,21 @@ def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
     run = sorted(target for target, decision in by_target.items() if decision == 'RUN')
     reuse = sorted(target for target, decision in by_target.items() if decision == 'REUSE')
     result = dict(plan)
-    result['shards'] = partition(run) if run else []
+    run_set = set(run)
+    durations = {
+        row['target']: row['previous_actual_duration']
+        for row in decisions
+        if row['target'] in run_set
+        and type(row.get('previous_actual_duration')) in (int, float)
+        and math.isfinite(row['previous_actual_duration'])
+        and row['previous_actual_duration'] >= 0
+    }
+    result['shards'] = partition(run, durations=durations) if run else []
+    result['shard_scheduling'] = {
+        'method': 'longest_processing_time',
+        'duration_source': 'historical_actual_duration_or_unit_weight',
+        'weighted_modules': sorted(durations),
+    }
     result['reuse_decision'] = {'schema': 'backend-reuse-decision/v1',
                                 'run': run, 'reuse': reuse, 'block': block,
                                 'execution_required': bool(run),
