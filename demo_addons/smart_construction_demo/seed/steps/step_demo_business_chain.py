@@ -11,6 +11,7 @@ from .step_40_contracts_demo import (
     _ensure_actionable_payment_draft,
     _ensure_complete_payment_request,
     _ensure_payment_execution,
+    _fixed_demo01_payment_request,
 )
 
 
@@ -46,63 +47,108 @@ def run(env):
     project = _one(project, "DEMO-01 主项目必须唯一存在。")
     _ensure_project_context(project)
 
-    Contract = env["construction.contract"].sudo()
-    expense_contract = _one(
-        Contract.search(
-            [
-                ("project_id", "=", project.id),
-                ("type", "=", "in"),
-                ("subject", "=", f"{project.name}-分包合同"),
-            ]
-        ),
-        "DEMO-01 分包合同必须唯一存在。",
+    expense_contract = env.ref(
+        "smart_construction_demo.sc_demo_exec_expense_contract",
+        raise_if_not_found=False,
     )
-    income_contract = _one(
-        Contract.search(
-            [
-                ("project_id", "=", project.id),
-                ("type", "=", "out"),
-                ("subject", "=", f"{project.name}-收入合同"),
-            ]
-        ),
-        "DEMO-01 收入合同必须唯一存在。",
+    if expense_contract:
+        if (
+            expense_contract._name != "construction.contract"
+            or expense_contract.project_id != project
+            or expense_contract.type != "in"
+        ):
+            raise UserError("DEMO-01 固定分包合同身份冲突。")
+    else:
+        expense_contract = _one(
+            env["construction.contract"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("type", "=", "in"),
+                    ("subject", "=", f"{project.name}-分包合同"),
+                ]
+            ),
+            "DEMO-01 分包合同必须唯一存在。",
+        )
+
+    income_contract = env.ref(
+        "smart_construction_demo.sc_demo_exec_income_contract",
+        raise_if_not_found=False,
     )
-    settlement = _one(
-        env["sc.settlement.order"].sudo().search(
-            [
-                ("project_id", "=", project.id),
-                ("contract_id", "=", expense_contract.id),
-                ("state", "!=", "cancel"),
-            ]
-        ),
-        "DEMO-01 结算单必须唯一存在。",
+    if income_contract:
+        if (
+            income_contract._name != "construction.contract"
+            or income_contract.project_id != project
+            or income_contract.type != "out"
+        ):
+            raise UserError("DEMO-01 固定收入合同身份冲突。")
+    else:
+        income_contract = _one(
+            env["construction.contract"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("type", "=", "out"),
+                    ("subject", "=", f"{project.name}-收入合同"),
+                ]
+            ),
+            "DEMO-01 收入合同必须唯一存在。",
+        )
+
+    settlement = env.ref(
+        "smart_construction_demo.sc_demo_exec_settlement",
+        raise_if_not_found=False,
     )
+    if settlement:
+        if (
+            settlement._name != "sc.settlement.order"
+            or settlement.project_id != project
+            or settlement.contract_id != expense_contract
+            or settlement.state == "cancel"
+        ):
+            raise UserError("DEMO-01 固定结算单身份冲突。")
+    else:
+        settlement = _one(
+            env["sc.settlement.order"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("contract_id", "=", expense_contract.id),
+                    ("state", "!=", "cancel"),
+                ]
+            ),
+            "DEMO-01 结算单必须唯一存在。",
+        )
     Request = env["payment.request"].sudo()
     pay_request = _one(
-        Request.search(
-            [
-                ("project_id", "=", project.id),
-                ("type", "=", "pay"),
-                ("contract_id", "=", expense_contract.id),
-                ("settlement_id", "=", settlement.id),
-                ("amount", "=", 160000.0),
-                ("state", "!=", "cancel"),
-            ]
+        _fixed_demo01_payment_request(
+            env, project, expense_contract, settlement
         ),
-        "DEMO-01 已审批付款申请必须唯一存在。",
+        "DEMO-01 固定付款申请必须唯一存在。",
     )
-    receipt_request = _one(
-        Request.search(
-            [
-                ("project_id", "=", project.id),
-                ("type", "=", "receive"),
-                ("contract_id", "=", income_contract.id),
-                ("amount", "=", 120000.0),
-                ("state", "!=", "cancel"),
-            ]
-        ),
-        "DEMO-01 收款申请必须唯一存在。",
+    receipt_request = env.ref(
+        "smart_construction_demo.sc_demo_exec_receipt_request",
+        raise_if_not_found=False,
     )
+    if receipt_request:
+        if (
+            receipt_request._name != "payment.request"
+            or receipt_request.project_id != project
+            or receipt_request.contract_id != income_contract
+            or receipt_request.type != "receive"
+            or receipt_request.state == "cancel"
+        ):
+            raise UserError("DEMO-01 固定收款申请身份冲突。")
+    else:
+        receipt_request = _one(
+            Request.search(
+                [
+                    ("project_id", "=", project.id),
+                    ("type", "=", "receive"),
+                    ("contract_id", "=", income_contract.id),
+                    ("amount", "=", 120000.0),
+                    ("state", "!=", "cancel"),
+                ]
+            ),
+            "DEMO-01 收款申请必须唯一存在。",
+        )
     pay_request = _ensure_complete_payment_request(env, pay_request)
 
     bindings = (

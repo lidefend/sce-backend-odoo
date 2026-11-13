@@ -38,6 +38,8 @@ DEMO_WARN_PROJECT_CODES = {
     "DEMO-PJ-TENDER",
 }
 DEMO_FUNDING_AMOUNT = 2000000.0
+DEMO01_FIXED_PAYMENT_NOTE = "DEMO-01 主业务链已审批付款申请。"
+DEMO01_DRAFT_NOTE = "DEMO-01 可操作草稿：第二期分包付款"
 
 
 def _annual_control_period(env):
@@ -384,6 +386,57 @@ def _payment_account_vals(partner):
     }
 
 
+def _fixed_demo01_payment_request(env, project, contract, settlement):
+    """Resolve only the fixed showcase request, never the actionable draft."""
+    fixed = env.ref(
+        "smart_construction_demo.sc_demo_exec_payment_request",
+        raise_if_not_found=False,
+    )
+    if fixed:
+        if (
+            fixed._name != "payment.request"
+            or fixed.project_id != project
+            or fixed.contract_id != contract
+            or fixed.settlement_id != settlement
+            or fixed.type != "pay"
+        ):
+            raise UserError("DEMO-01 固定付款申请身份冲突。")
+        return fixed
+
+    Request = env["payment.request"].sudo()
+    candidates = Request.search(
+        [
+            ("project_id", "=", project.id),
+            ("contract_id", "=", contract.id),
+            ("settlement_id", "=", settlement.id),
+            ("type", "=", "pay"),
+            ("note", "=", DEMO01_FIXED_PAYMENT_NOTE),
+        ],
+        limit=2,
+    )
+    if len(candidates) > 1:
+        raise UserError("DEMO-01 固定付款申请身份不唯一。")
+    if not candidates:
+        candidates = Request.search(
+            [
+                ("project_id", "=", project.id),
+                ("contract_id", "=", contract.id),
+                ("settlement_id", "=", settlement.id),
+                ("type", "=", "pay"),
+                ("amount", "=", 160000.0),
+                ("state", "in", ("approved", "done")),
+            ],
+            limit=2,
+        )
+    if len(candidates) > 1:
+        raise UserError("DEMO-01 固定付款申请兼容身份不唯一。")
+    if candidates:
+        _bind_generated_demo_xmlid(
+            env, "sc_demo_exec_payment_request", candidates
+        )
+    return candidates
+
+
 def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     # 产品的 payment.request._check_project_lifecycle 禁止在 保修/关闭 项目上
     # 提交或审批付款申请（P0_PROJECT_TERMINAL_BLOCKED）。终态项目不再新增付款
@@ -391,15 +444,23 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     if declared_stage(project) in ("warranty", "closed"):
         return False, False
     Payment = _demo_action_record(env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER)
-    pay = Payment.search(
-        [
-            ("project_id", "=", project.id),
-            ("type", "=", "pay"),
-            ("contract_id", "=", pay_contract.id),
-            ("state", "!=", "cancel"),
-        ],
-        limit=1,
+    pay = (
+        _fixed_demo01_payment_request(
+            env, project, pay_contract, settlement
+        )
+        if project.project_code == PROJECT_EXEC_CODE
+        else env["payment.request"].browse()
     )
+    if not pay:
+        pay = Payment.search(
+            [
+                ("project_id", "=", project.id),
+                ("type", "=", "pay"),
+                ("contract_id", "=", pay_contract.id),
+                ("state", "!=", "cancel"),
+            ],
+            limit=1,
+        )
     pay_vals = {
         "type": "pay",
         "project_id": project.id,
@@ -407,6 +468,7 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
         "contract_id": pay_contract.id,
         "settlement_id": settlement.id,
         "amount": 160000.0,
+        "note": DEMO01_FIXED_PAYMENT_NOTE,
         **_payment_account_vals(pay_contract.partner_id),
     }
     if not pay:
@@ -578,7 +640,7 @@ def _ensure_actionable_payment_draft(env, project, contract, settlement):
     Payment = _demo_action_record(
         env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER
     )
-    marker = "DEMO-01 可操作草稿：第二期分包付款"
+    marker = DEMO01_DRAFT_NOTE
     candidates = Payment.search(
         [("project_id", "=", project.id), ("note", "=", marker)]
     )

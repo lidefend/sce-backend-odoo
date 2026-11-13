@@ -285,8 +285,19 @@
           "command": "make verify.local.dev.golden_chain.orm",
           "status": "passed",
           "layer": "L3",
-          "test_count": 3,
-          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_orm.log"
+          "test_count": 4,
+          "detail": "Includes an equal-amount collision request and full fixed-chain replay without mutating the user-editable draft.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_replay_fix_final.log"
+        },
+        {
+          "command": "local_dev_write_lease demo_full_chain_replay_1/2 -> make local.dev.demo.seed STEPS=demo_40_contracts,demo_01_business_chain",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Two complete replay passes preserved draft id=109/state/amount and fixed request id=93; same-amount fixed-chain lookup remained unique.",
+          "logs": [
+            ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/full_chain_replay_1.log",
+            ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/full_chain_replay_2.log"
+          ]
         },
         {
           "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=project_evidence_summary",
@@ -363,7 +374,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the Demo incremental verification routing, refreeze the clean candidate, and publish the exact head through make pr.push/pr.create.",
+  "next_exact_step": "Commit and push the replay-identity fix to PR #884, wait for fresh exact-head CI and independent re-review, then merge only if all required gates pass.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",

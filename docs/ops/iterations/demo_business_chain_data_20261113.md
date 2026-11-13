@@ -75,7 +75,7 @@
 | --- | --- |
 | `make verify.demo.lifecycle.unit` | PASS，145 项 |
 | `make verify.demo.scenario_step.unit` | PASS，9 项 |
-| `make verify.local.dev.golden_chain.orm` | PASS，3 项 |
+| `make verify.local.dev.golden_chain.orm` | PASS，4 项 |
 | `make local.dev.verify_demo` | PASS，全部 Demo 验收项 |
 | `make verify.demo.role_startup.smoke` | PASS，项目经理正式入口、导航和工作台可用 |
 | `make verify.demo.usage_foundation_role_scope.smoke` | PASS，11/11 账号及错误密码负例通过 |
@@ -104,6 +104,25 @@
 | `make verify.frontend.dev.incremental.unit` | PASS，135 项，Demo 路径已映射到 lifecycle/scenario/Golden |
 | `make audit.verification.lane_coverage.check` | PASS |
 | `make ci.local.iteration` | PASS，全部受影响目标及 trusted scans 通过 |
+
+### PR #884 review remediation
+
+Independent review reproduced two mutable-record defects:
+
+1. Full replay through `demo_40_contracts` could select the newer actionable draft as the fixed payment request, change its amount and approve it; the subsequent business-chain step then failed on two equal 160,000 requests.
+2. Golden verification assumed the user-editable draft always remained `draft / 120,000`, so normal user progress caused a false failure.
+
+Fixes:
+
+- Fixed Demo identity resolution now prefers stable XMLIDs before fallback subject/amount searches.
+- Replay never treats the actionable draft as the fixed showcase request.
+- The Golden test no longer asserts mutable draft state or amount.
+- A transaction-only equal-amount collision request proves `demo_40_contracts → demo_01_business_chain` resolves the fixed record without changing the draft.
+
+Validation:
+
+- `make verify.local.dev.golden_chain.orm`: PASS, 4 tests, including full replay collision.
+- Two real persistent-database replay passes of `demo_40_contracts,demo_01_business_chain`: PASS; draft id/state/amount remained `109 / draft / 120000`, fixed request remained `93 / done / 160000`.
 
 ### 运行态变更与回滚
 

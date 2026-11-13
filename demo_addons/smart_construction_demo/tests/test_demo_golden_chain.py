@@ -18,9 +18,10 @@ from odoo.addons.smart_construction_core.services.project_dashboard_service impo
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo import (
     _ensure_actionable_payment_draft,
+    _ensure_payments,
 )
-from odoo.addons.smart_construction_demo.tools.scenario_loader import (
-    _demo_drive_approval,
+from odoo.addons.smart_construction_demo.seed.steps.step_demo_business_chain import (
+    run as run_demo_business_chain,
 )
 
 
@@ -126,8 +127,6 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(draft.contract_id, expense_contract)
         self.assertEqual(draft.settlement_id, settlement)
         self.assertEqual(draft.type, "pay")
-        self.assertEqual(draft.state, "draft")
-        self.assertAlmostEqual(draft.amount, 120000.0)
 
         finance_user = self.env.ref(
             "smart_construction_demo.user_sc_fin_mgr_01"
@@ -168,14 +167,81 @@ class TestDemoGoldenChain(TransactionCase):
             "smart_construction_demo.sc_demo_exec_actionable_payment_draft"
         )
         draft_id = draft.id
-
-        _demo_drive_approval(self.env, draft)
-        draft.invalidate_recordset()
-        self.assertEqual(draft.state, "approved")
+        state_before = draft.state
+        amount_before = draft.amount
 
         replayed = _ensure_actionable_payment_draft(
             self.env, project, contract, settlement
         )
         self.assertEqual(replayed.id, draft_id)
         replayed.invalidate_recordset()
-        self.assertEqual(replayed.state, "approved")
+        self.assertEqual(replayed.state, state_before)
+        self.assertAlmostEqual(replayed.amount, amount_before)
+
+    def test_demo01_full_replay_isolated_from_user_modified_draft(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        expense_contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_expense_contract"
+        )
+        income_contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        settlement = self.env.ref("smart_construction_demo.sc_demo_exec_settlement")
+        fixed_request = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_payment_request"
+        )
+        draft = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_actionable_payment_draft"
+        )
+        draft_id = draft.id
+        draft_state_before = draft.state
+        draft_amount_before = draft.amount
+        request_ids_before = set(
+            self.env["payment.request"]
+            .sudo()
+            .search([("project_id", "=", project.id)])
+            .ids
+        )
+        submitter = self.env.ref(
+            "smart_construction_demo.user_demo_role_project_a_member"
+        )
+        collision = (
+            self.env["payment.request"]
+            .with_user(submitter)
+            .sudo(False)
+            .create(
+                {
+                    "type": "pay",
+                    "project_id": project.id,
+                    "partner_id": expense_contract.partner_id.id,
+                    "contract_id": expense_contract.id,
+                    "settlement_id": settlement.id,
+                    "amount": 160000.0,
+                    "note": "DEMO-01 replay collision test",
+                }
+            )
+        )
+        request_ids_before.add(collision.id)
+
+        pay, _receive = _ensure_payments(
+            self.env,
+            project,
+            expense_contract,
+            income_contract,
+            settlement,
+        )
+        self.assertEqual(pay, fixed_request)
+        self.assertNotEqual(pay, draft)
+
+        run_demo_business_chain(self.env)
+        request_ids_after = set(
+            self.env["payment.request"]
+            .sudo()
+            .search([("project_id", "=", project.id)])
+            .ids
+        )
+        self.assertEqual(request_ids_after, request_ids_before)
+        draft.invalidate_recordset()
+        self.assertEqual(draft.id, draft_id)
+        self.assertEqual(draft.state, draft_state_before)
+        self.assertAlmostEqual(draft.amount, draft_amount_before)
