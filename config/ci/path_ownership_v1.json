@@ -30,6 +30,20 @@
       ]
     },
     {
+      "id": "database_lifecycle_tooling",
+      "patterns": [
+        "scripts/db/**"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": true,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.standard_preview.unit"
+      ]
+    },
+    {
       "id": "backend_runtime",
       "patterns": [
         "addons/**",

@@ -82,6 +82,22 @@ Independent review of `8a9f3c41` also identified two additional P4 corrections:
 - a nonzero `db.create` now retains and prints the original diagnostic before
   returning the original status, instead of being lost to `set -e`.
 
+Review of `745a9a824` found that CI's PostgreSQL image creates the named empty
+database before this script runs, so `db.create` returned `exists` for a
+cold-start database and incorrectly selected the persistent-upgrade path.
+`db.create` now inspects `public.ir_module_module` in the existing database:
+
+- `created` and `exists-empty` select fresh install;
+- `exists` means an initialized application database and retains both upgrades.
+
+This makes the fresh-install proof and zero-upgrade expectation apply to the
+actual CI cold-start sequence rather than only to databases created by
+`createdb` inside the script.
+
+The independently confirmed project cockpit summary gap is recorded in
+`docs/demo/product_gap_registry_v1.md` for the next P1 product batch. Demo data
+and tooling do not synthesize the missing projection.
+
 ## Validation
 
 `make ci.local.iteration` passed with 12/12 required targets, zero unmapped

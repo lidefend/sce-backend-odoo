@@ -135,6 +135,25 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             ("security.secrets.scan",),
         )
 
+    def test_database_lifecycle_tooling_selects_backend_runtime(self):
+        path = "scripts/db/create.sh"
+        registry = ownership.classify_paths([path])
+        risk = classify([path], event_name="pull_request")
+        backend = planner.select(
+            [path],
+            {"kernel": module(), "bundle": module(["kernel"])},
+            {"kernel": module(), "bundle": module(["kernel"])},
+        )
+
+        self.assertEqual(registry.assignments[path], "database_lifecycle_tooling")
+        self.assertTrue(risk.backend_changed)
+        self.assertTrue(risk.backend_runtime_changed)
+        self.assertTrue(risk.orm_required)
+        self.assertEqual(backend["mode"], "full")
+        self.assertEqual(backend["modules"], ["bundle", "kernel"])
+        self.assertIn("shared_runtime:" + path, backend["reasons"])
+        self.assertIn("verify.frontend.standard_preview.unit", backend["tool_checks"])
+
     def test_ownership_tool_checks_name_registered_make_targets(self):
         makefiles = sorted((Path(__file__).resolve().parents[2] / "make").glob("*.mk"))
         targets_text = "\n".join(path.read_text(encoding="utf-8") for path in makefiles)

@@ -36,17 +36,23 @@ if [[ "$create_status" != "0" ]]; then
   exit "$create_status"
 fi
 if grep -Fqx "[db] created: ${DB_NAME}" <<<"$create_output"; then
-  database_created=1
+  fresh_database=1
+  fresh_source=created
+elif grep -Fqx "[db] exists-empty: ${DB_NAME}" <<<"$create_output"; then
+  fresh_database=1
+  fresh_source=preexisting_empty
 elif grep -Fqx "[db] exists: ${DB_NAME}" <<<"$create_output"; then
-  database_created=0
+  fresh_database=0
+  fresh_source=initialized
 else
   echo "[frontend.acceptance.ensure] DENY unexpected db.create result for ${DB_NAME}" >&2
   exit 2
 fi
+echo "[frontend.acceptance.ensure] database_mode=$([[ "$fresh_database" == "1" ]] && echo fresh || echo persistent) source=${fresh_source}"
 frontend_acceptance_make mod.install \
   MODULE=smart_construction_bootstrap,smart_construction_bundle,smart_construction_seed,smart_construction_acceptance_fixture \
   DB_NAME="$DB_NAME"
-if [[ "$database_created" == "1" ]]; then
+if [[ "$fresh_database" == "1" ]]; then
   # This database was created in this run and installed from the exact current
   # source. Prove the clean install completed the same baselines before
   # skipping the two persistent-database upgrade passes.

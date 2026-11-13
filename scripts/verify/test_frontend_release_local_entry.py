@@ -237,8 +237,9 @@ load_profile
         self.assertIn("frontend_acceptance_make_identity.sh", source)
         self.assertIn("frontend_acceptance_make db.create", source)
         self.assertIn("frontend_acceptance_make mod.install", source)
-        self.assertIn('if [[ "$database_created" == "1" ]]; then', source)
+        self.assertIn('if [[ "$fresh_database" == "1" ]]; then', source)
         self.assertIn("[db] created: ${DB_NAME}", source)
+        self.assertIn("[db] exists-empty: ${DB_NAME}", source)
         self.assertIn("[db] exists: ${DB_NAME}", source)
         self.assertIn("unexpected db.create result", source)
         fresh_check = source.index("[frontend.acceptance.fresh-install]")
@@ -291,6 +292,10 @@ load_profile
         for database_state, expected in (
             (
                 "created",
+                ["mod.install", "fresh-install-check", "shell", "shell"],
+            ),
+            (
+                "exists-empty",
                 ["mod.install", "fresh-install-check", "shell", "shell"],
             ),
             (
@@ -454,6 +459,54 @@ load_profile
             self.assertEqual(result.returncode, 17, result.stderr)
             self.assertIn("database startup failed: original diagnostic", result.stdout)
             self.assertIn("DENY db.create failed status=17", result.stderr)
+
+    def test_db_create_distinguishes_empty_and_initialized_existing_databases(self) -> None:
+        source = ROOT / "scripts/db/create.sh"
+        for database_present, application_state, output in (
+            ("0", "", "[db] created: sc_frontend_acceptance"),
+            ("1", "empty", "[db] exists-empty: sc_frontend_acceptance"),
+            ("1", "initialized", "[db] exists: sc_frontend_acceptance"),
+        ):
+            with self.subTest(
+                database_present=database_present,
+                application_state=application_state,
+            ), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                common = root / "scripts/common"
+                common.mkdir(parents=True)
+                (common / "env.sh").write_text("", encoding="utf-8")
+                (common / "compose.sh").write_text(
+                    "compose_dev() {\n"
+                    "  printf '%s\\n' \"$*\" >> \"$CALLS\"\n"
+                    "  case \"$*\" in\n"
+                    "    'ps db') return 0 ;;\n"
+                    "    *'FROM pg_database'*) printf '%s\\n' \"$DB_PRESENT\" ;;\n"
+                    "    *'to_regclass'*) printf '%s\\n' \"$APP_STATE\" ;;\n"
+                    "    *'createdb'*) return 0 ;;\n"
+                    "    *) return 2 ;;\n"
+                    "  esac\n"
+                    "}\n",
+                    encoding="utf-8",
+                )
+                copied = root / "scripts/db/create.sh"
+                copied.parent.mkdir(parents=True)
+                copied.write_bytes(source.read_bytes())
+                calls = root / "calls"
+                result = subprocess.run(
+                    ["bash", str(copied), "sc_frontend_acceptance"],
+                    cwd=root,
+                    env={
+                        **os.environ,
+                        "DB_USER": "odoo",
+                        "DB_PRESENT": database_present,
+                        "APP_STATE": application_state,
+                        "CALLS": str(calls),
+                    },
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(output, result.stdout)
 
     def test_browser_login_failure_is_fail_fast_and_secret_free(self) -> None:
         source = (

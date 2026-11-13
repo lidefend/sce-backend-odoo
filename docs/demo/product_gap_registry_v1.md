@@ -37,6 +37,7 @@ R1 在本表逐项记录新证据后更新状态；本轮不伪报运行时复�
 | 15 | 模块升级视图校验失败 | demo 分支仍基于旧 main；数据库已由当前 main 升级，旧源码缺少 `action_sc_review_group_authority`，触发 `_update_user_groups_view` 校验失败 | P4 | 已解除 | covered-prefix 受管同步到 main 后升级 PASS；`res.partner.bank=9` 回读 PASS |
 | 16 | 浏览器验收登录页 409 | 前端登录页带客户端 `?db=` 提示，且浏览器未走 `/t/demo/` 命名空间，触发 `NS_DATABASE_HINT_CONFLICT` / `NS_NAMESPACE_REQUIRED` | P4 | 已解决 | F8 修正浏览器脚本：去掉 `?db=`、FRONTEND_URL 走命名空间、路径归一化；4/6 角色通过 |
 | 17 | 管理层首页菜单树为空 | executive 登录后 workspace.home 报「菜单树为空，请尝试刷新初始化」 | P1/P3 | 已解决 | owning layer 修复导航面；浏览器验收 executive 通过 |
+| 18 | 项目驾驶舱经营汇总归零 | `ProjectDashboardService` 依赖未注册的 `sc.evidence.summary.service`，并回退到空汇总；DEMO-01 已有 posted `payment.ledger=160000`，正式驾驶舱仍返回 `payment_executed_total=0.0`、台账数 `0` | P1 `smart_construction_core` | 下一轮立项 | Demo 层不伪造驾驶舱投影；在 P1 补齐项目级证据汇总并验证非零值、角色范围和来源追溯 |
 
 ## 回收判据
 

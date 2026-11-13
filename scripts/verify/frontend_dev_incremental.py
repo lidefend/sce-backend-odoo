@@ -839,6 +839,7 @@ RULES = (
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/db/create.sh",
         "scripts/test/frontend_acceptance_db_ensure.sh",
         "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
