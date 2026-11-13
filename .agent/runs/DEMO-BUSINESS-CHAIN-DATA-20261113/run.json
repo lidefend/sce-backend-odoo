@@ -370,6 +370,14 @@
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_user_approval_regression.log"
         },
         {
+          "command": "make verify.local.dev.golden_chain.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 6,
+          "detail": "Golden now prepares its clean-install fixture through the existing contract and DEMO-01 seed steps in class setup, and includes the old approved/payment-account-incomplete upgrade regression. The legacy request is repaired first, then the final record is bound; the global conflict guard remains active for different identities.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_fixture_and_legacy_upgrade_final4.log"
+        },
+        {
           "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS='sc_smoke/smart_construction_demo,sc_gate/smart_construction_demo,*/smart_construction_demo:TestDemoGoldenChain.test_golden_chain_amount_state_and_role_relay'",
           "status": "passed",
           "layer": "L3",
@@ -426,12 +434,27 @@
           "owner": "validation_tool_defect",
           "detail": "Changed ORM selector /smart_construction_demo:TestDemoGoldenChain.test_golden_chain_amount_state_and_role_relay implicitly required the standard tag, so Odoo filtered the -standard Golden class while the shard still passed 18 unrelated Demo tests. Coverage correctly left all four changed Golden methods pending. The changed-test-coverage artifact for run 43422880791 binds this finding to the exact head.",
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/wildcard_selector_reproduction.log"
+        },
+        {
+          "command": "backend_impact_suite / backend_suite (0) on PR #884 head dcc409c3b8ee540f98719687eae988b3e9917812",
+          "status": "failed",
+          "owner": "baseline_evidence_defect",
+          "detail": "The selector fix caused all five changed Golden methods to start, exposing that clean module installation had not prepared the S69/S70 and DEMO-01 seed records. All five errored on missing XMLIDs. Class setup now materializes the existing seed steps transactionally; exact verification remains pending on the new head.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_fixture_and_legacy_upgrade_final4.log"
+        },
+        {
+          "command": "make local.test.test MODULE=smart_construction_demo TEST_TAGS=demo_golden_chain",
+          "status": "not_run",
+          "layer": "L3",
+          "owner": "environment_defect",
+          "detail": "The disposable local profile spent more than ten minutes installing dependency modules and was interrupted before collection. No pass is claimed; the same exact candidate clean-install path remains mandatory in remote Demo CI.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_clean_database_final.log"
         }
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and publish the user-operable finance aggregate invariant, then wait for all four required checks on the resulting exact PR head.",
+  "next_exact_step": "Run ci.local.iteration, commit and publish the clean-fixture plus legacy-upgrade fixes, then verify all Golden methods and required checks on the new exact head.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
@@ -446,6 +469,6 @@
       "local.dev entry identity repair and service restart"
     ],
     "rollback": "Revert the topic commit. Runtime Demo data is intentionally disposable and reproducible through local.dev.rebuild_demo.",
-    "publication": "PR #884 is open. The changed-test selector fix passed local validation; independent review then found that project finance totals still assumed a frozen user-operable record. The new aggregate invariant and transaction regression await governed publication."
+    "publication": "PR #884 is open. Formal review at dcc409c3b8ee540f98719687eae988b3e9917812 requested changes for clean Golden fixtures and old Demo XMLID binding order. Both fixes now pass the six-test persistent Golden transaction and await governed publication plus remote clean-install verification."
   }
 }

@@ -8,6 +8,7 @@ from .step_20_projects_demo import STAGE_PROJECTS, declared_stage
 from ..tier_flow import advance_settlement, approve_tier_chain
 from ...tools.scenario_loader import (
     _bind_generated_demo_xmlid, _demo_action_record, _demo_finish_reviews,
+    _generated_demo_model_data,
     _demo_project_members, _demo_drive_approval, _DEMO_DOCUMENT_SUBMITTER,
     _DEMO_PAYMENT_SCOPED_SEATS,
 )
@@ -388,9 +389,13 @@ def _payment_account_vals(partner):
 
 def _fixed_demo01_payment_request(env, project, contract, settlement):
     """Resolve only the fixed showcase request, never the actionable draft."""
-    fixed = env.ref(
-        "smart_construction_demo.sc_demo_exec_payment_request",
-        raise_if_not_found=False,
+    fixed_data = _generated_demo_model_data(
+        env, "sc_demo_exec_payment_request"
+    )
+    fixed = (
+        env[fixed_data.model].browse(fixed_data.res_id).exists()
+        if fixed_data
+        else env["payment.request"].browse()
     )
     if fixed:
         if (
@@ -400,7 +405,13 @@ def _fixed_demo01_payment_request(env, project, contract, settlement):
             or fixed.settlement_id != settlement
             or fixed.type != "pay"
         ):
-            raise UserError("DEMO-01 固定付款申请身份冲突。")
+            raise UserError(
+                "DEMO-01 固定付款申请身份冲突："
+                f"request={fixed.id}/{fixed._name}/project={fixed.project_id.id}/"
+                f"contract={fixed.contract_id.id}/settlement={fixed.settlement_id.id}/"
+                f"type={fixed.type}; expected project={project.id}/"
+                f"contract={contract.id}/settlement={settlement.id}/type=pay"
+            )
         return fixed
 
     Request = env["payment.request"].sudo()
@@ -430,10 +441,6 @@ def _fixed_demo01_payment_request(env, project, contract, settlement):
         )
     if len(candidates) > 1:
         raise UserError("DEMO-01 固定付款申请兼容身份不唯一。")
-    if candidates:
-        _bind_generated_demo_xmlid(
-            env, "sc_demo_exec_payment_request", candidates
-        )
     return candidates
 
 

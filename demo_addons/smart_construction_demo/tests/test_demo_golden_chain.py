@@ -20,19 +20,35 @@ from odoo.addons.smart_construction_core.services.project_dashboard_service impo
     ProjectDashboardService,
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo import (
+    DEMO01_FIXED_PAYMENT_NOTE,
     _ensure_actionable_payment_draft,
+    _ensure_complete_payment_request,
     _ensure_payments,
+    _fixed_demo01_payment_request,
+    run as run_contracts_demo,
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_demo_business_chain import (
     run as run_demo_business_chain,
 )
 from odoo.addons.smart_construction_demo.tools.scenario_loader import (
+    _bind_generated_demo_xmlid,
     _demo_drive_approval,
+    _generated_demo_model_data,
 )
 
 
 @tagged("post_install", "-at_install", "-standard", "demo_golden_chain")
 class TestDemoGoldenChain(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not cls.env.ref(
+            "smart_construction_demo.sc_demo_exec_expense_contract",
+            raise_if_not_found=False,
+        ):
+            run_contracts_demo(cls.env)
+            run_demo_business_chain(cls.env)
+
     def test_golden_chain_amount_state_and_role_relay(self):
         settlement = self.env.ref("smart_construction_demo.sc_demo_settlement_069_payment")
         request = self.env.ref("smart_construction_demo.sc_demo_payment_request_069_pay")
@@ -302,3 +318,185 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(draft.id, draft_id)
         self.assertEqual(draft.state, draft_state_before)
         self.assertAlmostEqual(draft.amount, draft_amount_before)
+
+
+@tagged("post_install", "-at_install", "-standard", "demo_golden_chain")
+class TestDemoGoldenChainLegacyUpgrade(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Emulate a pre-DEMO-01 database before the contract seed resolves
+        # candidates: no generated payment identity is bound yet.
+        for name in (
+            "sc_demo_exec_payment_request",
+            "sc_demo_exec_payment_execution",
+            "sc_demo_exec_payment_ledger",
+        ):
+            xmlid = cls.env["ir.model.data"].sudo().search(
+                [
+                    ("module", "=", "smart_construction_demo"),
+                    ("name", "=", name),
+                ],
+                limit=1,
+            )
+            if xmlid:
+                xmlid.unlink()
+        cls.env["ir.model.data"].flush_model()
+        cls.env["ir.model.data"].invalidate_model()
+        cls.env.registry.clear_all_caches()
+        cls.env.clear()
+        cls.env.cr.execute(
+            "SELECT res_id FROM ir_model_data "
+            "WHERE module = %s AND name = %s",
+            ("smart_construction_demo", "sc_demo_exec_payment_request"),
+        )
+        if cls.env.cr.fetchone():
+            raise AssertionError("legacy fixture XMLID deletion did not persist")
+
+        run_contracts_demo(cls.env)
+        cls.env.cr.execute(
+            "SELECT res_id FROM ir_model_data "
+            "WHERE module = %s AND name = %s",
+            ("smart_construction_demo", "sc_demo_exec_payment_request"),
+        )
+        if cls.env.cr.fetchone():
+            raise AssertionError("contracts seed rebound the legacy payment XMLID")
+        project = cls.env["project.project"].sudo().search(
+            [("project_code", "=", "DEMO-PJ-EXEC")],
+            limit=2,
+        )
+        if len(project) != 1:
+            raise AssertionError("DEMO-01 project must be unique")
+        contract_data = _generated_demo_model_data(
+            cls.env, "sc_demo_exec_expense_contract"
+        )
+        contract = (
+            cls.env[contract_data.model].browse(contract_data.res_id)
+            if contract_data
+            else cls.env["construction.contract"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("type", "=", "in"),
+                ],
+                limit=2,
+            )
+        )
+        if len(contract) != 1:
+            raise AssertionError("DEMO-01 expense contract must be unique")
+        settlement_data = _generated_demo_model_data(
+            cls.env, "sc_demo_exec_settlement"
+        )
+        settlement = (
+            cls.env[settlement_data.model].browse(settlement_data.res_id)
+            if settlement_data
+            else cls.env["sc.settlement.order"].sudo().search(
+                [
+                    ("project_id", "=", project.id),
+                    ("contract_id", "=", contract.id),
+                    ("state", "!=", "cancel"),
+                ],
+                limit=2,
+            )
+        )
+        if len(settlement) != 1:
+            raise AssertionError("DEMO-01 settlement must be unique")
+
+        prior = cls.env["payment.request"].sudo().search(
+            [("note", "=", DEMO01_FIXED_PAYMENT_NOTE)]
+        )
+        if prior:
+            # Terminal business facts intentionally reject note rewrites. This
+            # transaction-only fixture adjustment recreates the pre-upgrade
+            # database shape; all new approval/repair steps still use public
+            # model actions below.
+            cls.env.cr.execute(
+                "UPDATE payment_request SET note = %s WHERE id IN %s",
+                ("DEMO-01 legacy full-chain payment (unbound)", tuple(prior.ids)),
+            )
+            prior.invalidate_recordset(["note"])
+
+        submitter = cls.env.ref(
+            "smart_construction_demo.user_demo_role_project_a_member"
+        )
+        Payment = cls.env["payment.request"].with_user(submitter).sudo(False)
+        legacy = Payment.create(
+            {
+                "type": "pay",
+                "project_id": project.id,
+                "partner_id": contract.partner_id.id,
+                "contract_id": contract.id,
+                "settlement_id": settlement.id,
+                "amount": 160000.0,
+                "date_request": fields.Date.context_today(submitter),
+                "note": DEMO01_FIXED_PAYMENT_NOTE,
+            }
+        )
+        legacy.write(
+            {
+                "actual_payee_unit": False,
+                "payment_account_name": False,
+                "payment_bank_name": False,
+                "payment_account_no": False,
+            }
+        )
+        legacy.invalidate_recordset()
+        if legacy.payee_account_completeness != "incomplete":
+            raise AssertionError("legacy DEMO-01 payment must have an incomplete account")
+        _demo_drive_approval(cls.env, legacy)
+        legacy.invalidate_recordset()
+        if legacy.state != "approved":
+            raise AssertionError("legacy DEMO-01 payment must reach approved")
+        cls.legacy_payment = legacy
+        cls.project = project
+        cls.contract = contract
+        cls.settlement = settlement
+
+    def test_contracts_then_business_chain_repairs_unbound_legacy_payment(self):
+        self.assertEqual(self.legacy_payment.state, "approved")
+        self.assertEqual(self.legacy_payment.payee_account_completeness, "incomplete")
+        legacy_request = _fixed_demo01_payment_request(
+            self.env,
+            self.project,
+            self.contract,
+            self.settlement,
+        )
+        self.assertEqual(legacy_request, self.legacy_payment)
+
+        repaired = _ensure_complete_payment_request(
+            self.env, legacy_request
+        )
+        self.legacy_payment.invalidate_recordset()
+        repaired.invalidate_recordset()
+        self.assertNotEqual(repaired, self.legacy_payment)
+        self.assertEqual(self.legacy_payment.state, "cancel")
+        self.assertEqual(repaired.note, DEMO01_FIXED_PAYMENT_NOTE)
+        self.assertIn(repaired.state, ("approved", "done"))
+        self.assertEqual(repaired.payee_account_completeness, "complete")
+        self.assertTrue(repaired.payment_account_name)
+        self.assertTrue(repaired.payment_bank_name)
+        self.assertTrue(repaired.payment_account_no)
+        self.assertEqual(repaired.project_id, self.project)
+        self.assertEqual(repaired.contract_id, self.contract)
+        self.assertEqual(repaired.settlement_id, self.settlement)
+        self.assertEqual(repaired.type, "pay")
+
+        _bind_generated_demo_xmlid(
+            self.env, "sc_demo_exec_payment_request", repaired
+        )
+        run_demo_business_chain(self.env)
+
+        fixed_data = _generated_demo_model_data(
+            self.env, "sc_demo_exec_payment_request"
+        )
+        fixed = self.env[fixed_data.model].browse(fixed_data.res_id)
+        self.assertEqual(fixed, repaired)
+        self.assertTrue(
+            self.env.ref(
+                "smart_construction_demo.sc_demo_exec_payment_execution"
+            )
+        )
+        self.assertTrue(
+            self.env.ref(
+                "smart_construction_demo.sc_demo_exec_payment_ledger"
+            )
+        )

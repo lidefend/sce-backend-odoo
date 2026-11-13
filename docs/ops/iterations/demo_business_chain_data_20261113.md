@@ -168,6 +168,26 @@ Validation:
 | --- | --- |
 | `make verify.local.dev.golden_chain.orm` | PASS，5 项，包含用户审批推进回归 |
 
+### PR #884 正式复审 P1 修复
+
+正式复审在 `dcc409c3b8ee540f98719687eae988b3e9917812` 确认两项 P1：
+
+1. 旧 Demo 中已有的 160,000 元已审批、账户不完整付款申请，会在 Step 40 被提前绑定 XMLID；Step 01 修复后再次绑定替代记录时触发全局冲突。
+2. 选择器修复使 5 项 Golden 在干净 CI 中真实启动，但模块安装没有准备 S69/S70 与完整 DEMO-01 seed 数据，因此全部因缺少 XMLID 报错。
+
+修复：
+
+- `_fixed_demo01_payment_request()` 只解析兼容记录，不再提前绑定。
+- `demo_01_business_chain` 在账户修复和正式审批完成后，才绑定最终固定付款申请。
+- Demo 生成 XMLID 查询改为受约束的 `ir.model.data` ORM 查表，避免同事务旧缓存把已删除身份重新带回；全局绑定函数仍对任何不同对象 fail closed。
+- Golden `setUpClass` 在缺少完整链时通过现有 `demo_40_contracts` 与 `demo_01_business_chain` step 建立测试夹具，不调用带显式提交的完整 profile loader。
+- 新增旧库升级回归：确认旧申请未被提前绑定，账户修复产生替代申请，替代申请在绑定后可以继续完成付款执行和台账。
+
+| 检查 | 结果 |
+| --- | --- |
+| `make verify.local.dev.golden_chain.orm` | PASS，6 项，包含旧付款升级与完整重放 |
+| 干净 test profile 本地安装 | `not_run`，依赖模块安装超过十分钟后终止；不记为通过，由新 exact-head 远端干净 Demo CI 提供证据 |
+
 ### 运行态变更与回滚
 
 已执行：Demo 模块升级、`local_dev_write_lease` 下的 DEMO-01/公司成员种子写入、`local.dev.restart`。没有推送远端、创建 PR 或部署。源码回滚为撤销本专题提交；运行库 Demo 数据回滚应使用受管重建，不执行无审计的批量删除。

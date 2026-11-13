@@ -886,12 +886,26 @@ def _link_s70_generated_treasury_ledger(env, reconciliation):
         _demo_action_record(env, reconciliation, "write").write({"treasury_ledger_id": ledgers.id})
 
 
+def _generated_demo_model_data(env, name: str):
+    """Read generated Demo identity without the transaction-wide xmlid cache."""
+    rows = env["ir.model.data"].sudo().search(
+        [
+            ("module", "=", "smart_construction_demo"),
+            ("name", "=", name),
+        ],
+        limit=2,
+    )
+    if len(rows) > 1:
+        raise ValueError("duplicate demo generated identity: %s" % name)
+    return rows
+
+
 def _bind_generated_demo_xmlid(env, name, record):
     """Bind fixture metadata to a real result; never replace a conflicting fact."""
     record.ensure_one()
-    existing = env.ref("smart_construction_demo." + name, raise_if_not_found=False)
+    existing = _generated_demo_model_data(env, name)
     if existing:
-        if existing._name != record._name or existing.id != record.id:
+        if existing.model != record._name or existing.res_id != record.id:
             raise ValueError("demo generated identity conflicts with existing seed: %s" % name)
         return
     env["ir.model.data"].sudo().create({

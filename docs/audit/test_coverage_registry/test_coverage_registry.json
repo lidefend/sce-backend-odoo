@@ -6,9 +6,9 @@
     "gated": 5,
     "on_demand": 70,
     "unwired": 139,
-    "odoo_tag_declarations": 439,
+    "odoo_tag_declarations": 440,
     "gated_declarations": 102,
-    "uncovered_declarations": 337,
+    "uncovered_declarations": 338,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -470,6 +470,20 @@
       "owner": "demo-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "demo_golden_chain",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.golden_chain.orm :: demo_golden_chain"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_scenario_tick",
@@ -1140,20 +1154,6 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.baseline_readiness.orm :: demo_baseline_readiness"
-      ],
-      "disposition": "class-selected"
-    },
-    {
-      "group": "demo_golden_chain",
-      "status": "on-demand",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py"
-      ],
-      "owner": "demo-team",
-      "evidence": [
-        "make:verify.local.dev.golden_chain.orm :: demo_golden_chain"
       ],
       "disposition": "class-selected"
     },
