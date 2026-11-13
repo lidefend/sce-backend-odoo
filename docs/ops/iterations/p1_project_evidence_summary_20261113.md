@@ -33,6 +33,12 @@ dashboard contract.
 - Aggregated company-currency facts under the caller environment:
   approved/done payment requests, posted payment ledgers, active financial or
   manual actual cost ledgers, and approved/done settlement orders.
+- The dashboard's paid total now comes only from valid posted payment ledgers.
+  Approved request amount remains a separate `payment_request_total` so an
+  unpaid or partially paid request cannot be reported or warned as paid.
+- Posted ledgers are included only for `normalized` or
+  `legacy_observed_identity`; `legacy_unresolved_identity` is excluded from
+  amount, count and references.
 - Added explicit per-source status and bounded evidence references.
 - Removed the dashboard's silent null-summary fallback and made it consume the
   registered service.
@@ -49,10 +55,14 @@ dashboard contract.
 - `make verify.frontend.dev.incremental.unit`: PASS, 134 tests; all P1 and
   dashboard paths resolve to the dashboard contract gate.
 - `make local.test.test MODULE=smart_construction_core
-  TEST_TAGS=project_evidence_summary`: PASS, 2 ORM tests.
-- The ORM fixture proved 160000 posted payment, 800 cost, 400000 settlement,
-  nonzero formal dashboard fields, traceable refs and finance-source denial for
-  a project member without finance groups.
+  TEST_TAGS=project_evidence_summary`: PASS, 4 ORM tests.
+- The ORM fixture proves posted payment, unpaid approved request separation,
+  unresolved legacy-ledger exclusion, nonzero formal dashboard fields,
+  traceable refs and finance-source denial for a project member without finance
+  groups.
+- The mixed case uses request totals `165200`, valid posted paid `160050` and
+  cost `162000`; the payment metric remains normal, proving request amount is
+  not used for the payment-versus-cost warning.
 - `local.dev.upgrade MODULE=smart_construction_core`: PASS; authority verify
   retained the demo company/currency/finance identity.
 - Live DEMO-PJ-EXEC finance-manager readback through
@@ -61,3 +71,6 @@ dashboard contract.
   settlement evidence count 1, and 8 evidence references.
 - The live dashboard payload retained source authority for the summary service,
   Odoo ORM/read_group and business projection models.
+- The block schema guard now resolves each actual `_envelope` return path. Its
+  startup negative self-test changes an empty return to `data=dict()` and
+  requires the guard to detect missing `fetch_intent`, copy and readonly fields.

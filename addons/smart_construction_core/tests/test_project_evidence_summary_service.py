@@ -159,6 +159,103 @@ class TestProjectEvidenceSummaryService(BusinessTransactionCase):
             payload["evidence_refs"],
         )
 
+    def test_approved_request_amount_is_not_reported_as_paid(self):
+        unpaid_request = self.env["payment.request"].create(
+            {
+                "type": "pay",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": self.contract.id,
+                "amount": 5000.0,
+            }
+        )
+        self.env.cr.execute(
+            """
+            UPDATE payment_request
+               SET state = 'approved',
+                   validation_status = 'validated'
+             WHERE id = %s
+            """,
+            (unpaid_request.id,),
+        )
+        unpaid_request.invalidate_recordset(["state", "validation_status"])
+        partial_request = self.env["payment.request"].create(
+            {
+                "type": "pay",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": self.contract.id,
+                "amount": 200.0,
+            }
+        )
+        self.env.cr.execute(
+            """
+            UPDATE payment_request
+               SET state = 'approved',
+                   validation_status = 'validated'
+             WHERE id = %s
+            """,
+            (partial_request.id,),
+        )
+        partial_request.invalidate_recordset(["state", "validation_status"])
+        partial_ledger = partial_request._ensure_payment_ledger(amount=50.0)
+        cost_ledger = self.env["project.cost.ledger"].search(
+            [("project_id", "=", self.project.id)],
+            limit=1,
+        )
+        cost_ledger.write({"amount": 162000.0})
+
+        summary = self.env[
+            "sc.evidence.summary.service"
+        ].summary_for_project(self.project)
+        self.assertEqual(summary["payment_request_total"], 165200.0)
+        self.assertEqual(summary["payment_request_count"], 3)
+        self.assertEqual(summary["pay_total"], 160050.0)
+        self.assertEqual(summary["pay_done_total"], 160050.0)
+        self.assertEqual(summary["pay_done_count"], 2)
+        self.assertIn(
+            "payment.ledger#%s" % partial_ledger.id,
+            summary["evidence_refs"],
+        )
+
+        payload = ProjectDashboardService(self.env).project_payload(self.project)
+        self.assertEqual(float(payload["payment_total"]), 160050.0)
+        self.assertEqual(
+            float(payload["payment_executed_total"]),
+            160050.0,
+        )
+        metrics = ProjectDashboardService(
+            self.env
+        ).build_metrics_explain(self.project)
+        payment_metric = next(
+            row for row in metrics if row.get("key") == "payment"
+        )
+        self.assertEqual(payment_metric["status"], "normal")
+        self.assertEqual(payment_metric["explain"], "付款与成本关系正常。")
+
+    def test_unresolved_legacy_ledger_is_not_counted_as_paid(self):
+        self.env.cr.execute(
+            """
+            UPDATE payment_ledger
+               SET normalization_state = 'legacy_unresolved_identity'
+             WHERE id = %s
+            """,
+            (self.ledger.id,),
+        )
+        self.ledger.invalidate_recordset(["normalization_state"])
+        summary = self.env[
+            "sc.evidence.summary.service"
+        ].summary_for_project(self.project)
+
+        self.assertEqual(summary["pay_total"], 0.0)
+        self.assertEqual(summary["pay_done_total"], 0.0)
+        self.assertEqual(summary["pay_done_count"], 0)
+        self.assertNotIn(
+            "payment.ledger#%s" % self.ledger.id,
+            summary["evidence_refs"],
+        )
+        self.assertEqual(summary["source_status"]["payment.ledger"], "ready")
+
     def test_project_member_without_finance_groups_gets_no_source_leak(self):
         restricted_user = self.env["res.users"].with_context(
             no_reset_password=True

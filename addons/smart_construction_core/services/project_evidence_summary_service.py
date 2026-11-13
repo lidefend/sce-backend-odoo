@@ -12,6 +12,10 @@ class ProjectEvidenceSummaryService(models.AbstractModel):
     _description = "Project Evidence Summary Service"
 
     PAYMENT_REQUEST_STATES = ("approved", "approve", "done")
+    PAYMENT_LEDGER_NORMALIZATION_STATES = (
+        "normalized",
+        "legacy_observed_identity",
+    )
     SETTLEMENT_STATES = ("approve", "done")
     COST_TREATMENTS = ("financial_actual", "manual_actual")
     REFERENCE_LIMIT = 10
@@ -43,7 +47,14 @@ class ProjectEvidenceSummaryService(models.AbstractModel):
             "payment.ledger": (
                 project_domain
                 + currency_domain
-                + [("state", "=", "posted")],
+                + [
+                    ("state", "=", "posted"),
+                    (
+                        "normalization_state",
+                        "in",
+                        list(self.PAYMENT_LEDGER_NORMALIZATION_STATES),
+                    ),
+                ],
                 "amount",
             ),
             "project.cost.ledger": (
@@ -74,7 +85,8 @@ class ProjectEvidenceSummaryService(models.AbstractModel):
         settlement = totals["sc.settlement.order"]
         summary.update(
             {
-                "pay_total": payment_request["total"],
+                "pay_total": payment_ledger["total"],
+                "payment_request_total": payment_request["total"],
                 "payment_request_count": payment_request["count"],
                 "pay_done_total": payment_ledger["total"],
                 "pay_done_count": payment_ledger["count"],
@@ -124,6 +136,7 @@ class ProjectEvidenceSummaryService(models.AbstractModel):
             "currency_id": int(getattr(currency, "id", 0) or 0),
             "currency_name": str(getattr(currency, "name", "") or ""),
             "pay_total": 0.0,
+            "payment_request_total": 0.0,
             "pay_done_total": 0.0,
             "pay_done_count": 0,
             "payment_count": 0,
