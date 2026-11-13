@@ -932,6 +932,7 @@ def load_scenario(
     step: str | None = None,
     ensure_base: bool = True,
     apply_passwords: bool = True,
+    commit: bool = True,
 ) -> None:
     """
     Load a demo scenario XML files into current DB using Odoo converter.
@@ -1008,7 +1009,8 @@ def load_scenario(
 
     if apply_passwords:
         apply_demo_user_passwords(env)
-    env.cr.commit()
+    if commit:
+        env.cr.commit()
 
 
 def load_base_seed(env, mode: str = "update") -> None:

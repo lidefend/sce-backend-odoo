@@ -180,7 +180,8 @@ Validation:
 - `_fixed_demo01_payment_request()` 只解析兼容记录，不再提前绑定。
 - `demo_01_business_chain` 在账户修复和正式审批完成后，才绑定最终固定付款申请。
 - Demo 生成 XMLID 查询改为受约束的 `ir.model.data` ORM 查表，避免同事务旧缓存把已删除身份重新带回；全局绑定函数仍对任何不同对象 fail closed。
-- Golden `setUpClass` 在缺少完整链时通过现有 `demo_40_contracts` 与 `demo_01_business_chain` step 建立测试夹具，不调用带显式提交的完整 profile loader。
+- Golden `setUpClass` 在缺少完整链时按 `demo_20_projects → S69 → S70 → demo_40_contracts → demo_01_business_chain` 建立测试夹具。
+- `load_scenario()` 新增默认保持兼容的 `commit` 参数；类级准备显式传入 `commit=False`，避免使用会提交事务的完整 profile loader。
 - 新增旧库升级回归：确认旧申请未被提前绑定，账户修复产生替代申请，替代申请在绑定后可以继续完成付款执行和台账。
 
 | 检查 | 结果 |

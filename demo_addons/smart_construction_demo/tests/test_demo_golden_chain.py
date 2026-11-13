@@ -37,7 +37,26 @@ from odoo.addons.smart_construction_demo.tools.scenario_loader import (
     _bind_generated_demo_xmlid,
     _demo_drive_approval,
     _generated_demo_model_data,
+    load_scenario,
 )
+
+
+def _ensure_transactional_golden_scenarios(env):
+    for scenario, xmlid in (
+        ("s69_payment_ledger_surface", "sc_demo_settlement_069_payment"),
+        ("s70_daily_business_surface", "sc_demo_receipt_income_070_progress"),
+    ):
+        if not env.ref(
+            f"smart_construction_demo.{xmlid}",
+            raise_if_not_found=False,
+        ):
+            load_scenario(
+                env,
+                scenario,
+                ensure_base=False,
+                apply_passwords=False,
+                commit=False,
+            )
 
 
 @tagged("post_install", "-at_install", "-standard", "demo_golden_chain")
@@ -50,6 +69,7 @@ class TestDemoGoldenChain(TransactionCase):
             raise_if_not_found=False,
         ):
             run_projects_demo(cls.env)
+            _ensure_transactional_golden_scenarios(cls.env)
             run_contracts_demo(cls.env)
             run_demo_business_chain(cls.env)
 
@@ -363,6 +383,7 @@ class TestDemoGoldenChainLegacyUpgrade(TransactionCase):
         )
         if not project:
             run_projects_demo(cls.env)
+        _ensure_transactional_golden_scenarios(cls.env)
         run_contracts_demo(cls.env)
         cls.env.cr.execute(
             "SELECT res_id FROM ir_model_data "

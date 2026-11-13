@@ -374,7 +374,7 @@
           "status": "passed",
           "layer": "L3",
           "test_count": 6,
-          "detail": "Golden now prepares its clean-install fixture through the existing contract and DEMO-01 seed steps in class setup, and includes the old approved/payment-account-incomplete upgrade regression. The legacy request is repaired first, then the final record is bound; the global conflict guard remains active for different identities.",
+          "detail": "Golden now prepares its clean-install fixture through the existing project, S69, S70, contract and DEMO-01 seed steps in class setup, and includes the old approved/payment-account-incomplete upgrade regression. S69/S70 use load_scenario(commit=False), so class setup remains transaction-scoped. The legacy request is repaired first, then the final record is bound; the global conflict guard remains active for different identities.",
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_fixture_and_legacy_upgrade_final4.log"
         },
         {
