@@ -41,6 +41,7 @@ goal:
       - scripts/verify/business_entry_matrix_scope.mjs
       - scripts/verify/business_entry_negative_closures.mjs
       - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/business_entry_matrix_reuse_identity.test.mjs
       - scripts/verify/local_dev_project_profile_write_browser.mjs
       - scripts/verify/local_dev_project_profile_write_browser.sh

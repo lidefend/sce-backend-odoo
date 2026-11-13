@@ -873,6 +873,7 @@ RULES = (
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
         "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "scripts/ops/dev_acceptance_release_probe.py",
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),

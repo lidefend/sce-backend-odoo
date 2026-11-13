@@ -140,6 +140,11 @@ removed project 1055, carrier 1056, responsibility rows `11,12`, and tags
   `unmappedPathCount=0`; receipt:
   `.runtime/frontend-dev-validation/executions/20261113T023556Z-3372746-588059402/receipt.json`.
 - `make ci.delivery.freeze.prepare`: passed; generated evidence is current.
+- The final review cleanup passed the date contract under both `UTC` and
+  `America/Los_Angeles`. A producer-only change to
+  `dev_acceptance_release_probe.py` now selects both
+  `verify.frontend.acceptance.environment.guard` and
+  `verify.daily_dev.acceptance_fixture.unit`.
 - Review-focused matrix rerun
   `.runtime/final-acceptance/entry-coverage-20261113/matrix-review-fix-r1/summary.json`
   records workspace home as passed through the runtime landing target and project

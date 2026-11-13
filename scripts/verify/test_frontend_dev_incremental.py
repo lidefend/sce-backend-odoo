@@ -1055,6 +1055,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), targets)
 
+    def test_release_probe_change_selects_the_fixture_consumer(self) -> None:
+        self.assertCountEqual(
+            select_targets(["scripts/ops/dev_acceptance_release_probe.py"]),
+            [
+                "verify.daily_dev.acceptance_fixture.unit",
+                "verify.frontend.acceptance.environment.guard",
+            ],
+        )
+
     def test_governed_make_lane_change_routes_to_the_iteration_policy_guard(self) -> None:
         # The baseline iteration policy guard declares which targets each
         # governed make lane must still provide. A lane edit therefore has to be

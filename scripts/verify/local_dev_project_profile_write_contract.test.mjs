@@ -37,7 +37,7 @@ check(targetInitiationDate('2026-11-13', 10), '2026-11-10',
   'the target date is a full different date');
 check(targetInitiationDate('2026-11-10', 10), '2026-11-11',
   'the target date moves when the preferred day equals the original');
-check(targetInitiationDate('', 31, new Date('2026-02-01T00:00:00Z')), '2026-02-28',
+check(targetInitiationDate('', 31, new Date(2026, 1, 1)), '2026-02-28',
   'the target date stays inside the selected month');
 
 assertDateSelection({
