@@ -120,6 +120,10 @@ dedicated `verify.frontend.acceptance.db_preparation.unit` target containing onl
 shell syntax and the dependency-free database preparation tests. The broader
 standard-preview suite retains its existing normal-lane coverage.
 
+A docs-only continuation from the normalized full Quick baseline is used to
+verify that descendant validation reuses unchanged test units and does not
+re-enter the full suite.
+
 The independently confirmed project cockpit summary gap is recorded in
 `docs/demo/product_gap_registry_v1.md` for the next P1 product batch. Demo data
 and tooling do not synthesize the missing projection.
