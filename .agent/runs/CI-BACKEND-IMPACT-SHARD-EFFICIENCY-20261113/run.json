@@ -3,7 +3,7 @@
   "id": "CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113",
   "branch": "codex/ci-backend-impact-sharding-efficiency-20261113",
   "baseline_sha": "fa09c289374252420fbf6082b5ed794bc789292b",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113.yaml",
   "record": "docs/ops/iterations/ci_backend_impact_sharding_efficiency_20261113.md",
   "scope": [
@@ -56,8 +56,8 @@
     }
   },
   "blockers": [
-    "candidate is not committed or frozen",
+    "independent review has not run for this candidate",
     "remote required checks have not run for this candidate"
   ],
-  "next_exact_step": "Review the local diff, run freeze preparation, commit the exact P4 candidate, and publish it through the governed PR lane."
+  "next_exact_step": "Publish the clean candidate and wait for independent review plus all required checks on the exact head."
 }
