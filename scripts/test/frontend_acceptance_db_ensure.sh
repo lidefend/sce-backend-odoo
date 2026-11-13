@@ -25,21 +25,87 @@ export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA
 # shellcheck source=../common/frontend_acceptance_make_identity.sh
 source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
 
-frontend_acceptance_make db.create
+create_output="$(frontend_acceptance_make db.create 2>&1)"
+printf '%s\n' "$create_output"
+if grep -Fqx "[db] created: ${DB_NAME}" <<<"$create_output"; then
+  database_created=1
+elif grep -Fqx "[db] exists: ${DB_NAME}" <<<"$create_output"; then
+  database_created=0
+else
+  echo "[frontend.acceptance.ensure] DENY unexpected db.create result for ${DB_NAME}" >&2
+  exit 2
+fi
 frontend_acceptance_make mod.install \
   MODULE=smart_construction_bootstrap,smart_construction_bundle,smart_construction_seed,smart_construction_acceptance_fixture \
   DB_NAME="$DB_NAME"
-# The acceptance database is persistent.  Installing the bundle is a no-op for
-# modules that are already installed, so always refresh the two governed
-# product baselines before fixture reset and browser acceptance.
-frontend_acceptance_make mod.upgrade \
-  MODULE=smart_core \
-  CODEX_NEED_UPGRADE=1 \
-  CODEX_MODULES=smart_core,smart_construction_core
-frontend_acceptance_make mod.upgrade \
-  MODULE=smart_construction_core \
-  CODEX_NEED_UPGRADE=1 \
-  CODEX_MODULES=smart_core,smart_construction_core
+if [[ "$database_created" == "1" ]]; then
+  # This database was created in this run and installed from the exact current
+  # source. Prove the clean install completed the same baselines before
+  # skipping the two persistent-database upgrade passes.
+  ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
+required_modules = (
+    "smart_core",
+    "smart_construction_core",
+    "smart_construction_bootstrap",
+    "smart_construction_bundle",
+    "smart_construction_seed",
+    "smart_construction_acceptance_fixture",
+)
+from odoo.modules.module import load_information_from_description_file
+
+rows = {
+    row.name: row
+    for row in env["ir.module.module"].sudo().search([
+        ("name", "in", list(required_modules)),
+    ])
+}
+for name in required_modules:
+    module = rows.get(name)
+    if not module or module.state != "installed":
+        raise RuntimeError("fresh acceptance module is not installed: %s" % name)
+    current = str(module.latest_version or "")
+    source = str(load_information_from_description_file(name).get("version") or "")
+    if not source or current != source:
+        raise RuntimeError(
+            "fresh acceptance module version drifted: %s current=%s source=%s"
+            % (name, current, source)
+        )
+
+required_xmlids = (
+    "smart_core.namespace_platform",
+    "smart_construction_bundle.param_construction_bundle_product_key",
+    "smart_construction_seed.seed_dict_contract_type_out",
+)
+missing_xmlids = [
+    xmlid
+    for xmlid in required_xmlids
+    if env.ref(xmlid, raise_if_not_found=False) is None
+]
+if missing_xmlids:
+    raise RuntimeError("fresh acceptance XMLIDs are missing: %s" % ",".join(missing_xmlids))
+
+product_keys = env["ir.config_parameter"].sudo().get_param(
+    "smart_core.release_operator.product_base_keys", ""
+)
+if "construction" not in [value.strip() for value in product_keys.split(",") if value.strip()]:
+    raise RuntimeError("fresh acceptance product baseline is missing construction")
+print(
+    "[frontend.acceptance.fresh-install] PASS modules=%s xmlids=%s product_base_keys=%s"
+    % (",".join(required_modules), ",".join(required_xmlids), product_keys)
+)
+PY
+else
+  # A persistent acceptance database may predate the current source. Refresh
+  # the two governed product baselines before fixture reset and acceptance.
+  frontend_acceptance_make mod.upgrade \
+    MODULE=smart_core \
+    CODEX_NEED_UPGRADE=1 \
+    CODEX_MODULES=smart_core,smart_construction_core
+  frontend_acceptance_make mod.upgrade \
+    MODULE=smart_construction_core \
+    CODEX_NEED_UPGRADE=1 \
+    CODEX_MODULES=smart_core,smart_construction_core
+fi
 ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 import hashlib
 import os

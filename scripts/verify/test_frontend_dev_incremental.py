@@ -421,6 +421,64 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
+        page_header_paths = (
+            "scripts/verify/frontend_product_page_header_guard.py",
+            "scripts/verify/test_frontend_product_page_header_guard.py",
+        )
+        for path in page_header_paths:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.product_page_header.unit"],
+                )
+        for path in (
+            "frontend/apps/web/src/router/index.ts",
+            "frontend/apps/web/src/views/MyWorkView.vue",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.product_page_header.unit",
+                    select_targets([path]),
+                )
+                self.assertIn("verify.frontend.lint.src", select_targets([path]))
+                self.assertIn("verify.frontend.typecheck.strict", select_targets([path]))
+
+        delivery_paths = (
+            "scripts/verify/frontend_delivery_hardening_guard.py",
+            "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        )
+        for path in delivery_paths:
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.delivery_hardening.guard",
+                    select_targets([path]),
+                )
+        for path in (
+            "frontend/apps/web/src/App.vue",
+            "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.delivery_hardening.guard",
+                    select_targets([path]),
+                )
+                self.assertIn("verify.frontend.lint.src", select_targets([path]))
+                self.assertIn("verify.frontend.typecheck.strict", select_targets([path]))
+
+        self.assertEqual(
+            select_targets(["scripts/verify/unified_page_contract_v2_assembler_guard.py"]),
+            ["verify.unified_page_contract.v2.assembler"],
+        )
+        self.assertIn(
+            "verify.unified_page_contract.v2.assembler",
+            select_targets(["addons/smart_core/core/unified_page_contract_v2_assembler.py"]),
+        )
+        self.assertEqual(
+            select_targets(["scripts/test/frontend_acceptance_db_ensure.sh"]),
+            ["verify.frontend.standard_preview.unit"],
+        )
+
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
         self.assertIn(
             "verify.frontend.contract_header_action.unit",

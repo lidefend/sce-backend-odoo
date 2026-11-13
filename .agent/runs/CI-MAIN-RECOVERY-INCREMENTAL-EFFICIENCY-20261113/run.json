@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "id": "CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113",
+  "branch": "codex/ci-main-recovery-incremental-efficiency-20261113",
+  "baseline_sha": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113.yaml",
+  "record": "docs/ops/iterations/ci_main_recovery_incremental_efficiency_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113.yaml",
+    ".agent/runs/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113/run.json",
+    "config/ci/path_ownership_v1.json",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    ".github/workflows/professional_quality_gate.yml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/verify/frontend_product_page_header_guard.py",
+    "scripts/verify/test_frontend_product_page_header_guard.py",
+    "scripts/verify/frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/local_dev_project_profile_write_browser.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/test/frontend_acceptance_db_ensure.sh",
+    "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+    "docs/ops/iterations/ci_main_recovery_incremental_efficiency_20261113.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local source and offline Make guards; no database or service access"
+  },
+  "checks": {
+    "path_ownership": {
+      "target": "verify.ci.path_ownership.unit",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/backend_impact_plan.py",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml"
+      ],
+      "kind": "offline"
+    },
+    "page_header": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/MyWorkView.vue"
+      ],
+      "kind": "offline"
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts"
+      ],
+      "kind": "offline"
+    },
+    "assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "candidate is not committed or frozen",
+    "remote required checks have not run for this candidate"
+  ],
+  "next_exact_step": "Review the generated changes, commit the P4 candidate, freeze it and run the exact-head Quick before publication."
+}

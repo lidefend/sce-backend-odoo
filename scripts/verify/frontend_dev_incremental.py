@@ -839,6 +839,7 @@ RULES = (
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
+        "scripts/test/frontend_acceptance_db_ensure.sh",
         "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
@@ -854,6 +855,22 @@ RULES = (
         "scripts/verify/frontend_my_work_approval_guard.py",
     ), (
         "verify.frontend.my_work_approval.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/MyWorkView.vue",
+    ), (
+        "verify.frontend.product_page_header.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    ), (
+        "verify.frontend.delivery_hardening.guard",
     )),
     Rule((
         "scripts/verify/frontend_authenticated_intent.mjs",

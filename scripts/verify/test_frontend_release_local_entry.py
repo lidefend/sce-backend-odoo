@@ -237,18 +237,31 @@ load_profile
         self.assertIn("frontend_acceptance_make_identity.sh", source)
         self.assertIn("frontend_acceptance_make db.create", source)
         self.assertIn("frontend_acceptance_make mod.install", source)
+        self.assertIn('if [[ "$database_created" == "1" ]]; then', source)
+        self.assertIn("[db] created: ${DB_NAME}", source)
+        self.assertIn("[db] exists: ${DB_NAME}", source)
+        self.assertIn("unexpected db.create result", source)
+        fresh_check = source.index("[frontend.acceptance.fresh-install]")
         smart_core_upgrade = source.index(
-            "frontend_acceptance_make mod.upgrade \\\n  MODULE=smart_core"
+            "frontend_acceptance_make mod.upgrade \\\n    MODULE=smart_core"
         )
         construction_upgrade = source.index(
-            "frontend_acceptance_make mod.upgrade \\\n  MODULE=smart_construction_core"
+            "frontend_acceptance_make mod.upgrade \\\n    MODULE=smart_construction_core"
         )
         fixture_probe = source.index(
-            'ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh'
+            "[frontend.acceptance.ensure] product_base_keys"
         )
+        self.assertLess(fresh_check, smart_core_upgrade)
         self.assertLess(smart_core_upgrade, construction_upgrade)
         self.assertLess(construction_upgrade, fixture_probe)
         self.assertIn("CODEX_MODULES=smart_core,smart_construction_core", source)
+        for marker in (
+            "smart_core.namespace_platform",
+            "smart_construction_bundle.param_construction_bundle_product_key",
+            "smart_construction_seed.seed_dict_contract_type_out",
+            "fresh acceptance module version drifted",
+        ):
+            self.assertIn(marker, source)
         self.assertNotIn(
             '\nDB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh', source
         )
@@ -272,6 +285,128 @@ load_profile
         for item in required:
             self.assertIn(item, adapter)
         self.assertNotIn("make --no-print-directory -e", adapter)
+
+    def test_clean_database_skips_persistent_upgrades_after_baseline_proof(self) -> None:
+        source = ROOT / "scripts/test/frontend_acceptance_db_ensure.sh"
+        for database_state, expected in (
+            (
+                "created",
+                ["mod.install", "fresh-install-check", "shell", "shell"],
+            ),
+            (
+                "exists",
+                ["mod.install", "mod.upgrade", "mod.upgrade", "shell", "shell"],
+            ),
+        ):
+            with self.subTest(database_state=database_state), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                for relative in (
+                    "scripts/common",
+                    "scripts/ops",
+                    "config/acceptance",
+                ):
+                    (root / relative).mkdir(parents=True, exist_ok=True)
+                (root / "scripts/common/frontend_acceptance_guard.sh").write_text(
+                    "guard_frontend_acceptance_scope() { :; }\n"
+                    "acquire_frontend_acceptance_lock() { :; }\n",
+                    encoding="utf-8",
+                )
+                (root / "scripts/common/env.sh").write_text("", encoding="utf-8")
+                (root / "scripts/common/guard_prod.sh").write_text(
+                    "guard_prod_forbid() { :; }\n",
+                    encoding="utf-8",
+                )
+                (root / "config/acceptance/isolated_entry_identity.v1.env").write_text(
+                    "SC_ENTRY_NAMESPACE=acceptance\n"
+                    "SC_ENTRY_AUDIENCE=acceptance-audience\n"
+                    "SC_ENTRY_SHARED_SECRET=acceptance-only\n"
+                    "SC_ENTRY_ROUTE_VERSION=acceptance-version\n",
+                    encoding="utf-8",
+                )
+                (root / "scripts/common/frontend_acceptance_make_identity.sh").write_text(
+                    "frontend_acceptance_make() {\n"
+                    "  if [[ \"$1\" == db.create ]]; then\n"
+                    "    echo \"[db] ${DB_STATE}: ${DB_NAME}\"\n"
+                    "    return\n"
+                    "  fi\n"
+                    "  if [[ \"$1\" == mod.install ]]; then\n"
+                    "    echo mod.install >> \"$CALLS\"\n"
+                    "  elif [[ \"$1\" == mod.upgrade ]]; then\n"
+                    "    echo mod.upgrade >> \"$CALLS\"\n"
+                    "  fi\n"
+                    "}\n",
+                    encoding="utf-8",
+                )
+                (root / "scripts/ops/odoo_shell_exec.sh").write_text(
+                    "body=\"$(cat)\"\n"
+                    "if grep -Fq '[frontend.acceptance.fresh-install]' <<<\"$body\"; then\n"
+                    "  echo fresh-install-check >> \"$CALLS\"\n"
+                    "else\n"
+                    "  echo shell >> \"$CALLS\"\n"
+                    "fi\n",
+                    encoding="utf-8",
+                )
+                calls = root / "calls"
+                result = subprocess.run(
+                    ["bash", str(source)],
+                    cwd=root,
+                    env={
+                        **os.environ,
+                        "ROOT_DIR": str(root),
+                        "DB_NAME": "sc_frontend_acceptance",
+                        "SC_ENVIRONMENT": "acceptance",
+                        "SC_ALLOW_DEMO_DATA": "1",
+                        "DB_STATE": database_state,
+                        "CALLS": str(calls),
+                    },
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(calls.read_text(encoding="utf-8").splitlines(), expected)
+
+    def test_unknown_database_create_result_fails_closed(self) -> None:
+        source = ROOT / "scripts/test/frontend_acceptance_db_ensure.sh"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for relative in ("scripts/common", "config/acceptance"):
+                (root / relative).mkdir(parents=True, exist_ok=True)
+            (root / "scripts/common/frontend_acceptance_guard.sh").write_text(
+                "guard_frontend_acceptance_scope() { :; }\n"
+                "acquire_frontend_acceptance_lock() { :; }\n",
+                encoding="utf-8",
+            )
+            (root / "scripts/common/env.sh").write_text("", encoding="utf-8")
+            (root / "scripts/common/guard_prod.sh").write_text(
+                "guard_prod_forbid() { :; }\n",
+                encoding="utf-8",
+            )
+            (root / "scripts/common/frontend_acceptance_make_identity.sh").write_text(
+                "frontend_acceptance_make() { echo unexpected; }\n",
+                encoding="utf-8",
+            )
+            (root / "config/acceptance/isolated_entry_identity.v1.env").write_text(
+                "SC_ENTRY_NAMESPACE=acceptance\n"
+                "SC_ENTRY_AUDIENCE=acceptance-audience\n"
+                "SC_ENTRY_SHARED_SECRET=acceptance-only\n"
+                "SC_ENTRY_ROUTE_VERSION=acceptance-version\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                ["bash", str(source)],
+                cwd=root,
+                env={
+                    **os.environ,
+                    "ROOT_DIR": str(root),
+                    "DB_NAME": "sc_frontend_acceptance",
+                    "SC_ENVIRONMENT": "acceptance",
+                    "SC_ALLOW_DEMO_DATA": "1",
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIn("unexpected db.create result", result.stderr)
 
     def test_browser_login_failure_is_fail_fast_and_secret_free(self) -> None:
         source = (

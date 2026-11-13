@@ -14,7 +14,9 @@ from typing import Iterable
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = ROOT / "config/ci/path_ownership_v1.json"
 RISK_VALUES = frozenset({"fast", "standard", "high"})
-TOOL_TARGET_RE = re.compile(r"^verify\.[A-Za-z0-9_.-]+$")
+# Ownership rows name executable Make targets. Most are verification entries,
+# while a high-risk config may directly own a security scan entry.
+TOOL_TARGET_RE = re.compile(r"^(?:verify|security)\.[A-Za-z0-9_.-]+$")
 
 
 class OwnershipError(ValueError):

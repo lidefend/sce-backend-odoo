@@ -320,8 +320,14 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("useRoute()", source)
 
     def test_cache_identity_is_scoped_to_the_authenticated_actor(self):
-        source = "return `activity:${activityActorPart()}:${routeKey}:${epoch}`;"
-        self.assertIn("activityActorPart()", source)
+        app = (ROOT / "frontend/apps/web/src/App.vue").read_text(encoding="utf-8")
+        helper = (ROOT / "frontend/apps/web/src/app/activityPageCacheIdentity.ts").read_text(encoding="utf-8")
+        self.assertIn("resolveActivityCacheKey({", app)
+        self.assertIn("retainedActivityActorId.value", app)
+        self.assertIn(
+            "activity:user:${positiveInteger(actorUserId)}:${routeKey}:${epoch}",
+            helper,
+        )
 
     def test_logout_does_not_create_an_anonymous_record_cache_key(self):
         source = "if (userId > 0) retainedActivityActorId.value = userId;"
