@@ -73,4 +73,6 @@ dashboard contract.
   Odoo ORM/read_group and business projection models.
 - The block schema guard now resolves each actual `_envelope` return path. Its
   startup negative self-test changes an empty return to `data=dict()` and
-  requires the guard to detect missing `fetch_intent`, copy and readonly fields.
+  follows it with the real dynamic `ready/empty` helper path. State field sets
+  are intersected across all returns, so a later complete branch cannot
+  overwrite an earlier missing-field result.

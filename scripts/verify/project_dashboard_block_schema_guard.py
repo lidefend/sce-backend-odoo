@@ -173,7 +173,7 @@ def _collect_builder_contract(path: Path):
     tree = ast.parse(path.read_text(encoding="utf-8"))
     block_key = ""
     block_type = ""
-    states = {}
+    state_key_sets = {}
     projection_keys = None
 
     for node in tree.body:
@@ -212,7 +212,12 @@ def _collect_builder_contract(path: Path):
                     )
                     if state_values and data_keys is not None:
                         for state in state_values:
-                            states[state] = data_keys
+                            state_key_sets.setdefault(state, []).append(data_keys)
+
+    states = {
+        state: _intersection_key_sets(values)
+        for state, values in state_key_sets.items()
+    }
 
     _must(bool(block_key), f"{path.name}: missing block_key")
     _must(bool(block_type), f"{path.name}: missing block_type")
@@ -241,7 +246,8 @@ class MissingEmptyDataBuilder:
     def build(self, project=None):
         if not project:
             return self._envelope(state="empty", data=dict())
-        return self._envelope(state="ready", data=self._projection_data())
+        state = "ready" if project else "empty"
+        return self._envelope(state=state, data=self._projection_data())
 """
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "project_missing_empty_data_builder.py"
