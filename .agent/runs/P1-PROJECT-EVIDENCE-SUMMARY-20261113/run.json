@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "P1-PROJECT-EVIDENCE-SUMMARY-20261113",
+  "branch": "fix/p1-project-evidence-summary-20261113",
+  "baseline_sha": "f70945256baf089bf26663b30ad50a55b9b04098",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml",
+  "record": "docs/ops/iterations/p1_project_evidence_summary_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml",
+    ".agent/runs/P1-PROJECT-EVIDENCE-SUMMARY-20261113/run.json",
+    "addons/smart_construction_core/services/__init__.py",
+    "addons/smart_construction_core/services/project_evidence_summary_service.py",
+    "addons/smart_construction_core/services/project_dashboard_service.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/project_management_contract_guard.py",
+    "scripts/verify/project_dashboard_assembly_guard.py",
+    "scripts/verify/project_dashboard_block_schema_guard.py",
+    "scripts/verify/project_dashboard_contract_snapshot_export.py",
+    "scripts/verify/project_dashboard_metric_semantics_guard.py",
+    "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p1_project_evidence_summary_20261113.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source, static guards and disposable local.test ORM; no persistent database mutation in this declared check"
+  },
+  "checks": {
+    "project_dashboard_contract": {
+      "target": "verify.project.dashboard.contract",
+      "inputs": [
+        "addons/smart_construction_core/services/__init__.py",
+        "addons/smart_construction_core/services/project_evidence_summary_service.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+        "make/dev_test.mk",
+        "scripts/verify/project_management_contract_guard.py",
+        "scripts/verify/project_dashboard_assembly_guard.py",
+        "scripts/verify/project_dashboard_block_schema_guard.py",
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_runtime_chain_guard.py",
+        "scripts/verify/project_dashboard_metric_semantics_guard.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "project_dashboard_snapshot": {
+      "target": "verify.project.dashboard.snapshot",
+      "inputs": [
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+        "docs/contract/project_management_capability_mapping_v2.json"
+      ],
+      "kind": "offline"
+    },
+    "selector": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "addons/smart_construction_core/services/project_evidence_summary_service.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "scripts/verify/project_management_contract_guard.py",
+        "scripts/verify/project_dashboard_assembly_guard.py",
+        "scripts/verify/project_dashboard_block_schema_guard.py",
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_metric_semantics_guard.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "candidate is not committed or frozen",
+    "independent review and remote required checks have not run"
+  ],
+  "next_exact_step": "Review the P1/guard diff, run freeze preparation, commit and publish the exact candidate."
+}

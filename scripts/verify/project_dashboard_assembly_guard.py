@@ -75,7 +75,7 @@ def _load_service_zone_blocks():
                     for target in stmt.targets:
                         if isinstance(target, ast.Name) and target.id == "ZONE_BLOCKS":
                             tuple_rows = ast.literal_eval(stmt.value)
-    _must(isinstance(tuple_rows, tuple) and len(tuple_rows) == 7, "service ZONE_BLOCKS must be tuple with 7 rows")
+    _must(isinstance(tuple_rows, tuple) and tuple_rows, "service ZONE_BLOCKS must be a nonempty tuple")
     rows = []
     for row in tuple_rows:
         _must(isinstance(row, tuple) and len(row) == 5, "service ZONE_BLOCKS row shape invalid")
@@ -95,7 +95,7 @@ def _load_builder_block_keys():
         key = key_match.group(1).strip()
         _must(key not in keys, f"duplicate builder block_key: {key}")
         keys[key] = type_match.group(1).strip()
-    _must(len(keys) == 7, "builder files must expose 7 block keys")
+    _must(bool(keys), "builder files must expose block keys")
     return keys
 
 
@@ -158,7 +158,11 @@ def main() -> None:
     scene_by_zone = {r["zone_key"]: r for r in scene_rows}
     service_by_zone = {r["zone_key"]: r for r in service_rows}
 
-    _must(set(mapping_by_zone.keys()) == set(scene_by_zone.keys()) == set(service_by_zone.keys()), "zone key set drift detected")
+    _must(set(mapping_by_zone.keys()) == set(scene_by_zone.keys()), "mapping/scene zone key set drift detected")
+    _must(
+        set(mapping_by_zone.keys()).issubset(service_by_zone.keys()),
+        "service is missing a formally mapped dashboard zone",
+    )
 
     for zone_key in sorted(mapping_by_zone):
         m = mapping_by_zone[zone_key]

@@ -1126,6 +1126,33 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), targets)
 
+    def test_project_evidence_summary_routes_only_to_dashboard_contract(self) -> None:
+        for path in (
+            "addons/smart_construction_core/services/__init__.py",
+            "addons/smart_construction_core/services/project_dashboard_service.py",
+            "addons/smart_construction_core/services/project_evidence_summary_service.py",
+            "addons/smart_construction_core/tests/__init__.py",
+            "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+            "scripts/verify/project_management_contract_guard.py",
+            "scripts/verify/project_dashboard_assembly_guard.py",
+            "scripts/verify/project_dashboard_block_schema_guard.py",
+            "scripts/verify/project_dashboard_metric_semantics_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.project.dashboard.contract"],
+                )
+        for path in (
+            "scripts/verify/project_dashboard_contract_snapshot_export.py",
+            "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.project.dashboard.snapshot"],
+                )
+
     def test_release_probe_change_selects_the_fixture_consumer(self) -> None:
         self.assertCountEqual(
             select_targets(["scripts/ops/dev_acceptance_release_probe.py"]),

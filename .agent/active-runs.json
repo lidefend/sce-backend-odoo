@@ -18,6 +18,7 @@
     "codex/cap02c-authority-boundary-20261105": ".agent/runs/CAP02C-RUNTIME-AUTHORITY-20261105/run.json",
     "codex/ci-main-recovery-incremental-efficiency-20261113": ".agent/runs/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113/run.json",
     "codex/ci-backend-impact-sharding-efficiency-20261113": ".agent/runs/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113/run.json",
+    "fix/p1-project-evidence-summary-20261113": ".agent/runs/P1-PROJECT-EVIDENCE-SUMMARY-20261113/run.json",
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",

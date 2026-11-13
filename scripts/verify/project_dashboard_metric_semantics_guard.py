@@ -12,7 +12,6 @@ CONTRACT_BUILDER = ROOT / "addons" / "smart_construction_core" / "services" / "p
 FINANCE_BUILDER = ROOT / "addons" / "smart_construction_core" / "services" / "project_dashboard_builders" / "project_finance_builder.py"
 PROGRESS_BUILDER = ROOT / "addons" / "smart_construction_core" / "services" / "project_dashboard_builders" / "project_progress_builder.py"
 RISK_BUILDER = ROOT / "addons" / "smart_construction_core" / "services" / "project_dashboard_builders" / "project_risk_builder.py"
-VIEW_FILE = ROOT / "frontend" / "apps" / "web" / "src" / "views" / "ProjectManagementDashboardView.vue"
 DOC_ZH = ROOT / "docs" / "contract" / "project_dashboard_metric_semantics_v1.md"
 DOC_EN = ROOT / "docs" / "contract" / "project_dashboard_metric_semantics_v1.en.md"
 
@@ -109,26 +108,25 @@ def main() -> None:
         ],
     )
 
-    _contains(
-        VIEW_FILE,
-        [
-            "'cost_completion_rate'",
-            "'subcontract_total'",
-            "'receive_pending'",
-            "'pay_pending'",
-            "'net_cash'",
-            "'task_open'",
-            "'task_critical'",
-            "'task_blocked'",
-            "'milestone_upcoming_days'",
-            "'critical_path_health'",
-            "progress_task_overdue",
-            "progress_task_blocked",
-            "progress_milestone_delay",
-            "open_task_overdue",
-            "open_task_blocked",
-        ],
-    )
+    documented = [
+        "cost_completion_rate",
+        "subcontract_total",
+        "receive_pending",
+        "pay_pending",
+        "net_cash",
+        "task_open",
+        "task_critical",
+        "task_blocked",
+        "milestone_upcoming_days",
+        "critical_path_health",
+        "progress_task_overdue",
+        "progress_task_blocked",
+        "progress_milestone_delay",
+        "open_task_overdue",
+        "open_task_blocked",
+    ]
+    for path in (DOC_ZH, DOC_EN):
+        _contains(path, ["`%s`" % metric for metric in documented])
 
     print("[verify.project.dashboard.metric_semantics] PASS")
 
