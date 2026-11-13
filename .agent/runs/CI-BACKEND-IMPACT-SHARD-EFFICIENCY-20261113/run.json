@@ -56,8 +56,8 @@
     }
   },
   "blockers": [
-    "independent review has not run for this candidate",
+    "independent re-review has not run for the fixed candidate",
     "remote required checks have not run for this candidate"
   ],
-  "next_exact_step": "Publish the clean candidate and wait for independent review plus all required checks on the exact head."
+  "next_exact_step": "Publish the zero-duration sharding fix and wait for independent re-review plus all required checks on the new exact head."
 }

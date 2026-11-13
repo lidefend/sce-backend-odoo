@@ -39,6 +39,10 @@ the full scope.
 - `backend_suite_plan.partition()` uses deterministic longest-processing-time
   assignment. Historical `actual_duration_seconds` values from authenticated
   receipt candidates become weights; missing durations use unit weight.
+- Equal loads prefer the shard with fewer assigned modules before using shard
+  index. This seeds every opened shard even when several historical durations
+  are exactly zero, so the generated plan remains acceptable to
+  `validate_execution_plan()`.
 
 ## Recorded replays
 
@@ -71,10 +75,25 @@ not a promise for the next runner.
 - `make ci.local.iteration`: PASS, three required targets executed, zero unmapped
   paths.
 - `verify.ci.path_ownership.unit`: PASS, 20 tests.
-- `verify.ci.workflow.contract`: PASS, 419 tests across its composed suites.
+- `verify.ci.workflow.contract`: PASS, 420 tests across its composed suites
+  after the review fix.
 - Original command logs:
-  `.runtime/frontend-dev-validation/executions/20261113T073734Z-1636630-198077077/`.
+  `.runtime/frontend-dev-validation/executions/20261113T080044Z-1782306-656175401/`.
 - No database, runtime service, deployment target or product data was touched.
 
 Remote CI remains the integration gate. This batch does not claim a new remote
 timing result until the candidate runs on GitHub.
+
+## Review follow-up
+
+The independent review found that zero-duration weights could leave an empty
+shard and make the consumer reject the execution plan. The scheduler now uses
+module count as the second tie-break after load. Regression coverage generates
+the plan through `apply_reuse_decision()` and then consumes it through the real
+`validate_execution_plan()` for:
+
+- `a=0, b=0`
+- `a=10, b=0, c=0`
+- four modules with all-zero durations
+
+The rerun of `verify.ci.workflow.contract` reports 420 tests passed.

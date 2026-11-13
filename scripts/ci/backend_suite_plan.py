@@ -49,7 +49,13 @@ def partition(
     buckets = [[] for _ in range(count)]
     loads = [0.0 for _ in range(count)]
     for name in weighted:
-        index = min(range(count), key=lambda candidate: (loads[candidate], candidate))
+        # A zero-duration target must not leave a newly opened shard empty.
+        # Prefer an empty shard before adding a second zero-weight target,
+        # otherwise validate_execution_plan rejects the resulting partition.
+        index = min(
+            range(count),
+            key=lambda candidate: (loads[candidate], len(buckets[candidate]), candidate),
+        )
         buckets[index].append(name)
         loads[index] += float(durations.get(name, 1))
     shards = [

@@ -61,6 +61,40 @@ class ShardPlanTest(unittest.TestCase):
             with self.subTest(durations=durations), self.assertRaises(ValueError):
                 planner.partition(['a', 'b'], durations=durations)
 
+    def test_zero_duration_weights_seed_every_shard_and_pass_plan_validation(self):
+        for modules, durations in (
+            (['a', 'b'], {'a': 0, 'b': 0}),
+            (['a', 'b', 'c'], {'a': 10, 'b': 0, 'c': 0}),
+            (['a', 'b', 'c', 'd'], {'a': 0, 'b': 0, 'c': 0, 'd': 0}),
+        ):
+            with self.subTest(modules=modules, durations=durations):
+                required = {
+                    'base': 'b' * 40,
+                    'head': 'a' * 40,
+                    'modules': sorted(modules),
+                    'changed_test_coverage': [],
+                }
+                decisions = [
+                    {
+                        'target': module,
+                        'decision': 'RUN',
+                        'previous_actual_duration': durations[module],
+                    }
+                    for module in modules
+                ]
+                plan = planner.apply_reuse_decision(required, decisions)
+                shards = plan['shards']
+                self.assertTrue(all(shard['modules'] for shard in shards))
+                flattened = [
+                    module for shard in shards for module in shard['modules']
+                ]
+                self.assertEqual(sorted(flattened), sorted(modules))
+                self.assertEqual(len(flattened), len(set(flattened)))
+                self.assertEqual(
+                    plan,
+                    planner.validate_execution_plan(plan, required),
+                )
+
     def test_invalid_scope_is_not_a_green_empty_matrix(self):
         for names in ([], ['a', 'a'], ['../a'], ['a;exit'], ['a\nb']):
             with self.subTest(names=names), self.assertRaises(ValueError):
