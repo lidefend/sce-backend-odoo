@@ -133,8 +133,11 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Inspect candidate startup scene declarations and full-hydration path using failure-preserving browser diagnostics; do not claim optimization accepted.",
+  "blockers": [
+    "Designed enterprise.setup full browser report fails h1=0; performance hydration observation passes but complete page review pending.",
+    "Daily same-environment before/after performance acceptance not run."
+  ],
+  "next_exact_step": "Resolve designed scene H1 finding at its declaration/rendering owner, then protected review/integration of first performance batch; selected daily release A/B on project/contract/payment with ordinary roles and >=20 hot samples. No daily deployment performed.",
   "results": {
     "research": "daily_project_baseline_and_first_optimization_implemented",
     "performance_acceptance": "not_run_candidate",
@@ -190,16 +193,6 @@
       "target": "verify.navigation.publication_consumers.unit",
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
     },
-    "candidate_browser": {
-      "status": "failed",
-      "head": "c754960051657b8ac3ecde8a7157dde482574265",
-      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
-      "logs": [
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
-      ],
-      "classification": "unresolved_test_scope"
-    },
     "iteration_latest": {
       "status": "passed",
       "command": "make ci.local.iteration",
@@ -241,12 +234,49 @@
       "filter": "^sc_dev_demo$",
       "filestore": "sc_local_dev_odoo_data",
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
+    },
+    "candidate_browser_failed_attempts": {
+      "status": "failed",
+      "head": "c754960051657b8ac3ecde8a7157dde482574265",
+      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
+      "logs": [
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+      ],
+      "classification": "unresolved_test_scope"
+    },
+    "candidate_browser": {
+      "status": "passed_scoped_native_journey",
+      "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
+      "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
+    },
+    "designed_scene_browser": {
+      "status": "failed",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
+      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
+      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+    },
+    "native_empty_list": {
+      "status": "passed",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
+      "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
+    },
+    "diagnostics_iteration": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
+      "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
+    },
+    "diagnostics_tool_final": {
+      "status": "passed",
+      "tests": 17,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
     }
   },
   "stage_identity": {
-    "head": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
+    "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
     "dirty": true,
-    "scope": "run.scope",
+    "scope": "Final result-index and living-record documentation only; browser source clean at observed head.",
     "frozen": false
   },
   "completion": {
