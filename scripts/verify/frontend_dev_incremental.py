@@ -809,12 +809,16 @@ RULES = (
     # through as an unmapped path and lose its non-zero L2 execution.
     Rule((
         "scripts/ops/local_quick_evidence.py",
-        "scripts/ops/quick_input_scope.py",
         "scripts/ops/test_local_quick_evidence.py",
-        "scripts/ops/test_quick_input_scope.py",
         "scripts/verify/test_local_quick_evidence.py",
     ), (
         "verify.branch.governance.consistency",
+    )),
+    Rule((
+        "scripts/ops/quick_input_scope.py",
+        "scripts/ops/test_quick_input_scope.py",
+    ), (
+        "verify.quick.input_scope.unit",
     )),
     Rule((
         "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
@@ -1473,6 +1477,9 @@ RULES = (
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
+DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
+    "verify.quick.input_scope.unit",
+})
 # Run bookkeeping and narrative documentation carry no frontend source input:
 # reconciling `.agent/` state or writing an iteration record must never be reported
 # as an unmapped product path, otherwise every continuation or record update would
@@ -1506,7 +1513,12 @@ def select_targets(paths: list[str]) -> list[str]:
             path_targets.update(BASE_FRONTEND_TARGETS)
         selected.update(path_targets)
     targets = sorted(selected)
-    if any(part in target for target in targets for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS):
+    if any(
+        part in target
+        for target in targets
+        if target not in DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS
+        for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS
+    ):
         raise RuntimeError("development validation selected a candidate-only target")
     return targets
 

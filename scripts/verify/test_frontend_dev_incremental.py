@@ -68,15 +68,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_quick_receipt_verifier_inputs_select_the_joint_consistency_unit(self) -> None:
         for path in (
             "scripts/ops/local_quick_evidence.py",
-            "scripts/ops/quick_input_scope.py",
             "scripts/ops/test_local_quick_evidence.py",
-            "scripts/ops/test_quick_input_scope.py",
             "scripts/verify/test_local_quick_evidence.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.branch.governance.consistency"],
+                )
+        for path in (
+            "scripts/ops/quick_input_scope.py",
+            "scripts/ops/test_quick_input_scope.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.quick.input_scope.unit"],
                 )
 
     def test_component_takeover_inputs_select_their_inventory_lock(self) -> None:

@@ -102,6 +102,10 @@ the current-HEAD relationship instead of the concrete changing SHA and excludes
 the terminal channels. A genuinely explicit different revision remains an
 environment input. One full Quick is required to establish the first receipt in
 this normalized format; subsequent descendants can reuse the unchanged units.
+Normalization is restricted to a reviewed allowlist of Make-derived keys;
+unknown variables, `EXPECTED_HEAD`, and explicit acceptance revisions remain
+literal inputs. The Quick scope implementation and its tests select
+`verify.quick.input_scope.unit` in the local incremental planner.
 
 The migration Quick also encountered a synthetic DEMO-01 bank-account string
 reachable through the shared Git object store. It was registered as one exact

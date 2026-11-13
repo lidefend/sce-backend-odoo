@@ -125,6 +125,36 @@ NON_INPUT_ENVIRONMENT = frozenset({
     "CODEX_TOOL_CALL_ID",
 })
 
+# These Makefile values are derived from the current HEAD or from the exact
+# current source revision. Bind only this reviewed set to the candidate-head
+# relation. Unknown inputs, EXPECTED_HEAD and explicitly selected acceptance
+# revisions remain literal environment inputs.
+CURRENT_HEAD_BOUND_ENVIRONMENT = frozenset({
+    "ACCEPTANCE_ARTIFACT_SHA",
+    "CONTRACT_LIFECYCLE_SOURCE_REVISION",
+    "DAILY_ACCEPTANCE_EXPECTED_SHA",
+    "DAILY_CANDIDATE_EXPECTED_SHA",
+    "DAILY_CONTINUITY_REMOTE_ROOT",
+    "DAILY_CONTINUITY_TOOL_SHA",
+    "DAILY_DUTY_EDITION_TOOL",
+    "DAILY_DUTY_OPERATOR_TOOL",
+    "DAILY_DUTY_PAYLOAD_TOOL",
+    "DAILY_DUTY_RECOVERY_CONTRACT_PATH",
+    "DAILY_DUTY_RECOVERY_TOOL",
+    "DAILY_DUTY_REGISTRATION_TOOL",
+    "DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA",
+    "DAILY_RUNTIME_RELEASE_ARGS",
+    "DAILY_RUNTIME_RELEASE_EXPECTED_SHA",
+    "DAILY_RUNTIME_SOURCE_REVISION_SHA",
+    "DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL",
+    "DAILY_SECURITY_ADMIN_TOOL",
+    "PRODUCTION_ACCEPTANCE_REMOTE_ROOT",
+    "PRODUCTION_ACCEPTANCE_TOOL_SHA",
+    "SC_ACCEPTANCE_REQUIRED_SHA",
+    "SC_ACCEPTANCE_SOURCE_SHA",
+    "run_production_acceptance_payload",
+})
+
 
 def input_environment(*, candidate_head: str | None = None) -> dict[str, object]:
     environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
@@ -133,7 +163,8 @@ def input_environment(*, candidate_head: str | None = None) -> dict[str, object]
     # committed source inputs. A genuinely explicit different revision does not
     # contain the current SHA and therefore remains a literal environment input.
     if candidate_head:
-        for key, value in tuple(environment.items()):
+        for key in CURRENT_HEAD_BOUND_ENVIRONMENT:
+            value = environment.get(key)
             if not isinstance(value, str) or candidate_head not in value:
                 continue
             environment[key] = (

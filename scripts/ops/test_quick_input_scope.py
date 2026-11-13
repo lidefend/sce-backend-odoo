@@ -219,6 +219,25 @@ class QuickInputScopeTest(unittest.TestCase):
         self.assertNotIn("MAKE_TERMERR", before_hashes)
         self.assertNotIn("MAKE_TERMOUT", before_hashes)
 
+    def test_unregistered_and_explicit_revision_inputs_are_not_normalized(self):
+        head = "a" * 40
+        other = "b" * 40
+        with mock.patch.dict(os.environ, {
+            "UNREGISTERED_SHA_INPUT": f"artifact:{head}",
+            "EXPECTED_HEAD": head,
+        }):
+            before = scope.execution_identity(candidate_head=head)
+        with mock.patch.dict(os.environ, {
+            "UNREGISTERED_SHA_INPUT": f"artifact:{head}:changed",
+            "EXPECTED_HEAD": head,
+        }):
+            self.assertNotEqual(before, scope.execution_identity(candidate_head=head))
+        with mock.patch.dict(os.environ, {
+            "UNREGISTERED_SHA_INPUT": f"artifact:{head}",
+            "EXPECTED_HEAD": other,
+        }):
+            self.assertNotEqual(before, scope.execution_identity(candidate_head=head))
+
     def test_default_candidate_revision_normalizes_but_explicit_revision_invalidates(self):
         with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "a" * 40}):
             before = scope.execution_identity(candidate_head="a" * 40)
