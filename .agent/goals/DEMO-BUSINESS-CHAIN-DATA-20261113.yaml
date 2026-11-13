@@ -10,8 +10,8 @@ goal:
     - smart_construction_demo
   baseline:
     branch: feature/demo-business-chain-data-20261113
-    full_sha: 70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07
-    source: origin_main_pr_880
+    full_sha: ab739d620a1dc55b85133d64dc69a3d31ab105c1
+    source: origin_main_pr_883
   objective: >-
     Build one coherent, auditable DEMO-01 project business story that runs from
     project master data through contract, settlement, payment request, payment
@@ -52,10 +52,10 @@ goal:
     - fixed_showcase_and_actionable_draft_have_distinct_replay_expectations
     - affected_role_visibility_and_formal_entry_consumption_are_observed
   next_exact_step: >-
-    Resolve the owning-layer project summary service gap, then rerun formal
-    project dashboard summary and frontend consumption.
+    Commit the current-head verification refresh, run clean incremental delivery
+    checks, and prepare the candidate for remote publication if requested.
   completion:
-    batch: data_rebuild_targeted_runtime_roles_and_frontend_health_passed_formal_summary_pending
+    batch: current_head_targeted_runtime_validation_passed
     mainline_integration: not_run
     deployment: not_run
     user_acceptance: not_run

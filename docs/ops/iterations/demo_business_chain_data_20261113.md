@@ -3,7 +3,8 @@
 ## 身份与边界
 
 - 仓库：`sce-backend-odoo`
-- 基线：`70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`（PR #880 合并后主线）
+- 起始基线：`70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`（PR #880）
+- 同步基线：`ab739d620a1dc55b85133d64dc69a3d31ab105c1`（PR #883，项目证据汇总修复）
 - 分支：`feature/demo-business-chain-data-20261113`
 - 工作树：`/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113`
 - Formal Product Layer：P4 演示交付工具
@@ -14,7 +15,7 @@
 
 ## 初始事实
 
-- `origin/main` 已核对为 `70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`。
+- 首次盘点时 `origin/main` 为 `70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`；后续已受管同步到 `ab739d620a1dc55b85133d64dc69a3d31ab105c1`。
 - 主工作树承载另一项 CI 主题且存在 3 个既有修改，已保留不动。
 - detached 验收工作树及其运行进程已保留不动。
 - 本工作树从精确主线新建且初始 clean。
@@ -86,8 +87,19 @@
 
 ### 未闭环项
 
-1. **产品汇总缺口**：`ProjectDashboardService` 引用未注册的 `sc.evidence.summary.service`，正式 `summary_rows` 回退为 0；真实付款台账为 160,000 元。该缺陷属于 P0/P1，未在 Demo 层造投影绕过。
+1. **主line 同步**：本批已重放到 `ab739d620`（#883），正式 `sc.evidence.summary.service` 返回 `payment_executed_total=160000`、台账记录数 1，并包含 `payment.ledger#5` 证据引用。
 2. **增量入口收口**：前端依赖和构建已补齐，账号矩阵通过。`ci.local.iteration` 的 dry-run 计划仍要求部署阶段的 `daily_runtime_entry` 证据；该证据不属于本地 Demo 数据验收，需按正式发布/远端 CI 阶段处理。
+
+### #883 汇总复核
+
+| 检查 | 结果 |
+| --- | --- |
+| `make local.dev.test MODULE=smart_construction_core TEST_TAGS=project_evidence_summary` | PASS，4 项 |
+| 正式 `sc.evidence.summary.service` | `pay_total=160000`、`pay_done_total=160000`、`pay_done_count=1` |
+| 正式项目驾驶舱 | `payment_executed_total=160000`、`payment_executed_record_count=1` |
+| 证据引用 | 包含 `payment.request#93`、`payment.ledger#5`、`sc.settlement.order#24` |
+| `make verify.demo.usage_foundation_role_scope.smoke` | PASS，11/11 账号及负例 |
+| `make local.dev.health` | PASS |
 
 ### 运行态变更与回滚
 

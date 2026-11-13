@@ -3,7 +3,7 @@
   "id": "DEMO-BUSINESS-CHAIN-DATA-20261113",
   "branch": "feature/demo-business-chain-data-20261113",
   "status": "verification_pending",
-  "baseline_sha": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+    "baseline_sha": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
   "goal": ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
   "record": "docs/ops/iterations/demo_business_chain_data_20261113.md",
   "scope": [
@@ -114,7 +114,7 @@
     "baseline_inventory": {
       "status": "passed",
       "identity": {
-        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+        "head": "421eac7fd19ae7c51ed5dc25d8ada3f4bec66df6",
         "stage": "clean_baseline"
       },
       "database_policy": {
@@ -147,7 +147,7 @@
     "demo01_implementation": {
       "status": "passed",
       "identity": {
-        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+        "head": "421eac7fd19ae7c51ed5dc25d8ada3f4bec66df6",
         "stage": "head_plus_demo01_dirty_scope",
         "runtime": "sc-local-dev db=sc_dev_demo"
       },
@@ -223,6 +223,13 @@
           "layer": "L3",
           "detail": "Persistent local-dev frontend and namespace entry health passed.",
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_health.log"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Loaded mainline #883 evidence-summary service into sc_dev_demo and restarted the persistent service. Full core upgrade took about 635 seconds because views, menus and runtime contracts are recomputed.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/core_upgrade_after_883.log"
         }
       ],
       "readback": {
@@ -237,22 +244,23 @@
           "payment_ledger": 5,
           "actionable_draft": 109
         },
-        "chain": "expense contract 452000 tax inclusive / 400000 line total -> approved settlement 400000 with approved_amount 400000 and purchase order -> paid request 160000 with complete account -> paid execution 160000 -> posted payment ledger 160000",
+        "chain": "expense contract 452000 tax inclusive / 400000 line total -> approved settlement 400000 with approved_amount 400000 and purchase order -> paid request 160000 with complete account -> paid execution 160000 -> posted payment ledger 160000 -> formal project dashboard summary 160000",
         "residuals": "two contracts on the primary project; zero generic cockpit contracts and zero generic cockpit payments",
         "replay": "same ids after clean rebuild and explicit replay; execution=1, posted ledger=1, actionable draft=1, contracts=2",
         "logs": [
           ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_readback.log",
           ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_replay_readback.log",
           ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/finance_block_readback.log",
-          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/post_rebuild_readback.log"
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/post_rebuild_readback.log",
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/summary_after_883.log"
         ]
       }
     },
     "targeted_validation": {
-      "status": "passed_with_exclusions",
+      "status": "passed",
       "identity": {
-        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
-        "stage": "head_plus_final_demo01_dirty_scope",
+        "head": "421eac7fd19ae7c51ed5dc25d8ada3f4bec66df6",
+        "stage": "mainline_ab739d620_plus_demo01",
         "runtime": "sc-local-dev db=sc_dev_demo"
       },
       "commands": [
@@ -278,6 +286,13 @@
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_orm.log"
         },
         {
+          "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=project_evidence_summary",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 4,
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/project_evidence_summary_orm.log"
+        },
+        {
           "command": "make local.dev.verify_demo",
           "status": "passed",
           "layer": "L3",
@@ -289,14 +304,21 @@
           "status": "passed",
           "layer": "L4",
           "detail": "demo_pm login, system.init contract, route, capabilities, navigation and my-work passed",
-          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_startup_smoke_post_rebuild.log"
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_startup_smoke_post_883.log"
         },
         {
           "command": "make verify.demo.usage_foundation_role_scope.smoke",
           "status": "passed",
           "layer": "L4",
           "detail": "11/11 accounts and the wrong-password negative passed on rebuilt sc_dev_demo.",
-          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_scope_smoke.log"
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_scope_smoke_post_883.log"
+        },
+        {
+          "command": "make local.dev.health",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Persistent Odoo and namespaced frontend entry healthy after #883 upgrade/restart.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_health_post_883.log"
         }
       ],
       "failed": [
@@ -317,22 +339,18 @@
       ]
     }
   },
-  "blockers": [
-    {
-      "id": "PRODUCT-PROJECT-SUMMARY-001",
-      "owner": "P0_P1_product",
-      "detail": "ProjectDashboardService references sc.evidence.summary.service, which is not registered in the current mainline. The service falls back to zeros, so formal project summary_rows report 0 despite the posted 160000 ledger. No Demo projection was forged."
-    }
-  ],
-  "next_exact_step": "Resolve the P0/P1 project summary service gap, then rerun formal project summary/frontend consumption.",
+  "blockers": [],
+  "next_exact_step": "Commit the current-head verification refresh, then run clean incremental delivery checks.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
-    "baseline_main": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+    "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
     "excluded_dirty_worktree": "/home/lidefend/workspace/sce-backend-odoo (CI topic with three modified files)",
     "excluded_runtime_worktree": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109 (detached acceptance runtime, left untouched)",
     "external_mutations": [
       "three governed local.dev.rebuild_demo attempts; the final attempt rebuilt sc_dev_demo and completed release seed plus demo_full",
+      "mainline sync from 70ad2e6a to ab739d620 with verified recovery bundle",
       "local.dev module upgrade for smart_construction_demo",
+      "smart_construction_core upgrade for #883",
       "governed demo seed writes for DEMO-01, company secondary and company membership under local_dev_write_lease",
       "local.dev entry identity repair and service restart"
     ],

@@ -13,6 +13,9 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_construction_core.services.project_dashboard_builders.project_finance_builder import (
     ProjectFinanceBuilder,
 )
+from odoo.addons.smart_construction_core.services.project_dashboard_service import (
+    ProjectDashboardService,
+)
 from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo import (
     _ensure_actionable_payment_draft,
 )
@@ -142,6 +145,17 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(finance_block["state"], "ready")
         self.assertAlmostEqual(
             finance_block["data"]["summary"]["paid"], 160000.0
+        )
+        dashboard = ProjectDashboardService(finance_env).build(project_id=project.id)
+        self.assertAlmostEqual(
+            float(dashboard["project"]["payment_executed_total"]), 160000.0
+        )
+        self.assertEqual(
+            dashboard["project"]["payment_executed_record_count"], "1"
+        )
+        self.assertIn(
+            "payment.ledger#%s" % ledger.id,
+            dashboard["project"]["evidence_refs"],
         )
 
     def test_demo01_actionable_draft_replay_preserves_user_progress(self):

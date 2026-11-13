@@ -310,7 +310,7 @@ make demo.verify DB_NAME=sc_demo
 
 固定展示记录由 Demo 正式动作链维持；可操作草稿采用“首次创建后不覆盖”的同步语义，两类数据不要混用。
 
-当前主线尚未注册 `sc.evidence.summary.service`，因此项目驾驶舱的 `summary_rows.payment_executed_total` 会回退为空值 0。支付台账本身仍完整可追溯；该展示聚合属于 P0/P1 产品缺陷，不在 Demo 层通过伪造投影绕过。
+项目驾驶舱通过正式 `sc.evidence.summary.service` 从付款申请、支付台账、成本台账和结算单生成汇总；DEMO-01 的已支付证据为 160,000 元，并可直接追溯到对应支付台账。
 
 ## 加载可选场景（Scenario Loader）
 
