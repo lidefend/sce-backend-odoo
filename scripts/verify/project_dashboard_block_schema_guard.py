@@ -210,7 +210,7 @@ def _collect_builder_contract(path: Path):
                         stmt.body,
                         projection_keys,
                     )
-                    if state_values and data_keys is not None:
+                    if state_values:
                         for state in state_values:
                             state_key_sets.setdefault(state, []).append(data_keys)
 
@@ -272,6 +272,10 @@ def main():
         for state in ("ready", "empty", "forbidden"):
             _must(state in states, f"{block_key}: missing envelope state {state}")
             keys = states[state]
+            _must(
+                keys is not None,
+                f"{block_key}:{state}: unable to resolve required data fields",
+            )
             missing = sorted(required - keys)
             _must(not missing, f"{block_key}:{state}: missing required data keys {missing}")
 
