@@ -25,8 +25,16 @@ export DB_NAME SC_ENVIRONMENT SC_ALLOW_DEMO_DATA
 # shellcheck source=../common/frontend_acceptance_make_identity.sh
 source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
 
-create_output="$(frontend_acceptance_make db.create 2>&1)"
+if create_output="$(frontend_acceptance_make db.create 2>&1)"; then
+  create_status=0
+else
+  create_status=$?
+fi
 printf '%s\n' "$create_output"
+if [[ "$create_status" != "0" ]]; then
+  echo "[frontend.acceptance.ensure] DENY db.create failed status=${create_status} for ${DB_NAME}" >&2
+  exit "$create_status"
+fi
 if grep -Fqx "[db] created: ${DB_NAME}" <<<"$create_output"; then
   database_created=1
 elif grep -Fqx "[db] exists: ${DB_NAME}" <<<"$create_output"; then

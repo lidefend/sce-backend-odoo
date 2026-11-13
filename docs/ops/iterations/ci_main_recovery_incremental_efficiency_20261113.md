@@ -74,6 +74,14 @@ dependency phase. The early step now invokes the dependency-free Python page
 header and delivery-hardening guards directly, plus the existing argument-bound
 assembler target. The complete Make targets still run in the normal full lane.
 
+Independent review of `8a9f3c41` also identified two additional P4 corrections:
+
+- the role and responsible-person controls are standard `ScSelect` option rows
+  and do not receive `role="option"`; their selectors now target the rendered
+  `li.t-select-option` rows within the existing vendor-coupling baseline;
+- a nonzero `db.create` now retains and prints the original diagnostic before
+  returning the original status, instead of being lost to `set -e`.
+
 ## Validation
 
 `make ci.local.iteration` passed with 12/12 required targets, zero unmapped

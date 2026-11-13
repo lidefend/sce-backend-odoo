@@ -408,6 +408,53 @@ load_profile
             self.assertEqual(result.returncode, 2, result.stderr)
             self.assertIn("unexpected db.create result", result.stderr)
 
+    def test_database_create_failure_preserves_original_error(self) -> None:
+        source = ROOT / "scripts/test/frontend_acceptance_db_ensure.sh"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for relative in ("scripts/common", "config/acceptance"):
+                (root / relative).mkdir(parents=True, exist_ok=True)
+            (root / "scripts/common/frontend_acceptance_guard.sh").write_text(
+                "guard_frontend_acceptance_scope() { :; }\n"
+                "acquire_frontend_acceptance_lock() { :; }\n",
+                encoding="utf-8",
+            )
+            (root / "scripts/common/env.sh").write_text("", encoding="utf-8")
+            (root / "scripts/common/guard_prod.sh").write_text(
+                "guard_prod_forbid() { :; }\n",
+                encoding="utf-8",
+            )
+            (root / "scripts/common/frontend_acceptance_make_identity.sh").write_text(
+                "frontend_acceptance_make() {\n"
+                "  printf 'database startup failed: original diagnostic\\n' >&2\n"
+                "  return 17\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (root / "config/acceptance/isolated_entry_identity.v1.env").write_text(
+                "SC_ENTRY_NAMESPACE=acceptance\n"
+                "SC_ENTRY_AUDIENCE=acceptance-audience\n"
+                "SC_ENTRY_SHARED_SECRET=acceptance-only\n"
+                "SC_ENTRY_ROUTE_VERSION=acceptance-version\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                ["bash", str(source)],
+                cwd=root,
+                env={
+                    **os.environ,
+                    "ROOT_DIR": str(root),
+                    "DB_NAME": "sc_frontend_acceptance",
+                    "SC_ENVIRONMENT": "acceptance",
+                    "SC_ALLOW_DEMO_DATA": "1",
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 17, result.stderr)
+            self.assertIn("database startup failed: original diagnostic", result.stdout)
+            self.assertIn("DENY db.create failed status=17", result.stderr)
+
     def test_browser_login_failure_is_fail_fast_and_secret_free(self) -> None:
         source = (
             ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs"

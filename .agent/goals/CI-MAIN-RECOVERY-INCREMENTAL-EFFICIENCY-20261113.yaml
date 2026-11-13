@@ -38,6 +38,7 @@ goal:
       - scripts/ci/test_ci_risk_workflow_contract.py
       - scripts/test/frontend_acceptance_db_ensure.sh
       - scripts/verify/test_frontend_release_local_entry.py
+      - scripts/verify/test_local_dev_project_profile_write_fixture.py
       - scripts/verify/test_frontend_acceptance_runtime_profile.py
       - scripts/verify/test_frontend_acceptance_carrier_discard.py
       - docs/ops/iterations/ci_main_recovery_incremental_efficiency_20261113.md
