@@ -19,6 +19,9 @@ from odoo.addons.smart_construction_core.services.project_dashboard_builders.pro
 from odoo.addons.smart_construction_core.services.project_dashboard_service import (
     ProjectDashboardService,
 )
+from odoo.addons.smart_construction_demo.seed.steps.step_20_projects_demo import (
+    run as run_projects_demo,
+)
 from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo import (
     DEMO01_FIXED_PAYMENT_NOTE,
     _ensure_actionable_payment_draft,
@@ -46,6 +49,7 @@ class TestDemoGoldenChain(TransactionCase):
             "smart_construction_demo.sc_demo_exec_expense_contract",
             raise_if_not_found=False,
         ):
+            run_projects_demo(cls.env)
             run_contracts_demo(cls.env)
             run_demo_business_chain(cls.env)
 
@@ -353,6 +357,12 @@ class TestDemoGoldenChainLegacyUpgrade(TransactionCase):
         if cls.env.cr.fetchone():
             raise AssertionError("legacy fixture XMLID deletion did not persist")
 
+        project = cls.env["project.project"].sudo().search(
+            [("project_code", "=", "DEMO-PJ-EXEC")],
+            limit=2,
+        )
+        if not project:
+            run_projects_demo(cls.env)
         run_contracts_demo(cls.env)
         cls.env.cr.execute(
             "SELECT res_id FROM ir_model_data "
