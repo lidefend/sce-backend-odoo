@@ -315,10 +315,9 @@ jobs:
       - name: Run early static quality owners
         run: |
           set -euo pipefail
-          make \
-            verify.frontend.product_page_header.unit \
-            verify.frontend.delivery_hardening.guard \
-            verify.unified_page_contract.v2.assembler
+          python3 scripts/verify/frontend_product_page_header_guard.py
+          python3 scripts/verify/frontend_delivery_hardening_guard.py
+          make verify.unified_page_contract.v2.assembler
 
       - name: Bind code evolution to acceptance impact
         run: |

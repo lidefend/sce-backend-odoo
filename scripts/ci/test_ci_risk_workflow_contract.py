@@ -714,12 +714,12 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         steps = self.jobs()['professional_quality_checks']['steps']
         static = next(step for step in steps if step['name'] == 'Run early static quality owners')
         static_run = static['run']
-        for target in (
-            'verify.frontend.product_page_header.unit',
-            'verify.frontend.delivery_hardening.guard',
-            'verify.unified_page_contract.v2.assembler',
+        for guard in (
+            'scripts/verify/frontend_product_page_header_guard.py',
+            'scripts/verify/frontend_delivery_hardening_guard.py',
         ):
-            self.assertIn(target, static_run)
+            self.assertIn(guard, static_run)
+        self.assertIn('make verify.unified_page_contract.v2.assembler', static_run)
         positions = {step['name']: index for index, step in enumerate(steps)}
         self.assertLess(
             positions['Run early static quality owners'],

@@ -67,6 +67,13 @@ installed module versions, required XMLIDs and the construction product baseline
 then skips the two persistent-database upgrade passes. Existing databases retain
 both upgrades.
 
+The first remote run of the new ordering exposed one dependency mistake in the
+early step: the full page-header Make target also runs component contract cases
+that require `esbuild`, which is not installed until the normal frontend
+dependency phase. The early step now invokes the dependency-free Python page
+header and delivery-hardening guards directly, plus the existing argument-bound
+assembler target. The complete Make targets still run in the normal full lane.
+
 ## Validation
 
 `make ci.local.iteration` passed with 12/12 required targets, zero unmapped
