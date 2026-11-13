@@ -5,6 +5,13 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { assertRuntimeWriterIdentity } from './local_dev_project_profile_write_identity.mjs';
+import {
+  appPathname,
+  assertDateSelection,
+  assertExpectedProjectRecord,
+  projectRecordTarget,
+  targetInitiationDate,
+} from './local_dev_project_profile_write_contract.mjs';
 
 const EXPECTED_DB = 'sc_dev_demo';
 const EXPECTED_ENVIRONMENT = 'dev';
@@ -29,17 +36,6 @@ const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
 function deny(message) { throw new Error(`[DENY] ${message}`); }
-function appPathname(value) {
-  const pathname = value instanceof URL ? value.pathname : new URL(String(value)).pathname;
-  return pathname === ENTRY_BASE_PATH
-    ? '/'
-    : pathname.startsWith(`${ENTRY_BASE_PATH}/`)
-      ? pathname.slice(ENTRY_BASE_PATH.length)
-      : pathname;
-}
-function isProjectRecordPath(value) {
-  return /^\/(?:f|r)\/project\.project\/[1-9][0-9]*\/?$/.test(appPathname(value));
-}
 function requiredPositiveInteger(name) {
   const raw = String(process.env[name] ?? '').trim();
   if (!/^[1-9][0-9]*$/.test(raw)) deny(`${name} must be an explicit positive integer`);
@@ -1314,7 +1310,18 @@ async function openProject(page) {
   let openedFromWorkspace = false;
   if (homeTargetVisible) {
     await homeTarget.getByRole('button', { name: '打开', exact: true }).click();
-    await page.waitForURL((url) => isProjectRecordPath(url), { timeout: 30000 });
+    await page.waitForURL(
+      (url) => projectRecordTarget(url)?.projectId === PROJECT_ID,
+      { timeout: 30000 },
+    );
+    const deliveredRoute = assertExpectedProjectRecord(
+      page.url(),
+      PROJECT_ID,
+      'workspace object entry',
+    );
+    if (deliveredRoute.surface !== 'f' && deliveredRoute.surface !== 'r') {
+      throw new Error(`workspace object entry returned unsupported surface ${deliveredRoute.surface}`);
+    }
     openedFromWorkspace = true;
   } else {
     await page.locator('li[data-navigation-label="项目中心"] > .t-menu__item').click();
@@ -1354,7 +1361,10 @@ async function openProject(page) {
       { waitUntil: 'domcontentloaded', timeout: 45000 },
     );
   }
-  await page.waitForURL((url) => isProjectRecordPath(url), { timeout: 30000 });
+  await page.waitForURL(
+    (url) => projectRecordTarget(url)?.projectId === PROJECT_ID,
+    { timeout: 30000 },
+  );
   if (!(await formContract)) throw new Error(`form_contract_not_ready:${JSON.stringify({ url: page.url(), formContractSeen })}`);
   await page.waitForFunction(() => {
     const text = document.body.innerText || '';
@@ -1365,7 +1375,7 @@ async function openProject(page) {
     return fields > 0 && save || explicitError;
   }, null, { timeout: 30000 });
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
-  if (!isProjectRecordPath(state.url)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
+  assertExpectedProjectRecord(state.url, PROJECT_ID, 'project edit surface');
   if (appPathname(state.url) === '/login' || appPathname(state.url).startsWith('/login/')) throw new Error(`login_redirect:${JSON.stringify(state)}`);
   if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
   return state;
@@ -1378,7 +1388,12 @@ async function fillField(page, name, value) {
   if (await control.getAttribute('contenteditable') === 'true') await control.fill(value);
   else await control.fill(value);
 }
-async function chooseDate(page, input, day) {
+async function chooseDate(page, input, targetDate) {
+  const target = String(targetDate || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(target)) throw new Error(`invalid_date_target:${target}`);
+  const before = normalize(await input.inputValue());
+  if (before === target) throw new Error(`date_target_does_not_change_value:${target}`);
+  const day = target.slice(8);
   await page.keyboard.press('Escape').catch(() => null);
   await input.click();
   const popup = page.locator('.t-popup__content:visible .t-date-picker__panel').last();
@@ -1394,7 +1409,7 @@ async function chooseDate(page, input, day) {
   await page.keyboard.press('Escape').catch(() => null);
   await popup.waitFor({ state: 'hidden', timeout: 12000 }).catch(() => null);
   const selected = normalize(await input.inputValue());
-  if (!selected) {
+  if (selected !== target) {
     const inputs = await page.locator('[data-field-name] input').evaluateAll(
       (rows) => rows.map((row) => ({
         aria_label: row.getAttribute('aria-label'),
@@ -1404,9 +1419,9 @@ async function chooseDate(page, input, day) {
       })),
     );
     const panels = await page.locator('.t-popup__content:visible .t-date-picker__panel').count();
-    throw new Error(`date_selection_missing:${day}:${JSON.stringify({ inputs, panels, cellIdentity })}`);
+    throw new Error(`date_selection_mismatch:${JSON.stringify({ before, target, selected, inputs, panels, cellIdentity })}`);
   }
-  return selected;
+  return { before, target, selected };
 }
 async function save(page) {
   const button = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
@@ -2106,7 +2121,8 @@ async function main() {
     const marker = `${originalName} · 真实保存 ${Date.now()}`;
     await fillField(page, 'name', marker);
     const initiationDateInput = field(page, 'initiation_date').locator('input:visible').first();
-    const selectedInitiationDate = await chooseDate(page, initiationDateInput, '10');
+    const targetInitiationDateValue = targetInitiationDate(await initiationDateInput.inputValue(), 10);
+    const selectedInitiationDate = await chooseDate(page, initiationDateInput, targetInitiationDateValue);
     const descriptionTab = page.locator('[data-section-tab="描述"]').first();
     if (await descriptionTab.count()) {
       await descriptionTab.click();
@@ -2151,11 +2167,39 @@ async function main() {
     if (!NETWORK_FAILURE_RECOVERY) {
       await page.waitForTimeout(400);
       const after = await readProject(page);
-      report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.initiation_date === selectedInitiationDate && writes.length === 1 ? 'PASS' : 'FAIL', before, after, selected_initiation_date: selectedInitiationDate, write_count: writes.length, responsibility_rows_before: initialRows });
+      const writeDate = writes[0]?.body?.params?.vals?.initiation_date;
+      let dateEvidencePassed = true;
+      let dateEvidenceError = '';
+      try {
+        assertDateSelection({
+          before: selectedInitiationDate.before,
+          target: selectedInitiationDate.target,
+          after: after?.initiation_date,
+          writeValue: writeDate,
+        });
+      } catch (error) {
+        dateEvidencePassed = false;
+        dateEvidenceError = String(error?.message || error);
+      }
+      const normalSavePassed = after?.name === marker
+        && writes.length === 1
+        && dateEvidencePassed;
+      report.scenarios.push({
+        name: 'normal_save',
+        status: normalSavePassed ? 'PASS' : 'FAIL',
+        before,
+        after,
+        selected_initiation_date: selectedInitiationDate,
+        write_initiation_date: writeDate,
+        date_evidence_error: dateEvidenceError,
+        write_count: writes.length,
+        responsibility_rows_before: initialRows,
+      });
+      if (!normalSavePassed) throw new Error(`normal_save_not_proven:${JSON.stringify({ after, writes, dateEvidenceError })}`);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
       const refreshed = await readProject(page);
-      report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.initiation_date === selectedInitiationDate ? 'PASS' : 'FAIL', refreshed, selected_initiation_date: selectedInitiationDate });
+      report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.initiation_date === selectedInitiationDate.target ? 'PASS' : 'FAIL', refreshed, selected_initiation_date: selectedInitiationDate });
     }
     await page.screenshot({ path: path.join(OUT, NETWORK_FAILURE_RECOVERY ? 'recovery-after-refresh.png' : 'normal-save.png'), fullPage: true });
   } catch (error) {

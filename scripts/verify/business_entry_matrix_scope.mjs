@@ -29,7 +29,9 @@ import {
   environmentIdentity,
   fileRevision,
   permissionContext,
+  recordedEntryStatus,
   reuseIdentityKey,
+  sceneBehaviour,
   surfaceInputs,
   loadMatrix,
   loadDeclaredSceneEntries,
@@ -180,12 +182,7 @@ export function surface() {
   }
   for (const row of sceneEntries) {
     if (matrix.some((entry) => entry.menu_xmlid === row.menu_xmlid)) continue;
-    const behaviour = {
-      detail: false,
-      expect_write: null,
-      negative_authority: 'not_applicable_no_action_scene',
-      negative_authority_reason: 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
-    };
+    const behaviour = sceneBehaviour(overlay, row.menu_xmlid);
     const plan = {
       candidate: null,
       reason: behaviour.negative_authority_reason,
@@ -290,7 +287,7 @@ if (args['emit-units']) {
   // reuse ledger and forces a justified re-walk of entries that never regressed.
   const recorded = new Map();
   for (const entry of summary.entries || []) {
-    if (entry && entry.entry) recorded.set(String(entry.entry), String(entry.status || 'checked'));
+    if (entry && entry.entry) recorded.set(String(entry.entry), recordedEntryStatus(entry));
   }
   // An interrupted run declares `completeness:partial` and carries only the
   // entries it actually concluded. Those unreached units are not recorded — not

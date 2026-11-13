@@ -92,6 +92,65 @@ export function overlayFor(overlay, menuXmlid) {
   return merged;
 }
 
+export function sceneBehaviour(overlay, menuXmlid) {
+  const merged = overlayFor(overlay, menuXmlid);
+  const negativeAuthority = !merged.negative_authority || merged.negative_authority === 'derive'
+    ? 'not_applicable_no_action_scene'
+    : String(merged.negative_authority);
+  return {
+    ...merged,
+    detail: false,
+    negative_authority: negativeAuthority,
+    negative_authority_reason: String(
+      merged.negative_authority_reason
+      || 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
+    ),
+  };
+}
+
+export function runtimeRoleSceneTarget(roleSurface, row) {
+  const surface = roleSurface && typeof roleSurface === 'object' ? roleSurface : {};
+  const roleHomeMenus = Array.isArray(surface.role_home_menu_xmlids)
+    ? surface.role_home_menu_xmlids.map(String)
+    : [];
+  if (!roleHomeMenus.includes(String(row.menu_xmlid || ''))) return null;
+  const landing = surface.landing_entry_target && typeof surface.landing_entry_target === 'object'
+    ? surface.landing_entry_target
+    : {};
+  const sceneKey = String(landing.scene_key || surface.landing_scene_key || '').trim();
+  const route = String(landing.route || surface.landing_path || '').trim();
+  if (!sceneKey || !route || sceneKey !== String(row.scene_key || '').trim()) return null;
+  return {
+    action_id: 0,
+    menu_id: Number(surface.landing_menu_id || 0),
+    route,
+    scene_key: sceneKey,
+    entry_target: landing,
+    entry_target_type: String(landing.type || 'scene'),
+    action_xmlid: '',
+    menu_xmlid: row.menu_xmlid,
+  };
+}
+
+export function recordedEntryStatus(record) {
+  if (record && record.status) return String(record.status);
+  if (record && record.error) return 'exception';
+  const assertions = record && record.assertions && typeof record.assertions === 'object'
+    ? record.assertions
+    : {};
+  for (const [stage, status] of Object.entries(assertions)) {
+    if (['error', 'failed', 'exception'].includes(String(status))) return `${stage}_failed`;
+  }
+  return 'checked';
+}
+
+export function matrixSucceeded({ completeness, problems, entries }) {
+  return String(completeness || '') === 'complete'
+    && Array.isArray(problems) && problems.length === 0
+    && Array.isArray(entries)
+    && !entries.some((record) => recordedEntryStatus(record) === 'exception');
+}
+
 export function loadDeclaredSceneEntries(registryPath) {
   const body = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
   const rows = body.non_action_delivery_entries && typeof body.non_action_delivery_entries === 'object'

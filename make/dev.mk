@@ -354,6 +354,7 @@ verify.local.dev.project_profile_write.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_dev_project_profile_write_fixture
 	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard
 	@python3 scripts/verify/frontend_probe_toolchain_guard.py
+	@node scripts/verify/local_dev_project_profile_write_contract.test.mjs
 
 local.dev.personnel_authorization_fixture: guard.prod.forbid local.dev.ready
 	@test -n "$(P4_PERSONNEL_AUTH_MODE)" || (echo "P4_PERSONNEL_AUTH_MODE is required" >&2; exit 2)

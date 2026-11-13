@@ -114,23 +114,36 @@ end control empty and omits the companion field from the save payload. The final
 uses the declared single date field `initiation_date`; the range-control behavior is
 recorded as a product frontend defect below.
 
+After independent review, the stricter rerun
+`.runtime/final-acceptance/entry-coverage-20261113/project-save-review-fix-r1/summary.json`
+proved the target transition `2026-11-13 -> 2026-11-10` in the control value, write
+payload and refresh readback. It also verified the workspace object URL opened
+exactly `project.project/1055` before entering the edit surface. Exact-batch cleanup
+removed project 1055, carrier 1056, responsibility rows `11,12`, and tags
+`10,11,12`; inspect returned `existing_batch=false`.
+
 ## Validation
 
 - `node --check` passed for the modified matrix/tool modules.
 - `python3 -m unittest scripts.verify.test_dev_acceptance_release_identity`:
-  62 tests passed.
+  63 tests passed.
 - `python3 -m unittest scripts.verify.test_business_entry_matrix_incremental`:
-  41 tests passed.
+  42 tests passed.
 - `python3 -m unittest scripts.verify.test_local_dev_project_profile_write_fixture`:
   44 tests passed.
-- `frontend_probe_toolchain_guard`: passed with 14 tests.
-- `make verify.frontend.business_entry.evidence_scope.unit`: passed with 69 tests;
-  runtime route suite passed 15 cases and reuse/binding suites passed non-zero cases.
-- `make verify.frontend.acceptance.environment.guard`: passed with 62 tests.
-- `make ci.local.iteration`: passed with seven affected targets and
+- `frontend_probe_toolchain_guard`: passed with 14 tests; the project URL/date
+  contract suite passed 11 cases.
+- `make verify.frontend.business_entry.evidence_scope.unit`: passed with 72 tests;
+  runtime route suite passed 24 cases and reuse/binding suites passed non-zero cases.
+- `make verify.frontend.acceptance.environment.guard`: passed with 63 tests.
+- `make ci.local.iteration`: passed with nine affected targets and
   `unmappedPathCount=0`; receipt:
-  `.runtime/frontend-dev-validation/executions/20261113T020141Z-3139630-69037117/receipt.json`.
+  `.runtime/frontend-dev-validation/executions/20261113T023556Z-3372746-588059402/receipt.json`.
 - `make ci.delivery.freeze.prepare`: passed; generated evidence is current.
+- Review-focused matrix rerun
+  `.runtime/final-acceptance/entry-coverage-20261113/matrix-review-fix-r1/summary.json`
+  records workspace home as passed through the runtime landing target and project
+  initiation as `status=form-error`; the aggregate matrix correctly returns false.
 - The daily role-scoped release probe was `not_run`: the governed daily credential
   confirmation declaration does not include the `daily-release-probe` tool for this
   identity. The role-scoped parser/report semantics are covered by focused tests.

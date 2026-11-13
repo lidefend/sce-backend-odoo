@@ -36,8 +36,10 @@ import {
   loadMatrix,
   loadDeclaredSceneEntries,
   loadOverlay,
+  matrixSucceeded,
   negativePlanByCandidate,
-  overlayFor,
+  runtimeRoleSceneTarget,
+  sceneBehaviour,
   selectEntries,
   universalCapabilities,
 } from './business_entry_matrix_model.mjs';
@@ -647,36 +649,13 @@ function applyRecordContract(record, contract, behaviour, sessionCompany, entryK
   }
 }
 
-function roleSceneTarget(state, row) {
-  const surface = state.roleSurface && typeof state.roleSurface === 'object' ? state.roleSurface : {};
-  const roleHomeMenus = Array.isArray(surface.role_home_menu_xmlids)
-    ? surface.role_home_menu_xmlids.map(String)
-    : [];
-  if (!roleHomeMenus.includes(row.menu_xmlid)) return null;
-  const landing = surface.landing_entry_target && typeof surface.landing_entry_target === 'object'
-    ? surface.landing_entry_target
-    : {};
-  const sceneKey = String(landing.scene_key || surface.landing_scene_key || row.scene_key || '').trim();
-  if (sceneKey !== String(row.scene_key || '').trim()) return null;
-  return {
-    action_id: 0,
-    menu_id: Number(surface.landing_menu_id || 0),
-    route: String(landing.route || surface.landing_path || row.route || '').trim(),
-    scene_key: sceneKey,
-    entry_target: landing,
-    entry_target_type: String(landing.type || 'scene'),
-    action_xmlid: '',
-    menu_xmlid: row.menu_xmlid,
-  };
-}
-
 // One entry's full read-only journey. Kept as a single unit so that a locator
 // timeout or an unexpected DOM shape fails only this entry and the batch keeps
 // covering its siblings.
 async function runEntry(page, state, row, behaviour, sessionCompany) {
   const entryKey = row.menu_xmlid;
   const navTarget = findReleasedNavigationTargetByMenuXmlid(state.nav, row.menu_xmlid, row.action_xmlid)
-    || (!row.action_xmlid ? roleSceneTarget(state, row) : null);
+    || (!row.action_xmlid ? runtimeRoleSceneTarget(state.roleSurface, row) : null);
   if (!navTarget) {
     const declaration = state.exposureDeclared.get(entryKey);
     if (declaration) {
@@ -784,6 +763,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       const message = String((await formError.innerText().catch(() => '')) || '').trim().slice(0, 500);
       assertions.collection = 'error';
       fail(`${entryKey}: the form surface rendered a blocking error state: ${message}`);
+      record.status = 'form-error';
       record.list_status = 'error';
       observations.push({
         entry: entryKey,
@@ -795,11 +775,13 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   }
   if (status === 'error') {
     assertions.collection = 'error';
+    record.status = 'surface-error';
     fail(`${entryKey}: ${presentation} surface rendered the declared error state`);
     return record;
   }
   if (status === 'loading') {
     assertions.collection = 'loading';
+    record.status = 'surface-loading';
     fail(`${entryKey}: ${presentation} surface never left the declared loading state`);
     return record;
   }
@@ -1040,7 +1022,7 @@ function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessi
     observations,
     console_errors: consoleErrors,
     problems,
-    ok: completeness === 'complete' && problems.length === 0,
+    ok: matrixSucceeded({ completeness, problems, entries: summary }),
   };
 }
 
@@ -1170,12 +1152,7 @@ async function main() {
   for (const row of sceneRows) {
     selected.push({
       row,
-      behaviour: {
-        ...overlayFor(overlay, row.menu_xmlid),
-        detail: false,
-        negative_authority: 'not_applicable_no_action_scene',
-        negative_authority_reason: 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
-      },
+      behaviour: sceneBehaviour(overlay, row.menu_xmlid),
     });
   }
   if (!selected.length) throw new Error('no entry selected from the matrix (check SC_ENTRY_MATRIX_DOMAIN / KEYS)');
@@ -1244,6 +1221,7 @@ async function main() {
     if (completedEntries.has(entryKey)) continue;
     let record;
     let lastConsoleMark = consoleErrors.length;
+    const entryProblemStart = problems.length;
     for (let attempt = 1; ; attempt += 1) {
       const consoleMark = consoleErrors.length;
       const problemMark = problems.length;
@@ -1278,6 +1256,12 @@ async function main() {
       record = null;
     }
     if (!record) continue;
+    const entryProblems = problems.slice(entryProblemStart);
+    if (record.status === 'exception') {
+      fail(`${entryKey}: unhandled acceptance exception: ${record.error || 'unknown error'}`);
+    } else if (entryProblems.length && !record.status) {
+      record.status = 'assertion-failed';
+    }
     record.console_errors = consoleErrors.slice(lastConsoleMark);
     summary.push(record);
     completedEntries.add(entryKey);

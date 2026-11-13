@@ -872,6 +872,7 @@ RULES = (
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
@@ -934,6 +935,8 @@ RULES = (
         "config/frontend/probe_toolchain_registry.json",
         "scripts/verify/local_dev_project_profile_write_browser.mjs",
         "scripts/verify/local_dev_project_profile_write_browser.sh",
+        "scripts/verify/local_dev_project_profile_write_contract.mjs",
+        "scripts/verify/local_dev_project_profile_write_contract.test.mjs",
         "scripts/verify/test_local_dev_project_profile_write_fixture.py",
         "scripts/verify/frontend_probe_toolchain_guard.py",
         "scripts/verify/test_frontend_probe_toolchain_guard.py",
@@ -945,6 +948,11 @@ RULES = (
         "scripts/verify/test_dev_acceptance_release_identity.py",
     ), (
         "verify.frontend.acceptance.environment.guard",
+    )),
+    Rule((
+        "config/security/secret_scan_false_positives.v1.json",
+    ), (
+        "security.secrets.scan",
     )),
     Rule((
         "addons/smart_construction_core/__init__.py",

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5195`
+- Scanned files: `5197`
 - Files requiring split plan: `78`
 - Files above warning threshold: `146`
 
@@ -41,10 +41,10 @@ Generated from repository source files. This report is informational during the 
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2339 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2280 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2185 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2139 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2147 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2129 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
@@ -102,8 +102,8 @@ Generated from repository source files. This report is informational during the 
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1436 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
+| 1420 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1411 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
@@ -275,10 +275,10 @@ Generated from repository source files. This report is informational during the 
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2339 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2280 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2185 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2139 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2147 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2129 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
