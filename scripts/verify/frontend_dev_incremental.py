@@ -497,6 +497,8 @@ RULES = (
         "scripts/verify/backend_contract_fact_readback_probe.py",
         "scripts/verify/test_backend_contract_fact_readback_probe.py",
         "scripts/test/test.sh",
+        "scripts/test/dependency_baseline.py",
+        "scripts/test/test_dependency_baseline.py",
         ".github/workflows/backend_test_suite.yml",
     ), (
         "verify.ci.workflow.contract",

@@ -117,6 +117,7 @@ jobs:
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
+      SC_TEST_DEPENDENCY_PREPARATION: '1'
 
     defaults:
       run:

@@ -10,24 +10,30 @@
     ".agent/active-runs.json",
     ".agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml",
     ".agent/runs/P1-PROJECT-EVIDENCE-SUMMARY-20261113/run.json",
+    ".github/workflows/backend_test_suite.yml",
     "addons/smart_construction_core/services/__init__.py",
-    "addons/smart_construction_core/services/project_evidence_summary_service.py",
     "addons/smart_construction_core/services/project_dashboard_service.py",
+    "addons/smart_construction_core/services/project_evidence_summary_service.py",
     "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p1_project_evidence_summary_20261113.md",
+    "make/dev_test.mk",
+    "scripts/test/dependency_baseline.py",
+    "scripts/test/test.sh",
+    "scripts/test/test_dependency_baseline.py",
     "scripts/verify/frontend_dev_incremental.py",
-    "scripts/verify/test_frontend_dev_incremental.py",
-    "scripts/verify/project_management_contract_guard.py",
     "scripts/verify/project_dashboard_assembly_guard.py",
     "scripts/verify/project_dashboard_block_schema_guard.py",
     "scripts/verify/project_dashboard_contract_snapshot_export.py",
     "scripts/verify/project_dashboard_metric_semantics_guard.py",
     "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
-    "docs/demo/product_gap_registry_v1.md",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md",
-    "docs/ops/iterations/p1_project_evidence_summary_20261113.md"
+    "scripts/verify/project_management_contract_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/ci.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -77,11 +83,30 @@
         "scripts/verify/project_dashboard_snapshot_freshness_guard.py"
       ],
       "kind": "offline"
+    },
+    "dependency_baseline": {
+      "target": "verify.test.dependency_baseline.unit",
+      "inputs": [
+        "scripts/test/dependency_baseline.py",
+        "scripts/test/test_dependency_baseline.py",
+        "scripts/test/test.sh",
+        ".github/workflows/backend_test_suite.yml",
+        "make/dev_test.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
-    "independent review has not run for this candidate",
-    "remote required checks have not run for this candidate"
+    "independent review pending for combined P1/P4 candidate",
+    "real CI clone execution and exact-head required checks pending"
   ],
-  "next_exact_step": "Publish the clean P1 candidate and wait for independent review plus all required checks on the exact head."
+  "next_exact_step": "Freeze reviewed generated evidence, obtain independent review, publish exact combined PR883 candidate and verify real clone behavior, complete coverage and measured timing before protected squash integration.",
+  "ci_preparation_evidence": {
+    "iteration": ".runtime/ci-preparation-iteration.log",
+    "routing": ".runtime/ci-preparation-routing.log",
+    "freeze": ".runtime/ci-preparation-freeze.log",
+    "runtime_validation": "not_run",
+    "coverage_policy": "same selected modules and tags; core/demo fresh installation; no test result reuse"
+  }
 }

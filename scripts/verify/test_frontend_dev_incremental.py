@@ -421,6 +421,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/verify/backend_contract_fact_readback_probe.py",
             "scripts/verify/test_backend_contract_fact_readback_probe.py",
             "scripts/test/test.sh",
+            "scripts/test/dependency_baseline.py",
+            "scripts/test/test_dependency_baseline.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])

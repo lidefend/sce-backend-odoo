@@ -76,3 +76,54 @@ dashboard contract.
   follows it with the real dynamic `ready/empty` helper path. State field sets
   are intersected across all returns, so a later complete branch cannot
   overwrite an earlier missing-field result.
+
+
+## P4 CI preparation extension (owner request, 2026-11-13)
+
+This candidate also introduces opt-in, same-run/same-attempt/same-shard pristine
+industry dependency preparation. It does not reuse test results or change the
+selected modules/tags. The backend workflow owns the ephemeral project and
+volume lifecycle; local.test and persistent environments do not enable it.
+
+The preparation process installs smart_construction_core without test-enable,
+then verifies that the requested target remains uninstalled. Each target gets a
+new PostgreSQL template clone and a separate copied filestore before the normal
+`-i target --test-enable` invocation. Target pre/post installation hooks and
+at_install/post_install tests remain on that invocation. Core itself and demo
+retain clean installation; demo retains its separate environment authorization.
+
+Identity binds full candidate SHA, CI run, attempt, shard and non-demo mode.
+Existing target databases/filestores, unknown provenance, incomplete preparation,
+and already-installed targets are refused. Preparation failure blocks the module;
+no old test verdict is substituted. Existing workflow teardown removes the
+per-run volume containing preparation data and provenance. The template is never
+uploaded as an artifact or shared across runners, runs or candidates.
+
+Validation at the dirty stage based on 537bd7251e4f1d46ebb6d10ccd2f0c82bdef1762:
+- 8 focused pure tests pass, including one-install/two-clone behavior, independent
+  attachment bytes, repeat-target refusal and missing-provenance refusal. PostgreSQL
+  and the Odoo subprocess are mocked in those tests; this is not runtime evidence.
+- Existing workflow dispatch contract: 17 tests pass.
+- `make ci.local.iteration`: 8 affected targets pass; original output is
+  `.runtime/ci-preparation-iteration.log` and the incremental execution receipt.
+- Real PostgreSQL/Odoo clone execution, test-count comparison, installation count,
+  preparation/test duration and end-to-end remote duration remain NOT_RUN.
+  Compare the shared module subset against PR883's historical 13-module run;
+  executor changes correctly require the wider CI scope as well.
+
+The earlier unmapped-target/verification-lane failures were tooling-registration
+failures, fixed by wiring the new unit target into the existing CI contract gate
+and mapping its input paths. No coverage baseline was lowered.
+
+Dependency propagation refinement and business-specific core selection are
+explicit follow-up work, excluded from this first preparation-only change.
+Rollback removes the workflow opt-in and the preparation wrapper; the normal
+fresh-install test command remains available. Independent review and exact-head
+remote required gates remain required before protected mainline integration.
+
+Independent review found that explicit workflow test-tag overrides can select
+dependency at_install tests. Preparation is now disabled for every nonempty
+TEST_TAGS_INPUT; a regression executes the actual shell gate with default,
+cross-module and unscoped selectors. Default target-scoped selection alone uses
+the prepared baseline. The reviewer also reproduced the original real-builder
+empty-branch negative case and confirmed the schema guard now rejects it.

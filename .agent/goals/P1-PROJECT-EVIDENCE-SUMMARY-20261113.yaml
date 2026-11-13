@@ -68,3 +68,12 @@ goal:
   rollback: >
     Revert the P1 evidence summary service, its dashboard consumption and tests.
     No business data migration is required.
+
+  ci_preparation_extension:
+    authorization: owner requested CI efficiency optimization and PR883 integration together
+    formal_product_layer: P4 ops delivery tool
+    layer_target: same-run pristine dependency database preparation
+    standard_vs_user_specific: generic CI execution mechanism
+    why_here: dependency preparation belongs to test tooling, not product semantics
+    exclusions: no test-result reuse, no persistent database writes, no reduced test selection
+    acceptance: isolated clones preserve target installation hooks and selected tests; core and demo remain clean installs
