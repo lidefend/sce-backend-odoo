@@ -27,6 +27,7 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/db/create.sh",
     "scripts/ops/quick_input_scope.py",
     "scripts/ops/test_quick_input_scope.py",

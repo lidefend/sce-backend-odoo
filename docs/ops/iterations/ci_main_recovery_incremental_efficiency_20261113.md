@@ -103,6 +103,12 @@ the terminal channels. A genuinely explicit different revision remains an
 environment input. One full Quick is required to establish the first receipt in
 this normalized format; subsequent descendants can reuse the unchanged units.
 
+The migration Quick also encountered a synthetic DEMO-01 bank-account string
+reachable through the shared Git object store. It was registered as one exact
+blob in the existing personal-data false-positive registry, with no wildcard,
+path-wide exemption, or scanner relaxation. Both the personal-data scan and clean
+history scan pass with the exact registry entry.
+
 The independently confirmed project cockpit summary gap is recorded in
 `docs/demo/product_gap_registry_v1.md` for the next P1 product batch. Demo data
 and tooling do not synthesize the missing projection.
