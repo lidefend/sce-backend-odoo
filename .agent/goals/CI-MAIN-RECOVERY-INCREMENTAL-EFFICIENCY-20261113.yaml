@@ -25,6 +25,7 @@ goal:
       - scripts/ci/ci_path_ownership.py
       - scripts/ci/test_ci_path_ownership.py
       - .github/workflows/professional_quality_gate.yml
+      - make/dev.mk
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/split_plan_queue.md
       - scripts/verify/frontend_product_page_header_guard.py

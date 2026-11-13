@@ -152,7 +152,10 @@ class PathOwnershipRegistryTest(unittest.TestCase):
         self.assertEqual(backend["mode"], "full")
         self.assertEqual(backend["modules"], ["bundle", "kernel"])
         self.assertIn("shared_runtime:" + path, backend["reasons"])
-        self.assertIn("verify.frontend.standard_preview.unit", backend["tool_checks"])
+        self.assertIn(
+            "verify.frontend.acceptance.db_preparation.unit",
+            backend["tool_checks"],
+        )
 
     def test_ownership_tool_checks_name_registered_make_targets(self):
         makefiles = sorted((Path(__file__).resolve().parents[2] / "make").glob("*.mk"))

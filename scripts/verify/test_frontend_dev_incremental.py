@@ -478,11 +478,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         self.assertEqual(
             select_targets(["scripts/test/frontend_acceptance_db_ensure.sh"]),
-            ["verify.frontend.standard_preview.unit"],
+            ["verify.frontend.acceptance.db_preparation.unit"],
         )
         self.assertEqual(
             select_targets(["scripts/db/create.sh"]),
-            ["verify.frontend.standard_preview.unit"],
+            ["verify.frontend.acceptance.db_preparation.unit"],
         )
 
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:

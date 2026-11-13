@@ -40,7 +40,7 @@
       "backend_runtime": true,
       "control_plane": true,
       "tool_checks": [
-        "verify.frontend.standard_preview.unit"
+        "verify.frontend.acceptance.db_preparation.unit"
       ]
     },
     {

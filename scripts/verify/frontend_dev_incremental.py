@@ -841,8 +841,6 @@ RULES = (
         "scripts/dev/frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/dev/frontend_acceptance_up.sh",
-        "scripts/db/create.sh",
-        "scripts/test/frontend_acceptance_db_ensure.sh",
         "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/frontend_menu_navigation_diagnostic.py",
         "scripts/verify/frontend_my_work_approval_browser.mjs",
@@ -853,6 +851,12 @@ RULES = (
         "scripts/verify/test_frontend_standard_preview.py",
     ), (
         "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "scripts/db/create.sh",
+        "scripts/test/frontend_acceptance_db_ensure.sh",
+    ), (
+        "verify.frontend.acceptance.db_preparation.unit",
     )),
     Rule((
         "scripts/verify/frontend_my_work_approval_guard.py",

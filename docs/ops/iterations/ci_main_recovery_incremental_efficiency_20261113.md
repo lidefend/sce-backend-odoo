@@ -109,6 +109,13 @@ blob in the existing personal-data false-positive registry, with no wildcard,
 path-wide exemption, or scanner relaxation. Both the personal-data scan and clean
 history scan pass with the exact registry entry.
 
+The first remote run of the database mapping still invoked
+`verify.frontend.standard_preview.unit`, which contains Node/esbuild checks
+before frontend dependencies are installed. Database lifecycle tools now own a
+dedicated `verify.frontend.acceptance.db_preparation.unit` target containing only
+shell syntax and the dependency-free database preparation tests. The broader
+standard-preview suite retains its existing normal-lane coverage.
+
 The independently confirmed project cockpit summary gap is recorded in
 `docs/demo/product_gap_registry_v1.md` for the next P1 product batch. Demo data
 and tooling do not synthesize the missing projection.
