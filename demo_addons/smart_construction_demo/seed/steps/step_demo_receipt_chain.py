@@ -16,11 +16,13 @@ from .step_40_contracts_demo import (
     PROJECT_EXEC_CODE,
     _approve_payment,
     _fixed_demo01_receipt_request,
-    _payment_account_vals,
 )
 
 
 ACTIONABLE_RECEIPT_AMOUNT = 180000.0
+DEMO_COMPANY_ACCOUNT_LABEL = "项目基本户（演示）"
+DEMO_COMPANY_ACCOUNT_NO = "DEMO-COMPANY-ACCOUNT-001"
+DEMO_COMPANY_BANK_NAME = "中国建设银行德阳分行（演示）"
 
 
 def _one(records, message):
@@ -65,13 +67,51 @@ def _receipt_date(project, contract):
     )
 
 
-def _receipt_account_values(partner):
-    account = _payment_account_vals(partner)
+def _company_receipt_account(env, project):
+    """Return a stable snapshot of the project company's receiving account."""
+    company = project.company_id
+    partner = company.partner_id
+    if not partner:
+        raise UserError("DEMO-02 project company has no partner identity.")
+
+    account_name = partner.sc_account_name or partner.name
+    bank_name = partner.sc_bank_name
+    account_no = partner.sc_bank_account
+    banks = partner.bank_ids.sorted("id")
+    if account_no:
+        bank = banks.filtered(lambda item: item.acc_number == account_no)[:1]
+    else:
+        bank = banks[:1]
+    if bank:
+        bank_name = bank_name or bank.bank_id.name or DEMO_COMPANY_BANK_NAME
+        account_no = account_no or bank.acc_number
+    else:
+        bank_name = bank_name or DEMO_COMPANY_BANK_NAME
+        account_no = account_no or DEMO_COMPANY_ACCOUNT_NO
+        env["res.partner.bank"].sudo().create(
+            {
+                "partner_id": partner.id,
+                "acc_number": account_no,
+            }
+        )
+
+    snapshot = {
+        "sc_account_name": account_name,
+        "sc_bank_name": bank_name,
+        "sc_bank_account": account_no,
+    }
+    missing = {
+        field_name: value
+        for field_name, value in snapshot.items()
+        if partner[field_name] != value
+    }
+    if missing:
+        partner.sudo().write(missing)
     return {
-        "receiving_account": account["actual_payee_unit"],
-        "receiving_account_name": account["payment_account_name"],
-        "receiving_bank_name": account["payment_bank_name"],
-        "receiving_account_no": account["payment_account_no"],
+        "receiving_account": DEMO_COMPANY_ACCOUNT_LABEL,
+        "receiving_account_name": account_name,
+        "receiving_bank_name": bank_name,
+        "receiving_account_no": account_no,
     }
 
 
@@ -92,8 +132,21 @@ def _receipt_vals(project, contract, request, note):
         "income_category": "工程进度款收入",
         "payment_method": "银行转账",
         "note": note,
-        **_receipt_account_values(request.partner_id),
+        **_company_receipt_account(contract.env, project),
     }
+
+
+def _repair_draft_receipt_account(env, receipt, project, contract):
+    """Repair the known old demo bug without overwriting a user-edited draft."""
+    if (
+        receipt.state == "draft"
+        and receipt.receiving_account_name == contract.partner_id.name
+    ):
+        receipt.with_user(
+            env.ref("smart_construction_demo.user_sc_fin_01")
+        ).sudo(False).write(_company_receipt_account(env, project))
+        receipt.invalidate_recordset()
+    return receipt
 
 
 def _ensure_receipt(env, project, contract, request, xmlid, note):
@@ -108,7 +161,9 @@ def _ensure_receipt(env, project, contract, request, xmlid, note):
             or receipt.payment_request_id != request
         ):
             raise UserError(f"{xmlid} business identity conflict.")
-        return receipt
+        return _repair_draft_receipt_account(
+            env, receipt, project, contract
+        )
 
     candidates = Receipt.search(
         [("payment_request_id", "=", request.id)],
@@ -117,7 +172,9 @@ def _ensure_receipt(env, project, contract, request, xmlid, note):
     if len(candidates) > 1:
         raise UserError(f"{xmlid} receipt identity is not unique.")
     if candidates:
-        return candidates
+        return _repair_draft_receipt_account(
+            env, candidates, project, contract
+        )
 
     actor = _demo_action_record(
         env,
@@ -126,6 +183,22 @@ def _ensure_receipt(env, project, contract, request, xmlid, note):
         "smart_construction_demo.user_sc_fin_01",
     )
     return actor.create(_receipt_vals(project, contract, request, note))
+
+
+def _complete_receipt(env, receipt):
+    """Continue an existing receipt without replaying an already-complete step."""
+    if receipt.state == "draft":
+        drive_seeded_record(env, receipt, "received")
+    elif receipt.state == "confirmed":
+        _demo_action_record(env, receipt, "action_received").action_received()
+        receipt.invalidate_recordset()
+    elif receipt.state != "received":
+        raise UserError(
+            f"DEMO-02 receipt cannot continue from state {receipt.state}."
+        )
+    if receipt.state != "received":
+        raise UserError("DEMO-02 fixed receipt did not reach received.")
+    return receipt
 
 
 def _ensure_fixed_receipt_chain(env, project, contract, request):
@@ -139,12 +212,9 @@ def _ensure_fixed_receipt_chain(env, project, contract, request):
         "sc_demo_exec_receipt_income",
         "DEMO-02 主业务链固定工程进度回款。",
     )
-    drive_seeded_record(env, receipt, "received")
-    receipt.invalidate_recordset()
+    _complete_receipt(env, receipt)
     request.invalidate_recordset()
 
-    if receipt.state != "received":
-        raise UserError("DEMO-02 fixed receipt did not reach received.")
     if request.state != "done":
         raise UserError("DEMO-02 fixed request did not reach done.")
     ledger = receipt.treasury_ledger_id
@@ -241,7 +311,9 @@ def _ensure_actionable_receipt_draft(env, project, contract, request):
             or receipt.payment_request_id != request
         ):
             raise UserError("DEMO-02 actionable receipt draft identity conflict.")
-        return receipt
+        return _repair_draft_receipt_account(
+            env, receipt, project, contract
+        )
 
     candidates = Receipt.search(
         [("payment_request_id", "=", request.id)],
@@ -249,6 +321,10 @@ def _ensure_actionable_receipt_draft(env, project, contract, request):
     )
     if len(candidates) > 1:
         raise UserError("DEMO-02 actionable receipt draft is not unique.")
+    if candidates:
+        candidates = _repair_draft_receipt_account(
+            env, candidates, project, contract
+        )
     if not candidates:
         actor = _demo_action_record(
             env,

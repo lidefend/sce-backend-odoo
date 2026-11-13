@@ -117,10 +117,30 @@
         "project": {"id": 1, "project_code": "DEMO-PJ-EXEC"},
         "income_contract": {"id": 79, "state": "confirmed", "amount_total": 1200000.0},
         "fixed_request": {"id": 94, "state": "done", "amount": 120000.0},
-        "fixed_receipt": {"id": 28, "state": "received", "amount": 120000.0},
-        "fixed_ledger": {"id": 28, "state": "posted", "direction": "in", "amount": 120000.0},
-        "actionable_request": {"id": 324, "state": "approved", "amount": 180000.0},
-        "actionable_receipt": {"id": 29, "state": "draft", "amount": 180000.0}
+        "fixed_receipt": {
+          "id": 14,
+          "state": "received",
+          "amount": 120000.0,
+          "date": "2026-11-14",
+          "receiving_account_name": "四川智汇某某建设集团有限公司",
+          "receiving_account_no": "DEMO-COMPANY-ACCOUNT-001"
+        },
+        "fixed_ledger": {
+          "id": 17,
+          "state": "posted",
+          "direction": "in",
+          "amount": 120000.0,
+          "date": "2026-11-14"
+        },
+        "actionable_request": {"id": 110, "state": "approved", "amount": 180000.0},
+        "actionable_receipt": {
+          "id": 15,
+          "state": "draft",
+          "amount": 180000.0,
+          "date": "2026-11-14",
+          "receiving_account_name": "四川智汇某某建设集团有限公司",
+          "receiving_account_no": "DEMO-COMPANY-ACCOUNT-001"
+        }
       },
       "log": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/receipt_chain_readback.log"
     },
@@ -148,18 +168,44 @@
       },
       "command": "make ci.local.iteration",
       "executed_targets": 4,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261113T152356Z-258180-678994812/receipt.json",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T155414Z-419630-991692571/receipt.json",
       "targets": {
         "verify.agent.ledger.unit": {"status": "passed", "tests": 18},
         "verify.demo.lifecycle.unit": {"status": "passed", "tests": 83},
         "verify.demo.scenario_step.unit": {"status": "passed", "tests": 9},
-        "verify.local.dev.golden_chain.orm": {"status": "passed", "tests": 11}
+        "verify.local.dev.golden_chain.orm": {"status": "passed", "tests": 12}
       },
       "limitations": [
         "This is development iteration evidence, not current-SHA remote CI.",
         "No P0-P3 product surface was changed or revalidated.",
         "No optional full Quick, navigation matrix or browser matrix was run."
       ]
+    },
+    "review_remediation": {
+      "status": "passed",
+      "reviewer": "Leedefend",
+      "reviewed_head": "56c7dc9c016e1903a98ce59a6879e6c6f7647dc8",
+      "findings": [
+        {
+          "severity": "P2",
+          "issue": "confirmed receipt was sent through action_confirm again",
+          "resolution": "demo orchestration now resumes confirmed receipts at action_received"
+        },
+        {
+          "severity": "P2",
+          "issue": "receipt account snapshot used the project owner instead of the project company",
+          "resolution": "new and known old draft receipts use the project company's account snapshot; counterparty identity remains the owner"
+        },
+        {
+          "severity": "P2",
+          "issue": "golden test required an existing receipt date to equal the contract start date",
+          "resolution": "new receipts assert the declared contract-start date; existing receipts require the actual date to be on or after contract start and equal to the ledger date"
+        }
+      ],
+      "runtime_refresh": {
+        "command": "CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo",
+        "status": "passed"
+      }
     },
     "diagnosed_failure": {
       "status": "resolved",

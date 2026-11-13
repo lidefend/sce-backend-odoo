@@ -37,6 +37,7 @@ from odoo.addons.smart_construction_demo.seed.steps.step_demo_business_chain imp
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_demo_receipt_chain import (
     ACTIONABLE_RECEIPT_AMOUNT,
+    _complete_receipt,
     _receipt_vals,
     run as run_demo_receipt_chain,
 )
@@ -72,6 +73,12 @@ class TestDemoGoldenChain(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.fixed_receipt_preexisting = bool(
+            cls.env.ref(
+                "smart_construction_demo.sc_demo_exec_receipt_income",
+                raise_if_not_found=False,
+            )
+        )
         if not cls.env.ref(
             "smart_construction_demo.sc_demo_exec_expense_contract",
             raise_if_not_found=False,
@@ -151,14 +158,30 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(receipt.currency_id, request.currency_id)
         self.assertTrue(receipt.date_receipt)
         if contract.date_start:
-            self.assertEqual(receipt.date_receipt, contract.date_start)
-        self.assertTrue(receipt.receiving_account_name)
-        self.assertTrue(receipt.receiving_bank_name)
-        self.assertTrue(receipt.receiving_account_no)
+            self.assertGreaterEqual(receipt.date_receipt, contract.date_start)
+        company_partner = project.company_id.partner_id
+        if not self.fixed_receipt_preexisting:
+            self.assertEqual(
+                receipt.receiving_account_name,
+                company_partner.sc_account_name,
+            )
+            self.assertEqual(
+                receipt.receiving_bank_name,
+                company_partner.sc_bank_name,
+            )
+            self.assertEqual(
+                receipt.receiving_account_no,
+                company_partner.sc_bank_account,
+            )
+            self.assertNotEqual(
+                receipt.receiving_account_name,
+                contract.partner_id.name,
+            )
         self.assertEqual(receipt.treasury_ledger_id, ledger)
         self.assertEqual(ledger.state, "posted")
         self.assertEqual(ledger.direction, "in")
         self.assertAlmostEqual(ledger.amount, request.amount)
+        self.assertEqual(ledger.date, receipt.date_receipt)
         self.assertEqual(ledger.project_id, project)
         self.assertEqual(ledger.payment_request_id, request)
         self.assertEqual(
@@ -196,9 +219,11 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(draft.contract_id, contract)
         self.assertEqual(draft.partner_id, contract.partner_id)
         self.assertEqual(draft.currency_id, request.currency_id)
-        self.assertTrue(draft.receiving_account_name)
-        self.assertTrue(draft.receiving_bank_name)
-        self.assertTrue(draft.receiving_account_no)
+        company_partner = project.company_id.partner_id
+        self.assertEqual(draft.receiving_account_name, company_partner.sc_account_name)
+        self.assertEqual(draft.receiving_bank_name, company_partner.sc_bank_name)
+        self.assertEqual(draft.receiving_account_no, company_partner.sc_bank_account)
+        self.assertNotEqual(draft.receiving_account_name, contract.partner_id.name)
 
         draft.with_user(fin1).sudo(False).write(
             {
@@ -328,6 +353,11 @@ class TestDemoGoldenChain(TransactionCase):
             )
         )
         self.assertEqual(receipt.state, "draft")
+        self.assertEqual(receipt.date_receipt, contract.date_start)
+        self.assertEqual(
+            receipt.receiving_account_name,
+            project.company_id.partner_id.sc_account_name,
+        )
         self.assertEqual(
             self.env["sc.receipt.income"]
             .with_user(fin1)
@@ -352,6 +382,59 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertEqual(receipt.treasury_ledger_id.direction, "in")
         self.assertEqual(receipt.treasury_ledger_id.state, "posted")
         self.assertAlmostEqual(receipt.treasury_ledger_id.amount, request.amount)
+
+    def test_demo02_confirmed_receipt_resumes_at_finance_receipt(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        submitter = self.env.ref(
+            "smart_construction_demo.user_demo_role_project_a_member"
+        )
+        fin1 = self.env.ref("smart_construction_demo.user_sc_fin_01")
+        request = (
+            self.env["payment.request"]
+            .with_user(submitter)
+            .sudo(False)
+            .create(
+                {
+                    "type": "receive",
+                    "project_id": project.id,
+                    "partner_id": contract.partner_id.id,
+                    "contract_id": contract.id,
+                    "amount": 60000.0,
+                    "date_request": contract.date_start,
+                    "note": "DEMO-02 confirmed receipt continuation regression",
+                }
+            )
+        )
+        request = _approve_payment(self.env, request)
+        receipt = (
+            self.env["sc.receipt.income"]
+            .with_user(fin1)
+            .sudo(False)
+            .create(
+                _receipt_vals(
+                    project,
+                    contract,
+                    request,
+                    "DEMO-02 confirmed receipt continuation regression",
+                )
+            )
+        )
+        receipt.with_user(fin1).sudo(False).action_confirm()
+        _demo_finish_reviews(self.env, receipt)
+        receipt.invalidate_recordset()
+        self.assertEqual(receipt.state, "confirmed")
+
+        _complete_receipt(self.env, receipt)
+        request.invalidate_recordset()
+
+        self.assertEqual(receipt.state, "received")
+        self.assertEqual(request.state, "done")
+        self.assertEqual(receipt.treasury_ledger_id.direction, "in")
+        self.assertEqual(receipt.treasury_ledger_id.state, "posted")
+        self.assertEqual(receipt.treasury_ledger_id.date, receipt.date_receipt)
 
     def test_demo01_exec_project_chain_and_project_summary(self):
         project = self.env.ref("smart_construction_demo.sc_demo_project")
