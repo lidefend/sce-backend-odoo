@@ -114,7 +114,7 @@
     "baseline_inventory": {
       "status": "passed",
       "identity": {
-        "head": "421eac7fd19ae7c51ed5dc25d8ada3f4bec66df6",
+        "head": "5f4565981005bd7b1045d8ae3705f64d05b15ade",
         "stage": "clean_baseline"
       },
       "database_policy": {
@@ -147,7 +147,7 @@
     "demo01_implementation": {
       "status": "passed",
       "identity": {
-        "head": "421eac7fd19ae7c51ed5dc25d8ada3f4bec66df6",
+        "head": "5f4565981005bd7b1045d8ae3705f64d05b15ade",
         "stage": "head_plus_demo01_dirty_scope",
         "runtime": "sc-local-dev db=sc_dev_demo"
       },

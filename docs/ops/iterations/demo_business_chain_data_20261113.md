@@ -5,6 +5,7 @@
 - 仓库：`sce-backend-odoo`
 - 起始基线：`70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`（PR #880）
 - 同步基线：`ab739d620a1dc55b85133d64dc69a3d31ab105c1`（PR #883，项目证据汇总修复）
+- 当前验证候选：`5f4565981005bd7b1045d8ae3705f64d05b15ade`
 - 分支：`feature/demo-business-chain-data-20261113`
 - 工作树：`/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113`
 - Formal Product Layer：P4 演示交付工具
