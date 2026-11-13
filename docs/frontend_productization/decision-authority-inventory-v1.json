@@ -197,7 +197,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordContractSemantics.ts",
       "lines": [
-        106
+        108
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1442
+        1444
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        573
+        574
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1432
+        1433
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1179,7 +1179,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3037
+        3039
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1419,7 +1419,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        966
+        967
       ],
       "occurrences": 1,
       "classification": "contract-derived",

@@ -175,6 +175,7 @@
 </template>
 
 <script setup lang="ts">
+import { shouldHydrateSceneContent } from '../app/sceneEntryContract';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ActionView from './ActionViewShell.vue';
@@ -927,7 +928,7 @@ async function resolveScene() {
       return;
     }
     scene.value = resolvedScene;
-    if (!sceneBlocks.value.length || !hasHandlingEntryCatalog(scene.value)) {
+    if (shouldHydrateSceneContent(scene.value.content_kind, Boolean(sceneBlocks.value.length && hasHandlingEntryCatalog(scene.value)))) {
       await hydrateSceneReadyForCurrentScene(sceneKey);
       if (!ownsResolution()) return;
       scene.value = getSceneByKey(sceneKey) || resolvedScene;

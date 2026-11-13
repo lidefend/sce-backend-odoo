@@ -780,6 +780,7 @@
   </ScPage>
 </template>
 <script setup lang="ts">
+import { shouldHydrateSceneContent } from '../app/sceneEntryContract';
 import { collectColumnSelections } from '../app/presentation/collectionStatusPresentation';
 import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVisibility';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../utils/fieldSemantics.ts';
@@ -1435,7 +1436,8 @@ function handleSceneBlockAction(payload: { action?: { target?: Record<string, un
 watch(
   () => [sceneKey.value, sceneReadyListSurface.value.sceneBlocks.length],
   async ([sceneKeyValue, blockCount]) => {
-    if (!sceneKeyValue || Number(blockCount || 0) > 0 || sceneReadyHydrateRequested.value) return;
+    const meta = sceneReadyEntry.value?.meta as Record<string, unknown> | undefined;
+    if (!sceneKeyValue || !shouldHydrateSceneContent(meta?.content_kind, Number(blockCount || 0) > 0) || sceneReadyHydrateRequested.value) return;
     sceneReadyHydrateRequested.value = true;
     try {
       const result = await intentRequest<Record<string, unknown>>({

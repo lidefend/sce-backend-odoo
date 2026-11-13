@@ -580,6 +580,17 @@ try {
     const page = await context.newPage();
     if (theme === 'system') await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     const errors = [];
+    let requestStage = 'startup';
+    const requestRows = new Map();
+    const intentRequests = [];
+    report.startup[`${viewport.name}Requests`] = intentRequests;
+    page.on('requestfinished', (request) => {
+      const row = requestRows.get(request);
+      if (!row) return;
+      const timing = request.timing();
+      row.durationMs = timing.responseEnd >= 0 ? timing.responseEnd : null;
+      requestRows.delete(request);
+    });
     let expectedReadFailureResponses = 0;
     let expectedReadFailureConsoleErrors = 0;
     let expectedSessionExpiredConsoleErrors = 0;
@@ -610,6 +621,14 @@ try {
       try { body = JSON.parse(request.postData() || '{}'); } catch {}
       const intent = String(body.intent || '');
       const method = String(body?.params?.method || body.method || '');
+      if (request.url().includes('/api/v1/intent') && intent) {
+        const row = { stage: requestStage, intent,
+          sceneKey: intent === 'system.init' ? String(body.params?.scene_key || '') : undefined,
+          sceneReadyMode: intent === 'system.init' ? String(body.params?.scene_ready_mode || '') : undefined,
+          durationMs: null };
+        intentRequests.push(row);
+        requestRows.set(request, row);
+      }
       if (/(^|\.)(create|write|unlink|execute_button|upload)(\.|$)/.test(intent) || /^(create|write|unlink|web_save|action_)/.test(method)) report.mutationCount += 1;
     });
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
@@ -687,6 +706,7 @@ try {
     }
     for (const target of routes) {
       if (target.viewports && !target.viewports.includes(viewport.name)) continue;
+      requestStage = target.name;
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
@@ -4839,7 +4859,13 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, collectionWidthEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
+      const sceneHydrationRequests = intentRequests.filter((row) => row.stage === target.name
+        && row.intent === 'system.init' && row.sceneKey && row.sceneReadyMode === 'full');
+      if (target.expectedSceneHydrationRequests !== undefined
+        && sceneHydrationRequests.length !== target.expectedSceneHydrationRequests) {
+        errors.push(`scene hydration count ${target.name}: expected ${target.expectedSceneHydrationRequests}, got ${sceneHydrationRequests.length}`);
+      }
+      report.routes.push({ sceneHydrationRequests, name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, collectionWidthEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();

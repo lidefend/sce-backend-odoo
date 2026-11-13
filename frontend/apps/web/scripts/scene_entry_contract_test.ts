@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   ownsSceneRoute,
+  shouldHydrateSceneContent,
   resolveSceneRuntimeDiagnostic,
   resolveSceneContractEntryIntent,
 } from '../src/app/sceneEntryContract';
@@ -8,6 +9,17 @@ import {
 import { getSceneByKey, setSceneRegistryFromSceneReadyContract } from '../src/app/resolvers/sceneRegistry';
 let cases = 0;
 const equal: typeof assert.equal = (...args) => { cases += 1; assert.equal(...args); };
+
+// Native delegation explicitly declares that no scene blocks need hydration.
+// Missing/unknown declarations retain the fetch path; they do not acquire the
+// native-delegate exemption from an empty block array or a model name.
+for (const hasContent of [false, true]) {
+  equal(shouldHydrateSceneContent('native_delegate', hasContent), false);
+}
+for (const kind of ['designed_scene', 'registry', '', undefined, null, 'native_delegate_typo']) {
+  equal(shouldHydrateSceneContent(kind, false), true);
+  equal(shouldHydrateSceneContent(kind, true), false);
+}
 
 // The scene runtime owns exactly one route.
 equal(ownsSceneRoute('scene'), true);

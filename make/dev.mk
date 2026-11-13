@@ -116,6 +116,8 @@ local.dev.frontend.watch: guard.prod.forbid local.dev.ready
 .PHONY: verify.local.dev.static_proxy_target.unit
 verify.local.dev.static_proxy_target.unit: guard.prod.forbid
 	@node scripts/verify/static_proxy_target_test.mjs
+	@node --check scripts/verify/local_dev_candidate_visual_smoke.mjs
+	@python3 -m unittest scripts.verify.test_local_dev_candidate_frontend
 
 local.dev.candidate.frontend.up: guard.prod.forbid verify.local.dev.static_proxy_target.unit
 	@python3 scripts/dev/local_dev_candidate_frontend.py up

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { shouldHydrateSceneContent } from '../../app/sceneEntryContract';
 import { computed, nextTick, ref, watch, type ComputedRef, type Ref } from 'vue';
 import {
   resolveContractV2FieldDescriptorMap,
@@ -99,7 +100,8 @@ export function useRecordContractSemantics(context: {
     ? resolveFormSceneReady(sceneReadyEntry.value).requiredFields : []);
   const sceneReadyFormSurface = computed(() => resolveFormSceneReady(useSceneFormAugmentations.value ? sceneReadyEntry.value : null));
   watch(() => [sceneReadySceneKey.value, sceneReadyFormSurface.value.sceneBlocks.length], async ([sceneKey, blockCount]) => {
-    if (!sceneKey || Number(blockCount || 0) > 0 || sceneReadyHydrateRequested.value) return;
+    const meta = sceneReadyEntry.value?.meta as Record<string, unknown> | undefined;
+    if (!sceneKey || !shouldHydrateSceneContent(meta?.content_kind, Number(blockCount || 0) > 0) || sceneReadyHydrateRequested.value) return;
     sceneReadyHydrateRequested.value = true;
     try {
       const result = await intentRequest<Record<string, unknown>>({

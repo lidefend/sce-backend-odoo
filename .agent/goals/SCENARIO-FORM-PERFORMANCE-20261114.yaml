@@ -1,0 +1,24 @@
+schema_version: 1
+goal:
+  id: SCENARIO-FORM-PERFORMANCE-20261114
+  title: 场景化后表单与系统运行效率专项
+  status: verification_pending
+  formal_product_layer: P0 contract consumption and scene binding; P4 measurement
+  layer_target: end-to-end scene and record form performance investigation
+  module: smart_core, generic Vue consumers and existing browser probes
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: 先建立可复现的端到端基线与成本归因，再在机制所有者层实施优化。
+  why_not_elsewhere: 不通过客户配置、前端业务特判或放宽权限与性能预算掩盖开销。
+  objective: 研究场景化后表单打开变慢，形成证据分级、按收益排序的优化专题及可执行验收方案。
+  acceptance:
+    - 登记唯一专题与可续跑索引
+    - 源码核对场景、契约、数据、关系字段和渲染调用链
+    - 区分历史证据、当前测量、待验证假设
+    - 明确优化顺序、责任层、验收矩阵、回退与下一步
+    - 执行适用的增量治理检查，失败如实记录
+  exclusions:
+    - production deployment or runtime mutation
+    - new database, environment or credentials
+    - other active business-chain topic
+    - unmeasured claims of performance improvement
+  rollback: 撤销本专题 P0/P4 代码及登记；缓存版本与装配摘要一起恢复；无数据库写入。
