@@ -1058,14 +1058,11 @@
       ]
     },
     "scripts/verify/local_dev_project_profile_write_browser.mjs": {
-      "status": "blocked_legacy",
-      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
-      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "status": "supported",
+      "reason": "The governed local.dev candidate frontend now logs in under /t/demo, reads the tenant-namespace session token, and sends every intent inside the namespace API path without a database hint or cross-entry token guessing.",
+      "replacement": "local.dev.project_profile_write_browser for its declared isolated project-profile write journey.",
       "prior_recipe_targets": [],
-      "audit_rules": [
-        "client_db_query",
-        "legacy_db_token"
-      ]
+      "audit_rules": []
     },
     "scripts/verify/local_dev_tender_award_browser.mjs": {
       "status": "blocked_legacy",

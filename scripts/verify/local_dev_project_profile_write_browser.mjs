@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import './lib/probe_toolchain_blocked.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -11,6 +10,8 @@ const EXPECTED_DB = 'sc_dev_demo';
 const EXPECTED_ENVIRONMENT = 'dev';
 const EXPECTED_DBFILTER = '^sc_dev_demo$';
 const EXPECTED_FRONTEND_URL = 'http://127.0.0.1:5176';
+const ENTRY_BASE_PATH = '/t/demo';
+const ENTRY_TOKEN_SCOPE = `tenant:${ENTRY_BASE_PATH}`;
 const FIXTURE_NAMESPACE = 'codex_p4_project_profile_write';
 const BATCH_PATTERN = /^[a-z0-9][a-z0-9-]{2,31}$/;
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -28,6 +29,17 @@ const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
 function deny(message) { throw new Error(`[DENY] ${message}`); }
+function appPathname(value) {
+  const pathname = value instanceof URL ? value.pathname : new URL(String(value)).pathname;
+  return pathname === ENTRY_BASE_PATH
+    ? '/'
+    : pathname.startsWith(`${ENTRY_BASE_PATH}/`)
+      ? pathname.slice(ENTRY_BASE_PATH.length)
+      : pathname;
+}
+function isProjectRecordPath(value) {
+  return /^\/(?:f|r)\/project\.project\/[1-9][0-9]*\/?$/.test(appPathname(value));
+}
 function requiredPositiveInteger(name) {
   const raw = String(process.env[name] ?? '').trim();
   if (!/^[1-9][0-9]*$/.test(raw)) deny(`${name} must be an explicit positive integer`);
@@ -351,11 +363,10 @@ async function successfulIntentData(response, label) {
 }
 async function login(page, login) {
   page.setDefaultTimeout(20000);
-  await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(`${FRONTEND_URL}${ENTRY_BASE_PATH}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const inputs = page.locator('input');
   await inputs.nth(0).fill(login);
   await inputs.nth(1).fill(PASSWORD);
-  if (await inputs.nth(2).isEnabled().catch(() => false)) await inputs.nth(2).fill(DB_NAME);
   const loginResponse = intentResponsePromise(page, 'login');
   const initResponse = intentResponsePromise(page, 'system.init');
   await page.getByRole('button', { name: /^登录$/ }).click();
@@ -365,23 +376,25 @@ async function login(page, login) {
     init: await successfulIntentData(await initResponse, 'system_init'),
   };
 }
-async function token(page) { return page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', DB_NAME); }
+async function token(page) {
+  return page.evaluate((scope) => sessionStorage.getItem(`sc_auth_token:${scope}`) || '', ENTRY_TOKEN_SCOPE);
+}
 async function intent(page, name, params, allowError = false) {
   const bearer = await token(page);
-  return page.evaluate(async ({ db, bearer, name, params, allowError }) => {
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(db)}`, {
+  return page.evaluate(async ({ basePath, bearer, name, params, allowError }) => {
+    const response = await fetch(`${basePath}/api/v1/intent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: bearer ? `Bearer ${bearer}` : '' },
       body: JSON.stringify({ intent: name, params }),
     });
     const body = await response.json().catch(() => ({}));
     if (!allowError && (!response.ok || body.ok === false)) throw new Error(JSON.stringify(body.error || body));
     return { status: response.status, ok: body.ok === true, data: body.data || {}, error: body.error || {} };
-  }, { db: DB_NAME, bearer, name, params, allowError });
+  }, { basePath: ENTRY_BASE_PATH, bearer, name, params, allowError });
 }
 async function readProject(page) {
   const result = await intent(page, 'api.data', {
     op: 'read', model: 'project.project', ids: [PROJECT_ID],
-    fields: ['id', 'name', 'project_code', 'partner_id', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
+    fields: ['id', 'name', 'project_code', 'partner_id', 'date_start', 'date', 'initiation_date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
   });
   return result.data.records?.[0] || null;
 }
@@ -415,6 +428,7 @@ async function readProjectFacts(page) {
       partner_id: many2oneId(project?.partner_id),
       date_start: project?.date_start || false,
       date: project?.date || false,
+      initiation_date: project?.initiation_date || false,
       description: project?.description || false,
       lifecycle_state: project?.lifecycle_state || false,
       responsibility_ids: responsibilityIds.slice().sort((left, right) => left - right),
@@ -450,6 +464,7 @@ async function captureDraftSnapshot(page) {
         name: fieldControls('name'),
         date_start: fieldControls('date_start'),
         date: fieldControls('date'),
+        initiation_date: fieldControls('initiation_date'),
         description: fieldControls('description'),
       },
       responsibility: {
@@ -1135,7 +1150,7 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
     const writerReadback = await readProjectTagIds(page);
     const targetUrl = new URL(page.url());
     await readonlyPage.goto(targetUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await readonlyPage.waitForURL((url) => url.pathname === '/access-denied'
+    await readonlyPage.waitForURL((url) => appPathname(url) === '/access-denied'
       && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED', { timeout: 30000 });
     const denialTextVisible = await readonlyPage.getByText(/无权限|没有权限|访问受限|权限不足/).first()
       .isVisible({ timeout: 10000 }).catch(() => false);
@@ -1286,12 +1301,28 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
 
 async function openProject(page) {
   // Reuse the verified formal navigation chain; do not hand-splice a form route.
-  await page.goto(`${FRONTEND_URL}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.locator('li[data-navigation-label="项目中心"] > .t-menu__item').click();
-  await page.locator('li[data-navigation-label="项目创建"] > .t-menu__item').click();
-  await page.locator(`li[data-navigation-node][data-navigation-menu-id="${MENU_ID}"]`).click();
-  await page.waitForFunction(() => !/正在载入数据|正在加载列表/.test(document.body.innerText || ''), null, { timeout: 30000 });
-  if (PROJECT_NAME) await page.getByRole('button', { name: PROJECT_NAME, exact: true }).waitFor({ timeout: 30000 });
+  await page.goto(`${FRONTEND_URL}${ENTRY_BASE_PATH}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const workspace = page.locator('[data-role-home][data-state="ready"]').first();
+  await workspace.waitFor({ state: 'visible', timeout: 30000 });
+  const homeTarget = page.locator(
+    `[data-login-home-block="my_objects"] [data-object-model="project.project"][data-object-record-id="${PROJECT_ID}"]`,
+  ).first();
+  const homeTargetVisible = await homeTarget
+    .waitFor({ state: 'visible', timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  let openedFromWorkspace = false;
+  if (homeTargetVisible) {
+    await homeTarget.getByRole('button', { name: '打开', exact: true }).click();
+    await page.waitForURL((url) => isProjectRecordPath(url), { timeout: 30000 });
+    openedFromWorkspace = true;
+  } else {
+    await page.locator('li[data-navigation-label="项目中心"] > .t-menu__item').click();
+    await page.locator('li[data-navigation-label="项目创建"] > .t-menu__item').click();
+    await page.locator(`li[data-navigation-node][data-navigation-menu-id="${MENU_ID}"]`).click();
+    await page.waitForFunction(() => !/正在载入数据|正在加载列表/.test(document.body.innerText || ''), null, { timeout: 30000 });
+    if (PROJECT_NAME) await page.getByRole('button', { name: PROJECT_NAME, exact: true }).waitFor({ timeout: 30000 });
+  }
   let formContractSeen = false;
   const formContract = new Promise((resolve) => {
     const timer = setTimeout(() => resolve(false), 30000);
@@ -1306,15 +1337,24 @@ async function openProject(page) {
       } catch { /* diagnostic listener only */ }
     });
   });
-  const target = page.locator(`[data-record-id="${PROJECT_ID}"], [data-id="${PROJECT_ID}"]`).first();
-  if (await target.count()) await target.click();
-  else {
-    const rows = PROJECT_NAME ? page.getByRole('button', { name: PROJECT_NAME, exact: true }) : page.locator('[data-semantic-component="ListPage"] button').filter({ hasText: /项目/ });
-    const count = await rows.count();
-    if (!count) throw new Error(`target_record_not_found:${PROJECT_ID}`);
-    await rows.first().click();
+  if (!openedFromWorkspace) {
+    const target = page.locator(`[data-record-id="${PROJECT_ID}"], [data-id="${PROJECT_ID}"]`).first();
+    if (await target.count()) await target.click();
+    else {
+      const rows = PROJECT_NAME ? page.getByRole('button', { name: PROJECT_NAME, exact: true }) : page.locator('[data-semantic-component="ListPage"] button').filter({ hasText: /项目/ });
+      const count = await rows.count();
+      if (!count) throw new Error(`target_record_not_found:${PROJECT_ID}`);
+      await rows.first().click();
+    }
+  } else {
+    // The home object route proves the delivered record identity. The canonical
+    // form route is the declared editable surface for that same record.
+    await page.goto(
+      `${FRONTEND_URL}${ENTRY_BASE_PATH}/f/project.project/${PROJECT_ID}`,
+      { waitUntil: 'domcontentloaded', timeout: 45000 },
+    );
   }
-  await page.waitForURL((url) => url.pathname.startsWith('/f/project.project/'), { timeout: 30000 });
+  await page.waitForURL((url) => isProjectRecordPath(url), { timeout: 30000 });
   if (!(await formContract)) throw new Error(`form_contract_not_ready:${JSON.stringify({ url: page.url(), formContractSeen })}`);
   await page.waitForFunction(() => {
     const text = document.body.innerText || '';
@@ -1325,25 +1365,48 @@ async function openProject(page) {
     return fields > 0 && save || explicitError;
   }, null, { timeout: 30000 });
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
-  if (!new URL(state.url).pathname.startsWith('/f/project.project/')) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
-  if (new URL(state.url).pathname === '/login' || new URL(state.url).pathname.startsWith('/login/')) throw new Error(`login_redirect:${JSON.stringify(state)}`);
+  if (!isProjectRecordPath(state.url)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
+  if (appPathname(state.url) === '/login' || appPathname(state.url).startsWith('/login/')) throw new Error(`login_redirect:${JSON.stringify(state)}`);
   if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
   return state;
 }
-function field(page, name) { return page.locator(`[data-field-name="${name}"]`).first(); }
+function field(page, name) { return page.locator(`[data-field-name="${name}"]:visible`).first(); }
 async function fillField(page, name, value) {
   const root = field(page, name);
-  const control = root.locator('input, textarea, [contenteditable="true"]').first();
+  const control = root.locator('input:visible, textarea:visible, [contenteditable="true"]:visible').first();
   await control.waitFor({ timeout: 12000 });
   if (await control.getAttribute('contenteditable') === 'true') await control.fill(value);
   else await control.fill(value);
 }
-async function chooseDate(page, index, day) {
-  const input = page.locator('[data-field-name="date_start"] input').nth(index);
+async function chooseDate(page, input, day) {
+  await page.keyboard.press('Escape').catch(() => null);
   await input.click();
   const popup = page.locator('.t-popup__content:visible .t-date-picker__panel').last();
   await popup.waitFor({ state: 'visible', timeout: 12000 });
-  await popup.locator('td:not(.t-is-disabled) .t-date-picker__cell-inner').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
+  const cell = popup.locator('td:not(.t-is-disabled) .t-date-picker__cell-inner').filter({ hasText: new RegExp(`^${day}$`) }).first();
+  const cellIdentity = await cell.evaluate((element) => ({
+    text: element.textContent,
+    inner_class: element.className,
+    parent_class: element.parentElement?.className,
+    grandparent_class: element.parentElement?.parentElement?.className,
+  }));
+  await cell.click();
+  await page.keyboard.press('Escape').catch(() => null);
+  await popup.waitFor({ state: 'hidden', timeout: 12000 }).catch(() => null);
+  const selected = normalize(await input.inputValue());
+  if (!selected) {
+    const inputs = await page.locator('[data-field-name] input').evaluateAll(
+      (rows) => rows.map((row) => ({
+        aria_label: row.getAttribute('aria-label'),
+        value: row.value,
+        placeholder: row.getAttribute('placeholder'),
+        visible: Boolean(row.getClientRects().length),
+      })),
+    );
+    const panels = await page.locator('.t-popup__content:visible .t-date-picker__panel').count();
+    throw new Error(`date_selection_missing:${day}:${JSON.stringify({ inputs, panels, cellIdentity })}`);
+  }
+  return selected;
 }
 async function save(page) {
   const button = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
@@ -1883,9 +1946,9 @@ async function verifyPermissionBoundary(browser, writerPage, report, beforeFacts
     if (!passed) throw new Error(`readonly_write_denial_not_proven:${JSON.stringify({ code, ok: rejected.ok, unchanged })}`);
     // Deliberately revisit the writer's URL as a refusal counterexample.
     const targetUrl = new URL(writerPage.url());
-    const targetRoute = targetUrl.pathname + targetUrl.search;
+    const targetRoute = appPathname(targetUrl) + targetUrl.search;
     await page.goto(targetUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForURL((url) => url.pathname === '/access-denied'
+    await page.waitForURL((url) => appPathname(url) === '/access-denied'
       && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED'
       && url.searchParams.get('from') === targetRoute, { timeout: 30000 });
     await page.getByText(/无权限|没有权限|访问受限|权限不足/).first().waitFor({ state: 'visible', timeout: 10000 });
@@ -2042,15 +2105,12 @@ async function main() {
     }
     const marker = `${originalName} · 真实保存 ${Date.now()}`;
     await fillField(page, 'name', marker);
-    const dateRoot = field(page, 'date_start');
-    const dateInputs = dateRoot.locator('input');
-    if (await dateInputs.count() >= 2) {
-      await chooseDate(page, 0, '15');
-      await chooseDate(page, 1, '15');
-    } else {
-      await dateInputs.first().fill('2026-09-15');
-      const end = field(page, 'date').locator('input').first();
-      if (await end.count()) await end.fill('2026-10-15');
+    const initiationDateInput = field(page, 'initiation_date').locator('input:visible').first();
+    const selectedInitiationDate = await chooseDate(page, initiationDateInput, '10');
+    const descriptionTab = page.locator('[data-section-tab="描述"]').first();
+    if (await descriptionTab.count()) {
+      await descriptionTab.click();
+      await field(page, 'description').waitFor({ state: 'visible', timeout: 15000 });
     }
     await fillField(page, 'description', 'P4 真实保存验收说明');
     const responsibility = field(page, 'responsibility_ids');
@@ -2061,23 +2121,27 @@ async function main() {
     if (await firstNote.count()) await firstNote.fill('P4 责任修改');
     await rows.nth(1).locator('.o2m-row-remove').click();
     await responsibility.locator('.o2m-create').click();
-    const createdRow = responsibility.locator('tbody tr').last();
-    const roleSelect = createdRow.locator('select').first();
-    if (await roleSelect.count()) await roleSelect.selectOption('finance');
-    else {
-      const roleInput = createdRow.locator('input[placeholder="请选择角色"]').first();
-      if (await roleInput.count()) { await roleInput.click(); await page.locator('.t-select-option').filter({ hasText: '项目经理' }).first().click(); }
-      // Empty relation controls change their placeholder before the first query.
-      // Bind the accessible field identity and require the real selection.
-      const userInput = createdRow.getByRole('textbox', { name: '责任人', exact: true });
+    const createdRow = responsibility.locator('tbody tr').filter({ hasText: '新增' }).last();
+    const roleInput = createdRow.locator('input:visible[aria-label="角色"]').first();
+    const roleValue = normalize(await roleInput.inputValue());
+    if (!roleValue || roleValue === 'false') {
+      await roleInput.click();
+      await page.locator('.t-select-option:visible').filter({ hasText: '项目经理' }).first().click();
+    }
+    const userInput = createdRow.locator('input:visible[aria-label="责任人"]').first();
+    const userValue = normalize(await userInput.inputValue());
+    if (!userValue) {
       await userInput.click();
+      await userInput.fill('张建国');
       await page.locator('.t-select-option:visible').filter({ hasText: '张建国' }).first().click();
     }
-    const rowInputs = createdRow.locator('input');
+    const rowInputs = createdRow.locator('input:visible');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');
-    const roleValue = await createdRow.locator('input[placeholder="请选择角色"]').inputValue().catch(() => '');
-    const userValue = await createdRow.getByRole('textbox', { name: '责任人', exact: true }).inputValue().catch(() => '');
-    if (await roleSelect.count() === 0 && (!roleValue || !userValue)) throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: Boolean(roleValue), user: Boolean(userValue) })}`);
+    const finalRoleValue = normalize(await roleInput.inputValue());
+    const finalUserValue = normalize(await userInput.inputValue());
+    if (!finalRoleValue || finalRoleValue === 'false' || !finalUserValue) {
+      throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: finalRoleValue, user: finalUserValue })}`);
+    }
     if (!await dirty(page)) throw new Error('draft did not become dirty');
     const draftBeforeFailure = NETWORK_FAILURE_RECOVERY ? await captureDraftSnapshot(page) : null;
     const writes = recordWriteRequests(page);
@@ -2087,11 +2151,11 @@ async function main() {
     if (!NETWORK_FAILURE_RECOVERY) {
       await page.waitForTimeout(400);
       const after = await readProject(page);
-      report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
+      report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.initiation_date === selectedInitiationDate && writes.length === 1 ? 'PASS' : 'FAIL', before, after, selected_initiation_date: selectedInitiationDate, write_count: writes.length, responsibility_rows_before: initialRows });
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
       const refreshed = await readProject(page);
-      report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
+      report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.initiation_date === selectedInitiationDate ? 'PASS' : 'FAIL', refreshed, selected_initiation_date: selectedInitiationDate });
     }
     await page.screenshot({ path: path.join(OUT, NETWORK_FAILURE_RECOVERY ? 'recovery-after-refresh.png' : 'normal-save.png'), fullPage: true });
   } catch (error) {

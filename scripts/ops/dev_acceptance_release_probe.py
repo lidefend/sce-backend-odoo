@@ -376,6 +376,20 @@ def load_acceptance_universe_size(path: Path = ACCEPTANCE_UNIVERSE_CSV_PATH) -> 
         return None
 
 
+def load_acceptance_action_entries(path: Path = ACCEPTANCE_UNIVERSE_CSV_PATH) -> set[str] | None:
+    """Return the declared action-entry identities used by a role-scoped probe."""
+    try:
+        with Path(path).open(encoding="utf-8", newline="") as handle:
+            entries = {
+                str(row.get("menu_xmlid") or "").strip()
+                for row in csv.DictReader(handle)
+                if str(row.get("menu_xmlid") or "").strip()
+            }
+    except OSError:
+        return None
+    return entries
+
+
 def _int_env(value: str) -> int | None:
     raw = str(value or "").strip()
     if not raw:
@@ -412,6 +426,9 @@ def published_face_checks(
     leaf_count: int,
     declared_non_action_entries: set[str],
     expected_action_entry_count: int | None,
+    *,
+    role_scoped_navigation: bool = False,
+    declared_action_entries: set[str] | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     """Compare the served published leaves with the declared acceptance surface.
 
@@ -421,26 +438,58 @@ def published_face_checks(
     equal the acceptance rows plus the declared carriers, otherwise a published
     leaf exists that no acceptance entry accounts for.
     """
+    leaves = [row for row in nav_rows if row.get("child_count") == 0]
     observed = {
         str(row.get("menu_xmlid") or "").strip()
-        for row in nav_rows
-        if row.get("child_count") == 0 and not row.get("action_id")
+        for row in leaves
+        if not row.get("action_id")
     }
     observed.discard("")
+    observed_actions = {
+        str(row.get("menu_xmlid") or "").strip()
+        for row in leaves
+        if row.get("action_id")
+    }
+    observed_actions.discard("")
     declared = {str(item).strip() for item in declared_non_action_entries if str(item).strip()}
+    declared_actions = (
+        {str(item).strip() for item in declared_action_entries if str(item).strip()}
+        if declared_action_entries is not None
+        else None
+    )
+    unregistered_non_action = observed - declared
+    missing_non_action = declared - observed
+    unregistered_actions = observed_actions - declared_actions if declared_actions is not None else set()
     checks: dict[str, Any] = {
+        "nav_role_scoped": role_scoped_navigation,
+        "nav_reachable_leaf_count": leaf_count,
         "nav_non_action_entries": sorted(observed),
         "nav_non_action_entries_declared": sorted(declared),
+        "nav_action_entries": sorted(observed_actions),
+        "nav_unregistered_non_action_entries": sorted(unregistered_non_action),
+        "nav_missing_non_action_entries": sorted(missing_non_action),
+        "nav_unregistered_action_entries": sorted(unregistered_actions),
     }
     errors: list[str] = []
-    if observed != declared:
+    if unregistered_non_action:
         errors.append("nav_non_action_entry_drift")
-    if expected_action_entry_count is not None:
+    if not role_scoped_navigation and missing_non_action:
+        errors.append("nav_non_action_entry_missing")
+    if unregistered_actions:
+        errors.append("nav_action_entry_drift")
+    if declared_actions is not None:
+        checks["nav_action_entries_declared"] = sorted(declared_actions)
+        missing_actions = declared_actions - observed_actions
+        checks["nav_missing_action_entries"] = sorted(missing_actions)
+        if not role_scoped_navigation and missing_actions:
+            errors.append("nav_action_entry_missing")
+    if not role_scoped_navigation and expected_action_entry_count is not None:
         expected_leaf_count = expected_action_entry_count + len(declared)
-        checks["nav_published_universe_expected"] = expected_leaf_count
-        checks["nav_acceptance_universe_size"] = expected_action_entry_count
+        checks["nav_published_global_universe_expected"] = expected_leaf_count
+        checks["nav_acceptance_global_action_entry_count"] = expected_action_entry_count
         if leaf_count != expected_leaf_count:
             errors.append("nav_published_universe_drift")
+    checks["nav_global_universe_comparison"] = not role_scoped_navigation
     return errors, checks
 
 
@@ -501,6 +550,7 @@ def probe_login(
     expected_role_code: str | None = None,
     declared_non_action_entries: set[str] | None = None,
     expected_action_entry_count: int | None = None,
+    role_scoped_navigation: bool = False,
 ) -> dict[str, Any]:
     if not login or not password:
         return {"enabled": False}
@@ -636,6 +686,8 @@ def probe_login(
                 nav_leaf_count,
                 declared_non_action_entries,
                 expected_action_entry_count,
+                role_scoped_navigation=role_scoped_navigation,
+                declared_action_entries=load_acceptance_action_entries(),
             )
             result["checks"].update(face_checks)
             errors.extend(face_errors)
@@ -1407,6 +1459,12 @@ def main() -> int:
     parser.add_argument("--nav-required-paths", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_PATHS", ""))
     parser.add_argument("--nav-required-actions", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_ACTIONS", ""))
     parser.add_argument("--nav-principal-role", default=os.getenv("ACCEPTANCE_NAV_PRINCIPAL_ROLE", ""))
+    parser.add_argument(
+        "--role-scoped-navigation",
+        action="store_true",
+        default=os.getenv("ACCEPTANCE_ROLE_SCOPED_NAVIGATION", "") not in ("", "0", "false"),
+        help="Validate the acting principal's reachable entry subset without comparing it to the global published universe.",
+    )
     parser.add_argument("--contract-declaration", default=os.getenv("ACCEPTANCE_CONTRACT_DECLARATION", ""))
     parser.add_argument("--record-resolution", default=os.getenv("ACCEPTANCE_RECORD_RESOLUTION", ""))
     parser.add_argument("--schema-asset", default=os.getenv("ACCEPTANCE_SCHEMA_ASSET", ""))
@@ -1464,6 +1522,7 @@ def main() -> int:
             expected_role_code=args.nav_principal_role.strip() or None,
             declared_non_action_entries=load_declared_non_action_entries(),
             expected_action_entry_count=load_acceptance_universe_size(),
+            role_scoped_navigation=args.role_scoped_navigation,
         ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     if not args.contract_declaration:

@@ -19,6 +19,7 @@
     "codex/cap02c-structured-diff-20261105": ".agent/runs/CAP02C-STRUCTURED-DIFF-20261105/run.json",
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",
+    "codex/entry-coverage-project-save-20261113": ".agent/runs/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113/run.json",
     "codex/fe-loop-01-quality-closure": ".agent/runs/FE-LOOP-01/run.json",
     "codex/list-create-entry-contract-20261106": ".agent/runs/LIST-CREATE-ENTRY-CONTRACT-20261106/run.json",
     "codex/nav-01-sidebar-canonical-closeout": ".agent/runs/NAV-01-CLOSEOUT/run.json",

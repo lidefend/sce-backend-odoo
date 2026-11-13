@@ -11,7 +11,11 @@ import { matrixLoginUrl } from './business_entry_matrix_model.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
-import { countReleasedNavigationTargets, loadOverlay } from './business_entry_matrix_model.mjs';
+import {
+  countReleasedNavigationTargets,
+  deniedRoleCandidatesFor,
+  loadOverlay,
+} from './business_entry_matrix_model.mjs';
 
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || '').replace(/\/$/, '');
 const DB = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
@@ -20,6 +24,7 @@ const PASSWORD = process.env.ACCEPTANCE_PASSWORD || '';
 // company-level half of the reuse identity, so it must be observed here rather
 // than assumed by the planner.
 const ACTING_LOGIN = (process.env.ACCEPTANCE_LOGIN || '').trim();
+const ACCEPTANCE_PROFILE = String(process.env.SC_ACCEPTANCE_PROFILE || '').trim();
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const OUT = process.env.SC_ENTRY_MATRIX_CLOSURES_OUT
   || path.join('artifacts', 'frontend-business-entry-matrix', 'negative_closures.json');
@@ -67,7 +72,7 @@ async function observe(browser, role, served) {
     await inputs.nth(0).fill(role);
     await inputs.nth(1).fill(PASSWORD);
     await page.getByRole('button', { name: /^登录$/ }).click();
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+    await page.waitForFunction(() => !location.pathname.includes('/login'), null, { timeout: 30000 });
     await page.waitForTimeout(3000);
   } catch (error) {
     state.error = String((error && error.message) || error);
@@ -118,7 +123,7 @@ function adoptSnapshot() {
 }
 
 const overlay = loadOverlay(OVERLAY_PATH);
-const order = overlay.deniedRoleCandidates;
+const order = deniedRoleCandidatesFor(overlay, ACCEPTANCE_PROFILE);
 if (!order.length) throw new Error(`${OVERLAY_PATH} declares no denied_role_candidates`);
 
 const served = { value: '' };

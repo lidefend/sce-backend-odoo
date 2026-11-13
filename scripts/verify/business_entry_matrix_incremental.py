@@ -227,6 +227,21 @@ def partial_fold_plan(folded: dict, selected_count: int) -> dict:
     }
 
 
+def restrict_selection_to_requested(selection: dict, requested: list[str]) -> dict:
+    """Narrow an affected plan to explicitly requested, still-affected units."""
+    affected = [str(key) for key in selection.get('affected') or []]
+    requested_set = {str(key) for key in requested}
+    selected = [key for key in affected if key in requested_set]
+    unrequested = [key for key in affected if key not in requested_set]
+    return {
+        **selection,
+        'execute': selected,
+        'affected': selected,
+        'unrequested_affected': unrequested,
+        'requested_only': True,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--requested', default=os.environ.get('SC_ENTRY_MATRIX_KEYS', '').strip(),
@@ -237,6 +252,9 @@ def main(argv: list[str] | None = None) -> int:
                         help='re-walk every declared entry (requires --reason)')
     parser.add_argument('--reason', default=os.environ.get('SC_ENTRY_SCOPE_FULL_REASON', '').strip(),
                         help='justification required for --full')
+    parser.add_argument('--requested-only', action='store_true',
+                        default=os.environ.get('SC_ENTRY_SCOPE_REQUESTED_ONLY', '').strip() in ('1', 'true', 'yes'),
+                        help='execute only explicitly requested units that remain affected; other affected units stay uncovered')
     parser.add_argument('--run-dir', default='', help='override the working directory for units/selection/results')
     parser.add_argument('--ledger', default=os.environ.get('SC_ENTRY_SCOPE_LEDGER', '').strip(),
                         help='override the evidence ledger path')
@@ -259,6 +277,9 @@ def main(argv: list[str] | None = None) -> int:
               f"to the deployed revision and every entry re-opens on a new deployment")
     if args.full:
         _require(bool(args.reason.strip()), '--full re-collects every entry and requires an explicit --reason')
+    if args.requested_only:
+        _require(bool(args.requested.strip()), '--requested-only requires an explicit requested key set')
+        _require(not args.full, '--requested-only and --full are mutually exclusive')
     if args.record_existing:
         _require(bool(args.record_existing_reason.strip()),
                  '--record-existing re-folds already-collected evidence and requires an explicit '
@@ -314,6 +335,14 @@ def main(argv: list[str] | None = None) -> int:
             '--json-out', str(selection_path),
         ])
         selection = load_json(selection_path)
+        if args.requested_only:
+            selection = restrict_selection_to_requested(selection, [
+                value.strip() for value in args.requested.split(',') if value.strip()
+            ])
+            selection_path.write_text(
+                json.dumps(selection, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
         print(f"[business-entry-incremental] reusable={len(selection['reused'])} affected={len(selection['affected'])}")
 
     selection['observation_binding'] = {

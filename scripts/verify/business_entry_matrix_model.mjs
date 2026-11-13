@@ -69,14 +69,55 @@ export function loadOverlay(overlayPath) {
     deniedRoleCandidates: Array.isArray(body.denied_role_candidates)
       ? body.denied_role_candidates.map(String)
       : [],
+    deniedRoleCandidatesByProfile: body.denied_role_candidates_by_profile
+      && typeof body.denied_role_candidates_by_profile === 'object'
+      ? Object.fromEntries(Object.entries(body.denied_role_candidates_by_profile).map(
+        ([profile, rows]) => [String(profile), Array.isArray(rows) ? rows.map(String) : []],
+      ))
+      : {},
   };
+}
+
+export function deniedRoleCandidatesFor(overlay, profile = '') {
+  const key = String(profile || '').trim();
+  const scoped = key ? overlay.deniedRoleCandidatesByProfile?.[key] : null;
+  return Array.isArray(scoped) && scoped.length ? scoped : overlay.deniedRoleCandidates;
 }
 
 export function overlayFor(overlay, menuXmlid) {
   const merged = { ...overlay.defaults, ...(overlay.entries[menuXmlid] || {}) };
   if (!('detail' in merged)) merged.detail = true;
   if (!('expect_write' in merged)) merged.expect_write = null;
+  if (!('negative_authority' in merged)) merged.negative_authority = 'derive';
   return merged;
+}
+
+export function loadDeclaredSceneEntries(registryPath) {
+  const body = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+  const rows = body.non_action_delivery_entries && typeof body.non_action_delivery_entries === 'object'
+    ? body.non_action_delivery_entries
+    : {};
+  return Object.entries(rows).map(([menuXmlid, declaration]) => {
+    const entry = declaration && typeof declaration === 'object' ? declaration : {};
+    return {
+      menu_xmlid: String(menuXmlid),
+      label: String(entry.label || entry.scene_key || menuXmlid),
+      domain: String(entry.delivery_bucket || 'scene'),
+      model: '',
+      scope_disposition: 'scene',
+      batch: 'scene_delivery',
+      role_authority: '{}',
+      action_xmlid: '',
+      rendering_path: `scene:${String(entry.scene_key || '').trim()}`,
+      query_responsibility: '',
+      write_responsibility: '',
+      acceptance_status: 'pending',
+      evidence: String(entry.evidence || ''),
+      gap: '',
+      route: String(entry.route || '').trim(),
+      scene_key: String(entry.scene_key || '').trim(),
+    };
+  });
 }
 
 export function declaredEntryGroups(row) {
@@ -172,7 +213,16 @@ export function resolveNegativeCandidate(declared, candidateOrder, states, pinne
 export function negativePlanByCandidate(entries, candidateOrder, states) {
   const byCandidate = new Map();
   const undecidable = [];
+  const notApplicable = [];
   for (const { row, behaviour } of entries) {
+    if (behaviour.negative_authority && behaviour.negative_authority !== 'derive') {
+      notApplicable.push({
+        entry: row.menu_xmlid,
+        kind: String(behaviour.negative_authority),
+        reason: String(behaviour.negative_authority_reason || ''),
+      });
+      continue;
+    }
     const declared = declaredEntryGroups(row);
     const pinned = behaviour.denied_role ? String(behaviour.denied_role) : null;
     const resolved = resolveNegativeCandidate(declared, candidateOrder, states, pinned);
@@ -183,7 +233,7 @@ export function negativePlanByCandidate(entries, candidateOrder, states) {
     if (!byCandidate.has(resolved.chosen)) byCandidate.set(resolved.chosen, []);
     byCandidate.get(resolved.chosen).push({ action: row.action_xmlid, menu: row.menu_xmlid });
   }
-  return { byCandidate, undecidable };
+  return { byCandidate, undecidable, notApplicable };
 }
 
 export function universalCapabilities(candidateOrder, states) {

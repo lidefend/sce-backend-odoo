@@ -23,6 +23,7 @@ import {
   actingContext,
   candidateStates,
   declaredEntryGroups,
+  deniedRoleCandidatesFor,
   deploymentProvenance,
   entryFingerprint,
   environmentIdentity,
@@ -31,6 +32,7 @@ import {
   reuseIdentityKey,
   surfaceInputs,
   loadMatrix,
+  loadDeclaredSceneEntries,
   loadOverlay,
   overlayFor,
   resolveNegativeCandidate,
@@ -46,6 +48,8 @@ const CSV_PATH = process.env.SC_ENTRY_MATRIX_CSV || 'docs/product/frontend_busin
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const CLOSURES_PATH = process.env.SC_ENTRY_MATRIX_CLOSURES
   || path.join('artifacts', 'frontend-business-entry-matrix', 'negative_closures.json');
+const EXPOSURE_REGISTRY_PATH = process.env.SC_ENTRY_MATRIX_EXPOSURE_REGISTRY
+  || 'config/frontend/role_surface_exposure_declarations_v1.json';
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || '').replace(/\/$/, '');
 const DATABASE = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
 const SERVED_REVISION = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
@@ -55,6 +59,7 @@ const SERVED_REVISION = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
 // what the entry assertions actually depend on.
 const BUNDLE_FINGERPRINT = (process.env.SC_ACCEPTANCE_FRONTEND_BUILD_SHA || '').trim().toLowerCase();
 const LOGIN = process.env.ACCEPTANCE_LOGIN || '';
+const ACCEPTANCE_PROFILE = String(process.env.SC_ACCEPTANCE_PROFILE || '').trim();
 const NEUTRAL_REVISION = (process.env.SC_ENTRY_MATRIX_PROBE_ASSERTION_NEUTRAL || '').trim();
 // Optional per-entry surface dependency declaration published by the build:
 // ``{"entries": {"<menu_xmlid>": ["surface.a", ...]}, "hashes": {"surface.a": "<sha256>"}}``.
@@ -105,9 +110,10 @@ function loadSurfaceScopes() {
 export function surface() {
   if (!SERVED_REVISION) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required so the observation is traceable to a deployment');
   const matrix = loadMatrix(CSV_PATH);
+  const sceneEntries = loadDeclaredSceneEntries(EXPOSURE_REGISTRY_PATH);
   const overlay = loadOverlay(OVERLAY_PATH);
   const closures = loadClosures();
-  const order = overlay.deniedRoleCandidates;
+  const order = deniedRoleCandidatesFor(overlay, ACCEPTANCE_PROFILE);
   const states = candidateStates(order, closures.candidates);
   const surfaceScopes = loadSurfaceScopes();
   // The acting principal's company and own role closure are authoritative
@@ -133,12 +139,15 @@ export function surface() {
     const behaviour = overlayFor(overlay, row.menu_xmlid);
     const declared = declaredEntryGroups(row);
     const pinned = behaviour.denied_role ? String(behaviour.denied_role) : null;
-    const resolved = resolveNegativeCandidate(declared, order, states, pinned);
+    const resolved = behaviour.negative_authority && behaviour.negative_authority !== 'derive'
+      ? { chosen: null, reason: String(behaviour.negative_authority_reason || behaviour.negative_authority) }
+      : resolveNegativeCandidate(declared, order, states, pinned);
     const plan = {
       candidate: resolved.chosen,
       reason: resolved.reason,
       declared_groups: declared,
       pinned,
+      negative_authority: behaviour.negative_authority || 'derive',
     };
     derived[row.menu_xmlid] = plan;
     units.push({
@@ -163,6 +172,41 @@ export function surface() {
           candidate: resolved.chosen,
           state: resolved.chosen ? states.get(resolved.chosen) : null,
         }),
+        modelRevision,
+        probeRevision,
+      }),
+      required: true,
+    });
+  }
+  for (const row of sceneEntries) {
+    if (matrix.some((entry) => entry.menu_xmlid === row.menu_xmlid)) continue;
+    const behaviour = {
+      detail: false,
+      expect_write: null,
+      negative_authority: 'not_applicable_no_action_scene',
+      negative_authority_reason: 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
+    };
+    const plan = {
+      candidate: null,
+      reason: behaviour.negative_authority_reason,
+      declared_groups: [],
+      pinned: null,
+    };
+    derived[row.menu_xmlid] = plan;
+    units.push({
+      id: row.menu_xmlid,
+      fingerprint: entryFingerprint({
+        row,
+        behaviour,
+        environment: identity,
+        surfaceInputs: surfaceInputs({
+          bundleFingerprint: BUNDLE_FINGERPRINT,
+          servedRevision: SERVED_REVISION,
+          surfaces: surfaceScopes.entries[row.menu_xmlid] || [],
+          surfaceScopes: surfaceScopes.hashes,
+        }),
+        derived: plan,
+        permissionContext: null,
         modelRevision,
         probeRevision,
       }),
@@ -202,8 +246,13 @@ if (args['emit-units']) {
   const ineligible = Object.entries(loadClosures().candidates)
     .filter(([, value]) => Number(value.nav_targets || 0) === 0)
     .map(([role]) => role);
-  const undecidable = Object.entries(document.derived).filter(([, value]) => !value.candidate).map(([key]) => key);
-  console.log(`[business-entry-scope] units=${document.units.length} ineligible_candidates=${ineligible.length} undecidable=${undecidable.length} reuse_identity_key=${document.provenance.reuse_identity_key}=${document.provenance[document.provenance.reuse_identity_key] || 'absent'}`);
+  const notApplicable = Object.entries(document.derived)
+    .filter(([, value]) => value.negative_authority && value.negative_authority !== 'derive')
+    .map(([key]) => key);
+  const undecidable = Object.entries(document.derived)
+    .filter(([, value]) => !value.candidate && (!value.negative_authority || value.negative_authority === 'derive'))
+    .map(([key]) => key);
+  console.log(`[business-entry-scope] units=${document.units.length} ineligible_candidates=${ineligible.length} undecidable=${undecidable.length} not_applicable_negative=${notApplicable.length} reuse_identity_key=${document.provenance.reuse_identity_key}=${document.provenance[document.provenance.reuse_identity_key] || 'absent'}`);
   if (undecidable.length) {
     console.log(`[business-entry-scope] undecidable: ${undecidable.slice(0, 10).join(', ')}`);
   }

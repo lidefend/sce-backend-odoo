@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "id": "DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113",
+  "branch": "codex/entry-coverage-project-save-20261113",
+  "baseline_sha": "5cdeb969f7e0181df0d0540e3c7e58eca0649b5d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113.yaml",
+  "record": "docs/ops/iterations/delivered_entry_coverage_project_save_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113.yaml",
+    ".agent/runs/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113/run.json",
+    "config/frontend/probe_toolchain_registry.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/delivered_entry_coverage_project_save_20261113.md",
+    "make/dev.mk",
+    "make/frontend.mk",
+    "scripts/ops/dev_acceptance_release_probe.py",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_matrix_incremental.py",
+    "scripts/verify/business_entry_matrix_model.mjs",
+    "scripts/verify/business_entry_matrix_overlay.json",
+    "scripts/verify/business_entry_matrix_scope.mjs",
+    "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+    "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+    "scripts/verify/business_entry_negative_closures.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/local_dev_project_profile_write_browser.mjs",
+    "scripts/verify/local_dev_project_profile_write_browser.sh",
+    "scripts/verify/released_navigation_target.mjs",
+    "scripts/verify/test_business_entry_matrix_incremental.py",
+    "scripts/verify/test_dev_acceptance_release_identity.py",
+    "scripts/verify/test_local_dev_project_profile_write_fixture.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing daily demo duty for read-only entry acceptance and existing local.dev/sc_dev_demo profile for the isolated project-profile write journey"
+  },
+  "checks": {
+    "entry_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/ops/evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/verify/released_navigation_target.mjs",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_environment": {
+      "target": "verify.frontend.acceptance.environment.guard",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "make/dev.mk",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "probe_toolchain": {
+      "target": "verify.local.dev.project_profile_write.unit",
+      "inputs": [
+        "config/frontend/probe_toolchain_registry.json",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "scripts/verify/local_dev_project_profile_write_browser.mjs",
+        "scripts/verify/test_local_dev_project_profile_write_fixture.py",
+        "make/dev.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "menu configuration reaches the generic empty table scene instead of the declared admin menu-config surface",
+    "project budget is absent from the released navigation of Business Full, business config admin, and the cost manager identities",
+    "message notification and organization department scenes render SceneView data-state=error",
+    "project initiation renders a blocking ONCHANGE_SPEC_INVALID form error",
+    "18 reachable project-read entries have no legal denied-role identity in the current daily principal set",
+    "direct-access denial and business writes were not executed by the read-only matrix"
+  ],
+  "next_exact_step": "Run the current batch iteration gate, then classify and fix the four delivered-surface defects in their owning layers before rerunning only the affected entry evidence."
+}

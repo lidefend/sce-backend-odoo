@@ -920,6 +920,7 @@ RULES = (
     Rule((
         "scripts/verify/business_entry_matrix_",
         "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/released_navigation_target.mjs",
         "scripts/ops/evidence_scope.py",
         # The focused behaviour tests are part of the same contract: editing the
         # entry's tests without running them let the suite that locks the reuse
@@ -928,6 +929,22 @@ RULES = (
         "scripts/verify/business_entry_matrix_scope_seed.py",
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",
+    )),
+    Rule((
+        "config/frontend/probe_toolchain_registry.json",
+        "scripts/verify/local_dev_project_profile_write_browser.mjs",
+        "scripts/verify/local_dev_project_profile_write_browser.sh",
+        "scripts/verify/test_local_dev_project_profile_write_fixture.py",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    ), (
+        "verify.local.dev.project_profile_write.unit",
+    )),
+    Rule((
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+    ), (
+        "verify.frontend.acceptance.environment.guard",
     )),
     Rule((
         "addons/smart_construction_core/__init__.py",

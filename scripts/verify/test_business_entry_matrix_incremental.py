@@ -253,6 +253,26 @@ class PartialFoldPlanTests(unittest.TestCase):
         self.assertEqual(plan["unreached"], 0)
 
 
+class RequestedOnlySelectionTests(unittest.TestCase):
+    def test_requested_only_narrows_an_all_uncovered_plan(self):
+        selection = incremental.restrict_selection_to_requested(
+            {"affected": ["menu.a", "menu.b", "menu.c"], "execute": ["menu.a", "menu.b", "menu.c"]},
+            ["menu.b", "menu.c"],
+        )
+        self.assertTrue(selection["requested_only"])
+        self.assertEqual(selection["execute"], ["menu.b", "menu.c"])
+        self.assertEqual(selection["affected"], ["menu.b", "menu.c"])
+        self.assertEqual(selection["unrequested_affected"], ["menu.a"])
+
+    def test_requested_only_does_not_turn_a_reused_unit_into_execution(self):
+        selection = incremental.restrict_selection_to_requested(
+            {"affected": ["menu.b"], "execute": ["menu.b"], "reused": ["menu.a"]},
+            ["menu.a", "menu.b"],
+        )
+        self.assertEqual(selection["execute"], ["menu.b"])
+        self.assertEqual(selection["unrequested_affected"], [])
+
+
 class EmitUnitsIdentityTests(unittest.TestCase):
     """The declared surface must bind the served bundle, not the deploying commit.
 

@@ -24,15 +24,17 @@ import fs from 'node:fs';
 import { surface } from './business_entry_matrix_scope.mjs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
-import { findReleasedNavigationTarget } from './released_navigation_target.mjs';
+import { findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
 import {
   observationBinding,
   validateObservationBinding,
   candidateStates,
   countReleasedNavigationTargets,
+  deniedRoleCandidatesFor,
   declaredEntryGroups,
   ineligibleCandidates,
   loadMatrix,
+  loadDeclaredSceneEntries,
   loadOverlay,
   negativePlanByCandidate,
   overlayFor,
@@ -51,6 +53,7 @@ const EXPECTED_BUNDLE = (process.env.SC_ACCEPTANCE_FRONTEND_BUILD_SHA || '').tri
 const BUNDLE_FINGERPRINT = /^[0-9a-f]{64}$/;
 const LOGIN = process.env.ACCEPTANCE_LOGIN || '';
 const PASSWORD = process.env.ACCEPTANCE_PASSWORD || '';
+const ACCEPTANCE_PROFILE = String(process.env.SC_ACCEPTANCE_PROFILE || '').trim();
 const CSV_PATH = process.env.SC_ENTRY_MATRIX_CSV || 'docs/product/frontend_business_entry_acceptance_v1.csv';
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const EXPOSURE_REGISTRY_PATH = process.env.SC_ENTRY_MATRIX_EXPOSURE_REGISTRY
@@ -163,6 +166,9 @@ function attachCapture(page, state) {
         const user = data && data.user;
         if (user && Number(user.company_id) > 0) {
           state.user = user;
+          state.roleSurface = data.role_surface && typeof data.role_surface === 'object'
+            ? data.role_surface
+            : null;
           const nav = data && data.navigation && data.navigation.nav;
           if (Array.isArray(nav)) state.nav = nav;
         }
@@ -218,7 +224,7 @@ async function login(page) {
   await inputs.nth(0).fill(LOGIN);
   await inputs.nth(1).fill(PASSWORD);
   await page.getByRole('button', { name: /^登录$/ }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+  await page.waitForFunction(() => !location.pathname.includes('/login'), null, { timeout: 30000 });
   await page.waitForTimeout(2500);
 }
 
@@ -323,6 +329,14 @@ const PRESENTATIONS = {
     readableRowSelector: '[data-semantic-component="ActionView"] table tbody tr',
     expectsRecords: false,
   },
+  workspace: {
+    csvTokens: ['dashboard:', 'scene:', '场景导航入口'],
+    surfaceSelector: '[data-semantic-component="MyWorkView"][data-state], [data-role-home][data-state]',
+    stateAttribute: 'data-state',
+    emptySurfaceSelector: null,
+    recordSelector: null,
+    expectsRecords: false,
+  },
 };
 
 // Runtime-declared surface semantic → presentation adapter. The semantic is the
@@ -395,7 +409,7 @@ async function detectPresentation(page) {
       host,
     };
   }
-  for (const candidate of ['hierarchical', 'kanban', 'table']) {
+  for (const candidate of ['workspace', 'hierarchical', 'kanban', 'table']) {
     if (await page.locator(PRESENTATIONS[candidate].surfaceSelector).count()) {
       return { presentation: candidate, declaredBy: PRESENTATIONS[candidate].surfaceSelector, semantic: null };
     }
@@ -404,7 +418,18 @@ async function detectPresentation(page) {
 }
 
 async function navigateEntry(page, navTarget) {
-  await page.goto(`${BASE}/a/${navTarget.action_id}?menu_id=${navTarget.menu_id}`, { waitUntil: 'networkidle' });
+  const route = String(navTarget.route || '').trim();
+  if (!route) {
+    throw new Error(`released entry ${navTarget.menu_xmlid || navTarget.menu_id} published no route`);
+  }
+  const target = /^https?:\/\//i.test(route)
+    ? new URL(route)
+    : new URL(`${BASE}${route.startsWith('/') ? route : `/${route}`}`);
+  const base = new URL(BASE);
+  if (target.origin !== base.origin) {
+    throw new Error(`released entry route ${route} escaped the acceptance origin`);
+  }
+  await page.goto(target.href, { waitUntil: 'networkidle' });
   await sleep(900);
 }
 
@@ -622,12 +647,36 @@ function applyRecordContract(record, contract, behaviour, sessionCompany, entryK
   }
 }
 
+function roleSceneTarget(state, row) {
+  const surface = state.roleSurface && typeof state.roleSurface === 'object' ? state.roleSurface : {};
+  const roleHomeMenus = Array.isArray(surface.role_home_menu_xmlids)
+    ? surface.role_home_menu_xmlids.map(String)
+    : [];
+  if (!roleHomeMenus.includes(row.menu_xmlid)) return null;
+  const landing = surface.landing_entry_target && typeof surface.landing_entry_target === 'object'
+    ? surface.landing_entry_target
+    : {};
+  const sceneKey = String(landing.scene_key || surface.landing_scene_key || row.scene_key || '').trim();
+  if (sceneKey !== String(row.scene_key || '').trim()) return null;
+  return {
+    action_id: 0,
+    menu_id: Number(surface.landing_menu_id || 0),
+    route: String(landing.route || surface.landing_path || row.route || '').trim(),
+    scene_key: sceneKey,
+    entry_target: landing,
+    entry_target_type: String(landing.type || 'scene'),
+    action_xmlid: '',
+    menu_xmlid: row.menu_xmlid,
+  };
+}
+
 // One entry's full read-only journey. Kept as a single unit so that a locator
 // timeout or an unexpected DOM shape fails only this entry and the batch keeps
 // covering its siblings.
 async function runEntry(page, state, row, behaviour, sessionCompany) {
   const entryKey = row.menu_xmlid;
-  const navTarget = findReleasedNavigationTarget(state.nav, row.action_xmlid);
+  const navTarget = findReleasedNavigationTargetByMenuXmlid(state.nav, row.menu_xmlid, row.action_xmlid)
+    || (!row.action_xmlid ? roleSceneTarget(state, row) : null);
   if (!navTarget) {
     const declaration = state.exposureDeclared.get(entryKey);
     if (declaration) {
@@ -645,17 +694,61 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
         declaration: declaration.kind,
       };
     }
-    fail(`${entryKey}: the acting role's released navigation does not contain ${row.action_xmlid}`);
-    return { entry: entryKey, label: row.label, status: 'unreachable' };
+    observations.push({
+      entry: entryKey,
+      stage: 'entry_navigation',
+      status: 'not_reachable_for_acting_role',
+      action_xmlid: row.action_xmlid,
+      menu_xmlid: row.menu_xmlid,
+      reason: 'The acting role did not publish this entry; this is a role coverage gap, not a global release assertion.',
+    });
+    return {
+      entry: entryKey, label: row.label, status: 'unreachable',
+      assertions: {
+        entry_navigation: 'not_reachable_for_acting_role',
+        presentation: 'not_run',
+        collection: 'not_run',
+        detail: 'not_run',
+        write: 'not_run',
+        navigation_denial: 'not_run',
+        direct_access_denial: 'not_run',
+      },
+    };
   }
+  const assertions = {
+    entry_navigation: 'passed',
+    presentation: 'not_run',
+    collection: 'not_run',
+    detail: 'not_run',
+    write: behaviour.expect_write === true ? 'not_run' : 'not_applicable',
+    navigation_denial: 'not_run',
+    direct_access_denial: 'not_run',
+  };
   const contractBaseline = state.contracts.length;
   await navigateEntry(page, navTarget);
+  const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
+  if (await sceneError.count()) {
+    const message = String((await sceneError.innerText().catch(() => '')) || '').trim().slice(0, 500);
+    assertions.presentation = 'error';
+    fail(`${entryKey}: the scene surface rendered its declared error state: ${message}`);
+    return {
+      entry: entryKey, label: row.label, menu_id: navTarget.menu_id, action_id: navTarget.action_id,
+      route: navTarget.route, scene_key: navTarget.scene_key,
+      entry_target_type: navTarget.entry_target_type, status: 'scene-error', assertions,
+    };
+  }
   const detected = await detectPresentation(page);
   const presentation = detected.presentation;
   if (!presentation) {
     fail(`${entryKey}: the runtime declared no recognised presentation surface (declared by ${detected.declaredBy || 'nothing'})`);
-    return { entry: entryKey, label: row.label, menu_id: navTarget.menu_id, action_id: navTarget.action_id, status: 'unknown-presentation' };
+    return {
+      entry: entryKey, label: row.label, menu_id: navTarget.menu_id, action_id: navTarget.action_id,
+      route: navTarget.route, scene_key: navTarget.scene_key,
+      entry_target_type: navTarget.entry_target_type,
+      status: 'unknown-presentation', assertions,
+    };
   }
+  assertions.presentation = 'passed';
   if (detected.host) {
     observations.push({
       entry: entryKey, stage: 'renderer', semantic: detected.host.semantic,
@@ -679,16 +772,38 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   const status = await awaitPresentation(page, presentation);
   const record = {
     entry: entryKey, label: row.label, menu_id: navTarget.menu_id,
-    action_id: navTarget.action_id, presentation, list_status: status,
+    action_id: navTarget.action_id, route: navTarget.route, scene_key: navTarget.scene_key,
+    entry_target_type: navTarget.entry_target_type, presentation, list_status: status,
+    assertions,
   };
+  if (presentation === 'form') {
+    const formError = page.locator(
+      '[data-semantic-component="ProductFormErrorSummary"][data-state="error"]:visible',
+    ).first();
+    if (await formError.count()) {
+      const message = String((await formError.innerText().catch(() => '')) || '').trim().slice(0, 500);
+      assertions.collection = 'error';
+      fail(`${entryKey}: the form surface rendered a blocking error state: ${message}`);
+      record.list_status = 'error';
+      observations.push({
+        entry: entryKey,
+        stage: 'form_error',
+        message,
+      });
+      return record;
+    }
+  }
   if (status === 'error') {
+    assertions.collection = 'error';
     fail(`${entryKey}: ${presentation} surface rendered the declared error state`);
     return record;
   }
   if (status === 'loading') {
+    assertions.collection = 'loading';
     fail(`${entryKey}: ${presentation} surface never left the declared loading state`);
     return record;
   }
+  assertions.collection = status || 'ready';
   await readPaging(page, entryKey, presentation);
   const rendered = await renderedRecordCount(page, presentation);
   record.records_rendered = rendered;
@@ -751,7 +866,15 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
     if (term) await searchAndVerify(page, entryKey, term, presentation);
   }
   if (behaviour.detail) {
-    if (presentation === 'form') {
+    if (presentation === 'workspace') {
+      assertions.detail = 'not_applicable_workspace';
+      observations.push({
+        entry: entryKey,
+        stage: 'detail',
+        skipped: true,
+        reason: 'workspace surface has no record-detail assertion',
+      });
+    } else if (presentation === 'form') {
       // A form workspace declares its record through the model contract
       // envelope: the surface declares the model, and the contract carries the
       // declared default field values (create) or the declared record (edit).
@@ -765,8 +888,10 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       }
       const envelope = await waitForModelContract(state, contractBaseline, row.model || formModel);
       if (!envelope) {
+        assertions.detail = 'failed';
         fail(`${entryKey}: form surface published no declared model contract envelope (ui.contract.v2 op=model)`);
       } else {
+        assertions.detail = 'passed';
         record.contract_view_type = envelope.view_type;
         record.contract_render_profile = envelope.render_profile;
         record.main_data_fields = envelope.mainDataKeys;
@@ -787,11 +912,13 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       // instead of fabricating a row.
       const contract = await waitForRecordContract(state, contractBaseline);
       if (!contract) {
+        assertions.detail = 'skipped_not_executed';
         observations.push({
           entry: entryKey, stage: 'detail', skipped: true,
           reason: `${presentation} surface published no record ui.contract.v2 envelope`,
         });
       } else {
+        assertions.detail = 'passed';
         applyRecordContract(record, contract, behaviour, sessionCompany, entryKey);
       }
     } else if (rendered < 1) {
@@ -799,6 +926,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       // first row to open by design (a legitimate empty state for the acting
       // company's data). Record the skipped read-back instead of fabricating a
       // failure; the readiness/empty declaration above already locked the fact.
+      assertions.detail = 'skipped_empty';
       observations.push({
         entry: entryKey, stage: 'detail', skipped: true,
         reason: `declared collection state ${status || 'unknown'} rendered ${rendered} record surface(s)`,
@@ -806,11 +934,15 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
     } else {
       const contract = await openFirstRecord(page, state, presentation);
       if (!contract) {
+        assertions.detail = 'failed';
         fail(`${entryKey}: record ui.contract.v2 envelope was not observed after opening the first row`);
       } else {
+        assertions.detail = 'passed';
         applyRecordContract(record, contract, behaviour, sessionCompany, entryKey);
       }
     }
+  } else {
+    assertions.detail = 'not_applicable';
   }
   return record;
 }
@@ -819,7 +951,56 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
 // `partial` document proves only the entries it carries, and the recorder must
 // never lift an unobserved entry to a pass or to a failure on the strength of
 // the surface verdict alone.
+function assertionSummary(entries, observed) {
+  const stages = [
+    'entry_navigation', 'presentation', 'collection', 'detail', 'write',
+    'navigation_denial', 'direct_access_denial',
+  ];
+  const summary = Object.fromEntries(stages.map((stage) => [stage, {}]));
+  for (const entry of entries) {
+    for (const stage of stages) {
+      const status = String(entry?.assertions?.[stage] || 'not_recorded');
+      summary[stage][status] = (summary[stage][status] || 0) + 1;
+    }
+  }
+  summary.navigation_denial_checked = observed.filter((row) => (
+    row.stage === 'authority_negative' && row.skipped !== true && Number(row.checked_entries || 0) > 0
+  )).length;
+  summary.direct_access_denial_checked = observed.filter((row) => (
+    row.stage === 'authority_negative_direct_access'
+  )).length;
+  return summary;
+}
+
+function releasedNavigationLeaves(nav) {
+  const rows = [];
+  const pending = Array.isArray(nav) ? [...nav] : [];
+  while (pending.length) {
+    const node = pending.shift();
+    if (!node || typeof node !== 'object') continue;
+    const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
+    const entryTarget = node.entry_target && typeof node.entry_target === 'object'
+      ? node.entry_target
+      : meta.entry_target && typeof meta.entry_target === 'object' ? meta.entry_target : {};
+    const children = Array.isArray(node.children) ? node.children : [];
+    if (!children.length) {
+      rows.push({
+        menu_xmlid: String(node.menu_xmlid || meta.menu_xmlid || '').trim(),
+        action_xmlid: String(node.action_xmlid || meta.action_xmlid || '').trim(),
+        menu_id: Number(node.menu_id || meta.menu_id || 0),
+        action_id: Number(node.action_id || meta.action_id || 0),
+        route: String(node.route || meta.route || entryTarget.route || '').trim(),
+        scene_key: String(node.scene_key || meta.scene_key || entryTarget.scene_key || '').trim(),
+        entry_target_type: String(entryTarget.type || '').trim(),
+      });
+    }
+    pending.push(...children);
+  }
+  return rows;
+}
+
 function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, state, summary, completeness }) {
+  const releasedLeaves = releasedNavigationLeaves(state.nav);
   return {
     schema: 'business_entry_matrix_browser.v1',
     generated_at: new Date().toISOString(),
@@ -831,7 +1012,20 @@ function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessi
     database: DB,
     login: LOGIN,
     session_company_id: sessionCompany,
-    acting: { login: state.actorLogin, company_id: sessionCompany, role_xmlids: state.roleXmlids },
+    acting: {
+      login: state.actorLogin,
+      company_id: sessionCompany,
+      role_xmlids: state.roleXmlids,
+      role_codes: state.roleSurface?.role_codes || [],
+      landing_entry_target: state.roleSurface?.landing_entry_target || null,
+      role_home_menu_xmlids: state.roleSurface?.role_home_menu_xmlids || [],
+    },
+    released_navigation: {
+      leaf_count: releasedLeaves.length,
+      action_leaf_count: releasedLeaves.filter((entry) => entry.action_id > 0).length,
+      scene_leaf_count: releasedLeaves.filter((entry) => entry.action_id === 0 && entry.scene_key).length,
+      leaves: releasedLeaves,
+    },
     observation_binding: EXECUTION_BINDING,
     completeness,
     viewport: VIEWPORT,
@@ -842,6 +1036,7 @@ function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessi
       mutating: mutating.map((entry) => entry.row.menu_xmlid),
     },
     entries: summary,
+    assertion_summary: assertionSummary(summary, observations),
     observations,
     console_errors: consoleErrors,
     problems,
@@ -944,7 +1139,7 @@ async function deniedRoleNavigation(deniedRole) {
     await inputs.nth(0).fill(deniedRole);
     await inputs.nth(1).fill(PASSWORD);
     await page.getByRole('button', { name: /^登录$/ }).click();
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+    await page.waitForFunction(() => !location.pathname.includes('/login'), null, { timeout: 30000 });
     await page.waitForTimeout(2500);
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline && !state.nav) await sleep(300);
@@ -967,6 +1162,22 @@ async function main() {
   const selected = selectEntries(matrix, overlay, {
     skipPassed: SKIP_PASSED, keys: KEYS_FILTER, domain: DOMAIN_FILTER,
   });
+  const sceneRows = loadDeclaredSceneEntries(EXPOSURE_REGISTRY_PATH).filter((row) => {
+    if (matrix.some((entry) => entry.menu_xmlid === row.menu_xmlid)) return false;
+    if (KEYS_FILTER.length) return KEYS_FILTER.includes(row.menu_xmlid);
+    return !DOMAIN_FILTER;
+  });
+  for (const row of sceneRows) {
+    selected.push({
+      row,
+      behaviour: {
+        ...overlayFor(overlay, row.menu_xmlid),
+        detail: false,
+        negative_authority: 'not_applicable_no_action_scene',
+        negative_authority_reason: 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
+      },
+    });
+  }
   if (!selected.length) throw new Error('no entry selected from the matrix (check SC_ENTRY_MATRIX_DOMAIN / KEYS)');
   const mutating = selected.filter((entry) => entry.behaviour.expect_write === true);
   if (mutating.length && WRITE_CONFIRM !== WRITE_CONFIRM_TOKEN) {
@@ -1005,7 +1216,7 @@ async function main() {
   });
   const page = await context.newPage();
   const state = {
-    user: null, nav: null, contracts: [], roleXmlids: null,
+    user: null, nav: null, roleSurface: null, contracts: [], roleXmlids: null,
     exposureDeclared: exposure.declared, exposureSource: exposure.source,
   };
   attachCapture(page, state);
@@ -1083,7 +1294,7 @@ async function main() {
   // makes "the entry is absent" vacuously true, which would fabricate a denial
   // that was never exercised. The derivation lives in
   // business_entry_matrix_model.mjs so planning and execution cannot drift.
-  const candidateRoles = overlay.deniedRoleCandidates;
+  const candidateRoles = deniedRoleCandidatesFor(overlay, ACCEPTANCE_PROFILE);
   const closures = {};
   const navByRole = new Map();
   for (const role of candidateRoles) {
@@ -1113,8 +1324,43 @@ async function main() {
     });
   }
   const universalCaps = universalCapabilities(candidateRoles, states);
-  const { byCandidate, undecidable } = negativePlanByCandidate(selected, candidateRoles, states);
+  const roleUnreachable = selected.filter(({ row }) => (
+    summary.find((entry) => entry.entry === row.menu_xmlid)?.assertions?.entry_navigation
+      === 'not_reachable_for_acting_role'
+  ));
+  for (const { row } of roleUnreachable) {
+    const record = summary.find((entry) => entry.entry === row.menu_xmlid);
+    if (record?.assertions) record.assertions.navigation_denial = 'not_applicable_role_not_reachable';
+    observations.push({
+      stage: 'authority_negative',
+      entry: row.menu_xmlid,
+      skipped: true,
+      not_applicable: true,
+      kind: 'role_not_reachable',
+      reason: 'The acting role did not receive this entry, so a denial observation for the same identity is not applicable.',
+    });
+  }
+  const negativeSelected = selected.filter(({ row }) => !roleUnreachable.some((item) => item.row.menu_xmlid === row.menu_xmlid));
+  const { byCandidate, undecidable, notApplicable } = negativePlanByCandidate(
+    negativeSelected,
+    candidateRoles,
+    states,
+  );
+  for (const item of notApplicable) {
+    const record = summary.find((entry) => entry.entry === item.entry);
+    if (record?.assertions) record.assertions.navigation_denial = 'not_applicable';
+    observations.push({
+      stage: 'authority_negative',
+      entry: item.entry,
+      skipped: true,
+      not_applicable: true,
+      kind: item.kind,
+      reason: item.reason,
+    });
+  }
   for (const item of undecidable) {
+    const record = summary.find((entry) => entry.entry === item.entry);
+    if (record?.assertions) record.assertions.navigation_denial = 'not_run_no_legal_candidate';
     observations.push({
       stage: 'authority_negative', entry: item.entry, skipped: true,
       declared_groups: item.declared_groups,
@@ -1126,7 +1372,7 @@ async function main() {
   for (const [deniedRole, entries] of byCandidate) {
     const nav = navByRole.get(deniedRole) || [];
     const leaked = entries
-      .filter((item) => findReleasedNavigationTarget(nav, item.action))
+      .filter((item) => findReleasedNavigationTargetByMenuXmlid(nav, item.menu, item.action))
       .map((item) => item.action);
     negativeChecked += entries.length;
     observations.push({
@@ -1139,16 +1385,22 @@ async function main() {
     });
     if (leaked.length) {
       fail(`authority: ${deniedRole} capability closure is disjoint from the declared groups yet received ${leaked.join(', ')}`);
+    } else {
+      for (const item of entries) {
+        const record = summary.find((entry) => entry.entry === item.menu);
+        if (record?.assertions) record.assertions.navigation_denial = 'passed';
+      }
     }
   }
   observations.push({
     stage: 'authority_negative_summary',
     candidates: candidateRoles,
     checked_entries: negativeChecked,
-    uncovered_entries: selected.length - negativeChecked,
+    not_applicable_entries: notApplicable.length,
+    uncovered_entries: negativeSelected.length - negativeChecked - notApplicable.length,
   });
-  if (selected.length - negativeChecked > 0) {
-    fail(`authority: ${selected.length - negativeChecked} selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups`);
+  if (negativeSelected.length - negativeChecked - notApplicable.length > 0) {
+    fail(`authority: ${negativeSelected.length - negativeChecked - notApplicable.length} selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups`);
   }
 
   const output = writeObservation('complete');
