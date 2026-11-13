@@ -137,7 +137,7 @@
     "Designed enterprise.setup full browser report fails h1=0; performance hydration observation passes but complete page review pending.",
     "Daily same-environment before/after performance acceptance not run."
   ],
-  "next_exact_step": "Resolve designed scene H1 finding at its declaration/rendering owner, then protected review/integration of first performance batch; selected daily release A/B on project/contract/payment with ordinary roles and >=20 hot samples. No daily deployment performed.",
+  "next_exact_step": "Verify SceneView handling header consumes declared scene label as H1; run designed-scene desktop/mobile browser at clean candidate, then freeze and independent review before publication.",
   "results": {
     "research": "daily_project_baseline_and_first_optimization_implemented",
     "performance_acceptance": "not_run_candidate",
@@ -271,6 +271,12 @@
       "status": "passed",
       "tests": 17,
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
+    },
+    "heading_iteration_first": {
+      "status": "failed",
+      "classification": "baseline_evidence_defect",
+      "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
     }
   },
   "stage_identity": {

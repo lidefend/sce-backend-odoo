@@ -99,7 +99,7 @@
       <header class="handling-surface__header">
         <div>
           <p class="handling-surface__eyebrow">{{ pageText('handling_surface_eyebrow', '办理入口') }}</p>
-          <h3 class="handling-surface__title">{{ pageText('handling_surface_title', '综合办理') }}</h3>
+          <h1 class="handling-surface__title">{{ scene?.label }}</h1>
         </div>
         <span class="handling-surface__badge">{{ handlingEntryCatalog.item_count || handlingEntryItemCount }} 项</span>
       </header>
