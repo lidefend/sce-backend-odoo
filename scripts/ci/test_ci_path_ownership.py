@@ -135,27 +135,36 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             ("security.secrets.scan",),
         )
 
-    def test_database_lifecycle_tooling_selects_backend_runtime(self):
-        path = "scripts/db/create.sh"
-        registry = ownership.classify_paths([path])
-        risk = classify([path], event_name="pull_request")
-        backend = planner.select(
-            [path],
-            {"kernel": module(), "bundle": module(["kernel"])},
-            {"kernel": module(), "bundle": module(["kernel"])},
-        )
+    def test_database_lifecycle_tooling_selects_managed_consumer_without_module_shards(self):
+        paths = [
+            "scripts/db/create.sh",
+            "scripts/test/frontend_acceptance_db_ensure.sh",
+        ]
+        graph = {"kernel": module(), "bundle": module(["kernel"])}
+        for path in paths:
+            with self.subTest(path=path):
+                registry = ownership.classify_paths([path])
+                risk = classify([path], event_name="pull_request")
+                backend = planner.select([path], graph, graph)
 
-        self.assertEqual(registry.assignments[path], "database_lifecycle_tooling")
-        self.assertTrue(risk.backend_changed)
-        self.assertTrue(risk.backend_runtime_changed)
-        self.assertTrue(risk.orm_required)
-        self.assertEqual(backend["mode"], "full")
-        self.assertEqual(backend["modules"], ["bundle", "kernel"])
-        self.assertIn("shared_runtime:" + path, backend["reasons"])
-        self.assertIn(
-            "verify.frontend.acceptance.db_preparation.unit",
-            backend["tool_checks"],
-        )
+                self.assertEqual(
+                    registry.assignments[path], "database_lifecycle_tooling"
+                )
+                self.assertFalse(risk.backend_changed)
+                self.assertFalse(risk.backend_runtime_changed)
+                self.assertTrue(risk.control_plane_changed)
+                self.assertTrue(risk.orm_required)
+                self.assertEqual(risk.orm_scopes, ("managed_acceptance",))
+                self.assertTrue(risk.managed_orm_required)
+                self.assertEqual(risk.outputs()["payment_orm_required"], "false")
+                self.assertEqual(backend["mode"], "incremental")
+                self.assertEqual(backend["modules"], [])
+                self.assertNotIn("shared_runtime:" + path, backend["reasons"])
+                self.assertIn(
+                    "verify.frontend.acceptance.db_preparation.unit",
+                    backend["tool_checks"],
+                )
+                self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
 
     def test_ownership_tool_checks_name_registered_make_targets(self):
         makefiles = sorted((Path(__file__).resolve().parents[2] / "make").glob("*.mk"))

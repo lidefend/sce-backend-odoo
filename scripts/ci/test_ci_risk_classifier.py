@@ -166,6 +166,34 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertTrue(classify(['scripts/ops/agent_run_context.py',
                                  'addons/smart_core/models/core.py'], event_name='pull_request').orm_required)
 
+    def test_acceptance_database_tooling_requires_managed_orm_not_module_suite(self):
+        for path in (
+            'scripts/db/create.sh',
+            'scripts/test/frontend_acceptance_db_ensure.sh',
+        ):
+            with self.subTest(path=path):
+                result = classify([path], event_name='pull_request')
+                self.assertEqual(result.lane, 'HIGH_RISK')
+                self.assertEqual(result.professional_mode, 'full')
+                self.assertFalse(result.backend_changed)
+                self.assertFalse(result.backend_runtime_changed)
+                self.assertTrue(result.control_plane_changed)
+                self.assertTrue(result.orm_required)
+                self.assertEqual(result.orm_scopes, ('managed_acceptance',))
+                self.assertTrue(result.managed_orm_required)
+                self.assertEqual(result.outputs()['payment_orm_required'], 'false')
+                self.assertEqual(result.outputs()['managed_orm_required'], 'true')
+
+    def test_generic_scripts_test_runner_remains_full_backend_runtime(self):
+        result = classify(['scripts/test/unrelated_runner.sh'], event_name='pull_request')
+        self.assertTrue(result.backend_changed)
+        self.assertTrue(result.backend_runtime_changed)
+        self.assertTrue(result.orm_required)
+        self.assertIn('module_suite', result.orm_scopes)
+        self.assertIn('payment_settlement', result.orm_scopes)
+        self.assertIn('navigation_maintenance', result.orm_scopes)
+        self.assertTrue(result.managed_orm_required)
+
     def test_formal_ci_names_do_not_match_the_orm_runtime_glob(self) -> None:
         for path in (
             "scripts/ci/gitee_formal_executor.py",
