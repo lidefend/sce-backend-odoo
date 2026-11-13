@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-business-state-visibility-proof-v37"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-scene-binding-declaration-v38"
 
 
 def _node_validation_snapshot_ready(source):
@@ -344,7 +344,17 @@ class UiContractV2Handler(BaseIntentHandler):
         # loaded payload would never be read, only discarded by the adapter.
         if not str(params.get("scene_key") or params.get("sceneKey") or "").strip():
             return None
-        payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
+        # Binding consumes only the effective declaration's target identity.
+        # Reuse the delivery declaration authority instead of projecting every
+        # scene tile's access result, which this validator never consumes.
+        declarations = call_extension_hook_first(
+            self.env, "smart_core_delivery_scene_declarations", self.env,
+        )
+        payload = (
+            {"scenes": declarations}
+            if isinstance(declarations, list)
+            else load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
+        )
         return _authority.validate_scene_action_binding(payload, params, self._err)
 
     def _set_v2_container_tree(self, contract: dict[str, Any], container_tree: list[Any]) -> None:

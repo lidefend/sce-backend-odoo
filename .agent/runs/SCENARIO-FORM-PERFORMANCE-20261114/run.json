@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "id": "SCENARIO-FORM-PERFORMANCE-20261114",
+  "branch": "audit/scenario-form-performance-20261114",
+  "baseline_sha": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
+  "record": "docs/ops/iterations/scenario_form_performance_20261114.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
+    ".agent/runs/SCENARIO-FORM-PERFORMANCE-20261114/run.json",
+    "docs/ops/iterations/scenario_form_performance_20261114.md",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "frontend/apps/web/src/app/sceneEntryContract.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/pages/contractForm/useRecordContractSemantics.ts",
+    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+    "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+    "make/dev.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/test/test.sh"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "P0 declared native-delegate hydration and scene-binding declaration optimization; P4 existing daily readonly browser measurement. No deployment or database writes."
+  },
+  "checks": {
+    "verify_agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/delivery/",
+        "addons/smart_core/utils/",
+        "addons/smart_core/app_config_engine/",
+        "addons/smart_core/tests/",
+        "addons/smart_construction_scene/",
+        "scripts/verify/",
+        "make/",
+        "Makefile",
+        ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verify_business_config_formal_list_unit": {
+      "target": "verify.business_config.formal_list.unit",
+      "inputs": [
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/delivery/",
+        "addons/smart_core/utils/",
+        "addons/smart_core/app_config_engine/",
+        "addons/smart_core/tests/",
+        "addons/smart_construction_scene/",
+        "scripts/verify/",
+        "make/",
+        "Makefile",
+        ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verify_form_structure_authority_unification_unit": {
+      "target": "verify.form_structure_authority_unification.unit",
+      "inputs": [
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/delivery/",
+        "addons/smart_core/utils/",
+        "addons/smart_core/app_config_engine/",
+        "addons/smart_core/tests/",
+        "addons/smart_construction_scene/",
+        "scripts/verify/",
+        "make/",
+        "Makefile",
+        ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verify_unified_page_contract_v2_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/delivery/",
+        "addons/smart_core/utils/",
+        "addons/smart_core/app_config_engine/",
+        "addons/smart_core/tests/",
+        "addons/smart_construction_scene/",
+        "scripts/verify/",
+        "make/",
+        "Makefile",
+        ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verify_contract_entry_equivalence_guard": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "inputs": [
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/delivery/",
+        "addons/smart_core/utils/",
+        "addons/smart_core/app_config_engine/",
+        "addons/smart_core/tests/",
+        "addons/smart_construction_scene/",
+        "scripts/verify/",
+        "make/",
+        "Makefile",
+        ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml"
+      ],
+      "kind": "offline"
+    },
+    "browser_tools": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+        "scripts/verify/lib/",
+        "frontend/apps/web/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [
+    "Independent exact-candidate review and publication evidence archive pending.",
+    "Daily same-environment before/after performance acceptance not run."
+  ],
+  "next_exact_step": "Finish freeze preparation, commit final result index, obtain independent read-only exact-head review before evidence archive and protected PR publication. No daily deployment authorized by this preparation.",
+  "results": {
+    "research": "daily_project_baseline_and_first_optimization_implemented",
+    "performance_acceptance": "not_run_candidate",
+    "iteration": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration.log",
+      "targeted_tests": 18
+    },
+    "probe_tools": {
+      "status": "passed",
+      "target": "verify.system.performance.baseline.unit",
+      "test_count": 72,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/probe-tests.log"
+    },
+    "daily_requests": {
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-request-summary.json",
+      "sha256": "0d6b12ca1fea7c95ef8190693c3a6163cf79a0ae84e4115b97f3375fc0636c7b",
+      "limitation": "Mixed intent log window, not form-only or browser latency; not root-cause attribution."
+    },
+    "daily_browser_baseline": {
+      "status": "failed",
+      "classification": "validation_tool_defect",
+      "record_checks_passed": 8,
+      "reason": "readonly interceptor omitted workspace.scenario.projection.get",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser.json"
+    },
+    "implementation_iteration_first": {
+      "status": "failed",
+      "classification": "baseline_evidence_defect",
+      "reason": "assembled cache pin changed with owned handler edit; bump namespace and repin exact digest",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-implementation.log"
+    },
+    "daily_browser_timed_baseline": {
+      "status": "passed",
+      "record_checks": 8,
+      "request_timings": 51,
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser-timed.json",
+      "limitation": "Unmodified daily baseline only, project record at two viewports; not candidate improvement."
+    },
+    "implementation_iteration_repinned": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-repinned.log",
+      "limitation": "Backend/P4 scope before native delegate frontend edits."
+    },
+    "native_delegate_targeted": {
+      "status": "passed",
+      "targets_executed": 20,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T172041Z-906102-923312030/receipt.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log"
+    },
+    "declaration_authority": {
+      "status": "passed",
+      "target": "verify.navigation.publication_consumers.unit",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
+    },
+    "iteration_latest": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "targets_executed": 20,
+      "exit_code": 0,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log",
+      "scope_note": "All implementation inputs; subsequent documentation-only reconciliation checked by resume, ledger unit and diff check."
+    },
+    "final_metadata": {
+      "status": "passed",
+      "commands": [
+        "make agent.run.resume",
+        "make verify.agent.ledger.unit",
+        "git diff --check"
+      ],
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ledger-final.log"
+    },
+    "browser_iteration_first": {
+      "status": "failed",
+      "classification": "validation_tool_defect",
+      "reason": "Existing candidate visual script had no incremental test mapping; map it to candidate tool unit target and include existing candidate suite and syntax check.",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser.log"
+    },
+    "candidate_tool_tests": {
+      "status": "passed",
+      "tests": 17,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-tool-tests.log"
+    },
+    "browser_iteration_mapped": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
+      "exit_code": 0
+    },
+    "local_runtime": {
+      "status": "passed_identity",
+      "head": "c754960051657b8ac3ecde8a7157dde482574265",
+      "database": "sc_dev_demo",
+      "filter": "^sc_dev_demo$",
+      "filestore": "sc_local_dev_odoo_data",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
+    },
+    "candidate_browser_failed_attempts": {
+      "status": "failed",
+      "head": "c754960051657b8ac3ecde8a7157dde482574265",
+      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
+      "logs": [
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+      ],
+      "classification": "unresolved_test_scope"
+    },
+    "candidate_browser": {
+      "status": "passed_scoped_native_journey",
+      "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
+      "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
+    },
+    "designed_scene_browser": {
+      "status": "passed",
+      "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
+      "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
+    },
+    "native_empty_list": {
+      "status": "passed",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
+      "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
+    },
+    "diagnostics_iteration": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
+      "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
+    },
+    "diagnostics_tool_final": {
+      "status": "passed",
+      "tests": 17,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
+    },
+    "heading_iteration_first": {
+      "status": "failed",
+      "classification": "baseline_evidence_defect",
+      "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
+    },
+    "heading_iteration": {
+      "status": "passed",
+      "targets_executed": 25,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
+    },
+    "designed_scene_browser_previous": {
+      "status": "failed",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
+      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
+      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+    },
+    "native_browser_reuse": {
+      "status": "reused_unaffected",
+      "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+      "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+      "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
+    }
+  },
+  "stage_identity": {
+    "head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
+    "dirty": true,
+    "scope": "P4 crash diagnostics and current run index",
+    "frozen": false
+  },
+  "completion": {
+    "batch": "verification_pending_ci_crash_unresolved",
+    "mainline": "not_integrated",
+    "deployment": "unchanged",
+    "user_acceptance": "not_run"
+  },
+  "ci_crash_diagnosis": {
+    "layer": "P4",
+    "target": "CI fatal-process diagnostics; temporary local diagnostic restored after execution",
+    "module": "smart_construction_acceptance_fixture",
+    "standard_vs_user_specific": "standard tooling",
+    "why_here": "Fatal process exits require runner diagnostic evidence; no product semantics change",
+    "blast_radius": "Python fatal-signal stack output in test processes only",
+    "exclusions": [
+      "P0-P3 behavior",
+      "coverage rules",
+      "retry policy",
+      "daily runtime",
+      "new environment authority"
+    ],
+    "source_head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
+    "status": "local_not_reproduced_remote_unresolved",
+    "findings": [
+      "Frozen scope 13 modules; successful receipts 12; only fixture missing",
+      "Underlying exit 139 is wrapped by make as 2; no automatic retry occurred",
+      "No fatal stack captured; root cause unconfirmed"
+    ],
+    "next": "Validate diagnostic candidate incrementally; collect fatal stack on remote if crash recurs; preserve required coverage gates",
+    "local_receipt": ".runtime/test-baseline/1794596361693371600/receipt.json",
+    "local_cases": 7,
+    "targeted_tests": {
+      "runner": 14,
+      "dependency_baseline": 8
+    },
+    "composite_validation": {
+      "status": "failed",
+      "tests": 51,
+      "failures": 2,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/crash-diagnostics-unit.log",
+      "reason": "Unmodified local.clean preparation tests provide ENV only; script requires SC_ENTRY_SHARED_SECRET and SC_ENTRY_ROUTE_VERSION; grep absence exits under pipefail. Not treated as passed."
+    },
+    "local_diagnostic_restored": true,
+    "incremental_first": {
+      "status": "blocked",
+      "reason": "Temporary local runner edit lacked a registered incremental mapping",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-crash-diagnostics.log"
+    },
+    "incremental_final": {
+      "status": "passed",
+      "targets_executed": 26,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-ci-only-diagnostic.log"
+    }
+  }
+}

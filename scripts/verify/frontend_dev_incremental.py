@@ -537,6 +537,7 @@ RULES = (
         "scripts/release/release_static_server.mjs",
         "scripts/dev/local_dev_candidate_frontend.py",
         "scripts/verify/test_local_dev_candidate_frontend.py",
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs",
         "scripts/verify/test_frontend_acceptance_runtime_profile.py",
         "scripts/verify/static_proxy_target_test.mjs",
     ), (

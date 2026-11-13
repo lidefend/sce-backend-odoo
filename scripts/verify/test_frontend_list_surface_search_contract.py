@@ -142,10 +142,10 @@ const code = build({stdin:{contents:"export * from './app/runtime/recordEntryCon
 const mod={exports:{}};new Function('module','exports','require',code)(mod,mod.exports,require);const dailyRuntime=mod.exports;
 function dailyReadonlyRequest(""" + source + "\n"
         program += """
-for (const intent of ['login','system.init','ui.contract','ui.contract.v2','load_contract','route.authority.validate','my.work.summary','app.catalog','product.configuration.capability.catalog','chatter.timeline','chatter.followers.list']) assert(dailyReadonlyRequest('POST','/api/v1/intent',{intent}));
+for (const intent of ['login','system.init','ui.contract','ui.contract.v2','load_contract','route.authority.validate','my.work.summary','app.catalog','product.configuration.capability.catalog','chatter.timeline','chatter.followers.list','workspace.scenario.projection.get']) assert(dailyReadonlyRequest('POST','/api/v1/intent',{intent}));
 for (const op of ['list','read','search_read','default_get']) assert(dailyReadonlyRequest('POST','/api/v1/intent',{intent:'api.data',params:{op}}));
 for (const op of ['create','write','unlink']) assert(!dailyReadonlyRequest('POST','/api/v1/intent',{intent:'api.data',params:{op}}));
-for (const intent of ['execute_button','file.upload','chatter.post','search.favorite.set','unknown']) assert(!dailyReadonlyRequest('POST','/api/v1/intent',{intent}));
+for (const intent of ['execute_button','file.upload','chatter.post','search.favorite.set','scenario.activation.set','workspace.scenario.projection.set','unknown']) assert(!dailyReadonlyRequest('POST','/api/v1/intent',{intent}));
 assert(!dailyReadonlyRequest('POST','/api/v1/intent',{intent:'api.data',params:{op:'list',payload:{op:'write'}}}));
 assert(!dailyReadonlyRequest('POST','/api/v1/intent',{intent:'api.data',op:'unlink',params:{op:'read'}}));
 assert(dailyReadonlyRequest('POST','/api/v1/intent',{intent:'api.data',params:{op:'read',context:{lang:'zh_CN'}}}));

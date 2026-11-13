@@ -13,6 +13,11 @@
  */
 const SCENE_ROUTE_NAME = 'scene';
 
+/** A native delegate's empty scene content is complete by backend declaration. */
+export function shouldHydrateSceneContent(contentKind: unknown, hasContent: boolean): boolean {
+  return contentKind !== 'native_delegate' && !hasContent;
+}
+
 export function ownsSceneRoute(routeName: unknown): boolean {
   return String(routeName ?? '').trim() === SCENE_ROUTE_NAME;
 }

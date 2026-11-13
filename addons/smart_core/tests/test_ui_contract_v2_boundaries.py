@@ -1683,6 +1683,48 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(len(loads), 3)
 
+    def test_scene_binding_uses_effective_declaration_without_tile_projection(self):
+        from unittest.mock import patch
+        handler = self.module.UiContractV2Handler(env=object())
+        declarations = [{"code": "contract.income", "target": {"action_id": 786}}]
+        with patch.object(self.module, "call_extension_hook_first", return_value=declarations) as hook, \
+             patch.object(self.module, "load_scenes_from_db_or_fallback", side_effect=AssertionError("unused tile projection")):
+            self.assertIsNone(handler._validate_scene_action_binding(
+                {"scene_key": "contract.income", "action_id": 786}))
+            for params in ({"scene_key": "contract.income"},
+                           {"sceneKey": "contract.income", "actionId": 999}):
+                result = handler._validate_scene_action_binding(params)
+                self.assertFalse(result.ok)
+                self.assertEqual(result.code, 409)
+                self.assertIn("SCENE_ACTION_BINDING_INVALID", result.error["message"])
+            hook.assert_called_with(handler.env, "smart_core_delivery_scene_declarations", handler.env)
+        self.assertEqual(declarations, [{"code": "contract.income", "target": {"action_id": 786}}])
+
+    def test_scene_binding_empty_declaration_does_not_resurrect_projected_target(self):
+        from unittest.mock import patch
+        handler = self.module.UiContractV2Handler(env=object())
+        with patch.object(self.module, "call_extension_hook_first", return_value=[]), \
+             patch.object(self.module, "load_scenes_from_db_or_fallback", side_effect=AssertionError("empty is authoritative")):
+            # A semantic scene hint without a concrete binding stays a no-op;
+            # publication and record access are still checked by their owners.
+            self.assertIsNone(handler._validate_scene_action_binding(
+                {"scene_key": "contract.income", "action_id": 786}))
+
+    def test_scene_binding_legacy_provider_retains_rejection(self):
+        from unittest.mock import patch
+        handler = self.module.UiContractV2Handler(env=object())
+        for declaration in (None, {}):
+            with self.subTest(declaration=declaration), \
+                 patch.object(self.module, "call_extension_hook_first", return_value=declaration), \
+                 patch.object(self.module, "load_scenes_from_db_or_fallback", return_value={
+                     "scenes": [{"code": "contract.income", "target": {"action_id": 786}}]
+                 }) as legacy:
+                result = handler._validate_scene_action_binding(
+                    {"scene_key": "contract.income", "action_id": 999})
+                self.assertFalse(result.ok)
+                self.assertEqual(result.code, 409)
+                legacy.assert_called_once()
+
     def test_rejects_invalid_max_widgets(self):
         handler = self.module.UiContractV2Handler(env=object())
 

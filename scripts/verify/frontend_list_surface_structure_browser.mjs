@@ -865,7 +865,7 @@ function dailyReadonlyRequest(method, pathname, body) {
     }
     return true;
   }
-  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'app.catalog', 'product.configuration.capability.catalog', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
+  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'app.catalog', 'product.configuration.capability.catalog', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'workspace.scenario.projection.get', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
 }
 
 function dailyDeclaredLanding(init) {
@@ -1134,7 +1134,7 @@ function safeFailedResponse(status, url, request, response, secrets = []) {
 }
 
 let browser, context, page, lease, servedIdentity;
-const runtime = { console_errors: [], page_errors: [], failed_responses: [], denied_requests: [], operational_tracking: [], contracts: [] };
+const runtime = { console_errors: [], page_errors: [], failed_responses: [], denied_requests: [], operational_tracking: [], contracts: [], request_timings: [] };
 const dailyObservations = [];
 const acceptanceScope = { authority: 'actual captured account/company contract consumption',
   not_run: ['other_roles_or_companies', 'per_button_authorization', 'backend_rejection_of_forbidden_write', 'submit_approval_lifecycle'],
@@ -1177,6 +1177,19 @@ try {
       if (isIntent) {
         try { request = response.request().postDataJSON(); } catch {}
         try { envelope = await response.json(); } catch {}
+      }
+      if (isIntent) {
+        const timing = response.request().timing();
+        runtime.request_timings.push({
+          intent: request?.intent || '', status: response.status(),
+          trace_id: envelope?.meta?.trace_id || envelope?.meta?.traceId || '',
+          request_start_epoch_ms: timing.startTime,
+          request_start_ms: timing.requestStart, response_start_ms: timing.responseStart,
+          response_end_ms: timing.responseEnd,
+          server_elapsed_ms: envelope?.meta?.elapsed_ms ?? null,
+          // Raw Playwright offsets: -1 means unavailable, never zero latency.
+          // No request bodies, credentials or record data enter this timing rail.
+        });
       }
       if (response.status() >= 400) runtime.failed_responses.push(safeFailedResponse(response.status(), response.url(), request, envelope, [PASSWORD, BOOTSTRAP_SECRET]));
       // system.init is captured because the declared preload rail delivers the landing scene

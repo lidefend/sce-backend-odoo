@@ -99,7 +99,7 @@
       <header class="handling-surface__header">
         <div>
           <p class="handling-surface__eyebrow">{{ pageText('handling_surface_eyebrow', '办理入口') }}</p>
-          <h3 class="handling-surface__title">{{ pageText('handling_surface_title', '综合办理') }}</h3>
+          <h1 class="handling-surface__title">{{ scene?.label }}</h1>
         </div>
         <span class="handling-surface__badge">{{ handlingEntryCatalog.item_count || handlingEntryItemCount }} 项</span>
       </header>
@@ -175,6 +175,7 @@
 </template>
 
 <script setup lang="ts">
+import { shouldHydrateSceneContent } from '../app/sceneEntryContract';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ActionView from './ActionViewShell.vue';
@@ -927,7 +928,7 @@ async function resolveScene() {
       return;
     }
     scene.value = resolvedScene;
-    if (!sceneBlocks.value.length || !hasHandlingEntryCatalog(scene.value)) {
+    if (shouldHydrateSceneContent(scene.value.content_kind, Boolean(sceneBlocks.value.length && hasHandlingEntryCatalog(scene.value)))) {
       await hydrateSceneReadyForCurrentScene(sceneKey);
       if (!ownsResolution()) return;
       scene.value = getSceneByKey(sceneKey) || resolvedScene;
