@@ -46,7 +46,7 @@ def _load_builder_types():
                 block_type = s.split("=", 1)[1].strip().strip('"')
         if block_key and block_type:
             out[block_key] = block_type
-    _must(len(out) == 7, "expected 7 builder block_type entries")
+    _must(bool(out), "builder block_type entries not found")
     return out
 
 
@@ -54,9 +54,14 @@ def main():
     _must(SNAPSHOT.exists(), "snapshot file missing; run make verify.project.dashboard.snapshot first")
     snap = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     mapping = json.loads(MAPPING.read_text(encoding="utf-8"))
-    rows = _load_zone_blocks()
     builder_types = _load_builder_types()
     map_by_zone = {str(r.get("zone_key") or "").split(".", 1)[1]: r for r in (mapping.get("mappings") or [])}
+    rows = [
+        item
+        for item in _load_zone_blocks()
+        if item[0] in map_by_zone
+    ]
+    _must(len(rows) == len(map_by_zone), "formal service zones differ from mapping")
 
     zones = ((snap.get("data") or {}).get("zones") or {})
     _must(len(zones) == 7, "snapshot zones count must be 7")

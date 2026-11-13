@@ -28,11 +28,6 @@ from .project_dashboard_builders import BUILDERS
 _logger = logging.getLogger(__name__)
 
 
-class _NullEvidenceSummaryService:
-    def summary_for_project(self, _project):
-        return {}
-
-
 class ProjectDashboardService:
     """Provide business-truth-backed dashboard data for orchestration carriers."""
     SOURCE_KIND = "project_dashboard_business_fact_projection"
@@ -91,7 +86,7 @@ class ProjectDashboardService:
         self.env = env
         self._authorization_service = ProjectAuthorizationService(env)
         evidence_summary_service = self._model("sc.evidence.summary.service")
-        self._evidence_summary_service = evidence_summary_service or _NullEvidenceSummaryService()
+        self._evidence_summary_service = evidence_summary_service
         self._decision_engine = ProjectDecisionEngineService(env)
         self._state_explain_service = ProjectStateExplainService(env)
         self._metrics_explain_service = ProjectMetricsExplainService(env)
@@ -364,6 +359,8 @@ class ProjectDashboardService:
                     progress_percent = round((done / float(total)) * 100.0, 2)
         except Exception:
             progress_percent = 0.0
+        if self._evidence_summary_service is None:
+            raise RuntimeError("project evidence summary service is not registered")
         evidence_summary = self._evidence_summary_service.summary_for_project(project)
         evidence_chain = EvidenceChainService(self.env).build_project_chain(
             int(project.id)
@@ -463,7 +460,11 @@ class ProjectDashboardService:
             "payment_total": str(evidence_summary.get("pay_total") or 0.0),
             "payment_executed_total": str(evidence_summary.get("pay_done_total") or 0.0),
             "payment_executed_record_count": str(evidence_summary.get("pay_done_count") or 0),
-            "evidence_refs": evidence_chain.get("evidence_refs") or [],
+            "evidence_refs": (
+                evidence_summary.get("evidence_refs")
+                or evidence_chain.get("evidence_refs")
+                or []
+            ),
             "evidence_summary": evidence_summary,
             "fact_metrics": fact_metrics,
             "facts": {

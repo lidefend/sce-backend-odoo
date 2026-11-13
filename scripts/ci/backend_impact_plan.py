@@ -305,7 +305,7 @@ def snapshot(revision: str) -> dict:
         if not isinstance(deps, list) or not all(isinstance(v, str) for v in deps):
             raise ValueError(f'invalid dependencies: {path}')
         prefix = '/'.join(parts[:2]) + '/'
-        modules[name] = {'depends': set(deps), 'prefix': prefix,
+        modules[name] = {'depends': set(deps), 'manifest_depends': set(deps), 'prefix': prefix,
                          'tests': any(f.startswith(prefix + 'tests/') and f.endswith('.py') for f in files),
                          'installable': data.get('installable', True)}
     # Cross-module Python imports also express consumers, including test helpers.

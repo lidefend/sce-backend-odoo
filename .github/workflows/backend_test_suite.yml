@@ -72,6 +72,7 @@ jobs:
           IMPACT_BASE: ${{ inputs.base_sha }}
           HEAD_SHA: ${{ inputs.head_sha || github.sha }}
           MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+          TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
@@ -117,6 +118,7 @@ jobs:
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
+      SC_TEST_DEPENDENCY_PREPARATION: '1'
 
     defaults:
       run:
@@ -646,6 +648,7 @@ jobs:
           PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
           IMPACT_BASE: ${{ inputs.base_sha }}
           MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+          TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
         run: |
           python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
             --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \

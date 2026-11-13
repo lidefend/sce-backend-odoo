@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SERVICE = ROOT / "addons" / "smart_construction_core" / "services" / "project_dashboard_service.py"
 BUILDERS_DIR = ROOT / "addons" / "smart_construction_core" / "services" / "project_dashboard_builders"
+MAPPING = ROOT / "docs" / "contract" / "project_management_capability_mapping_v2.json"
 OUT = ROOT / "tmp" / "project_dashboard_contract_snapshot_v1.json"
 
 
@@ -51,13 +52,26 @@ def _load_builder_types():
                 btype = line.split("=", 1)[1].strip().strip('"')
         if key and btype:
             out[key] = btype
-    if len(out) != 7:
-        raise SystemExit("unexpected builder count for snapshot")
+    if not out:
+        raise SystemExit("builder block types not found for snapshot")
     return out
 
 
 def main():
     zones = _load_zone_blocks()
+    mapping = json.loads(MAPPING.read_text(encoding="utf-8"))
+    mapped_zones = {
+        str(row.get("zone_key") or "").split(".", 1)[1]
+        for row in (mapping.get("mappings") or [])
+        if str(row.get("zone_key") or "").startswith("zone.")
+    }
+    zones = [
+        zone
+        for zone in zones
+        if zone["zone_key"].split(".", 1)[1] in mapped_zones
+    ]
+    if {zone["zone_key"].split(".", 1)[1] for zone in zones} != mapped_zones:
+        raise SystemExit("formal mapping zones missing from service")
     block_types = _load_builder_types()
 
     contract = {

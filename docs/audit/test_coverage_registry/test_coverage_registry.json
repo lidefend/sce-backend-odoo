@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 213,
+    "odoo_tags": 214,
     "gated": 5,
     "on_demand": 70,
-    "unwired": 138,
-    "odoo_tag_declarations": 437,
-    "gated_declarations": 101,
-    "uncovered_declarations": 336,
+    "unwired": 139,
+    "odoo_tag_declarations": 439,
+    "gated_declarations": 102,
+    "uncovered_declarations": 337,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 70,
+      "declarations": 71,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -64,6 +64,7 @@
         "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
         "addons/smart_construction_core/tests/test_product_system_settings.py",
         "addons/smart_construction_core/tests/test_project_context_resolver.py",
+        "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
         "addons/smart_construction_core/tests/test_project_salary_product.py",
         "addons/smart_construction_core/tests/test_project_special_tax_deduction.py",
         "addons/smart_construction_core/tests/test_project_state_transition_validation.py",
@@ -1989,6 +1990,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "project_evidence_summary",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_evidence_summary_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "project_progress_read_boundary",

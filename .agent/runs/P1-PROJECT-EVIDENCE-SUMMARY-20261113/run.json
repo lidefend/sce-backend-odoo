@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "P1-PROJECT-EVIDENCE-SUMMARY-20261113",
+  "branch": "fix/p1-project-evidence-summary-20261113",
+  "baseline_sha": "f70945256baf089bf26663b30ad50a55b9b04098",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml",
+  "record": "docs/ops/iterations/p1_project_evidence_summary_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml",
+    ".agent/runs/P1-PROJECT-EVIDENCE-SUMMARY-20261113/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    "addons/smart_construction_core/services/__init__.py",
+    "addons/smart_construction_core/services/project_dashboard_service.py",
+    "addons/smart_construction_core/services/project_evidence_summary_service.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p1_project_evidence_summary_20261113.md",
+    "make/ci.mk",
+    "make/dev_test.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/test/dependency_baseline.py",
+    "scripts/test/test.sh",
+    "scripts/test/test_dependency_baseline.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/project_dashboard_assembly_guard.py",
+    "scripts/verify/project_dashboard_block_schema_guard.py",
+    "scripts/verify/project_dashboard_contract_snapshot_export.py",
+    "scripts/verify/project_dashboard_metric_semantics_guard.py",
+    "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+    "scripts/verify/project_management_contract_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source, static guards and disposable local.test ORM; no persistent database mutation in this declared check"
+  },
+  "checks": {
+    "project_dashboard_contract": {
+      "target": "verify.project.dashboard.contract",
+      "inputs": [
+        "addons/smart_construction_core/services/__init__.py",
+        "addons/smart_construction_core/services/project_evidence_summary_service.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+        "make/dev_test.mk",
+        "scripts/verify/project_management_contract_guard.py",
+        "scripts/verify/project_dashboard_assembly_guard.py",
+        "scripts/verify/project_dashboard_block_schema_guard.py",
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_runtime_chain_guard.py",
+        "scripts/verify/project_dashboard_metric_semantics_guard.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "project_dashboard_snapshot": {
+      "target": "verify.project.dashboard.snapshot",
+      "inputs": [
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+        "docs/contract/project_management_capability_mapping_v2.json"
+      ],
+      "kind": "offline"
+    },
+    "selector": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "addons/smart_construction_core/services/project_evidence_summary_service.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "scripts/verify/project_management_contract_guard.py",
+        "scripts/verify/project_dashboard_assembly_guard.py",
+        "scripts/verify/project_dashboard_block_schema_guard.py",
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_metric_semantics_guard.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "dependency_baseline": {
+      "target": "verify.test.dependency_baseline.unit",
+      "inputs": [
+        "scripts/test/dependency_baseline.py",
+        "scripts/test/test_dependency_baseline.py",
+        "scripts/test/test.sh",
+        ".github/workflows/backend_test_suite.yml",
+        "make/dev_test.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "dependency_affinity": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/test/dependency_baseline.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "independent review pending for combined P1/P4 candidate",
+    "real CI clone execution and exact-head required checks pending"
+  ],
+  "next_exact_step": "Co-locate pristine dependency consumers after real frozen plan demonstrated LPT separated them; independently review and validate the new exact candidate before mainline integration.",
+  "ci_preparation_evidence": {
+    "iteration": ".runtime/ci-preparation-iteration.log",
+    "routing": ".runtime/ci-preparation-routing.log",
+    "freeze": ".runtime/ci-preparation-freeze.log",
+    "runtime_validation": "not_run",
+    "coverage_policy": "same selected modules and tags; core/demo fresh installation; no test result reuse"
+  }
+}

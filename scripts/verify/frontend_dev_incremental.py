@@ -497,6 +497,8 @@ RULES = (
         "scripts/verify/backend_contract_fact_readback_probe.py",
         "scripts/verify/test_backend_contract_fact_readback_probe.py",
         "scripts/test/test.sh",
+        "scripts/test/dependency_baseline.py",
+        "scripts/test/test_dependency_baseline.py",
         ".github/workflows/backend_test_suite.yml",
     ), (
         "verify.ci.workflow.contract",
@@ -1108,12 +1110,30 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/services/review_work_item_service.py",
-        "addons/smart_construction_core/tests/__init__.py",
         "addons/smart_construction_core/tests/test_approval_contract_closure.py",
         "scripts/verify/test_general_contract_review_authority.py",
     ), (
         "verify.general_contract.review_authority.unit",
         "verify.approval.contract_closure.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/services/__init__.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "addons/smart_construction_core/services/project_evidence_summary_service.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_project_evidence_summary_service.py",
+        "scripts/verify/project_management_contract_guard.py",
+        "scripts/verify/project_dashboard_assembly_guard.py",
+        "scripts/verify/project_dashboard_block_schema_guard.py",
+        "scripts/verify/project_dashboard_metric_semantics_guard.py",
+    ), (
+        "verify.project.dashboard.contract",
+    )),
+    Rule((
+        "scripts/verify/project_dashboard_contract_snapshot_export.py",
+        "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
+    ), (
+        "verify.project.dashboard.snapshot",
     )),
     Rule((
         "addons/smart_construction_core/models/support/workflow_contract_service.py",

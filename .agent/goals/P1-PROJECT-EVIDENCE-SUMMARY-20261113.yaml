@@ -1,0 +1,79 @@
+schema_version: 1
+goal:
+  id: P1-PROJECT-EVIDENCE-SUMMARY-20261113
+  title: Restore project evidence summary for the formal project dashboard
+  status: active
+  formal_product_layer: P1 construction industry standard product
+  layer_target: project evidence summary service in smart_construction_core
+  module: smart_construction_core
+  standard_vs_user_specific: construction_industry_standard
+  why_here: >
+    Project-level actual payment, cost and settlement amounts are construction
+    business facts. The formal dashboard already depends on a project evidence
+    summary service, so the missing service must be supplied by the industry
+    module.
+  why_not_elsewhere: >
+    Demo data must not manufacture a dashboard projection. P0 owns generic
+    mechanisms, P3 is a runtime configuration carrier, P4 runs acceptance, and
+    the frontend must render contract data rather than infer financial facts.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/P1-PROJECT-EVIDENCE-SUMMARY-20261113.yaml
+      - .agent/runs/P1-PROJECT-EVIDENCE-SUMMARY-20261113/run.json
+      - addons/smart_construction_core/services/__init__.py
+      - addons/smart_construction_core/services/project_evidence_summary_service.py
+      - addons/smart_construction_core/services/project_dashboard_service.py
+      - addons/smart_construction_core/tests/__init__.py
+      - addons/smart_construction_core/tests/test_project_evidence_summary_service.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/project_management_contract_guard.py
+      - scripts/verify/project_dashboard_assembly_guard.py
+      - scripts/verify/project_dashboard_block_schema_guard.py
+      - scripts/verify/project_dashboard_contract_snapshot_export.py
+      - scripts/verify/project_dashboard_metric_semantics_guard.py
+      - scripts/verify/project_dashboard_snapshot_freshness_guard.py
+      - docs/demo/product_gap_registry_v1.md
+      - docs/audit/test_coverage_registry/test_coverage_registry.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/ops/iterations/p1_project_evidence_summary_20261113.md
+    product_behavior: >
+      The project dashboard will aggregate caller-visible posted payment ledger,
+      actual cost ledger and confirmed settlement facts instead of silently
+      publishing zero. Source status remains explicit when a role cannot read a
+      source model.
+  objective: >
+    Register sc.evidence.summary.service in smart_construction_core, aggregate
+    project-level business facts with caller permissions, expose source
+    traceability, and prove that a posted 160000 payment ledger produces a
+    non-zero formal dashboard total.
+  acceptance:
+    - the registered service exists in the current module
+    - posted payment ledger amount and count appear in the dashboard
+    - source model references remain traceable
+    - inaccessible source models do not leak amounts
+    - project dashboard contract guard and focused ORM tests pass
+    - local demo readback returns 160000 for the existing demo payment ledger
+  exclusions:
+    - demo data mutation or projection fabrication
+    - frontend hardcoding or model-specific amount inference
+    - permission or record-rule relaxation
+    - unrelated payment, cost or settlement workflow changes
+  validation_tool_correction: >
+    The dashboard guards now recognize already-supported multiline capability
+    declarations, explicit runtime zones beyond the seven formal mappings, and
+    the current contract-snapshot consumption path.
+  rollback: >
+    Revert the P1 evidence summary service, its dashboard consumption and tests.
+    No business data migration is required.
+
+  ci_preparation_extension:
+    authorization: owner requested CI efficiency optimization and PR883 integration together
+    formal_product_layer: P4 ops delivery tool
+    layer_target: same-run pristine dependency database preparation
+    standard_vs_user_specific: generic CI execution mechanism
+    why_here: dependency preparation belongs to test tooling, not product semantics
+    exclusions: no test-result reuse, no persistent database writes, no reduced test selection
+    acceptance: isolated clones preserve target installation hooks and selected tests; core and demo remain clean installs

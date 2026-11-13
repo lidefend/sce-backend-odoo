@@ -26,7 +26,7 @@ def _load_mapping() -> dict:
 
 def _extract_registry_keys() -> set[str]:
     text = REGISTRY_PY.read_text(encoding="utf-8")
-    keys = set(re.findall(r'_cap\("([a-z0-9_.]+)"', text))
+    keys = set(re.findall(r'_cap\(\s*"([a-z0-9_.]+)"', text))
     if not keys:
         raise SystemExit("no capability keys extracted from registry")
     return keys

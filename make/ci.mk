@@ -774,7 +774,7 @@ verify.ci.path_ownership.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ci/ci_path_ownership.py scripts/ci/test_ci_path_ownership.py scripts/ci/ci_risk_classifier.py scripts/ci/backend_impact_plan.py
 	@PYTHONPATH=scripts/ci python3 -m unittest scripts.ci.test_ci_path_ownership
 
-verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit
+verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit verify.test.dependency_baseline.unit
 	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
 	@python3 scripts/ci/test_backend_test_receipt.py
 	@python3 scripts/ci/test_backend_impact_plan.py
@@ -1461,3 +1461,7 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
+
+.PHONY: verify.test.dependency_baseline.unit
+verify.test.dependency_baseline.unit: guard.prod.forbid
+	@python3 -m unittest scripts.test.test_dependency_baseline

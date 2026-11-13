@@ -7,6 +7,7 @@ import fnmatch
 import hashlib
 import json
 import math
+import os
 import re
 import sys
 import functools
@@ -26,6 +27,7 @@ def partition(
     modules: list[str],
     limit: int = 4,
     durations: dict[str, float] | None = None,
+    groups: list[list[str]] | None = None,
 ) -> list[dict]:
     if not modules or len(set(modules)) != len(modules):
         raise ValueError('scope must be nonempty and unique')
@@ -42,22 +44,26 @@ def partition(
                 or duration < 0):
             raise ValueError('duration weights must be finite non-negative numbers')
     ordered = sorted(modules)
-    count = min(limit, len(ordered))
-    # LPT scheduling uses actual prior durations when available and unit
-    # weights otherwise. Name and shard index break ties deterministically.
-    weighted = sorted(ordered, key=lambda name: (-float(durations.get(name, 1)), name))
+    units = []
+    grouped = set()
+    for group in groups or []:
+        if not group or len(set(group)) != len(group) or not set(group) <= set(modules) or grouped & set(group):
+            raise ValueError('affinity groups must be nonempty disjoint subsets of scope')
+        units.append(sorted(group))
+        grouped.update(group)
+    units.extend([name] for name in ordered if name not in grouped)
+    count = min(limit, len(units))
+    # Keep pristine dependency consumers together. Historical sums deliberately
+    # overestimate the shared preparation group; never claim estimated savings
+    # as measured performance. Core/demo remain independently schedulable.
+    weight = lambda unit: sum(float(durations.get(name, 1)) for name in unit)
+    weighted = sorted(units, key=lambda unit: (-weight(unit), unit))
     buckets = [[] for _ in range(count)]
     loads = [0.0 for _ in range(count)]
-    for name in weighted:
-        # A zero-duration target must not leave a newly opened shard empty.
-        # Prefer an empty shard before adding a second zero-weight target,
-        # otherwise validate_execution_plan rejects the resulting partition.
-        index = min(
-            range(count),
-            key=lambda candidate: (loads[candidate], len(buckets[candidate]), candidate),
-        )
-        buckets[index].append(name)
-        loads[index] += float(durations.get(name, 1))
+    for unit in weighted:
+        index = min(range(count), key=lambda candidate: (loads[candidate], len(buckets[candidate]), candidate))
+        buckets[index].extend(unit)
+        loads[index] += weight(unit)
     shards = [
         {
             'index': index,
@@ -70,6 +76,27 @@ def partition(
     if sorted(flattened) != ordered or len(set(flattened)) != len(ordered):
         raise ValueError('shard union differs from selected scope')
     return shards
+
+
+def preparation_groups(graph: dict, modules: list[str]) -> list[list[str]]:
+    """Installation affinity comes only from manifests, never test imports."""
+    if os.environ.get('TEST_TAGS_INPUT'):
+        return []  # explicit selectors retain independent fresh installations
+    consumers = []
+    for module in sorted(modules):
+        if module in ('smart_construction_core', 'smart_construction_demo'):
+            continue
+        pending, seen = [module], set()
+        while pending:
+            name = pending.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            if name == 'smart_construction_core':
+                consumers.append(module)
+                break
+            pending.extend(graph.get(name, {}).get('manifest_depends', ()))
+    return [consumers] if len(consumers) > 1 else []
 
 
 # Known execution dependencies supplement the existing selector; this inventory
@@ -174,7 +201,9 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
             if not modules or any(name not in selected['modules'] for name in modules):
                 raise ValueError('override contains a module without runnable tests')
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
-    plan = {**selected, 'base': base, 'head': head, 'shards': partition(selected['modules']) if selected['modules'] else []}
+    groups = preparation_groups(after, selected['modules'])
+    plan = {**selected, 'base': base, 'head': head, 'preparation_groups': groups,
+            'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
     plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
     if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
         plan['changed_test_coverage'] = changed_coverage.managed_tests(head)
@@ -427,9 +456,12 @@ def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
         and math.isfinite(row['previous_actual_duration'])
         and row['previous_actual_duration'] >= 0
     }
-    result['shards'] = partition(run, durations=durations) if run else []
+    groups = [sorted(set(group) & run_set) for group in plan.get('preparation_groups', [])]
+    groups = [group for group in groups if group]
+    result['shards'] = partition(run, durations=durations, groups=groups) if run else []
     result['shard_scheduling'] = {
-        'method': 'longest_processing_time',
+        'method': 'dependency_affinity_then_longest_processing_time' if groups else 'longest_processing_time',
+        'estimate_policy': 'conservative_sum_without_assumed_preparation_savings',
         'duration_source': 'historical_actual_duration_or_unit_weight',
         'weighted_modules': sorted(durations),
     }
@@ -442,7 +474,7 @@ def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
 
 def validate_execution_plan(plan: dict, required: dict) -> dict:
     """Consume the frozen partition, proving identity and disjoint coverage."""
-    for key in ('base', 'head', 'modules', 'changed_test_coverage'):
+    for key in ('base', 'head', 'modules', 'changed_test_coverage', 'preparation_groups'):
         if plan.get(key) != required.get(key):
             raise ValueError('frozen plan differs from required ' + key)
     shards = plan.get('shards', [])
