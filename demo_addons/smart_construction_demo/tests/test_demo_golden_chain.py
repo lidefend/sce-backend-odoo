@@ -8,6 +8,7 @@ and field names below are the persisted, already-validated demo fixtures.
 """
 from __future__ import annotations
 
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.services.project_dashboard_builders.project_finance_builder import (
@@ -22,6 +23,9 @@ from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo impor
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_demo_business_chain import (
     run as run_demo_business_chain,
+)
+from odoo.addons.smart_construction_demo.tools.scenario_loader import (
+    _demo_drive_approval,
 )
 
 
@@ -142,20 +146,71 @@ class TestDemoGoldenChain(TransactionCase):
             project=project.with_user(finance_user).sudo(False)
         )
         self.assertEqual(finance_block["state"], "ready")
-        self.assertAlmostEqual(
-            finance_block["data"]["summary"]["paid"], 160000.0
-        )
+        self.assertGreaterEqual(float(finance_block["data"]["summary"]["paid"]), 160000.0)
         dashboard = ProjectDashboardService(finance_env).build(project_id=project.id)
-        self.assertAlmostEqual(
+        self.assertGreaterEqual(
             float(dashboard["project"]["payment_executed_total"]), 160000.0
         )
-        self.assertEqual(
-            dashboard["project"]["payment_executed_record_count"], "1"
-        )
+        self.assertGreaterEqual(int(dashboard["project"]["payment_executed_record_count"]), 1)
         self.assertIn(
             "payment.ledger#%s" % ledger.id,
             dashboard["project"]["evidence_refs"],
         )
+
+    def test_demo01_user_approval_does_not_rewrite_fixed_showcase_evidence(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        contract = self.env.ref("smart_construction_demo.sc_demo_exec_expense_contract")
+        settlement = self.env.ref("smart_construction_demo.sc_demo_exec_settlement")
+        fixed_ledger = self.env.ref("smart_construction_demo.sc_demo_exec_payment_ledger")
+        finance_user = self.env.ref("smart_construction_demo.user_sc_fin_mgr_01")
+        submitter = self.env.ref("smart_construction_demo.user_demo_role_project_a_member")
+        finance_env = self.env(
+            user=finance_user,
+            context={
+                **self.env.context,
+                "allowed_company_ids": [project.company_id.id],
+            },
+        )
+        project_for_finance = project.with_user(finance_user).sudo(False)
+
+        def finance_snapshot():
+            block = ProjectFinanceBuilder(finance_env).build(project=project_for_finance)
+            dashboard = ProjectDashboardService(finance_env).build(project_id=project.id)
+            return (
+                float(block["data"]["summary"]["paid"]),
+                float(dashboard["project"]["payment_executed_total"]),
+                int(dashboard["project"]["payment_executed_record_count"]),
+                dashboard["project"]["evidence_refs"],
+            )
+
+        paid_before, executed_before, count_before, refs_before = finance_snapshot()
+        self.assertGreaterEqual(paid_before, fixed_ledger.amount)
+        self.assertGreaterEqual(executed_before, fixed_ledger.amount)
+        self.assertGreaterEqual(count_before, 1)
+        self.assertIn("payment.ledger#%s" % fixed_ledger.id, refs_before)
+
+        Payment = self.env["payment.request"].with_user(submitter).sudo(False)
+        extra = Payment.create(
+            {
+                "type": "pay",
+                "project_id": project.id,
+                "partner_id": contract.partner_id.id,
+                "contract_id": contract.id,
+                "settlement_id": settlement.id,
+                "amount": 120000.0,
+                "date_request": fields.Date.context_today(submitter),
+                "note": "DEMO-01 Golden approved-progress regression",
+            }
+        )
+        _demo_drive_approval(self.env, extra)
+        extra.invalidate_recordset()
+        self.assertIn(extra.state, ("approved", "done"))
+
+        paid_after, executed_after, count_after, refs_after = finance_snapshot()
+        self.assertAlmostEqual(paid_after, paid_before + extra.amount)
+        self.assertGreaterEqual(executed_after, fixed_ledger.amount)
+        self.assertGreaterEqual(count_after, 1)
+        self.assertIn("payment.ledger#%s" % fixed_ledger.id, refs_after)
 
     def test_demo01_actionable_draft_replay_preserves_user_progress(self):
         project = self.env.ref("smart_construction_demo.sc_demo_project")

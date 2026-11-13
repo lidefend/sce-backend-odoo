@@ -362,6 +362,14 @@
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_after_selector_fix.log"
         },
         {
+          "command": "make verify.local.dev.golden_chain.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 5,
+          "detail": "Adds a transaction-only user approval to prove project finance totals may advance while the fixed ledger evidence remains present. Aggregate dashboard assertions now use the fixed showcase record as a lower bound rather than requiring the user-operable project total to stay frozen.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_user_approval_regression.log"
+        },
+        {
           "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS='sc_smoke/smart_construction_demo,sc_gate/smart_construction_demo,*/smart_construction_demo:TestDemoGoldenChain.test_golden_chain_amount_state_and_role_relay'",
           "status": "passed",
           "layer": "L3",
@@ -423,7 +431,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and publish the clean changed-test execution-selector fix, then wait for all four required checks on the new exact PR head.",
+  "next_exact_step": "Commit and publish the user-operable finance aggregate invariant, then wait for all four required checks on the resulting exact PR head.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
@@ -438,6 +446,6 @@
       "local.dev entry identity repair and service restart"
     ],
     "rollback": "Revert the topic commit. Runtime Demo data is intentionally disposable and reproducible through local.dev.rebuild_demo.",
-    "publication": "PR #884 is open. The prior source head exposed the changed-test execution-selector defect; the clean fix now awaits governed publication and all four required checks on the resulting exact head."
+    "publication": "PR #884 is open. The changed-test selector fix passed local validation; independent review then found that project finance totals still assumed a frozen user-operable record. The new aggregate invariant and transaction regression await governed publication."
   }
 }
