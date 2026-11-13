@@ -41,6 +41,8 @@ DEMO_WARN_PROJECT_CODES = {
 DEMO_FUNDING_AMOUNT = 2000000.0
 DEMO01_FIXED_PAYMENT_NOTE = "DEMO-01 主业务链已审批付款申请。"
 DEMO01_DRAFT_NOTE = "DEMO-01 可操作草稿：第二期分包付款"
+DEMO02_FIXED_RECEIPT_NOTE = "DEMO-02 主业务链已审批收款申请。"
+DEMO02_ACTIONABLE_RECEIPT_NOTE = "DEMO-02 可操作收款申请：第二期进度回款"
 
 
 def _annual_control_period(env):
@@ -444,6 +446,59 @@ def _fixed_demo01_payment_request(env, project, contract, settlement):
     return candidates
 
 
+def _fixed_demo01_receipt_request(env, project, contract):
+    """Resolve only the fixed DEMO-02 receipt request, never user drafts."""
+    fixed_data = _generated_demo_model_data(
+        env, "sc_demo_exec_receipt_request"
+    )
+    fixed = (
+        env[fixed_data.model].browse(fixed_data.res_id).exists()
+        if fixed_data
+        else env["payment.request"].browse()
+    )
+    if fixed:
+        if (
+            fixed._name != "payment.request"
+            or fixed.project_id != project
+            or fixed.contract_id != contract
+            or fixed.type != "receive"
+            or fixed.state == "cancel"
+        ):
+            raise UserError(
+                "DEMO-02 固定收款申请身份冲突："
+                f"request={fixed.id}/project={fixed.project_id.id}/"
+                f"contract={fixed.contract_id.id}/type={fixed.type}/state={fixed.state}"
+            )
+        return fixed
+
+    Request = env["payment.request"].sudo()
+    candidates = Request.search(
+        [
+            ("project_id", "=", project.id),
+            ("contract_id", "=", contract.id),
+            ("type", "=", "receive"),
+            ("note", "=", DEMO02_FIXED_RECEIPT_NOTE),
+        ],
+        limit=2,
+    )
+    if len(candidates) > 1:
+        raise UserError("DEMO-02 固定收款申请身份不唯一。")
+    if not candidates:
+        candidates = Request.search(
+            [
+                ("project_id", "=", project.id),
+                ("contract_id", "=", contract.id),
+                ("type", "=", "receive"),
+                ("amount", "=", 120000.0),
+                ("state", "in", ("approved", "done")),
+            ],
+            limit=2,
+        )
+    if len(candidates) > 1:
+        raise UserError("DEMO-02 固定收款申请兼容身份不唯一。")
+    return candidates
+
+
 def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     # 产品的 payment.request._check_project_lifecycle 禁止在 保修/关闭 项目上
     # 提交或审批付款申请（P0_PROJECT_TERMINAL_BLOCKED）。终态项目不再新增付款
@@ -482,14 +537,18 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
         pay = Payment.create(pay_vals)
     elif pay.state in ("draft", "rejected"):
         pay.write(pay_vals)
-    receive = Payment.search(
-        [
-            ("project_id", "=", project.id),
-            ("type", "=", "receive"),
-            ("contract_id", "=", receive_contract.id),
-            ("state", "!=", "cancel"),
-        ],
-        limit=1,
+    receive = (
+        _fixed_demo01_receipt_request(env, project, receive_contract)
+        if project.project_code == PROJECT_EXEC_CODE
+        else Payment.search(
+            [
+                ("project_id", "=", project.id),
+                ("type", "=", "receive"),
+                ("contract_id", "=", receive_contract.id),
+                ("state", "!=", "cancel"),
+            ],
+            limit=1,
+        )
     )
     receive_vals = {
         "type": "receive",
@@ -497,6 +556,7 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
         "partner_id": receive_contract.partner_id.id,
         "contract_id": receive_contract.id,
         "amount": 120000.0,
+        "note": DEMO02_FIXED_RECEIPT_NOTE,
     }
     if not receive:
         receive = Payment.create(receive_vals)
@@ -709,6 +769,24 @@ def _get_dictionary(env, xmlid, domain):
 
 
 def _ensure_contract(env, vals):
+    if vals.get("project_id") and "project.project" in env:
+        project = env["project.project"].sudo().browse(vals["project_id"])
+        xmlid = {
+            ("DEMO-PJ-EXEC", "in"): "sc_demo_exec_expense_contract",
+            ("DEMO-PJ-EXEC", "out"): "sc_demo_exec_income_contract",
+        }.get((project.project_code, vals.get("type")))
+        if xmlid:
+            data = _generated_demo_model_data(env, xmlid)
+            if data:
+                fixed = env[data.model].sudo().browse(data.res_id).exists()
+                if (
+                    not fixed
+                    or fixed.project_id != project
+                    or fixed.type != vals.get("type")
+                ):
+                    raise UserError(f"DEMO-PJ-EXEC fixed contract identity conflict: {xmlid}")
+                return fixed
+
     Contract = _demo_action_record(env, env["construction.contract"], "action_confirm", "smart_construction_demo.user_sc_contract_manager_cap")
     contract = Contract.search(
         [("project_id", "=", vals["project_id"]), ("subject", "=", vals["subject"])], limit=1

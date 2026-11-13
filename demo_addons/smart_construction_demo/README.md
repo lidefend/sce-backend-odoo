@@ -312,6 +312,41 @@ make demo.verify DB_NAME=sc_demo
 
 项目驾驶舱通过正式 `sc.evidence.summary.service` 从付款申请、支付台账、成本台账和结算单生成汇总；DEMO-01 的已支付证据为 160,000 元，并可直接追溯到对应支付台账。
 
+## DEMO-02 主项目收入回款闭环（固定到账 + 可办理样例）
+
+本批继续使用主项目 `DEMO-PJ-EXEC`，在既有收入合同
+`smart_construction_demo.sc_demo_exec_income_contract`（两行合计 1,200,000 元）
+下补齐一笔已完成的工程进度回款，并另留一笔可由用户继续办理的示例。
+
+| 环节 | XMLID | 展示口径 |
+| --- | --- | --- |
+| 固定收款申请 | `smart_construction_demo.sc_demo_exec_receipt_request` | 120,000 元，状态 `done` |
+| 固定收款登记 | `smart_construction_demo.sc_demo_exec_receipt_income` | 120,000 元，状态 `received` |
+| 固定资金台账 | `smart_construction_demo.sc_demo_exec_receipt_treasury_ledger` | 120,000 元，方向 `in`，状态 `posted` |
+| 可办理收款申请 | `smart_construction_demo.sc_demo_exec_actionable_receipt_request` | 第二期进度回款 180,000 元，状态 `approved` |
+| 可办理收款草稿 | `smart_construction_demo.sc_demo_exec_actionable_receipt_draft` | 180,000 元，状态 `draft` |
+
+固定 120,000 元记录走正式收款流程：收款申请 → 收款登记 → 审批 → 登记实收 → 收入资金台账。
+到账应以 `received` 收款登记和关联的 `posted/in` 资金台账为准；不要用包含已批准申请的
+`ProjectFinanceBuilder.summary.received` 单独证明实际到账。
+
+在正式页面可以按以下顺序查看和办理：
+
+1. 财务中心 → 收款申请：按项目“东环路城市快速路提升工程”筛选，查看固定 120,000 元申请与
+   可办理 180,000 元申请。可办理申请已完成审批，业务依据是 1,200,000 元收入合同的第二期进度回款。
+2. 财务中心 → 工程进度款收入登记：查看固定记录 `received` 和可办理记录 `draft`。
+3. 财务中心 → 资金台账：查看固定记录对应的 `posted/in` 120,000 元台账，并回查项目、往来单位和收款申请。
+
+可办理草稿的角色交接如下：
+
+- 财务经办 `fin1`（王秀兰）打开收款登记草稿，核对合同、往来单位、账户和 180,000 元金额后提交确认。
+- 当前审批实例中的实际审批席位处理提交后的审批，不以固定人员姓名代替审批链。
+- 财务主管 `fin_mgr`（陈志强）在审批完成后执行“登记实收”，系统随即完成收款申请并生成收入资金台账。
+- 业务项目成员可查看其授权范围内的项目结果，但不能代替财务席位完成登记实收。
+
+可办理草稿只在不存在时创建；重复加载 `demo_full` 不会覆盖用户后续修改的金额、状态或办理进度。
+固定展示记录重复加载时只核对已有业务事实，不重复生成收款登记或资金台账。
+
 ## 加载可选场景（Scenario Loader）
 
 除模块 manifest 已默认加载的 S00/S10 基础数据外，其余场景可按需加载：

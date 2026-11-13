@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-02-RECEIPT-CHAIN-20261113",
+  "branch": "feature/demo-02-receipt-chain-20261113",
+  "status": "verification_pending",
+  "baseline_sha": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+  "goal": ".agent/goals/DEMO-02-RECEIPT-CHAIN-20261113.yaml",
+  "record": "docs/ops/iterations/demo_02_receipt_chain_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
+    ".agent/goals/DEMO-02-RECEIPT-CHAIN-20261113.yaml",
+    ".agent/runs/DEMO-BUSINESS-CHAIN-DATA-20261113/run.json",
+    ".agent/runs/DEMO-02-RECEIPT-CHAIN-20261113/run.json",
+    "docs/ops/iterations/demo_02_receipt_chain_20261113.md",
+    "demo_addons/smart_construction_demo/README.md",
+    "demo_addons/smart_construction_demo/models/scenario_tick.py",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_receipt_chain.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.dev profile only; sc-local-dev / sc_dev_demo; writes serialized through local dev write lease"
+  },
+  "checks": {
+    "agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-02-RECEIPT-CHAIN-20261113.yaml",
+        ".agent/runs/DEMO-02-RECEIPT-CHAIN-20261113/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "demo_lifecycle_unit": {
+      "target": "verify.demo.lifecycle.unit",
+      "inputs": [
+        "demo_addons/smart_construction_demo",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/demo_verify.log"
+      }
+    },
+    "demo_scenario_step_unit": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/demo_verify.log"
+      }
+    },
+    "golden_chain_orm": {
+      "target": "verify.local.dev.golden_chain.orm",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_receipt_chain.py",
+        "demo_addons/smart_construction_demo/seed/registry.py",
+        "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "demo_addons/smart_construction_demo/models/scenario_tick.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/receipt_chain_readback.log"
+      }
+    }
+  },
+  "verification_results": {
+    "baseline_inventory": {
+      "status": "passed",
+      "identity": {
+        "head": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+        "stage": "clean_baseline"
+      },
+      "database_policy": {
+        "target_database_role": "customer_tenant_demo_development",
+        "target_tenant_id": "base.main_company_demo_scope",
+        "target_environment_id": "sc-local-dev/sc_dev_demo",
+        "is_platform_control_database": false,
+        "is_industry_catalog_database": false,
+        "is_customer_tenant_database": true,
+        "is_isolated_rehearsal_database": false,
+        "customer_business_data_allowed": false,
+        "fixture_allowed": true,
+        "exact_database_filter_confirmed": true,
+        "filestore_identity_confirmed": true
+      },
+      "readback": {
+        "inventory": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/readonly_inventory.log",
+        "amounts": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/readonly_inventory_amounts.log"
+      }
+    },
+    "user_business_path": {
+      "status": "passed",
+      "identity": {
+        "head": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+        "stage": "head_plus_demo02_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo"
+      },
+      "fixed_path": "income contract -> fixed 120000 request -> received registration -> posted incoming treasury ledger",
+      "actionable_path": "separate approved 180000 request -> fin1 receipt draft -> submitted approval chain -> fin_mgr registration received -> posted incoming treasury ledger",
+      "authoritative_readback": {
+        "project": {"id": 1, "project_code": "DEMO-PJ-EXEC"},
+        "income_contract": {"id": 79, "state": "confirmed", "amount_total": 1200000.0},
+        "fixed_request": {"id": 94, "state": "done", "amount": 120000.0},
+        "fixed_receipt": {"id": 28, "state": "received", "amount": 120000.0},
+        "fixed_ledger": {"id": 28, "state": "posted", "direction": "in", "amount": 120000.0},
+        "actionable_request": {"id": 324, "state": "approved", "amount": 180000.0},
+        "actionable_receipt": {"id": 29, "state": "draft", "amount": 180000.0}
+      },
+      "log": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/receipt_chain_readback.log"
+    },
+    "implementation": {
+      "status": "passed",
+      "identity": {
+        "head": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+        "stage": "head_plus_demo02_dirty_scope"
+      },
+      "logs": [
+        ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/demo02_seed_first.log",
+        ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/demo02_seed_replay.log"
+      ],
+      "replay": {
+        "status": "passed",
+        "result": "same primary record ids, states, directions and amounts before and after loading demo_40_contracts,demo_01_business_chain,demo_02_receipt_chain again",
+        "log": ".runtime/agent-runs/DEMO-02-RECEIPT-CHAIN-20261113/receipt_chain_replay_readback.log"
+      }
+    },
+    "incremental_validation": {
+      "status": "passed",
+      "identity": {
+        "head": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+        "stage": "head_plus_demo02_final_dirty_scope"
+      },
+      "command": "make ci.local.iteration",
+      "executed_targets": 4,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T152356Z-258180-678994812/receipt.json",
+      "targets": {
+        "verify.agent.ledger.unit": {"status": "passed", "tests": 18},
+        "verify.demo.lifecycle.unit": {"status": "passed", "tests": 83},
+        "verify.demo.scenario_step.unit": {"status": "passed", "tests": 9},
+        "verify.local.dev.golden_chain.orm": {"status": "passed", "tests": 11}
+      },
+      "limitations": [
+        "This is development iteration evidence, not current-SHA remote CI.",
+        "No P0-P3 product surface was changed or revalidated.",
+        "No optional full Quick, navigation matrix or browser matrix was run."
+      ]
+    },
+    "diagnosed_failure": {
+      "status": "resolved",
+      "classification": "validation_tool_defect",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T152321Z-254960-590099010/receipt.json",
+      "observation": "The lightweight supplemental-flow fixture exposed only construction.contract, while the new fixed-contract resolver assumed project.project existed.",
+      "resolution": "The resolver now activates project identity lookup only when the environment provides project.project; demo lifecycle tests then passed 83/83 and the full incremental plan passed."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the locally validated candidate and publish it through the governed GitHub PR entry.",
+  "handoff": {
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
+    "baseline_main": "2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd",
+    "excluded_dirty_worktree": "/home/lidefend/workspace/sce-backend-odoo (main is occupied and has pre-existing modifications)",
+    "excluded_runtime_worktree": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109 (detached acceptance runtime, left untouched)",
+    "rollback": "Revert the DEMO-02 topic commit. Runtime demo data remains disposable and reproducible through governed local.dev demo rebuild/seed steps.",
+    "publication": "not_run"
+  }
+}

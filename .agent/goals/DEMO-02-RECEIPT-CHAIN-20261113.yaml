@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: DEMO-02-RECEIPT-CHAIN-20261113
+  title: demo_receipt_chain_completion
+  status: verification_pending
+  formal_product_layer: P4
+  supporting_layers: []
+  layer_target: smart_construction_demo receipt data, scenario orchestration, verification and demo documentation
+  module:
+    - smart_construction_demo
+  baseline:
+    branch: feature/demo-02-receipt-chain-20261113
+    full_sha: 2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd
+    source: origin_main_after_pr_884
+  objective: >-
+    Complete the DEMO-PJ-EXEC income receipt story from the existing approved
+    120,000 receipt request through a received receipt registration and posted
+    incoming treasury ledger, while leaving a separate approved request and a
+    complete receipt-registration draft that users can continue processing.
+  product_boundary:
+    standard_vs_user_specific: demo_delivery_tool
+    why_here: >-
+      The records are fictional P4 demo data and must consume existing product
+      models, permissions and public lifecycle actions without changing them.
+    why_not_elsewhere:
+      - no_p1_receipt_model_or_lifecycle_change
+      - no_permission_approval_or_contract_rule_change
+      - no_frontend_metric_inference_or_fallback
+      - no_seed_acceptance_fixture_or_customer_data_change
+    blast_radius:
+      - DEMO-PJ-EXEC income contract fixed receipt request and new receipt facts
+      - one separate approved request and one editable receipt-registration draft
+      - daily_receipt scenario fact project binding and verification
+      - affected Golden ORM replay, role task evidence and demo README
+  constraints:
+    - reuse_existing_models_public_actions_and_role_seats
+    - fixed_receipt_request_amount_is_120000_and_must_reach_done
+    - fixed_receipt_registration_must_reach_received
+    - fixed_treasury_ledger_must_be_posted_direction_in
+    - fixed_and_actionable_receipt_requests_must_have_distinct_stable_identities
+    - replay_must_verify_existing_facts_without_duplicate_registration
+    - actionable_receipt_draft_must_not_be_reset_on_replay
+    - preserve_existing_payment_chain_and_actionable_payment_draft_progress
+    - shared_database_writes_must_use_local_dev_write_lease
+    - product_contract_or_permission_gaps_are_reported_not_absorbed
+  exclusions:
+    - P0_P3_product_model_contract_permission_menu_and_frontend_changes
+    - actual_receipt_summary_metric_on_project_dashboard
+    - smart_construction_seed_and_acceptance_fixture_changes
+    - production_customer_or_deployment_data_changes
+  acceptance:
+    - fixed_120000_receipt_request_reaches_done_with_received_registration_and_posted_incoming_ledger
+    - receipt_registration_request_project_company_contract_partner_currency_and_dates_reconcile
+    - separate_approved_request_and_complete_receipt_draft_remain_user_operable
+    - replay_does_not_duplicate_receipts_ledgers or reset user progress
+    - daily_receipt_fact_resolves_the_main_project_receipt_and_rejects_other_projects
+    - affected_finance_roles_and_non_finance_denial_are_observed_on_the_receipt_records
+  next_exact_step: >-
+    Commit the locally validated DEMO-02 candidate, publish it through the
+    governed GitHub PR entry, and wait for the four required checks on the
+    exact pushed SHA.
+  completion:
+    batch: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: not_run

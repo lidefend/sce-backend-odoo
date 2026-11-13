@@ -82,8 +82,9 @@ _FACT_BINDINGS = {
     },
     "demo.scenario.fact.daily_receipt": {
         "kind": "lifecycle",
-        "record": "sc_demo_receipt_income_070_progress",
+        "record": "sc_demo_exec_receipt_income",
         "state": "received",
+        "project_code": "DEMO-PJ-EXEC",
     },
     "demo.scenario.fact.risk_settlement": {
         "kind": "lifecycle",
@@ -265,6 +266,11 @@ class DemoScenarioTick(models.AbstractModel):
         )
         if not record:
             return "unbound", "record_missing"
+        project_code = binding.get("project_code")
+        if project_code:
+            project = getattr(record, "project_id", self.env["project.project"])
+            if not project or project.project_code != project_code:
+                return "unbound", "project_mismatch"
         drive_seeded_record(self.env, record, binding["state"])
         field = getattr(record, "_state_field", "state")
         if record[field] != binding["state"]:

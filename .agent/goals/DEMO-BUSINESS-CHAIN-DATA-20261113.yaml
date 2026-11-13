@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-BUSINESS-CHAIN-DATA-20261113
   title: demo_business_chain_data_completion
-  status: verification_pending
+  status: completed
   formal_product_layer: P4
   supporting_layers: []
   layer_target: smart_construction_demo scenario data, seed steps, verification and demo documentation
@@ -52,10 +52,10 @@ goal:
     - fixed_showcase_and_actionable_draft_have_distinct_replay_expectations
     - affected_role_visibility_and_formal_entry_consumption_are_observed
   next_exact_step: >-
-    Commit and push the replay-identity fix to PR #884, wait for fresh exact-head
-    CI and independent re-review, then merge only if all required gates pass.
+    Merged through PR #884 at main 2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd;
+    continue with DEMO-02-RECEIPT-CHAIN-20261113.
   completion:
-    batch: targeted_runtime_validation_passed_remote_integration_not_run
-    mainline_integration: not_run
+    batch: accepted
+    mainline_integration: merged_pr_884
     deployment: not_run
     user_acceptance: not_run

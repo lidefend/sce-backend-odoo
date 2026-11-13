@@ -11,6 +11,7 @@ already-validated demo fixtures.
 from __future__ import annotations
 
 from odoo import fields
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.services.project_dashboard_builders.project_finance_builder import (
@@ -24,6 +25,7 @@ from odoo.addons.smart_construction_demo.seed.steps.step_20_projects_demo import
 )
 from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo import (
     DEMO01_FIXED_PAYMENT_NOTE,
+    _approve_payment,
     _ensure_actionable_payment_draft,
     _ensure_complete_payment_request,
     _ensure_payments,
@@ -33,9 +35,15 @@ from odoo.addons.smart_construction_demo.seed.steps.step_40_contracts_demo impor
 from odoo.addons.smart_construction_demo.seed.steps.step_demo_business_chain import (
     run as run_demo_business_chain,
 )
+from odoo.addons.smart_construction_demo.seed.steps.step_demo_receipt_chain import (
+    ACTIONABLE_RECEIPT_AMOUNT,
+    _receipt_vals,
+    run as run_demo_receipt_chain,
+)
 from odoo.addons.smart_construction_demo.tools.scenario_loader import (
     _bind_generated_demo_xmlid,
     _demo_drive_approval,
+    _demo_finish_reviews,
     _generated_demo_model_data,
     load_scenario,
 )
@@ -72,6 +80,7 @@ class TestDemoGoldenChain(TransactionCase):
             _ensure_transactional_golden_scenarios(cls.env)
             run_contracts_demo(cls.env)
             run_demo_business_chain(cls.env)
+        run_demo_receipt_chain(cls.env)
 
     def test_golden_chain_amount_state_and_role_relay(self):
         settlement = self.env.ref("smart_construction_demo.sc_demo_settlement_069_payment")
@@ -114,6 +123,228 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertTrue(
             settlement.with_user(actor).sudo(False).search_count([("id", "=", settlement.id)])
         )
+
+    def test_demo02_fixed_receipt_chain_reconciles_request_registration_and_ledger(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        request = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_receipt_request"
+        )
+        receipt = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_receipt_income"
+        )
+        ledger = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_receipt_treasury_ledger"
+        )
+
+        self.assertAlmostEqual(request.amount, 120000.0)
+        self.assertEqual(request.state, "done")
+        self.assertEqual(receipt.state, "received")
+        self.assertAlmostEqual(receipt.amount, request.amount)
+        self.assertEqual(receipt.payment_request_id, request)
+        self.assertEqual(receipt.project_id, project)
+        self.assertEqual(receipt.company_id, project.company_id)
+        self.assertEqual(receipt.contract_id, contract)
+        self.assertEqual(receipt.partner_id, contract.partner_id)
+        self.assertEqual(receipt.currency_id, request.currency_id)
+        self.assertTrue(receipt.date_receipt)
+        if contract.date_start:
+            self.assertEqual(receipt.date_receipt, contract.date_start)
+        self.assertTrue(receipt.receiving_account_name)
+        self.assertTrue(receipt.receiving_bank_name)
+        self.assertTrue(receipt.receiving_account_no)
+        self.assertEqual(receipt.treasury_ledger_id, ledger)
+        self.assertEqual(ledger.state, "posted")
+        self.assertEqual(ledger.direction, "in")
+        self.assertAlmostEqual(ledger.amount, request.amount)
+        self.assertEqual(ledger.project_id, project)
+        self.assertEqual(ledger.payment_request_id, request)
+        self.assertEqual(
+            self.env["sc.receipt.income"].sudo().search_count(
+                [("payment_request_id", "=", request.id)]
+            ),
+            1,
+        )
+        self.assertEqual(
+            self.env["sc.treasury.ledger"].sudo().search_count(
+                [("payment_request_id", "=", request.id)]
+            ),
+            1,
+        )
+
+    def test_demo02_actionable_receipt_draft_preserves_user_progress(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        request = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_actionable_receipt_request"
+        )
+        draft = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_actionable_receipt_draft"
+        )
+        self.assertNotEqual(request, self.env.ref(
+            "smart_construction_demo.sc_demo_exec_receipt_request"
+        ))
+        self.assertAlmostEqual(request.amount, ACTIONABLE_RECEIPT_AMOUNT)
+        self.assertEqual(draft.payment_request_id, request)
+        self.assertEqual(draft.project_id, project)
+        self.assertEqual(draft.company_id, project.company_id)
+        self.assertEqual(draft.contract_id, contract)
+        self.assertEqual(draft.partner_id, contract.partner_id)
+        self.assertEqual(draft.currency_id, request.currency_id)
+        self.assertTrue(draft.receiving_account_name)
+        self.assertTrue(draft.receiving_bank_name)
+        self.assertTrue(draft.receiving_account_no)
+
+        state_before = draft.state
+        amount_before = draft.amount
+        run_demo_receipt_chain(self.env)
+        draft.invalidate_recordset()
+        request.invalidate_recordset()
+        self.assertEqual(draft.state, state_before)
+        self.assertAlmostEqual(draft.amount, amount_before)
+        self.assertEqual(draft.payment_request_id, request)
+
+    def test_demo02_equal_amount_user_request_is_not_reused_as_fixed_receipt(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        expense_contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_expense_contract"
+        )
+        income_contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        settlement = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_settlement"
+        )
+        fixed = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_receipt_request"
+        )
+        submitter = self.env.ref(
+            "smart_construction_demo.user_demo_role_project_a_member"
+        )
+        collision = (
+            self.env["payment.request"]
+            .with_user(submitter)
+            .sudo(False)
+            .create(
+                {
+                    "type": "receive",
+                    "project_id": project.id,
+                    "partner_id": income_contract.partner_id.id,
+                    "contract_id": income_contract.id,
+                    "amount": 120000.0,
+                    "date_request": income_contract.date_start,
+                    "note": "DEMO-02 user equal-amount receipt request",
+                }
+            )
+        )
+        state_before = collision.state
+        amount_before = collision.amount
+
+        _pay, receive = _ensure_payments(
+            self.env,
+            project,
+            expense_contract,
+            income_contract,
+            settlement,
+        )
+
+        collision.invalidate_recordset()
+        self.assertEqual(receive, fixed)
+        self.assertNotEqual(receive, collision)
+        self.assertEqual(collision.state, state_before)
+        self.assertAlmostEqual(collision.amount, amount_before)
+
+    def test_demo02_daily_receipt_fact_binds_main_project(self):
+        tick = self.env["demo.scenario.tick"]
+        status, reason = tick._lifecycle_fact(
+            {
+                "record": "sc_demo_exec_receipt_income",
+                "state": "received",
+                "project_code": "DEMO-PJ-EXEC",
+            }
+        )
+        self.assertEqual((status, reason), ("advanced", "sc_demo_exec_receipt_income"))
+
+        status, reason = tick._lifecycle_fact(
+            {
+                "record": "sc_demo_receipt_income_070_progress",
+                "state": "received",
+                "project_code": "DEMO-PJ-EXEC",
+            }
+        )
+        self.assertEqual((status, reason), ("unbound", "project_mismatch"))
+
+    def test_demo02_receipt_roles_complete_a_transactional_receipt(self):
+        project = self.env.ref("smart_construction_demo.sc_demo_project")
+        contract = self.env.ref(
+            "smart_construction_demo.sc_demo_exec_income_contract"
+        )
+        submitter = self.env.ref(
+            "smart_construction_demo.user_demo_role_project_a_member"
+        )
+        fin1 = self.env.ref("smart_construction_demo.user_sc_fin_01")
+        fin_mgr = self.env.ref(
+            "smart_construction_demo.user_sc_fin_mgr_01"
+        )
+        request = (
+            self.env["payment.request"]
+            .with_user(submitter)
+            .sudo(False)
+            .create(
+                {
+                    "type": "receive",
+                    "project_id": project.id,
+                    "partner_id": contract.partner_id.id,
+                    "contract_id": contract.id,
+                    "amount": 90000.0,
+                    "date_request": contract.date_start,
+                    "note": "DEMO-02 role receipt regression",
+                }
+            )
+        )
+        request = _approve_payment(self.env, request)
+        receipt = (
+            self.env["sc.receipt.income"]
+            .with_user(fin1)
+            .sudo(False)
+            .create(
+                _receipt_vals(
+                    project,
+                    contract,
+                    request,
+                    "DEMO-02 role receipt regression",
+                )
+            )
+        )
+        self.assertEqual(receipt.state, "draft")
+        self.assertEqual(
+            self.env["sc.receipt.income"]
+            .with_user(fin1)
+            .sudo(False)
+            .search_count([("id", "=", receipt.id)]),
+            1,
+        )
+
+        receipt.with_user(fin1).sudo(False).action_confirm()
+        _demo_finish_reviews(self.env, receipt)
+        receipt.invalidate_recordset()
+        self.assertEqual(receipt.state, "confirmed")
+
+        with self.assertRaises(UserError):
+            receipt.with_user(submitter).sudo(False).action_received()
+
+        receipt.with_user(fin_mgr).sudo(False).action_received()
+        receipt.invalidate_recordset()
+        request.invalidate_recordset()
+        self.assertEqual(receipt.state, "received")
+        self.assertEqual(request.state, "done")
+        self.assertEqual(receipt.treasury_ledger_id.direction, "in")
+        self.assertEqual(receipt.treasury_ledger_id.state, "posted")
+        self.assertAlmostEqual(receipt.treasury_ledger_id.amount, request.amount)
 
     def test_demo01_exec_project_chain_and_project_summary(self):
         project = self.env.ref("smart_construction_demo.sc_demo_project")
