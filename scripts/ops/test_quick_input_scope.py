@@ -193,6 +193,32 @@ class QuickInputScopeTest(unittest.TestCase):
             self.assertEqual(before, scope.execution_identity())
             self.assertNotIn("CODEX_TOOL_CALL_ID", scope.environment_hashes())
 
+    def test_head_derived_environment_and_terminal_channels_are_not_inputs(self):
+        first = "a" * 40
+        second = "b" * 40
+        with mock.patch.dict(os.environ, {
+            "SC_ACCEPTANCE_SOURCE_SHA": first,
+            "ACCEPTANCE_ARTIFACT_SHA": first,
+            "DAILY_DUTY_EDITION_TOOL": f"/opt/sce/deployment-tools/{first}/scripts/ops/tool.py",
+            "DAILY_RUNTIME_RELEASE_ARGS": f'--expected-sha "{first}" --source-branch main',
+            "MAKE_TERMERR": "/dev/pts/1",
+            "MAKE_TERMOUT": "/dev/pts/1",
+        }):
+            before = scope.execution_identity(candidate_head=first)
+            before_hashes = scope.environment_hashes(candidate_head=first)
+        with mock.patch.dict(os.environ, {
+            "SC_ACCEPTANCE_SOURCE_SHA": second,
+            "ACCEPTANCE_ARTIFACT_SHA": second,
+            "DAILY_DUTY_EDITION_TOOL": f"/opt/sce/deployment-tools/{second}/scripts/ops/tool.py",
+            "DAILY_RUNTIME_RELEASE_ARGS": f'--expected-sha "{second}" --source-branch main',
+            "MAKE_TERMERR": "/dev/pts/2",
+            "MAKE_TERMOUT": "/dev/pts/2",
+        }):
+            self.assertEqual(before, scope.execution_identity(candidate_head=second))
+            self.assertEqual(before_hashes, scope.environment_hashes(candidate_head=second))
+        self.assertNotIn("MAKE_TERMERR", before_hashes)
+        self.assertNotIn("MAKE_TERMOUT", before_hashes)
+
     def test_default_candidate_revision_normalizes_but_explicit_revision_invalidates(self):
         with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": "a" * 40}):
             before = scope.execution_identity(candidate_head="a" * 40)

@@ -809,7 +809,9 @@ RULES = (
     # through as an unmapped path and lose its non-zero L2 execution.
     Rule((
         "scripts/ops/local_quick_evidence.py",
+        "scripts/ops/quick_input_scope.py",
         "scripts/ops/test_local_quick_evidence.py",
+        "scripts/ops/test_quick_input_scope.py",
         "scripts/verify/test_local_quick_evidence.py",
     ), (
         "verify.branch.governance.consistency",

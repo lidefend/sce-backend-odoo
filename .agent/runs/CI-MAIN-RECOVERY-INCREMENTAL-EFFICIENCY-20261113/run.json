@@ -28,6 +28,8 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/db/create.sh",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/test_quick_input_scope.py",
     "scripts/test/frontend_acceptance_db_ensure.sh",
     "scripts/verify/test_frontend_release_local_entry.py",
     "scripts/verify/test_local_dev_project_profile_write_fixture.py",

@@ -94,6 +94,15 @@ This makes the fresh-install proof and zero-upgrade expectation apply to the
 actual CI cold-start sequence rather than only to databases created by
 `createdb` inside the script.
 
+The same review cycle exposed why Quick receipts were not reusable across
+candidate commits: Make exports deployment paths and command arguments derived
+from the current HEAD, while terminal channel variables (`MAKE_TERMERR` and
+`MAKE_TERMOUT`) also changed between invocations. `quick_input_scope` now binds
+the current-HEAD relationship instead of the concrete changing SHA and excludes
+the terminal channels. A genuinely explicit different revision remains an
+environment input. One full Quick is required to establish the first receipt in
+this normalized format; subsequent descendants can reuse the unchanged units.
+
 The independently confirmed project cockpit summary gap is recorded in
 `docs/demo/product_gap_registry_v1.md` for the next P1 product batch. Demo data
 and tooling do not synthesize the missing projection.

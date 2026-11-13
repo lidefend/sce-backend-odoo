@@ -116,6 +116,9 @@ def target_fingerprint(head: str, target: str, inputs=None, *, root: Path = ROOT
 NON_INPUT_ENVIRONMENT = frozenset({
     "PWD", "OLDPWD", "SHLVL", "_", "MAKELEVEL", "MAKEFLAGS", "MFLAGS",
     "MAKEOVERRIDES", "SC_QUICK_SCAN_COVERAGE_DIR",
+    # GNU Make changes these when a recipe is attached to a terminal. They
+    # select diagnostic streams, not target commands or repository inputs.
+    "MAKE_TERMERR", "MAKE_TERMOUT",
     # Admission budget only; never changes a selected target's command/inputs.
     "QUICK_MAX_TARGETS",
     # Orchestrator correlation only; no repository executor consumes this ID.
@@ -125,11 +128,19 @@ NON_INPUT_ENVIRONMENT = frozenset({
 
 def input_environment(*, candidate_head: str | None = None) -> dict[str, object]:
     environment = {key: value for key, value in os.environ.items() if key not in NON_INPUT_ENVIRONMENT}
-    # Make exports the current HEAD by default. Bind that relation rather than
-    # the changing SHA; each unit already binds its committed source inputs.
-    # An explicitly selected different acceptance revision remains an input.
-    if candidate_head and environment.get("SC_ACCEPTANCE_SOURCE_SHA") == candidate_head:
-        environment["SC_ACCEPTANCE_SOURCE_SHA"] = {"binding": "candidate-head"}
+    # Make exports many deployment/tool paths derived from the current HEAD.
+    # Bind the relation, not the changing SHA; each unit already binds its
+    # committed source inputs. A genuinely explicit different revision does not
+    # contain the current SHA and therefore remains a literal environment input.
+    if candidate_head:
+        for key, value in tuple(environment.items()):
+            if not isinstance(value, str) or candidate_head not in value:
+                continue
+            environment[key] = (
+                {"binding": "candidate-head"}
+                if value == candidate_head
+                else value.replace(candidate_head, "<candidate-head>")
+            )
     return environment
 
 
