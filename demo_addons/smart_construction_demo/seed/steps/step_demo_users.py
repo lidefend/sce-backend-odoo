@@ -164,7 +164,7 @@ def run_accounting_roles(env):
     """Two ordinary accounting seats, with stable XML identities for rebuilds."""
     import json
     identities = []
-    for suffix, label in (("read", "会计只读示例"), ("user", "会计经办示例")):
+    for suffix, label in (("read", "会计只读岗"), ("user", "会计经办岗")):
         login = "sc_demo_accounting_" + suffix
         role_xmlid = "smart_construction_core.group_sc_role_accounting_" + suffix
         _ensure_user(env, login, label, ["base.group_user", role_xmlid],

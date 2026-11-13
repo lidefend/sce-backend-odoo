@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-BUSINESS-CHAIN-DATA-20261113",
+  "branch": "feature/demo-business-chain-data-20261113",
+  "status": "verification_pending",
+  "baseline_sha": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+  "goal": ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
+  "record": "docs/ops/iterations/demo_business_chain_data_20261113.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
+    ".agent/runs/DEMO-BUSINESS-CHAIN-DATA-20261113/run.json",
+    "docs/ops/iterations/demo_business_chain_data_20261113.md",
+    "demo_addons/smart_construction_demo/README.md",
+    "demo_addons/smart_construction_demo/__manifest__.py",
+    "demo_addons/smart_construction_demo/data/base",
+    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing",
+    "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit",
+    "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface",
+    "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface",
+    "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_business_chain.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.dev profile only; sc-local-dev / sc_dev_demo; writes serialized through local dev write lease"
+  },
+  "checks": {
+    "agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
+        ".agent/runs/DEMO-BUSINESS-CHAIN-DATA-20261113/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "demo_lifecycle_unit": {
+      "target": "verify.demo.lifecycle.unit",
+      "inputs": [
+        "demo_addons/smart_construction_demo/__manifest__.py",
+        "demo_addons/smart_construction_demo/data/base",
+        "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+        "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment",
+        "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing",
+        "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit",
+        "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface",
+        "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface",
+        "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+        "demo_addons/smart_construction_demo/seed/registry.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_business_chain.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo_verify.log"
+      }
+    },
+    "demo_scenario_step_unit": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo_verify.log"
+      }
+    },
+    "golden_chain_orm": {
+      "target": "verify.local.dev.golden_chain.orm",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+        "demo_addons/smart_construction_demo/data/base",
+        "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment",
+        "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing",
+        "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit",
+        "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface",
+        "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface",
+        "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+        "demo_addons/smart_construction_demo/seed/registry.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_business_chain.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_replay_readback.log"
+      }
+    }
+  },
+  "verification_results": {
+    "baseline_inventory": {
+      "status": "passed",
+      "identity": {
+        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+        "stage": "clean_baseline"
+      },
+      "database_policy": {
+        "target_database_role": "customer_tenant_demo_development",
+        "target_tenant_id": "base.main_company_demo_scope",
+        "target_environment_id": "sc-local-dev/sc_dev_demo",
+        "is_platform_control_database": false,
+        "is_industry_catalog_database": false,
+        "is_customer_tenant_database": true,
+        "is_isolated_rehearsal_database": false,
+        "customer_business_data_allowed": false,
+        "fixture_allowed": true,
+        "exact_database_filter_confirmed": true,
+        "filestore_identity_confirmed": true
+      },
+      "completed": [
+        "workspace_and_repository_boundary_confirmed",
+        "origin_main_pr_880_exact_base_confirmed",
+        "existing_ci_and_acceptance_worktrees_excluded",
+        "formal_product_layer_and_scope_declared"
+      ],
+      "readback": {
+        "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/readonly_inventory.log",
+        "supporting_log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/readonly_supporting_inventory.log",
+        "selected_project": "DEMO-PJ-EXEC",
+        "selection": "Most complete existing WBS/BOQ/budget/task/document baseline; missing paid execution, posted ledger and stable actionable draft."
+      },
+      "next": "Complete the selected project chain and verify replay semantics."
+    },
+    "demo01_implementation": {
+      "status": "passed",
+      "identity": {
+        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+        "stage": "head_plus_demo01_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo"
+      },
+      "commands": [
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo",
+          "status": "passed",
+          "layer": "L3",
+          "attempts": 2,
+          "detail": "First attempt correctly failed on an invalid P4 forced lifecycle target; removing that override let the product initiation guard remain authoritative.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/module_upgrade_retry.log"
+        },
+        {
+          "command": "local_dev_write_lease demo01_business_chain_seed -> make local.dev.demo.seed STEPS=demo_01_business_chain",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Created the paid execution and posted ledger, repaired an incomplete approved payment request through cancel-and-new-public-workflow, created the actionable draft, and bound stable XMLIDs.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_seed_first.log"
+        },
+        {
+          "command": "local_dev_write_lease demo01_business_chain_seed_replay -> make local.dev.demo.seed STEPS=demo_01_business_chain",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Second run kept all primary XMLIDs and counts stable.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_seed_replay.log"
+        },
+        {
+          "command": "local_dev_write_lease demo_company_membership_seed -> make local.dev.demo.seed STEPS=demo_company_secondary,demo_company_membership",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "The pre-rebuild shared database used second-company id 350; the full rebuild recreated it with stable id 2.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/company_membership_seed.log"
+        },
+        {
+          "command": "CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo",
+          "status": "failed",
+          "layer": "L3",
+          "attempts": 3,
+          "detail": "Third rebuild completed database reset, release seed and demo_full successfully. The outer command failed only at frontend HTTP health because this candidate worktree has no built static bundle. Earlier failures exposed and fixed paused-project reconciliation ordering.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_rebuild_demo_retry2.log"
+        },
+        {
+          "command": "make local.dev.entry_identity.ensure",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Updated namespace ns_000000000002 from stale sc_demo to sc_dev_demo.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/entry_identity_ensure.log"
+        },
+        {
+          "command": "local_dev_write_lease demo01_business_chain_post_rebuild_replay -> make local.dev.demo.seed STEPS=demo_01_business_chain",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Replay after clean rebuild kept all primary ids, states and counts unchanged.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_seed_post_rebuild_replay.log"
+        },
+        {
+          "command": "make fe.install",
+          "status": "passed",
+          "layer": "L1",
+          "detail": "Pinned frontend dependencies installed from the existing lockfile.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/fe_install.log"
+        },
+        {
+          "command": "make local.dev.frontend",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Candidate static bundle built successfully after restoring ownership of the generated dist-dev directory.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_frontend_build.log"
+        },
+        {
+          "command": "make local.dev.health",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "Persistent local-dev frontend and namespace entry health passed.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_health.log"
+        }
+      ],
+      "readback": {
+        "ids": {
+          "project": 1,
+          "expense_contract": 80,
+          "income_contract": 79,
+          "settlement": 24,
+          "payment_request": 93,
+          "receipt_request": 94,
+          "payment_execution": 4,
+          "payment_ledger": 5,
+          "actionable_draft": 109
+        },
+        "chain": "expense contract 452000 tax inclusive / 400000 line total -> approved settlement 400000 with approved_amount 400000 and purchase order -> paid request 160000 with complete account -> paid execution 160000 -> posted payment ledger 160000",
+        "residuals": "two contracts on the primary project; zero generic cockpit contracts and zero generic cockpit payments",
+        "replay": "same ids after clean rebuild and explicit replay; execution=1, posted ledger=1, actionable draft=1, contracts=2",
+        "logs": [
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_readback.log",
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo01_replay_readback.log",
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/finance_block_readback.log",
+          ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/post_rebuild_readback.log"
+        ]
+      }
+    },
+    "targeted_validation": {
+      "status": "passed_with_exclusions",
+      "identity": {
+        "head": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+        "stage": "head_plus_final_demo01_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo"
+      },
+      "commands": [
+        {
+          "command": "make verify.demo.lifecycle.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 145,
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo_lifecycle_unit.log"
+        },
+        {
+          "command": "make verify.demo.scenario_step.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 9,
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo_scenario_step_unit.log"
+        },
+        {
+          "command": "make verify.local.dev.golden_chain.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 3,
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_orm.log"
+        },
+        {
+          "command": "make local.dev.verify_demo",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "all demo verification items passed on sc_dev_demo",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/demo_verify.log"
+        },
+        {
+          "command": "make verify.demo.role_startup.smoke",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "demo_pm login, system.init contract, route, capabilities, navigation and my-work passed",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_startup_smoke_post_rebuild.log"
+        },
+        {
+          "command": "make verify.demo.usage_foundation_role_scope.smoke",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "11/11 accounts and the wrong-password negative passed on rebuilt sc_dev_demo.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/role_scope_smoke.log"
+        }
+      ],
+      "failed": [
+        {
+          "command": "local.dev.rebuild_demo final environment health",
+          "status": "failed",
+          "owner": "environment_defect",
+          "detail": "Data reset, release seed, demo_full and ORM/demo verification passed. The outer rebuild exited before the later explicit build; after fe.install and local.dev.frontend, local.dev.health passes.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_rebuild_demo_retry2.log"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "not_run",
+          "owner": "delivery_workflow",
+          "detail": "After frontend dependencies were installed, the remaining first blocker was a missing registered receipt for verify.agent.ledger.unit. That check is now registered and passes; final rerun follows clean candidate creation.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/ci_local_iteration.log"
+        }
+      ]
+    }
+  },
+  "blockers": [
+    {
+      "id": "PRODUCT-PROJECT-SUMMARY-001",
+      "owner": "P0_P1_product",
+      "detail": "ProjectDashboardService references sc.evidence.summary.service, which is not registered in the current mainline. The service falls back to zeros, so formal project summary_rows report 0 despite the posted 160000 ledger. No Demo projection was forged."
+    }
+  ],
+  "next_exact_step": "Resolve the P0/P1 project summary service gap, then rerun formal project summary/frontend consumption.",
+  "handoff": {
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
+    "baseline_main": "70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07",
+    "excluded_dirty_worktree": "/home/lidefend/workspace/sce-backend-odoo (CI topic with three modified files)",
+    "excluded_runtime_worktree": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109 (detached acceptance runtime, left untouched)",
+    "external_mutations": [
+      "three governed local.dev.rebuild_demo attempts; the final attempt rebuilt sc_dev_demo and completed release seed plus demo_full",
+      "local.dev module upgrade for smart_construction_demo",
+      "governed demo seed writes for DEMO-01, company secondary and company membership under local_dev_write_lease",
+      "local.dev entry identity repair and service restart"
+    ],
+    "rollback": "Revert the topic commit. Runtime Demo data is intentionally disposable and reproducible through local.dev.rebuild_demo.",
+    "publication": "not_run; no remote push or PR creation requested"
+  }
+}

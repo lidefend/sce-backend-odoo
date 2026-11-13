@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: DEMO-BUSINESS-CHAIN-DATA-20261113
+  title: demo_business_chain_data_completion
+  status: verification_pending
+  formal_product_layer: P4
+  supporting_layers: []
+  layer_target: smart_construction_demo scenario data, seed steps, verification and demo documentation
+  module:
+    - smart_construction_demo
+  baseline:
+    branch: feature/demo-business-chain-data-20261113
+    full_sha: 70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07
+    source: origin_main_pr_880
+  objective: >-
+    Build one coherent, auditable DEMO-01 project business story that runs from
+    project master data through contract, settlement, payment request, payment
+    execution and ledger to a traceable project summary, while preserving an
+    actionable draft sample and replay-safe loading semantics.
+  product_boundary:
+    standard_vs_user_specific: demo_delivery_tool
+    why_here: >-
+      Fictional demo records and replay orchestration belong to the dedicated
+      P4 demo module and may consume real product models and public actions.
+    why_not_elsewhere:
+      - no_product_semantics_permissions_or_contract_changes
+      - no_frontend_inference_or_hardcoded_business_fallbacks
+      - no_customer_or_production_data_baseline
+      - no_seed_or_acceptance_fixture_responsibility_absorption
+    blast_radius:
+      - one primary demo project and its supporting master data
+      - demo contract settlement payment execution ledger and cockpit facts
+      - demo profile replay semantics and affected verification
+      - demo README loading documentation
+  constraints:
+    - reuse_existing_models_and_public_actions
+    - no_direct_terminal_state_or_approval_history_writes
+    - fixed_showcase_records_must_remain_replay_safe
+    - actionable_drafts_must_not_be_reset_by_repeat_loading
+    - amounts_dates_states_company_and_project_references_must_reconcile
+    - shared_database_writes_must_use_local_dev_write_lease
+    - product_contract_or_permission_gaps_are_reported_not_absorbed
+  exclusions:
+    - P0_P3_product_model_contract_permission_and_menu_repair
+    - smart_construction_seed_and_acceptance_fixture_changes
+    - production_or_customer_data_changes
+    - CI_optimization_branch_changes
+  acceptance:
+    - repeat_loading_the_same_profile_does_not_duplicate_primary_records
+    - primary_story_records_share_company_project_contract_and_partner_identity
+    - contract_settlement_payment_execution_and_ledger_amounts_reconcile
+    - fixed_showcase_and_actionable_draft_have_distinct_replay_expectations
+    - affected_role_visibility_and_formal_entry_consumption_are_observed
+  next_exact_step: >-
+    Resolve the owning-layer project summary service gap, then rerun formal
+    project dashboard summary and frontend consumption.
+  completion:
+    batch: data_rebuild_targeted_runtime_roles_and_frontend_health_passed_formal_summary_pending
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: not_run

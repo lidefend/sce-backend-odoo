@@ -86,12 +86,13 @@ class ProjectDemoCockpitSeed(models.Model):
             if not partner:
                 continue
 
-            self._sc_demo_seed_contracts(
-                project=project,
-                partner=partner,
-                contract_model=contract_model,
-                contract_line_model=contract_line_model,
-            )
+            if profile.get("seed_contracts", True):
+                self._sc_demo_seed_contracts(
+                    project=project,
+                    partner=partner,
+                    contract_model=contract_model,
+                    contract_line_model=contract_line_model,
+                )
             if profile.get("seed_costs", True):
                 self._sc_demo_seed_cost_ledger(
                     project=project,
@@ -149,6 +150,20 @@ class ProjectDemoCockpitSeed(models.Model):
 
     @api.model
     def _sc_demo_profile(self, project):
+        if str(getattr(project, "project_code", "") or "").strip() == "DEMO-PJ-EXEC":
+            return {
+                "profile": "demo01_execution_chain",
+                "showcase_ready": True,
+                "seed_contracts": False,
+                "seed_costs": True,
+                # The dedicated DEMO-01 chain owns this project's contract,
+                # settlement, payment, execution and ledger facts. Generic
+                # cockpit samples must not add a second unrelated payment
+                # story on top of it.
+                "seed_payments": False,
+                "health_state": "warn",
+                "execution_state": "in_progress",
+            }
         profile = dict(
             self._OFFICIAL_SAMPLE_PROFILES.get(
                 str(project.name or "").strip(),
@@ -165,6 +180,7 @@ class ProjectDemoCockpitSeed(models.Model):
         )
         profile.setdefault("profile", "showroom")
         profile.setdefault("showcase_ready", False)
+        profile.setdefault("seed_contracts", True)
         profile.setdefault("seed_costs", True)
         profile.setdefault("seed_payments", True)
         profile.setdefault("health_state", "warn")

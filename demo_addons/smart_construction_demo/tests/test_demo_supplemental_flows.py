@@ -731,6 +731,83 @@ class SupplementalFlows(unittest.TestCase):
                      "user_sc_settlement_manager_cap", "user_sc_fin_mgr_01", "user_demo_role_executive"):
             self.assertIn("smart_construction_demo." + seat, observed[0][1])
 
+    def test_demo01_actionable_draft_is_not_rewritten_on_replay(self):
+        draft = SimpleNamespace(
+            state="approved",
+            note="DEMO-01 可操作草稿：第二期分包付款",
+            write=lambda *args, **kwargs: self.fail(
+                "repeat replay must not write an actionable draft"
+            ),
+        )
+        # The helper lives with the other contract/payment helpers so both the
+        # full profile and its source test share one implementation.
+        ensure_draft = function(
+            "step_40_contracts_demo.py",
+            "_ensure_actionable_payment_draft",
+            _bind_generated_demo_xmlid=lambda *args, **kwargs: self.fail(
+                "already bound draft must not be rebound"
+            ),
+            _demo_action_record=lambda *args, **kwargs: self.fail(
+                "already bound draft must not resolve a new actor"
+            ),
+            _DEMO_DOCUMENT_SUBMITTER="submitter",
+            fields=SimpleNamespace(),
+            UserError=RuntimeError,
+        )
+        env = SimpleNamespace(
+            ref=lambda xmlid, **kwargs: draft,
+        )
+        self.assertIs(ensure_draft(env, object(), object(), object()), draft)
+
+    def test_demo01_fixed_project_context_updates_only_changed_fields(self):
+        class Project:
+            start_date = date(2026, 1, 1)
+            end_date = date(2027, 10, 18)
+            description = "旧说明"
+
+            def __getitem__(self, name):
+                return getattr(self, name)
+
+        project = Project()
+        writes = []
+        project.write = lambda values: writes.append(dict(values))
+        ensure_context = function_from(
+            ROOT / "seed/steps/step_demo_business_chain.py",
+            "_ensure_project_context",
+            fields=SimpleNamespace(
+                Date=SimpleNamespace(to_date=date.fromisoformat)
+            ),
+        )
+        ensure_context(project)
+        self.assertEqual(
+            writes,
+            [
+                {
+                    "start_date": date(2026, 10, 19),
+                    "description": (
+                        "东环路城市快速路提升工程位于德阳经开区，建设内容包括道路拓宽、"
+                        "桥梁结构、管网迁改及交通附属工程。当前处于在建阶段，项目资料、"
+                        "WBS、清单、预算和成本事实共同支撑合同结算与付款执行演示。"
+                    ),
+                }
+            ],
+        )
+
+    def test_contract_reconciliation_skips_new_ops_for_halted_projects(self):
+        source = (ROOT / "seed/steps/step_40_contracts_demo.py").read_text()
+        guard = source.index(
+            'if project.lifecycle_state in ("paused", "warranty", "closed"):'
+        )
+        purchase = source.index(
+            "_ensure_purchase_order(env, settlement, split_first_line=split_first)",
+            guard,
+        )
+        self.assertLess(guard, purchase)
+        self.assertIn(
+            "product correctly rejects",
+            source[guard:purchase],
+        )
+
     def test_payment_rejected_reenters_public_submission(self):
         tree = ast.parse((ROOT / "tools/scenario_loader.py").read_text())
         node = next(n for n in tree.body if isinstance(n, ast.FunctionDef)

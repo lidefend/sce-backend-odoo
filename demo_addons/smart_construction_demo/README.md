@@ -149,7 +149,7 @@ make mod.upgrade MODULE=smart_construction_demo DB_NAME=sc_demo
 
 ---
 
-## S10 合同付款演示路径（最小闭环）
+## S10 合同付款演示路径（模块默认加载）
 
 场景目录：`data/scenario/s10_contract_payment/`
 
@@ -157,7 +157,7 @@ make mod.upgrade MODULE=smart_construction_demo DB_NAME=sc_demo
 - 付款申请：`sc_demo_pay_req_010_001`（model: `payment.request`，保持 draft；type=receive 与合同类型约束一致）
 - 发票：`sc_demo_invoice_s10_001`、`sc_demo_invoice_s10_002`（默认 draft）
 
-> 说明：S10 目前不默认写入 `__manifest__.py`，以保持 S00 为默认稳定演示路径；需要时可临时加入 manifest 进行加载验证。
+> 说明：S10 已由 `__manifest__.py` 默认加载，随模块安装/升级建立合同、付款申请和发票记录。S20/S30 等其余场景仍按需加载。
 
 验收命令：
 ```bash
@@ -291,9 +291,30 @@ make demo.verify DB_NAME=sc_demo
 
 ---
 
+## DEMO-01 主业务链（固定展示 + 可操作草稿）
+
+主项目为 `DEMO-PJ-EXEC`（东环路城市快速路提升工程）。完整加载 `demo_full` 后，可通过以下固定 XMLID 解释一条一致业务链：
+
+| 环节 | XMLID | 展示口径 |
+| --- | --- | --- |
+| 支出合同 | `smart_construction_demo.sc_demo_exec_expense_contract` | 两行合同明细合计 400,000 元，含税合同额 452,000 元 |
+| 已审批结算 | `smart_construction_demo.sc_demo_exec_settlement` | 审定 400,000 元，关联采购依据 |
+| 已审批付款申请 | `smart_construction_demo.sc_demo_exec_payment_request` | 申请 160,000 元，已走正式审批 |
+| 付款执行 | `smart_construction_demo.sc_demo_exec_payment_execution` | 实付 160,000 元 |
+| 支付台账 | `smart_construction_demo.sc_demo_exec_payment_ledger` | 已过账 160,000 元 |
+| 项目财务汇总块 | `ProjectFinanceBuilder` | 已支付金额从付款申请状态汇总为 160,000 元 |
+
+新库或受管重建会在提交审批前写入结算总额、送审金额和审定金额，因此结算、付款申请、执行和台账金额可以逐层对账。
+
+另有 `smart_construction_demo.sc_demo_exec_actionable_payment_draft`，用于演示继续发起第二期付款。该草稿只在不存在时创建；重复同步不会把用户已提交、审批或修改过的状态重置回 `draft`。
+
+固定展示记录由 Demo 正式动作链维持；可操作草稿采用“首次创建后不覆盖”的同步语义，两类数据不要混用。
+
+当前主线尚未注册 `sc.evidence.summary.service`，因此项目驾驶舱的 `summary_rows.payment_executed_total` 会回退为空值 0。支付台账本身仍完整可追溯；该展示聚合属于 P0/P1 产品缺陷，不在 Demo 层通过伪造投影绕过。
+
 ## 加载可选场景（Scenario Loader）
 
-S10 等可选场景默认不写入 manifest，可使用命令按需加载：
+除模块 manifest 已默认加载的 S00/S10 基础数据外，其余场景可按需加载：
 
 ```bash
 make demo.load SCENARIO=s10_contract_payment DB_NAME=sc_demo

@@ -7,8 +7,9 @@ from ..registry import SeedStep, register
 from .step_20_projects_demo import STAGE_PROJECTS, declared_stage
 from ..tier_flow import advance_settlement, approve_tier_chain
 from ...tools.scenario_loader import (
-    _demo_action_record, _demo_project_members, _demo_drive_approval,
-    _DEMO_DOCUMENT_SUBMITTER, _DEMO_PAYMENT_SCOPED_SEATS,
+    _bind_generated_demo_xmlid, _demo_action_record, _demo_finish_reviews,
+    _demo_project_members, _demo_drive_approval, _DEMO_DOCUMENT_SUBMITTER,
+    _DEMO_PAYMENT_SCOPED_SEATS,
 )
 
 
@@ -149,6 +150,14 @@ def _ensure_settlement(env, project, contract):
                 existing.write(vals)
             else:
                 Line.create(vals)
+        line_total = sum(spec["price_unit"] for spec in line_vals)
+        settlement.write(
+            {
+                "settlement_amount": line_total,
+                "submitted_amount": line_total,
+                "approved_amount": line_total,
+            }
+        )
     elif not settlement.line_ids:
         raise UserError("已进入流程的演示结算单缺少不可变结算明细。")
     return settlement
@@ -366,12 +375,21 @@ def _approve_payment(env, payment):
     return payment
 
 
+def _payment_account_vals(partner):
+    return {
+        "actual_payee_unit": partner.name,
+        "payment_account_name": partner.name,
+        "payment_bank_name": "中国建设银行德阳分行",
+        "payment_account_no": "6222021000000160",
+    }
+
+
 def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     # 产品的 payment.request._check_project_lifecycle 禁止在 保修/关闭 项目上
     # 提交或审批付款申请（P0_PROJECT_TERMINAL_BLOCKED）。终态项目不再新增付款
     # 事实：这里只跳过，不注入任何状态绕开守卫。
     if declared_stage(project) in ("warranty", "closed"):
-        return
+        return False, False
     Payment = _demo_action_record(env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER)
     pay = Payment.search(
         [
@@ -389,6 +407,7 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
         "contract_id": pay_contract.id,
         "settlement_id": settlement.id,
         "amount": 160000.0,
+        **_payment_account_vals(pay_contract.partner_id),
     }
     if not pay:
         pay = Payment.create(pay_vals)
@@ -417,6 +436,172 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
 
     _approve_payment(env, pay)
     _approve_payment(env, receive)
+    return pay, receive
+
+
+def _ensure_complete_payment_request(env, request):
+    """Repair an incomplete DEMO-01 request through its owning workflow."""
+    expected = _payment_account_vals(request.partner_id)
+    actual = {name: request[name] for name in expected}
+    if actual == expected:
+        return request
+    if request.payment_execution_ids or request.ledger_line_ids:
+        raise UserError("DEMO-01 付款申请已有执行或台账历史，禁止补写账户事实。")
+
+    submitter = env.ref(
+        "smart_construction_demo.user_demo_role_project_a_member",
+        raise_if_not_found=False,
+    )
+    if not submitter:
+        raise UserError("DEMO-01 付款申请缺少业务发起席位。")
+    if request.state in ("draft", "rejected"):
+        request.with_user(submitter).sudo(False).write(expected)
+        return request
+    if request.state != "approved":
+        raise UserError("DEMO-01 付款账户修复只接受草稿、驳回或已批准状态。")
+
+    manager = env.ref(
+        "smart_construction_demo.user_sc_fin_mgr_01",
+        raise_if_not_found=False,
+    )
+    if not manager:
+        raise UserError("DEMO-01 付款申请缺少财务取消席位。")
+    request.with_user(manager).sudo(False).action_cancel()
+
+    Payment = _demo_action_record(
+        env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER
+    )
+    replacement = Payment.create(
+        {
+            "type": "pay",
+            "project_id": request.project_id.id,
+            "partner_id": request.partner_id.id,
+            "contract_id": request.contract_id.id,
+            "settlement_id": request.settlement_id.id,
+            "amount": request.amount,
+            "currency_id": request.currency_id.id,
+            "date_request": request.date_request,
+            "note": "DEMO-01 主业务链已审批付款申请。",
+            **expected,
+        }
+    )
+    _demo_drive_approval(env, replacement)
+    replacement.invalidate_recordset()
+    if replacement.state != "approved":
+        raise UserError("DEMO-01 重建付款申请未完成正式审批。")
+    return replacement
+
+
+def _ensure_payment_execution(env, request):
+    """Create the paid execution and posted ledger for the DEMO-01 request."""
+    if request.state not in ("approved", "done"):
+        raise UserError("DEMO-01 付款申请必须先完成正式审批。")
+
+    execution = env.ref(
+        "smart_construction_demo.sc_demo_exec_payment_execution",
+        raise_if_not_found=False,
+    )
+    if execution and execution.payment_request_id != request:
+        raise UserError("DEMO-01 付款执行身份与固定申请不一致。")
+    if not execution:
+        Execution = _demo_action_record(
+            env,
+            env["sc.payment.execution"],
+            "action_confirm",
+            "smart_construction_demo.user_sc_fin_mgr_01",
+        )
+        executions = Execution.search([("payment_request_id", "=", request.id)])
+        if len(executions) > 1:
+            raise UserError("DEMO-01 付款执行身份不唯一。")
+        execution = executions or Execution.create(
+            {
+                "payment_request_id": request.id,
+                "project_id": request.project_id.id,
+                "partner_id": request.partner_id.id,
+                "contract_id": request.contract_id.id,
+                "source_kind": "actual_outflow",
+                "payment_family": "分包工程款",
+                "payment_method": "银行转账",
+                "date_payment": "2026-10-27",
+                "document_no": "PAY-DEMO01-EXEC-001",
+                "planned_amount": request.amount,
+                "paid_amount": request.amount,
+                "invoice_amount": request.amount,
+                "currency_id": request.currency_id.id,
+                "receipt_account_name": request.payment_account_name,
+                "receipt_bank_name": request.payment_bank_name,
+                "receipt_account_no": request.payment_account_no,
+                "handler_name": "王秀兰",
+                "note": "DEMO-01 主业务链付款执行。",
+            }
+        )
+        _bind_generated_demo_xmlid(
+            env, "sc_demo_exec_payment_execution", execution
+        )
+
+    if execution.state == "draft":
+        _demo_action_record(env, execution, "action_confirm").action_confirm()
+    _demo_finish_reviews(env, execution)
+    if execution.state == "confirmed":
+        _demo_action_record(
+            env,
+            execution,
+            "action_paid",
+            "smart_construction_demo.user_sc_fin_mgr_01",
+        ).action_paid()
+    execution.invalidate_recordset()
+    if execution.state != "paid":
+        raise UserError("DEMO-01 付款执行未到达已支付状态。")
+
+    Ledger = env["payment.ledger"].sudo()
+    ledgers = Ledger.search(
+        [("payment_execution_id", "=", execution.id), ("state", "=", "posted")]
+    )
+    if len(ledgers) != 1:
+        raise UserError("DEMO-01 已支付执行必须且只能对应一条已过账台账。")
+    ledger = ledgers
+    if abs((ledger.amount or 0.0) - request.amount) > 0.01:
+        raise UserError("DEMO-01 付款执行与支付台账金额不一致。")
+    _bind_generated_demo_xmlid(env, "sc_demo_exec_payment_ledger", ledger)
+    return execution, ledger
+
+
+def _ensure_actionable_payment_draft(env, project, contract, settlement):
+    """Create the editable DEMO-01 draft once and never replay its state."""
+    draft = env.ref(
+        "smart_construction_demo.sc_demo_exec_actionable_payment_draft",
+        raise_if_not_found=False,
+    )
+    if draft:
+        return draft
+
+    Payment = _demo_action_record(
+        env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER
+    )
+    marker = "DEMO-01 可操作草稿：第二期分包付款"
+    candidates = Payment.search(
+        [("project_id", "=", project.id), ("note", "=", marker)]
+    )
+    if len(candidates) > 1:
+        raise UserError("DEMO-01 可操作付款草稿身份不唯一。")
+    if not candidates:
+        candidates = Payment.create(
+            {
+                "type": "pay",
+                "project_id": project.id,
+                "partner_id": contract.partner_id.id,
+                "contract_id": contract.id,
+                "settlement_id": settlement.id,
+                "amount": 120000.0,
+                "date_request": fields.Date.context_today(env.user),
+                "note": marker,
+            }
+        )
+    draft = candidates
+    _bind_generated_demo_xmlid(
+        env, "sc_demo_exec_actionable_payment_draft", draft
+    )
+    return draft
 
 
 def _get_project(env, code):
@@ -640,6 +825,12 @@ def run(env):
 
         _ensure_funding_baseline(env, project)
         settlement = _ensure_settlement(env, project, in_contract)
+        if project.lifecycle_state in ("paused", "warranty", "closed"):
+            # A showroom project can reach its declared terminal display stage
+            # before this reconciliation pass. Its historical chain is already
+            # owned by demo_showroom; the product correctly rejects confirming
+            # a new purchase order on paused/terminal projects.
+            continue
         split_first = project.project_code in split_codes
         _ensure_purchase_order(env, settlement, split_first_line=split_first)
         if project.project_code in warn_codes:

@@ -30,6 +30,7 @@
     "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
     "codex/test-baseline-incremental-reuse": ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",
     "feature/contract-detail-productization-01": ".agent/runs/PC02-CONTRACT-DETAIL-PRODUCTIZATION/run.json",
+    "feature/demo-business-chain-data-20261113": ".agent/runs/DEMO-BUSINESS-CHAIN-DATA-20261113/run.json",
     "feature/demo-iteration-line-20261020": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
     "feature/fe-user-flow-closure-20261110": ".agent/runs/FE-USER-FLOW-CLOSURE-20261110/run.json",
     "feature/pc01-phase5-shadow-contraction": ".agent/runs/BNVA-04/run.json",

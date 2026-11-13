@@ -11,6 +11,8 @@ from ...tools.scenario_loader import _demo_action_record
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
 PROJECT_TENDER_CODE = "DEMO-PJ-TENDER"
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
+DEMO_EXEC_START_DATE = fields.Date.to_date("2026-10-19")
+DEMO_EXEC_END_DATE = fields.Date.to_date("2027-10-18")
 STAGE_PROJECTS = [
     ("DEMO-PJ-STAGE-DRAFT", "临港产业园标准厂房项目（立项阶段）", "draft", "initiation"),
     ("DEMO-PJ-STAGE-RUN", "城北新区安置房项目（在建阶段）", "in_progress", "execution"),
@@ -425,7 +427,13 @@ def run(env):
             "contract_no": "HT-2025-001",
             "plan_percent": 65.0,
             "actual_percent": 52.0,
-            "start_date": today,
+            "start_date": DEMO_EXEC_START_DATE,
+            "end_date": DEMO_EXEC_END_DATE,
+            "description": (
+                "东环路城市快速路提升工程位于德阳经开区，建设内容包括道路拓宽、"
+                "桥梁结构、管网迁改及交通附属工程。当前处于在建阶段，项目资料、"
+                "WBS、清单、预算和成本事实共同支撑合同结算与付款执行演示。"
+            ),
         },
         owned_xmlid="smart_construction_demo.sc_demo_project",
     )
