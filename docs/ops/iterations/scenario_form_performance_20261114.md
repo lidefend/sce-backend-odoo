@@ -208,3 +208,27 @@ P0 通用 SceneView 的独立办理入口区域原先使用固定“综合办理
 发布前仍需独立的精确候选复核与证据归档；作者自检不能代替独立复核。
 远端 origin/main 只读回查仍为 f4f87939bcafcd35a5a0b18017b36464056a78e9，未发现基线漂移。
 主线集成、日常部署与用户验收均未完成。
+
+## PR #886 CI 崩溃诊断续跑
+
+正式 COMMENT review 绑定 c101d7464dbfde82e8d525f3c3679220bd00fb12；未确认 P1/P2 源码问题，
+但 professional_quality_gate 与 merge_policy_gate 失败，public_guard 与 frontend_release_gate 成功。
+独立核对全部四个 shard：冻结 13 模块，成功 receipt 12 模块，唯一缺失 acceptance fixture。
+覆盖集合拒绝符合预期，不能补造回执或将计划 192 项称为通过。底层退出 139 被 make 包装为 2，
+现有自动重试没有触发；原始崩溃原因尚无栈证明。
+
+P4 最小诊断仅保留 scripts/test/test.sh 中容器 PYTHONFAULTHANDLER=1；不改变产品行为、
+测试选择、重试或覆盖规则。local.test/sc_test 临时同样启用诊断后执行 acceptance_fixture_gate，
+实际收集 7 项（四项 guard、三项冻结测试），全部通过且退出 0；源码、镜像、profile 均未漂移，
+一次性测试容器已清理。本地诊断开关随后恢复，原始回执位于
+.runtime/test-baseline/1794596361693371600/receipt.json。该运行未复现，不证明 CI 偶发或已修复。
+
+受影响 runner 单测 14 项、依赖准备单测 8 项通过。组合 lifecycle 单测 51 项中 2 项失败：
+未修改的 local.clean 测试仅提供 ENV 输入，缺少其脚本读取的入口变量，pipefail 提前退出。
+该失败保留为独立限制，未记为通过；不扩大本次崩溃诊断去修改其他环境工具。
+临时 local runner 改动缺少增量映射的阻断也保留；恢复临时开关后按实际保留改动重新验证。
+
+进程环境 patch 与后台线程交互仅为调查假设，不能在没有崩溃栈时宣称根因。
+后续需在远端原有运行链采集诊断并完成全部冻结覆盖；主线未合并，日常未部署，A/B 验收未完成。
+
+恢复临时开关后的 ci.local.iteration 26 项映射定向检查全部通过；仅表明诊断候选本地验证通过。

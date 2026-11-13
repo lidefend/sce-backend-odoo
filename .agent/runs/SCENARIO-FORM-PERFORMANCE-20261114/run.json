@@ -27,7 +27,8 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/test/test.sh"
   ],
   "environment": {
     "kind": "offline",
@@ -301,15 +302,62 @@
     }
   },
   "stage_identity": {
-    "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+    "head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
     "dirty": true,
-    "scope": "Documentation-only finalization after successful affected browser checks",
+    "scope": "P4 crash diagnostics and current run index",
     "frozen": false
   },
   "completion": {
-    "batch": "scoped_local_validation_passed",
+    "batch": "verification_pending_ci_crash_unresolved",
     "mainline": "not_integrated",
     "deployment": "unchanged",
     "user_acceptance": "not_run"
+  },
+  "ci_crash_diagnosis": {
+    "layer": "P4",
+    "target": "CI fatal-process diagnostics; temporary local diagnostic restored after execution",
+    "module": "smart_construction_acceptance_fixture",
+    "standard_vs_user_specific": "standard tooling",
+    "why_here": "Fatal process exits require runner diagnostic evidence; no product semantics change",
+    "blast_radius": "Python fatal-signal stack output in test processes only",
+    "exclusions": [
+      "P0-P3 behavior",
+      "coverage rules",
+      "retry policy",
+      "daily runtime",
+      "new environment authority"
+    ],
+    "source_head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
+    "status": "local_not_reproduced_remote_unresolved",
+    "findings": [
+      "Frozen scope 13 modules; successful receipts 12; only fixture missing",
+      "Underlying exit 139 is wrapped by make as 2; no automatic retry occurred",
+      "No fatal stack captured; root cause unconfirmed"
+    ],
+    "next": "Validate diagnostic candidate incrementally; collect fatal stack on remote if crash recurs; preserve required coverage gates",
+    "local_receipt": ".runtime/test-baseline/1794596361693371600/receipt.json",
+    "local_cases": 7,
+    "targeted_tests": {
+      "runner": 14,
+      "dependency_baseline": 8
+    },
+    "composite_validation": {
+      "status": "failed",
+      "tests": 51,
+      "failures": 2,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/crash-diagnostics-unit.log",
+      "reason": "Unmodified local.clean preparation tests provide ENV only; script requires SC_ENTRY_SHARED_SECRET and SC_ENTRY_ROUTE_VERSION; grep absence exits under pipefail. Not treated as passed."
+    },
+    "local_diagnostic_restored": true,
+    "incremental_first": {
+      "status": "blocked",
+      "reason": "Temporary local runner edit lacked a registered incremental mapping",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-crash-diagnostics.log"
+    },
+    "incremental_final": {
+      "status": "passed",
+      "targets_executed": 26,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-ci-only-diagnostic.log"
+    }
   }
 }
