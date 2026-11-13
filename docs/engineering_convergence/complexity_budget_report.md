@@ -75,9 +75,9 @@ Generated from repository source files. This report is informational during the 
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1649 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
+| 1592 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1589 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1588 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1586 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
@@ -157,7 +157,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
-| 1051 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
+| 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -310,9 +310,9 @@ Generated from repository source files. This report is informational during the 
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1649 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
+| 1592 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1589 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1588 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1586 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |

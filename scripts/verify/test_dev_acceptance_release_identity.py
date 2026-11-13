@@ -810,6 +810,18 @@ class PublishedFaceScopeTest(unittest.TestCase):
         self.assertIn("nav_action_entry_drift", errors)
         self.assertEqual(checks["nav_unregistered_action_entries"], [self.ACTION])
 
+    def test_role_scoped_navigation_requires_the_declared_action_identities(self):
+        errors, checks = MODULE.published_face_checks(
+            self.rows(),
+            2,
+            {self.HOME},
+            91,
+            role_scoped_navigation=True,
+            declared_action_entries=None,
+        )
+        self.assertIn("nav_declared_action_entries_missing", errors)
+        self.assertEqual(checks["nav_action_identity_check"], "not_available_missing_declaration")
+
     def test_global_face_still_requires_the_declared_universe(self):
         errors, checks = MODULE.published_face_checks(
             self.rows(),

@@ -471,6 +471,12 @@ def published_face_checks(
         "nav_unregistered_action_entries": sorted(unregistered_actions),
     }
     errors: list[str] = []
+    if declared_action_entries is None:
+        checks["nav_action_identity_check"] = "not_available_missing_declaration"
+        if role_scoped_navigation:
+            errors.append("nav_declared_action_entries_missing")
+    else:
+        checks["nav_action_identity_check"] = "checked"
     if unregistered_non_action:
         errors.append("nav_non_action_entry_drift")
     if not role_scoped_navigation and missing_non_action:

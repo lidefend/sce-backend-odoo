@@ -250,7 +250,7 @@ export function universalCapabilities(candidateOrder, states) {
 // this entry's outcome, so they are bound into the key fingerprint.
 const CONSUMED_ROW_FIELDS = [
   'menu_xmlid', 'action_xmlid', 'label', 'domain', 'model', 'scope_disposition',
-  'batch', 'role_authority', 'rendering_path',
+  'batch', 'role_authority', 'rendering_path', 'route', 'scene_key', 'entry_target_type',
 ];
 
 // Row fields that record an outcome rather than declare an input. They must
