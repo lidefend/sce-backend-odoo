@@ -29,7 +29,10 @@
     "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
     "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
-    "demo_addons/smart_construction_demo/tools/scenario_loader.py"
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -319,6 +322,26 @@
           "layer": "L3",
           "detail": "Persistent Odoo and namespaced frontend entry healthy after #883 upgrade/restart.",
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_health_post_883.log"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1/L2",
+          "detail": "Demo paths now route to lifecycle, scenario and Golden ORM; all affected targets and trusted scans passed.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/ci_local_iteration_after_demo_routing.log"
+        },
+        {
+          "command": "make verify.frontend.dev.incremental.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 135,
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/frontend_dev_incremental_unit.log"
+        },
+        {
+          "command": "make audit.verification.lane_coverage.check",
+          "status": "passed",
+          "layer": "L1",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/lane_coverage_check.log"
         }
       ],
       "failed": [
@@ -340,7 +363,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the clean candidate through the governed remote PR lane if requested; no push or PR has been performed yet.",
+  "next_exact_step": "Commit the Demo incremental verification routing, refreeze the clean candidate, and publish the exact head through make pr.push/pr.create.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",

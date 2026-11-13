@@ -52,8 +52,8 @@ goal:
     - fixed_showcase_and_actionable_draft_have_distinct_replay_expectations
     - affected_role_visibility_and_formal_entry_consumption_are_observed
   next_exact_step: >-
-    Publish the clean candidate through the governed remote PR lane if requested;
-    no push or PR has been performed yet.
+    Commit the Demo incremental verification routing, refreeze the clean candidate,
+    and publish the exact head through make pr.push/pr.create.
   completion:
     batch: targeted_runtime_validation_passed_remote_integration_not_run
     mainline_integration: not_run

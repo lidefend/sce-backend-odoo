@@ -1778,12 +1778,6 @@
       "reason": "real /t/demo contract smoke for demo roles; run manually after local.dev identity verification",
       "review_by": "2026-12-31"
     },
-    "verify.demo.scenario_step.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "scenario step unit suite; selected on demand by the demo runbook",
-      "review_by": "2026-12-31"
-    },
     "verify.demo.usage_foundation.unit": {
       "disposition": "demo_runbook",
       "owner": "demo-team",

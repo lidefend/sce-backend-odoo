@@ -33,6 +33,28 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_demo_module_paths_select_demo_lifecycle_contracts(self) -> None:
+        demo_targets = [
+            "verify.demo.lifecycle.unit",
+            "verify.demo.scenario_step.unit",
+        ]
+        for path in (
+            "demo_addons/smart_construction_demo/README.md",
+            "demo_addons/smart_construction_demo/data/base/20_projects.xml",
+            "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+            "demo_addons/smart_construction_demo/seed/registry.py",
+            "demo_addons/smart_construction_demo/seed/steps/step_demo_business_chain.py",
+            "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), demo_targets)
+        self.assertEqual(
+            select_targets([
+                "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py"
+            ]),
+            demo_targets + ["verify.local.dev.golden_chain.orm"],
+        )
+
     def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
         self.assertEqual(
             select_targets([

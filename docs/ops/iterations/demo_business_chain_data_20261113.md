@@ -101,6 +101,9 @@
 | 证据引用 | 包含 `payment.request#93`、`payment.ledger#5`、`sc.settlement.order#24` |
 | `make verify.demo.usage_foundation_role_scope.smoke` | PASS，11/11 账号及负例 |
 | `make local.dev.health` | PASS |
+| `make verify.frontend.dev.incremental.unit` | PASS，135 项，Demo 路径已映射到 lifecycle/scenario/Golden |
+| `make audit.verification.lane_coverage.check` | PASS |
+| `make ci.local.iteration` | PASS，全部受影响目标及 trusted scans 通过 |
 
 ### 运行态变更与回滚
 
