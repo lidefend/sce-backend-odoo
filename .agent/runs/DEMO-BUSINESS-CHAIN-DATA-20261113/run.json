@@ -340,7 +340,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the current-head verification refresh, then run clean incremental delivery checks.",
+  "next_exact_step": "Publish the clean candidate through the governed remote PR lane if requested; no push or PR has been performed yet.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
