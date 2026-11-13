@@ -117,6 +117,7 @@ Fixes:
 - Fixed Demo identity resolution now prefers stable XMLIDs before fallback subject/amount searches.
 - Replay never treats the actionable draft as the fixed showcase request.
 - New Demo payment-account snapshots use an explicitly masked account string; existing complete historical snapshots are preserved when execution or ledger history exists.
+- The superseded synthetic bank-account blob is registered as one exact personal-data false positive because the published PR branch cannot be force-rewritten; current HEAD contains no numeric account fixture.
 - The Golden test no longer asserts mutable draft state or amount.
 - A transaction-only equal-amount collision request proves `demo_40_contracts → demo_01_business_chain` resolves the fixed record without changing the draft.
 

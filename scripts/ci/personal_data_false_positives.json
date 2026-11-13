@@ -581,6 +581,13 @@
       "blob_id": "78fabdbe1436d08ad8500ebd8c987a1cbdb61247",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_demo_payment_account_fixture_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+      "blob_id": "6d86729b5d4ee96c746279d484f9358577270882",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_payment_account_fixture_prior_revision_superseded_in_branch"
     }
   ]
 }

@@ -31,6 +31,7 @@
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
     "demo_addons/smart_construction_demo/tools/scenario_loader.py",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
