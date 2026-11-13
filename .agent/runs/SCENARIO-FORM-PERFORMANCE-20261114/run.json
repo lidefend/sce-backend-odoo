@@ -23,7 +23,11 @@
     "frontend/apps/web/scripts/scene_entry_contract_test.ts",
     "scripts/verify/local_dev_candidate_visual_smoke.mjs",
     "make/dev.mk",
-    "scripts/verify/frontend_dev_incremental.py"
+    "scripts/verify/frontend_dev_incremental.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "offline",
@@ -130,7 +134,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "After mapped iteration passes, save a local candidate commit; align existing local.dev source revision and run bounded native scene/list/record browser with zero hydration assertion.",
+  "next_exact_step": "Inspect candidate startup scene declarations and full-hydration path using failure-preserving browser diagnostics; do not claim optimization accepted.",
   "results": {
     "research": "daily_project_baseline_and_first_optimization_implemented",
     "performance_acceptance": "not_run_candidate",
@@ -187,8 +191,14 @@
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
     },
     "candidate_browser": {
-      "status": "not_run",
-      "reason": "Dirty candidate not frozen; governed candidate service requires clean exact SHA."
+      "status": "failed",
+      "head": "c754960051657b8ac3ecde8a7157dde482574265",
+      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
+      "logs": [
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+      ],
+      "classification": "unresolved_test_scope"
     },
     "iteration_latest": {
       "status": "passed",
@@ -223,6 +233,14 @@
       "command": "make ci.local.iteration",
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
       "exit_code": 0
+    },
+    "local_runtime": {
+      "status": "passed_identity",
+      "head": "c754960051657b8ac3ecde8a7157dde482574265",
+      "database": "sc_dev_demo",
+      "filter": "^sc_dev_demo$",
+      "filestore": "sc_local_dev_odoo_data",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
     }
   },
   "stage_identity": {

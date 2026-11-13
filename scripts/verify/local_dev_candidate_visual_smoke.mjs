@@ -267,7 +267,7 @@ function summarizeSystemInit(payload) {
     const authorized = routeEntries.find((entry) => entry.menuId === menuId && entry.actionId === actionId);
     const menuXmlid = authorized?.menuXmlid || meta.menu_xmlid || node.xmlid || node.xml_id;
     if (menuXmlid && actionId && authorized) {
-      menuEntries.push({ menuXmlid, menuId, actionId, model: meta.model || meta.action?.res_model,
+      menuEntries.push({ menuXmlid, menuId, actionId, sceneKey: meta.scene_key, route: meta.route, contentKind: meta.content_kind, model: meta.model || meta.action?.res_model,
         viewModes: meta.view_modes, actionType: meta.action_type, views: meta.views });
     }
     if (node.children) visitMenu(node.children);
@@ -275,6 +275,12 @@ function summarizeSystemInit(payload) {
   visitMenu(navigation.nav || []);
   return {
     menuEntries,
+    sceneEntries: (data?.scene_ready_contract?.scenes || []).map((row) => ({
+      key: row.scene?.key || row.page?.scene_key,
+      contentKind: row.meta?.content_kind,
+      mode: row.meta?.mode,
+      target: row.meta?.target || row.target,
+    })),
     roleCode: String(data?.role_surface?.role_code || ''),
     userId: Number(authority?.principal_scope?.user_id || 0),
     companyId: Number(authority?.principal_scope?.company_id || 0),
@@ -4870,7 +4876,12 @@ try {
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
   }
+} catch (error) {
+  report.pass = false;
+  report.executionError = String(error?.stack || error);
+  throw error;
 } finally {
+  fs.writeFileSync(path.join(outputDir, 'execution.json'), `${JSON.stringify(report, null, 2)}\n`);
   await browser.close();
 }
 
