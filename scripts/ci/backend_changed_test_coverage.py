@@ -75,9 +75,16 @@ def inventory(source: str, path: str) -> list[dict]:
             continue
         for method in cls.body:
             if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)) and method.name.startswith('test_'):
+                identity = f'{cls.name}.{method.name}'
                 rows.append({'path': path, 'module': module, 'class': cls.name,
                              'method': method.name, 'logger': logger, 'kind': kind,
-                             'selector': f'/{module}:{cls.name}.{method.name}',
+                             'selector': f'/{module}:{identity}',
+                             # Odoo gives an exact selector with no explicit tag
+                             # the implicit ``standard`` tag.  Wildcarding only
+                             # the tag keeps the module/class/method selection
+                             # exact while also executing changed tests that
+                             # deliberately declare ``-standard``.
+                             'execution_selector': f'*/{module}:{identity}',
                              'owner': MANAGED_TARGET if module == MANAGED_MODULE else 'backend_suite',
                              'status': 'pending'})
     return rows
@@ -202,6 +209,24 @@ def _python_outcomes(text: str) -> dict[str, str]:
                 outcomes[test_id] = outcome
     return outcomes
 
+
+def module_execution_selectors(plan: dict, module: str) -> list[str]:
+    """Return tag-independent exact selectors for changed ORM methods."""
+    rows = plan.get('changed_test_coverage', [])
+    selectors = []
+    for row in rows:
+        if row.get('module') != module or row.get('owner') != 'backend_suite' or row.get('kind') != 'orm':
+            continue
+        selector = row.get('execution_selector')
+        expected_prefix = f'*/{module}:'
+        if not isinstance(selector, str) or not selector.startswith(expected_prefix):
+            raise ValueError(
+                f"changed test lacks tag-independent execution selector: {row.get('selector', '<unknown>')}"
+            )
+        selectors.append(selector)
+    return selectors
+
+
 def managed_report(head: str, log: str) -> dict:
     if impact.git('rev-parse', 'HEAD').strip() != head:
         raise ValueError('managed evidence must bind the checked out candidate')
@@ -323,8 +348,7 @@ def main() -> None:
     plan = json.loads(args.plan.read_text())
     rows = plan.get('changed_test_coverage', [])
     if args.module:
-        print(','.join(row['selector'] for row in rows
-                       if row['module'] == args.module and row['owner'] == 'backend_suite' and row['kind'] == 'orm'))
+        print(','.join(module_execution_selectors(plan, args.module)))
         return
     if args.receipts is None or args.output is None:
         parser.error('receipt reconciliation requires --receipts and --output')

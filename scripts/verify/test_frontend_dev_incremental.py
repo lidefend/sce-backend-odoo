@@ -437,6 +437,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/ci/test_backend_impact_plan.py",
             "scripts/ci/backend_suite_plan.py",
             "scripts/ci/test_backend_suite_plan.py",
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/test_backend_changed_test_coverage.py",
             "scripts/ci/backend_test_receipt.py",
             "scripts/ci/test_backend_test_receipt.py",
             "scripts/ci/test_backend_test_suite_dispatch_contract.py",

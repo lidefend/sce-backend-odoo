@@ -31,7 +31,9 @@
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
     "demo_addons/smart_construction_demo/tools/scenario_loader.py",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/backend_changed_test_coverage.py",
     "scripts/ci/personal_data_false_positives.json",
+    "scripts/ci/test_backend_changed_test_coverage.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -336,6 +338,45 @@
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/local_dev_health_post_883.log"
         },
         {
+          "command": "python3 scripts/ci/test_backend_changed_test_coverage.py",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 30,
+          "detail": "Locks tag-independent exact execution selectors for changed ORM methods and fails closed when the selector field is absent or still implicitly requires standard.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/changed_test_coverage_selector_unit.log"
+        },
+        {
+          "command": "python3 scripts/ci/test_backend_suite_plan.py",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 53,
+          "detail": "Frozen-plan, partition, receipt and changed-coverage planner behavior remains intact after adding execution selectors.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/backend_suite_plan_unit_after_selector.log"
+        },
+        {
+          "command": "make verify.local.dev.golden_chain.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 4,
+          "detail": "The Golden suite still passes on sc_dev_demo after the execution-selector fix.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/golden_chain_after_selector_fix.log"
+        },
+        {
+          "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS='sc_smoke/smart_construction_demo,sc_gate/smart_construction_demo,*/smart_construction_demo:TestDemoGoldenChain.test_golden_chain_amount_state_and_role_relay'",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 19,
+          "detail": "The tag-independent exact selector executes the changed -standard Golden method; the equivalent /module:Class.method selector executed 18 base-tag tests and omitted it.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/wildcard_selector_reproduction.log"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1/L2",
+          "detail": "All nine required incremental targets passed, including selector/planner/workflow contracts, Demo lifecycle and Golden ORM, clean history, secret and personal-data scans, and lane coverage.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/ci_local_iteration_after_selector_and_scan_fix.log"
+        },
+        {
           "command": "make ci.local.iteration",
           "status": "passed",
           "layer": "L1/L2",
@@ -370,12 +411,19 @@
           "owner": "delivery_workflow",
           "detail": "After frontend dependencies were installed, the remaining first blocker was a missing registered receipt for verify.agent.ledger.unit. That check is now registered and passes; final rerun follows clean candidate creation.",
           "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/ci_local_iteration.log"
+        },
+        {
+          "command": "backend_impact_suite / verify_coverage on PR #884 head 6b3379cdf128b3fbcffaa27c82aeded77b25b3a4",
+          "status": "failed",
+          "owner": "validation_tool_defect",
+          "detail": "Changed ORM selector /smart_construction_demo:TestDemoGoldenChain.test_golden_chain_amount_state_and_role_relay implicitly required the standard tag, so Odoo filtered the -standard Golden class while the shard still passed 18 unrelated Demo tests. Coverage correctly left all four changed Golden methods pending. The changed-test-coverage artifact for run 43422880791 binds this finding to the exact head.",
+          "log": ".runtime/agent-runs/DEMO-BUSINESS-CHAIN-DATA-20261113/wildcard_selector_reproduction.log"
         }
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and push the replay-identity fix to PR #884, wait for fresh exact-head CI and independent re-review, then merge only if all required gates pass.",
+  "next_exact_step": "Commit and publish the clean changed-test execution-selector fix, then wait for all four required checks on the new exact PR head.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
@@ -390,6 +438,6 @@
       "local.dev entry identity repair and service restart"
     ],
     "rollback": "Revert the topic commit. Runtime Demo data is intentionally disposable and reproducible through local.dev.rebuild_demo.",
-    "publication": "not_run; no remote push or PR creation requested"
+    "publication": "PR #884 is open. The prior source head exposed the changed-test execution-selector defect; the clean fix now awaits governed publication and all four required checks on the resulting exact head."
   }
 }

@@ -5,7 +5,7 @@
 - 仓库：`sce-backend-odoo`
 - 起始基线：`70ad2e6af3b6794a9bcba0ea2b4dde499a6ecf07`（PR #880）
 - 同步基线：`ab739d620a1dc55b85133d64dc69a3d31ab105c1`（PR #883，项目证据汇总修复）
-- 当前验证候选：`5f4565981005bd7b1045d8ae3705f64d05b15ade`
+- PR #884 原远端候选：`6b3379cdf128b3fbcffaa27c82aeded77b25b3a4`
 - 分支：`feature/demo-business-chain-data-20261113`
 - 工作树：`/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113`
 - Formal Product Layer：P4 演示交付工具
@@ -125,6 +125,34 @@ Validation:
 
 - `make verify.local.dev.golden_chain.orm`: PASS, 4 tests, including full replay collision.
 - Two real persistent-database replay passes of `demo_40_contracts,demo_01_business_chain`: PASS; draft id/state/amount remained `109 / draft / 120000`, fixed request remained `93 / done / 160000`.
+
+### PR #884 changed-test execution selector remediation
+
+远端 `professional_quality_gate` 在 `scan_workflows / backend_impact_suite / verify_coverage` 失败，归因为 `validation_tool_defect`，不是 Golden 断言失败。
+
+事实：
+
+- 远端 `changed-test-coverage` artifact 对应 run `43422880791`、head `6b3379cdf128b3fbcffaa27c82aeded77b25b3a4`。
+- 分片命令已包含 `/smart_construction_demo:TestDemoGoldenChain.<method>`，但 Odoo 17 对未显式声明 tag 的精确 selector 隐式附加 `standard`。
+- Golden 测试类声明了 `-standard`，因此命令实际只执行 18 项基础 tag 测试；`test_demo_golden_chain.py` 的 4 个 changed methods 全部保持 `pending`。
+- 本地在同一 `sc_dev_demo` 上复现：`/module:Class.method` 执行 18 项并漏掉目标；改为 `*/module:Class.method` 后执行 19 项，目标 Golden 方法实际出现并通过。
+
+修复：
+
+- coverage 身份继续使用 `/module:Class.method`，避免改变回执和日志匹配语义。
+- Odoo 执行选择新增 `*/module:Class.method`，仅忽略隐式 tag，仍精确限定 module/class/method。
+- `--module` 只输出去除 tag 假设的执行 selector；字段缺失或仍为旧 selector 时 fail closed。
+- 新增定向单测锁定该差异，不为 Golden 或 Demo 路径添加 coverage 豁免。
+
+本修复的验证：
+
+| 检查 | 结果 |
+| --- | --- |
+| `python3 scripts/ci/test_backend_changed_test_coverage.py` | PASS，30 项 |
+| `python3 scripts/ci/test_backend_suite_plan.py` | PASS，53 项 |
+| tag-independent exact selector on `sc_dev_demo` | PASS，19 项，目标 Golden 方法实际执行 |
+| `make verify.local.dev.golden_chain.orm` | PASS，4 项 |
+| `make ci.local.iteration` | PASS，9/9 必需增量 target |
 
 ### 运行态变更与回滚
 

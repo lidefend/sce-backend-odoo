@@ -32,6 +32,31 @@ class TestNavigation(TransactionCase):
         self.assertEqual(['/example:TestNavigation.test_upgrade', '/example:TestNavigation.test_delete'],
                          [r['selector'] for r in self.rows()])
 
+    def test_execution_selectors_ignore_the_implicit_standard_tag(self):
+        self.assertEqual(
+            [
+                '*/example:TestNavigation.test_upgrade',
+                '*/example:TestNavigation.test_delete',
+            ],
+            [r['execution_selector'] for r in self.rows()],
+        )
+
+    def test_module_execution_selectors_cover_negative_standard_tests(self):
+        plan = {'changed_test_coverage': self.rows()}
+        self.assertEqual(
+            [
+                '*/example:TestNavigation.test_upgrade',
+                '*/example:TestNavigation.test_delete',
+            ],
+            coverage.module_execution_selectors(plan, 'example'),
+        )
+        for selector in (None, '/example:TestNavigation.test_upgrade'):
+            with self.subTest(selector=selector), self.assertRaises(ValueError):
+                coverage.module_execution_selectors(
+                    {'changed_test_coverage': [dict(self.rows()[0], execution_selector=selector)]},
+                    'example',
+                )
+
     def test_unrelated_nonzero_suite_does_not_prove_changed_tests(self):
         result = coverage.verify_logs(self.rows(), [self.orm_src(
             'odoo.addons.other.tests.test_nav: Starting TestNavigation.test_upgrade ...\n'
