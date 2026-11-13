@@ -38,12 +38,12 @@ Generated from repository source files. This report is informational during the 
 | 2727 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
-| 2389 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2413 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2333 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2219 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2204 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2129 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -273,12 +273,12 @@ Generated from repository source files. This report is informational during the 
 | 2727 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
-| 2389 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2413 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2333 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2219 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2204 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2129 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |

@@ -129,6 +129,19 @@ RULES = (
         "verify.agent.ledger.unit",
     )),
     Rule((
+        "demo_addons/smart_construction_demo/",
+    ), (
+        "verify.demo.lifecycle.unit",
+        "verify.demo.scenario_step.unit",
+    )),
+    Rule((
+        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+    ), (
+        "verify.demo.lifecycle.unit",
+        "verify.demo.scenario_step.unit",
+        "verify.local.dev.golden_chain.orm",
+    )),
+    Rule((
         ".gitignore",
     ), (
         "verify.pr.push.unit",
@@ -491,6 +504,8 @@ RULES = (
         "scripts/ci/test_backend_impact_plan.py",
         "scripts/ci/backend_suite_plan.py",
         "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/test_backend_changed_test_coverage.py",
         "scripts/ci/backend_test_receipt.py",
         "scripts/ci/test_backend_test_receipt.py",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py",
