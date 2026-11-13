@@ -21,7 +21,11 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/p1_project_evidence_summary_20261113.md",
+    "make/ci.mk",
     "make/dev_test.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
     "scripts/test/dependency_baseline.py",
     "scripts/test/test.sh",
     "scripts/test/test_dependency_baseline.py",
@@ -32,8 +36,7 @@
     "scripts/verify/project_dashboard_metric_semantics_guard.py",
     "scripts/verify/project_dashboard_snapshot_freshness_guard.py",
     "scripts/verify/project_management_contract_guard.py",
-    "scripts/verify/test_frontend_dev_incremental.py",
-    "make/ci.mk"
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
@@ -95,13 +98,24 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "dependency_affinity": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/test/dependency_baseline.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
     "independent review pending for combined P1/P4 candidate",
     "real CI clone execution and exact-head required checks pending"
   ],
-  "next_exact_step": "Freeze reviewed generated evidence, obtain independent review, publish exact combined PR883 candidate and verify real clone behavior, complete coverage and measured timing before protected squash integration.",
+  "next_exact_step": "Co-locate pristine dependency consumers after real frozen plan demonstrated LPT separated them; independently review and validate the new exact candidate before mainline integration.",
   "ci_preparation_evidence": {
     "iteration": ".runtime/ci-preparation-iteration.log",
     "routing": ".runtime/ci-preparation-routing.log",

@@ -127,3 +127,29 @@ TEST_TAGS_INPUT; a regression executes the actual shell gate with default,
 cross-module and unscoped selectors. Default target-scoped selection alone uses
 the prepared baseline. The reviewer also reproduced the original real-builder
 empty-branch negative case and confirmed the schema guard now rejects it.
+
+### Dependency preparation affinity
+
+The first real plan for 8287535a70192a733afdbdf57e4d28a7707fc20c exposed a
+scheduling gap: historical per-module LPT put core+portal, norm+demo, and fixture
+in separate shards. Only bundle+seed shared preparation, so the critical path
+still paid repeated installation cost. The current refinement treats consumers
+of the same manifest dependency as one scheduling group. Core and demo stay
+independent units; no module/test is removed. Pure Python consumers may share
+that shard but never receive an ORM database.
+
+The planner retains manifest dependencies separately from test/import dependency
+edges and computes affinity from the exact HEAD manifest graph. Explicit tag
+overrides disable both preparation and affinity. Reuse-decision repartitioning
+intersects the group with RUN modules, and workers verify frozen group identity.
+Historical durations are conservatively summed without subtracting guessed
+installation costs; these weights are not a forecast or measured speedup.
+
+The observed 14-module full scope partitions into: shared consumers (norm,
+fixture, bundle, portal, scene, seed); clean core; clean demo; and the six small
+remaining modules. `backend_suite_plan` now passes 53 tests, including exact
+union, one shared group, independent core/demo scheduling, override handling,
+history repartition and frozen identity rejection. The new dirty candidate's
+local iteration passes all 8 affected targets. The real execution comparison
+remains pending the final exact-head CI; the initial runner validation is not
+misrepresented as validation of the refined scheduler.

@@ -95,6 +95,51 @@ class ShardPlanTest(unittest.TestCase):
                     planner.validate_execution_plan(plan, required),
                 )
 
+    def test_dependency_affinity_keeps_one_preparation_and_exact_coverage(self):
+        modules = ['core', 'demo', 'bundle', 'portal', 'seed', 'fixture', 'norm', 'small']
+        group = ['bundle', 'portal', 'seed', 'fixture', 'norm']
+        durations = dict(core=580, demo=500, bundle=490, portal=420, seed=420, fixture=430, norm=427, small=20)
+        shards = planner.partition(modules, durations=durations, groups=[group])
+        owners = {name: row['index'] for row in shards for name in row['modules']}
+        self.assertEqual(len({owners[name] for name in group}), 1)
+        self.assertNotEqual(owners['core'], owners['demo'])
+        self.assertNotEqual(owners['core'], owners['portal'])
+        self.assertNotEqual(owners['demo'], owners['portal'])
+        self.assertEqual(sorted(owners), sorted(modules))
+        self.assertEqual(shards, planner.partition(list(reversed(modules)), durations=durations, groups=[list(reversed(group))]))
+        one = planner.partition(group, groups=[group])
+        self.assertEqual(len(one), 1)
+        self.assertEqual(one[0]['modules'], sorted(group))
+
+    def test_invalid_affinity_groups_fail_closed(self):
+        for groups in ([[]], [['a', 'a']], [['missing']], [['a'], ['a', 'b']]):
+            with self.subTest(groups=groups), self.assertRaises(ValueError):
+                planner.partition(['a', 'b'], groups=groups)
+
+    def test_preparation_affinity_uses_manifest_closure_not_test_imports(self):
+        graph = {
+            'smart_construction_core': {'manifest_depends': {'smart_core'}},
+            'smart_construction_demo': {'manifest_depends': {'smart_construction_core'}},
+            'portal': {'manifest_depends': {'smart_construction_core'}},
+            'bundle': {'manifest_depends': {'portal'}},
+            'test_reader': {'depends': {'smart_construction_core'}, 'manifest_depends': set()},
+        }
+        with patch.dict(planner.os.environ, {'TEST_TAGS_INPUT': ''}):
+            self.assertEqual(planner.preparation_groups(graph, list(graph)), [['bundle', 'portal']])
+        with patch.dict(planner.os.environ, {'TEST_TAGS_INPUT': 'sc_gate'}):
+            self.assertEqual(planner.preparation_groups(graph, list(graph)), [])
+
+    def test_affinity_survives_history_partition_and_frozen_identity_validation(self):
+        required = dict(base='b'*40, head='a'*40, modules=['a', 'b', 'c'], changed_test_coverage=[], preparation_groups=[['a', 'b']])
+        decisions = [dict(target=name, decision='RUN', previous_actual_duration=100) for name in required['modules']]
+        plan = planner.apply_reuse_decision(required, decisions)
+        self.assertEqual(plan['shards'][0]['modules'], ['a', 'b'])
+        self.assertEqual(plan, planner.validate_execution_plan(plan, required))
+        tampered = copy.deepcopy(plan)
+        tampered['preparation_groups'] = []
+        with self.assertRaises(ValueError):
+            planner.validate_execution_plan(tampered, required)
+
     def test_invalid_scope_is_not_a_green_empty_matrix(self):
         for names in ([], ['a', 'a'], ['../a'], ['a;exit'], ['a\nb']):
             with self.subTest(names=names), self.assertRaises(ValueError):
