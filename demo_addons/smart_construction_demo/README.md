@@ -302,7 +302,7 @@ make demo.verify DB_NAME=sc_demo
 | 已审批付款申请 | `smart_construction_demo.sc_demo_exec_payment_request` | 申请 160,000 元，已走正式审批 |
 | 付款执行 | `smart_construction_demo.sc_demo_exec_payment_execution` | 实付 160,000 元 |
 | 支付台账 | `smart_construction_demo.sc_demo_exec_payment_ledger` | 已过账 160,000 元 |
-| 项目财务汇总块 | `ProjectFinanceBuilder` | 已支付金额从付款申请状态汇总为 160,000 元 |
+| 项目财务汇总块 | `ProjectFinanceBuilder` | 固定样板贡献 160,000 元；用户推进可操作付款后，项目汇总可合法增加 |
 
 新库或受管重建会在提交审批前写入结算总额、送审金额和审定金额，因此结算、付款申请、执行和台账金额可以逐层对账。
 

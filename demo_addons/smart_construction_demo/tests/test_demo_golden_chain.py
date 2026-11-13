@@ -2,9 +2,11 @@
 """Read-only golden business chain readback (contract -> settlement -> payment
 -> ledger -> receipt -> treasury -> reconciliation).
 
-This test never writes. It pins the one main demo story so a rebuild cannot
-silently lose cross-record amount/state coherence or the role relay. The XMLIDs
-and field names below are the persisted, already-validated demo fixtures.
+The readback pins the one main demo story so a rebuild cannot silently lose
+cross-record amount/state coherence or the role relay. Replay and user-progress
+regressions use TransactionCase writes that are rolled back; they never alter
+the persistent demo records. The XMLIDs and field names below are the persisted,
+already-validated demo fixtures.
 """
 from __future__ import annotations
 
