@@ -185,6 +185,7 @@ class TestDemoGoldenChain(TransactionCase):
         draft = self.env.ref(
             "smart_construction_demo.sc_demo_exec_actionable_receipt_draft"
         )
+        fin1 = self.env.ref("smart_construction_demo.user_sc_fin_01")
         self.assertNotEqual(request, self.env.ref(
             "smart_construction_demo.sc_demo_exec_receipt_request"
         ))
@@ -199,6 +200,12 @@ class TestDemoGoldenChain(TransactionCase):
         self.assertTrue(draft.receiving_bank_name)
         self.assertTrue(draft.receiving_account_no)
 
+        draft.with_user(fin1).sudo(False).write(
+            {
+                "amount": 175000.0,
+                "note": "DEMO-02 user-adjusted receipt draft",
+            }
+        )
         state_before = draft.state
         amount_before = draft.amount
         run_demo_receipt_chain(self.env)
