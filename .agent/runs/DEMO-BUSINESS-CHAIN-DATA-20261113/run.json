@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-BUSINESS-CHAIN-DATA-20261113",
   "branch": "feature/demo-business-chain-data-20261113",
-  "status": "verification_pending",
+  "status": "completed",
     "baseline_sha": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
   "goal": ".agent/goals/DEMO-BUSINESS-CHAIN-DATA-20261113.yaml",
   "record": "docs/ops/iterations/demo_business_chain_data_20261113.md",
@@ -454,7 +454,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run ci.local.iteration, commit and publish the clean-fixture plus legacy-upgrade fixes, then verify all Golden methods and required checks on the new exact head.",
+  "next_exact_step": "Merged through PR #884 at main 2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd; continue with DEMO-02-RECEIPT-CHAIN-20261113.",
   "handoff": {
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-demo-business-chain-20261113",
     "baseline_main": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
@@ -469,6 +469,6 @@
       "local.dev entry identity repair and service restart"
     ],
     "rollback": "Revert the topic commit. Runtime Demo data is intentionally disposable and reproducible through local.dev.rebuild_demo.",
-    "publication": "PR #884 is open. Formal review at dcc409c3b8ee540f98719687eae988b3e9917812 requested changes for clean Golden fixtures and old Demo XMLID binding order. Both fixes now pass the six-test persistent Golden transaction and await governed publication plus remote clean-install verification."
+    "publication": "PR #884 merged at 2dd8e2f7ded8a39916d40bb5e81f654c55c9b3cd from verified head d7b4841ab73ab09baa2e6c1e1cbaeb31c92d2b63; all four required checks and independent approval passed."
   }
 }
