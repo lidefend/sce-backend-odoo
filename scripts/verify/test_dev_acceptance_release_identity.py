@@ -773,6 +773,68 @@ class CanonicalNavigationTest(unittest.TestCase):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])
 
 
+class PublishedFaceScopeTest(unittest.TestCase):
+    ACTION = "smart_construction_core.menu_action"
+    HOME = "smart_construction_core.menu_sc_workspace_home"
+
+    def rows(self):
+        return [
+            {"menu_xmlid": self.ACTION, "action_id": 27, "child_count": 0},
+            {"menu_xmlid": self.HOME, "action_id": 0, "child_count": 0},
+        ]
+
+    def test_role_scoped_subset_does_not_compare_against_global_universe(self):
+        errors, checks = MODULE.published_face_checks(
+            self.rows(),
+            2,
+            {self.HOME},
+            91,
+            role_scoped_navigation=True,
+            declared_action_entries={self.ACTION, "smart_construction_core.menu_unreached"},
+        )
+        self.assertEqual(errors, [])
+        self.assertTrue(checks["nav_role_scoped"])
+        self.assertFalse(checks["nav_global_universe_comparison"])
+        self.assertNotIn("nav_published_global_universe_expected", checks)
+        self.assertEqual(checks["nav_missing_action_entries"], ["smart_construction_core.menu_unreached"])
+
+    def test_role_scoped_navigation_rejects_an_unregistered_action_leaf(self):
+        errors, checks = MODULE.published_face_checks(
+            self.rows(),
+            2,
+            {self.HOME},
+            91,
+            role_scoped_navigation=True,
+            declared_action_entries=set(),
+        )
+        self.assertIn("nav_action_entry_drift", errors)
+        self.assertEqual(checks["nav_unregistered_action_entries"], [self.ACTION])
+
+    def test_role_scoped_navigation_requires_the_declared_action_identities(self):
+        errors, checks = MODULE.published_face_checks(
+            self.rows(),
+            2,
+            {self.HOME},
+            91,
+            role_scoped_navigation=True,
+            declared_action_entries=None,
+        )
+        self.assertIn("nav_declared_action_entries_missing", errors)
+        self.assertEqual(checks["nav_action_identity_check"], "not_available_missing_declaration")
+
+    def test_global_face_still_requires_the_declared_universe(self):
+        errors, checks = MODULE.published_face_checks(
+            self.rows(),
+            2,
+            {self.HOME},
+            2,
+            declared_action_entries={self.ACTION, "smart_construction_core.menu_missing"},
+        )
+        self.assertIn("nav_action_entry_missing", errors)
+        self.assertIn("nav_published_universe_drift", errors)
+        self.assertEqual(checks["nav_published_global_universe_expected"], 3)
+
+
 class EntryBoundContractSessionTest(unittest.TestCase):
     def test_root_and_prefixed_entries_use_intent_without_database_hints(self):
         for base in ('https://example.test', 'https://example.test/t/demo'):

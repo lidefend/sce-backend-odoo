@@ -69,14 +69,114 @@ export function loadOverlay(overlayPath) {
     deniedRoleCandidates: Array.isArray(body.denied_role_candidates)
       ? body.denied_role_candidates.map(String)
       : [],
+    deniedRoleCandidatesByProfile: body.denied_role_candidates_by_profile
+      && typeof body.denied_role_candidates_by_profile === 'object'
+      ? Object.fromEntries(Object.entries(body.denied_role_candidates_by_profile).map(
+        ([profile, rows]) => [String(profile), Array.isArray(rows) ? rows.map(String) : []],
+      ))
+      : {},
   };
+}
+
+export function deniedRoleCandidatesFor(overlay, profile = '') {
+  const key = String(profile || '').trim();
+  const scoped = key ? overlay.deniedRoleCandidatesByProfile?.[key] : null;
+  return Array.isArray(scoped) && scoped.length ? scoped : overlay.deniedRoleCandidates;
 }
 
 export function overlayFor(overlay, menuXmlid) {
   const merged = { ...overlay.defaults, ...(overlay.entries[menuXmlid] || {}) };
   if (!('detail' in merged)) merged.detail = true;
   if (!('expect_write' in merged)) merged.expect_write = null;
+  if (!('negative_authority' in merged)) merged.negative_authority = 'derive';
   return merged;
+}
+
+export function sceneBehaviour(overlay, menuXmlid) {
+  const merged = overlayFor(overlay, menuXmlid);
+  const negativeAuthority = !merged.negative_authority || merged.negative_authority === 'derive'
+    ? 'not_applicable_no_action_scene'
+    : String(merged.negative_authority);
+  return {
+    ...merged,
+    detail: false,
+    negative_authority: negativeAuthority,
+    negative_authority_reason: String(
+      merged.negative_authority_reason
+      || 'No action-bearing entry exists; the scene surface is verified by its declared runtime route and ready state.',
+    ),
+  };
+}
+
+export function runtimeRoleSceneTarget(roleSurface, row) {
+  const surface = roleSurface && typeof roleSurface === 'object' ? roleSurface : {};
+  const roleHomeMenus = Array.isArray(surface.role_home_menu_xmlids)
+    ? surface.role_home_menu_xmlids.map(String)
+    : [];
+  if (!roleHomeMenus.includes(String(row.menu_xmlid || ''))) return null;
+  const landing = surface.landing_entry_target && typeof surface.landing_entry_target === 'object'
+    ? surface.landing_entry_target
+    : {};
+  const sceneKey = String(landing.scene_key || surface.landing_scene_key || '').trim();
+  const route = String(landing.route || surface.landing_path || '').trim();
+  if (!sceneKey || !route || sceneKey !== String(row.scene_key || '').trim()) return null;
+  return {
+    action_id: 0,
+    menu_id: Number(surface.landing_menu_id || 0),
+    route,
+    scene_key: sceneKey,
+    entry_target: landing,
+    entry_target_type: String(landing.type || 'scene'),
+    action_xmlid: '',
+    menu_xmlid: row.menu_xmlid,
+  };
+}
+
+export function recordedEntryStatus(record) {
+  if (record && record.status) return String(record.status);
+  if (record && record.error) return 'exception';
+  const assertions = record && record.assertions && typeof record.assertions === 'object'
+    ? record.assertions
+    : {};
+  for (const [stage, status] of Object.entries(assertions)) {
+    if (['error', 'failed', 'exception'].includes(String(status))) return `${stage}_failed`;
+  }
+  return 'checked';
+}
+
+export function matrixSucceeded({ completeness, problems, entries }) {
+  return String(completeness || '') === 'complete'
+    && Array.isArray(problems) && problems.length === 0
+    && Array.isArray(entries)
+    && !entries.some((record) => recordedEntryStatus(record) === 'exception');
+}
+
+export function loadDeclaredSceneEntries(registryPath) {
+  const body = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+  const rows = body.non_action_delivery_entries && typeof body.non_action_delivery_entries === 'object'
+    ? body.non_action_delivery_entries
+    : {};
+  return Object.entries(rows).map(([menuXmlid, declaration]) => {
+    const entry = declaration && typeof declaration === 'object' ? declaration : {};
+    return {
+      menu_xmlid: String(menuXmlid),
+      label: String(entry.label || entry.scene_key || menuXmlid),
+      domain: String(entry.delivery_bucket || 'scene'),
+      model: '',
+      scope_disposition: 'scene',
+      batch: 'scene_delivery',
+      role_authority: '{}',
+      action_xmlid: '',
+      rendering_path: `scene:${String(entry.scene_key || '').trim()}`,
+      query_responsibility: '',
+      write_responsibility: '',
+      acceptance_status: 'pending',
+      evidence: String(entry.evidence || ''),
+      gap: '',
+      route: String(entry.route || '').trim(),
+      scene_key: String(entry.scene_key || '').trim(),
+    };
+  });
 }
 
 export function declaredEntryGroups(row) {
@@ -172,7 +272,16 @@ export function resolveNegativeCandidate(declared, candidateOrder, states, pinne
 export function negativePlanByCandidate(entries, candidateOrder, states) {
   const byCandidate = new Map();
   const undecidable = [];
+  const notApplicable = [];
   for (const { row, behaviour } of entries) {
+    if (behaviour.negative_authority && behaviour.negative_authority !== 'derive') {
+      notApplicable.push({
+        entry: row.menu_xmlid,
+        kind: String(behaviour.negative_authority),
+        reason: String(behaviour.negative_authority_reason || ''),
+      });
+      continue;
+    }
     const declared = declaredEntryGroups(row);
     const pinned = behaviour.denied_role ? String(behaviour.denied_role) : null;
     const resolved = resolveNegativeCandidate(declared, candidateOrder, states, pinned);
@@ -183,7 +292,7 @@ export function negativePlanByCandidate(entries, candidateOrder, states) {
     if (!byCandidate.has(resolved.chosen)) byCandidate.set(resolved.chosen, []);
     byCandidate.get(resolved.chosen).push({ action: row.action_xmlid, menu: row.menu_xmlid });
   }
-  return { byCandidate, undecidable };
+  return { byCandidate, undecidable, notApplicable };
 }
 
 export function universalCapabilities(candidateOrder, states) {
@@ -200,7 +309,7 @@ export function universalCapabilities(candidateOrder, states) {
 // this entry's outcome, so they are bound into the key fingerprint.
 const CONSUMED_ROW_FIELDS = [
   'menu_xmlid', 'action_xmlid', 'label', 'domain', 'model', 'scope_disposition',
-  'batch', 'role_authority', 'rendering_path',
+  'batch', 'role_authority', 'rendering_path', 'route', 'scene_key', 'entry_target_type',
 ];
 
 // Row fields that record an outcome rather than declare an input. They must

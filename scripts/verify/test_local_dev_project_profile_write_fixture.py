@@ -244,6 +244,19 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=0", browser_make)
         self.assertLess(BROWSER_MJS.index("const WRITE_AUTHORITY"), BROWSER_MJS.index("const { chromium }"))
 
+    def test_browser_runner_uses_the_tenant_namespace_contract(self):
+        self.assertNotIn("probe_toolchain_blocked", BROWSER_MJS)
+        self.assertIn("const ENTRY_BASE_PATH = '/t/demo'", BROWSER_MJS)
+        self.assertIn("const ENTRY_TOKEN_SCOPE = `tenant:${ENTRY_BASE_PATH}`", BROWSER_MJS)
+        self.assertIn("`${FRONTEND_URL}${ENTRY_BASE_PATH}/login`", BROWSER_MJS)
+        self.assertIn("`${basePath}/api/v1/intent`", BROWSER_MJS)
+        self.assertNotIn("/api/v1/intent?db=", BROWSER_MJS)
+        self.assertNotIn("sc_auth_token:${db}", BROWSER_MJS)
+        registry = json.loads((ROOT / "config/frontend/probe_toolchain_registry.json").read_text())
+        row = registry["tools"]["scripts/verify/local_dev_project_profile_write_browser.mjs"]
+        self.assertEqual(row["status"], "supported")
+        self.assertEqual(row["audit_rules"], [])
+
     def test_shell_rejects_missing_and_invalid_project_id_before_browser_setup(self):
         base = os.environ.copy()
         base.update({"ROOT_DIR": str(ROOT), "PRODUCT_CANDIDATE_SHA": "2" * 40})

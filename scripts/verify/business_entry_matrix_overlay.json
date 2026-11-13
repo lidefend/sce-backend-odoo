@@ -28,7 +28,25 @@
     "fixture_role_system_admin",
     "fixture_role_partner_manager"
   ],
+  "denied_role_candidates_by_profile": {
+    "daily": [
+      "demo_role_project_a_member",
+      "demo_role_executive",
+      "sc_demo_operation",
+      "demo_role_owner",
+      "demo_role_pm",
+      "demo_role_finance",
+      "sc_demo_business_config",
+      "sc_project_mgr",
+      "demo_readonly",
+      "sc_demo_accounting_read"
+    ]
+  },
   "entries": {
+    "smart_construction_core.menu_sc_my_work": {
+      "negative_authority": "not_applicable_internal_workspace",
+      "negative_authority_reason": "我的工作以 base.group_user 为入口受众；内部用户之间不存在合法的导航拒绝负例。数据隔离边界必须在适用的记录规则与跨身份数据观察中单独验证。"
+    },
     "smart_construction_core.menu_sc_operating_metrics_project": { "presentation": "table" },
     "smart_construction_core.menu_sc_project_kanban": { "presentation": "kanban" },
     "smart_construction_core.menu_sc_workbench_my_todo_fact": { "presentation": "table" },

@@ -349,6 +349,13 @@ local.dev.project_profile_write_browser: guard.prod.forbid local.dev.ready
 	  FRONTEND_URL="$(FRONTEND_URL)" \
 	  bash scripts/verify/local_dev_project_profile_write_browser.sh
 
+.PHONY: verify.local.dev.project_profile_write.unit
+verify.local.dev.project_profile_write.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_dev_project_profile_write_fixture
+	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard
+	@python3 scripts/verify/frontend_probe_toolchain_guard.py
+	@node scripts/verify/local_dev_project_profile_write_contract.test.mjs
+
 local.dev.personnel_authorization_fixture: guard.prod.forbid local.dev.ready
 	@test -n "$(P4_PERSONNEL_AUTH_MODE)" || (echo "P4_PERSONNEL_AUTH_MODE is required" >&2; exit 2)
 	@test -n "$(P4_PERSONNEL_AUTH_BATCH)" || (echo "P4_PERSONNEL_AUTH_BATCH is required" >&2; exit 2)
@@ -1068,6 +1075,7 @@ DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 scripts/verify/acceptance_ac
 DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE ?= $(shell python3 scripts/verify/acceptance_action_count.py --role)
 DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["forbidden_labels"]))')
 DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["required_paths"]))')
+DAILY_ACCEPTANCE_ROLE_SCOPED_NAVIGATION ?= 0
 DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY ?= construction.standard
 
 verify.dev.acceptance.release: guard.prod.forbid check-compose-project check-compose-env
@@ -1080,7 +1088,7 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" node scripts/verify/frontend_acceptance_environment_cli.mjs --tool daily-release-probe --operation readonly --expected-sha "$(ACCEPTANCE_TARGET_SHA)" --login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"
 	@test -n "$$ACCEPTANCE_LOGIN" -a -n "$$ACCEPTANCE_PASSWORD" || (echo "daily readonly credentials must be supplied through environment"; exit 2)
-	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_NAV_PRINCIPAL_ROLE="$(DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE)" ACCEPTANCE_CONTRACT_DECLARATION="$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_CONTRACT_PASSWORD="$(ACCEPTANCE_CONTRACT_PASSWORD)" ACCEPTANCE_REQUIRE_CONTRACT="$(DAILY_ACCEPTANCE_REQUIRE_CONTRACT)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
+	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_NAV_PRINCIPAL_ROLE="$(DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE)" ACCEPTANCE_ROLE_SCOPED_NAVIGATION="$(DAILY_ACCEPTANCE_ROLE_SCOPED_NAVIGATION)" ACCEPTANCE_CONTRACT_DECLARATION="$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_CONTRACT_PASSWORD="$(ACCEPTANCE_CONTRACT_PASSWORD)" ACCEPTANCE_REQUIRE_CONTRACT="$(DAILY_ACCEPTANCE_REQUIRE_CONTRACT)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
 # --- daily development acceptance fixture lane -------------------------------

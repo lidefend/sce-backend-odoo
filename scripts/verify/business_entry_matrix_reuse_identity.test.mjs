@@ -268,7 +268,11 @@ assert.notEqual(fingerprint(baseline, { row: { rendering_path: 'kanban' } }), re
   'a changed consumed declaration still re-opens the entry');
 assert.notEqual(fingerprint(baseline, { row: { model: 'res.company' } }), reported,
   'a changed declared model still re-opens the entry');
-cases += 2;
+assert.notEqual(fingerprint(baseline, { row: { route: '/s/other.scene' } }), reported,
+  'a changed declared scene route re-opens the entry');
+assert.notEqual(fingerprint(baseline, { row: { scene_key: 'other.scene' } }), reported,
+  'a changed declared scene identity re-opens the entry');
+cases += 4;
 
 console.log(`[business_entry_matrix_reuse_identity_test] PASS cases=${cases}`);
 

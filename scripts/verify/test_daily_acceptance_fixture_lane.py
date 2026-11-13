@@ -645,7 +645,7 @@ class PublishedFaceIdentityTests(unittest.TestCase):
         errors, checks = published_face_checks(rows, 2, {self.SCENE}, 1)
         self.assertEqual(errors, [])
         self.assertEqual(checks["nav_non_action_entries"], [self.SCENE])
-        self.assertEqual(checks["nav_published_universe_expected"], 2)
+        self.assertEqual(checks["nav_published_global_universe_expected"], 2)
 
     def test_swapped_carrier_fails_even_though_the_leaf_count_matches(self) -> None:
         rows = [self._leaf("t.menu_a", 780), self._leaf("t.menu_other_scene", 0)]

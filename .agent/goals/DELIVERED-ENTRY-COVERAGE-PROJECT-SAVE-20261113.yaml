@@ -1,0 +1,86 @@
+schema_version: 1
+goal:
+  id: DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113
+  title: Trust delivered-entry coverage and prove one real project-profile save journey
+  status: active
+  formal_product_layer: P4 operations delivery tooling
+  layer_target: delivered entry acceptance routing and isolated project-profile write evidence
+  module: repository acceptance tooling
+  standard_vs_user_specific: governed_validation_tooling
+  why_here: >
+    The source product is already delivered, but the existing acceptance tools
+    still synthesize action routes, use one global denominator for every
+    principal, and block the project-profile write probe before namespace-aware
+    browser execution. These tools own the false coverage and missing evidence,
+    not the product contracts they inspect.
+  why_not_elsewhere: >
+    Frontend or backend product changes would compensate for a probe defect.
+    Updating CSV labels would convert unexecuted cases into apparent coverage.
+    Creating a parallel browser harness would duplicate the existing governed
+    Make entries and evidence-scope engine.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113.yaml
+      - .agent/runs/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113/run.json
+      - config/frontend/probe_toolchain_registry.json
+      - config/security/secret_scan_false_positives.v1.json
+      - docs/product/frontend_business_entry_acceptance_v1.csv
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/ops/iterations/delivered_entry_coverage_project_save_20261113.md
+      - make/dev.mk
+      - make/frontend.mk
+      - scripts/ops/dev_acceptance_release_probe.py
+      - scripts/verify/business_entry_matrix_browser.mjs
+      - scripts/verify/business_entry_matrix_incremental.py
+      - scripts/verify/business_entry_matrix_model.mjs
+      - scripts/verify/business_entry_matrix_overlay.json
+      - scripts/verify/business_entry_matrix_scope.mjs
+      - scripts/verify/business_entry_negative_closures.mjs
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/business_entry_matrix_reuse_identity.test.mjs
+      - scripts/verify/local_dev_project_profile_write_browser.mjs
+      - scripts/verify/local_dev_project_profile_write_browser.sh
+      - scripts/verify/local_dev_project_profile_write_contract.mjs
+      - scripts/verify/local_dev_project_profile_write_contract.test.mjs
+      - scripts/verify/released_navigation_target.mjs
+      - scripts/verify/test_business_entry_matrix_incremental.py
+      - scripts/verify/test_dev_acceptance_release_identity.py
+      - scripts/verify/test_daily_acceptance_fixture_lane.py
+      - scripts/verify/test_local_dev_project_profile_write_fixture.py
+    product_behavior: >
+      Acceptance opens the runtime-declared final route for each separately
+      identified entry, evaluates role-specific reachability without treating
+      legitimate pruning as a release loss, and records the exact assertion
+      boundary. The isolated project-profile browser proves save, one-write
+      ownership, refresh readback and exact cleanup through the namespace entry.
+  objective: >
+    Produce a trustworthy delivered-entry coverage report for the current
+    Business Full surface, then prove one ordinary project-profile save journey
+    on the governed local.dev carrier without changing product semantics.
+  acceptance:
+    - entry identity and final route are consumed instead of reconstructed
+    - same-action entries remain distinct by menu identity
+    - no-action workspace.home is represented as a scene entry
+    - role-specific navigation subsets do not trigger global release-universe drift
+    - no-action scenes resolve through role_surface landing targets
+    - role-specific candidate identities are declared without pretending fixture identities exist in the daily tenant
+    - requested-only incremental execution narrows an all-uncovered plan to the explicitly selected keys
+    - assertion stages distinguish empty, skipped detail, navigation denial, direct-access denial and writes
+    - the project-profile probe passes namespace-contract static guards
+    - one isolated browser save produces exactly one successful write and survives refresh readback
+    - fixture cleanup removes only the declared batch and inspect reports no residue
+  exclusions:
+    - product model, contract, ACL, menu or workflow changes
+    - real customer data
+    - daily demo writes
+    - every declared entry for every role
+    - mobile and independent mobile-client acceptance
+  rollback: >
+    Revert the P4 acceptance-tool commit. Prepared local.dev objects are removed
+    through the same fixture entry, and no product business rows outside the
+    batch namespace are changed.
