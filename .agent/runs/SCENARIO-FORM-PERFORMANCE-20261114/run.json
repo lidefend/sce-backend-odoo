@@ -134,10 +134,10 @@
     }
   },
   "blockers": [
-    "Designed enterprise.setup full browser report fails h1=0; performance hydration observation passes but complete page review pending.",
+    "Independent exact-candidate review and publication evidence archive pending.",
     "Daily same-environment before/after performance acceptance not run."
   ],
-  "next_exact_step": "Verify SceneView handling header consumes declared scene label as H1; run designed-scene desktop/mobile browser at clean candidate, then freeze and independent review before publication.",
+  "next_exact_step": "Finish freeze preparation, commit final result index, obtain independent read-only exact-head review before evidence archive and protected PR publication. No daily deployment authorized by this preparation.",
   "results": {
     "research": "daily_project_baseline_and_first_optimization_implemented",
     "performance_acceptance": "not_run_candidate",
@@ -252,10 +252,10 @@
       "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
     },
     "designed_scene_browser": {
-      "status": "failed",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
-      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
-      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+      "status": "passed",
+      "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
+      "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
     },
     "native_empty_list": {
       "status": "passed",
@@ -277,16 +277,37 @@
       "classification": "baseline_evidence_defect",
       "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
+    },
+    "heading_iteration": {
+      "status": "passed",
+      "targets_executed": 25,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
+    },
+    "designed_scene_browser_previous": {
+      "status": "failed",
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
+      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
+      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+    },
+    "native_browser_reuse": {
+      "status": "reused_unaffected",
+      "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+      "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+      "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
     }
   },
   "stage_identity": {
-    "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+    "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
     "dirty": true,
-    "scope": "Final result-index and living-record documentation only; browser source clean at observed head.",
+    "scope": "Documentation-only finalization after successful affected browser checks",
     "frozen": false
   },
   "completion": {
-    "batch": "verification_pending",
+    "batch": "scoped_local_validation_passed",
     "mainline": "not_integrated",
     "deployment": "unchanged",
     "user_acceptance": "not_run"
