@@ -382,7 +382,7 @@ def _payment_account_vals(partner):
         "actual_payee_unit": partner.name,
         "payment_account_name": partner.name,
         "payment_bank_name": "中国建设银行德阳分行",
-        "payment_account_no": "6222021000000160",
+        "payment_account_no": "6222 **** **** 0160",
     }
 
 
@@ -505,7 +505,11 @@ def _ensure_complete_payment_request(env, request):
     """Repair an incomplete DEMO-01 request through its owning workflow."""
     expected = _payment_account_vals(request.partner_id)
     actual = {name: request[name] for name in expected}
-    if actual == expected:
+    if (
+        request.payee_account_completeness == "complete"
+        and request.actual_payee_unit
+        and all(actual.values())
+    ):
         return request
     if request.payment_execution_ids or request.ledger_line_ids:
         raise UserError("DEMO-01 付款申请已有执行或台账历史，禁止补写账户事实。")
