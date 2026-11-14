@@ -48,6 +48,9 @@
     "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_coverage_registry.yaml",
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
     "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     "make/frontend.mk",
@@ -214,12 +217,12 @@
     }
   },
   "blockers": [
-    "The manifest-lineage evidence commit still requires its own exact-head Quick and independent review.",
-    "The candidate has not been pushed from the validated A/B deployment commit; remote branch state cannot be inherited as current-head evidence.",
+    "The metadata-only run-scope repair still requires its successor exact-head Quick and independent review.",
+    "Push and current-SHA remote required CI remain pending the new review and a separate push authorization.",
     "Merge and product deployment remain paused pending review and authorization.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Commit the R12 manifest-lineage record, run Quick on the new clean HEAD, then request final independent review.",
+  "next_exact_step": "Commit the metadata-only run-scope repair, run Quick on the new clean HEAD, then request final independent review.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1316,7 +1319,7 @@
     "merge_deployment": "paused"
   },
   "r12b": {
-    "status": "evidence_closeout_validation_pending",
+    "status": "run_scope_repaired_pending_quick_and_review",
     "formal_product_layer": "P0 frontend session lifecycle",
     "layer_target": "apps/web Session Store persistence",
     "module": "frontend/apps/web",
@@ -1582,6 +1585,22 @@
       "cause": "Candidate B redeploy tooling was added without changing existing deploy or cold_reset functions.",
       "original_evidence_overwritten": false
     },
+    "release_push_r1": {
+      "status": "scope_repaired_pending_quick_and_review",
+      "classification": "baseline_evidence_defect",
+      "original_approved_head": "e9b56f2dc868005bc72aed07f86ee2e30b471889",
+      "failure_receipt": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/release-push-887-blocked.json",
+      "failure_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/release-push-887.log",
+      "remote_head_unchanged": "526a1044ba6e99557823ad16567c0425eec98d99",
+      "registered_paths": [
+        "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+        "scripts/verify/registry.yaml",
+        "scripts/verify/test_coverage_registry.yaml"
+      ],
+      "registered_paths_content_modified": false,
+      "product_runtime_frozen_at": "e9b56f2dc868005bc72aed07f86ee2e30b471889",
+      "push_attempted": false
+    },
     "r12_manifest_lineage": {
       "status": "owner_authorized_replacement_recorded",
       "original_artifact_count": 59,
@@ -1596,7 +1615,7 @@
       "tracked_file_recovery_commit": "d748195681bbdeaa0956ee8f1ab84acfe41cd597"
     },
     "final_review": {
-      "status": "changes_addressed_pending_final_review",
+      "status": "new_successor_head_review_required",
       "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-independent-review.json",
       "product_code_findings_S0_S1": 0,
       "open_S2": [
@@ -1604,7 +1623,7 @@
         "R10 manifest required an input-revision transition"
       ]
     },
-    "next_exact_step": "Commit the manifest-lineage record, run exact-head Quick, then request final independent review."
+    "next_exact_step": "Commit the metadata-only run-scope repair, run exact-head Quick, then request final independent review."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
