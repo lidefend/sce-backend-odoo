@@ -9,7 +9,7 @@ R10_PERF_A_SHA ?= 5d631f6dd304a003f09c72e7de22fde45b8c3dbc
 R10_PERF_EVIDENCE_ROOT ?= .runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/runtime
 R10_PERF_REMOTE_CONTRACT ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(R10_PERF_CONTINUITY_CONTRACT)
 
-.PHONY: verify.r10.performance_ab.profile r10.performance_ab.plan r10.performance_ab.preflight r10.performance_ab.snapshot r10.performance_ab.snapshot.validate r10.performance_ab.snapshot.restore_drill r10.performance_ab.twins.prepare r10.performance_ab.twins.restore r10.performance_ab.twins.deploy r10.performance_ab.twins.readback r10.performance_ab.twins.destroy
+.PHONY: verify.r10.performance_ab.profile r10.performance_ab.plan r10.performance_ab.preflight r10.performance_ab.snapshot r10.performance_ab.snapshot.validate r10.performance_ab.snapshot.restore_drill r10.performance_ab.twins.stack.sync r10.performance_ab.twins.prepare r10.performance_ab.twins.restore r10.performance_ab.twins.deploy r10.performance_ab.twins.readback r10.performance_ab.twins.destroy
 
 verify.r10.performance_ab.profile: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/r10_performance_ab_profile.py scripts/ops/test_r10_performance_ab_profile.py scripts/ops/r10_performance_ab_lifecycle.py scripts/ops/test_r10_performance_ab_lifecycle.py
@@ -47,6 +47,12 @@ r10.performance_ab.snapshot.restore_drill: guard.prod.forbid verify.r10.performa
 	@$(MAKE) --no-print-directory DAILY_CANDIDATE_SSH_HOST="$(R10_PERF_SSH_HOST)" daily.candidate.continuity.remote_install
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
 		'CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY DAILY_CONTINUITY_EVIDENCE=/tmp/r10-performance-ab-restore.json python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" restore-drill --contract "$(R10_PERF_REMOTE_CONTRACT)" --backup-dir "$(R10_PERF_SNAPSHOT_DIR)"'
+
+r10.performance_ab.twins.stack.sync: guard.prod.forbid verify.r10.performance_ab.profile
+	@test "$${CONFIRM_R10_PERFORMANCE_TWIN_RESOURCES:-}" = "CREATE_R10_ISOLATED_PERFORMANCE_TWINS" || { echo "exact R10 twin creation confirmation is required" >&2; exit 2; }
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
+		'install -d -m 0750 /opt/projects/perf-r10/runtime && cat > /opt/projects/perf-r10/runtime/stack.yml' \
+		< config/ops/r10_performance_ab_stack.yml
 
 r10.performance_ab.twins.prepare: guard.prod.forbid verify.r10.performance_ab.profile
 	@test -n "$(R10_PERF_SNAPSHOT_DIR)" || { echo "R10_PERF_SNAPSHOT_DIR is required" >&2; exit 2; }

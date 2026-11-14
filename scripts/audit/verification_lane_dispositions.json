@@ -1177,6 +1177,12 @@
       "reason": "Restores the reviewed paired snapshot into both isolated R10 arms; never runs from CI or against the serving A duty.",
       "review_by": "2027-03-31"
     },
+    "r10.performance_ab.twins.stack.sync": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Synchronizes the reviewed isolated compose definition after source staging without recreating twin sources or data.",
+      "review_by": "2027-03-31"
+    },
     "refresh.frontend.rendering_detail.inventory": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
