@@ -737,6 +737,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             apply_visibility=False,
             draft_feedback=draft_feedback,
             parsed_view=parsed_view,
+            evaluate_runtime=False,
         )
         return contract
 

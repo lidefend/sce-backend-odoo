@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib
+from pathlib import Path
 from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
@@ -843,6 +844,102 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         cached.invalidate_recordset()
 
         self.assertEqual((cached.version, cached.config_hash, cached.write_date), before)
+
+    def test_native_view_carrier_preserves_requirements_and_supplies_projection_metadata(self):
+        from odoo.addons.smart_core.core.native_view_parsed_cache import RequestScopedCarrier
+        from odoo.addons.smart_core.core.native_view_projection import project_native_view
+
+        carrier = RequestScopedCarrier(self.env)
+        ViewConfig = self.env["app.view.config"].with_context(
+            contract_projection_readonly=True,
+        )
+        view_data = ViewConfig._safe_get_view_data("res.partner", "form", carrier=carrier)
+        view_id = int(view_data["_source_view_id"])
+
+        self.assertEqual(view_data["model"], "res.partner")
+        self.assertEqual(view_data["view_type"], "form")
+        self.assertIn("res.partner", view_data["field_requirements"])
+        self.assertTrue(view_data["fields"])
+        self.assertIs(carrier.fetch(self.env, "res.partner", "form", 0), view_data)
+        self.assertIs(carrier.fetch(self.env, "res.partner", "form", view_id), view_data)
+
+        with patch.object(
+            type(self.env["res.partner"]),
+            "fields_get",
+            side_effect=AssertionError("resolved view fields must be reused"),
+        ):
+            projected = project_native_view(
+                self.env,
+                "res.partner",
+                view_id=0,
+                view_type="form",
+                carrier=carrier,
+            )
+        self.assertEqual(projected.provenance["metadata_source"], "resolved_native_view")
+        self.assertTrue(projected.provenance["field_requirements"]["res.partner"])
+
+    def test_final_validation_reuses_request_scoped_parsed_view(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "handlers" / "ui_contract_v2.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("cached_parsed_view", source)
+        self.assertIn("parsed_view=cached_parsed_view", source)
+        self.assertIn("parsed_form_view = self._request_carrier.fetch(", source)
+        self.assertIn("parsed_view=parsed_form_view", source)
+        index_source = (
+            Path(__file__).resolve().parents[1] / "core" / "node_component_validation.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('parsed_view["_arch_index"] = (elements, fields)', index_source)
+
+    def test_final_modifier_dependencies_reuse_actor_recordset_for_one_bulk_read(self):
+        partner = self.env["res.partner"].create({
+            "name": "Contract dependency record",
+            "email": "contract-dependency@example.com",
+        })
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "name",
+                            "operator": "!=",
+                            "value_field": "email",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {"id": partner.id}},
+        }
+        calls = []
+        original_read = type(partner).read
+
+        def tracked_read(records, fields=None, load="_classic_read"):
+            calls.append(list(fields or []))
+            return original_read(records, fields, load=load)
+
+        modifier_dependencies = importlib.import_module(
+            "odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies"
+        )
+        with patch.object(type(partner), "read", tracked_read):
+            modifier_dependencies.hydrate_final_modifier_dependencies(
+                self.env,
+                contract,
+                model="res.partner",
+                record_id=partner.id,
+                view_type="form",
+                record=partner,
+            )
+
+        self.assertEqual(calls, [["name", "email"]])
+        self.assertEqual(
+            contract["dataContract"]["mainData"],
+            {
+                "id": partner.id,
+                "name": "Contract dependency record",
+                "email": "contract-dependency@example.com",
+            },
+        )
 
     def test_view_config_form_fallback_preserves_sheet_groups_and_direct_page_fields(self):
         parsed = self.env["app.view.config"]._fallback_parse(

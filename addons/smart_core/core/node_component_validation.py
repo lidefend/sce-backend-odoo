@@ -120,8 +120,8 @@ def native_source(node, originals, path, code="FEEDBACK_SOURCE_INVALID"):
     return original
 
 
-def read_facts(record, names, path):
-    if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
+def _collect_fact_plan(record, names, path):
+    if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0:
         fail("FEEDBACK_SOURCE_FORBIDDEN", path)
     needed, pending, reviewed_dependencies = set(), list(names), set()
     while pending:
@@ -161,7 +161,42 @@ def read_facts(record, names, path):
             if not isinstance(dependencies, tuple) or any(not isinstance(d, str) or not d.isidentifier() for d in dependencies):
                 fail("FEEDBACK_SOURCE_INVALID", path)
             pending.extend(dependencies)
+    return needed, reviewed_dependencies
+
+
+def read_facts(record, names, path):
+    needed, reviewed_dependencies = _collect_fact_plan(record, names, path)
     return _read_actor_facts(
+        record,
+        needed,
+        path,
+        permission_names=reviewed_dependencies,
+    )
+
+
+def _check_actor_fact_access(record, names, path, *, permission_names=()):
+    if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
+        fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+    context = _context(record)
+    checked_names = set(names) | set(permission_names)
+    try:
+        record.check_access_rights("read")
+        record.check_access_rule("read")
+        allowed = record.check_field_access_rights("read", sorted(checked_names))
+        if allowed is None or not checked_names.issubset(allowed):
+            fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+    except Exception as exc:
+        if isinstance(exc, PermissionError) or type(exc).__name__ in {"AccessError", "AccessDenied", "MissingError"}:
+            fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+        raise
+    if _context(record) != context:
+        fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+
+
+def check_fact_access(record, names, path):
+    """Prove actor read access without loading current field values."""
+    needed, reviewed_dependencies = _collect_fact_plan(record, names, path)
+    _check_actor_fact_access(
         record,
         needed,
         path,
@@ -171,13 +206,13 @@ def read_facts(record, names, path):
 
 def _read_actor_facts(record, names, path, *, permission_names=()):
     context = _context(record)
-    checked_names = set(names) | set(permission_names)
+    _check_actor_fact_access(
+        record,
+        names,
+        path,
+        permission_names=permission_names,
+    )
     try:
-        record.check_access_rights("read")
-        record.check_access_rule("read")
-        allowed = record.check_field_access_rights("read", sorted(checked_names))
-        if allowed is None or not checked_names.issubset(allowed):
-            fail("FEEDBACK_SOURCE_FORBIDDEN", path)
         values = record.read(sorted(names))
     except Exception as exc:
         if isinstance(exc, PermissionError) or type(exc).__name__ in {"AccessError", "AccessDenied", "MissingError"}:
@@ -188,6 +223,23 @@ def _read_actor_facts(record, names, path, *, permission_names=()):
     if not names.issubset(values[0]):
         fail("FEEDBACK_SOURCE_INVALID", path)
     return values[0]
+
+
+def _native_view_index(root):
+    elements, fields = {}, set()
+
+    def visit(element, location):
+        elements[location] = element
+        if element.tag == "field":
+            fields.add(element.get("name"))
+            return
+        counts = {}
+        for child in element:
+            counts[child.tag] = counts.get(child.tag, 0) + 1
+            visit(child, f"{location}/{child.tag}[{counts[child.tag]}]")
+
+    visit(root, "/form[1]")
+    return elements, fields
 
 
 def native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=None):
@@ -215,17 +267,24 @@ def native_feedback_fields(record, contract, node, source, invisible, path, pars
     view_id = meta.get("formViewId")
     if type(view_id) is not int or view_id <= 0:
         return False
-    # Metadata only, never sudo the business record or its field values.
-    view_record = record.env["ir.ui.view"].sudo().browse(view_id)
-    if view_record.model != record._name or view_record.type != "form":
-        fail("FEEDBACK_SOURCE_INVALID", path)
-    if (
-        parsed_view is not None
+    parsed_view_valid = (
+        isinstance(parsed_view, dict)
         and int(parsed_view.get("_source_view_id") or 0) == view_id
         and parsed_view.get("_arch_root") is not None
+    )
+    if parsed_view_valid and parsed_view.get("model") not in (None, "", record._name):
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    if parsed_view_valid and parsed_view.get("view_type") not in (None, "", "form"):
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    if (
+        parsed_view_valid
     ):
         root = parsed_view["_arch_root"]
     else:
+        # Metadata only, never sudo the business record or its field values.
+        view_record = record.env["ir.ui.view"].sudo().browse(view_id)
+        if view_record.model != record._name or view_record.type != "form":
+            fail("FEEDBACK_SOURCE_INVALID", path)
         view = record.get_view(view_id=view_id, view_type="form")
         if view.get("id") != view_id:
             fail("FEEDBACK_SOURCE_INVALID", path)
@@ -235,17 +294,12 @@ def native_feedback_fields(record, contract, node, source, invisible, path, pars
             fail("FEEDBACK_SOURCE_INVALID", path)
     if root.tag != "form":
         fail("FEEDBACK_SOURCE_INVALID", path)
-    elements, fields = {}, set()
-    def visit(element, location):
-        elements[location] = element
-        if element.tag == "field":
-            fields.add(element.get("name"))
-            return  # Relation subviews are not declarations on this model.
-        counts = {}
-        for child in element:
-            counts[child.tag] = counts.get(child.tag, 0) + 1
-            visit(child, f"{location}/{child.tag}[{counts[child.tag]}]")
-    visit(root, "/form[1]")
+    if parsed_view_valid and isinstance(parsed_view.get("_arch_index"), tuple):
+        elements, fields = parsed_view["_arch_index"]
+    else:
+        elements, fields = _native_view_index(root)
+        if parsed_view_valid:
+            parsed_view["_arch_index"] = (elements, fields)
     host = elements.get(locator)
     if host is None:
         fail("FEEDBACK_SOURCE_INVALID", path)
@@ -287,14 +341,28 @@ def native_feedback_fields(record, contract, node, source, invisible, path, pars
     return True
 
 
-def read_native_facts(record, names, path):
-    """Read only view-proven direct facts under ordinary ORM permissions."""
+def _validate_native_fact_names(record, names, path):
     if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
         fail("FEEDBACK_SOURCE_FORBIDDEN", path)
     for name in names:
         field = record._fields.get(name)
         if field is None or field.type not in SCALARS | {"many2one", "one2many", "many2many"}:
             fail("FEEDBACK_SOURCE_INVALID", path)
+
+
+def _check_native_fact_access(record, names, path):
+    _validate_native_fact_names(record, names, path)
+    _check_actor_fact_access(record, names, path)
+
+
+def check_native_fact_access(record, names, path):
+    """Prove access to view-authorized facts without evaluating their values."""
+    _check_native_fact_access(record, names, path)
+
+
+def read_native_facts(record, names, path):
+    """Read only view-proven direct facts under ordinary ORM permissions."""
+    _validate_native_fact_names(record, names, path)
     values = _read_actor_facts(record, names, path)
     for name in names:
         if record._fields[name].type == "many2one" and isinstance(values[name], (list, tuple)):
@@ -302,7 +370,16 @@ def read_native_facts(record, names, path):
     return values
 
 
-def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, draft_feedback=None, parsed_view=None):
+def validate_final_nodes(
+    env,
+    contract,
+    native_tree,
+    *,
+    apply_visibility=True,
+    draft_feedback=None,
+    parsed_view=None,
+    evaluate_runtime=True,
+):
     """Validate all declarations before modifying visibility. Re-run per request."""
     tree = (contract.get("layoutContract") or {}).get("containerTree", [])
     rows, originals = list(walk(tree)), list(walk(native_tree))
@@ -318,6 +395,13 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
     record = env[model].browse(record_id) if env is not None and model and type(record_id) is int and record_id > 0 else None
     draft_only = record is None and draft_feedback is not None
     plans, needed, native_needed, native_plans = [], set(), set(), set()
+
+    def register_declared_components():
+        registry = contract["layoutContract"].setdefault("componentRegistry", {})
+        for node, _ in declarations:
+            registration = component_registration(node["componentKey"])
+            registry[node["componentKey"]] = {"version": registration["version"]}
+
     for node, path in declarations:
         key, config = node["componentKey"], node.get("componentConfig")
         unique(rows, node.get("containerId"), path)
@@ -419,10 +503,14 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
                 needed.update(direct)
         plans.append((node, config["purpose"], source, name, invisible, path))
     if draft_only:
-        registry = contract["layoutContract"].setdefault("componentRegistry", {})
-        for node, _ in declarations:
-            registration = component_registration(node["componentKey"])
-            registry[node["componentKey"]] = {"version": registration["version"]}
+        register_declared_components()
+        return
+    if not evaluate_runtime:
+        if needed:
+            check_fact_access(record, needed, "layoutContract.feedback")
+        if native_needed:
+            check_native_fact_access(record, native_needed, "layoutContract.feedback")
+        register_declared_components()
         return
     facts = read_facts(record, needed, "layoutContract.feedback") if needed else {}
     native_facts = read_native_facts(record, native_needed, "layoutContract.feedback") if native_needed else {}
@@ -455,7 +543,4 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
             for status in statuses:
                 if status.get("containerId") == node["containerId"]:
                     status["visible"] = False
-    registry = contract["layoutContract"].setdefault("componentRegistry", {})
-    for node, _ in declarations:
-        registration = component_registration(node["componentKey"])
-        registry[node["componentKey"]] = {"version": registration["version"]}
+    register_declared_components()

@@ -66,6 +66,38 @@ class NodeValidationTests(unittest.TestCase):
         self.record.amount = 1
         self.validate(); self.assertFalse(self.host['visible'])
 
+    def test_declaration_only_validation_defers_runtime_fact_reads(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        self.record.empty = True
+        validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+        )
+        self.assertNotIn('visible', self.host)
+        self.assertFalse(self.record.reads)
+        self.assertEqual(
+            self.contract['layoutContract']['componentRegistry']['sc.feedback.message'],
+            {'version': '1.0.0'},
+        )
+
+    def test_declaration_only_draft_validation_does_not_require_a_saved_record(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        self.contract['dataContract']['mainData'] = {}
+        self.env._fields = self.record._fields
+        validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            draft_feedback=object(),
+            evaluate_runtime=False,
+        )
+        self.assertNotIn('visible', self.host)
+        self.assertFalse(self.record.reads)
+
     def test_static_only_explanation(self):
         self.host['modifiers'] = {'invisible': False}
         self.host['componentConfig']['purpose'] = 'advisory'

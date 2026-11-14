@@ -28,7 +28,7 @@ from ..core.unified_page_contract_v2_client import (
 )
 from ..core.contract_runtime.semantic_resolver import component_registry as _component_registry
 from ..core.unified_page_contract_v2_modifier_dependencies import (
-    FORM_RECORD_SNAPSHOT_FIELD_BUDGET,
+    collect_initial_record_snapshot_fields,
     hydrate_final_modifier_dependencies,
 )
 from ..core.scene_provider import load_scenes_from_db_or_fallback
@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v39"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v45"
 
 
 def _node_validation_snapshot_ready(source):
@@ -978,9 +978,16 @@ class UiContractV2Handler(BaseIntentHandler):
             from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes
             cached_ui_data = cached_source.get("ui_data") if isinstance(cached_source, dict) else None
             cached_draft_proof = controlled_draft_proof(cached_ui_data)
+            cached_model = str((cached_ui_data or {}).get("model") or "").strip() if isinstance(cached_ui_data, dict) else ""
+            cached_view_id = _source_view_id(cached_ui_data)
+            cached_parsed_view = (
+                self._request_carrier.fetch(self.env, cached_model, "form", cached_view_id)
+                if cached_model and cached_view_id
+                else None
+            )
             validate_final_nodes(self.env, assembled_cached["node_validation_contract"],
                                  assembled_cached["node_validation_native_tree"], apply_visibility=False,
-                                 draft_feedback=cached_draft_proof)
+                                 draft_feedback=cached_draft_proof, parsed_view=cached_parsed_view)
             from ..core.node_component_capabilities import validate_component_capabilities
             validate_component_capabilities(assembled_cached["node_validation_contract"], params)
         # The gate tuple is read through the same helper the shared accessor and
@@ -1168,7 +1175,7 @@ class UiContractV2Handler(BaseIntentHandler):
             view_type=str(view_type or "").strip().lower(),
         )
         native_group_layout_at = time.monotonic()
-        hydrated_record = self._hydrate_record_snapshot(
+        hydrated_record, record_fact_record = self._hydrate_record_snapshot(
             model=str(model or "").strip(),
             record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
             source_contract=source_contract,
@@ -1280,6 +1287,7 @@ class UiContractV2Handler(BaseIntentHandler):
             record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
             view_type=str(view_type or "").strip().lower(),
             logger=_logger,
+            record=record_fact_record,
         )
         modifier_dependencies_at = time.monotonic()
         hydrate_final_layout_modifier_status(contract_v2)
@@ -1303,11 +1311,34 @@ class UiContractV2Handler(BaseIntentHandler):
             if not runtime_record_id and not is_create_request and cache_key and source_token
             else None
         )
+        parsed_form_view = None
+        validation_model = str(
+            contract_v2.get("pageInfo", {}).get("model") or ""
+        ).strip()
+        validation_source_context = (
+            contract_v2.get("dataContract", {})
+            .get("dataMeta", {})
+            .get("sourceContext", {})
+        )
+        try:
+            validation_view_id = int(
+                validation_source_context.get("formViewId") or 0
+            )
+        except (TypeError, ValueError):
+            validation_view_id = 0
+        if validation_model and validation_view_id:
+            parsed_form_view = self._request_carrier.fetch(
+                self.env,
+                validation_model,
+                "form",
+                validation_view_id,
+            )
         validate_final_nodes(
             self.env,
             contract_v2,
             node_validation_native_tree,
             draft_feedback=draft_feedback_proof,
+            parsed_view=parsed_form_view,
         )
         from ..core.node_component_capabilities import validate_component_capabilities
         validate_component_capabilities(contract_v2, params)
@@ -3759,45 +3790,23 @@ class UiContractV2Handler(BaseIntentHandler):
         source_contract: dict[str, Any],
         current_record: dict[str, Any],
         view_type: str,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], Any | None]:
         if view_type != "form" or not model:
-            return dict(current_record or {}) if isinstance(current_record, dict) else {}
+            return (dict(current_record or {}) if isinstance(current_record, dict) else {}, None)
         record_id_int, _record_id_error = parse_positive_int(record_id, allow_empty=True)
         record_id_int = int(record_id_int or 0)
         if record_id_int <= 0:
-            return dict(current_record or {}) if isinstance(current_record, dict) else {}
-        field_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
-        record_snapshot_fields = {
-            "id",
-            "display_name",
-            "name",
-            "document_no",
-            "state",
-            "company_id",
-            "project_id",
-            "business_category_id",
-            "operation_strategy",
-        }
-        field_names = []
-        for name in field_map.keys():
-            field_name = str(name).strip()
-            if not field_name:
-                continue
-            field = self.env[model]._fields.get(field_name) if model in self.env else None
-            field_type = str(getattr(field, "type", "") or "")
-            if field_name not in record_snapshot_fields and field_type in {"one2many", "many2many", "binary", "html"}:
-                continue
-            if field_name in record_snapshot_fields or len(field_names) < FORM_RECORD_SNAPSHOT_FIELD_BUDGET:
-                field_names.append(field_name)
-        if "id" not in field_names:
-            field_names.insert(0, "id")
+            return (dict(current_record or {}) if isinstance(current_record, dict) else {}, None)
+        model_fields = getattr(self.env[model], "_fields", {}) if model in self.env else {}
+        field_names = collect_initial_record_snapshot_fields(source_contract, model_fields)
         if not field_names:
-            return dict(current_record or {}) if isinstance(current_record, dict) else {}
+            return (dict(current_record or {}) if isinstance(current_record, dict) else {}, None)
         merged = deepcopy(current_record) if isinstance(current_record, dict) else {}
+        record = None
         try:
             record = self.env[model].browse(record_id_int).exists()
             if not record:
-                return merged
+                return merged, None
             rows = record.read(field_names)
             if rows and isinstance(rows[0], dict):
                 merged.update(rows[0])
@@ -3817,7 +3826,7 @@ class UiContractV2Handler(BaseIntentHandler):
                             self._hydrate_attachment_display_values(record, [name], merged)
                     except Exception:
                         _logger.debug("ui.contract.v2 field hydration skipped: %s.%s", model, name, exc_info=True)
-        return merged
+        return merged, record
 
     def _hydrate_attachment_display_values(self, record, field_names: list[str], values: dict[str, Any]) -> None:
         for name in field_names:

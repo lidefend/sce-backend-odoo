@@ -487,6 +487,35 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_initial_record_snapshot_prefers_seed_and_explicit_native_form_fields(self):
+        class Field:
+            def __init__(self, field_type):
+                self.type = field_type
+
+        fields = {
+            "id": Field("integer"),
+            "name": Field("char"),
+            "state": Field("selection"),
+            "manager_id": Field("many2one"),
+            "note": Field("text"),
+            "lines": Field("one2many"),
+            "unrelated": Field("char"),
+        }
+        source = {
+            "nativeFormProjection": {
+                "fieldDescriptors": {
+                    "name": {"type": "char"},
+                    "manager_id": {"type": "many2one"},
+                    "note": {"type": "text"},
+                },
+            },
+            "views": {"form": {"fields": [{"name": "unrelated"}]}},
+        }
+        selected = self.module.collect_initial_record_snapshot_fields(source, fields)
+        self.assertEqual(selected, ["id", "name", "state", "manager_id", "note"])
+        self.assertNotIn("lines", selected)
+        self.assertNotIn("unrelated", selected)
+
     def test_interaction_field_cannot_override_native_usage_through_list_schema(self):
         assembler = sys.modules["odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"]
         source = {"meta_fields": [{"name": "new_guidance_name", "sc_ui_usage": "interaction", "type": "char"}]}
@@ -1065,6 +1094,171 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(model.record_id, 42)
         self.assertEqual(model.record.read_fields, [["type"]])
 
+    def test_final_modifier_dependencies_reuse_recordset_and_prefer_one_bulk_read(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def exists(self):
+                return self
+            def read(self, fields):
+                self.calls.append(list(fields))
+                return [{"left": "a", "right": 3}]
+
+        record = Record()
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "integer"})(),
+            }
+            def browse(self, _record_id):
+                raise AssertionError("the request recordset must be reused")
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=record,
+        )
+        self.assertEqual(record.calls, [["left", "right"]])
+        self.assertEqual(contract["dataContract"]["mainData"], {"left": "a", "right": 3})
+
+    def test_final_modifier_dependencies_do_not_reuse_a_different_request_scope(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            env = types.SimpleNamespace(
+                cr=object(),
+                uid=7,
+                su=False,
+                context={"allowed_company_ids": [2]},
+            )
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def exists(self):
+                return self
+            def read(self, fields):
+                self.calls.append(list(fields))
+                return [{"left": "wrong", "right": 0}]
+
+        stale_record = Record()
+        current_record = Record()
+        current_record.env = types.SimpleNamespace(
+            cr=stale_record.env.cr,
+            uid=7,
+            su=False,
+            context={"allowed_company_ids": [1]},
+        )
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "integer"})(),
+            }
+            env = current_record.env
+            def browse(self, _record_id):
+                return current_record
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=stale_record,
+        )
+        self.assertEqual(stale_record.calls, [])
+        self.assertEqual(current_record.calls, [["left", "right"]])
+        self.assertEqual(
+            contract["dataContract"]["mainData"],
+            {"left": "wrong", "right": 0},
+        )
+
+    def test_final_modifier_bulk_read_failure_keeps_readable_siblings(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def read(self, fields):
+                self.calls.append(list(fields))
+                if fields == ["left", "right"] or fields == ["right"]:
+                    raise PermissionError("restricted")
+                return [{"left": "a"}]
+
+        record = Record()
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "char"})(),
+            }
+            def browse(self, _record_id):
+                return record
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=record,
+        )
+        self.assertEqual(record.calls, [["left", "right"], ["left"], ["right"]])
+        self.assertEqual(contract["dataContract"]["mainData"], {"left": "a"})
+
     def test_persisted_relation_modifier_dependencies_use_only_authorized_native_ids(self):
         for kind in ("one2many", "many2many"):
             for value in ([], [7, 9], False, None, [True], [0], [-1], [9007199254740992], [[6, 0, []]]):
@@ -1430,8 +1624,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertEqual(len(record.read_fields), 40)
-        self.assertTrue(all(len(call) == 1 for call in record.read_fields))
+        self.assertEqual(len(record.read_fields), 1)
+        self.assertEqual(len(record.read_fields[0]), 40)
         self.assertEqual(record.read_fields[0][0], "late_summary")
         self.assertIn("late_summary", contract["dataContract"]["mainData"])
 
