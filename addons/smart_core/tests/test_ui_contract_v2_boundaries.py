@@ -10,6 +10,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 
 class _BaseIntentHandler:
@@ -502,12 +503,21 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "unrelated": Field("char"),
         }
         source = {
+            "model": "x.document",
             "nativeFormProjection": {
+                "model": "x.document",
                 "fieldDescriptors": {
                     "name": {"type": "char"},
                     "manager_id": {"type": "many2one"},
                     "note": {"type": "text"},
+                    "unrelated": {"type": "char"},
                 },
+                "fieldRequirements": {"x.document": ["name", "manager_id", "note"]},
+                "layout": [
+                    {"type": "field", "name": "name"},
+                    {"type": "field", "name": "manager_id"},
+                    {"type": "field", "name": "note"},
+                ],
             },
             "views": {"form": {"fields": [{"name": "unrelated"}]}},
         }
@@ -515,6 +525,77 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(selected, ["id", "name", "state", "manager_id", "note"])
         self.assertNotIn("lines", selected)
         self.assertNotIn("unrelated", selected)
+
+    def test_initial_snapshot_uses_sparse_view_requirements_not_full_descriptors(self):
+        class Field:
+            def __init__(self, field_type):
+                self.type = field_type
+
+        fields = {f"unrelated_{index}": Field("char") for index in range(93)}
+        fields.update({
+            "id": Field("integer"),
+            "name": Field("char"),
+            "state": Field("selection"),
+            "z_form_value": Field("char"),
+        })
+        source = {
+            "model": "x.document",
+            "nativeFormProjection": {
+                "model": "x.document",
+                "fieldDescriptors": {name: {"type": meta.type} for name, meta in fields.items()},
+                "fieldRequirements": {"x.document": ["name", "z_form_value"]},
+                "layout": [
+                    {"type": "field", "name": "name"},
+                    {
+                        "type": "group",
+                        "children": [{"type": "field", "name": "z_form_value"}],
+                    },
+                ],
+            },
+        }
+        selected = self.module.collect_initial_record_snapshot_fields(source, fields)
+        self.assertIn("z_form_value", selected)
+        self.assertEqual(set(selected), {"id", "name", "state", "z_form_value"})
+        self.assertLess(len(selected), 10)
+
+    def test_native_form_source_preserves_sparse_view_field_requirements(self):
+        class Dispatcher:
+            def __init__(self, env, su_env):
+                pass
+            def dispatch(self, payload):
+                del payload
+                return {
+                    "model": "x.document",
+                    "view_id": 731,
+                    "view_ids_by_type": {"form": 731},
+                    "view_field_requirements": {
+                        "form": {"x.document": ["name", "z_form_value"]},
+                    },
+                    "fields": {
+                        "name": {"type": "char"},
+                        "unrelated": {"type": "char"},
+                        "z_form_value": {"type": "char"},
+                    },
+                    "views": {"form": {"layout": [
+                        {"type": "field", "name": "name"},
+                        {"type": "field", "name": "z_form_value"},
+                    ]}},
+                }, {}
+
+        with patch.object(self.module, "ActionDispatcher", Dispatcher):
+            data, _meta = self.module.UiContractV2Handler._dispatch_native_form_source(
+                {},
+                {},
+                {"op": "model", "model": "x.document"},
+            )
+        self.assertEqual(
+            data["nativeFormProjection"]["fieldRequirements"],
+            {"x.document": ["name", "z_form_value"]},
+        )
+        self.assertEqual(
+            data["field_requirements"],
+            {"x.document": ["name", "z_form_value"]},
+        )
 
     def test_interaction_field_cannot_override_native_usage_through_list_schema(self):
         assembler = sys.modules["odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"]

@@ -1507,25 +1507,13 @@ try {
       recordChecks.push({ viewport: viewport.key, check: 'exact_record_contract', passed: true, contract_evidence_ref: contractEvidenceRef });
       const observedDetail = newContracts[newContracts.length - 1];
       const detailContract = observedDetail.response.data;
+      let appBinding = null;
       if (contractGate.status === 'accepted') {
         // The contract the browser actually executed must still be the approved one.
-        const appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
+        appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
           approved: contractGate.verdict, requestParams: observedDetail.params || {} });
         contractGate.app_viewport_bindings = [...(contractGate.app_viewport_bindings || []), { viewport: viewport.key, ...appBinding }];
         if (!appBinding.ok) throw new Error(`observed detail contract is not the approved contract: ${appBinding.code} ${JSON.stringify(appBinding.detail || {})}`);
-        // The contract the browser actually rendered must be reproducible from the
-        // request that produced it, under the same real session authority.
-        const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
-        const observedReplay = await authenticatedProbes.get(page)(page.context(), observedPayload.intent, observedPayload.params);
-        const observedEnvelope = observedReplay.body;
-        const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
-        if (observedReplay.status !== 200 || observedDigest !== appBinding.observedSemanticSha256) {
-          throw new Error(`observed detail contract is not reproducible: status=${observedReplay.status} original=${appBinding.observedSemanticSha256} replay=${observedDigest}`);
-        }
-        recordChecks.push({ viewport: viewport.key, check: 'approved_contract_binding', passed: true, contract_evidence_ref: contractEvidenceRef,
-          approved_semantic_sha256: contractGate.approved_semantic_sha256, observed_semantic_sha256: appBinding.observedSemanticSha256,
-          exact_approved_request: appBinding.exact_approved_request, extra_request_params: appBinding.extra_request_params,
-          missing_request_params: appBinding.missing_request_params, reproducible: true });
       }
       const declaration = dailyRecordPresentation(detailContract, expectedDetail);
       const profile = declaration.profile;
@@ -1552,6 +1540,21 @@ try {
             projection_cache_reason: detailEnvelope?.meta?.projection_cache?.reason ?? null,
           },
         });
+      }
+      if (contractGate.status === 'accepted') {
+        // Reproducibility is an acceptance check, not part of the user's form-open
+        // latency. Run it only after the interaction-ready boundary above.
+        const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
+        const observedReplay = await authenticatedProbes.get(page)(page.context(), observedPayload.intent, observedPayload.params);
+        const observedEnvelope = observedReplay.body;
+        const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
+        if (observedReplay.status !== 200 || observedDigest !== appBinding.observedSemanticSha256) {
+          throw new Error(`observed detail contract is not reproducible: status=${observedReplay.status} original=${appBinding.observedSemanticSha256} replay=${observedDigest}`);
+        }
+        recordChecks.push({ viewport: viewport.key, check: 'approved_contract_binding', passed: true, contract_evidence_ref: contractEvidenceRef,
+          approved_semantic_sha256: contractGate.approved_semantic_sha256, observed_semantic_sha256: appBinding.observedSemanticSha256,
+          exact_approved_request: appBinding.exact_approved_request, extra_request_params: appBinding.extra_request_params,
+          missing_request_params: appBinding.missing_request_params, reproducible: true });
       }
       if (!dailyRecordDomMatches(presentation, declaration, expectedDetail)) throw new Error(`record renderer declaration mismatch: ${JSON.stringify(presentation)}`);
       recordChecks.push({ viewport: viewport.key, check: 'declared_renderer', passed: true, contract_evidence_ref: contractEvidenceRef, presentation });

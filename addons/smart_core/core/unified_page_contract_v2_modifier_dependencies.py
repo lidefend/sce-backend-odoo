@@ -40,23 +40,42 @@ def collect_initial_record_snapshot_fields(
     source_contract: dict[str, Any],
     model_fields: Any,
 ) -> list[str]:
-    """Select bounded seed facts plus fields explicitly present in the native form."""
+    """Select bounded early facts from requirements and native layout occurrences."""
     fields_map = model_fields if isinstance(model_fields, dict) else {}
     source = source_contract if isinstance(source_contract, dict) else {}
     marker = source.get("nativeFormProjection")
     marker = marker if isinstance(marker, dict) else {}
-    descriptors = marker.get("fieldDescriptors")
     view_fields: list[str] = []
-    if isinstance(descriptors, dict) and descriptors:
-        view_fields.extend(str(name).strip() for name in descriptors if str(name).strip())
-    else:
-        view_spec = (
-            (source.get("views") or {}).get("form")
-            if isinstance(source.get("views"), dict)
-            else None
-        )
-        if isinstance(view_spec, dict):
-            for row in view_spec.get("fields") or []:
+
+    def add_layout_fields(nodes: Any) -> None:
+        if not isinstance(nodes, list):
+            return
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if str(node.get("type") or node.get("kind") or "").strip().lower() == "field":
+                name = str(node.get("name") or node.get("field") or "").strip()
+                if name:
+                    view_fields.append(name)
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                add_layout_fields(node.get(key))
+
+    add_layout_fields(marker.get("layout"))
+    marker_requirements = marker.get("fieldRequirements")
+    has_native_requirements = (
+        bool(view_fields)
+        or isinstance(marker_requirements, dict) and bool(marker_requirements)
+    )
+    form_view = (
+        (source.get("views") or {}).get("form")
+        if isinstance(source.get("views"), dict)
+        else None
+    )
+    if isinstance(form_view, dict):
+        if not view_fields:
+            add_layout_fields(form_view.get("layout"))
+        if not has_native_requirements and not view_fields:
+            for row in form_view.get("fields") or []:
                 name = str(
                     row.get("name") or row.get("field") or row.get("field_name")
                     if isinstance(row, dict)
@@ -64,6 +83,17 @@ def collect_initial_record_snapshot_fields(
                 ).strip()
                 if name:
                     view_fields.append(name)
+    requirements = marker_requirements
+    if not isinstance(requirements, dict):
+        requirements = source.get("field_requirements")
+    if isinstance(requirements, dict):
+        model_name = str(source.get("model") or marker.get("model") or "").strip()
+        required = requirements.get(model_name) if model_name else None
+        if isinstance(required, list):
+            view_fields.extend(str(name).strip() for name in required if str(name).strip())
+    early_dependencies = source.get("record_snapshot_dependency_fields")
+    if isinstance(early_dependencies, list):
+        view_fields.extend(str(name).strip() for name in early_dependencies if str(name).strip())
     view_fields = list(dict.fromkeys(view_fields))
     selected: list[str] = []
 
@@ -80,15 +110,9 @@ def collect_initial_record_snapshot_fields(
 
     for name in INITIAL_RECORD_SEED_FIELDS:
         add(name)
-    if view_fields:
-        for name in view_fields:
-            add(name)
-        return selected[:FORM_RECORD_SNAPSHOT_FIELD_BUDGET]
-    for name in fields_map:
+    for name in view_fields:
         add(name)
-        if len(selected) >= FORM_RECORD_SNAPSHOT_FIELD_BUDGET:
-            break
-    return selected
+    return selected[:FORM_RECORD_SNAPSHOT_FIELD_BUDGET]
 
 
 def collect_modifier_dependency_fields(*sources: Any, known_fields: Any = None) -> list[str]:

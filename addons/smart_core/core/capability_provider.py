@@ -4,7 +4,10 @@ from __future__ import annotations
 import time
 from typing import List
 
-from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.utils.extension_hooks import (
+    call_extension_hook_first,
+    call_extension_hook_first_compatible,
+)
 
 
 DEFAULT_CAPABILITY_GROUPS = [
@@ -114,22 +117,18 @@ def load_capabilities_for_user(
     *,
     published_authority: dict | None = None,
 ) -> List[dict]:
-    extension_caps = call_extension_hook_first(
+    optional_kwargs = (
+        {"published_authority": published_authority}
+        if published_authority is not None
+        else {}
+    )
+    extension_caps = call_extension_hook_first_compatible(
         env,
         "smart_core_list_capabilities_for_user",
         env,
         user,
-        published_authority=published_authority,
+        optional_kwargs=optional_kwargs,
     )
-    if extension_caps is None and published_authority is not None:
-        # Older extension providers do not accept the same-scope authority
-        # keyword. Keep their compatibility path while new providers consume it.
-        extension_caps = call_extension_hook_first(
-            env,
-            "smart_core_list_capabilities_for_user",
-            env,
-            user,
-        )
     if isinstance(extension_caps, list):
         return _with_source_authority(extension_caps)
 
@@ -182,20 +181,18 @@ def load_capabilities_for_user_with_timings(
     published_authority: dict | None = None,
 ) -> tuple[List[dict], dict[str, int]]:
     started_at = time.perf_counter()
-    extension_result = call_extension_hook_first(
+    optional_kwargs = (
+        {"published_authority": published_authority}
+        if published_authority is not None
+        else {}
+    )
+    extension_result = call_extension_hook_first_compatible(
         env,
         "smart_core_list_capabilities_for_user_with_timings",
         env,
         user,
-        published_authority=published_authority,
+        optional_kwargs=optional_kwargs,
     )
-    if extension_result is None and published_authority is not None:
-        extension_result = call_extension_hook_first(
-            env,
-            "smart_core_list_capabilities_for_user_with_timings",
-            env,
-            user,
-        )
     if (
         isinstance(extension_result, tuple)
         and len(extension_result) == 2

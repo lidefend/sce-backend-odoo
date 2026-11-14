@@ -1035,6 +1035,7 @@ RULES = (
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py",
         "addons/smart_core/core/capability_provider.py",
+        "addons/smart_core/utils/extension_hooks.py",
     ), (
         "verify.daily.permission_truth.capability.orm",
     )),

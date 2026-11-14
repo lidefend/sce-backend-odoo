@@ -656,6 +656,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/__init__.py",
             "addons/smart_construction_scene/services/capability_scene_targets.py",
             "addons/smart_core/core/capability_provider.py",
+            "addons/smart_core/utils/extension_hooks.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

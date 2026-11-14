@@ -119,24 +119,27 @@ def source_fingerprint(env):
 
 
 def schema_fingerprint(env):
-    """Fingerprint only module definition/install inputs, not Python request code."""
+    """Fingerprint every database/install input reachable from addon manifests."""
     paths = command(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], env).stdout.split('\0')
     digest = hashlib.sha256()
     for name in sorted(set(paths) - {''}):
-        if not (
-            name == 'config/requirements-test.txt'
-            or name.startswith(('addons/', 'demo_addons/', 'addons_external/'))
-            and (
-                name.endswith('__manifest__.py')
-                or name.endswith('/__init__.py')
-                or name.endswith('/hooks.py')
-                or '/models/' in name
-                or '/data/' in name
-                or '/security/' in name
-                or '/views/' in name
-                or '/migrations/' in name
-            )
+        in_addon = name.startswith(('addons/', 'demo_addons/', 'addons_external/'))
+        if not (name == 'config/requirements-test.txt' or in_addon):
+            continue
+        if (
+            '/tests/' in name
+            or '/static/' in name
+            or name.endswith(('.pyc', '.md', '.pot', '.po', '.js', '.ts', '.vue', '.scss', '.css'))
         ):
+            continue
+        install_python = (
+            name.endswith(('__manifest__.py', '__init__.py', '/hooks.py'))
+            or '/models/' in name
+            or '/wizard/' in name
+            or '/migrations/' in name
+        )
+        install_data = name.endswith(('.xml', '.csv', '.json', '.yaml', '.yml'))
+        if not (name == 'config/requirements-test.txt' or install_python or install_data):
             continue
         path = ROOT / name
         digest.update(name.encode() + b'\0')
@@ -160,6 +163,39 @@ def module_is_installed(dc, env, module):
               "SELECT state FROM ir_module_module WHERE name='" + module + "'"],
         env,
     ).stdout.strip() == 'installed'
+
+
+def template_database_comment(dc, env):
+    return command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
+              "SELECT COALESCE(shobj_description(oid, 'pg_database'), '') "
+              "FROM pg_database WHERE datname='" + TEMPLATE_DATABASE + "'"],
+        env,
+    ).stdout.strip()
+
+
+def set_template_database_comment(dc, env, key):
+    if not re.fullmatch('[a-f0-9]{64}', str(key or '')):
+        raise ValueError('invalid template identity')
+    command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
+              "COMMENT ON DATABASE " + TEMPLATE_DATABASE + " IS '" + key + "'"],
+        env,
+    )
+
+
+def template_is_ready(
+    *,
+    database_comment,
+    template_key,
+    exists,
+    requested_module_installed,
+):
+    return (
+        database_comment == template_key
+        and bool(exists)
+        and bool(requested_module_installed)
+    )
 
 
 def cleanup_carrier(name, env):
@@ -283,16 +319,20 @@ def main(argv=None):
             template_reused = False
             command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
             if args.reuse_database:
-                marker = {}
-                try:
-                    marker = json.loads(TEMPLATE_MARKER.read_text())
-                except (OSError, ValueError):
-                    marker = {}
-                template_ready = (
-                    marker.get('key') == template_key
-                    and marker.get('template_module') == template_module
-                    and database_exists(dc, env, TEMPLATE_DATABASE)
-                    and module_is_installed(dc, env, module)
+                template_exists = database_exists(dc, env, TEMPLATE_DATABASE)
+                template_ready = template_is_ready(
+                    database_comment=(
+                        template_database_comment(dc, env)
+                        if template_exists
+                        else ""
+                    ),
+                    template_key=template_key,
+                    exists=template_exists,
+                    requested_module_installed=(
+                        module_is_installed(dc, env, module)
+                        if template_exists
+                        else False
+                    ),
                 )
                 if not template_ready:
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', TEMPLATE_DATABASE], env)
@@ -325,6 +365,7 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                         cleanup_carrier(prepare_carrier, env)
                     command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', 'sc_test', TEMPLATE_DATABASE], env)
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+                    set_template_database_comment(dc, env, template_key)
                     TEMPLATE_MARKER.parent.mkdir(parents=True, exist_ok=True)
                     TEMPLATE_MARKER.write_text(json.dumps({
                         'key': template_key,

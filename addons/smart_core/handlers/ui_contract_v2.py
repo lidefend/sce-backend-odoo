@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v48"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v49"
 
 
 def _node_validation_snapshot_ready(source):
@@ -4282,6 +4282,14 @@ class UiContractV2Handler(BaseIntentHandler):
             raise ValueError("native form projection requires a resolved native form layout")
         data["model"] = model
         data["view_type"] = "form"
+        form_field_requirements = (
+            (data.get("view_field_requirements") or {}).get("form")
+            if isinstance(data.get("view_field_requirements"), dict)
+            else {}
+        )
+        data["field_requirements"] = deepcopy(
+            form_field_requirements if isinstance(form_field_requirements, dict) else {}
+        )
         # Preserve the action's resolved form view identity through the native
         # source carrier.  Form orchestration contracts are scoped by
         # action/view; dropping this identity makes a correctly scoped task
@@ -4311,6 +4319,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "model": model,
             "viewType": "form",
             "fieldDescriptors": deepcopy(fields),
+            "fieldRequirements": deepcopy(data["field_requirements"]),
             "layout": deepcopy(form_view["layout"]),
             "capabilities": deepcopy(
                 form_view.get("capabilities") if isinstance(form_view.get("capabilities"), dict) else {}
@@ -4357,6 +4366,11 @@ class UiContractV2Handler(BaseIntentHandler):
             "model": str(source.get("model") or marker.get("model") or "").strip(),
             "viewType": "form",
             "fieldDescriptors": deepcopy(fields),
+            "fieldRequirements": deepcopy(
+                source.get("field_requirements")
+                if isinstance(source.get("field_requirements"), dict)
+                else marker.get("fieldRequirements") or {}
+            ),
             "layout": deepcopy(layout),
             "capabilities": deepcopy(
                 form_view.get("capabilities") if isinstance(form_view.get("capabilities"), dict) else {}

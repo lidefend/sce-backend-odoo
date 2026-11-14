@@ -493,3 +493,39 @@ native form 的 canonical 输入原先在 `deepcopy(marker)` 之外，又分别�
 
 runner 单测 15 项和 local development lifecycle 52 项通过。该 28.67→8.92 秒是测试执行器
 初始化开销下降，不是用户表单打开时间，也不计入产品 A/B 收益。
+
+### PR #887 复审修正结果
+
+正式复审在 `9e0f046f5a2ee3160b006018c4162e73a2844c8b` 上确认 5 项 P2。当前工作树已完成
+对应修正，尚未提交或重新推送：
+
+1. 初次记录快照从原生 XML 布局字段出现位置、Odoo `get_view` 的字段需求和显式早期依赖选取；
+   `fieldDescriptors` 仅保留为字段元数据，不再驱动读取集合。
+2. capability hook 在调用前按签名适配可选参数，保留 provider 顺序、旧 `(env, user)` 签名和
+   有意返回空列表的结果；同时补回旧 capability-group hook 的接线。
+3. `sc_test_template` 的候选身份写入 PostgreSQL 数据库注释，克隆前读取核对；工作树 marker
+   不再证明共享模板身份。
+4. 模板指纹覆盖 manifest 可达的 Python 与安装数据，包括 `wizard/` 下的 Python/XML。
+5. `form_interactive_ms` 在实际 ready 条件处结束，额外契约重放校验移到计时样本之后。
+
+跨环境验证还发现并修正了两项验证归属问题：`_fallback_parse()` 现在会在没有
+`_arch_root` 时解析传入的 `arch`；P0 测试不再硬依赖 `project.project` 或
+`smart_construction_core` XMLID，而是使用核心模型和最小测试事实表达同一规则。
+
+验证结果：
+
+- `make ci.local.iteration`：41 个受影响目标通过，无未映射路径、无未执行目标。回执
+  `.runtime/frontend-dev-validation/executions/20261114T071532Z-1065015-55502259/receipt.json`。
+- 仅安装 `smart_core` 的隔离 `sc_test`：8 个原 CI 失败相关用例通过，回执
+  `.runtime/test-baseline/1794640293370985139/receipt.json`。
+- 已安装 P1 的 `sc_dev_demo`：同一组 8 个用例通过。
+- 真实 XML carrier/projection ORM：1 项通过，回执
+  `.runtime/test-baseline/1794639707155587749/receipt.json`。
+- capability hook 兼容 ORM：3 项通过，回执
+  `.runtime/test-baseline/1794639231458808147/receipt.json`。
+- capability identity boundary ORM：26 项通过；权限事实 capability ORM：63 项通过。
+- assembled contract cache 提升为 v49，输入摘要重签为
+  `d4b9230f4a6287cfcf469bd9761737104152bd45415f2c2b7ebc5850693d0162`。
+
+当前候选仍不能宣称主线集成或性能收益：精确提交后的远端必需 CI、独立复审以及该累计候选的
+同环境 A/B 均未执行。合并、部署继续暂停。

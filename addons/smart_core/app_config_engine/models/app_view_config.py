@@ -782,6 +782,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         """
         fields_get = (view_data or {}).get('fields') or self.env[model_name].sudo().fields_get()
         arch_root = (view_data or {}).get('_arch_root')
+        raw_arch = (view_data or {}).get('arch')
+        if arch_root is None and isinstance(raw_arch, str) and raw_arch.strip():
+            try:
+                arch_root = etree.fromstring(raw_arch.encode('utf-8'))
+            except Exception as exc:
+                _logger.warning("FALLBACK XML解析失败: %s", exc)
         base = {
             'modifiers': {},
             'toolbar': {'header': [], 'sidebar': [], 'footer': []},
