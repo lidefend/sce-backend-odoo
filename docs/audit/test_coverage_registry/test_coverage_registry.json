@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 214,
     "gated": 5,
-    "on_demand": 70,
-    "unwired": 139,
+    "on_demand": 71,
+    "unwired": 138,
     "odoo_tag_declarations": 440,
     "gated_declarations": 102,
     "uncovered_declarations": 338,
@@ -2312,14 +2312,16 @@
     },
     {
       "group": "scenario_direct_initialization",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.capability.orm :: /TestScenarioDirectInitialization (class selection)"
+      ],
       "disposition": "class-selected"
     },
     {

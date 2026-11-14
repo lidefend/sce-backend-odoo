@@ -82,6 +82,18 @@ class ContextEnv:
         return bound
 
 
+class NativeRecordsetDouble(list):
+    def mapped(self, path):
+        rows = list(self)
+        for part in path.split('.'):
+            values = [getattr(row, part) for row in rows]
+            rows = [item for value in values for item in (value if isinstance(value, list) else [value])]
+        return type(self)(rows)
+
+    def get_external_id(self):
+        return {record.id: record.get_external_id().get(record.id, '') for record in self}
+
+
 def _runtime_model(name, env):
     """ORM transport fixture; production readers never consult this seed file."""
     if name not in ("sc.product.scenario", "ir.ui.menu"):
@@ -103,7 +115,7 @@ def _runtime_model(name, env):
                         for intent, keys in row.get("intents", {}).items() for key in keys]
             records.append(types.SimpleNamespace(code=row["key"], name=row.get("name", row["key"]),
                                                  active=True, sequence=10, entry_ids=bindings))
-    model = types.SimpleNamespace(search=lambda domain: records)
+    model = types.SimpleNamespace(search=lambda domain: NativeRecordsetDouble(records))
     model.sudo = lambda: model
     model.with_context = lambda **kwargs: model
     return model
@@ -1664,7 +1676,7 @@ class TestMaintainedScenarioScope(unittest.TestCase):
         class Env:
             def __getitem__(self, name):
                 rows = {"ir.ui.menu": [menu], "sc.product.scenario": [scenario]}[name]
-                model = types.SimpleNamespace(search=lambda domain: rows)
+                model = types.SimpleNamespace(search=lambda domain: NativeRecordsetDouble(rows))
                 model.sudo = lambda: model
                 model.with_context = lambda **kwargs: model
                 return model

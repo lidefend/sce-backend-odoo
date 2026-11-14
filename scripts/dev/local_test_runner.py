@@ -19,6 +19,8 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 ORDER_DRIVER = ROOT / 'scripts/test/odoo_ordered_tests.py'
 PROFILE = Path('/home/lidefend/workspace/sce-backend-odoo/.env.local.test')
+TEMPLATE_DATABASE = 'sc_test_template'
+TEMPLATE_MARKER = ROOT / '.runtime/test-baseline/sc-test-template.json'
 IDENTITY = dict(ENV='dev', COMPOSE_PROJECT_NAME='sc-local-test', DB_NAME='sc_test',
     DB_USER='sc_test_odoo', ODOO_DBFILTER='^sc_test$', DB_DATA='sc_local_test_db_data',
     REDIS_DATA='sc_local_test_redis_data', ODOO_DATA='sc_local_test_odoo_data',
@@ -116,6 +118,86 @@ def source_fingerprint(env):
     return digest.hexdigest()
 
 
+def schema_fingerprint(env):
+    """Fingerprint every database/install input reachable from addon manifests."""
+    paths = command(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], env).stdout.split('\0')
+    digest = hashlib.sha256()
+    for name in sorted(set(paths) - {''}):
+        in_addon = name.startswith(('addons/', 'demo_addons/', 'addons_external/'))
+        if not (name == 'config/requirements-test.txt' or in_addon):
+            continue
+        if (
+            '/tests/' in name
+            or '/static/' in name
+            or name.endswith(('.pyc', '.md', '.pot', '.po', '.js', '.ts', '.vue', '.scss', '.css'))
+        ):
+            continue
+        install_python = (
+            name.endswith(('__manifest__.py', '__init__.py', '/hooks.py'))
+            or '/models/' in name
+            or '/wizard/' in name
+            or '/migrations/' in name
+        )
+        install_data = name.endswith(('.xml', '.csv', '.json', '.yaml', '.yml'))
+        if not (name == 'config/requirements-test.txt' or install_python or install_data):
+            continue
+        path = ROOT / name
+        digest.update(name.encode() + b'\0')
+        digest.update(path.read_bytes() if path.is_file() else b'missing')
+    return digest.hexdigest()
+
+
+def database_exists(dc, env, name):
+    if name not in {'sc_test', TEMPLATE_DATABASE}:
+        raise ValueError('unregistered database name')
+    return bool(command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
+              "SELECT 1 FROM pg_database WHERE datname='" + name + "'"],
+        env,
+    ).stdout.strip())
+
+
+def module_is_installed(dc, env, module):
+    return command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', TEMPLATE_DATABASE, '-Atc',
+              "SELECT state FROM ir_module_module WHERE name='" + module + "'"],
+        env,
+    ).stdout.strip() == 'installed'
+
+
+def template_database_comment(dc, env):
+    return command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
+              "SELECT COALESCE(shobj_description(oid, 'pg_database'), '') "
+              "FROM pg_database WHERE datname='" + TEMPLATE_DATABASE + "'"],
+        env,
+    ).stdout.strip()
+
+
+def set_template_database_comment(dc, env, key):
+    if not re.fullmatch('[a-f0-9]{64}', str(key or '')):
+        raise ValueError('invalid template identity')
+    command(
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
+              "COMMENT ON DATABASE " + TEMPLATE_DATABASE + " IS '" + key + "'"],
+        env,
+    )
+
+
+def template_is_ready(
+    *,
+    database_comment,
+    template_key,
+    exists,
+    requested_module_installed,
+):
+    return (
+        database_comment == template_key
+        and bool(exists)
+        and bool(requested_module_installed)
+    )
+
+
 def cleanup_carrier(name, env):
     found = command(['docker', 'ps', '-aq', '--filter', 'name=^/' + name + '$'], env).stdout.strip()
     if not found:
@@ -172,6 +254,7 @@ def main(argv=None):
     ap.add_argument('--upgrade-scenario', choices=['', 'payment_approval_order'],
                     default=os.environ.get('LOCAL_TEST_UPGRADE_SCENARIO', ''))
     ap.add_argument('--order', choices=['forward','reverse','random'], default='forward')
+    ap.add_argument('--reuse-database', action='store_true')
     args = ap.parse_args(argv)
     try:
         if not ORDER_DRIVER.is_file() or ORDER_DRIVER.is_symlink():
@@ -214,13 +297,85 @@ def main(argv=None):
             actual = command(dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc', 'SELECT current_user'], env).stdout.strip()
             if actual != 'sc_test_odoo':
                 raise ValueError('database role readback mismatch')
-            command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+            if args.reuse_database and rehearsal_script:
+                raise ValueError('upgrade rehearsal requires a fresh database attempt')
             output = ROOT / '.runtime/test-baseline' / str(time.time_ns())
             output.mkdir(parents=True)
             log = output / 'odoo.log'
             image_id = command(['docker','image','inspect',config['services']['odoo']['image'],'--format','{{.Id}}'],env).stdout.strip()
             source_before = source_fingerprint(env)
             head_before = command(['git','rev-parse','HEAD'],env).stdout.strip()
+            schema_sha = schema_fingerprint(env)
+            template_module = str(
+                os.environ.get("LOCAL_TEST_TEMPLATE_MODULE") or module
+            ).strip()
+            selection(template_module, "/" + template_module)
+            template_key = hashlib.sha256(json.dumps({
+                'schema': schema_sha,
+                'profile': profile_sha,
+                'image': image_id,
+                'template_module': template_module,
+            }, sort_keys=True).encode()).hexdigest()
+            template_reused = False
+            command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+            if args.reuse_database:
+                template_exists = database_exists(dc, env, TEMPLATE_DATABASE)
+                template_ready = template_is_ready(
+                    database_comment=(
+                        template_database_comment(dc, env)
+                        if template_exists
+                        else ""
+                    ),
+                    template_key=template_key,
+                    exists=template_exists,
+                    requested_module_installed=(
+                        module_is_installed(dc, env, module)
+                        if template_exists
+                        else False
+                    ),
+                )
+                if not template_ready:
+                    command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', TEMPLATE_DATABASE], env)
+                    prepare_carrier = 'sc-local-test-prepare-' + output.name
+                    prepare_script = '''set -euo pipefail
+python3 -m pip install -q -r /mnt/config/requirements-test.txt
+python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"'
+exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" -d sc_test --db-filter='^sc_test$' --data-dir=/tmp/sc-test-data --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux -i "$SC_TEST_MODULE" --without-demo=all --no-http --workers=0 --max-cron-threads=0 --stop-after-init --log-level=test
+'''
+                    prepare_run = dc + [
+                        'run', '--name', prepare_carrier, '--rm', '--no-deps', '-T',
+                        '-v', str(ROOT / 'config') + ':/mnt/config:ro',
+                        '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0',
+                        '-e', 'SC_TEST_MODULE=' + template_module,
+                        '--entrypoint', 'bash', 'odoo', '-ec', prepare_script,
+                    ]
+                    try:
+                        with (output / 'prepare.log').open('w') as stream:
+                            prepare_result = subprocess.run(
+                                prepare_run,
+                                cwd=ROOT,
+                                env=env,
+                                stdout=stream,
+                                stderr=subprocess.STDOUT,
+                                timeout=1800,
+                            )
+                        if prepare_result.returncode:
+                            raise ValueError('test database template preparation failed')
+                    finally:
+                        cleanup_carrier(prepare_carrier, env)
+                    command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', 'sc_test', TEMPLATE_DATABASE], env)
+                    command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+                    set_template_database_comment(dc, env, template_key)
+                    TEMPLATE_MARKER.parent.mkdir(parents=True, exist_ok=True)
+                    TEMPLATE_MARKER.write_text(json.dumps({
+                        'key': template_key,
+                        'schema_fingerprint': schema_sha,
+                        'profile_sha256': profile_sha,
+                        'image_id': image_id,
+                        'template_module': template_module,
+                    }, indent=2) + '\n')
+                command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', TEMPLATE_DATABASE, 'sc_test'], env)
+                template_reused = True
             carrier = 'sc-local-test-attempt-' + output.name
             # Transient data-dir prevents prior filestore/sessions/config leakage.
             script = '''set -euo pipefail
@@ -229,6 +384,8 @@ python3 -c 'import importlib.metadata as m,hashlib; print("LOCAL_TEST_PACKAGES="
 python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"; print("LOCAL_TEST_IDENTITY=sc-local-test/sc_test/test")'
 exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" -d sc_test --db-filter='^sc_test$' --data-dir=/tmp/sc-test-data --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux -i "$SC_TEST_MODULE" --without-demo=all --no-http --workers=0 --max-cron-threads=0 --test-enable --test-tags="$SC_TEST_TAGS" --stop-after-init --log-level=test
 '''
+            if template_reused:
+                script = script.replace(' -i "$SC_TEST_MODULE"', '')
             if rehearsal_script:
                 script = script.replace('exec python3 /tmp/odoo_ordered_tests.py', 'python3 /tmp/odoo_ordered_tests.py') + rehearsal_script
             run = dc + ['run', '--name', carrier, '--rm', '--no-deps', '-T', '-v', str(ORDER_DRIVER) + ':/tmp/odoo_ordered_tests.py:ro', '-v', str(ROOT / 'config') + ':/mnt/config:ro', '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0', '-e', 'SC_TEST_ORDER=' + args.order, '-e', 'SC_TEST_ORDER_SEED=20261026', '-e', 'SC_TEST_MODULE=' + module, '-e', 'SC_TEST_TAGS=' + tags, '--entrypoint', 'bash', 'odoo', '-ec', script]
@@ -266,6 +423,7 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
             receipt = dict(schema='local-test-execution/v1', head=head_before, source_fingerprint=source_before, source_unchanged=source_before == source_after, cleanup=cleanup,
                 dirty=command(['git','status','--porcelain'],env).stdout, profile=IDENTITY, purpose='test',
                 profile_sha256=profile_sha, profile_unchanged=profile_unchanged, image_id=image_id, image_unchanged=image_id == image_after, module=module, tags=tags, order=args.order, seed=20261026, execution_order=[f'{m}:{case}' for m,case in START.findall(text)], packages_sha256=(re.findall(r'^LOCAL_TEST_PACKAGES=([a-f0-9]{64})$',text,re.M) or ['missing'])[0], fresh_database=True, transient_application_state=True,
+                database_template_reused=template_reused, schema_fingerprint=schema_sha,
                 upgrade_rehearsal=rehearsal, cases=cases, count=len(cases), status='passed' if cases else 'failed', log=str(log.relative_to(ROOT)),
                 log_sha256=hashlib.sha256(log.read_bytes()).hexdigest(), process_status=process_status, guard_status=guard.returncode)
             (output / 'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')

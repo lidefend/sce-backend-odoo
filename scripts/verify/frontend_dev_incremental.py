@@ -86,6 +86,14 @@ class Rule:
 
 RULES = (
     Rule((
+        "addons/smart_core/core/system_init_extension_fact_merger.py",
+        "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+    ), ("verify.backend.navigation_delivery.unit",)),
+    Rule((
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    ), ("verify.frontend.professional_relation_field.unit",)),
+    Rule((
         "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
@@ -354,6 +362,20 @@ RULES = (
         "verify.frontend.rich_text.guard",
     )),
     Rule((
+        "scripts/verify/daily_demo_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "make/role_authority.mk",
+    ), (
+        "verify.local.dev.runtime.performance.unit",
+    )),
+    Rule((
+        "scripts/verify/test_menu_metadata_batch.py",
+        "addons/smart_core/delivery/menu_service.py",
+    ), (
+        "verify.product.menu.metadata_batch.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/menu_service.py",
         "addons/smart_core/tests/test_delivery_menu_entry_target.py",
         "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
@@ -544,9 +566,15 @@ RULES = (
         "verify.local.dev.static_proxy_target.unit",
     )),
     Rule((
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+    ), (
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
         "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
         "scripts/verify/local_dev_payment_settlement_component_journey.sh",
-        "scripts/verify/test_local_development_lifecycle.py",
     ), (
         "verify.local.dev.payment_settlement_journey.unit",
     )),
@@ -721,7 +749,6 @@ RULES = (
         "config/product_menu_contract_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
-        "scripts/verify/test_menu_metadata_batch.py",
     ), (
         "verify.product.menu.contract_v1.guard",
     )),
@@ -1008,6 +1035,7 @@ RULES = (
         "addons/smart_construction_core/tests/test_capability_registry_service.py",
         "addons/smart_construction_scene/services/capability_scene_targets.py",
         "addons/smart_core/core/capability_provider.py",
+        "addons/smart_core/utils/extension_hooks.py",
     ), (
         "verify.daily.permission_truth.capability.orm",
     )),
@@ -1186,6 +1214,7 @@ RULES = (
         "addons/smart_core/core/draft_feedback.py",
         "addons/smart_core/core/node_component_validation.py",
         "addons/smart_core/tests/test_native_advisory.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
         "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
     ), (
         "verify.native_advisory.unit",
@@ -1257,8 +1286,12 @@ RULES = (
         "addons/smart_core/handlers/ui_contract_v2.py",
         "addons/smart_core/handlers/ui_contract_v2_projection.py",
         "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/native_view_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
         "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
         "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     ), (
         "verify.business_config.formal_list.unit",
         "verify.form_structure_authority_unification.unit",
@@ -1613,12 +1646,13 @@ def resumable_receipt_results(
     paths: list[str],
     targets: list[str],
 ) -> tuple[Path | None, str, dict[str, dict]]:
-    """Carry verified target prefixes from a clean interrupted execution.
+    """Carry verified targets from a prior clean execution.
 
-    An interrupted aggregate receipt can contain many completed targets before
-    the operator stops the current target. Those target logs remain useful when
-    the source head is still an ancestor and the target set is identical. The
-    caller removes targets affected by commits or dirty paths since that head.
+    A prior aggregate receipt can contain passed targets even when another
+    target was interrupted, or can be a complete passed execution whose source
+    later changed. Those target logs remain useful when the source head is still
+    an ancestor and the target set is identical. The caller removes targets
+    selected by commits or dirty paths since that head.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
     if not execution_root.is_dir():
@@ -1635,7 +1669,7 @@ def resumable_receipt_results(
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             head = str(receipt.get("identity", {}).get("head", ""))
             if (
-                receipt.get("status") != "interrupted"
+                receipt.get("status") not in ("interrupted", "passed", "failed")
                 or not receipt.get("identity", {}).get("worktreeClean")
                 or len(head) != 40
                 or sorted(receipt.get("changedPaths", [])) != expected_paths
@@ -1852,9 +1886,18 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
     command = ["make", "--no-print-directory", target]
     started = time.time()
     try:
+        # Incremental ORM targets share one schema-bound test template and clone
+        # a fresh database per target. Direct local.test.test keeps fresh-by-default
+        # behavior because only this planner supplies the opt-in variable.
+        env = dict(
+            os.environ,
+            LOCAL_TEST_REUSE_DATABASE="1",
+            LOCAL_TEST_TEMPLATE_MODULE="smart_construction_bundle",
+        )
         result = subprocess.run(
             command,
             cwd=root,
+            env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -2011,7 +2054,7 @@ def execute_targets(
     source_receipt = incremental_verified_receipt(root, paths, targets, identity)
     resume_receipt, resume_head, carried_results = (
         resumable_receipt_results(root, paths, targets)
-        if source_receipt is None and identity.get("worktreeClean")
+        if source_receipt is None
         else (None, "", {})
     )
     if resume_receipt is not None:

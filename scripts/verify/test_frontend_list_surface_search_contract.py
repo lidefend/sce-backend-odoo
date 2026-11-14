@@ -424,6 +424,40 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
         self.assertIn('DAILY ? acceptance.login', self.probe)
         self.assertIn('DAILY ? acceptance.password', self.probe)
 
+    def test_ab_timing_is_opt_in_and_binds_form_ready_to_the_declared_contract(self):
+        self.assertIn("const AB_TIMING = ['1', 'true'].includes(abTimingValue);", self.probe)
+        self.assertIn('LIST_SURFACE_AB_TIMING requires the daily all or detail-only record walk', self.probe)
+        self.assertIn('if (AB_TIMING) runtime.ab_timing =', self.probe)
+        start = self.probe.index('const abInteractionStart = AB_TIMING ?')
+        click = self.probe.index('await firstRecord.click();', start)
+        capture = self.probe.index('const presentation = await captureRecordPresentation(page, declaration);', click)
+        finish = self.probe.index('const endedMonotonic = performance.now();', capture)
+        sample = self.probe.index('form_interactive_ms:', finish)
+        self.assertLess(start, click)
+        self.assertLess(capture, finish)
+        self.assertLess(finish, sample)
+        replay = self.probe.index('const observedReplay = await authenticatedProbes.get(page)', sample)
+        self.assertLess(sample, replay)
+        self.assertIn("Reproducibility is an acceptance check, not part of the user's form-open", self.probe)
+        self.assertIn('started_epoch_ms: abInteractionStart.started_epoch_ms', self.probe)
+        self.assertIn('request_start_epoch_ms: contractTiming?.request_start_epoch_ms ?? null', self.probe)
+        self.assertIn('browser_request_ms: contractTiming?.browser_request_ms ?? null', self.probe)
+        self.assertIn('projection_cache_reason: detailEnvelope?.meta?.projection_cache?.reason ?? null', self.probe)
+        self.assertIn("row.intent === 'system.init' && row.request_start_epoch_ms >= AB_RUN_STARTED_EPOCH_MS", self.probe)
+        self.assertIn('ab_timing: AB_TIMING ? runtime.ab_timing : undefined', self.probe)
+
+    def test_ab_browser_request_duration_never_turns_unavailable_timing_into_zero(self):
+        source = self.probe.split('function browserRequestDurationMs(')[1].split('function relativeRoutePath(')[0]
+        program = """const assert = require('node:assert/strict');
+function browserRequestDurationMs(""" + source + """
+assert.equal(browserRequestDurationMs({requestStart: 10.1234, responseEnd: 20.1234}), 10);
+assert.equal(browserRequestDurationMs({requestStart: -1, responseEnd: -1}), null);
+assert.equal(browserRequestDurationMs({requestStart: 20, responseEnd: 10}), null);
+assert.equal(browserRequestDurationMs({}), null);
+"""
+        result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_released_probe_declares_the_contract(self):
         self.assertIsNone(validate_search_probe(*self.declared))
 

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import importlib
+from pathlib import Path
+import types
 from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
@@ -219,6 +221,181 @@ from odoo.addons.smart_core.orchestration.settlement_slice_contract_orchestrator
 
 @tagged("post_install", "-at_install", "smart_core", "native_alignment")
 class TestOdooNativeAlignmentBoundaries(TransactionCase):
+    def test_extension_hook_compat_preserves_order_empty_result_and_keyword_capability(self):
+        env = object()
+        user = object()
+        authority = {"role_home_actions": []}
+        calls = []
+        modules = {}
+
+        def old_provider(_env, _user):
+            calls.append("old")
+            return []
+
+        def new_provider(_env, _user, *, published_authority=None):
+            calls.append("new")
+            return [{"authority": published_authority}]
+
+        modules["odoo.addons.old_provider"] = types.SimpleNamespace(
+            capability_hook=old_provider,
+        )
+        modules["odoo.addons.new_provider"] = types.SimpleNamespace(
+            capability_hook=new_provider,
+        )
+        with patch.object(
+            extension_hooks,
+            "iter_extension_modules",
+            return_value=["old_provider", "new_provider"],
+        ), patch.object(
+            extension_hooks.importlib,
+            "import_module",
+            side_effect=lambda name: modules[name],
+        ):
+            result = extension_hooks.call_extension_hook_first_compatible(
+                env,
+                "capability_hook",
+                env,
+                user,
+                optional_kwargs={"published_authority": authority},
+            )
+        self.assertEqual(result, [])
+        self.assertEqual(calls, ["old"])
+
+        calls.clear()
+        modules["odoo.addons.old_provider"] = types.SimpleNamespace(
+            capability_hook=lambda _env, _user, *, published_authority=None: (
+                calls.append("old"),
+                [{"authority": published_authority}],
+            )[1],
+        )
+        with patch.object(
+            extension_hooks,
+            "iter_extension_modules",
+            return_value=["old_provider", "new_provider"],
+        ), patch.object(
+            extension_hooks.importlib,
+            "import_module",
+            side_effect=lambda name: modules[name],
+        ):
+            result = extension_hooks.call_extension_hook_first_compatible(
+                env,
+                "capability_hook",
+                env,
+                user,
+                optional_kwargs={"published_authority": authority},
+            )
+        self.assertEqual(result, [{"authority": authority}])
+        self.assertEqual(calls, ["old"])
+
+    def test_extension_hook_compat_does_not_retry_provider_internal_type_error(self):
+        env = object()
+        user = object()
+        calls = []
+
+        def internal_type_error(_env, _user):
+            calls.append("old")
+            raise TypeError("provider defect")
+
+        def fallback_provider(_env, _user):
+            calls.append("new")
+            return ["fallback"]
+
+        modules = {
+            "odoo.addons.old_provider": types.SimpleNamespace(
+                capability_hook=internal_type_error,
+            ),
+            "odoo.addons.new_provider": types.SimpleNamespace(
+                capability_hook=fallback_provider,
+            ),
+        }
+        with patch.object(
+            extension_hooks,
+            "iter_extension_modules",
+            return_value=["old_provider", "new_provider"],
+        ), patch.object(
+            extension_hooks.importlib,
+            "import_module",
+            side_effect=lambda name: modules[name],
+        ):
+            result = extension_hooks.call_extension_hook_first_compatible(
+                env,
+                "capability_hook",
+                env,
+                user,
+                optional_kwargs={"published_authority": {"scope": "same"}},
+            )
+        self.assertEqual(result, ["fallback"])
+        self.assertEqual(calls, ["old", "new"])
+
+    def test_capability_timing_hook_compat_preserves_old_provider_result(self):
+        env = object()
+        user = object()
+        calls = []
+
+        def old_timing(_env, _user):
+            calls.append("old")
+            return [], {"old_stage": 3}
+
+        def new_timing(_env, _user, *, published_authority=None):
+            calls.append("new")
+            return [{"authority": published_authority}], {"new_stage": 4}
+
+        modules = {
+            "odoo.addons.old_provider": types.SimpleNamespace(
+                smart_core_list_capabilities_for_user_with_timings=old_timing,
+            ),
+            "odoo.addons.new_provider": types.SimpleNamespace(
+                smart_core_list_capabilities_for_user_with_timings=new_timing,
+            ),
+        }
+        with patch.object(
+            extension_hooks,
+            "iter_extension_modules",
+            return_value=["old_provider", "new_provider"],
+        ), patch.object(
+            extension_hooks.importlib,
+            "import_module",
+            side_effect=lambda name: modules[name],
+        ), patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            side_effect=lambda _env, hook_name, *args, **kwargs: (
+                extension_hooks.call_extension_hook_first_compatible(
+                    _env,
+                    hook_name,
+                    *args,
+                    **kwargs,
+                )
+            ),
+        ):
+            rows, timings = capability_provider.load_capabilities_for_user_with_timings(
+                env,
+                user,
+                published_authority={"scope": "same"},
+            )
+        self.assertEqual(rows, [])
+        self.assertEqual(timings["old_stage"], 3)
+        self.assertEqual(calls, ["old"])
+
+    def test_capability_group_hook_remains_available_with_compatible_dispatch(self):
+        class Env:
+            def __getitem__(self, key):
+                raise KeyError(key)
+
+        with patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            return_value=None,
+        ), patch.object(
+            capability_provider,
+            "call_extension_hook_first",
+            return_value=[],
+        ) as group_hook:
+            self.assertEqual(capability_provider.load_capabilities_for_user(Env(), object()), [])
+
+        group_hook.assert_called_once()
+        self.assertEqual(group_hook.call_args.args[1], "smart_core_capability_groups")
+
     def test_search_config_declares_odoo_native_authorities(self):
         cfg = self.env["app.search.config"]
         source = cfg._source_contract("project.project")
@@ -459,11 +636,17 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual((identity.get("source_authority") or {}).get("kind"), "delivery_product_identity_resolver")
 
     def test_non_construction_missing_product_policy_uses_minimal_default(self):
-        policy = ProductPolicyService(self.env).get_policy(product_key="platform.standard")
-        delivery = DeliveryEngine(self.env).build(
-            data={"role_surface": {"role_code": "operator"}},
-            product_key="platform.standard",
-        )
+        empty_policy = self.env["sc.product.policy"]
+        with (
+            patch.object(type(empty_policy), "search", return_value=empty_policy),
+            patch.object(ProductPolicyService, "_load_platform_policy", return_value=None),
+            patch.object(ProductPolicyService, "_is_catalog_backed_product", return_value=False),
+        ):
+            policy = ProductPolicyService(self.env).get_policy(product_key="platform.standard")
+            delivery = DeliveryEngine(self.env).build(
+                data={"role_surface": {"role_code": "operator"}},
+                product_key="platform.standard",
+            )
 
         self.assertEqual(policy.get("product_key"), "platform.standard")
         self.assertEqual(policy.get("base_product_key"), "platform")
@@ -485,6 +668,15 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
 
     def test_construction_missing_direct_policy_uses_minimal_default_and_delivery_stable_fallback(self):
         product_key = "construction.missing_policy_test"
+        self.env["sc.product.policy"].sudo().create({
+            "product_key": "construction.delivery_fallback_test",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "label": "Construction delivery fallback test",
+            "capabilities": [{"key": "test.delivery_fallback", "label": "Delivery fallback"}],
+        })
         with (
             patch.object(ProductPolicyService, "_load_platform_policy", return_value=None),
             patch.object(ProductPolicyService, "_is_catalog_backed_product", return_value=False),
@@ -844,6 +1036,102 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
 
         self.assertEqual((cached.version, cached.config_hash, cached.write_date), before)
 
+    def test_native_view_carrier_preserves_requirements_and_supplies_projection_metadata(self):
+        from odoo.addons.smart_core.core.native_view_parsed_cache import RequestScopedCarrier
+        from odoo.addons.smart_core.core.native_view_projection import project_native_view
+
+        carrier = RequestScopedCarrier(self.env)
+        ViewConfig = self.env["app.view.config"].with_context(
+            contract_projection_readonly=True,
+        )
+        view_data = ViewConfig._safe_get_view_data("res.partner", "form", carrier=carrier)
+        view_id = int(view_data["_source_view_id"])
+
+        self.assertEqual(view_data["model"], "res.partner")
+        self.assertEqual(view_data["view_type"], "form")
+        self.assertIn("res.partner", view_data["field_requirements"])
+        self.assertTrue(view_data["fields"])
+        self.assertIs(carrier.fetch(self.env, "res.partner", "form", 0), view_data)
+        self.assertIs(carrier.fetch(self.env, "res.partner", "form", view_id), view_data)
+
+        with patch.object(
+            type(self.env["res.partner"]),
+            "fields_get",
+            side_effect=AssertionError("resolved view fields must be reused"),
+        ):
+            projected = project_native_view(
+                self.env,
+                "res.partner",
+                view_id=0,
+                view_type="form",
+                carrier=carrier,
+            )
+        self.assertEqual(projected.provenance["metadata_source"], "resolved_native_view")
+        self.assertTrue(projected.provenance["field_requirements"]["res.partner"])
+
+    def test_final_validation_reuses_request_scoped_parsed_view(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "handlers" / "ui_contract_v2.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("cached_parsed_view", source)
+        self.assertIn("parsed_view=cached_parsed_view", source)
+        self.assertIn("parsed_form_view = self._request_carrier.fetch(", source)
+        self.assertIn("parsed_view=parsed_form_view", source)
+        index_source = (
+            Path(__file__).resolve().parents[1] / "core" / "node_component_validation.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('parsed_view["_arch_index"] = (elements, fields)', index_source)
+
+    def test_final_modifier_dependencies_reuse_actor_recordset_for_one_bulk_read(self):
+        partner = self.env["res.partner"].create({
+            "name": "Contract dependency record",
+            "email": "contract-dependency@example.com",
+        })
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "name",
+                            "operator": "!=",
+                            "value_field": "email",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {"id": partner.id}},
+        }
+        calls = []
+        original_read = type(partner).read
+
+        def tracked_read(records, fields=None, load="_classic_read"):
+            calls.append(list(fields or []))
+            return original_read(records, fields, load=load)
+
+        modifier_dependencies = importlib.import_module(
+            "odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies"
+        )
+        with patch.object(type(partner), "read", tracked_read):
+            modifier_dependencies.hydrate_final_modifier_dependencies(
+                self.env,
+                contract,
+                model="res.partner",
+                record_id=partner.id,
+                view_type="form",
+                record=partner,
+            )
+
+        self.assertEqual(calls, [["name", "email"]])
+        self.assertEqual(
+            contract["dataContract"]["mainData"],
+            {
+                "id": partner.id,
+                "name": "Contract dependency record",
+                "email": "contract-dependency@example.com",
+            },
+        )
+
     def test_view_config_form_fallback_preserves_sheet_groups_and_direct_page_fields(self):
         parsed = self.env["app.view.config"]._fallback_parse(
             "res.partner",
@@ -978,30 +1266,30 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
 
     def test_form_parser_only_emits_explicit_native_statusbar(self):
         plain_view = self.env["ir.ui.view"].sudo().create({
-            "name": "Native alignment project stage without statusbar",
-            "model": "project.project",
+            "name": "Native alignment partner type without statusbar",
+            "model": "res.partner",
             "type": "form",
-            "arch": '<form><sheet><field name="stage_id"/></sheet></form>',
+            "arch": '<form><sheet><field name="type"/></sheet></form>',
         })
         explicit_view = self.env["ir.ui.view"].sudo().create({
-            "name": "Native alignment project explicit statusbar",
-            "model": "project.project",
+            "name": "Native alignment partner explicit statusbar",
+            "model": "res.partner",
             "type": "form",
-            "arch": '<form><header><field name="stage_id" widget="statusbar"/></header><sheet/></form>',
+            "arch": '<form><header><field name="type" widget="statusbar"/></header><sheet/></form>',
         })
 
         plain = self.env["app.view.config"].with_context(
             contract_view_id=plain_view.id,
             contract_projection_readonly=True,
-        )._generate_from_fields_view_get("project.project", "form")
+        )._generate_from_fields_view_get("res.partner", "form")
         explicit = self.env["app.view.config"].with_context(
             contract_view_id=explicit_view.id,
             contract_projection_readonly=True,
-        )._generate_from_fields_view_get("project.project", "form")
+        )._generate_from_fields_view_get("res.partner", "form")
 
         self.assertFalse(((plain.arch_parsed or {}).get("statusbar") or {}).get("field"))
         self.assertEqual(((plain.arch_parsed or {}).get("statusbar") or {}).get("states"), [])
-        self.assertEqual(((explicit.arch_parsed or {}).get("statusbar") or {}).get("field"), "stage_id")
+        self.assertEqual(((explicit.arch_parsed or {}).get("statusbar") or {}).get("field"), "type")
 
     def test_collection_create_matches_native_form_and_action_restrictions(self):
         for index, (form_create, tree_create, context, expected) in enumerate((
@@ -1060,18 +1348,18 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertIs(((denied.arch_parsed or {}).get("capabilities") or {}).get("can_duplicate"), False)
         self.assertIs(((allowed.arch_parsed or {}).get("capabilities") or {}).get("can_duplicate"), True)
 
-    def test_project_overview_readonly_root_preserves_all_native_crud_denials(self):
+    def test_readonly_root_preserves_all_native_crud_denials(self):
         view = self.env["ir.ui.view"].sudo().create({
-            "name": "Native alignment project overview readonly form",
-            "model": "project.project",
+            "name": "Native alignment readonly root form",
+            "model": "res.partner",
             "type": "form",
-            "arch": '<form string="项目概览" create="0" edit="0" delete="0" duplicate="0"><sheet><field name="name"/></sheet></form>',
+            "arch": '<form string="只读记录" create="0" edit="0" delete="0" duplicate="0"><sheet><field name="name"/></sheet></form>',
         })
 
         projection = self.env["app.view.config"].with_context(
             contract_view_id=view.id,
             contract_projection_readonly=True,
-        )._generate_from_fields_view_get("project.project", "form")
+        )._generate_from_fields_view_get("res.partner", "form")
 
         capabilities = (projection.arch_parsed or {}).get("capabilities") or {}
         self.assertEqual(
@@ -1380,7 +1668,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         })
         other_action = self.env["ir.actions.act_window"].sudo().create({
             "name": "Project Action Scope Probe",
-            "res_model": "project.project",
+            "res_model": "res.users",
             "view_mode": "tree,form",
         })
         other_view = self.env["ir.ui.view"].sudo().search([
@@ -1408,8 +1696,48 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(policy.model_id.model, "res.partner")
 
     def test_form_contract_declares_current_page_field_settings_action(self):
-        group = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
+        group_xmlid = "smart_core.group_smart_core_business_config_admin"
+        group = self.env.ref(group_xmlid)
         self.env.user.write({"groups_id": [(4, group.id)]})
+        admin_group_patch = patch.object(
+            PageAssembler,
+            "_business_config_admin_group_xmlids",
+            return_value=[group_xmlid],
+        )
+        admin_group_patch.start()
+        self.addCleanup(admin_group_patch.stop)
+        settings_action = self.env["ir.actions.act_window"].sudo().create({
+            "name": "Current Form Settings Probe",
+            "res_model": "ui.form.field.policy",
+            "view_mode": "tree,form",
+        })
+        settings_menu = self.env["ir.ui.menu"].sudo().create({
+            "name": "Current Form Settings Probe",
+        })
+        self.env["ir.model.data"].sudo().create({
+            "module": "smart_core",
+            "name": "test_current_form_settings_action_probe",
+            "model": "ir.actions.act_window",
+            "res_id": settings_action.id,
+            "noupdate": True,
+        })
+        self.env["ir.model.data"].sudo().create({
+            "module": "smart_core",
+            "name": "test_current_form_settings_menu_probe",
+            "model": "ir.ui.menu",
+            "res_id": settings_menu.id,
+            "noupdate": True,
+        })
+        settings_ref_patch = patch.object(
+            PageAssembler,
+            "_business_config_form_settings_refs",
+            return_value=(
+                "smart_core.test_current_form_settings_action_probe",
+                "smart_core.test_current_form_settings_menu_probe",
+            ),
+        )
+        settings_ref_patch.start()
+        self.addCleanup(settings_ref_patch.stop)
         action = self.env["ir.actions.act_window"].sudo().create({
             "name": "Customer Current Form Settings Probe",
             "res_model": "res.partner",
@@ -1458,6 +1786,11 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "view_type": "form",
             "action_id": action.id,
             "render_profile": "edit",
+            "client_contract_capabilities": [
+                "form.feedback.message.v1",
+                "form.feedback.draft.v1",
+                "form.navigation.anchor.v1",
+            ],
         })
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(envelope.get("ok", True))
@@ -1662,7 +1995,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
     def test_system_init_delivery_identity_preserves_extension_edition(self):
         for edition in ('preview', 'standard'):
             with self.subTest(edition=edition), patch(
-                'odoo.addons.smart_core.handlers.system_init.call_extension_hook_first',
+                'odoo.addons.smart_core.delivery.effective_delivery_inputs.call_extension_hook_first',
                 return_value={'product_key': 'vertical.' + edition,
                               'base_product_key': 'vertical', 'edition_key': edition},
             ):

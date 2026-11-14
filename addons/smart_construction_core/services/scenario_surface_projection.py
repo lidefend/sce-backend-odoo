@@ -498,6 +498,18 @@ def _menu_external_id(env, menu) -> str:
         return ""
 
 
+def _menu_external_ids(menus) -> dict[int, str]:
+    """Use Odoo's native XMLID choice, including authoritative empty values."""
+    if not menus:
+        return {}
+    try:
+        native = menus.get_external_id()
+        return {menu.id: _text(native.get(menu.id)) for menu in menus}
+    except Exception:
+        # Leave failed metadata unresolved so callers retain singleton fallback.
+        return {}
+
+
 def legacy_native_center_seed(env, menu) -> dict[str, Any]:
     """Read the current native center once for migration/seed initialization."""
     if env is None:
@@ -542,13 +554,15 @@ def load_runtime_surface(env):
     if env is None:
         raise ValueError("scenario runtime requires an Odoo environment")
     scenarios = env["sc.product.scenario"].sudo().with_context(active_test=False).search([])
+    menu_xmlids = _menu_external_ids(scenarios.mapped("entry_ids.menu_id"))
     rows = []
     for scenario in scenarios:
         intents = {}
         bindings = []
         for entry in scenario.entry_ids:
             menu = entry.menu_id
-            key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+            xmlid = menu_xmlids[menu.id] if menu.id in menu_xmlids else _menu_external_id(env, menu)
+            key = xmlid or f"menu:{menu.id}"
             intents.setdefault(entry.intent, []).append(key)
             bindings.append({
                 "entry_id": int(getattr(entry, "id", 0) or 0),
@@ -580,10 +594,13 @@ def runtime_menu_scope(env, surface=None):
     # menu groups even under sudo unless the full-list context is set, so a
     # role that cannot yet see a configuration menu would silently drop it from
     # this index and then misclassify its route as BUSINESS_SCENARIO_CONFIGURATION_MISSING.
-    for menu in env["ir.ui.menu"].sudo().with_context(
+    menus = env["ir.ui.menu"].sudo().with_context(
         **{"ir.ui.menu.full_list": True}
-    ).search([]):
-        key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+    ).search([])
+    menu_xmlids = _menu_external_ids(menus)
+    for menu in menus:
+        xmlid = menu_xmlids[menu.id] if menu.id in menu_xmlids else _menu_external_id(env, menu)
+        key = xmlid or f"menu:{menu.id}"
         by_id[menu.id] = key
         if menu.action:
             by_action.setdefault(menu.action.id, []).append(key)
@@ -699,15 +716,22 @@ def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     if env is None:
         return {}, []
     try:
-        from odoo.addons.smart_core.core.scene_provider import (
-            load_scenes_from_db_or_fallback,
-        )
+        from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
     except ModuleNotFoundError:
-        return {}, []
-    payload = load_scenes_from_db_or_fallback(env, drift=None, logger=None) or {}
+        scenes = None
+    else:
+        scenes = call_extension_hook_first(env, "smart_core_delivery_scene_declarations", env)
+    # An empty declaration list is authoritative; only older providers fall back.
+    if not isinstance(scenes, list):
+        try:
+            from odoo.addons.smart_core.core.scene_provider import load_scenes_from_db_or_fallback
+        except ModuleNotFoundError:
+            return {}, []
+        payload = load_scenes_from_db_or_fallback(env, drift=None, logger=None) or {}
+        scenes = payload.get("scenes") or []
     by_pair: dict[tuple[int, int], str] = {}
     ambiguous: set[str] = set()
-    for scene in payload.get("scenes") or []:
+    for scene in scenes:
         if not isinstance(scene, dict):
             continue
         scene_key = _text(scene.get("code") or scene.get("key") or scene.get("scene_key"))

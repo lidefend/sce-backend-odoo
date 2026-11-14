@@ -3,6 +3,7 @@
 import { authenticateBrowserProbe, fillLoginCredentials } from './frontend_authenticated_intent.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
 import { resolveAcceptanceEnvironment, verifyServedIdentity, redactedEnvironmentEvidence } from './lib/frontend_acceptance_environment.mjs';
@@ -14,6 +15,13 @@ const DAILY = acceptance.profile === 'daily';
 const DAILY_OBSERVATION_SCOPE = process.env.LIST_SURFACE_DAILY_OBSERVATION_SCOPE || 'all';
 const DAILY_SCOPES = ['all', 'record-only', 'detail-only', 'workbench-only', 'form-profiles'];
 if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !DAILY_SCOPES.includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
+const abTimingValue = String(process.env.LIST_SURFACE_AB_TIMING || '').trim().toLowerCase();
+if (abTimingValue && !['0', '1', 'false', 'true'].includes(abTimingValue)) throw new Error('unknown LIST_SURFACE_AB_TIMING');
+const AB_TIMING = ['1', 'true'].includes(abTimingValue);
+if (AB_TIMING && (!DAILY || !['all', 'detail-only'].includes(DAILY_OBSERVATION_SCOPE))) {
+  throw new Error('LIST_SURFACE_AB_TIMING requires the daily all or detail-only record walk');
+}
+const AB_RUN_STARTED_EPOCH_MS = Date.now();
 // Scope variants reuse this one governed tool instead of adding a new framework:
 //   all            -> declared landing + workspace home + list matrix + record read-only walk
 //   workbench-only -> declared landing + workspace home only
@@ -39,6 +47,12 @@ const BASE_PATH = (() => {
   const pathname = new URL(BASE_URL).pathname.replace(/\/+$/, '');
   return pathname === '/' ? '' : pathname;
 })();
+function browserRequestDurationMs(timing) {
+  const start = Number(timing?.requestStart);
+  const end = Number(timing?.responseEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < start) return null;
+  return Math.round((end - start) * 1000) / 1000;
+}
 function relativeRoutePath(pathname) {
   if (!BASE_PATH) return pathname;
   if (pathname === BASE_PATH) return '/';
@@ -1135,6 +1149,8 @@ function safeFailedResponse(status, url, request, response, secrets = []) {
 
 let browser, context, page, lease, servedIdentity;
 const runtime = { console_errors: [], page_errors: [], failed_responses: [], denied_requests: [], operational_tracking: [], contracts: [], request_timings: [] };
+if (DAILY && process.env.LIST_SURFACE_CAPTURE_READ_FIELDS === '1') runtime.record_read_fields = [];
+if (AB_TIMING) runtime.ab_timing = { schema: 'sce-list-surface-ab-timing/v1', run_started_epoch_ms: AB_RUN_STARTED_EPOCH_MS, interactions: [] };
 const dailyObservations = [];
 const acceptanceScope = { authority: 'actual captured account/company contract consumption',
   not_run: ['other_roles_or_companies', 'per_button_authorization', 'backend_rejection_of_forbidden_write', 'submit_approval_lifecycle'],
@@ -1144,6 +1160,10 @@ const recordChecks = [];
 let target = null;
 let actorContext = null;
 const responseTasks = new Set();
+const httpProfileNonce = process.env.DAILY_HTTP_PROFILE_NONCE || '';
+if (httpProfileNonce && (!DAILY || !/^r6_[a-z0-9]{8,24}$/.test(httpProfileNonce))) throw new Error('invalid daily profiler scope');
+let httpProfileActive = false;
+let httpProfileSequence = 0;
 try {
   if (DAILY) {
     if (acceptance.operation !== 'readonly' || acceptance.target.mode !== 'external' || acceptance.apiUrl !== BASE_URL || !LOGIN || !PASSWORD) throw new Error('daily scope requires exact external readonly target and credentials');
@@ -1164,6 +1184,11 @@ try {
       return route.abort('blockedbyclient');
     }
     if (['telemetry.track', 'usage.track'].includes(body?.intent)) runtime.operational_tracking.push({ intent: body.intent, classification: 'runtime_telemetry_not_business_write' });
+    if (httpProfileActive && relativeRoutePath(url.pathname) === '/api/v1/intent') {
+      url.searchParams.set('sce_perf', httpProfileNonce);
+      url.searchParams.set('sce_req', String(++httpProfileSequence));
+      return route.continue({ url: url.toString() });
+    }
     return route.continue();
   });
   page = await context.newPage();
@@ -1182,16 +1207,30 @@ try {
         const timing = response.request().timing();
         runtime.request_timings.push({
           intent: request?.intent || '', status: response.status(),
+          profile_url: httpProfileNonce ? response.url() : undefined,
+          server_timing: response.headers()['server-timing'] || '',
+          header_trace_id: response.headers()['x-trace-id'] || '',
           trace_id: envelope?.meta?.trace_id || envelope?.meta?.traceId || '',
           request_start_epoch_ms: timing.startTime,
           request_start_ms: timing.requestStart, response_start_ms: timing.responseStart,
           response_end_ms: timing.responseEnd,
+          ...(AB_TIMING ? { browser_request_ms: browserRequestDurationMs(timing) } : {}),
           server_elapsed_ms: envelope?.meta?.elapsed_ms ?? null,
           // Raw Playwright offsets: -1 means unavailable, never zero latency.
           // No request bodies, credentials or record data enter this timing rail.
         });
       }
       if (response.status() >= 400) runtime.failed_responses.push(safeFailedResponse(response.status(), response.url(), request, envelope, [PASSWORD, BOOTSTRAP_SECRET]));
+      if (runtime.record_read_fields && isIntent && request?.intent === 'api.data'
+          && request?.params?.op === 'read' && request?.params?.model === 'project.project') {
+        runtime.record_read_fields.push({
+          intent: request.intent, op: request.params.op, model: request.params.model,
+          ids: request.params.ids, fields: request.params.fields,
+          trace_id: envelope?.meta?.trace_id || envelope?.meta?.traceId || '',
+          status: response.status(), ok: envelope?.ok === true,
+          timing: response.request().timing(),
+        });
+      }
       // system.init is captured because the declared preload rail delivers the landing scene
       // inside it (workspace_home_ref + embedded workspace_home), not as a separate
       // wire ui.contract.v2; the landing check consumes that declared carrier.
@@ -1201,6 +1240,28 @@ try {
     task.finally(() => responseTasks.delete(task)).catch(() => {});
   });
   await login(page, navigation);
+  if (httpProfileNonce) {
+    httpProfileActive = true; // Cleanup even if enable succeeds remotely but the reply is lost.
+    const enabled = await context.request.get(`${BASE_URL}/web/set_profiling?profile=1&collectors=sql,traces_async`, { timeout: 15000 });
+    if (!enabled.ok()) throw new Error(`native profiling endpoint failed: ${enabled.status()}`);
+    const state = await enabled.json();
+    if (!state.session) throw new Error('native profiling session absent');
+    runtime.http_profile = { nonce: httpProfileNonce, session: state.session, collectors: state.collectors };
+    runtime.http_profile.transport_delta = 'same-origin anonymous Odoo profiling cookie; original Bearer header retained';
+    await page.addInitScript(() => {
+      const originalFetch = window.fetch;
+      window.fetch = function(input, init) {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, location.href);
+        if (url.origin === location.origin && url.pathname.endsWith('/api/v1/intent')) {
+          return originalFetch.call(this, input, { ...init, credentials: 'same-origin' });
+        }
+        return originalFetch.call(this, input, init);
+      };
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45000 });
+    await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45000 });
+  }
   if (contractGate.status === 'accepted') {
     // Replay the backend-approved request through this real session. The approved
     // contract must be reproducible at the served revision under the live actor;
@@ -1426,6 +1487,12 @@ try {
       if (approvedRecordId && Number(rowId) !== approvedRecordId) throw new Error(`opened row ${rowId} is not the approved record ${approvedRecordId}`);
       const expectedDetail = dailyRecordEntry(listContract.response.data, { id: Number(rowId), model: listContract.response.data.pageInfo.model }, source);
       const contractStart = runtime.contracts.length;
+      const abInteractionStart = AB_TIMING ? {
+        viewport: viewport.key,
+        expected_entry: expectedDetail,
+        started_monotonic_ms: performance.now(),
+        started_epoch_ms: Date.now(),
+      } : null;
       await firstRecord.click();
       await page.waitForURL(url => relativeRoutePath(url.pathname) === expectedDetail.path, { timeout: 30_000 });
       recordChecks.push({ viewport: viewport.key, check: 'declared_entry_route', passed: true, entry: expectedDetail, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
@@ -1440,14 +1507,43 @@ try {
       recordChecks.push({ viewport: viewport.key, check: 'exact_record_contract', passed: true, contract_evidence_ref: contractEvidenceRef });
       const observedDetail = newContracts[newContracts.length - 1];
       const detailContract = observedDetail.response.data;
+      let appBinding = null;
       if (contractGate.status === 'accepted') {
         // The contract the browser actually executed must still be the approved one.
-        const appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
+        appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
           approved: contractGate.verdict, requestParams: observedDetail.params || {} });
         contractGate.app_viewport_bindings = [...(contractGate.app_viewport_bindings || []), { viewport: viewport.key, ...appBinding }];
         if (!appBinding.ok) throw new Error(`observed detail contract is not the approved contract: ${appBinding.code} ${JSON.stringify(appBinding.detail || {})}`);
-        // The contract the browser actually rendered must be reproducible from the
-        // request that produced it, under the same real session authority.
+      }
+      const declaration = dailyRecordPresentation(detailContract, expectedDetail);
+      const profile = declaration.profile;
+      const presentation = await captureRecordPresentation(page, declaration);
+      if (AB_TIMING) {
+        await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 30_000 });
+        const endedMonotonic = performance.now();
+        const detailEnvelope = observedDetail.response?.result?.ok !== undefined ? observedDetail.response.result : observedDetail.response;
+        const contractTiming = [...runtime.request_timings].reverse()
+          .find(row => row.trace_id === contractEvidenceRef.trace_id);
+        runtime.ab_timing.interactions.push({
+          viewport: viewport.key,
+          expected_entry: expectedDetail,
+          started_epoch_ms: abInteractionStart.started_epoch_ms,
+          started_monotonic_ms: Math.round(abInteractionStart.started_monotonic_ms * 1000) / 1000,
+          finished_monotonic_ms: Math.round(endedMonotonic * 1000) / 1000,
+          form_interactive_ms: Math.round((endedMonotonic - abInteractionStart.started_monotonic_ms) * 1000) / 1000,
+          main_contract: {
+            trace_id: contractEvidenceRef.trace_id,
+            status: contractTiming?.status ?? null,
+            request_start_epoch_ms: contractTiming?.request_start_epoch_ms ?? null,
+            browser_request_ms: contractTiming?.browser_request_ms ?? null,
+            server_elapsed_ms: contractTiming?.server_elapsed_ms ?? null,
+            projection_cache_reason: detailEnvelope?.meta?.projection_cache?.reason ?? null,
+          },
+        });
+      }
+      if (contractGate.status === 'accepted') {
+        // Reproducibility is an acceptance check, not part of the user's form-open
+        // latency. Run it only after the interaction-ready boundary above.
         const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
         const observedReplay = await authenticatedProbes.get(page)(page.context(), observedPayload.intent, observedPayload.params);
         const observedEnvelope = observedReplay.body;
@@ -1460,9 +1556,6 @@ try {
           exact_approved_request: appBinding.exact_approved_request, extra_request_params: appBinding.extra_request_params,
           missing_request_params: appBinding.missing_request_params, reproducible: true });
       }
-      const declaration = dailyRecordPresentation(detailContract, expectedDetail);
-      const profile = declaration.profile;
-      const presentation = await captureRecordPresentation(page, declaration);
       if (!dailyRecordDomMatches(presentation, declaration, expectedDetail)) throw new Error(`record renderer declaration mismatch: ${JSON.stringify(presentation)}`);
       recordChecks.push({ viewport: viewport.key, check: 'declared_renderer', passed: true, contract_evidence_ref: contractEvidenceRef, presentation });
       const cards = presentation.cards;
@@ -1548,6 +1641,17 @@ try {
     + Object.keys(aggregateChecks).length + (componentProof ? 1 : 0);
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
   await Promise.allSettled([...responseTasks]);
+  if (AB_TIMING) {
+    runtime.ab_timing.initialization_requests = runtime.request_timings
+      .filter(row => row.intent === 'system.init' && row.request_start_epoch_ms >= AB_RUN_STARTED_EPOCH_MS)
+      .map(row => ({
+        trace_id: row.trace_id || null,
+        status: row.status,
+        request_start_epoch_ms: row.request_start_epoch_ms,
+        browser_request_ms: row.browser_request_ms ?? null,
+        server_elapsed_ms: row.server_elapsed_ms ?? null,
+      }));
+  }
   const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status, DAILY_OBSERVATION_SCOPE);
   const passed = recordSummary.complete && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
@@ -1566,6 +1670,7 @@ try {
     production_component_proof: componentProof,
     negative_fixtures: negativeFixtures,
     runtime,
+    ab_timing: AB_TIMING ? runtime.ab_timing : undefined,
     aggregate_checks: aggregateChecks,
     observations,
     summary: {
@@ -1594,6 +1699,13 @@ try {
   process.exitCode = 1;
 } finally {
   const cleanup = [];
+  if (httpProfileActive && context) {
+    try {
+      const disabled = await context.request.get(`${BASE_URL}/web/set_profiling?profile=0`, { timeout: 15000 });
+      if (!disabled.ok() || (await disabled.json()).session) throw new Error('profiler disable readback failed');
+      process.stdout.write('[daily HTTP profiler] session disabled\n');
+    } catch (error) { process.stderr.write(String(error) + '\n'); process.exitCode = 1; }
+  }
   if (context) cleanup.push(await closeWithin('context close', () => context.close()));
   if (browser) cleanup.push(await closeWithin('browser close', () => browser.close()));
   if (lease) cleanup.push(await closeWithin('lease release', () => lease.release()));

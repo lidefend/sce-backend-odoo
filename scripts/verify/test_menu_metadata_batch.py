@@ -9,7 +9,7 @@ from unittest.mock import Mock
 SOURCE = Path(__file__).resolve().parents[2] / 'addons/smart_core/delivery/menu_service.py'
 ENTRY_TARGET_SOURCE = Path(__file__).resolve().parents[2] / 'addons/smart_core/core/navigation_entry_target.py'
 CLASS = next(node for node in ast.parse(SOURCE.read_text()).body if isinstance(node, ast.ClassDef) and node.name == 'MenuService')
-METHODS = {'_action_xmlids_from_facts', '_route_entry_from_menu', '_native_visible_menu_paths'}
+METHODS = {'_action_xmlids_from_facts', '_route_entry_from_menu', '_native_visible_menu_paths', '_groups_authorize_current_user'}
 _ENTRY_TARGET_SPEC = importlib.util.spec_from_file_location('navigation_entry_target_under_test', ENTRY_TARGET_SOURCE)
 ENTRY_TARGET_MODULE = importlib.util.module_from_spec(_ENTRY_TARGET_SPEC)
 _ENTRY_TARGET_SPEC.loader.exec_module(ENTRY_TARGET_MODULE)
@@ -106,6 +106,80 @@ class MenuMetadataBatchTests(unittest.TestCase):
         menus.sudo.assert_not_called()
         data.sudo.assert_not_called()
 
+
+
+class GroupXmlidReuseTests(unittest.TestCase):
+    class Records:
+        def __init__(self, owner, ids):
+            self.owner, self.ids = owner, ids
+        def __bool__(self): return bool(self.ids)
+        def __iter__(self): return iter(self.owner.records[i] for i in self.ids)
+        def sudo(self): return self
+        def browse(self, ids): return type(self)(self.owner, ids)
+        def get_external_id(self):
+            self.owner.batches.append(list(self.ids))
+            if self.owner.fail_batch: raise RuntimeError('unavailable')
+            return {i: self.owner.choices[i][0] if self.owner.choices[i] else '' for i in self.ids}
+
+    def setUp(self):
+        self.choices = {1: ['native.first', 'alias.second'], 2: [], 3: ['native.third']}
+        self.records = {i: SimpleNamespace(id=i) for i in self.choices}
+        self.batches, self.singles = [], []
+        self.fail_batch = False
+        self.allowed = set()
+        def singleton(group):
+            self.singles.append(group.id)
+            return self.choices[group.id][0] if self.choices[group.id] else ''
+        self.user = SimpleNamespace(groups_id=[], has_group=Mock(side_effect=lambda xid: xid in self.allowed))
+        self.actor = SimpleNamespace(env=SimpleNamespace(user=self.user), _record_xmlid=singleton)
+
+    def authorize(self, ids, actor=None):
+        return namespace['_groups_authorize_current_user'](actor or self.actor, self.Records(self, ids))
+
+    def test_only_missing_metadata_is_batched_and_authority_remains_live(self):
+        self.assertFalse(self.authorize([1, 2]))
+        self.allowed.add('native.first')
+        self.assertTrue(self.authorize([1, 2]))
+        self.allowed.clear()
+        self.assertFalse(self.authorize([1, 2, 3]))
+        self.assertEqual(self.batches, [[1, 2], [3]])
+        self.assertEqual(self.singles, [])
+        self.assertNotIn('alias.second', [c.args[0] for c in self.user.has_group.call_args_list])
+        self.assertGreaterEqual(self.user.has_group.call_count, 4)
+
+    def test_empty_xmlid_is_cached_but_intersection_is_live(self):
+        # Hashable identity records model the original recordset intersection.
+        self.records[2] = 2
+        class Group(int):
+            @property
+            def id(self): return int(self)
+        self.records[2] = Group(2)
+        self.assertFalse(self.authorize([2]))
+        self.user.groups_id = [self.records[2]]
+        self.assertTrue(self.authorize([2]))
+        self.user.groups_id = []
+        self.assertFalse(self.authorize([2]))
+        self.assertEqual(self.batches, [[2]])
+        self.user.has_group.assert_not_called()
+
+    def test_batch_failure_uses_singletons_then_retries_after_recovery(self):
+        self.fail_batch = True
+        self.allowed.add('native.first')
+        self.assertTrue(self.authorize([1, 2]))
+        self.assertEqual(self.actor._group_xmlid_cache, {})
+        self.assertEqual(self.singles, [1])
+        self.fail_batch = False
+        self.assertTrue(self.authorize([1, 2]))
+        self.assertEqual(self.batches, [[1, 2], [1, 2]])
+        self.assertEqual(self.actor._group_xmlid_cache, {1: 'native.first', 2: ''})
+
+    def test_instances_do_not_share_metadata(self):
+        self.authorize([1])
+        self.choices[1] = ['changed.native']
+        other = SimpleNamespace(env=self.actor.env, _record_xmlid=self.actor._record_xmlid)
+        self.allowed.add('changed.native')
+        self.assertTrue(self.authorize([1], other))
+        self.assertEqual(self.batches, [[1], [1]])
 
 if __name__ == '__main__':
     unittest.main()

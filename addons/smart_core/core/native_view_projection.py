@@ -188,7 +188,13 @@ def project_native_view(
             raise ValueError(f"native view projection requires a resolved arch for {model_name}")
         root = etree.fromstring(arch.encode("utf-8"))
 
-    fields_meta = model.fields_get()
+    resolved_fields = (view_data or {}).get("fields")
+    if isinstance(resolved_fields, dict) and resolved_fields:
+        fields_meta = resolved_fields
+        metadata_source = "resolved_native_view"
+    else:
+        fields_meta = model.fields_get()
+        metadata_source = "model_fields_get"
     resolved_view_id = int(
         (view_data or {}).get("id")
         or (view_data or {}).get("_source_view_id")
@@ -203,6 +209,17 @@ def project_native_view(
         view_type=view_type,
         provenance={
             "source_view_id": resolved_view_id,
+            "metadata_source": metadata_source,
+            "field_requirements": (
+                (view_data or {}).get("field_requirements")
+                if isinstance((view_data or {}).get("field_requirements"), dict)
+                else {model_name: sorted(fields_meta)}
+            ),
+            "models": (
+                (view_data or {}).get("models")
+                if isinstance((view_data or {}).get("models"), dict)
+                else {}
+            ),
             "runtime_context": {
                 key: str(value)
                 for key, value in (dict(env.context or {}) or {}).items()

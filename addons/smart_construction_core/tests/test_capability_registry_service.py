@@ -100,7 +100,11 @@ class TestCapabilityVerdictProjection(TransactionCase):
         from unittest.mock import patch, MagicMock
         from odoo.addons.smart_core.core import capability_provider
         env = MagicMock()
-        with patch.object(capability_provider, "call_extension_hook_first", return_value=[]) as hook:
+        with patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            return_value=[],
+        ) as hook:
             self.assertEqual(capability_provider.load_capabilities_for_user(env, self.env.user), [])
         hook.assert_called_once()
         env.__getitem__.assert_not_called()
@@ -113,7 +117,15 @@ class TestCapabilityVerdictProjection(TransactionCase):
         record._user_visible.return_value = True
         record.to_public_dict.return_value = {"key": "standalone", "capability_state": "deny"}
         env.__getitem__.return_value.sudo.return_value.search.return_value = [record]
-        with patch.object(capability_provider, "call_extension_hook_first", return_value=None):
+        with patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            return_value=None,
+        ), patch.object(
+            capability_provider,
+            "call_extension_hook_first",
+            return_value=None,
+        ):
             rows = capability_provider.load_capabilities_for_user(env, self.env.user)
         self.assertEqual(rows[0]["capability_state"], "deny")
         self.assertEqual(rows[0]["key"], "standalone")
@@ -448,6 +460,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
 
     def test_capability_list_resolves_published_route_authority_once(self):
         from unittest.mock import patch
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
         from odoo.addons.smart_core.delivery import runtime_route_authority
 
         user = self._actor(
@@ -455,14 +468,46 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
             login='single-route-authority-resolution',
         )
         env = user.with_user(user).env
+        authority = runtime_route_authority.published_route_authority(env)
         with patch.object(
-            runtime_route_authority,
-            'published_route_authority',
-            wraps=runtime_route_authority.published_route_authority,
-        ) as authority:
-            rows = capability_registry.list_capabilities_for_user(env, user)
+            EffectiveDeliveryService,
+            'resolve',
+            wraps=EffectiveDeliveryService.resolve,
+        ) as resolver:
+            rows = capability_registry.list_capabilities_for_user(
+                env,
+                user,
+                published_authority=authority,
+            )
         self.assertTrue(rows)
-        self.assertEqual(authority.call_count, 1)
+        resolver.assert_not_called()
+
+    def test_capability_list_reuses_same_scope_published_authority(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+
+        user = self._actor(
+            ['smart_construction_core.group_sc_cap_project_read'],
+            login='same-scope-route-authority-reuse',
+        )
+        env = user.with_user(user).env
+        authority = runtime_route_authority.published_route_authority(env)
+        with patch.object(
+            capability_registry,
+            '_published_query_pairs_by_action_id',
+            wraps=capability_registry._published_query_pairs_by_action_id,
+        ) as pair_builder:
+            rows = capability_registry.list_capabilities_for_user(
+                env,
+                user,
+                published_authority=authority,
+            )
+        self.assertTrue(rows)
+        pair_builder.assert_called_once()
+        self.assertIs(
+            pair_builder.call_args.kwargs.get('published_authority'),
+            authority,
+        )
 
     def test_cached_published_query_pairs_match_legacy_first_match(self):
         from odoo.addons.smart_core.delivery.runtime_route_authority import (

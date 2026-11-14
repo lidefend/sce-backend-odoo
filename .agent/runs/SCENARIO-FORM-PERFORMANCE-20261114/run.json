@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "SCENARIO-FORM-PERFORMANCE-20261114",
-  "branch": "audit/scenario-form-performance-20261114",
-  "baseline_sha": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
-  "status": "verification_pending",
+  "branch": "fix/scenario-form-performance-r2-20261114",
+  "baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+  "status": "active",
   "goal": ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
   "record": "docs/ops/iterations/scenario_form_performance_20261114.md",
   "scope": [
@@ -28,11 +28,54 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "scripts/test/test.sh"
+    "scripts/test/test.sh",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "make/frontend.mk",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/role_authority.mk",
+    "scripts/verify/daily_demo_runtime_performance.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "scripts/verify/test_menu_metadata_batch.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "make/dev_test.mk",
+    "scripts/verify/test_local_dev_runtime_performance.py",
+    "addons/smart_core/app_config_engine/models/app_view_config.py",
+    "addons/smart_core/core/native_view_parsed_cache.py",
+    "addons/smart_core/core/native_view_projection.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/core/node_component_validation.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_view_parsed_cache.py",
+    "addons/smart_core/tests/test_node_component_validation.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_core/utils/extension_hooks.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "scripts/dev/local_test_runner.py",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/test_local_test_runner.py",
+    "scripts/verify/test_local_development_lifecycle.py",
+    "make/ci.mk",
+    "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "P0 declared native-delegate hydration and scene-binding declaration optimization; P4 existing daily readonly browser measurement. No deployment or database writes."
+    "authority": "R2: offline tests and planner-selected registered local.test ORM checks only; sc-local-test / sc_test isolated synthetic test profile, exact filter and fixed filestore checked by local.test.prepare. No R2 daily deployment or business data writes."
   },
   "checks": {
     "verify_agent_ledger_unit": {
@@ -135,183 +178,468 @@
     }
   },
   "blockers": [
-    "Independent exact-candidate review and publication evidence archive pending.",
-    "Daily same-environment before/after performance acceptance not run."
+    "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
+    "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Finish freeze preparation, commit final result index, obtain independent read-only exact-head review before evidence archive and protected PR publication. No daily deployment authorized by this preparation.",
+  "next_exact_step": "Commit and publish the PR #887 review fixes, wait for current-head required CI and independent re-review, then resume the same-environment A/B plan without merge or deployment.",
   "results": {
-    "research": "daily_project_baseline_and_first_optimization_implemented",
-    "performance_acceptance": "not_run_candidate",
-    "iteration": {
+    "init_payload": {
       "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration.log",
-      "targeted_tests": 18
+      "tests": 23,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-init-payload.log"
     },
-    "probe_tools": {
+    "init_facts": {
       "status": "passed",
-      "target": "verify.system.performance.baseline.unit",
-      "test_count": 72,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/probe-tests.log"
+      "tests": 4,
+      "includes": "legacy absent/true/0/empty-string and explicit false; retained facts and principal unchanged",
+      "log": ".runtime/frontend-dev-validation/executions/20261113T234559Z-2783249-141453041/verify.backend.navigation_delivery.unit.log"
     },
-    "daily_requests": {
-      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-request-summary.json",
-      "sha256": "0d6b12ca1fea7c95ef8190693c3a6163cf79a0ae84e4115b97f3375fc0636c7b",
-      "limitation": "Mixed intent log window, not form-only or browser latency; not root-cause attribution."
+    "scene_projection": {
+      "status": "passed",
+      "tests": 19,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-scene.log"
     },
-    "daily_browser_baseline": {
+    "relation": {
+      "status": "passed",
+      "mounted_sfc_assertions": 43,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-relation.log"
+    },
+    "contract_first": {
       "status": "failed",
+      "classification": "new test harness selected wrapper handle instead of assembly method; fixed AST selection",
+      "tests": 167,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-contract.log"
+    },
+    "iteration_first": {
+      "status": "blocked",
       "classification": "validation_tool_defect",
-      "record_checks_passed": 8,
-      "reason": "readonly interceptor omitted workspace.scenario.projection.get",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser.json"
+      "reason": "Existing extension fact test lacked an incremental target mapping. Added to existing navigation unit entry and mapped relation consumption to actual SFC suite.",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration.log"
     },
-    "implementation_iteration_first": {
+    "contract": {
+      "status": "passed",
+      "boundary_tests": 167,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-contract-fixed.log"
+    },
+    "planner": {
+      "status": "passed",
+      "tests": 136,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-planner.log"
+    },
+    "test_environment": {
+      "status": "passed",
+      "command": "make local.test.prepare",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-test-env.log"
+    },
+    "source_review": {
+      "status": "passed",
+      "scope": "dirty R2 source; not final exact-head review",
+      "reviewer": "independent_perf_review",
+      "findings_S0_S2": 0,
+      "limitations": [
+        "Backend AST/stub tests do not replace ORM handler coverage",
+        "Context isolates new top-level flag only, not arbitrary nested mutation",
+        "Same-environment performance acceptance pending"
+      ]
+    },
+    "iteration_mapped": {
       "status": "failed",
-      "classification": "baseline_evidence_defect",
-      "reason": "assembled cache pin changed with owned handler edit; bump namespace and repin exact digest",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-implementation.log"
+      "classification": "validation_execution_identity_drift",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration-mapped.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T233539Z-2728306-504684422/receipt.json",
+      "reason": "ORM process and guard succeeded (55 tests), but tracked documentation/run updates during execution changed full-tree identity. Receipt source_unchanged=false, therefore cannot count as a passing ORM execution.",
+      "recovery": "Documentation/run reconciliation is now complete. Repeat required iteration with no tracked or untracked source writes while any test executes; preserve failed receipt."
     },
-    "daily_browser_timed_baseline": {
-      "status": "passed",
-      "record_checks": 8,
-      "request_timings": 51,
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser-timed.json",
-      "limitation": "Unmodified daily baseline only, project record at two viewports; not candidate improvement."
-    },
-    "implementation_iteration_repinned": {
-      "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-repinned.log",
-      "limitation": "Backend/P4 scope before native delegate frontend edits."
-    },
-    "native_delegate_targeted": {
-      "status": "passed",
-      "targets_executed": 20,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261113T172041Z-906102-923312030/receipt.json",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log"
-    },
-    "declaration_authority": {
-      "status": "passed",
-      "target": "verify.navigation.publication_consumers.unit",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
+    "related_request_attribution": {
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-related-request-attribution.json",
+      "finding": "Captured project tags is many2many; collaborator/responsibility are one2many. Only tags preparation expected to disappear; not post-change network proof."
     },
     "iteration_latest": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "targets_executed": 20,
-      "exit_code": 0,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log",
-      "scope_note": "All implementation inputs; subsequent documentation-only reconciliation checked by resume, ledger unit and diff check."
+      "targets_executed": 25,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T234559Z-2783249-141453041/receipt.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration-stable.log",
+      "identity_note": "Executed against base 5d631f6 with explicit R2 dirty scope. Subsequent changes limited to documentation/run/generated evidence; do not relabel this as a clean-head test run."
     },
-    "final_metadata": {
+    "orm": {
       "status": "passed",
-      "commands": [
-        "make agent.run.resume",
-        "make verify.agent.ledger.unit",
-        "git diff --check"
+      "tests": 57,
+      "executions": [
+        {
+          "receipt": ".runtime/test-baseline/1794613573987635591/receipt.json",
+          "tests": 55,
+          "status": "passed",
+          "cleanup": "absent"
+        },
+        {
+          "receipt": ".runtime/test-baseline/1794614187827054597/receipt.json",
+          "tests": 1,
+          "status": "passed",
+          "cleanup": "absent"
+        },
+        {
+          "receipt": ".runtime/test-baseline/1794614629200166424/receipt.json",
+          "tests": 1,
+          "status": "passed",
+          "cleanup": "absent"
+        }
+      ]
+    },
+    "startup_stage_observation": {
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-baseline-startup-stages.json",
+      "finding": "Existing daily boot facts production 23-51ms; build_scene_runtime_surface parent 1222-1821ms includes EffectiveDeliveryService.resolve and surface builder. Not candidate performance or per-function attribution."
+    },
+    "freeze_preparation": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-freeze-prepare.log",
+      "changed_generated_paths": [
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
       ],
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ledger-final.log"
+      "impact": "Line counts/derived inventory digest only. Generated semantic runtime files unchanged. Product/test sources match successful iteration."
     },
-    "browser_iteration_first": {
+    "r6_actual_http": {
+      "status": "confirmed_hotspots_not_fixed",
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-result.json",
+      "attribution": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-attribution.json",
+      "profile_records": 52,
+      "response_bindings": 48,
+      "main_claims_independently_reviewed": true,
+      "browser_tool_tests": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-browser-tool-tests-2.log",
+      "config_window": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-http-window-2.log",
+      "cleanup_readback": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-http-cleanup-readback.log",
+      "scope": "P4; anonymous profiling cookie opt-in with original Bearer; four exact transport ids excluded for business data comparison",
+      "not_claimed": [
+        "all branches or users covered",
+        "exact CPU/function invocation counts from periodic",
+        "browser speedup",
+        "product fix or deployment"
+      ]
+    },
+    "r7_initial_failures": {
+      "scenario_fixture": "Duplicate menu assignment rejected as designed; fixed fixture to valid unique bindings",
+      "publication_fixture": "12 errors from old list-only ORM double; extended mapped/get_external_id transport",
+      "logs": [
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-scenario.log",
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-publication.log"
+      ]
+    },
+    "r7_product_review": {
+      "reviewer": "independent_perf_review",
+      "status": "no_S0_S2_in_dirty_product_diff",
+      "scope": "P0 group metadata reuse and P1 menu batches; not final approval",
+      "limitation": "Real ORM test pending; instance metadata assumes no XMLID mutation during that instance"
+    },
+    "r7_pure": {
+      "metadata_tests": 10,
+      "scenario_tests": 22,
+      "publication_tests": 90,
+      "planner_tests": 137,
+      "snapshot": "Existing R2 conditional snapshot revalidated via node_component_validation.unit",
+      "logs": [
+        "r7-metadata-final.log",
+        "r7-publication-fixed.log",
+        "r7-navigation.log",
+        "r7-snapshot.log",
+        "r7-planner-fixed.log"
+      ]
+    },
+    "r7_iteration_initial": {
       "status": "failed",
-      "classification": "validation_tool_defect",
-      "reason": "Existing candidate visual script had no incremental test mapping; map it to candidate tool unit target and include existing candidate suite and syntax check.",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser.log"
+      "classification": "P4 diagnostic entry had no executable local caller",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-iteration.log",
+      "recovery": "Added validated local replay using governed Make, tested; lane baseline unchanged and check now passes"
     },
-    "candidate_tool_tests": {
-      "status": "passed",
-      "tests": 17,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-tool-tests.log"
-    },
-    "browser_iteration_mapped": {
+    "r7_iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
-      "exit_code": 0
+      "executed_targets": 30,
+      "orm_tests": 75,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261114T014527Z-3430691-302821093/receipt.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-iteration-fixed.log",
+      "source_unchanged_during_runtime": true
     },
-    "local_runtime": {
-      "status": "passed_identity",
-      "head": "c754960051657b8ac3ecde8a7157dde482574265",
-      "database": "sc_dev_demo",
-      "filter": "^sc_dev_demo$",
-      "filestore": "sc_local_dev_odoo_data",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
+    "backend_native_view_reuse": {
+      "status": "passed",
+      "candidate_head": "90b9159e75daad57df44b24543f8cadab0308aba",
+      "dirty_scope": "native view carrier, projection and final validation only",
+      "unit_target": "verify.business_config.formal_list.unit",
+      "unit_tests": 287,
+      "assembler_guard": "verify.unified_page_contract.v2.assembler",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v40",
+      "assembled_cache_inputs_sha256": "88faa40db054db7d18e2e9e4269e7c44f98e09d50e6714b36108a9ebc13499c3",
+      "orm_target": "local.test.test",
+      "orm_tests": 2,
+      "orm_receipt": ".runtime/test-baseline/1794630004874637351/receipt.json",
+      "orm_source_unchanged": true,
+      "coverage": [
+        "resolved view fields are reused instead of a second fields_get",
+        "default and resolved view ids share the same carrier payload",
+        "final cached and fresh validation consume the request-scoped parsed view",
+        "native locator index is built once per parsed view"
+      ]
     },
-    "candidate_browser_failed_attempts": {
-      "status": "failed",
-      "head": "c754960051657b8ac3ecde8a7157dde482574265",
-      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
-      "logs": [
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+    "backend_record_fact_and_validation_split": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_head": "90b9159e75daad57df44b24543f8cadab0308aba",
+      "pre_ledger_source_fingerprint": "1d640dd163a9daefc8c0c9a0e5520fb7d20c215c237bb697e3dfc87b854e9b9b",
+      "dirty_scope": [
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py"
       ],
-      "classification": "unresolved_test_scope"
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v45",
+      "assembled_cache_inputs_sha256": "9c564685159219081108b9bf08ae212e69ea4b6e55821a287e9da3ea2829e55c",
+      "record_dependency": {
+        "initial_snapshot": "bounded seed fields plus fields explicitly present in the native form; scalar and many2one view consumers retained, one2many/many2many/binary/html excluded unless seed",
+        "final_hydration": "same model, record, actor and context reuse the request recordset; missing final dependencies are read in one bulk call",
+        "failure_fallback": "bulk failure preserves per-field denial and readable-sibling behavior"
+      },
+      "validation_split": {
+        "assembler": "validates declarations, source/config and actor read access without loading current values or mutating final visibility",
+        "draft": "new forms use the existing draft proof and do not require a persisted record",
+        "final_handler": "still performs full current-record evaluation, error activation/content proof, final visibility and reference validation",
+        "compatibility": "validate_final_nodes defaults to full runtime evaluation"
+      },
+      "passed": {
+        "formal_list": {
+          "target": "verify.business_config.formal_list.unit",
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "node_and_feedback": {
+          "node_validation_tests": 32,
+          "native_advisory_tests": [17, 43]
+        },
+        "contract_guards": {
+          "targets": [
+            "verify.platform.duty.contract.unit",
+            "verify.product.menu.metadata_batch.unit",
+            "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+            "verify.unified_page_contract.v2.action",
+            "verify.unified_page_contract.v2.assembler",
+            "verify.unified_page_contract.v2.runtime",
+            "verify.unified_page_contract.v2.status"
+          ]
+        },
+        "isolated_orm": {
+          "target": "local.test.test",
+          "module": "smart_core",
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794632565043660383/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "target": "verify.local.dev.conditioned.feedback.orm",
+          "database": "sc_dev_demo",
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error",
+          "log": ".runtime/frontend-dev-validation/executions/20261114T044839Z-244811-364447798/verify.local.dev.conditioned.feedback.orm.log"
+        },
+        "page_finalize_orm": {
+          "target": "verify.page.finalize.authority.orm",
+          "tests": 1,
+          "receipt": ".runtime/test-baseline/1794632178043540846/receipt.json",
+          "source_unchanged": true
+        },
+        "incremental_iteration": {
+          "status": "interrupted_after_27_passed_targets",
+          "receipt": ".runtime/frontend-dev-validation/executions/20261114T044839Z-244811-364447798/receipt.json",
+          "reason": "operator stopped additional independent ORM targets that each rebuilt the disposable local.test database; no failure was reported in the 27 completed targets",
+          "recovery_history": [
+            "A first full mapped run exposed FEEDBACK_SOURCE_FORBIDDEN for draft forms; the draft branch was ordered before saved-record permission proof and a regression test was added",
+            "The same conditioned-feedback ORM then passed on sc_dev_demo"
+          ]
+        }
+      },
+      "not_run": {
+        "page_project_finalize_orm": "Not rerun after interrupt: the changed record-read and validation functions do not redefine project page structure; pure assembler/action/status/runtime guards passed and page finalize authority ran.",
+        "workspace_entry_authority_orm": "Not rerun: role/workspace route authority is unchanged; the interrupted operator request stopped redundant database isolation runs.",
+        "actual_form_performance": "Not measured for this candidate; no SQL-count or latency reduction is claimed."
+      }
     },
-    "candidate_browser": {
-      "status": "passed_scoped_native_journey",
-      "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
-      "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
+    "backend_declaration_proof_reuse": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_head": "e604ba4e6eeed82f82f26851efff25fe803f4e86",
+      "source_fingerprint_during_orm": "79263ab63cc7f157126b0d843345395cd71f55a3384b5015014ec1815595bbfb",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v47",
+      "assembled_cache_inputs_sha256": "bb900b00565a33dd0421ba206adfa2eec86a9eeaee77e4827ec265f997967bef",
+      "component_sources": [
+        "model field declarations with sc_feedback_usage and sc_ui_usage=interaction project through native_advisory.project()",
+        "legacy native alert markup projects only when it has an exact native content source and declared visibility condition",
+        "record-error components come from reviewed model field declarations and are still evaluated at final delivery",
+        "navigation anchors are accepted only as explicit nodes with native source authority; no generic backend generator was found"
+      ],
+      "proof_boundary": {
+        "scope": "request-only proof bound to model, view type, form view id, record id, draft state, uid, su, context and native tree",
+        "reuse_unit": "one feedback declaration signature plus its source node and unique occurrence counts",
+        "reused": "config/source/native advisory/draft declaration checks and compiled dependency plan",
+        "never_reused": "current record values, error activation/content proof, final visibility or post-trim reference validation",
+        "mutation": "changed component config, source identity/content, duplicate ownership or request scope invalidates the affected declaration proof"
+      },
+      "passed": {
+        "node_validation": 36,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "native_advisory": [17, 43],
+        "contract_guards": [
+          "verify.unified_page_contract.v2.action",
+          "verify.unified_page_contract.v2.assembler",
+          "verify.unified_page_contract.v2.runtime",
+          "verify.unified_page_contract.v2.status",
+          "verify.form_structure_authority_unification.unit",
+          "verify.contract.entry_equivalence.guard"
+        ],
+        "isolated_orm": {
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794633175389575442/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "target": "verify.local.dev.conditioned.feedback.orm",
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error"
+        }
+      },
+      "not_run": {
+        "actual_form_performance": "Proof reuse is behaviorally validated; SQL count, HTTP latency and click-to-interactive remain unmeasured for this candidate."
+      }
     },
-    "designed_scene_browser": {
+    "backend_representation_copy_reduction": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_base_head": "500b54f380e0955bf5308a33101f901844697f0c",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v48",
+      "assembled_cache_inputs_sha256": "046e904b4d6d7154a9e90873082c6ef9b94f393ec90732c49ed5ba1bd10c7768",
+      "ownership": {
+        "source_definition": "one isolated deep copy of the native marker owns layout, fieldDescriptors, capabilities, subviews, headerButtons, actions and runtime inputs for the request",
+        "canonical_aliases": "canonical fields, views.form.layout, subviews, capabilities and header buttons read from that owned graph instead of copying the same subtrees again",
+        "mutable_output": "existing V2 nodes and row builders still copy the structures they mutate; final contract remains disjoint from the source graph"
+      },
+      "passed": {
+        "mobile_compact_assembler_tests": 145,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "assembler_guard": "verify.unified_page_contract.v2.assembler",
+        "isolated_orm": {
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794633471640538460/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error"
+        },
+        "mutation_isolation": "assembly does not alter the source; later mutations to source and contract do not cross into each other"
+      },
+      "not_run": {
+        "actual_form_performance": "Copy volume is structurally reduced; no HTTP, SQL-count or click-to-interactive gain is claimed."
+      }
+    },
+    "backend_initialization_delivery_order": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_base_head": "09fb223ca22dca3c2ff78fbcbcc8a7eb83712fa2",
+      "prototype": {
+        "path": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/backend-execution-order/deferred-init-order.patch",
+        "sha256": "18fc0862fef954822211a1567614c62504d307986c6342d559791e8f7fe4931e",
+        "application": "product/test hunks only; obsolete branch/run registration excluded"
+      },
+      "execution_order": {
+        "delivery": "one EffectiveDeliveryService.resolve(params) before navigation and capability consumers",
+        "capability": "capability registry consumes effective_delivery.route_authority instead of resolving route authority independently",
+        "navigation": "NavDispatcher remains the versions/legacy-flag adapter; its independently built tree is replaced by effective delivery nav before cleaning, enrichment and fingerprints",
+        "landing": "the existing final role surface and default route now consume the same effective delivery result"
+      },
+      "compatibility": "provider hooks first receive published_authority; older hooks that reject the keyword fall back to their original signature",
+      "passed": {
+        "navigation_delivery": "verify.backend.navigation_delivery.unit",
+        "menu_metadata": 10,
+        "system_init_menu_boundary": 7,
+        "contract_entry_equivalence": 10,
+        "capability_identity_unit": 6,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "same_scope_capability_orm": {
+          "database": "sc_dev_demo",
+          "tests": 1,
+          "result": "passed",
+          "scope": "published query pair builder received the effective delivery authority and did not resolve a second authority"
+        }
+      },
+      "failed": {
+        "system_init_snapshot_equivalence": {
+          "classification": "environment_defect",
+          "reason": "E2E_BASE_URL was not set; the governed HTTP equivalence probe did not start"
+        }
+      },
+      "not_run": {
+        "daily_permission_truth_capability_group": "Only the directly affected same-scope capability test was run on the persistent sc_dev_demo database; the full fresh sc_test group was not rebuilt.",
+        "actual_performance": "Initialization correctness/order is validated; request latency and SQL reduction remain unmeasured for this candidate."
+      }
+    },
+    "local_test_database_template_reuse": {
       "status": "passed",
-      "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
-      "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
-    },
-    "native_empty_list": {
-      "status": "passed",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
-      "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
-    },
-    "diagnostics_iteration": {
-      "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
-      "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
-    },
-    "diagnostics_tool_final": {
-      "status": "passed",
-      "tests": 17,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
-    },
-    "heading_iteration_first": {
-      "status": "failed",
-      "classification": "baseline_evidence_defect",
-      "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
-    },
-    "heading_iteration": {
-      "status": "passed",
-      "targets_executed": 25,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
-    },
-    "designed_scene_browser_previous": {
-      "status": "failed",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
-      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
-      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
-    },
-    "native_browser_reuse": {
-      "status": "reused_unaffected",
-      "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
-      "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
-      "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
-    },
-    "freeze_prepare": {
-      "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
+      "formal_product_layer": "P4 operations delivery tooling",
+      "scope": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk",
+        "make/ci.mk"
+      ],
+      "behavior": {
+        "default": "direct local.test.test remains fresh-database behavior",
+        "incremental_iteration": "ci.local.iteration enables schema-bound sc_test_template cloning",
+        "template_module": "smart_construction_bundle installs the planned ORM module superset once",
+        "template_rebuild_inputs": ["schema/install inputs", "registered profile", "Odoo image"],
+        "per_target_isolation": "each ORM target receives a newly cloned sc_test database",
+        "module_guard": "template is rebuilt when the requested module is not installed"
+      },
+      "measured": {
+        "schema_fingerprint": "7f337bc35f1a509420a69c7f0e2364a4c05ae152719fd8c322623eebc783e13f",
+        "template_key_before_superset": "d7f1f54312eb680f743f63852e26e1e3dec3f4dbba0aea6c16efcd45b54b66eb",
+        "first_run_seconds": 28.67,
+        "second_run_seconds": 8.92,
+        "same_tests": 3,
+        "receipts": [
+          ".runtime/test-baseline/1794635249589859327/receipt.json",
+          ".runtime/test-baseline/1794635285640751862/receipt.json"
+        ],
+        "interpretation": "Runner overhead reduction only; not form latency evidence."
+      },
+      "passed_checks": {
+        "runner_unit_tests": 15,
+        "local_development_lifecycle_tests": 52
+      }
     }
   },
   "stage_identity": {
-    "head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
+    "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
-    "scope": "P4 crash diagnostics and current run index",
-    "frozen": false
+    "frozen": false,
+    "scope": "backend execution convergence plus P4 reuse of schema-bound local.test database templates"
   },
   "completion": {
-    "batch": "verification_pending_ci_crash_unresolved",
-    "mainline": "not_integrated",
-    "deployment": "unchanged",
-    "user_acceptance": "not_run"
+    "batch": "backend_execution_order_batches_1_to_5_locally_validated",
+    "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
+    "deployment": "B_measured_then_A_tree_restored",
+    "user_acceptance": "initialization_improved_form_interaction_not_proven"
   },
   "ci_crash_diagnosis": {
     "layer": "P4",
@@ -359,5 +687,410 @@
       "targets_executed": 26,
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-ci-only-diagnostic.log"
     }
-  }
+  },
+  "previous_iteration": {
+    "branch": "audit/scenario-form-performance-20261114",
+    "baseline_sha": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
+    "merged_pr": 886,
+    "merge_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "deployment": "passed",
+    "browser_observation": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/deployed-project-observation.json",
+    "results": {
+      "research": "daily_project_baseline_and_first_optimization_implemented",
+      "performance_acceptance": "not_run_candidate",
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration.log",
+        "targeted_tests": 18
+      },
+      "probe_tools": {
+        "status": "passed",
+        "target": "verify.system.performance.baseline.unit",
+        "test_count": 72,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/probe-tests.log"
+      },
+      "daily_requests": {
+        "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-request-summary.json",
+        "sha256": "0d6b12ca1fea7c95ef8190693c3a6163cf79a0ae84e4115b97f3375fc0636c7b",
+        "limitation": "Mixed intent log window, not form-only or browser latency; not root-cause attribution."
+      },
+      "daily_browser_baseline": {
+        "status": "failed",
+        "classification": "validation_tool_defect",
+        "record_checks_passed": 8,
+        "reason": "readonly interceptor omitted workspace.scenario.projection.get",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser.json"
+      },
+      "implementation_iteration_first": {
+        "status": "failed",
+        "classification": "baseline_evidence_defect",
+        "reason": "assembled cache pin changed with owned handler edit; bump namespace and repin exact digest",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-implementation.log"
+      },
+      "daily_browser_timed_baseline": {
+        "status": "passed",
+        "record_checks": 8,
+        "request_timings": 51,
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser-timed.json",
+        "limitation": "Unmodified daily baseline only, project record at two viewports; not candidate improvement."
+      },
+      "implementation_iteration_repinned": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-repinned.log",
+        "limitation": "Backend/P4 scope before native delegate frontend edits."
+      },
+      "native_delegate_targeted": {
+        "status": "passed",
+        "targets_executed": 20,
+        "receipt": ".runtime/frontend-dev-validation/executions/20261113T172041Z-906102-923312030/receipt.json",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log"
+      },
+      "declaration_authority": {
+        "status": "passed",
+        "target": "verify.navigation.publication_consumers.unit",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
+      },
+      "iteration_latest": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "targets_executed": 20,
+        "exit_code": 0,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log",
+        "scope_note": "All implementation inputs; subsequent documentation-only reconciliation checked by resume, ledger unit and diff check."
+      },
+      "final_metadata": {
+        "status": "passed",
+        "commands": [
+          "make agent.run.resume",
+          "make verify.agent.ledger.unit",
+          "git diff --check"
+        ],
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ledger-final.log"
+      },
+      "browser_iteration_first": {
+        "status": "failed",
+        "classification": "validation_tool_defect",
+        "reason": "Existing candidate visual script had no incremental test mapping; map it to candidate tool unit target and include existing candidate suite and syntax check.",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser.log"
+      },
+      "candidate_tool_tests": {
+        "status": "passed",
+        "tests": 17,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-tool-tests.log"
+      },
+      "browser_iteration_mapped": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
+        "exit_code": 0
+      },
+      "local_runtime": {
+        "status": "passed_identity",
+        "head": "c754960051657b8ac3ecde8a7157dde482574265",
+        "database": "sc_dev_demo",
+        "filter": "^sc_dev_demo$",
+        "filestore": "sc_local_dev_odoo_data",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
+      },
+      "candidate_browser_failed_attempts": {
+        "status": "failed",
+        "head": "c754960051657b8ac3ecde8a7157dde482574265",
+        "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
+        "logs": [
+          ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
+          ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+        ],
+        "classification": "unresolved_test_scope"
+      },
+      "candidate_browser": {
+        "status": "passed_scoped_native_journey",
+        "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
+        "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
+      },
+      "designed_scene_browser": {
+        "status": "passed",
+        "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
+        "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
+      },
+      "native_empty_list": {
+        "status": "passed",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
+        "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
+      },
+      "diagnostics_iteration": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
+        "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
+      },
+      "diagnostics_tool_final": {
+        "status": "passed",
+        "tests": 17,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
+      },
+      "heading_iteration_first": {
+        "status": "failed",
+        "classification": "baseline_evidence_defect",
+        "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
+      },
+      "heading_iteration": {
+        "status": "passed",
+        "targets_executed": 25,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
+      },
+      "designed_scene_browser_previous": {
+        "status": "failed",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
+        "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
+        "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+      },
+      "native_browser_reuse": {
+        "status": "reused_unaffected",
+        "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+        "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+        "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
+      },
+      "freeze_prepare": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
+      }
+    }
+  },
+  "round2": {
+    "formal_product_layer": "P0 init policy, contract snapshot and generic relation consumption; P1 facts production and scene identity projection; P4 regression evidence",
+    "standard_vs_user_specific": "standard",
+    "why_here": "Remove unused work at owning producer/consumer boundaries, without product semantics or authorization changes",
+    "blast_radius": "Boot without workspace; native scene index; record/create contract copy; many2many preparation",
+    "exclusions": [
+      "hidden notebook unmount",
+      "new shared cache",
+      "shared mutable source graphs",
+      "daily redeployment before verification",
+      "other worktrees"
+    ],
+    "status": "local_validation_passed",
+    "tests": "Extend existing payload/fact, scenario, contract boundary and actual mounted SFC suites",
+    "next": "Prepare consistent generated evidence and clean local candidate; exact-head review remains separate from deployment and A/B."
+  },
+  "runtime_result_index": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-final-result.json",
+  "diagnostic_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-result.json",
+  "diagnostic_stage_identity": {
+    "head": "19e7376c9c0f21bf56dcbd7a1c2657188f2afa3c",
+    "dirty": true,
+    "formal_product_layer": "P4",
+    "paths": [
+      "make/role_authority.mk",
+      "scripts/verify/daily_demo_runtime_performance.py",
+      "scripts/verify/frontend_list_surface_structure_browser.mjs"
+    ],
+    "purpose": "bounded same-principal daily performance diagnosis; no release cycle"
+  },
+  "round7": {
+    "layers": {
+      "P0": "MenuService instance XMLID metadata only; live group authority retained",
+      "P1": "scenario bound/all-menu metadata batches; original fact order and scope retained"
+    },
+    "product_files": [
+      "addons/smart_core/delivery/menu_service.py",
+      "addons/smart_construction_core/services/scenario_surface_projection.py"
+    ],
+    "snapshot": "Reuse existing R2 conditional validation snapshot at HEAD; no duplicate edit",
+    "excluded": [
+      "merge",
+      "deployment",
+      "record-read optimization",
+      "unattributed profiler pause"
+    ],
+    "validation": "L1 syntax and focused tests, then deterministic affected L2/registered ORM; no browser candidate claims without deployment",
+    "status": "product_fix_and_local_correctness_passed_performance_pending",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
+  },
+  "r7_handover": {
+    "status": "r7_product_receipts_bound_ab_tool_extended",
+    "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-handover.json",
+    "candidate_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-candidate-vs-baseline.patch",
+    "r7_worktree_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-worktree.patch",
+    "product_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-product.patch",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-result.json",
+    "iteration_receipt": ".runtime/frontend-dev-validation/executions/20261114T014527Z-3430691-302821093/receipt.json",
+    "targets": 30,
+    "orm_receipts": 4,
+    "orm_tests": 75,
+    "test_source_fingerprint": "604b71c6d9aecc62fa9c1c216fc42024b93512b740e0f12ec725239a473090ab",
+    "post_test_drift": "The result index and later P4 browser timing tool/test changed after the original execution; R7 product hashes remain identical and the affected browser-tool unit was rerun separately.",
+    "review": "Existing independent_perf_review covers the dirty R7 product diff and the original 30-target/four-ORM receipt set; no later product edit was found. The subsequently added P4 browser timing option is validated by its focused tool suite, not presented as part of that review.",
+    "ab_plan": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-ab-plan.md",
+    "ab_measurement_tool_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/ab-measurement-tool-result.json",
+    "performance_status": "directional_result_complete"
+  },
+  "ab_baseline": {
+    "status": "passed",
+    "arm": "A",
+    "served_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "frontend_build_sha256": "53600d54014d38799c79241231a99389d4ee55b29ec622bfc0a866ddd2be98a2",
+    "database": "sc_demo",
+    "namespace": "demo",
+    "account": "demo_full",
+    "user_id": 42,
+    "company_id": 1,
+    "warmups": 2,
+    "valid_runs": 12,
+    "summary": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/A/summary.json",
+    "samples": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/A/samples/",
+    "excluded_operator_cancellations": [
+      "measured-10.json",
+      "measured-13.json"
+    ],
+    "user_decision": "The owner decided the completed baseline evidence is sufficient and requested immediate B comparison."
+  },
+  "ab_measurement_tool": {
+    "formal_product_layer": "P4",
+    "layer_target": "existing daily list-surface browser probe",
+    "module": "scripts/verify/frontend_list_surface_structure_browser.mjs and its focused contract test",
+    "standard_vs_user_specific": "standard engineering measurement tooling",
+    "why_here": "The required click-to-interactive and trace-bound timing fields belong to the existing governed browser evidence collector.",
+    "why_not_elsewhere": "No product semantics, contract rendering, permissions, runtime configuration, database, or deployment behavior needs to change.",
+    "blast_radius": "Opt-in report fields only when LIST_SURFACE_AB_TIMING=1; default probe behavior is unchanged.",
+    "status": "live_measurement_passed",
+    "files": [
+      "scripts/verify/frontend_list_surface_structure_browser.mjs",
+      "scripts/verify/test_frontend_list_surface_search_contract.py"
+    ],
+    "passed": {
+      "node_check": "passed",
+      "python_compile": "passed",
+      "git_diff_check": "passed",
+      "focused_tool_tests": 26
+    },
+    "not_run": {
+      "SQL_count_after": "formal timing was collected without profiler; no post-B SQL-count claim is made"
+    },
+    "carried_forward": "R7 product hashes, focused product suites, and four ORM receipts remain unchanged; only the browser-tool input and its focused test were affected."
+  },
+  "ab_comparison": {
+    "status": "directional_result_complete",
+    "a": {
+      "sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+      "frontend_build_sha256": "53600d54014d38799c79241231a99389d4ee55b29ec622bfc0a866ddd2be98a2",
+      "valid_runs": 12
+    },
+    "b": {
+      "sha": "552f2083f54616fce2938d8dcca8ec152c7ae1c8",
+      "frontend_build_sha256": "92ccd01b9a4f2043316f05749f8daa5a6c5a2de1d445bfd145cac772de2dac3e",
+      "cold_smoke": 1,
+      "warm_runs": 2,
+      "deployment": "PASS"
+    },
+    "warm_medians": {
+      "initialization_browser_ms": {"A": 2158.543, "B": 1542.711, "delta_percent": -28.5},
+      "initialization_server_ms": {"A": 2027.5, "B": 1359.5, "delta_percent": -32.9},
+      "form_interactive_1440_ms": {"A": 1626.409, "B": 1667.087, "delta_percent": 2.5},
+      "form_interactive_390_ms": {"A": 1603.216, "B": 1978.051, "delta_percent": 23.4},
+      "main_contract_browser_1440_ms": {"A": 921.418, "B": 843.314, "delta_percent": -8.5},
+      "main_contract_browser_390_ms": {"A": 850.065, "B": 1115.52, "delta_percent": 31.2},
+      "main_contract_server_1440_ms": {"A": 683.5, "B": 628.0, "delta_percent": -8.1},
+      "main_contract_server_390_ms": {"A": 654.0, "B": 661.5, "delta_percent": 1.1}
+    },
+    "correctness": "B smoke and both warm runs passed 8/8 record checks with zero runtime errors; core business payload equal",
+    "interpretation": "Initialization is clearly faster; end-to-end form interaction improvement is not established",
+    "summary": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/comparison.json"
+  },
+  "daily_runtime_restore": {
+    "status": "PASS",
+    "requested_baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "restore_carrier_sha": "1baa749baa3af02416909d6182e074fbd26d3958",
+    "code_tree_equal_to_baseline": true,
+    "served_source_revision": "1baa749baa3af02416909d6182e074fbd26d3958",
+    "served_frontend_build_sha256": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd",
+    "entry_verify": "PASS",
+    "build_identity_verify": "PASS",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
+  },
+  "backend_execution_order": {
+    "status": "review_fixes_validation_passed_publication_pending",
+    "source_review_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "batch_order": [
+      "native_view_and_field_requirement_reuse",
+      "record_dependency_and_business_fact_reuse",
+      "validation_responsibility_split",
+      "intermediate_object_and_copy_reduction",
+      "initialization_effective_delivery_order"
+    ],
+    "deferred_prototype": {
+      "path": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/backend-execution-order/deferred-init-order.patch",
+      "sha256": "18fc0862fef954822211a1567614c62504d307986c6342d559791e8f7fe4931e",
+      "reason": "Initialization order was implemented before the owner-approved batch order and is parked for batch 5."
+    },
+    "merge_deployment": "paused",
+    "evidence": {
+      "batch_1": "backend_native_view_reuse",
+      "record_dependency_and_validation_split": "backend_record_fact_and_validation_split",
+      "declaration_proof_reuse": "backend_declaration_proof_reuse",
+      "representation_copy_reduction": "backend_representation_copy_reduction",
+      "initialization_delivery_order": "backend_initialization_delivery_order"
+    }
+  },
+  "pr_review_response": {
+    "pr": 887,
+    "reviewed_head": "9e0f046f5a2ee3160b006018c4162e73a2844c8b",
+    "status": "validation_passed_publication_pending",
+    "findings_addressed": 5,
+    "fixes": {
+      "field_requirements": "Native layout occurrences plus Odoo view field requirements now select the initial record snapshot; full fieldDescriptors are metadata only.",
+      "capability_hooks": "Compatible dispatch preserves provider order, old signatures and intentional empty results; the legacy capability-group hook remains wired.",
+      "template_identity": "The shared template database comment is the authoritative candidate identity and is checked before cloning.",
+      "install_fingerprint": "Manifest-reachable Python and install data, including wizard inputs, invalidate the test template.",
+      "interaction_timing": "Contract replay validation now runs after the form-interaction timing sample."
+    },
+    "workflow_correction": {
+      "problem": "pr.push reran the complete affected target set after a clean commit even when the committed runtime bytes were identical to the already validated dirty worktree; later source changes also discarded all prior target results.",
+      "fix": "Runtime-tree reuse identity hashes current tracked, dirty and untracked source bytes; passed target logs are carried individually from prior passed, interrupted or failed receipts unless their selected inputs changed.",
+      "fail_closed": "Changed runtime bytes, changed target scope, changed validation authorities, failed target rows or missing/tampered target logs still block reuse.",
+      "tests": 143
+    },
+    "additional_fixes": [
+      "Fallback parsing now consumes a supplied raw arch when _arch_root is absent.",
+      "Platform tests no longer require project.project or smart_construction_core XMLIDs in the P0-only shard.",
+      "Explicit sc_ui_usage=interaction fields are included in the sparse record snapshot dependency set.",
+      "Capability-empty tests bind the compatible dispatcher used by production.",
+      "The assembled contract cache advances to v50 with a re-pinned input digest."
+    ],
+    "validation": {
+      "ci_local_iteration": {
+        "status": "passed",
+        "targets": 41,
+        "receipt": ".runtime/frontend-dev-validation/executions/20261114T071532Z-1065015-55502259/receipt.json"
+      },
+      "p0_only_orm": {
+        "status": "passed",
+        "tests": 8,
+        "receipt": ".runtime/test-baseline/1794640293370985139/receipt.json"
+      },
+      "p1_installed_orm": {
+        "status": "passed",
+        "tests": 8,
+        "profile": "sc_dev_demo"
+      },
+      "xml_carrier_orm": {
+        "status": "passed",
+        "tests": 1,
+        "receipt": ".runtime/test-baseline/1794639707155587749/receipt.json"
+      },
+      "capability_hook_orm": {
+        "status": "passed",
+        "tests": 3,
+        "receipt": ".runtime/test-baseline/1794639231458808147/receipt.json"
+      }
+    },
+    "assembled_contract_cache_version": "ui-contract-v2-demand-driven-snapshot-v50",
+    "assembled_cache_inputs_sha256": "f273c060bf429179f427d6137ab6752a59b480407aa59578a4b59d2c63a9a382",
+    "not_run": [
+      "current-head remote required CI",
+      "same-environment A/B for this cumulative candidate"
+    ],
+    "merge_deployment": "paused"
+  },
+  "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

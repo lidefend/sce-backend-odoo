@@ -216,13 +216,20 @@ def _is_group_member(user, group_xmlid: str) -> bool:
         return False
 
 
-def _published_query_pairs_by_action_id(user) -> dict[int, tuple[int, int]]:
+def _published_query_pairs_by_action_id(
+    user,
+    published_authority: dict[str, Any] | None = None,
+) -> dict[int, tuple[int, int]]:
     if not user:
         return {}
     from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, iter_published_pairs
-    principal_env = user.with_user(user).env
+    authority = (
+        published_authority
+        if isinstance(published_authority, dict)
+        else published_route_authority(user.with_user(user).env)
+    )
     pairs_by_action_id = {}
-    for pair in iter_published_pairs(published_route_authority(principal_env)):
+    for pair in iter_published_pairs(authority):
         action_id = int(pair[1] or 0)
         if action_id > 0:
             pairs_by_action_id.setdefault(action_id, pair)
@@ -278,12 +285,26 @@ def _capability_state(defn: dict[str, Any], allowed: bool) -> tuple[str, str]:
     return "allow", ""
 
 
-def list_capabilities_for_user(env, user) -> list[dict[str, Any]]:
-    rows, _timings = list_capabilities_for_user_with_timings(env, user)
+def list_capabilities_for_user(
+    env,
+    user,
+    *,
+    published_authority: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    rows, _timings = list_capabilities_for_user_with_timings(
+        env,
+        user,
+        published_authority=published_authority,
+    )
     return rows
 
 
-def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def list_capabilities_for_user_with_timings(
+    env,
+    user,
+    *,
+    published_authority: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     timings_ms: dict[str, int] = {}
 
     def _mark(stage: str, started_at: float) -> float:
@@ -297,7 +318,10 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
     stage_ts = _mark("resolve_role_codes_for_user", stage_ts)
     definitions = capability_definitions()
     stage_ts = _mark("capability_definitions", stage_ts)
-    published_pairs_by_action_id = _published_query_pairs_by_action_id(user)
+    published_pairs_by_action_id = _published_query_pairs_by_action_id(
+        user,
+        published_authority=published_authority,
+    )
     stage_ts = _mark("published_route_authority", stage_ts)
     entry_ref_id_cache: dict[str, int | None] = {}
 

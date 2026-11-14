@@ -153,4 +153,71 @@ class LocalTestRunnerTest(unittest.TestCase):
                 before=runner.source_fingerprint({});f.chmod(0o755);self.assertNotEqual(before,runner.source_fingerprint({}))
                 before=runner.source_fingerprint({});f.unlink();self.assertNotEqual(before,runner.source_fingerprint({}))
 
+    def test_schema_fingerprint_tracks_install_inputs_not_request_handlers(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / 'addons' / 'smart_core' / 'models' / 'model.py'
+            handler = root / 'addons' / 'smart_core' / 'handlers' / 'handler.py'
+            wizard = root / 'addons' / 'smart_core' / 'wizard' / 'wizard.py'
+            wizard_view = root / 'addons' / 'smart_core' / 'wizard' / 'wizard_views.xml'
+            manifest = root / 'addons' / 'smart_core' / '__manifest__.py'
+            for path in (model, handler, wizard, wizard_view, manifest):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('value = 1')
+            names = '\0'.join(
+                str(path.relative_to(root))
+                for path in (model, handler, wizard, wizard_view, manifest)
+            ) + '\0'
+            with patch.object(runner, 'ROOT', root), \
+                    patch.object(runner, 'command', return_value=SimpleNamespace(stdout=names)):
+                before = runner.schema_fingerprint({})
+                handler.write_text('value = 2')
+                self.assertEqual(before, runner.schema_fingerprint({}))
+                model.write_text('value = 2')
+                self.assertNotEqual(before, runner.schema_fingerprint({}))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wizard = root / 'addons' / 'smart_core' / 'wizard' / 'wizard.py'
+            wizard_view = root / 'addons' / 'smart_core' / 'wizard' / 'wizard_views.xml'
+            manifest = root / 'addons' / 'smart_core' / '__manifest__.py'
+            for path in (wizard, wizard_view, manifest):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('value = 1')
+            names = '\0'.join(
+                str(path.relative_to(root))
+                for path in (wizard, wizard_view, manifest)
+            ) + '\0'
+            with patch.object(runner, 'ROOT', root), \
+                    patch.object(runner, 'command', return_value=SimpleNamespace(stdout=names)):
+                before = runner.schema_fingerprint({})
+                wizard.write_text('value = 2')
+                self.assertNotEqual(before, runner.schema_fingerprint({}))
+                before = runner.schema_fingerprint({})
+                wizard_view.write_text('value = 2')
+                self.assertNotEqual(before, runner.schema_fingerprint({}))
+
+    def test_template_identity_is_read_from_database_not_worktree_marker(self):
+        identity_a = 'a' * 64
+        identity_b = 'b' * 64
+        self.assertFalse(runner.template_is_ready(
+            database_comment=identity_b,
+            template_key=identity_a,
+            exists=True,
+            requested_module_installed=True,
+        ))
+        self.assertTrue(runner.template_is_ready(
+            database_comment=identity_a,
+            template_key=identity_a,
+            exists=True,
+            requested_module_installed=True,
+        ))
+        self.assertFalse(runner.template_is_ready(
+            database_comment=identity_a,
+            template_key=identity_a,
+            exists=True,
+            requested_module_installed=False,
+        ))
+
 if __name__=='__main__': unittest.main()
