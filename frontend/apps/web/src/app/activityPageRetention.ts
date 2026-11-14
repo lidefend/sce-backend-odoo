@@ -50,6 +50,15 @@ export function normalizeRetainedActivityPageIdentity<T extends RetainedActivity
   return page;
 }
 
+export function activityPageCacheRouteKey(key: string): string {
+  const normalized = String(key || '').trim();
+  if (!normalized) return '';
+  const parts = normalized.split(':');
+  if (parts[0] === 'action' && parts.length >= 4) return parts.slice(0, 4).join(':');
+  if (parts[0] === 'scene' && parts.length >= 2) return parts.slice(0, 2).join(':');
+  return normalized;
+}
+
 export function isSupersededEntryActionActivityPage(
   existing: RetainedActivityPageLike,
   incoming: RetainedActivityPageLike,

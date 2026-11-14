@@ -761,3 +761,61 @@ R12-A 建议只做最小架构收敛：
 
 未修改前端/后端产品源码，未改 R10/R11 原始数据，A/B twin 未变。R12-B 需等待独立审查。
 交付物位于 `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/`。
+
+### R12-B Session 生命周期实施
+
+独立审查确认架构方向成立，并要求在实施前补齐四项边界。实施按三项提交推进：
+
+| 批次 | 提交 | 内容 | 结果 |
+| --- | --- | --- | --- |
+| B1 | `f780bbe45` | 版本化 Durable Snapshot、严格 `user`/`recordContext` 白名单、legacy/current/future/corrupt 迁移 | 48 例通过，严格类型检查通过 |
+| B2 | `e3440e2de` | 单 pending 合并、generation 取消、transient 去写入、capability catalog 去写入、生命周期 flush | 25 例通过，workspace lifecycle 与 143 项映射测试通过 |
+| B3 | 当前记录提交 | 登录/刷新/上下文/activity/dirty/logout/401/多标签/quota 完整恢复回归与受控测量 | 34 例通过 |
+
+Durable Snapshot 现在由显式字段构造，不再展开 live Session：
+
+- `user` 只保存 `id`、`name`；权限字段由当前 `system.init` 重建。
+- `recordContext` 只保存模型、记录、公司、经营方式和 request context；不保存
+  `company_options`、`operation_options`、`options`、`selector` 或消息等实时契约。
+- activity 只保存恢复身份、标题、路由、runtime query、时间和必要的记录上下文；
+  `dirty` 与 `settling` 留在内存。
+- menu/scenario 展开偏好、active tab、cache epochs 和 boot intent 保持恢复。
+
+持久化行为：
+
+- 连续 durable 更新共用单 pending，flush 时读取最新状态。
+- 身份、上下文、tab 结构、启动完成和退出边界可直接写入。
+- `clearSession()` 首先递增 persistence generation、取消定时器并清除 pending，再删除
+  Snapshot 与 token；旧 generation 已排入事件队列的回调也会在写入前失败关闭。
+- `pagehide` 与 `visibilitychange=hidden` 共用同一 flush；第一次消费 pending，
+  第二次不写。
+- `recordIntentTrace()`、dirty、settling 和 product capability catalog 不再触发
+  durable Session 写入。
+- 多标签页仍保持 last-write-wins，没有新增跨标签页协调。
+
+旧快照迁移已在生产 Store 路径验证：
+
+- 无 `schemaVersion` 的旧快照按 legacy 读取，只提取 durable allowlist；
+- 当前版本按白名单恢复；
+- 损坏 JSON 和未知未来版本只丢弃 Snapshot，token 仍从 `sessionStorage` 独立恢复；
+- `menuTree`、`capabilityCatalog`、`initMeta` 等旧派生字段即使格式异常也不阻止登录。
+
+受控进程内测量使用生产 Snapshot builder 和 restore 路径。legacy 基线是按 R12-A
+`421,339` 字节字段清单重建的同尺寸测试载荷，不代表当前真实业务数据；候选状态是
+包含真实 store 类型结构的测试 fixture：
+
+| 指标 | 结果 |
+| --- | ---: |
+| Durable Snapshot | 1,383 bytes |
+| 模拟 12 次更新 | 1 次 durable write |
+| 合并更新 | 11 |
+| 单次持久化 `stringify` | 2 次 / 0.022 ms |
+| 单次 `setItem` | 0.021 ms |
+| restore 中位数（20 次） | 0.259 ms |
+
+这些是 Node.js 受控测量，不是浏览器点击到可用时间或部署 HTTP 数据，不替代独立复审后的
+真实浏览器 A/B。性能证据：
+`.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance.json`。
+
+本批未修改后端产品代码、PR #887、R10/R11 原始证据、A/B twin 或业务数据；未部署、
+未合并。下一步是基于当前精确 HEAD 和保留证据执行独立 R12-B 复审。

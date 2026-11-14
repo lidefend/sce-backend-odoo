@@ -1,3 +1,5 @@
+import { activityPageCacheRouteKey } from '../app/activityPageRetention';
+
 export const DURABLE_SESSION_SCHEMA_VERSION = 1;
 export const SESSION_SNAPSHOT_KEY_PREFIX = 'sc_frontend_session_v0_6';
 export const MAX_DURABLE_ACTIVITY_PAGES = 6;
@@ -283,13 +285,6 @@ function durableActivityPages(raw: unknown): DurableActivityPage[] {
     if (pages.length >= MAX_DURABLE_ACTIVITY_PAGES) break;
   }
   return pages;
-}
-
-function activityPageCacheRouteKey(key: string): string {
-  const parts = key.split(':');
-  if (parts[0] === 'action' && parts.length >= 4) return parts.slice(0, 4).join(':');
-  if (parts[0] === 'scene' && parts.length >= 2) return parts.slice(0, 2).join(':');
-  return key;
 }
 
 function durableCacheEpochs(raw: unknown, retainedPageKeys: Set<string>): Record<string, number> {

@@ -20,12 +20,23 @@
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/src/pages/contractForm/useRecordContractSemantics.ts",
+    "frontend/apps/web/src/app/activityPageRetention.ts",
+    "frontend/apps/web/src/main.ts",
+    "frontend/apps/web/src/stores/navigationExpansionActions.ts",
+    "frontend/apps/web/src/stores/navigationProjectionActions.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/stores/sessionPersistence.ts",
+    "frontend/apps/web/scripts/session_persistence_snapshot_test.ts",
+    "frontend/apps/web/scripts/session_persistence_scheduler_test.ts",
+    "frontend/apps/web/scripts/session_persistence_recovery_test.ts",
+    "frontend/apps/web/scripts/session_persistence_performance_test.ts",
     "frontend/apps/web/scripts/scene_entry_contract_test.ts",
     "scripts/verify/local_dev_candidate_visual_smoke.mjs",
     "make/dev.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/architecture/split_usage_allowlist.json",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "scripts/test/test.sh",
@@ -204,10 +215,10 @@
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope.",
-    "R12-B front-end implementation is not authorized.",
+    "R12-B implementation is complete and awaits independent review; browser performance is not yet measured.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Independently review the R12-A Session ownership split and persistence scheduler design; authorize or reject R12-B before changing product code.",
+  "next_exact_step": "Run the independent R12-B implementation review against the exact branch HEAD and retained recovery/performance evidence.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1302,6 +1313,86 @@
     "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-a-manifest.json",
     "product_code_modified": false,
     "merge_deployment": "paused"
+  },
+  "r12b": {
+    "status": "verification_pending_independent_review",
+    "formal_product_layer": "P0 frontend session lifecycle",
+    "layer_target": "apps/web Session Store persistence",
+    "module": "frontend/apps/web",
+    "standard_vs_user_specific": "platform_engineering_standard",
+    "why_here": "Reload recovery state, persistence scheduling and request diagnostics are generic frontend runtime mechanisms.",
+    "why_not_elsewhere": "No backend contract, business rule, industry behavior, customer configuration or deployment state is changed.",
+    "starting_head": "e7e5fef89bb62548002f8627edadf315e138e3e4",
+    "commits": {
+      "b1": "f780bbe4554f78ee84e7cd5d648ab6138c2de3b9",
+      "b2": "e3440e2de",
+      "b3": "current record commit"
+    },
+    "b1_snapshot": {
+      "status": "passed",
+      "tests": 48,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b1-snapshot.log",
+      "typecheck": "passed",
+      "typecheck_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b1-typecheck.log",
+      "scope": "versioned Durable Snapshot allowlist, strict user/recordContext sanitization, legacy/current/future/corrupt migration, independent token recovery"
+    },
+    "b2_scheduler": {
+      "status": "passed",
+      "tests": 25,
+      "workspace_lifecycle": "passed",
+      "incremental_mapping_tests": 143,
+      "tests_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b3-recovery.log",
+      "scope": "single pending flush, generation cancellation, transient trace/dirty/settling, no product-catalog write, pagehide and visibilitychange sharing"
+    },
+    "b3_recovery": {
+      "status": "passed",
+      "tests": 34,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b3-recovery.log",
+      "coverage": [
+        "login and authoritative identity initialization",
+        "refresh and activity restoration",
+        "company and record context",
+        "activity tab and expansion preferences",
+        "SPA dirty semantics",
+        "logout and 401 cleanup",
+        "pagehide and visibilitychange",
+        "multi-tab last-write-wins",
+        "quota failure",
+        "legacy, corrupt and future snapshots",
+        "independent token recovery"
+      ]
+    },
+    "performance": {
+      "mode": "controlled_in_process",
+      "measured_legacy_bytes": 421339,
+      "durable_snapshot_bytes": 1383,
+      "simulated_durable_updates": 12,
+      "durable_writes": 1,
+      "merged_updates": 11,
+      "total_durable_write_bytes": 1383,
+      "durable_persist_stringify_calls": 2,
+      "durable_persist_stringify_elapsed_ms": 0.022,
+      "set_item_elapsed_ms": 0.021,
+      "restore_median_ms": 0.259,
+      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance.json",
+      "latest_report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance-latest.json",
+      "caveat": "Production snapshot builder and restore path in Node.js; not browser click-to-interactive or deployed HTTP evidence."
+    },
+    "not_run": [
+      "browser click-to-interactive performance",
+      "deployment",
+      "independent review"
+    ],
+    "external_mutations": {
+      "backend_product_code": "none",
+      "pr_887": "none",
+      "deployment": "none",
+      "ab_twins": "none",
+      "business_data": "none",
+      "push": "none",
+      "merge": "none"
+    },
+    "next_exact_step": "Run the independent R12-B implementation review against the exact branch HEAD and the retained R12-B evidence."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

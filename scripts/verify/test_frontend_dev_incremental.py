@@ -1878,6 +1878,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         self.assertFalse(payload["testsRun"])
 
+    def test_precommit_generated_refresh_routes_to_lane_coverage(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/ops/pre-commit_refresh_generated.sh"]),
+            ["verify.verification.lane_coverage"],
+        )
+
 
 class FrontendCoverageContractTest(unittest.TestCase):
     root = Path(__file__).resolve().parents[2]

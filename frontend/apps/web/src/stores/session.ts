@@ -23,6 +23,7 @@ import {
   type ScenarioNavigationModel,
 } from '../app/scenarioSurface';
 import {
+  activityPageCacheRouteKey,
   activityPageTitleTargetKeys,
   normalizeRetainedActivityPageIdentity,
   reconcileRestoredActivityPages,
@@ -523,15 +524,6 @@ function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage
   if (sceneKey === 'workspace.home') return false;
   if (route === '/' || route === '/s/workspace.home') return false;
   return true;
-}
-
-function activityPageCacheRouteKey(key: string): string {
-  const normalized = asText(key);
-  if (!normalized) return '';
-  const parts = normalized.split(':');
-  if (parts[0] === 'action' && parts.length >= 4) return parts.slice(0, 4).join(':');
-  if (parts[0] === 'scene' && parts.length >= 2) return parts.slice(0, 2).join(':');
-  return normalized;
 }
 
 function isGenericActivityTitle(title: string): boolean {
