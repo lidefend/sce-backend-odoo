@@ -699,15 +699,22 @@ def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     if env is None:
         return {}, []
     try:
-        from odoo.addons.smart_core.core.scene_provider import (
-            load_scenes_from_db_or_fallback,
-        )
+        from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
     except ModuleNotFoundError:
-        return {}, []
-    payload = load_scenes_from_db_or_fallback(env, drift=None, logger=None) or {}
+        scenes = None
+    else:
+        scenes = call_extension_hook_first(env, "smart_core_delivery_scene_declarations", env)
+    # An empty declaration list is authoritative; only older providers fall back.
+    if not isinstance(scenes, list):
+        try:
+            from odoo.addons.smart_core.core.scene_provider import load_scenes_from_db_or_fallback
+        except ModuleNotFoundError:
+            return {}, []
+        payload = load_scenes_from_db_or_fallback(env, drift=None, logger=None) or {}
+        scenes = payload.get("scenes") or []
     by_pair: dict[tuple[int, int], str] = {}
     ambiguous: set[str] = set()
-    for scene in payload.get("scenes") or []:
+    for scene in scenes:
         if not isinstance(scene, dict):
             continue
         scene_key = _text(scene.get("code") or scene.get("key") or scene.get("scene_key"))

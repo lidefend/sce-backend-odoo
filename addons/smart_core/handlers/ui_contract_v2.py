@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-scene-binding-declaration-v38"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v39"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1298,7 +1298,11 @@ class UiContractV2Handler(BaseIntentHandler):
         project_native_action_guidance(contract_v2, read_action_fact)
         modifier_status_at = time.monotonic()
         from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
-        node_validation_contract = deepcopy(contract_v2)
+        node_validation_contract = (
+            deepcopy(contract_v2)
+            if not runtime_record_id and not is_create_request and cache_key and source_token
+            else None
+        )
         validate_final_nodes(
             self.env,
             contract_v2,

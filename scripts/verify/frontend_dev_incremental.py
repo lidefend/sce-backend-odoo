@@ -86,6 +86,14 @@ class Rule:
 
 RULES = (
     Rule((
+        "addons/smart_core/core/system_init_extension_fact_merger.py",
+        "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+    ), ("verify.backend.navigation_delivery.unit",)),
+    Rule((
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    ), ("verify.frontend.professional_relation_field.unit",)),
+    Rule((
         "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/tests/test_platform_minimum_nav_contract.py",

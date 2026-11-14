@@ -33,6 +33,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_performance_consumption_regressions_have_executable_owners(self):
+        for path, owner in [
+            ("addons/smart_core/core/system_init_extension_fact_merger.py", "verify.backend.navigation_delivery.unit"),
+            ("addons/smart_core/tests/test_system_init_extension_fact_merger.py", "verify.backend.navigation_delivery.unit"),
+            ("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue", "verify.frontend.professional_relation_field.unit"),
+            ("frontend/apps/web/scripts/readonly_block_component_test.mjs", "verify.frontend.professional_relation_field.unit"),
+        ]:
+            with self.subTest(path=path):
+                self.assertIn(owner, select_targets([path]))
+
     def test_demo_module_paths_select_demo_lifecycle_contracts(self) -> None:
         demo_targets = [
             "verify.demo.lifecycle.unit",

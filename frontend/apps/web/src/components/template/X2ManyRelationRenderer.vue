@@ -810,9 +810,14 @@ function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column:
   );
 }
 
-watch(() => props.field.name, (fieldName) => {
-  void Promise.resolve(props.adapter.prepareOne2manyColumns(fieldName));
-}, { immediate: true });
+watch(
+  [() => props.field.type, () => props.field.name],
+  ([fieldType, fieldName]) => {
+    if (fieldType !== 'one2many') return;
+    void Promise.resolve(props.adapter.prepareOne2manyColumns(fieldName));
+  },
+  { immediate: true },
+);
 
 watch(() => {
   const fieldName = props.field.name;

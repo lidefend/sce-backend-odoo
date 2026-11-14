@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "SCENARIO-FORM-PERFORMANCE-20261114",
-  "branch": "audit/scenario-form-performance-20261114",
-  "baseline_sha": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
+  "branch": "fix/scenario-form-performance-r2-20261114",
+  "baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
   "status": "verification_pending",
   "goal": ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
   "record": "docs/ops/iterations/scenario_form_performance_20261114.md",
@@ -28,11 +28,22 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "scripts/test/test.sh"
+    "scripts/test/test.sh",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "make/frontend.mk",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "P0 declared native-delegate hydration and scene-binding declaration optimization; P4 existing daily readonly browser measurement. No deployment or database writes."
+    "authority": "R2: offline tests and planner-selected registered local.test ORM checks only; sc-local-test / sc_test isolated synthetic test profile, exact filter and fixed filestore checked by local.test.prepare. No R2 daily deployment or business data writes."
   },
   "checks": {
     "verify_agent_ledger_unit": {
@@ -135,183 +146,141 @@
     }
   },
   "blockers": [
-    "Independent exact-candidate review and publication evidence archive pending.",
-    "Daily same-environment before/after performance acceptance not run."
+    "R2 final exact-candidate review and publication are pending.",
+    "R2 candidate browser/network and daily same-environment A/B performance acceptance not run."
   ],
-  "next_exact_step": "Finish freeze preparation, commit final result index, obtain independent read-only exact-head review before evidence archive and protected PR publication. No daily deployment authorized by this preparation.",
+  "next_exact_step": "Commit the prepared local R2 candidate and bind an independent exact-head review. Current local checks are valid for their documented dirty execution; remote CI, R2 deployment and same-environment browser A/B remain pending.",
   "results": {
-    "research": "daily_project_baseline_and_first_optimization_implemented",
-    "performance_acceptance": "not_run_candidate",
-    "iteration": {
+    "init_payload": {
       "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration.log",
-      "targeted_tests": 18
+      "tests": 23,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-init-payload.log"
     },
-    "probe_tools": {
+    "init_facts": {
       "status": "passed",
-      "target": "verify.system.performance.baseline.unit",
-      "test_count": 72,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/probe-tests.log"
+      "tests": 4,
+      "includes": "legacy absent/true/0/empty-string and explicit false; retained facts and principal unchanged",
+      "log": ".runtime/frontend-dev-validation/executions/20261113T234559Z-2783249-141453041/verify.backend.navigation_delivery.unit.log"
     },
-    "daily_requests": {
-      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-request-summary.json",
-      "sha256": "0d6b12ca1fea7c95ef8190693c3a6163cf79a0ae84e4115b97f3375fc0636c7b",
-      "limitation": "Mixed intent log window, not form-only or browser latency; not root-cause attribution."
+    "scene_projection": {
+      "status": "passed",
+      "tests": 19,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-scene.log"
     },
-    "daily_browser_baseline": {
+    "relation": {
+      "status": "passed",
+      "mounted_sfc_assertions": 43,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-relation.log"
+    },
+    "contract_first": {
       "status": "failed",
+      "classification": "new test harness selected wrapper handle instead of assembly method; fixed AST selection",
+      "tests": 167,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-contract.log"
+    },
+    "iteration_first": {
+      "status": "blocked",
       "classification": "validation_tool_defect",
-      "record_checks_passed": 8,
-      "reason": "readonly interceptor omitted workspace.scenario.projection.get",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser.json"
+      "reason": "Existing extension fact test lacked an incremental target mapping. Added to existing navigation unit entry and mapped relation consumption to actual SFC suite.",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration.log"
     },
-    "implementation_iteration_first": {
+    "contract": {
+      "status": "passed",
+      "boundary_tests": 167,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-contract-fixed.log"
+    },
+    "planner": {
+      "status": "passed",
+      "tests": 136,
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-planner.log"
+    },
+    "test_environment": {
+      "status": "passed",
+      "command": "make local.test.prepare",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-test-env.log"
+    },
+    "source_review": {
+      "status": "passed",
+      "scope": "dirty R2 source; not final exact-head review",
+      "reviewer": "independent_perf_review",
+      "findings_S0_S2": 0,
+      "limitations": [
+        "Backend AST/stub tests do not replace ORM handler coverage",
+        "Context isolates new top-level flag only, not arbitrary nested mutation",
+        "Same-environment performance acceptance pending"
+      ]
+    },
+    "iteration_mapped": {
       "status": "failed",
-      "classification": "baseline_evidence_defect",
-      "reason": "assembled cache pin changed with owned handler edit; bump namespace and repin exact digest",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-implementation.log"
+      "classification": "validation_execution_identity_drift",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration-mapped.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T233539Z-2728306-504684422/receipt.json",
+      "reason": "ORM process and guard succeeded (55 tests), but tracked documentation/run updates during execution changed full-tree identity. Receipt source_unchanged=false, therefore cannot count as a passing ORM execution.",
+      "recovery": "Documentation/run reconciliation is now complete. Repeat required iteration with no tracked or untracked source writes while any test executes; preserve failed receipt."
     },
-    "daily_browser_timed_baseline": {
-      "status": "passed",
-      "record_checks": 8,
-      "request_timings": 51,
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser-timed.json",
-      "limitation": "Unmodified daily baseline only, project record at two viewports; not candidate improvement."
-    },
-    "implementation_iteration_repinned": {
-      "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-repinned.log",
-      "limitation": "Backend/P4 scope before native delegate frontend edits."
-    },
-    "native_delegate_targeted": {
-      "status": "passed",
-      "targets_executed": 20,
-      "receipt": ".runtime/frontend-dev-validation/executions/20261113T172041Z-906102-923312030/receipt.json",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log"
-    },
-    "declaration_authority": {
-      "status": "passed",
-      "target": "verify.navigation.publication_consumers.unit",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
+    "related_request_attribution": {
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-related-request-attribution.json",
+      "finding": "Captured project tags is many2many; collaborator/responsibility are one2many. Only tags preparation expected to disappear; not post-change network proof."
     },
     "iteration_latest": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "targets_executed": 20,
-      "exit_code": 0,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log",
-      "scope_note": "All implementation inputs; subsequent documentation-only reconciliation checked by resume, ledger unit and diff check."
-    },
-    "final_metadata": {
-      "status": "passed",
-      "commands": [
-        "make agent.run.resume",
-        "make verify.agent.ledger.unit",
-        "git diff --check"
-      ],
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ledger-final.log"
-    },
-    "browser_iteration_first": {
-      "status": "failed",
-      "classification": "validation_tool_defect",
-      "reason": "Existing candidate visual script had no incremental test mapping; map it to candidate tool unit target and include existing candidate suite and syntax check.",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser.log"
-    },
-    "candidate_tool_tests": {
-      "status": "passed",
-      "tests": 17,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-tool-tests.log"
-    },
-    "browser_iteration_mapped": {
-      "status": "passed",
-      "command": "make ci.local.iteration",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
-      "exit_code": 0
-    },
-    "local_runtime": {
-      "status": "passed_identity",
-      "head": "c754960051657b8ac3ecde8a7157dde482574265",
-      "database": "sc_dev_demo",
-      "filter": "^sc_dev_demo$",
-      "filestore": "sc_local_dev_odoo_data",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
-    },
-    "candidate_browser_failed_attempts": {
-      "status": "failed",
-      "head": "c754960051657b8ac3ecde8a7157dde482574265",
-      "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
-      "logs": [
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
-        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
-      ],
-      "classification": "unresolved_test_scope"
-    },
-    "candidate_browser": {
-      "status": "passed_scoped_native_journey",
-      "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
-      "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
-    },
-    "designed_scene_browser": {
-      "status": "passed",
-      "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
-      "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
-    },
-    "native_empty_list": {
-      "status": "passed",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
-      "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
-    },
-    "diagnostics_iteration": {
-      "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
-      "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
-    },
-    "diagnostics_tool_final": {
-      "status": "passed",
-      "tests": 17,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
-    },
-    "heading_iteration_first": {
-      "status": "failed",
-      "classification": "baseline_evidence_defect",
-      "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
-    },
-    "heading_iteration": {
-      "status": "passed",
       "targets_executed": 25,
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
+      "receipt": ".runtime/frontend-dev-validation/executions/20261113T234559Z-2783249-141453041/receipt.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-iteration-stable.log",
+      "identity_note": "Executed against base 5d631f6 with explicit R2 dirty scope. Subsequent changes limited to documentation/run/generated evidence; do not relabel this as a clean-head test run."
     },
-    "designed_scene_browser_previous": {
-      "status": "failed",
-      "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
-      "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
-      "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
-    },
-    "native_browser_reuse": {
-      "status": "reused_unaffected",
-      "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
-      "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
-      "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
-    },
-    "freeze_prepare": {
+    "orm": {
       "status": "passed",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
+      "tests": 57,
+      "executions": [
+        {
+          "receipt": ".runtime/test-baseline/1794613573987635591/receipt.json",
+          "tests": 55,
+          "status": "passed",
+          "cleanup": "absent"
+        },
+        {
+          "receipt": ".runtime/test-baseline/1794614187827054597/receipt.json",
+          "tests": 1,
+          "status": "passed",
+          "cleanup": "absent"
+        },
+        {
+          "receipt": ".runtime/test-baseline/1794614629200166424/receipt.json",
+          "tests": 1,
+          "status": "passed",
+          "cleanup": "absent"
+        }
+      ]
+    },
+    "startup_stage_observation": {
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-baseline-startup-stages.json",
+      "finding": "Existing daily boot facts production 23-51ms; build_scene_runtime_surface parent 1222-1821ms includes EffectiveDeliveryService.resolve and surface builder. Not candidate performance or per-function attribution."
+    },
+    "freeze_preparation": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-freeze-prepare.log",
+      "changed_generated_paths": [
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+      ],
+      "impact": "Line counts/derived inventory digest only. Generated semantic runtime files unchanged. Product/test sources match successful iteration."
     }
   },
   "stage_identity": {
-    "head": "c101d7464dbfde82e8d525f3c3679220bd00fb12",
+    "head": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
     "dirty": true,
-    "scope": "P4 crash diagnostics and current run index",
-    "frozen": false
+    "frozen": false,
+    "scope": "R2 minimal removal of unused computation"
   },
   "completion": {
-    "batch": "verification_pending_ci_crash_unresolved",
-    "mainline": "not_integrated",
-    "deployment": "unchanged",
-    "user_acceptance": "not_run"
+    "batch": "R2_code_and_local_checks_passed_browser_AB_pending",
+    "mainline": "R1_integrated_PR886_R2_not_integrated",
+    "deployment": "R1_5d631f6_deployed_R2_not_deployed",
+    "user_acceptance": "performance_AB_not_run"
   },
   "ci_crash_diagnosis": {
     "layer": "P4",
@@ -359,5 +328,191 @@
       "targets_executed": 26,
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-ci-only-diagnostic.log"
     }
+  },
+  "previous_iteration": {
+    "branch": "audit/scenario-form-performance-20261114",
+    "baseline_sha": "f4f87939bcafcd35a5a0b18017b36464056a78e9",
+    "merged_pr": 886,
+    "merge_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "deployment": "passed",
+    "browser_observation": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/deployed-project-observation.json",
+    "results": {
+      "research": "daily_project_baseline_and_first_optimization_implemented",
+      "performance_acceptance": "not_run_candidate",
+      "iteration": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration.log",
+        "targeted_tests": 18
+      },
+      "probe_tools": {
+        "status": "passed",
+        "target": "verify.system.performance.baseline.unit",
+        "test_count": 72,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/probe-tests.log"
+      },
+      "daily_requests": {
+        "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-request-summary.json",
+        "sha256": "0d6b12ca1fea7c95ef8190693c3a6163cf79a0ae84e4115b97f3375fc0636c7b",
+        "limitation": "Mixed intent log window, not form-only or browser latency; not root-cause attribution."
+      },
+      "daily_browser_baseline": {
+        "status": "failed",
+        "classification": "validation_tool_defect",
+        "record_checks_passed": 8,
+        "reason": "readonly interceptor omitted workspace.scenario.projection.get",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser.json"
+      },
+      "implementation_iteration_first": {
+        "status": "failed",
+        "classification": "baseline_evidence_defect",
+        "reason": "assembled cache pin changed with owned handler edit; bump namespace and repin exact digest",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-implementation.log"
+      },
+      "daily_browser_timed_baseline": {
+        "status": "passed",
+        "record_checks": 8,
+        "request_timings": 51,
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/daily-browser-timed.json",
+        "limitation": "Unmodified daily baseline only, project record at two viewports; not candidate improvement."
+      },
+      "implementation_iteration_repinned": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-repinned.log",
+        "limitation": "Backend/P4 scope before native delegate frontend edits."
+      },
+      "native_delegate_targeted": {
+        "status": "passed",
+        "targets_executed": 20,
+        "receipt": ".runtime/frontend-dev-validation/executions/20261113T172041Z-906102-923312030/receipt.json",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log"
+      },
+      "declaration_authority": {
+        "status": "passed",
+        "target": "verify.navigation.publication_consumers.unit",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/declaration-authority.log"
+      },
+      "iteration_latest": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "targets_executed": 20,
+        "exit_code": 0,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-native-delegate.log",
+        "scope_note": "All implementation inputs; subsequent documentation-only reconciliation checked by resume, ledger unit and diff check."
+      },
+      "final_metadata": {
+        "status": "passed",
+        "commands": [
+          "make agent.run.resume",
+          "make verify.agent.ledger.unit",
+          "git diff --check"
+        ],
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ledger-final.log"
+      },
+      "browser_iteration_first": {
+        "status": "failed",
+        "classification": "validation_tool_defect",
+        "reason": "Existing candidate visual script had no incremental test mapping; map it to candidate tool unit target and include existing candidate suite and syntax check.",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser.log"
+      },
+      "candidate_tool_tests": {
+        "status": "passed",
+        "tests": 17,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-tool-tests.log"
+      },
+      "browser_iteration_mapped": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-browser-mapped.log",
+        "exit_code": 0
+      },
+      "local_runtime": {
+        "status": "passed_identity",
+        "head": "c754960051657b8ac3ecde8a7157dde482574265",
+        "database": "sc_dev_demo",
+        "filter": "^sc_dev_demo$",
+        "filestore": "sc_local_dev_odoo_data",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-stage.json"
+      },
+      "candidate_browser_failed_attempts": {
+        "status": "failed",
+        "head": "c754960051657b8ac3ecde8a7157dde482574265",
+        "reason": "Local role excludes project entry; guessed native user scene path is not authoritative (source also declares enterprise.user). Loaded-state timeout and one hydration remain failed evidence, not proof of product regression. Discover exact declared scene identities before rerun.",
+        "logs": [
+          ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-users.log",
+          ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-users-diagnostic/summary.json"
+        ],
+        "classification": "unresolved_test_scope"
+      },
+      "candidate_browser": {
+        "status": "passed_scoped_native_journey",
+        "head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-record/summary.json",
+        "scope": "Authoritatively declared native data permission entry; desktop and mobile list -> record 8 -> return; full scene hydration count 0 per viewport; no runtime errors, business mutationCount 0. Not daily project/contract/payment acceptance."
+      },
+      "designed_scene_browser": {
+        "status": "passed",
+        "head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-heading/summary.json",
+        "scope": "Desktop/mobile: one H1 from scene.label, one required full hydration, SceneView ready, zero overflow, no runtime errors or business mutations. Async readiness/activation subpanel completion is not asserted."
+      },
+      "native_empty_list": {
+        "status": "passed",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-native-state/summary.json",
+        "scope": "Declared numbering scene renders empty state with zero full hydration. Earlier ok/nonempty assertion was invalid for current data."
+      },
+      "diagnostics_iteration": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-diagnostics.log",
+        "note": "Final menu identity projection subsequently covered by candidate-diagnostics-tests-final.log; all product source unchanged."
+      },
+      "diagnostics_tool_final": {
+        "status": "passed",
+        "tests": 17,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-diagnostics-tests-final.log"
+      },
+      "heading_iteration_first": {
+        "status": "failed",
+        "classification": "baseline_evidence_defect",
+        "reason": "Template edit invalidated component-driver inputDigest; refreshed derived inventory using refresh.generated_evidence.",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading.log"
+      },
+      "heading_iteration": {
+        "status": "passed",
+        "targets_executed": 25,
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/iteration-heading-refreshed.log"
+      },
+      "designed_scene_browser_previous": {
+        "status": "failed",
+        "report": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/candidate-designed-scene/summary.json",
+        "functional_observation": "Each viewport performs exactly one full enterprise.setup hydration and reaches SceneView ready; errors 0, mutationCount 0.",
+        "failure": "Both viewports have h1=0; complete visual acceptance not passed. Header rendering not modified in this batch; preexistence not runtime-proven."
+      },
+      "native_browser_reuse": {
+        "status": "reused_unaffected",
+        "source_head": "6b8382da77ce4cfef6bbe084f5c911538184a041",
+        "current_source_head": "259d196df90c5bd7805e0c6d1c271387084a2e44",
+        "reason": "Only handling-entry header changes product source; native delegates have no handling-entry groups. Hydration, ActionView and record code unchanged; original JSON evidence retained."
+      },
+      "freeze_prepare": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/freeze-prepare.log"
+      }
+    }
+  },
+  "round2": {
+    "formal_product_layer": "P0 init policy, contract snapshot and generic relation consumption; P1 facts production and scene identity projection; P4 regression evidence",
+    "standard_vs_user_specific": "standard",
+    "why_here": "Remove unused work at owning producer/consumer boundaries, without product semantics or authorization changes",
+    "blast_radius": "Boot without workspace; native scene index; record/create contract copy; many2many preparation",
+    "exclusions": [
+      "hidden notebook unmount",
+      "new shared cache",
+      "shared mutable source graphs",
+      "daily redeployment before verification",
+      "other worktrees"
+    ],
+    "status": "local_validation_passed",
+    "tests": "Extend existing payload/fact, scenario, contract boundary and actual mounted SFC suites",
+    "next": "Prepare consistent generated evidence and clean local candidate; exact-head review remains separate from deployment and A/B."
   }
 }

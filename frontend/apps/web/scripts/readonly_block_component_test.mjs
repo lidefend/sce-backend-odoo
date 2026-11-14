@@ -248,14 +248,16 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     delete globalThis.window; delete globalThis.document; delete globalThis.ResizeObserver;
     return checks;
   }
+  const preparedFields = [];
   const selected = ref([{ id: 15, label: '#15' }]);
   const attachmentProps = { field: { name: 'attachment_ids', type: 'many2many', readonly: true, descriptor: { relation: 'ir.attachment' } }, adapter: {
-    selectedRelationOptions: () => selected.value, prepareOne2manyColumns: () => [], visibleOne2manyRows: () => [], one2manyColumns: () => [],
+    selectedRelationOptions: () => selected.value, prepareOne2manyColumns: name => { preparedFields.push(name); return []; }, visibleOne2manyRows: () => [], one2manyColumns: () => [],
   } };
   const props = ref(kind === 'attachment' ? attachmentProps : kind === 'grid' ? { intent: 'example.entry', sceneKey: 'scene.a' } : { block: { key: 'test', title: 'Test' }, zoneKey: 'main', dataset: {} });
   const app = renderer.createApp({ setup: () => () => h(Component, props.value) });
   app.mount(rootNode); await tick();
   if (kind === 'attachment') {
+    equal(preparedFields, [], 'mounted many2many attachment does not request one2many metadata');
     const attachmentName = () => {
       const search = n => n.props.class === 'attachment-name' ? n : n.children.map(search).find(Boolean);
       return search(rootNode)?.text;
@@ -296,7 +298,7 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     ];
     const columns = [{ name: 'title', label: 'Title', ttype: 'char' }];
     const collectionAdapter = {
-      prepareOne2manyColumns: () => [], visibleOne2manyRows: () => rows,
+      prepareOne2manyColumns: name => { preparedFields.push(name); return []; }, visibleOne2manyRows: () => rows,
       one2manyColumns: () => columns, one2manyCanOpenRow: () => false,
       one2manyColumnDisplayValue: (_column, value) => value ?? '',
       one2manyRowStateLabel: () => '', one2manyRowHints: () => [],
@@ -308,8 +310,10 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
       ...(predicate(from) ? [from] : []), ...from.children.flatMap(child => all(predicate, child)),
     ];
     const textOf = n => n.text + n.children.map(textOf).join('');
-    const collection = renderer.createApp({ render: () => h(Component, collectionProps(2)) });
+    const liveCollectionProps = ref(collectionProps(2));
+    const collection = renderer.createApp({ render: () => h(Component, liveCollectionProps.value) });
     collection.mount(rootNode); await tick();
+    equal(preparedFields, ['line_ids'], 'mounted one2many still prepares its columns once');
     const tableRows = () => all(n => Array.isArray(n.props.data))[0].props.data;
     const cards = () => all(n => n.props.class === 'o2m-readonly-row');
     const pageButtons = () => all(n => n.type === 'test-button' && n.props.class === 'o2m-page-action');
@@ -328,6 +332,14 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     equal(pageButtons()[1].props.disabled, true, 'last-page next is disabled');
     pageButtons()[0].props.onClick(); await tick();
     equal(tableRows().map(row => row.id), ['r3', 'r4'], 'actual previous action restores the prior window');
+    liveCollectionProps.value = { field: { ...attachmentProps.field, name: 'line_ids' },
+      adapter: { ...attachmentProps.adapter, selectedRelationOptions: () => [] } };
+    await tick();
+    equal(preparedFields, ['line_ids'], 'same-name transition to many2many does not prepare columns');
+    liveCollectionProps.value = collectionProps(2); await tick();
+    equal(preparedFields, ['line_ids', 'line_ids'], 'same-name transition to one2many prepares columns');
+    liveCollectionProps.value.field = { ...liveCollectionProps.value.field, name: 'other_line_ids' }; await tick();
+    equal(preparedFields, ['line_ids', 'line_ids', 'other_line_ids'], 'one2many field-name change prepares its own columns');
     collection.unmount(); await tick();
     for (const pageSize of [undefined, 0, -1, 1.5, '2', true]) {
       const errors = [];

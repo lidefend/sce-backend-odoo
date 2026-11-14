@@ -1192,6 +1192,8 @@ class SystemInitHandler(BaseIntentHandler):
         if not isinstance(params, dict):
             params = payload if isinstance(payload, dict) else {}
         build_mode = SystemInitPayloadBuilder.resolve_build_mode(params)
+        with_tokens = _parse_with_tokens(params.get("with"))
+        include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens
         startup_timings_ms: dict[str, int] = {}
         startup_subtimings_ms: dict[str, dict[str, int]] = {}
 
@@ -1408,7 +1410,12 @@ class SystemInitHandler(BaseIntentHandler):
         )
 
         # 扩展模块 facts contribution（平台 merge owner）
-        apply_extension_fact_contributions(data, env, user, context=params)
+        apply_extension_fact_contributions(
+            data, env, user,
+            context=SystemInitPayloadBuilder.extension_fact_context(
+                params, build_mode=build_mode, include_workspace_home=include_workspace_home,
+            ),
+        )
         prepare_runtime_context_ts = _mark_substage(
             "prepare_runtime_context",
             "apply_extension_fact_contributions",
@@ -1492,8 +1499,6 @@ class SystemInitHandler(BaseIntentHandler):
         data, scene_diagnostics = SystemInitSurfaceBuilder.apply(surface_ctx=surface_ctx)
         data = _merge_platform_duty_capabilities(data)
         stage_ts = _mark("apply_surface", stage_ts)
-        with_tokens = _parse_with_tokens(params.get("with"))
-        include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens
         if include_workspace_home:
             data["workspace_home"] = build_workspace_home_contract(data)
         else:

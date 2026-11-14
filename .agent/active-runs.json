@@ -145,6 +145,6 @@
     "refactor/scene-shell-designed-scene-acceptance-20261112": ".agent/runs/SCENE-SHELL-FINAL-DELIVERY-20261112/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
     "fix/backend-effective-delivery-closeout-20261112": ".agent/runs/BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112/run.json",
-    "audit/scenario-form-performance-20261114": ".agent/runs/SCENARIO-FORM-PERFORMANCE-20261114/run.json"
+    "fix/scenario-form-performance-r2-20261114": ".agent/runs/SCENARIO-FORM-PERFORMANCE-20261114/run.json"
   }
 }

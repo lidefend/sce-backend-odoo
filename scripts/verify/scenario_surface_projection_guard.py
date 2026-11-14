@@ -13,6 +13,8 @@ import importlib.util
 import json
 import sys
 import unittest
+import types
+from unittest.mock import Mock, patch
 from pathlib import Path
 
 
@@ -31,6 +33,41 @@ def _load_module(name: str, path: Path):
 PMS = _load_module("product_menu_source", ROOT / "addons/smart_construction_core/services/product_menu_source.py")
 PROJ = _load_module("scenario_surface_projection", ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py")
 SURFACE_PATH = ROOT / "addons/smart_construction_core/data/scenario_product_surface.json"
+
+
+class SceneDeclarationConsumptionTest(unittest.TestCase):
+    def test_declarations_empty_compatibility_and_ambiguity(self):
+        scene = {"code": "scene.a", "target": {"menu_id": 10, "action_id": 20}}
+        for declared, fallback_calls, expected in [
+            ([scene], 0, {(10, 20): "scene.a"}), ([], 0, {}),
+            (None, 1, {(10, 20): "scene.a"}), ({}, 1, {(10, 20): "scene.a"}),
+        ]:
+            with self.subTest(declared=declared):
+                hook = Mock(return_value=declared)
+                provider = Mock(return_value={"scenes": [scene]})
+                with patch.dict(sys.modules, {
+                    "odoo.addons.smart_core.utils.extension_hooks": types.SimpleNamespace(call_extension_hook_first=hook),
+                    "odoo.addons.smart_core.core.scene_provider": types.SimpleNamespace(load_scenes_from_db_or_fallback=provider),
+                }):
+                    env = object()
+                    self.assertEqual(PROJ._scene_targets_by_pair(env), (expected, []))
+                    hook.assert_called_once_with(env, "smart_core_delivery_scene_declarations", env)
+                    self.assertEqual(provider.call_count, fallback_calls)
+
+    def test_declaration_xmlid_default_action_and_conflicts(self):
+        scenes = [
+            {"code": "scene.a", "target": {"menu_xmlid": "menu"}},
+            {"key": "scene.b", "target": {"menu_id": "11", "action_xmlid": "action"}},
+            {"code": "scene.c", "target": {"menu_id": 10, "action_id": 20}},
+            {"code": "scene.a", "target": {"menu_id": 10, "action_id": 20}},
+        ]
+        action = types.SimpleNamespace(id=20)
+        env = types.SimpleNamespace(ref=lambda key, **kw: {"menu": types.SimpleNamespace(id=10, action=action), "action": action}.get(key))
+        with patch.dict(sys.modules, {
+            "odoo.addons.smart_core.utils.extension_hooks": types.SimpleNamespace(call_extension_hook_first=lambda *args: scenes),
+            "odoo.addons.smart_core.core.scene_provider": types.SimpleNamespace(load_scenes_from_db_or_fallback=Mock(side_effect=AssertionError("unused full projection"))),
+        }):
+            self.assertEqual(PROJ._scene_targets_by_pair(env), ({(11, 20): "scene.b"}, ["10/20"]))
 
 
 def released_menu_xmlids():

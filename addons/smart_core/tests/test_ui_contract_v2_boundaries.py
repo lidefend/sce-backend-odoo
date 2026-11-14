@@ -431,6 +431,58 @@ class FormStructureSurfaceBoundariesTest(unittest.TestCase):
         )
 
 
+class TestNodeValidationSnapshotConsumption(unittest.TestCase):
+    def test_actual_validation_segment_preserves_order_isolation_and_rejections(self):
+        path = Path(__file__).resolve().parents[1] / "handlers/ui_contract_v2.py"
+        tree = ast.parse(path.read_text())
+        handle = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)
+                      and any(isinstance(stmt, ast.Assign) and any(isinstance(t, ast.Name)
+                              and t.id == "node_validation_contract" for t in stmt.targets) for stmt in n.body))
+        start = next(i for i, n in enumerate(handle.body) if isinstance(n, ast.Assign)
+                     and any(isinstance(t, ast.Name) and t.id == "node_validation_contract" for t in n.targets))
+        end = next(i for i in range(start, len(handle.body)) if isinstance(handle.body[i], ast.If)
+                   and "CONTRACT_PROJECTION_HOT_CACHE.put_generated" in ast.unparse(handle.body[i]))
+        segment = [n for n in handle.body[start:end] if not isinstance(n, (ast.Import, ast.ImportFrom))]
+        program = compile(ast.Module(body=segment, type_ignores=[]), str(path), "exec")
+        for record, create, key, token, copies in [
+            (7, False, "key", "token", 0), (0, True, "key", "token", 0),
+            (0, False, None, "token", 0), (0, False, "key", None, 0),
+            (0, False, "key", "token", 1),
+        ]:
+            for rejected in (None, "nodes", "capabilities", "references"):
+                with self.subTest(record=record, create=create, key=key, token=token, rejected=rejected):
+                    events = []
+                    source = {"nested": {"value": "before"}}
+                    def copy(value):
+                        events.append("copy")
+                        return deepcopy(value)
+                    def validate(label, value):
+                        events.append(label)
+                        value["nested"]["value"] = label
+                        if rejected == label:
+                            raise ValueError(label)
+                    def trim(value, **kwargs):
+                        events.append("trim")
+                        return value
+                    ns = dict(runtime_record_id=record, is_create_request=create, cache_key=key, source_token=token,
+                              contract_v2=source, deepcopy=copy, self=types.SimpleNamespace(env=object()),
+                              node_validation_native_tree={}, draft_feedback_proof=None, params={},
+                              client_type="web", delivery_profile="full", limit_params={},
+                              time=types.SimpleNamespace(monotonic=lambda: 0), trim_unified_page_contract_v2=trim,
+                              validate_final_nodes=lambda env, value, tree, **kw: validate("nodes", value),
+                              validate_component_capabilities=lambda value, params: validate("capabilities", value),
+                              validate_delivered_references=lambda value: validate("references", value))
+                    if rejected:
+                        with self.assertRaisesRegex(ValueError, rejected):
+                            exec(program, ns)
+                    else:
+                        exec(program, ns)
+                    order = ["nodes", "capabilities", "trim", "references"]
+                    expected = order[:order.index(rejected)+1] if rejected else order
+                    self.assertEqual(events, (["copy"] if copies else []) + expected)
+                    self.assertEqual(ns["node_validation_contract"], {"nested": {"value": "before"}} if copies else None)
+
+
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
