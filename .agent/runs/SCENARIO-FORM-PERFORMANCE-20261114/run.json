@@ -204,10 +204,10 @@
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope.",
-    "Warm desktop click-to-form latency did not improve in the three-sample isolated A/B set.",
-    "Formal timing did not collect SQL counts."
+    "Front-end implementation is not authorized; R11 is read-only diagnosis.",
+    "Core-ready and auxiliary-ready boundaries are not yet separated."
   ],
-  "next_exact_step": "Review the isolated A/B evidence; keep or destroy the two R10 twin projects, and require a separate authorization before push, CI, merge, or deployment.",
+  "next_exact_step": "Review the R11 identity, nine-sample A/B and stage-diagnostic evidence; approve or reject a front-end implementation proposal before changing product code.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1232,6 +1232,42 @@
     },
     "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-summary.md",
     "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-manifest.json"
+  },
+  "r11": {
+    "status": "read_only_diagnosis_complete",
+    "candidate_identity": {
+      "pr_head": "526a1044ba6e99557823ad16567c0425eec98d99",
+      "b_runtime": "5d0381f364f9eebab109469fd2be5e6925c67cf4",
+      "branch_head": "297fe1c1c30bd37c4a25cc02ea952cd3cea824cd",
+      "b_to_head_product_runtime_diff": []
+    },
+    "formal_warm_samples": {
+      "desktop_per_arm": 9,
+      "mobile_per_arm": 3,
+      "desktop_form_interactive_delta_percent": -3.6,
+      "desktop_p90_delta_ms": -163.2,
+      "mobile_form_interactive_delta_percent": -6.8,
+      "earlier_desktop_regression_confirmed": false
+    },
+    "stage_diagnostic": {
+      "session_full_snapshot_writes_per_form_open": "11-12",
+      "session_snapshot_bytes_approx": 409600,
+      "session_total_bytes_per_open_approx": "4.5-4.9 MB",
+      "session_direct_setitem_ms": "22-26",
+      "session_persist_cpu_self_ms": "72-85",
+      "post_field_auxiliary_tail_ms": "494-528",
+      "relation_contract_requests": "2-3, parallel",
+      "relation_contract_max_ms": "294-329"
+    },
+    "evidence": {
+      "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/result.md",
+      "call_chain": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/call-chain.md",
+      "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/r11-manifest.json",
+      "warm_comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/formal-warm-comparison.json",
+      "stage_comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/stage-comparison.json"
+    },
+    "product_code_modified": false,
+    "merge_deployment": "paused"
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
