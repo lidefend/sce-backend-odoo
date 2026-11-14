@@ -314,6 +314,7 @@ overrides = {
     "REDIS_DATA": arm["redis_volume"],
     "ODOO_DATA": arm["odoo_volume"],
     "INTERNAL_NETWORK": arm["internal_network"],
+    "INGRESS_NETWORK": arm["ingress_network"],
     "NGINX_PORT": str(arm["public_port"]),
     "SC_PRODUCT_ROOT": arm["source_root"],
     "DEMO_ADDONS_ROOT": arm["source_root"] + "/demo_addons",
@@ -380,6 +381,7 @@ def restore(
         enriched = {
             **arm,
             **arm_identity[name],
+            "ingress_network": profile["ingress"]["network"],
             "frontend_build_sha256": (
                 profile["source"]["frontend_build_sha256"]
                 if name == "a"

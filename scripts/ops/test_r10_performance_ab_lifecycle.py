@@ -21,6 +21,10 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
     def test_profile_stack_names_each_arm_without_shared_runtime_resources(self):
         profile = module._profile(module.DEFAULT_PROFILE)
         self.assertTrue(module.STACK_TEMPLATE.is_file())
+        stack = module.STACK_TEMPLATE.read_text(encoding="utf-8")
+        nginx = stack.split("  nginx:", 1)[1].split("\nvolumes:\n", 1)[0]
+        self.assertIn("- ingress", nginx)
+        self.assertEqual(stack.count("- ingress"), 1)
         self.assertNotEqual(
             profile["arms"]["a"]["database"], profile["arms"]["b"]["database"]
         )

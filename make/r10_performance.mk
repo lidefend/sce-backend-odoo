@@ -7,6 +7,7 @@ R10_PERF_SNAPSHOT_DIR ?=
 R10_PERF_CANDIDATE_SHA ?= $(shell git rev-parse HEAD)
 R10_PERF_A_SHA ?= 5d631f6dd304a003f09c72e7de22fde45b8c3dbc
 R10_PERF_EVIDENCE_ROOT ?= .runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/runtime
+R10_PERF_INGRESS_NETWORK ?= sc-perf-r10-ingress
 R10_PERF_REMOTE_CONTRACT ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(R10_PERF_CONTINUITY_CONTRACT)
 
 .PHONY: verify.r10.performance_ab.profile r10.performance_ab.plan r10.performance_ab.preflight r10.performance_ab.snapshot r10.performance_ab.snapshot.validate r10.performance_ab.snapshot.restore_drill r10.performance_ab.twins.stack.sync r10.performance_ab.twins.prepare r10.performance_ab.twins.restore r10.performance_ab.twins.deploy r10.performance_ab.twins.readback r10.performance_ab.twins.destroy
@@ -53,6 +54,8 @@ r10.performance_ab.twins.stack.sync: guard.prod.forbid verify.r10.performance_ab
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
 		'install -d -m 0750 /opt/projects/perf-r10/runtime && cat > /opt/projects/perf-r10/runtime/stack.yml' \
 		< config/ops/r10_performance_ab_stack.yml
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
+		'docker network inspect "$(R10_PERF_INGRESS_NETWORK)" >/dev/null 2>&1 || docker network create --driver bridge --opt com.docker.network.bridge.enable_ip_masquerade=false "$(R10_PERF_INGRESS_NETWORK)"'
 
 r10.performance_ab.twins.prepare: guard.prod.forbid verify.r10.performance_ab.profile
 	@test -n "$(R10_PERF_SNAPSHOT_DIR)" || { echo "R10_PERF_SNAPSHOT_DIR is required" >&2; exit 2; }
