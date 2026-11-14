@@ -64,7 +64,11 @@
     "addons/smart_core/core/capability_provider.py",
     "addons/smart_construction_core/services/capability_registry.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
-    "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/test_local_test_runner.py",
+    "scripts/verify/test_local_development_lifecycle.py",
+    "make/ci.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -585,13 +589,47 @@
         "daily_permission_truth_capability_group": "Only the directly affected same-scope capability test was run on the persistent sc_dev_demo database; the full fresh sc_test group was not rebuilt.",
         "actual_performance": "Initialization correctness/order is validated; request latency and SQL reduction remain unmeasured for this candidate."
       }
+    },
+    "local_test_database_template_reuse": {
+      "status": "passed",
+      "formal_product_layer": "P4 operations delivery tooling",
+      "scope": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk",
+        "make/ci.mk"
+      ],
+      "behavior": {
+        "default": "direct local.test.test remains fresh-database behavior",
+        "incremental_iteration": "ci.local.iteration enables schema-bound sc_test_template cloning",
+        "template_rebuild_inputs": ["schema/install inputs", "registered profile", "Odoo image"],
+        "per_target_isolation": "each ORM target receives a newly cloned sc_test database",
+        "module_guard": "template is rebuilt when the requested module is not installed"
+      },
+      "measured": {
+        "schema_fingerprint": "7f337bc35f1a509420a69c7f0e2364a4c05ae152719fd8c322623eebc783e13f",
+        "template_key": "d7f1f54312eb680f743f63852e26e1e3dec3f4dbba0aea6c16efcd45b54b66eb",
+        "first_run_seconds": 28.67,
+        "second_run_seconds": 8.92,
+        "same_tests": 3,
+        "receipts": [
+          ".runtime/test-baseline/1794635249589859327/receipt.json",
+          ".runtime/test-baseline/1794635285640751862/receipt.json"
+        ],
+        "interpretation": "Runner overhead reduction only; not form latency evidence."
+      },
+      "passed_checks": {
+        "runner_unit_tests": 15,
+        "local_development_lifecycle_tests": 52
+      }
     }
   },
   "stage_identity": {
     "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
     "frozen": false,
-    "scope": "backend native-view reuse, demand-driven record facts, declaration proof reuse, native-form copy reduction and initialization delivery order"
+    "scope": "backend execution convergence plus P4 reuse of schema-bound local.test database templates"
   },
   "completion": {
     "batch": "backend_execution_order_batches_1_to_5_locally_validated",

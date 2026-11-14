@@ -467,3 +467,28 @@ native form 的 canonical 输入原先在 `deepcopy(marker)` 之外，又分别�
 
 本批证明初始化事实顺序已经收敛，但没有测量本次候选相对 A 的实际初始化耗时、SQL 数或
 表单可用时间。下一步进入同环境 A/B 执行准备与测量；合并、部署继续暂停。
+
+### P4 结果：测试库模板复用
+
+`ci.local.iteration` 原先每个 ORM 目标都会重建 `sc_test`、重新安装模块并生成启动资源，
+单个目标约五分钟。现改为：
+
+- 默认直接执行 `local.test.test` 仍保持 fresh-database 语义。
+- 只有 `ci.local.iteration` 设置 `LOCAL_TEST_REUSE_DATABASE=1`。
+- 首次按 schema/install 输入、profile 和 Odoo 镜像准备一次 `sc_test_template`。
+- 每个 ORM 目标从模板克隆新的 `sc_test`，测试之间仍相互隔离。
+- 目标模块未安装、schema/install 输入变化、profile 或镜像变化时重建模板。
+- schema 指纹只覆盖 manifest、models、data、security、views、migrations、hooks 和测试依赖，
+  不因普通 handler 代码变化重建数据库。
+
+实际双跑同一组 3 项 ORM：
+
+- 首次建立模板并克隆执行：28.67 秒，回执
+  `.runtime/test-baseline/1794635249589859327/receipt.json`。
+- 第二次直接克隆模板执行：8.92 秒，回执
+  `.runtime/test-baseline/1794635285640751862/receipt.json`。
+- 两次均 `source_unchanged=true`、`fresh_database=true`、
+  `database_template_reused=true`，执行同一 schema 指纹。
+
+runner 单测 15 项和 local development lifecycle 52 项通过。该 28.67→8.92 秒是测试执行器
+初始化开销下降，不是用户表单打开时间，也不计入产品 A/B 收益。
