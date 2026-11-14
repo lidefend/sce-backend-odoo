@@ -48,8 +48,9 @@ def main() -> int:
             "core_extension_capability_rows as _capability_rows",
             "return _capability_rows.normalize_capability_rows(capabilities)",
             "_capability_rows.normalize_capability_rows(capabilities),",
-            "registry_list_capabilities_for_user(env, user)",
-            "registry_list_capabilities_for_user_with_timings(env, user)",
+            "capabilities = registry_list_capabilities_for_user(",
+            "capabilities, timings_ms = registry_list_capabilities_for_user_with_timings(",
+            "published_authority=published_authority,",
         ]:
             if token not in core_text:
                 errors.append(f"core_extension.py missing capability rows split token: {token}")
