@@ -1686,10 +1686,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
                 "scripts/verify/local_dev_payment_settlement_component_journey.sh",
-                "scripts/verify/test_local_development_lifecycle.py",
             ]),
             ["verify.local.dev.payment_settlement_journey.unit"],
         )
+
+    def test_local_test_database_reuse_keeps_lifecycle_unit(self) -> None:
+        for path in (
+            "scripts/dev/local_test_runner.py",
+            "scripts/verify/test_local_test_runner.py",
+            "scripts/verify/test_local_development_lifecycle.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.local.development_lifecycle.unit"],
+                )
 
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(

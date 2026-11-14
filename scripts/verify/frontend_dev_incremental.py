@@ -566,9 +566,15 @@ RULES = (
         "verify.local.dev.static_proxy_target.unit",
     )),
     Rule((
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+    ), (
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
         "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
         "scripts/verify/local_dev_payment_settlement_component_journey.sh",
-        "scripts/verify/test_local_development_lifecycle.py",
     ), (
         "verify.local.dev.payment_settlement_journey.unit",
     )),
