@@ -448,6 +448,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
 
     def test_capability_list_resolves_published_route_authority_once(self):
         from unittest.mock import patch
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
         from odoo.addons.smart_core.delivery import runtime_route_authority
 
         user = self._actor(
@@ -455,14 +456,19 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
             login='single-route-authority-resolution',
         )
         env = user.with_user(user).env
+        authority = runtime_route_authority.published_route_authority(env)
         with patch.object(
-            runtime_route_authority,
-            'published_route_authority',
-            wraps=runtime_route_authority.published_route_authority,
-        ) as authority:
-            rows = capability_registry.list_capabilities_for_user(env, user)
+            EffectiveDeliveryService,
+            'resolve',
+            wraps=EffectiveDeliveryService.resolve,
+        ) as resolver:
+            rows = capability_registry.list_capabilities_for_user(
+                env,
+                user,
+                published_authority=authority,
+            )
         self.assertTrue(rows)
-        self.assertEqual(authority.call_count, 1)
+        resolver.assert_not_called()
 
     def test_capability_list_reuses_same_scope_published_authority(self):
         from unittest.mock import patch
