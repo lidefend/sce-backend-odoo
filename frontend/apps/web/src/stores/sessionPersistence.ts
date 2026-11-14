@@ -124,6 +124,21 @@ export interface DurableSessionDecodeResult {
   snapshot: DurableSessionSnapshotV1 | null;
 }
 
+export interface SessionLifecycleEventTarget {
+  addEventListener(type: string, listener: () => void): void;
+  removeEventListener(type: string, listener: () => void): void;
+}
+
+export interface SessionLifecycleDocumentTarget extends SessionLifecycleEventTarget {
+  visibilityState?: string;
+}
+
+export interface SessionPersistenceLifecycleOptions {
+  windowTarget: SessionLifecycleEventTarget;
+  documentTarget: SessionLifecycleDocumentTarget;
+  flush: () => void;
+}
+
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
@@ -358,4 +373,19 @@ export function decodeDurableSessionSnapshot(raw: string | null): DurableSession
     return { status: 'unsupported', snapshot: null };
   }
   return { status: 'current', snapshot: snapshotFromRaw(row, false) };
+}
+
+export function installSessionPersistenceLifecycle(
+  options: SessionPersistenceLifecycleOptions,
+): () => void {
+  const flush = () => options.flush();
+  const onVisibilityChange = () => {
+    if (options.documentTarget.visibilityState === 'hidden') flush();
+  };
+  options.windowTarget.addEventListener('pagehide', flush);
+  options.documentTarget.addEventListener('visibilitychange', onVisibilityChange);
+  return () => {
+    options.windowTarget.removeEventListener('pagehide', flush);
+    options.documentTarget.removeEventListener('visibilitychange', onVisibilityChange);
+  };
 }

@@ -63,6 +63,16 @@ export type {
 let appInitInFlight: Promise<void> | null = null;
 let appInitEpoch = -1;
 let appInitSequence = 0;
+let durablePersistenceGeneration = 0;
+let durablePersistencePending = false;
+let durablePersistenceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function invalidateDurablePersistence(): void {
+  durablePersistenceGeneration += 1;
+  if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+  durablePersistenceTimer = null;
+  durablePersistencePending = false;
+}
 
 function resolveAvailableSceneRoute(rawPath: string): string {
   const normalized = normalizeLegacyWorkbenchPath(String(rawPath || '').trim());
@@ -886,6 +896,7 @@ export const useSessionStore = defineStore('session', {
       sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
     },
     clearSession() {
+      invalidateDurablePersistence();
       invalidateContextRequests();
       this.invalidateWorkspaceScenarioProjection();
       appInitSequence += 1;
@@ -941,10 +952,12 @@ export const useSessionStore = defineStore('session', {
     },
     setActionMeta(meta: NavMeta) {
       this.currentAction = meta;
-      this.persist();
     },
     ...navigationExpansionActions,
-    persist() {
+    persistDurableNow() {
+      if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+      durablePersistenceTimer = null;
+      durablePersistencePending = false;
       const snapshot = buildDurableSessionSnapshot({
         sessionDb: this.sessionDb,
         user: this.user,
@@ -980,6 +993,28 @@ export const useSessionStore = defineStore('session', {
       } catch {
         localStorage.removeItem(sessionStorageKey());
       }
+    },
+    scheduleDurablePersist() {
+      const generation = durablePersistenceGeneration;
+      if (durablePersistencePending) return;
+      durablePersistencePending = true;
+      durablePersistenceTimer = setTimeout(() => {
+        durablePersistenceTimer = null;
+        if (generation !== durablePersistenceGeneration || !durablePersistencePending) return;
+        durablePersistencePending = false;
+        this.persistDurableNow();
+      }, 0);
+    },
+    flushDurablePersist() {
+      if (!durablePersistencePending) return false;
+      if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+      durablePersistenceTimer = null;
+      durablePersistencePending = false;
+      this.persistDurableNow();
+      return true;
+    },
+    persist() {
+      this.persistDurableNow();
     },
     currentActivityRecordContextSnapshot(): ActivityRecordContextSnapshot | null {
       const current = this.recordContext;
@@ -1029,7 +1064,7 @@ export const useSessionStore = defineStore('session', {
       const registeredPages = [...others, nextPage];
       this.activityPages = (nextPage.settling ? registeredPages : trimActivityPages(registeredPages, key))
         .sort((a, b) => a.created_at - b.created_at);
-      this.persist();
+      this.scheduleDurablePersist();
     },
     settleActivityPage(key: string) {
       const normalizedKey = asText(key);
@@ -1043,7 +1078,6 @@ export const useSessionStore = defineStore('session', {
       if (changed) {
         this.activityPages = trimActivityPages(this.activityPages, normalizedKey)
           .sort((a, b) => a.created_at - b.created_at);
-        this.persist();
       }
     },
     settleActionActivityPage(actionId: number, menuId: number) {
@@ -1061,13 +1095,11 @@ export const useSessionStore = defineStore('session', {
     updateActiveActivityDirty(dirty: boolean) {
       const activeKey = asText(this.activeActivityPageKey);
       if (!activeKey) return;
-      let changed = false;
       this.activityPages = this.activityPages.map((page) => {
         if (page.key !== activeKey || Boolean(page.dirty) === Boolean(dirty)) return page;
-        changed = true;
         return { ...page, dirty: Boolean(dirty) };
       });
-      if (changed) this.persist();
+      // Dirty is an in-memory activity indicator; refresh recovery is false.
     },
     completeCreatedActivityPage(key: string) {
       const normalizedKey = asText(key);
@@ -1075,7 +1107,7 @@ export const useSessionStore = defineStore('session', {
       this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
       this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(this.activityPageCacheEpochs, normalizedKey);
       if (this.activeActivityPageKey === normalizedKey) this.activeActivityPageKey = '';
-      this.persist();
+      this.persistDurableNow();
       return true;
     },
     authorizeActivityPageNavigation() {
@@ -1103,7 +1135,7 @@ export const useSessionStore = defineStore('session', {
         nextPage = [...this.activityPages].sort((a, b) => b.last_active_at - a.last_active_at)[0] || null;
         this.activeActivityPageKey = nextPage?.key || '';
       }
-      this.persist();
+      this.persistDurableNow();
       return nextPage;
     },
     markActivityPageActive(key: string) {
@@ -1114,7 +1146,7 @@ export const useSessionStore = defineStore('session', {
         page.key === normalizedKey ? { ...page, last_active_at: now } : page
       ));
       this.activeActivityPageKey = normalizedKey;
-      this.persist();
+      this.scheduleDurablePersist();
     },
     updateActiveActivityRuntimeQuery(rawQuery: unknown) {
       const activeKey = asText(this.activeActivityPageKey);
@@ -1132,7 +1164,7 @@ export const useSessionStore = defineStore('session', {
           runtime_query: runtimeQuery,
         };
       });
-      if (changed) this.persist();
+      if (changed) this.scheduleDurablePersist();
     },
     updateActiveActivityTitle(rawTitle: unknown, rawRoute?: unknown) {
       const route = asText(rawRoute);
@@ -1171,7 +1203,7 @@ export const useSessionStore = defineStore('session', {
         changed = true;
         return { ...page, title };
       });
-      if (changed) this.persist();
+      if (changed) this.scheduleDurablePersist();
     },
     async applyActivityRecordContext(snapshot: ActivityRecordContextSnapshot | null | undefined) {
       if (!snapshot || !this.recordContext) return;
@@ -1180,7 +1212,7 @@ export const useSessionStore = defineStore('session', {
       const requestEpoch = beginContextTransition();
       this.routeAuthority = null;
       this.recordContext = nextContext;
-      this.persist();
+      this.persistDurableNow();
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
     },
     recordIntentTrace(params: { traceId?: string; intent: string; latencyMs?: number | null; writeMode?: string }) {
@@ -1190,7 +1222,6 @@ export const useSessionStore = defineStore('session', {
       this.lastIntent = params.intent;
       this.lastLatencyMs = params.latencyMs ?? null;
       this.lastWriteMode = params.writeMode ?? '';
-      this.persist();
     },
     async login(username: string, password: string) {
       this.clearSession();
@@ -1217,9 +1248,11 @@ export const useSessionStore = defineStore('session', {
         setActiveDb(sessionDb);
       }
       this.setToken(token);
+      this.persistDurableNow();
     },
     async logout() {
       // Cancel page/data work before the server invalidates the token.
+      invalidateDurablePersistence();
       beginContextTransition();
       try {
         await intentRequest<{ message?: string }>({ intent: 'auth.logout' });
@@ -1655,7 +1688,7 @@ export const useSessionStore = defineStore('session', {
       if (!bootstrapIsCurrent()) return;
       this.isReady = true;
       this.initStatus = 'ready';
-      this.persist();
+      this.persistDurableNow();
       } catch (err) {
         if (!publishFailure(err)) return;
         throw err;
@@ -1734,7 +1767,6 @@ export const useSessionStore = defineStore('session', {
         this.publicPageContractStatus = 'idle';
         this.pageContracts = row.page_contracts.pages;
       }
-      this.persist();
       return this.workspaceHome;
     },
     async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
@@ -1762,7 +1794,7 @@ export const useSessionStore = defineStore('session', {
           ...normalized,
           selected: normalized.selected ?? this.recordContext?.selected ?? null,
         };
-        this.persist();
+        this.scheduleDurablePersist();
       }
       return this.recordContext;
     },
@@ -1778,7 +1810,7 @@ export const useSessionStore = defineStore('session', {
         operation_strategy: option?.operation_strategy || current.operation_strategy || '',
         operation_strategy_label: option?.operation_strategy_label || current.operation_strategy_label || '',
       };
-      this.persist();
+      this.persistDurableNow();
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
     },
     async selectBusinessScope(scope: { company_id?: number | null; operation_strategy?: string }) {
@@ -1819,7 +1851,7 @@ export const useSessionStore = defineStore('session', {
         this.activeActivityPageKey = '';
         this.activityPageCacheEpochs = nextEpochs;
       }
-      this.persist();
+      this.persistDurableNow();
       // system.init is authoritative and already returns record_context.
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
       if (!isCurrentContextEpoch(requestEpoch)) return false;

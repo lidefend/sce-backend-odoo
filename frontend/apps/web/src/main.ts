@@ -14,6 +14,7 @@ import {
   registerIndustryRenderers,
   unregisterIndustryRenderers,
 } from './extensions/industryRenderers';
+import { installSessionPersistenceLifecycle } from './stores/sessionPersistence';
 
 installStaleAssetRecovery();
 registerIndustryRenderers();
@@ -28,19 +29,28 @@ bootTheme();
 bootThemeProfile();
 startThemeApplicationRuntime();
 
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    unregisterIndustryRenderers();
-    stopThemeApplicationRuntime();
-  });
-}
-
 // Synchronously restore session (token, user, etc.) before mounting.
 // Without this, the router guard sees token=null on first paint and
 // redirects to /login, then bootstrapApp() restores the token and the
 // guard redirects back — causing visible page flicker on every reload.
 const session = useSessionStore();
 session.restore();
+const disposeSessionPersistenceLifecycle = installSessionPersistenceLifecycle({
+  windowTarget: window,
+  documentTarget: document,
+  flush: () => {
+    session.flushDurablePersist();
+  },
+});
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    session.flushDurablePersist();
+    disposeSessionPersistenceLifecycle();
+    unregisterIndustryRenderers();
+    stopThemeApplicationRuntime();
+  });
+}
 
 bootstrapApp();
 

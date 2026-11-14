@@ -22,7 +22,6 @@ export interface NavigationProjectionState {
 
 interface ProjectionStore extends NavigationProjectionState {
   token: string | null;
-  persist(): void;
   invalidateWorkspaceScenarioProjection(): void;
 }
 
@@ -75,7 +74,6 @@ export const navigationProjectionActions = {
       if (!isCurrentContextEpoch(requestEpoch) || token !== this.token
         || requestSequence !== this.productCapabilityCatalogRequestSequence) return null;
       this.productCapabilityCatalog = result;
-      this.persist();
       return this.productCapabilityCatalog;
     },
 };
