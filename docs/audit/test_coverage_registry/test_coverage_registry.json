@@ -2000,7 +2000,8 @@
         "addons/smart_construction_core/tests/test_project_evidence_summary_service.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "project_progress_read_boundary",
