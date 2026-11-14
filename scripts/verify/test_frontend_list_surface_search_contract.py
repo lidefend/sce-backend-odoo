@@ -445,6 +445,8 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
         self.assertIn('projection_cache_reason: detailEnvelope?.meta?.projection_cache?.reason ?? null', self.probe)
         self.assertIn("row.intent === 'system.init' && row.request_start_epoch_ms >= AB_RUN_STARTED_EPOCH_MS", self.probe)
         self.assertIn('ab_timing: AB_TIMING ? runtime.ab_timing : undefined', self.probe)
+        self.assertIn("const REQUESTED_RECORD_ID = Number(String(process.env.LIST_SURFACE_RECORD_ID", self.probe)
+        self.assertIn(": REQUESTED_RECORD_ID || null;", self.probe)
 
     def test_ab_browser_request_duration_never_turns_unavailable_timing_into_zero(self):
         source = self.probe.split('function browserRequestDurationMs(')[1].split('function relativeRoutePath(')[0]

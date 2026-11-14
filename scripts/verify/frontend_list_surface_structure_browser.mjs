@@ -21,6 +21,10 @@ const AB_TIMING = ['1', 'true'].includes(abTimingValue);
 if (AB_TIMING && (!DAILY || !['all', 'detail-only'].includes(DAILY_OBSERVATION_SCOPE))) {
   throw new Error('LIST_SURFACE_AB_TIMING requires the daily all or detail-only record walk');
 }
+const REQUESTED_RECORD_ID = Number(String(process.env.LIST_SURFACE_RECORD_ID || '').trim() || 0);
+if (REQUESTED_RECORD_ID && (!DAILY || !Number.isInteger(REQUESTED_RECORD_ID) || REQUESTED_RECORD_ID < 1)) {
+  throw new Error('LIST_SURFACE_RECORD_ID requires one positive integer on the daily record walk');
+}
 const AB_RUN_STARTED_EPOCH_MS = Date.now();
 // Scope variants reuse this one governed tool instead of adding a new framework:
 //   all            -> declared landing + workspace home + list matrix + record read-only walk
@@ -1471,7 +1475,9 @@ try {
       if (!listContract) throw new Error('current list authority contract missing');
       // Open the contract-approved record through the row authority the list
       // contract declares; never the first row that happens to render.
-      const approvedRecordId = contractGate.status === 'accepted' ? Number(contractGate.approved.record_id) : null;
+      const approvedRecordId = contractGate.status === 'accepted'
+        ? Number(contractGate.approved.record_id)
+        : REQUESTED_RECORD_ID || null;
       const approvedRow = approvedRecordId
         ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first()
         : page.locator('[data-record-key]').filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first();
