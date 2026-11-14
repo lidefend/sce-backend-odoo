@@ -24,6 +24,7 @@ from scripts.verify.frontend_dev_incremental import (
     worktree_changed_paths,
 )
 from scripts.ops.incremental_execution import current_identity, reuse_identity
+from scripts.verify import frontend_dev_incremental as incremental
 from scripts.verify.frontend_style_system_guard import (
     RECORD_RUNTIME_SIZE_LIMITS,
     SIZE_LIMITS,
@@ -33,6 +34,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_incremental_targets_enable_database_template_reuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log_path = Path(directory) / "target.log"
+            completed = subprocess.CompletedProcess(
+                ["make", "verify.node_component_validation.unit"],
+                0,
+                stdout="ok\n",
+                stderr="",
+            )
+            with mock.patch.object(incremental.subprocess, "run", return_value=completed) as run:
+                result = incremental._run_make_target(
+                    "verify.node_component_validation.unit",
+                    Path(directory),
+                    log_path,
+                )
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(run.call_args.kwargs["env"]["LOCAL_TEST_REUSE_DATABASE"], "1")
+
     def test_performance_consumption_regressions_have_executable_owners(self):
         for path, owner in [
             ("addons/smart_core/core/system_init_extension_fact_merger.py", "verify.backend.navigation_delivery.unit"),

@@ -1878,9 +1878,14 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
     command = ["make", "--no-print-directory", target]
     started = time.time()
     try:
+        # Incremental ORM targets share one schema-bound test template and clone
+        # a fresh database per target. Direct local.test.test keeps fresh-by-default
+        # behavior because only this planner supplies the opt-in variable.
+        env = dict(os.environ, LOCAL_TEST_REUSE_DATABASE="1")
         result = subprocess.run(
             command,
             cwd=root,
+            env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
