@@ -524,6 +524,20 @@ class RepositoryInvariantTest(unittest.TestCase):
         self.assertEqual(sorted(tracked), sorted(SELF_DATA_FILES))
 
 
+class PreCommitRefreshTest(unittest.TestCase):
+    def test_lane_coverage_runs_after_generated_evidence_is_staged(self) -> None:
+        hook = (ROOT / "scripts/ops/pre-commit_refresh_generated.sh").read_text(
+            encoding="utf-8"
+        )
+        refresh = hook.index("make --no-print-directory refresh.generated_evidence")
+        stage = hook.index("git add -u")
+        check = hook.index(
+            "make --no-print-directory audit.verification.lane_coverage.check"
+        )
+        self.assertLess(refresh, stage)
+        self.assertLess(stage, check)
+
+
 class ResolveModuleSpecifierTest(unittest.TestCase):
     """A module named without its extension must resolve like the runtime.
 

@@ -620,7 +620,7 @@ P4 隔离准备：
   `.runtime/test-baseline/1794649732744739201/receipt.json`，运行期间源指纹未变化。
 - 修复后的 `make ci.local.iteration`：43 个目标全部通过，`verificationPassed=true`、
   `unmappedPathCount=0`，回执
-  `.runtime/frontend-dev-validation/executions/20261114T095638Z-1955093-177409798/receipt.json`。
+  `.runtime/frontend-dev-validation/executions/20261114T100812Z-2040968-920561893/receipt.json`。
 - 初轮 `ci.local.iteration` 的唯一失败是既有 scene tile 测试桩未接受新增
   `published_authority` 关键字，归因为 `validation_tool_defect`；已更新该测试桩，并保留
   失败回执 `.runtime/frontend-dev-validation/executions/20261114T093846Z-1856661-274860467/`。
@@ -632,3 +632,8 @@ clean-head 复核还发现，提交钩子刷新测试清册后，R10 plan 中列
 已经被验证工具识别为执行引用，但 dispositions 仍把它们登记为零引用目标。该问题归因为
 `baseline_evidence_defect`，只移除了三个已经失效的登记，没有放宽任何检查或验证范围；
 `make audit.verification.lane_coverage.check` 通过。产品代码和业务输出没有变化。
+
+为避免同类问题再次在 commit 之后才暴露，pre-commit 刷新并暂存生成证据后立即执行
+`audit.verification.lane_coverage.check`。若生成清册使登记失效，commit 在写入 Git 对象前
+直接失败并指出需要清理的登记。该 P4 修正的 74 项 lane coverage 单测通过，未改变产品代码、
+验证范围或基线允许值。

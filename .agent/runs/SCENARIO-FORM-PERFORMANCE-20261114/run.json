@@ -68,9 +68,11 @@
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
     "scripts/dev/local_test_runner.py",
     "scripts/ops/incremental_execution.py",
+    "scripts/ops/pre-commit_refresh_generated.sh",
     "scripts/verify/test_local_test_runner.py",
     "scripts/verify/test_local_development_lifecycle.py",
     "make/ci.mk",
+    "scripts/audit/test_verification_lane_coverage.py",
     "scripts/audit/verification_lane_dispositions.json",
     "Makefile",
     "addons/smart_construction_core/models/support/scene_orchestration.py",
@@ -1172,7 +1174,7 @@
         "executed_targets": 43,
         "verification_passed": true,
         "unmapped_path_count": 0,
-        "receipt": ".runtime/frontend-dev-validation/executions/20261114T095638Z-1955093-177409798/receipt.json"
+        "receipt": ".runtime/frontend-dev-validation/executions/20261114T100812Z-2040968-920561893/receipt.json"
       },
       "initial_iteration_failure": {
         "status": "failed",
@@ -1186,6 +1188,12 @@
         "reason": "Generated verification inventory referenced three R10 snapshot targets that were still registered as zero-reference dispositions.",
         "resolution": "Removed only the three stale dispositions; lane coverage now passes without changing the baseline allowance.",
         "command": "make audit.verification.lane_coverage.check"
+      },
+      "precommit_generated_refresh_guard": {
+        "status": "passed",
+        "tests": 74,
+        "command": "make audit.verification.lane_coverage.test",
+        "behavior": "Generated evidence is refreshed and staged, then lane coverage is checked before the commit can be created."
       }
     },
     "external_mutations": {
