@@ -39,7 +39,15 @@
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
     "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     "make/frontend.mk",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/role_authority.mk",
+    "scripts/verify/daily_demo_runtime_performance.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "scripts/verify/test_menu_metadata_batch.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "make/dev_test.mk",
+    "scripts/verify/test_local_dev_runtime_performance.py"
   ],
   "environment": {
     "kind": "offline",
@@ -146,10 +154,10 @@
     }
   },
   "blockers": [
-    "R2 final exact-candidate review and publication are pending.",
-    "R2 candidate browser/network and daily same-environment A/B performance acceptance not run."
+    "R7 local product repair passed and A baseline is complete; clean candidate deployment and same-environment B measurement are now in progress under explicit user authorization.",
+    "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Commit the prepared local R2 candidate and bind an independent exact-head review. Current local checks are valid for their documented dirty execution; remote CI, R2 deployment and same-environment browser A/B remain pending.",
+  "next_exact_step": "Commit the current candidate, deploy it through daily.runtime.candidate.release with expected old SHA 5d631f6, then run the same detail-only B smoke and compare it with the 12-run A summary.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -268,6 +276,67 @@
         "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
       ],
       "impact": "Line counts/derived inventory digest only. Generated semantic runtime files unchanged. Product/test sources match successful iteration."
+    },
+    "r6_actual_http": {
+      "status": "confirmed_hotspots_not_fixed",
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-result.json",
+      "attribution": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-attribution.json",
+      "profile_records": 52,
+      "response_bindings": 48,
+      "main_claims_independently_reviewed": true,
+      "browser_tool_tests": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-browser-tool-tests-2.log",
+      "config_window": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-http-window-2.log",
+      "cleanup_readback": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-http-cleanup-readback.log",
+      "scope": "P4; anonymous profiling cookie opt-in with original Bearer; four exact transport ids excluded for business data comparison",
+      "not_claimed": [
+        "all branches or users covered",
+        "exact CPU/function invocation counts from periodic",
+        "browser speedup",
+        "product fix or deployment"
+      ]
+    },
+    "r7_initial_failures": {
+      "scenario_fixture": "Duplicate menu assignment rejected as designed; fixed fixture to valid unique bindings",
+      "publication_fixture": "12 errors from old list-only ORM double; extended mapped/get_external_id transport",
+      "logs": [
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-scenario.log",
+        ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-publication.log"
+      ]
+    },
+    "r7_product_review": {
+      "reviewer": "independent_perf_review",
+      "status": "no_S0_S2_in_dirty_product_diff",
+      "scope": "P0 group metadata reuse and P1 menu batches; not final approval",
+      "limitation": "Real ORM test pending; instance metadata assumes no XMLID mutation during that instance"
+    },
+    "r7_pure": {
+      "metadata_tests": 10,
+      "scenario_tests": 22,
+      "publication_tests": 90,
+      "planner_tests": 137,
+      "snapshot": "Existing R2 conditional snapshot revalidated via node_component_validation.unit",
+      "logs": [
+        "r7-metadata-final.log",
+        "r7-publication-fixed.log",
+        "r7-navigation.log",
+        "r7-snapshot.log",
+        "r7-planner-fixed.log"
+      ]
+    },
+    "r7_iteration_initial": {
+      "status": "failed",
+      "classification": "P4 diagnostic entry had no executable local caller",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-iteration.log",
+      "recovery": "Added validated local replay using governed Make, tested; lane baseline unchanged and check now passes"
+    },
+    "r7_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "executed_targets": 30,
+      "orm_tests": 75,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261114T014527Z-3430691-302821093/receipt.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-iteration-fixed.log",
+      "source_unchanged_during_runtime": true
     }
   },
   "stage_identity": {
@@ -277,10 +346,10 @@
     "scope": "R2 minimal removal of unused computation"
   },
   "completion": {
-    "batch": "R2_code_and_local_checks_passed_browser_AB_pending",
-    "mainline": "R1_integrated_PR886_R2_not_integrated",
-    "deployment": "R1_5d631f6_deployed_R2_not_deployed",
-    "user_acceptance": "performance_AB_not_run"
+    "batch": "R7_product_fix_and_local_correctness_passed_actual_performance_pending",
+    "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
+    "deployment": "R1_5d631f6_deployed_R2_R7_not_deployed",
+    "user_acceptance": "same_environment_AB_not_run"
   },
   "ci_crash_diagnosis": {
     "layer": "P4",
@@ -514,5 +583,101 @@
     "status": "local_validation_passed",
     "tests": "Extend existing payload/fact, scenario, contract boundary and actual mounted SFC suites",
     "next": "Prepare consistent generated evidence and clean local candidate; exact-head review remains separate from deployment and A/B."
-  }
+  },
+  "runtime_result_index": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r2-final-result.json",
+  "diagnostic_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r6-result.json",
+  "diagnostic_stage_identity": {
+    "head": "19e7376c9c0f21bf56dcbd7a1c2657188f2afa3c",
+    "dirty": true,
+    "formal_product_layer": "P4",
+    "paths": [
+      "make/role_authority.mk",
+      "scripts/verify/daily_demo_runtime_performance.py",
+      "scripts/verify/frontend_list_surface_structure_browser.mjs"
+    ],
+    "purpose": "bounded same-principal daily performance diagnosis; no release cycle"
+  },
+  "round7": {
+    "layers": {
+      "P0": "MenuService instance XMLID metadata only; live group authority retained",
+      "P1": "scenario bound/all-menu metadata batches; original fact order and scope retained"
+    },
+    "product_files": [
+      "addons/smart_core/delivery/menu_service.py",
+      "addons/smart_construction_core/services/scenario_surface_projection.py"
+    ],
+    "snapshot": "Reuse existing R2 conditional validation snapshot at HEAD; no duplicate edit",
+    "excluded": [
+      "merge",
+      "deployment",
+      "record-read optimization",
+      "unattributed profiler pause"
+    ],
+    "validation": "L1 syntax and focused tests, then deterministic affected L2/registered ORM; no browser candidate claims without deployment",
+    "status": "product_fix_and_local_correctness_passed_performance_pending",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
+  },
+  "r7_handover": {
+    "status": "r7_product_receipts_bound_ab_tool_extended",
+    "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-handover.json",
+    "candidate_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-candidate-vs-baseline.patch",
+    "r7_worktree_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-worktree.patch",
+    "product_patch": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-product.patch",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-result.json",
+    "iteration_receipt": ".runtime/frontend-dev-validation/executions/20261114T014527Z-3430691-302821093/receipt.json",
+    "targets": 30,
+    "orm_receipts": 4,
+    "orm_tests": 75,
+    "test_source_fingerprint": "604b71c6d9aecc62fa9c1c216fc42024b93512b740e0f12ec725239a473090ab",
+    "post_test_drift": "The result index and later P4 browser timing tool/test changed after the original execution; R7 product hashes remain identical and the affected browser-tool unit was rerun separately.",
+    "review": "Existing independent_perf_review covers the dirty R7 product diff and the original 30-target/four-ORM receipt set; no later product edit was found. The subsequently added P4 browser timing option is validated by its focused tool suite, not presented as part of that review.",
+    "ab_plan": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-ab-plan.md",
+    "ab_measurement_tool_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/ab-measurement-tool-result.json",
+    "performance_status": "pending"
+  },
+  "ab_baseline": {
+    "status": "passed",
+    "arm": "A",
+    "served_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "frontend_build_sha256": "53600d54014d38799c79241231a99389d4ee55b29ec622bfc0a866ddd2be98a2",
+    "database": "sc_demo",
+    "namespace": "demo",
+    "account": "demo_full",
+    "user_id": 42,
+    "company_id": 1,
+    "warmups": 2,
+    "valid_runs": 12,
+    "summary": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/A/summary.json",
+    "samples": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/A/samples/",
+    "excluded_operator_cancellations": [
+      "measured-10.json",
+      "measured-13.json"
+    ],
+    "user_decision": "The owner decided the completed baseline evidence is sufficient and requested immediate B comparison."
+  },
+  "ab_measurement_tool": {
+    "formal_product_layer": "P4",
+    "layer_target": "existing daily list-surface browser probe",
+    "module": "scripts/verify/frontend_list_surface_structure_browser.mjs and its focused contract test",
+    "standard_vs_user_specific": "standard engineering measurement tooling",
+    "why_here": "The required click-to-interactive and trace-bound timing fields belong to the existing governed browser evidence collector.",
+    "why_not_elsewhere": "No product semantics, contract rendering, permissions, runtime configuration, database, or deployment behavior needs to change.",
+    "blast_radius": "Opt-in report fields only when LIST_SURFACE_AB_TIMING=1; default probe behavior is unchanged.",
+    "status": "offline_tool_validation_passed_live_sample_not_run",
+    "files": [
+      "scripts/verify/frontend_list_surface_structure_browser.mjs",
+      "scripts/verify/test_frontend_list_surface_search_contract.py"
+    ],
+    "passed": {
+      "node_check": "passed",
+      "python_compile": "passed",
+      "git_diff_check": "passed",
+      "focused_tool_tests": 26
+    },
+    "not_run": {
+      "B_measurement": "pending clean candidate commit and governed deployment"
+    },
+    "carried_forward": "R7 product hashes, focused product suites, and four ORM receipts remain unchanged; only the browser-tool input and its focused test were affected."
+  },
+  "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

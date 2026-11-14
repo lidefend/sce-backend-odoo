@@ -113,3 +113,57 @@ class TestScenarioDirectInitialization(TransactionCase):
         index, by_id, _ = runtime_menu_scope(principal_env)
         self.assertIn(menu.id, by_id)
         self.assertEqual(index[by_id[menu.id]]['location'], 'exempt')
+
+    def test_xmlid_batches_match_native_choice_and_keep_group_authority_live(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_core.delivery.menu_service import MenuService
+        from ..services import scenario_surface_projection as projection
+
+        groups = self.env['res.groups'].create([
+            {'name': 'Batch metadata with aliases'}, {'name': 'Batch metadata without XMLID'},
+        ])
+        metadata = self.env['ir.model.data']
+        for name in ['first_group_alias', 'second_group_alias']:
+            metadata.create({'module': 'test_r7_metadata', 'name': name,
+                             'model': 'res.groups', 'res_id': groups[0].id})
+        expected = {group.id: group.get_external_id().get(group.id, '') for group in groups}
+        principal = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Metadata batch principal', 'login': 'test.r7.metadata.principal',
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        service = MenuService(self.env(user=principal.id))
+        original = type(groups).get_external_id
+        calls = []
+        def observe(records):
+            calls.append(records.ids)
+            return original(records)
+        with patch.object(type(groups), 'get_external_id', observe):
+            self.assertFalse(service._groups_authorize_current_user(groups))
+            principal.write({'groups_id': [(4, groups[0].id)]})
+            self.assertTrue(service._groups_authorize_current_user(groups))
+            principal.write({'groups_id': [(3, groups[0].id)]})
+            self.assertFalse(service._groups_authorize_current_user(groups))
+        self.assertEqual(calls, [groups.ids])
+        self.assertEqual(service._group_xmlid_cache, expected)
+
+        menu = self.env['ir.ui.menu'].create({
+            'name': 'Archived metadata binding', 'active': False,
+            'groups_id': [(4, groups[0].id)],
+        })
+        for name in ['first_menu_alias', 'second_menu_alias']:
+            metadata.create({'module': 'test_r7_metadata', 'name': name,
+                             'model': 'ir.ui.menu', 'res_id': menu.id})
+        scenario = self.env['sc.product.scenario'].create({
+            'code': 'test.r7.metadata', 'name': 'Archived metadata scenario', 'active': False,
+        })
+        self.env['sc.product.scenario.entry'].create({'scenario_id': scenario.id, 'menu_id': menu.id})
+        actor_env = self.env(user=principal.id)
+        with patch.object(projection, '_menu_external_ids', return_value={}):
+            before = projection.load_runtime_surface(actor_env)
+            before_scope = projection.runtime_menu_scope(actor_env, before)
+        after = projection.load_runtime_surface(actor_env)
+        self.assertEqual(after, before)
+        self.assertEqual(projection.runtime_menu_scope(actor_env, after), before_scope)
+        archived = next(row for row in after['scenarios'] if row['key'] == scenario.code)
+        self.assertFalse(archived['active'])
+        self.assertEqual(archived['bindings'][0]['menu_key'], menu.get_external_id()[menu.id])

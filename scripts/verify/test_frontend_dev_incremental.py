@@ -402,6 +402,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.scene_shell_contract.unit"],
         )
 
+    def test_menu_metadata_batch_selects_its_executable_suite(self) -> None:
+        self.assertEqual(select_targets(['scripts/verify/test_menu_metadata_batch.py']),
+                         ['verify.product.menu.metadata_batch.unit'])
+        self.assertIn('verify.product.menu.metadata_batch.unit',
+                      select_targets(['addons/smart_core/delivery/menu_service.py']))
+
     def test_scenario_center_composition_selects_center_and_navigation_guards(self) -> None:
         self.assertEqual(
             select_targets([
@@ -1246,7 +1252,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.backend.navigation_delivery.unit", "verify.workspace.entry_authority.orm"],
+                    ["verify.backend.navigation_delivery.unit", *(["verify.product.menu.metadata_batch.unit"] if path.endswith("/menu_service.py") else []), "verify.workspace.entry_authority.orm"],
                 )
 
     def test_native_scene_identity_test_selects_navigation_checks(self):

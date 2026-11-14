@@ -362,6 +362,20 @@ RULES = (
         "verify.frontend.rich_text.guard",
     )),
     Rule((
+        "scripts/verify/daily_demo_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "make/role_authority.mk",
+    ), (
+        "verify.local.dev.runtime.performance.unit",
+    )),
+    Rule((
+        "scripts/verify/test_menu_metadata_batch.py",
+        "addons/smart_core/delivery/menu_service.py",
+    ), (
+        "verify.product.menu.metadata_batch.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/menu_service.py",
         "addons/smart_core/tests/test_delivery_menu_entry_target.py",
         "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
@@ -729,7 +743,6 @@ RULES = (
         "config/product_menu_contract_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
-        "scripts/verify/test_menu_metadata_batch.py",
     ), (
         "verify.product.menu.contract_v1.guard",
     )),

@@ -351,5 +351,75 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(leaves[0]["route"], "/s/workspace.home")
 
 
+
+class RuntimeMenuMetadataBatchTest(unittest.TestCase):
+    def fixture(self, fail_batch=False):
+        calls = []
+        menus = []
+        for mid, choices in [(9, ['native.first', 'alias.second']), (4, []), (7, ['native.seven'])]:
+            menu = types.SimpleNamespace(id=mid, action=types.SimpleNamespace(id=80),
+                                         sc_scenario_exempt=False, child_id=[])
+            menu.get_external_id = Mock(return_value={mid: choices[0] if choices else ''})
+            menus.append(menu)
+        class Menus(list):
+            def get_external_id(self):
+                calls.append([m.id for m in self])
+                if fail_batch: raise RuntimeError('batch unavailable')
+                # Native selector owns multi-XMLID choice; no alternate selection.
+                return {m.id: {9: 'native.first', 4: '', 7: 'native.seven'}[m.id] for m in self}
+        class Scenarios(list):
+            def mapped(self, path):
+                assert path == 'entry_ids.menu_id'
+                return Menus(menus[:2])
+        entries = [types.SimpleNamespace(id=i+1, menu_id=menus[i], intent='view', sequence=20-i)
+                   for i in [0, 1]]
+        scenarios = Scenarios([types.SimpleNamespace(code='archived', name='Archived', active=False,
+                                                     sequence=7, entry_ids=entries)])
+        scenario_model, menu_model = Mock(), Mock()
+        for model, records in [(scenario_model, scenarios), (menu_model, Menus(menus))]:
+            model.sudo.return_value = model
+            model.with_context.return_value = model
+            model.search.return_value = records
+        env = {'sc.product.scenario': scenario_model, 'ir.ui.menu': menu_model}
+        return env, menus, calls
+
+    def test_native_choice_empty_ids_archived_binding_and_order_match_singletons(self):
+        env, menus, calls = self.fixture()
+        surface = PROJ.load_runtime_surface(env)
+        scope = PROJ.runtime_menu_scope(env, surface)
+        self.assertEqual(calls, [[9, 4], [9, 4, 7]])
+        for menu in menus: menu.get_external_id.assert_not_called()
+        with patch.object(PROJ, '_menu_external_ids', return_value={}):
+            original_surface = PROJ.load_runtime_surface(env)
+            original_scope = PROJ.runtime_menu_scope(env, original_surface)
+        self.assertEqual(surface, original_surface)
+        self.assertEqual(scope, original_scope)
+        self.assertFalse(surface['scenarios'][0]['active'])
+        self.assertEqual(surface['scenarios'][0]['intents']['view'], ['native.first', 'menu:4'])
+        self.assertEqual(scope[2][80], ['native.first', 'menu:4', 'native.seven'])
+        env['sc.product.scenario'].with_context.assert_called_with(active_test=False)
+        env['ir.ui.menu'].with_context.assert_called_with(**{'ir.ui.menu.full_list': True})
+
+    def test_failed_batch_preserves_original_singleton_fallback(self):
+        good_env, _, _ = self.fixture()
+        expected = PROJ.load_runtime_surface(good_env)
+        env, menus, calls = self.fixture(fail_batch=True)
+        self.assertEqual(PROJ.load_runtime_surface(env), expected)
+        self.assertEqual(calls, [[9, 4]])
+        self.assertEqual(menus[0].get_external_id.call_count, 1)
+        self.assertEqual(menus[1].get_external_id.call_count, 1)
+        with patch.object(PROJ, '_menu_external_ids', return_value={}):
+            expected_scope = PROJ.runtime_menu_scope(good_env, expected)
+        self.assertEqual(PROJ.runtime_menu_scope(env, expected), expected_scope)
+
+    def test_singleton_failure_keeps_native_id_fallback_without_cross_call_cache(self):
+        env, menus, _ = self.fixture(fail_batch=True)
+        menus[0].get_external_id.side_effect = RuntimeError('singleton unavailable')
+        surface = PROJ.load_runtime_surface(env)
+        self.assertEqual(surface['scenarios'][0]['intents']['view'], ['menu:9', 'menu:4'])
+        menus[0].get_external_id.side_effect = None
+        self.assertEqual(PROJ.load_runtime_surface(env)['scenarios'][0]['intents']['view'],
+                         ['native.first', 'menu:4'])
+
 if __name__ == "__main__":
     sys.exit(0 if unittest.main(verbosity=2, exit=False).result.wasSuccessful() else 1)

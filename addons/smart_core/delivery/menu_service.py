@@ -53,9 +53,24 @@ class MenuService:
         except TypeError:
             user_groups = getattr(self.env.user, "groups_id", None)
             return bool(user_groups is not None and resolved_groups & user_groups)
+        # Only native XMLID metadata is reused within this service instance.
+        # Authorization below still observes the current user's group closure.
+        xmlids = getattr(self, "_group_xmlid_cache", None)
+        if xmlids is None:
+            xmlids = self._group_xmlid_cache = {}
+        try:
+            missing = [group_id for group_id in resolved_groups.ids if group_id not in xmlids]
+            if missing:
+                native = resolved_groups.browse(missing).get_external_id()
+                xmlids.update({group_id: str(native.get(group_id) or "").strip()
+                               for group_id in missing})
+        except Exception:
+            # A failed batch is unresolved, not an authoritative empty XMLID.
+            # Keep the original singleton fallback and retry missing metadata later.
+            pass
         for group in group_iter:
             try:
-                group_xmlid = self._record_xmlid(group)
+                group_xmlid = xmlids[group.id] if group.id in xmlids else self._record_xmlid(group)
             except Exception:
                 group_xmlid = ""
             if group_xmlid and self.env.user.has_group(group_xmlid):
@@ -1808,6 +1823,7 @@ class MenuService:
     def __init__(self, env=None):
         self.env = env
         self._menu_fact_cache = {}
+        self._group_xmlid_cache = {}
         self._business_group_display_order = self._resolve_business_group_display_order()
 
     def _menu_fact_snapshot(self, kind: str):

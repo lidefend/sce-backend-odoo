@@ -498,6 +498,18 @@ def _menu_external_id(env, menu) -> str:
         return ""
 
 
+def _menu_external_ids(menus) -> dict[int, str]:
+    """Use Odoo's native XMLID choice, including authoritative empty values."""
+    if not menus:
+        return {}
+    try:
+        native = menus.get_external_id()
+        return {menu.id: _text(native.get(menu.id)) for menu in menus}
+    except Exception:
+        # Leave failed metadata unresolved so callers retain singleton fallback.
+        return {}
+
+
 def legacy_native_center_seed(env, menu) -> dict[str, Any]:
     """Read the current native center once for migration/seed initialization."""
     if env is None:
@@ -542,13 +554,15 @@ def load_runtime_surface(env):
     if env is None:
         raise ValueError("scenario runtime requires an Odoo environment")
     scenarios = env["sc.product.scenario"].sudo().with_context(active_test=False).search([])
+    menu_xmlids = _menu_external_ids(scenarios.mapped("entry_ids.menu_id"))
     rows = []
     for scenario in scenarios:
         intents = {}
         bindings = []
         for entry in scenario.entry_ids:
             menu = entry.menu_id
-            key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+            xmlid = menu_xmlids[menu.id] if menu.id in menu_xmlids else _menu_external_id(env, menu)
+            key = xmlid or f"menu:{menu.id}"
             intents.setdefault(entry.intent, []).append(key)
             bindings.append({
                 "entry_id": int(getattr(entry, "id", 0) or 0),
@@ -580,10 +594,13 @@ def runtime_menu_scope(env, surface=None):
     # menu groups even under sudo unless the full-list context is set, so a
     # role that cannot yet see a configuration menu would silently drop it from
     # this index and then misclassify its route as BUSINESS_SCENARIO_CONFIGURATION_MISSING.
-    for menu in env["ir.ui.menu"].sudo().with_context(
+    menus = env["ir.ui.menu"].sudo().with_context(
         **{"ir.ui.menu.full_list": True}
-    ).search([]):
-        key = _menu_external_id(env, menu) or f"menu:{menu.id}"
+    ).search([])
+    menu_xmlids = _menu_external_ids(menus)
+    for menu in menus:
+        xmlid = menu_xmlids[menu.id] if menu.id in menu_xmlids else _menu_external_id(env, menu)
+        key = xmlid or f"menu:{menu.id}"
         by_id[menu.id] = key
         if menu.action:
             by_action.setdefault(menu.action.id, []).append(key)
