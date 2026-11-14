@@ -1147,6 +1147,12 @@
       "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
       "review_by": "2027-03-31"
     },
+    "r10.performance_ab.twins.cold_reset": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "Clears only each isolated arm Redis and restarts its Odoo process to bind a process-first performance sample.",
+      "review_by": "2027-03-31"
+    },
     "r10.performance_ab.twins.deploy": {
       "disposition": "ops_runbook",
       "owner": "platform-team",

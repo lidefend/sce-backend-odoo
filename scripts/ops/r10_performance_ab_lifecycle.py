@@ -527,6 +527,59 @@ def deploy(
     return result
 
 
+def cold_reset(
+    profile_path: Path,
+    *,
+    candidate_sha: str,
+    evidence: Path,
+    a_sha: str,
+) -> dict[str, Any]:
+    profile = _profile(profile_path)
+    host = profile["source"]["ssh_host"]
+    stack = "/opt/projects/perf-r10/runtime/stack.yml"
+    arms: dict[str, Any] = {}
+    for name, arm in profile["arms"].items():
+        enriched = {
+            **arm,
+            "source_revision": a_sha if name == "a" else candidate_sha,
+            "frontend_build_sha256": (
+                profile["source"]["frontend_build_sha256"]
+                if name == "a"
+                else _ssh(host, f"cat {shlex.quote(arm['frontend_dist'] + '/.build-sha256')}")
+                .decode()
+                .strip()
+            ),
+            "ingress_network": profile["ingress"]["network"],
+        }
+        env_file = _render_arm_env(host, enriched, stack)
+        _ssh(
+            host,
+            f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
+            f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
+            f"--env-file {shlex.quote(env_file)} -f {shlex.quote(stack)} "
+            "exec -T redis redis-cli FLUSHALL",
+        )
+        _ssh(
+            host,
+            _compose(
+                env_file,
+                stack,
+                arm["compose_project"],
+                "restart odoo nginx",
+            ),
+        )
+        _wait_remote_health(host, env_file, stack, arm["compose_project"], "odoo")
+        _wait_remote_health(host, env_file, stack, arm["compose_project"], "nginx")
+        arms[name] = {"status": "cold_ready"}
+    result = {
+        "schema": "r10.performance_ab.cold_reset.v1",
+        "status": "PASS",
+        "arms": arms,
+    }
+    _write_evidence(evidence, result)
+    return result
+
+
 def readback(profile_path: Path, *, evidence: Path) -> dict[str, Any]:
     profile = _profile(profile_path)
     host = profile["source"]["ssh_host"]
@@ -613,7 +666,10 @@ def destroy(profile_path: Path, *, evidence: Path) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("prepare", "restore", "deploy", "readback", "destroy"))
+    parser.add_argument(
+        "action",
+        choices=("prepare", "restore", "deploy", "cold-reset", "readback", "destroy"),
+    )
     parser.add_argument("--profile", type=Path, default=DEFAULT_PROFILE)
     parser.add_argument("--candidate-sha", default="")
     parser.add_argument("--a-sha", default="5d631f6dd304a003f09c72e7de22fde45b8c3dbc")
@@ -621,7 +677,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        if args.action in {"prepare", "restore", "deploy"}:
+        if args.action in {"prepare", "restore", "deploy", "cold-reset"}:
             _require(bool(SAFE_SHA.fullmatch(args.candidate_sha)), "candidate SHA is required")
         if args.action in {"prepare", "restore"}:
             _require(bool(args.snapshot), "snapshot directory is required")
@@ -643,6 +699,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.action == "deploy":
             result = deploy(
+                args.profile,
+                candidate_sha=args.candidate_sha,
+                evidence=args.evidence,
+                a_sha=args.a_sha,
+            )
+        elif args.action == "cold-reset":
+            result = cold_reset(
                 args.profile,
                 candidate_sha=args.candidate_sha,
                 evidence=args.evidence,
