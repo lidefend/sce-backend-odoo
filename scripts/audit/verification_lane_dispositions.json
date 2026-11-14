@@ -1135,6 +1135,48 @@
       "owner": "platform-team",
       "reason": "项目遗留入口回填运行手册。"
     },
+    "r10.performance_ab.plan": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读计划入口；只输出资源与阶段计划，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.preflight": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.deploy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Starts the isolated A twin and upgrades only the B database and source identity before A/B sampling.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.destroy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Destroys only the two exact R10 Compose projects after evidence capture; the paired snapshot and current A remain untouched.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.prepare": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "R10 isolated A/B source and bundle staging entry; manually invoked after exact twin creation authorization and clean candidate binding.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.readback": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "Reads exact R10 container, network, volume, database, project record and HTTP identities before samples are accepted.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.restore": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Restores the reviewed paired snapshot into both isolated R10 arms; never runs from CI or against the serving A duty.",
+      "review_by": "2027-03-31"
+    },
     "refresh.frontend.rendering_detail.inventory": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -3337,18 +3379,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/workflow_state_unification_plan.md。登记待接线或退役，B3 按族处理。"
-    },
-    "r10.performance_ab.plan": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "R10 isolated Cold/Warm A/B 的只读计划入口；只输出资源与阶段计划，不创建资源。",
-      "review_by": "2027-03-31"
-    },
-    "r10.performance_ab.preflight": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
-      "review_by": "2027-03-31"
     }
   },
   "scripts": {

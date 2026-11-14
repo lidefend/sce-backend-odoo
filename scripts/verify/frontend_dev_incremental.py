@@ -87,8 +87,11 @@ class Rule:
 RULES = (
     Rule((
         "scripts/ops/r10_performance_ab_profile.py",
+        "scripts/ops/r10_performance_ab_lifecycle.py",
         "scripts/ops/test_r10_performance_ab_profile.py",
+        "scripts/ops/test_r10_performance_ab_lifecycle.py",
         "config/ops/r10_performance_ab_profile.v1.json",
+        "config/ops/r10_performance_ab_stack.yml",
         "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
         "make/r10_performance.mk",
         "Makefile",

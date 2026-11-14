@@ -87,11 +87,14 @@
     "addons/smart_core/core/scene_runtime_orchestrator.py",
     "addons/smart_core/core/system_init_runtime_context.py",
     "config/ops/r10_performance_ab_profile.v1.json",
+    "config/ops/r10_performance_ab_stack.yml",
     "make/daily_candidate.mk",
     "make/r10_performance.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
     "scripts/ops/r10_performance_ab_profile.py",
+    "scripts/ops/r10_performance_ab_lifecycle.py",
+    "scripts/ops/test_r10_performance_ab_lifecycle.py",
     "scripts/ops/test_r10_performance_ab_profile.py"
   ],
   "environment": {
