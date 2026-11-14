@@ -169,7 +169,7 @@
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Complete batch 3 by keying declaration/source proofs to the final tree identity where mutation changes their premises; retain final runtime evaluation, then proceed to batch 4 copy/representation reduction.",
+  "next_exact_step": "Proceed to batch 4: reduce native marker, canonical source and final V2 representation copies only where ownership and cache isolation are proven by identity and mutation tests.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -454,16 +454,66 @@
         "workspace_entry_authority_orm": "Not rerun: role/workspace route authority is unchanged; the interrupted operator request stopped redundant database isolation runs.",
         "actual_form_performance": "Not measured for this candidate; no SQL-count or latency reduction is claimed."
       }
+    },
+    "backend_declaration_proof_reuse": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_head": "e604ba4e6eeed82f82f26851efff25fe803f4e86",
+      "source_fingerprint_during_orm": "79263ab63cc7f157126b0d843345395cd71f55a3384b5015014ec1815595bbfb",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v47",
+      "assembled_cache_inputs_sha256": "bb900b00565a33dd0421ba206adfa2eec86a9eeaee77e4827ec265f997967bef",
+      "component_sources": [
+        "model field declarations with sc_feedback_usage and sc_ui_usage=interaction project through native_advisory.project()",
+        "legacy native alert markup projects only when it has an exact native content source and declared visibility condition",
+        "record-error components come from reviewed model field declarations and are still evaluated at final delivery",
+        "navigation anchors are accepted only as explicit nodes with native source authority; no generic backend generator was found"
+      ],
+      "proof_boundary": {
+        "scope": "request-only proof bound to model, view type, form view id, record id, draft state, uid, su, context and native tree",
+        "reuse_unit": "one feedback declaration signature plus its source node and unique occurrence counts",
+        "reused": "config/source/native advisory/draft declaration checks and compiled dependency plan",
+        "never_reused": "current record values, error activation/content proof, final visibility or post-trim reference validation",
+        "mutation": "changed component config, source identity/content, duplicate ownership or request scope invalidates the affected declaration proof"
+      },
+      "passed": {
+        "node_validation": 36,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "native_advisory": [17, 43],
+        "contract_guards": [
+          "verify.unified_page_contract.v2.action",
+          "verify.unified_page_contract.v2.assembler",
+          "verify.unified_page_contract.v2.runtime",
+          "verify.unified_page_contract.v2.status",
+          "verify.form_structure_authority_unification.unit",
+          "verify.contract.entry_equivalence.guard"
+        ],
+        "isolated_orm": {
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794633175389575442/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "target": "verify.local.dev.conditioned.feedback.orm",
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error"
+        }
+      },
+      "not_run": {
+        "actual_form_performance": "Proof reuse is behaviorally validated; SQL count, HTTP latency and click-to-interactive remain unmeasured for this candidate."
+      }
     }
   },
   "stage_identity": {
     "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
     "frozen": false,
-    "scope": "backend native-view reuse plus demand-driven record facts and validation-stage split; ledger/docs update follows validated product source"
+    "scope": "backend native-view reuse, demand-driven record facts, and request-scoped final declaration proof reuse"
   },
   "completion": {
-    "batch": "backend_batch_2_validated_validation_split_partial",
+    "batch": "backend_batch_3_validation_proof_reuse_validated",
     "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
     "deployment": "B_measured_then_A_tree_restored",
     "user_acceptance": "initialization_improved_form_interaction_not_proven"
@@ -836,7 +886,7 @@
     "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
   },
   "backend_execution_order": {
-    "status": "batch_2_record_dependency_reuse_validated; batch_3_validation_split_partial",
+    "status": "batch_3_validation_responsibility_and_proof_reuse_validated",
     "source_review_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
     "batch_order": [
       "native_view_and_field_requirement_reuse",
@@ -853,7 +903,8 @@
     "merge_deployment": "paused",
     "evidence": {
       "batch_1": "backend_native_view_reuse",
-      "record_dependency_and_validation_split": "backend_record_fact_and_validation_split"
+      "record_dependency_and_validation_split": "backend_record_fact_and_validation_split",
+      "declaration_proof_reuse": "backend_declaration_proof_reuse"
     }
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"

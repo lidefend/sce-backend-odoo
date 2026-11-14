@@ -346,3 +346,51 @@ R7 保留为已有优化基础。后续按端到端契约生成成本推进，�
 未重跑项及原因：project finalize 不重定义页面结构，本次记录读取与校验拆分没有改变该规则；
 workspace 路由权限不在改动面。实际表单 SQL 数、HTTP 耗时和点击到可用时间仍未测，
 不能宣称本批性能收益。合并、部署继续暂停。
+
+### 后端组件来源
+
+最终节点里的“组件”不是后端临时发明的业务组件，也不是前端绕过契约自行推断的语义。
+当前只有以下显式来源：
+
+- 模型字段声明包含 `sc_feedback_usage`、且字段用于 `interaction` 时，
+  `native_advisory.project()` 先验证精确 view XMLID、locator、occurrence 和原生条件，
+  再把对应原生 host 投影为 `sc.feedback.message`。没有字段声明，不生成节点。
+- 原生 legacy alert 只有在存在可解析内容来源、原生 locator 和显式可见条件时，
+  `_project_legacy_native_layout` 才投影为同一 feedback 组件；CSS alert 本身只表示呈现，
+  不推导业务严重度。
+- record-error feedback 来自已复核的模型字段声明，激活字段、内容字段、依赖和审查证据
+  必须同批成立，并在最终交付阶段读取当前记录。
+- `sc.navigation.anchor` 只接受显式携带原生来源的节点，当前未发现通用后端自动生成路径。
+
+因此本次优化复用的是这些已投影声明的来源证明，不增加新的组件来源。
+
+### 第三批结果：最终声明证明复用
+
+assembler 在 `evaluate_runtime=False` 时生成请求内 proof。proof 绑定模型、视图类型、
+form view id、记录、draft 状态、actor、context 和原生树；每个 feedback 声明另按组件配置、
+来源节点、条件及 container 唯一出现次数签名。
+
+最终校验的行为：
+
+- 声明和来源签名未变时，直接复用来源、native advisory/draft 和依赖计划，不再重复解析
+  或重新执行静态来源检查。
+- 最终树新增声明、修改组件配置、修改来源字段、造成 container 重复或请求范围变化时，
+  只对该声明执行完整来源检查。
+- 所有声明在最终阶段仍共用当前记录事实读取；error activation/content 仍由
+  `validate_record_errors` 同批证明；最终可见性和裁剪后引用检查没有跳过。
+- 跨请求缓存不保存该 proof。assembled-cache 命中仍重新做 actor 权限判断，不缓存授权结果。
+
+验证：
+
+- 节点校验 36 项通过，包括未变化声明跳过来源检查但读取当前事实、配置变化重验、
+  来源字段变化重验、native feedback 依赖计划复用及 assembler proof sink。
+- 契约边界主套件 171 项及关联 53、62、5 项通过；native advisory 17/43 项通过。
+- V2 action/assembler/runtime/status、入口等价和表单结构 authority 目标通过。
+- 隔离 `sc_test` ORM 3 项通过，回执
+  `.runtime/test-baseline/1794633175389575442/receipt.json`，运行期间源未变化。
+- conditioned-feedback ORM 26 个场景、34 项子测试为 0 failed / 0 error。
+- assembled contract cache 提升到 v47，输入摘要重签为
+  `bb900b00565a33dd0421ba206adfa2eec86a9eeaee77e4827ec265f997967bef`。
+
+未测量 proof 复用带来的实际 HTTP 或 SQL 降幅。该批只证明重复静态来源工作被消除且
+最终记录求值没有绕过。下一步进入中间表示和复制收敛；合并、部署继续暂停。
