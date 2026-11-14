@@ -472,7 +472,19 @@ def deploy(
         "arms": {},
     }
     for name, arm in profile["arms"].items():
-        env_file = f"/opt/projects/secure/r10-performance-ab/{arm['compose_project']}.env"
+        enriched = {
+            **arm,
+            "source_revision": a_sha if name == "a" else candidate_sha,
+            "frontend_build_sha256": (
+                profile["source"]["frontend_build_sha256"]
+                if name == "a"
+                else _ssh(host, f"cat {shlex.quote(arm['frontend_dist'] + '/.build-sha256')}")
+                .decode()
+                .strip()
+            ),
+            "ingress_network": profile["ingress"]["network"],
+        }
+        env_file = _render_arm_env(host, enriched, stack)
         _ssh(
             host,
             f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
