@@ -24,6 +24,8 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
         self.assertNotEqual(
             profile["arms"]["a"]["database"], profile["arms"]["b"]["database"]
         )
+        self.assertTrue(profile["arms"]["a"]["database"].startswith("sc_demo_"))
+        self.assertTrue(profile["arms"]["b"]["database"].startswith("sc_demo_"))
         self.assertNotEqual(
             profile["arms"]["a"]["database_volume"],
             profile["arms"]["b"]["database_volume"],

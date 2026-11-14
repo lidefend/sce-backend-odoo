@@ -23,8 +23,8 @@
   "arms": {
     "a": {
       "compose_project": "sc-perf-a-r10",
-      "database": "sc_perf_a_r10",
-      "database_filter": "^sc_perf_a_r10$",
+      "database": "sc_demo_perf_a_r10",
+      "database_filter": "^sc_demo_perf_a_r10$",
       "database_volume": "sc_perf_a_r10_db_data",
       "redis_volume": "sc_perf_a_r10_redis_data",
       "odoo_volume": "sc_perf_a_r10_odoo_data",
@@ -40,8 +40,8 @@
     },
     "b": {
       "compose_project": "sc-perf-b-r10",
-      "database": "sc_perf_b_r10",
-      "database_filter": "^sc_perf_b_r10$",
+      "database": "sc_demo_perf_b_r10",
+      "database_filter": "^sc_demo_perf_b_r10$",
       "database_volume": "sc_perf_b_r10_db_data",
       "redis_volume": "sc_perf_b_r10_redis_data",
       "odoo_volume": "sc_perf_b_r10_odoo_data",

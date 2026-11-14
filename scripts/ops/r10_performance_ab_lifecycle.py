@@ -391,6 +391,26 @@ def restore(
         env_file = _render_arm_env(host, enriched, stack)
         _ssh(host, _compose(env_file, stack, arm["compose_project"], "up -d db redis"))
         _wait_remote_health(host, env_file, stack, arm["compose_project"], "db")
+        exists = _ssh(
+            host,
+            f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
+            f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
+            f"--env-file {shlex.quote(env_file)} -f {shlex.quote(stack)} "
+            'exec -T db psql -U "$DB_USER" -d postgres -Atc '
+            + shlex.quote(
+                'SELECT 1 FROM pg_database WHERE datname=\''
+                + arm["database"]
+                + '\''
+            )
+        ).decode().strip()
+        if exists != "1":
+            _ssh(
+                host,
+                f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
+                f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
+                f"--env-file {shlex.quote(env_file)} -f {shlex.quote(stack)} "
+                'exec -T db createdb -U "$DB_USER" -O "$DB_USER" "$DB_NAME"',
+            )
         restore_cmd = (
             f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
             f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
