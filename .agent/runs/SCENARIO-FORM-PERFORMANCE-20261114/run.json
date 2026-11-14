@@ -71,7 +71,26 @@
     "scripts/verify/test_local_test_runner.py",
     "scripts/verify/test_local_development_lifecycle.py",
     "make/ci.mk",
-    "scripts/audit/verification_lane_dispositions.json"
+    "scripts/audit/verification_lane_dispositions.json",
+    "Makefile",
+    "addons/smart_construction_core/models/support/scene_orchestration.py",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+    "addons/smart_core/core/scene_provider.py",
+    "addons/smart_core/core/scene_registry_provider.py",
+    "addons/smart_core/core/scene_runtime_orchestrator.py",
+    "addons/smart_core/core/system_init_runtime_context.py",
+    "config/ops/r10_performance_ab_profile.v1.json",
+    "make/daily_candidate.mk",
+    "make/r10_performance.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
+    "scripts/ops/r10_performance_ab_profile.py",
+    "scripts/ops/test_r10_performance_ab_profile.py"
   ],
   "environment": {
     "kind": "offline",
@@ -179,9 +198,10 @@
   },
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
-    "146ms profiler pause remains unattributed and out of this repair scope."
+    "146ms profiler pause remains unattributed and out of this repair scope.",
+    "Candidate B deployment and formal Cold/Warm A/B remain blocked on separate isolated-runtime authorization."
   ],
-  "next_exact_step": "Commit and publish the PR #887 review fixes, wait for current-head required CI and independent re-review, then resume the same-environment A/B plan without merge or deployment.",
+  "next_exact_step": "Finish the affected incremental iteration, reconcile the local R10 evidence, and commit the clean candidate locally; do not push, deploy, run A/B, or merge without separate authorization.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1091,6 +1111,89 @@
       "same-environment A/B for this cumulative candidate"
     ],
     "merge_deployment": "paused"
+  },
+  "r10": {
+    "formal_product_layer": "P0 init route-fact consumption; P1 scene/capability projection; P4 isolated performance profiling",
+    "status": "product_fix_and_local_validation_passed_performance_pending",
+    "source_head": "526a1044ba6e99557823ad16567c0425eec98d99",
+    "base_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "cold_start": {
+      "controlled_legacy": {
+        "resolve": 2,
+        "build": 2,
+        "sql_count": 1766,
+        "elapsed_ms": 1464.399
+      },
+      "controlled_request_authority": {
+        "resolve": 1,
+        "build": 1,
+        "sql_count": 1590,
+        "elapsed_ms": 1215.744
+      },
+      "post_fix_new_process_samples": {
+        "resolve": [1, 1, 1],
+        "build": [1, 1, 1],
+        "sql_count": [1590, 1590, 1590],
+        "elapsed_ms": [1351.914, 1260.662, 1293.81]
+      },
+      "output_equivalence": {
+        "route_authority_sha256_equal": true,
+        "capability_payloads_equal": true,
+        "capability_count": 57
+      },
+      "performance_claim": "Diagnostic shell comparison only; not HTTP, browser, or formal A/B evidence."
+    },
+    "cache_boundary": {
+      "target_lookup_source": "actor-independent effective scene declarations",
+      "cached_fields": ["target", "alias_of", "identity_owner"],
+      "actor_filtered_tiles_cached": false,
+      "final_tile_permission_filter_preserved": true
+    },
+    "isolation_profile": {
+      "status": "design_only_preflight_passed",
+      "profile_test_count": 9,
+      "resources_created": false,
+      "snapshot_created": false,
+      "candidate_b_deployed": false,
+      "formal_ab_executed": false
+    },
+    "validation": {
+      "navigation_and_scene_targets": {
+        "status": "passed",
+        "tests": 64
+      },
+      "affected_orm": {
+        "status": "passed",
+        "tests": 42,
+        "receipt": ".runtime/test-baseline/1794649732744739201/receipt.json"
+      },
+      "ci_local_iteration": {
+        "status": "passed",
+        "executed_targets": 43,
+        "verification_passed": true,
+        "unmapped_path_count": 0,
+        "receipt": ".runtime/frontend-dev-validation/executions/20261114T095638Z-1955093-177409798/receipt.json"
+      },
+      "initial_iteration_failure": {
+        "status": "failed",
+        "classification": "validation_tool_defect",
+        "reason": "Existing scene tile test stub did not accept the new published_authority keyword.",
+        "receipt": ".runtime/frontend-dev-validation/executions/20261114T093846Z-1856661-274860467/receipt.json"
+      }
+    },
+    "external_mutations": {
+      "product_push": "none",
+      "deployment": "none",
+      "candidate_a_restart": "none",
+      "candidate_a_upgrade": "none",
+      "database_snapshot": "none",
+      "container_creation": "none",
+      "network_or_volume_creation": "none",
+      "business_data_write": "none",
+      "merge": "none"
+    },
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-summary.md",
+    "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-manifest.json"
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

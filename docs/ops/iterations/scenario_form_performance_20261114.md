@@ -569,3 +569,61 @@ professional quality checks 通过；shard 0 暴露两项问题：
 定向 ORM 三项通过；最近一次 `ci.local.iteration` 从上一份 41 目标回执复用 33 项，只重跑
 受影响的 8 项并全部通过。`verify_coverage` 的模块不一致是 shard 0 失败后的派生失败，
 需要新精确提交的远端执行确认。
+
+### R10 冷启动重复构建与隔离 A/B 准备
+
+`Formal Product Layer`：P0 初始化路由事实消费；P1 场景能力投影；P4 性能验收工具。
+`Layer Target`：`SystemInitHandler`、scene runtime context、scene registry tile 过滤、
+capability scene target 和 R10 isolation profile。
+`Why Here`：重复构建发生在当前请求已有 `EffectiveDeliveryService.resolve()` 结果，却被
+scene/capability consumer 再次查找的边界。
+`Why Not Elsewhere`：不把请求事实写入全局缓存，不删除最终权限过滤，也不通过前端或客户配置
+补足后端事实。
+`Blast Radius`：`system.init` 冷启动、capability target 映射、scene tile 可见性、同一请求的
+用户/公司/权限作用域，以及隔离 A/B 的资源声明。
+
+已实现：
+
+- `SystemInitRuntimeContext` 携带本次请求已经生成的 `published_authority`，并经
+  `SceneRuntimeOrchestrator`、scene provider、registry provider 和
+  `sc.scene._filter_payload_tiles()` 传给原生 capability 访问判断。
+- capability scene target lookup 现在只消费与 actor 无关的有效场景声明，并只缓存
+  `target`、`alias_of`、`identity_owner` 等身份字段；不再把按用户过滤后的 tiles 放入
+  `_SCENE_MAP_CACHE`。
+- 最终场景 tile 过滤、原生权限判断和 `published_route_authority()` 的 ormcache 回退仍保留。
+  没有把请求级 authority 写入全局缓存。
+
+同一进程受控对照（仅 shell 诊断，不是 HTTP/browser 样本）：
+
+| 口径 | resolve/build | SQL | elapsed |
+| --- | ---: | ---: | ---: |
+| 旧全局查找路径 | 2 / 2 | 1,766 | 1,464.399 ms |
+| 当前请求 authority 路径 | 1 / 1 | 1,590 | 1,215.744 ms |
+
+修复后三个新进程样本均为 `resolve=1`、`build=1`、`SQL=1,590`，elapsed 为
+`1,351.914 / 1,260.662 / 1,293.810 ms`，route authority hash 和 57 个 capability
+输出保持一致。该结果证明重复生产链路被收敛，不是实际用户耗时收益。
+
+P4 隔离准备：
+
+- 新增只读 profile、continuity contract、受管 Make 入口及 profile 单测。
+- `verify.r10.performance_ab.profile` 9 项、`r10.performance_ab.plan` 和
+  `r10.performance_ab.preflight` 通过。
+- preflight 确认当前 A 四个容器存在；R10 容器、卷、网络、路径不存在；端口
+  `18181/18182` 可用；没有创建快照、容器、网络或卷。
+- Candidate B 部署与正式 Cold/Warm A/B 仍未执行，合并和部署继续暂停。
+
+本轮定向验证：
+
+- scene target 跨主体缓存边界、声明读取、tile 过滤和入口 target：64 项通过。
+- 受影响真实 ORM：42 项通过，回执
+  `.runtime/test-baseline/1794649732744739201/receipt.json`，运行期间源指纹未变化。
+- 修复后的 `make ci.local.iteration`：43 个目标全部通过，`verificationPassed=true`、
+  `unmappedPathCount=0`，回执
+  `.runtime/frontend-dev-validation/executions/20261114T095638Z-1955093-177409798/receipt.json`。
+- 初轮 `ci.local.iteration` 的唯一失败是既有 scene tile 测试桩未接受新增
+  `published_authority` 关键字，归因为 `validation_tool_defect`；已更新该测试桩，并保留
+  失败回执 `.runtime/frontend-dev-validation/executions/20261114T093846Z-1856661-274860467/`。
+
+当前没有将 189.633 ms 的第二次 resolve、诊断 SQL 差值或测试模板收益换算为用户可见
+性能收益。R10 的正式 Cold/Warm A/B 仍需隔离 A/B 环境和单独部署授权。

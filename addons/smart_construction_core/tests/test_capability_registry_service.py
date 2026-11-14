@@ -509,6 +509,39 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
             authority,
         )
 
+    def test_capability_entry_targets_do_not_consume_request_route_authority(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+
+        user = self._actor(
+            ['smart_construction_core.group_sc_cap_project_read'],
+            login='entry-target-route-authority-reuse',
+        )
+        env = user.with_user(user).env
+        authority = runtime_route_authority.published_route_authority(env)
+        with patch.object(
+            capability_registry,
+            'build_capability_entry_target',
+            wraps=capability_registry.build_capability_entry_target,
+        ) as build_target, patch.object(
+            capability_registry,
+            'resolve_capability_entry_target_payload_with_timings',
+            wraps=capability_registry.resolve_capability_entry_target_payload_with_timings,
+        ) as resolve_payload:
+            rows = capability_registry.list_capabilities_for_user(
+                env,
+                user,
+                published_authority=authority,
+            )
+
+        self.assertTrue(rows)
+        self.assertTrue(build_target.call_args_list)
+        self.assertTrue(resolve_payload.call_args_list)
+        for call in build_target.call_args_list:
+            self.assertNotIn('published_authority', call.kwargs)
+        for call in resolve_payload.call_args_list:
+            self.assertNotIn('published_authority', call.kwargs)
+
     def test_cached_published_query_pairs_match_legacy_first_match(self):
         from odoo.addons.smart_core.delivery.runtime_route_authority import (
             iter_published_pairs,

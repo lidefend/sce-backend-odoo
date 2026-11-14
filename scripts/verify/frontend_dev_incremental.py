@@ -86,6 +86,25 @@ class Rule:
 
 RULES = (
     Rule((
+        "scripts/ops/r10_performance_ab_profile.py",
+        "scripts/ops/test_r10_performance_ab_profile.py",
+        "config/ops/r10_performance_ab_profile.v1.json",
+        "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
+        "make/r10_performance.mk",
+        "Makefile",
+        "make/daily_candidate.mk",
+    ), (
+        "verify.r10.performance_ab.profile",
+    )),
+    Rule((
+        "addons/smart_core/core/scene_provider.py",
+        "addons/smart_core/core/scene_registry_provider.py",
+        "addons/smart_core/core/scene_runtime_orchestrator.py",
+        "addons/smart_core/core/system_init_runtime_context.py",
+    ), (
+        "verify.backend.navigation_delivery.unit",
+    )),
+    Rule((
         "addons/smart_core/core/system_init_extension_fact_merger.py",
         "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
     ), ("verify.backend.navigation_delivery.unit",)),

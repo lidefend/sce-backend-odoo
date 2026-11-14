@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5202`
+- Scanned files: `5204`
 - Files requiring split plan: `78`
 - Files above warning threshold: `147`
 
@@ -42,7 +42,7 @@ Generated from repository source files. This report is informational during the 
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2333 | YAML workflow | `scripts/verify/registry.yaml` |
-| 2263 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2282 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -55,8 +55,8 @@ Generated from repository source files. This report is informational during the 
 | 1959 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1955 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1906 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1900 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
@@ -103,12 +103,12 @@ Generated from repository source files. This report is informational during the 
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
+| 1421 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1420 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1411 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
-| 1366 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
@@ -173,10 +173,10 @@ Generated from repository source files. This report is informational during the 
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
+| 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 971 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
-| 970 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
@@ -277,7 +277,7 @@ Generated from repository source files. This report is informational during the 
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2333 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
-| 2263 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2282 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -290,8 +290,8 @@ Generated from repository source files. This report is informational during the 
 | 1959 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1955 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1906 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1900 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |

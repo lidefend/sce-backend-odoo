@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from .source_authority import build_source_authority_contract
 
-from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.utils.extension_hooks import (
+    call_extension_hook_first,
+    call_extension_hook_first_compatible,
+)
 
 SOURCE_KIND = "scene_registry_projection"
 SOURCE_AUTHORITIES = ("sc.scene", "sc.capability", "ir.ui.menu", "ir.actions", "res.groups")
@@ -18,8 +21,18 @@ def source_authority_contract():
     )
 
 
-def load_scene_configs(env, *, drift=None):
-    payload = call_extension_hook_first(env, "smart_core_load_scene_configs", env, drift=drift)
+def load_scene_configs(env, *, drift=None, published_authority=None):
+    optional_kwargs = (
+        {"published_authority": published_authority}
+        if isinstance(published_authority, dict)
+        else {}
+    )
+    payload = call_extension_hook_first_compatible(
+        env,
+        "smart_core_load_scene_configs",
+        env,
+        optional_kwargs={**optional_kwargs, "drift": drift},
+    )
     return payload if isinstance(payload, list) else []
 
 

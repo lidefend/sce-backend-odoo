@@ -759,7 +759,12 @@
       "verify.workbench.extraction_hit_rate.report",
       "verify.workbench.product_acceptance.guard",
       "verify.workflow_contract",
-      "verify.workspace.branch.sync-main"
+      "verify.workspace.branch.sync-main",
+      "r10.performance_ab.plan",
+      "r10.performance_ab.preflight",
+      "r10.performance_ab.snapshot",
+      "r10.performance_ab.snapshot.restore_drill",
+      "r10.performance_ab.snapshot.validate"
     ],
     "scripts_unreferenced_anywhere": [
       "scripts/audit/tenant_pro_03_data_responsibility_inventory.py",

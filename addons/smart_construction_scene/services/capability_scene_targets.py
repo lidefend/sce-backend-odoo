@@ -123,18 +123,27 @@ def _load_scene_map_with_timings(env) -> Tuple[dict[str, dict[str, Any]], dict[s
         }
 
     timings_ms: dict[str, int] = {}
-    scenes, scene_config_timings_ms = scene_registry.load_scene_configs_with_timings(env)
+    scenes, scene_config_timings_ms = (
+        scene_registry.load_effective_scene_declarations_with_timings(env)
+    )
     if isinstance(scene_config_timings_ms, dict):
         for key, value in scene_config_timings_ms.items():
             timings_ms[key] = int(value)
     if isinstance(scenes, list):
         _SCENE_CONFIGS_CACHE[cache_key] = list(scenes)
     map_ts = time.perf_counter()
-    scene_map = {
-        str(scene.get("code") or scene.get("key") or "").strip(): dict(scene)
-        for scene in (scenes or [])
-        if isinstance(scene, dict) and str(scene.get("code") or scene.get("key") or "").strip()
-    }
+    scene_map = {}
+    for scene in scenes or []:
+        if not isinstance(scene, dict):
+            continue
+        scene_key = str(scene.get("code") or scene.get("key") or "").strip()
+        if not scene_key:
+            continue
+        scene_map[scene_key] = {
+            field: scene[field]
+            for field in ("target", "alias_of", "identity_owner")
+            if field in scene
+        }
     timings_ms["build_scene_map"] = int((time.perf_counter() - map_ts) * 1000)
     _SCENE_MAP_CACHE[cache_key] = scene_map
     return scene_map, timings_ms
@@ -179,7 +188,10 @@ def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
     return lookup
 
 
-def _derive_scene_key_from_explicit_target(env, explicit_target: dict[str, Any] | None = None) -> str:
+def _derive_scene_key_from_explicit_target(
+    env,
+    explicit_target: dict[str, Any] | None = None,
+) -> str:
     if not env or not isinstance(explicit_target, dict):
         return ""
     lookup = _build_target_scene_lookup(env)
@@ -209,7 +221,10 @@ def resolve_capability_entry_scene_key(
     resolved = str(CAPABILITY_ENTRY_SCENE_MAP.get(str(capability_key or "").strip(), "") or "").strip()
     if resolved:
         return resolved
-    return _derive_scene_key_from_explicit_target(env, explicit_target=explicit_target)
+    return _derive_scene_key_from_explicit_target(
+        env,
+        explicit_target=explicit_target,
+    )
 
 
 def build_capability_entry_target(
@@ -229,7 +244,11 @@ def build_capability_entry_target(
     return target
 
 
-def resolve_capability_entry_target_payload(env, capability_key: str, explicit_target: dict[str, Any] | None = None) -> dict[str, Any]:
+def resolve_capability_entry_target_payload(
+    env,
+    capability_key: str,
+    explicit_target: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     payload, _timings = resolve_capability_entry_target_payload_with_timings(
         env,
         capability_key,
@@ -251,7 +270,11 @@ def resolve_capability_entry_target_payload_with_timings(
         return time.perf_counter()
 
     stage_ts = time.perf_counter()
-    target = build_capability_entry_target(capability_key, explicit_target=explicit_target, env=env)
+    target = build_capability_entry_target(
+        capability_key,
+        explicit_target=explicit_target,
+        env=env,
+    )
     stage_ts = _mark("build_capability_entry_target", stage_ts)
     scene_key = str(target.get("scene_key") or "").strip()
     payload: dict[str, Any] = {}

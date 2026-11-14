@@ -1,0 +1,65 @@
+{
+  "schema_version": "daily_candidate_data_continuity.v1",
+  "duty": "demo",
+  "task_id": "R10-PERFORMANCE-AB-CURRENT-DUTY-SNAPSHOT",
+  "environment_class": "R10_ISOLATED_PERFORMANCE_AB_SOURCE",
+  "data_authority": "CANDIDATE",
+  "source_repository": "/opt/projects/repos/sce-product-odoo",
+  "backup_root": "/data/backups/perf-r10",
+  "required_artifacts": [
+    "database.dump",
+    "filestore.tar.gz",
+    "manifest.json",
+    "SHA256SUMS"
+  ],
+  "sentinel_tables": [
+    "res_company",
+    "res_users",
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment",
+    "ir_module_module"
+  ],
+  "sample_tables": [
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment"
+  ],
+  "relation_sample": {
+    "table": "payment_request",
+    "columns": [
+      "project_id",
+      "contract_id"
+    ],
+    "limit": 100
+  },
+  "data_classes": {
+    "database_and_filestore": "CANDIDATE",
+    "legacy_source": "LEGACY_SOURCE",
+    "test_fixture": "TEST_FIXTURE",
+    "personal_development": "DISPOSABLE"
+  },
+  "forbidden_on_candidate_database": [
+    "database_recreate",
+    "filestore_recreate",
+    "demo_data_install",
+    "fixture_reset",
+    "module_uninstall",
+    "temporary_sql_repair",
+    "compose_down_with_volumes"
+  ],
+  "upgrade_contract": {
+    "database_migration_declared": true,
+    "versioned_migration_required": true,
+    "clone_rehearsal_required": true,
+    "paired_backup_required": true,
+    "fixture_write_allowed": false,
+    "demo_data_write_allowed": false,
+    "database_recreate_required": false,
+    "filestore_recreate_required": false
+  },
+  "identity_source": "config/ops/daily_runtime_database_duties.v1.json",
+  "identity_note": "Runtime identity comes only from the current demo duty declaration and is checked at backup/restore time. No historical UUID or carrier is restated here."
+}

@@ -37,8 +37,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 2675 | Platform owner | `addons/smart_core/handlers/api_data.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 2454 | Platform owner | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 1959 | Platform owner | `addons/smart_core/tests/test_delivery_menu_entry_target.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P1 | 1906 | Platform owner | `addons/smart_core/handlers/system_init.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 1901 | Platform owner | `addons/smart_core/handlers/menu_configuration.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
-| P1 | 1900 | Platform owner | `addons/smart_core/handlers/system_init.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 1863 | Platform owner | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 1844 | Platform owner | `addons/smart_core/core/page_contracts_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 1676 | Platform owner | `addons/smart_core/core/scene_ready_contract_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -52,7 +52,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 2472 | DevOps owner | `scripts/verify/test_frontend_professional_component_registry_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2342 | DevOps owner | `scripts/verify/backend_business_fact_model_audit.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2333 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 2263 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 2282 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2229 | DevOps owner | `scripts/verify/local_dev_project_profile_write_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2205 | Construction backend owner | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2199 | Frontend owner | `frontend/apps/web/src/pages/ListPage.vue` | Assessed Wave3 Round12 (no further split value; component/helper extraction done, max logic block 51 lines). Keep under P2 growth guard. |

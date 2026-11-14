@@ -77,7 +77,10 @@ class SceneRuntimeOrchestrator:
             scene_diagnostics["schema_version"] = data.get("schema_version")
             scene_diagnostics["loaded_from"] = "contract"
             data["scenes"] = runtime_ctx.merge_missing_scenes_fn(
-                env, data.get("scenes"), scene_diagnostics["normalize_warnings"]
+                env,
+                data.get("scenes"),
+                scene_diagnostics["normalize_warnings"],
+                published_authority=runtime_ctx.published_authority,
             )
             return
 
@@ -206,7 +209,10 @@ class SceneRuntimeOrchestrator:
         scene_diagnostics["drift"] = []
         scene_diagnostics["normalize_warnings"] = []
         data["scenes"] = runtime_ctx.merge_missing_scenes_fn(
-            env, data.get("scenes"), scene_diagnostics["normalize_warnings"]
+            env,
+            data.get("scenes"),
+            scene_diagnostics["normalize_warnings"],
+            published_authority=runtime_ctx.published_authority,
         )
 
         self._normalize_and_resolve(

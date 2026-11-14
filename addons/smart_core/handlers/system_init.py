@@ -1169,8 +1169,13 @@ def _load_scenes_from_db_or_fallback(env, drift=None, logger=None):
         logger=logger or _logger,
     )
 
-def _merge_missing_scenes_from_registry(env, scenes, warnings):
-    return provider_merge_missing_scenes_from_registry(env, scenes, warnings)
+def _merge_missing_scenes_from_registry(env, scenes, warnings, *, published_authority=None):
+    return provider_merge_missing_scenes_from_registry(
+        env,
+        scenes,
+        warnings,
+        published_authority=published_authority,
+    )
 
 # ===================== Handler =====================
 
@@ -1485,6 +1490,7 @@ class SystemInitHandler(BaseIntentHandler):
             nav_tree=nav_tree,
             scene_channel=scene_channel,
             rollback_active=rollback_active,
+            published_authority=effective_delivery.route_authority,
             trace_id=trace_id,
             diagnostics_collector=diagnostics_collector,
             scene_diagnostics=scene_diagnostics,

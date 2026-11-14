@@ -3337,6 +3337,36 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/workflow_state_unification_plan.md。登记待接线或退役，B3 按族处理。"
+    },
+    "r10.performance_ab.plan": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读计划入口；只输出资源与阶段计划，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.preflight": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.snapshot": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "R10 当前 duty paired DB/filestore 快照人工入口；需要独立资源授权、clean immutable tool SHA 与显式确认，不能由 CI 自动重放。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.snapshot.validate": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "R10 快照离线验证人工入口；只消费已审查快照，不创建 twins。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.snapshot.restore_drill": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "R10 paired DB/filestore 隔离恢复演练人工入口；创建临时隔离资源并在成功后清理，不能由 CI 自动重放。",
+      "review_by": "2027-03-31"
     }
   },
   "scripts": {
@@ -3869,7 +3899,8 @@
         "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
         "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
         "scripts/ops/production_acceptance_contract_v1.js",
-        "scripts/ops/production_acceptance_package_v1.sh"
+        "scripts/ops/production_acceptance_package_v1.sh",
+        "scripts/ops/r10_performance_ab_continuity_contract_v1.js"
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."

@@ -135,6 +135,25 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertNotIn("value?.release_navigation_v1", audit)
         self.assertNotIn("value?.delivery_engine", audit)
 
+    def test_runtime_scene_consumers_receive_the_same_route_authority(self):
+        core = Path(__file__).resolve().parents[1] / "core"
+        system_init = (core.parent / "handlers" / "system_init.py").read_text(encoding="utf-8")
+        runtime_context = (core / "system_init_runtime_context.py").read_text(encoding="utf-8")
+        orchestrator = (core / "scene_runtime_orchestrator.py").read_text(encoding="utf-8")
+        registry_provider = (core / "scene_registry_provider.py").read_text(encoding="utf-8")
+
+        self.assertIn("published_authority: dict | None = None", runtime_context)
+        self.assertIn(
+            "published_authority=effective_delivery.route_authority",
+            system_init,
+        )
+        self.assertEqual(
+            orchestrator.count("published_authority=runtime_ctx.published_authority"),
+            2,
+        )
+        self.assertIn("call_extension_hook_first_compatible(", registry_provider)
+        self.assertIn('"published_authority": published_authority', registry_provider)
+
 
 if __name__ == "__main__":
     unittest.main()
