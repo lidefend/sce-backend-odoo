@@ -2084,17 +2084,40 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertTrue(second["verificationPassed"])
         self.assertEqual(second["sourceReceipt"], "receipt-0/receipt.json")
 
-    def test_dirty_execution_identity_never_reuses_a_clean_receipt(self) -> None:
+    def test_equivalent_dirty_and_clean_identity_reuses_verified_receipt(self) -> None:
         clean = {
             "head": "a" * 40,
             "worktreeClean": True,
+            "runtimeTreeSha256": "c" * 64,
             "authoritySha256": {"planner.py": "b" * 64},
         }
         dirty = {**clean, "worktreeClean": False}
-        self.execute(registered=set(BASE_FRONTEND_TARGETS), identity=clean)
-        code, receipt = self.execute(
+        first_code, first = self.execute(
             registered=set(BASE_FRONTEND_TARGETS),
             identity=dirty,
+        )
+        self.assertEqual(first_code, 0)
+        self.assertFalse(first["reused"])
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity=clean,
+        )
+        self.assertEqual(code, 0)
+        self.assertTrue(receipt["reused"])
+        self.assertEqual(receipt["targetResults"], [])
+        self.assertEqual(receipt["sourceReceipt"], "receipt-0/receipt.json")
+
+    def test_changed_runtime_tree_does_not_reuse_verified_receipt(self) -> None:
+        identity = {
+            "head": "a" * 40,
+            "worktreeClean": True,
+            "runtimeTreeSha256": "c" * 64,
+            "authoritySha256": {"planner.py": "b" * 64},
+        }
+        self.execute(registered=set(BASE_FRONTEND_TARGETS), identity=identity)
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            identity={**identity, "runtimeTreeSha256": "d" * 64},
         )
         self.assertEqual(code, 0)
         self.assertFalse(receipt["reused"])
@@ -2251,9 +2274,22 @@ class IncrementalExecutionIdentityTest(unittest.TestCase):
         self.assertTrue(identity["worktreeClean"])
         self.assertEqual(len(identity["authoritySha256"]["planner.py"]), 64)
 
-    def test_dirty_worktree_is_never_reusable(self) -> None:
+    def test_dirty_worktree_hashes_current_runtime_bytes(self) -> None:
+        clean = current_identity(self.root, (self.authority,))
         self.authority.write_text("two\n", encoding="utf-8")
-        self.assertFalse(current_identity(self.root, (self.authority,))["worktreeClean"])
+        dirty = current_identity(self.root, (self.authority,))
+        self.assertFalse(dirty["worktreeClean"])
+        self.assertNotEqual(clean["runtimeTreeSha256"], dirty["runtimeTreeSha256"])
+
+    def test_committing_equivalent_dirty_runtime_keeps_reuse_identity(self) -> None:
+        self.authority.write_text("two\n", encoding="utf-8")
+        dirty = current_identity(self.root, (self.authority,))
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "source"], check=True)
+        clean = current_identity(self.root, (self.authority,))
+        self.assertTrue(clean["worktreeClean"])
+        self.assertNotEqual(dirty["head"], clean["head"])
+        self.assertEqual(reuse_identity(dirty), reuse_identity(clean))
 
     def test_bookkeeping_commit_keeps_runtime_reuse_identity(self) -> None:
         before = current_identity(self.root, (self.authority,))

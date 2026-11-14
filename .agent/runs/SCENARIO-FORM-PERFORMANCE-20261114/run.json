@@ -67,6 +67,7 @@
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
     "scripts/dev/local_test_runner.py",
+    "scripts/ops/incremental_execution.py",
     "scripts/verify/test_local_test_runner.py",
     "scripts/verify/test_local_development_lifecycle.py",
     "make/ci.mk",
@@ -1042,6 +1043,12 @@
       "template_identity": "The shared template database comment is the authoritative candidate identity and is checked before cloning.",
       "install_fingerprint": "Manifest-reachable Python and install data, including wizard inputs, invalidate the test template.",
       "interaction_timing": "Contract replay validation now runs after the form-interaction timing sample."
+    },
+    "workflow_correction": {
+      "problem": "pr.push reran the complete affected target set after a clean commit even when the committed runtime bytes were identical to the already validated dirty worktree.",
+      "fix": "Runtime-tree reuse identity now hashes current tracked, dirty and untracked source bytes; HEAD and worktree cleanliness remain provenance rather than validity.",
+      "fail_closed": "Changed runtime bytes, changed target scope, changed validation authorities or missing/tampered target logs still block reuse.",
+      "tests": 141
     },
     "additional_fixes": [
       "Fallback parsing now consumes a supplied raw arch when _arch_root is absent.",
