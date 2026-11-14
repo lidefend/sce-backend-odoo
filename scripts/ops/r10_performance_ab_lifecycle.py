@@ -203,6 +203,7 @@ def _build_candidate_bundle(sha: str, evidence_root: Path) -> tuple[Path, str]:
             "SC_DEPLOY_ENV=perf-r10",
         ]
     )
+    _run(["bash", "scripts/verify/frontend_build_fingerprint.sh", str(output)])
     marker = output / ".build-sha256"
     _require(marker.is_file(), "candidate bundle identity is missing")
     digest = marker.read_text(encoding="utf-8").strip()
