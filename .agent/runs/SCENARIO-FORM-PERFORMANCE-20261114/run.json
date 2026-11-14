@@ -59,7 +59,8 @@
     "addons/smart_core/tests/test_native_view_parsed_cache.py",
     "addons/smart_core/tests/test_node_component_validation.py",
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
-    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
   ],
   "environment": {
     "kind": "offline",
@@ -169,7 +170,7 @@
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Proceed to batch 4: reduce native marker, canonical source and final V2 representation copies only where ownership and cache isolation are proven by identity and mutation tests.",
+  "next_exact_step": "Proceed to batch 5 only after re-reading the deferred initialization-order prototype: produce effective delivery once per request scope, then let capability, navigation, scene and default-route consumers read that result without triggering a second build.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -504,16 +505,49 @@
       "not_run": {
         "actual_form_performance": "Proof reuse is behaviorally validated; SQL count, HTTP latency and click-to-interactive remain unmeasured for this candidate."
       }
+    },
+    "backend_representation_copy_reduction": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_base_head": "500b54f380e0955bf5308a33101f901844697f0c",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v48",
+      "assembled_cache_inputs_sha256": "046e904b4d6d7154a9e90873082c6ef9b94f393ec90732c49ed5ba1bd10c7768",
+      "ownership": {
+        "source_definition": "one isolated deep copy of the native marker owns layout, fieldDescriptors, capabilities, subviews, headerButtons, actions and runtime inputs for the request",
+        "canonical_aliases": "canonical fields, views.form.layout, subviews, capabilities and header buttons read from that owned graph instead of copying the same subtrees again",
+        "mutable_output": "existing V2 nodes and row builders still copy the structures they mutate; final contract remains disjoint from the source graph"
+      },
+      "passed": {
+        "mobile_compact_assembler_tests": 145,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "assembler_guard": "verify.unified_page_contract.v2.assembler",
+        "isolated_orm": {
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794633471640538460/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error"
+        },
+        "mutation_isolation": "assembly does not alter the source; later mutations to source and contract do not cross into each other"
+      },
+      "not_run": {
+        "actual_form_performance": "Copy volume is structurally reduced; no HTTP, SQL-count or click-to-interactive gain is claimed."
+      }
     }
   },
   "stage_identity": {
     "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
     "frozen": false,
-    "scope": "backend native-view reuse, demand-driven record facts, and request-scoped final declaration proof reuse"
+    "scope": "backend native-view reuse, demand-driven record facts, declaration proof reuse and native-form representation copy reduction"
   },
   "completion": {
-    "batch": "backend_batch_3_validation_proof_reuse_validated",
+    "batch": "backend_batch_4_representation_copy_reduction_validated",
     "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
     "deployment": "B_measured_then_A_tree_restored",
     "user_acceptance": "initialization_improved_form_interaction_not_proven"
@@ -886,7 +920,7 @@
     "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
   },
   "backend_execution_order": {
-    "status": "batch_3_validation_responsibility_and_proof_reuse_validated",
+    "status": "batch_4_intermediate_representation_and_copy_reduction_validated",
     "source_review_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
     "batch_order": [
       "native_view_and_field_requirement_reuse",
@@ -904,7 +938,8 @@
     "evidence": {
       "batch_1": "backend_native_view_reuse",
       "record_dependency_and_validation_split": "backend_record_fact_and_validation_split",
-      "declaration_proof_reuse": "backend_declaration_proof_reuse"
+      "declaration_proof_reuse": "backend_declaration_proof_reuse",
+      "representation_copy_reduction": "backend_representation_copy_reduction"
     }
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"

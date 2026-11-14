@@ -24,6 +24,7 @@ goal:
     - 记录快照按明确消费者取数；同一作用域 recordset 和业务结果只消费一次
     - 装配阶段保留来源/权限证明，当前记录求值与最终可见性和引用校验留在最终交付边界
     - 最终树未改变的组件声明复用请求内来源证明；声明或来源变化时只重验受影响声明
+    - 同一 native 定义只建立一份 owned source graph；输出不与输入共享可变节点
   exclusions:
     - production deployment or runtime mutation
     - new database, environment or credentials

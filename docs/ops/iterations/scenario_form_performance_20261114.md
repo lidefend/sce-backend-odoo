@@ -394,3 +394,38 @@ form view id、记录、draft 状态、actor、context 和原生树；每个 fee
 
 未测量 proof 复用带来的实际 HTTP 或 SQL 降幅。该批只证明重复静态来源工作被消除且
 最终记录求值没有绕过。下一步进入中间表示和复制收敛；合并、部署继续暂停。
+
+### 第四批结果：中间表示和复制收敛
+
+native form 的 canonical 输入原先在 `deepcopy(marker)` 之外，又分别深拷贝
+`fieldDescriptors`、`layout`、`capabilities`、`subviews`、`headerButtons` 和动作列表。
+这些对象来自同一份 native marker，且 V2 builder 在真正修改节点前仍会建立自己的副本。
+
+本批改为：
+
+- 每个请求只建立一份隔离的 owned marker，canonical source 的 fields、form layout、
+  capabilities、subviews 和 header buttons 直接读取这份 owned graph。
+- 页面元数据、记录、搜索、权限、动作和 runtime 输入也使用该 owned graph，不在同一装配入口
+  重复深拷贝。
+- 输出节点继续走现有 `_normalize_native_layout_nodes()`、field widget 和 action builder；
+  这些 builder 对将要修改的结构自行复制，因而最终 contract 不与输入共享可变节点。
+- `form_governance` 仍从输入单独取得，因为它是 native marker 外的请求级声明。
+
+新增隔离测试同时证明：
+
+- 装配完成后输入 source 与装配前完全相同。
+- 装配后修改 source 的 layout/descriptor 不会改变已生成 contract。
+- 修改 contract layout 不会回写 source。
+
+验证：
+
+- mobile compact assembler 145 项通过；契约边界主套件 171 项及 53、62、5 项关联套件通过。
+- assembler guard 通过。
+- 隔离 `sc_test` ORM 3 项通过，回执
+  `.runtime/test-baseline/1794633471640538460/receipt.json`，源在运行期间未变化。
+- conditioned-feedback ORM 26 个场景、34 项子测试为 0 failed / 0 error。
+- assembled contract cache 提升到 v48，输入摘要重签为
+  `046e904b4d6d7154a9e90873082c6ef9b94f393ec90732c49ed5ba1bd10c7768`。
+
+本批只证明同一 native marker 不再被多次完整复制，没有把复制次数下降换算成 HTTP 耗时。
+下一步进入初始化有效交付的“先生产、后消费”顺序；合并、部署继续暂停。
