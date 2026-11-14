@@ -204,9 +204,10 @@
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope.",
-    "Candidate B deployment and formal Cold/Warm A/B remain blocked on separate isolated-runtime authorization."
+    "Warm desktop click-to-form latency did not improve in the three-sample isolated A/B set.",
+    "Formal timing did not collect SQL counts."
   ],
-  "next_exact_step": "Finish the affected incremental iteration, reconcile the local R10 evidence, and commit the clean candidate locally; do not push, deploy, run A/B, or merge without separate authorization.",
+  "next_exact_step": "Review the isolated A/B evidence; keep or destroy the two R10 twin projects, and require a separate authorization before push, CI, merge, or deployment.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1119,7 +1120,7 @@
   },
   "r10": {
     "formal_product_layer": "P0 init route-fact consumption; P1 scene/capability projection; P4 isolated performance profiling",
-    "status": "product_fix_and_local_validation_passed_performance_pending",
+    "status": "isolated_ab_completed_backend_improvement_user_latency_mixed",
     "source_head": "526a1044ba6e99557823ad16567c0425eec98d99",
     "base_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
     "cold_start": {
@@ -1155,12 +1156,31 @@
       "final_tile_permission_filter_preserved": true
     },
     "isolation_profile": {
-      "status": "design_only_preflight_passed",
-      "profile_test_count": 9,
-      "resources_created": false,
-      "snapshot_created": false,
-      "candidate_b_deployed": false,
-      "formal_ab_executed": false
+      "status": "isolated_ab_running",
+      "profile_test_count": 16,
+      "resources_created": true,
+      "snapshot_created": true,
+      "snapshot_id": "sc_demo-20261114T102211Z-8d8c07d0",
+      "restore_drill_passed": true,
+      "candidate_b_deployed": true,
+      "formal_ab_executed": true
+    },
+    "ab_result": {
+      "reader": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/ab/result.md",
+      "comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/ab/comparison-r10.json",
+      "a": {
+        "source": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+        "bundle": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd"
+      },
+      "b": {
+        "source": "5d0381f364f9eebab109469fd2be5e6925c67cf4",
+        "bundle": "8b282dfc66bbbec599a343326a148bb556b35c33ab2f413b179142294feb737a"
+      },
+      "sample_policy": "1 cold and 3 warm samples per arm, both viewports, record 2",
+      "backend_initialization": "improved",
+      "mobile_form_interactive": "improved",
+      "desktop_warm_form_interactive": "not proven; +5.6% median regression",
+      "formal_sql_counts": "not collected"
     },
     "validation": {
       "navigation_and_scene_targets": {
