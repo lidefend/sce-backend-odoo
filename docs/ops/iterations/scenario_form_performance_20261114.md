@@ -875,17 +875,36 @@ shard PASS，回执位于 `.git/codex/evidence/ci.local.quick/`。隔离 B 已�
 原始结果：
 `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/browser-verification-b.json`。
 
-正式 A/B 采用每臂、每视口 9 个 warm 和 9 个 cold 样本，共 36 份报告、72 次视口交互；
-所有样本均从同一 `record 2` 进入，正式耗时关闭 profiler。每份报告重新回读服务端 SHA、
-bundle、主契约状态和运行错误，汇总错误数为 0。cold 样本前通过受管入口清空两臂 Redis
-并重启 Odoo/Nginx。
+正式 A/B 原始组采用每臂、每视口 9 个 warm 和 9 个 cold 样本，共 36 份报告、
+72 次视口交互；所有样本均从同一 `record 2` 进入，正式耗时关闭 profiler。每份报告
+重新回读服务端 SHA、bundle、主契约状态和运行错误，汇总错误数为 0。cold 样本前通过
+受管入口清空两臂 Redis 并重启 Odoo/Nginx。
 
-| 点击到表单可交互 | A 中位数 | B 中位数 | 变化 | A P90 | B P90 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Warm 1440 | 1,825.133 ms | 1,568.570 ms | -14.06% | 1,948.022 | 1,697.195 |
-| Warm 390 | 1,731.114 ms | 1,389.985 ms | -19.71% | 1,855.350 | 1,467.491 |
-| Cold 1440 | 2,439.529 ms | 2,016.283 ms | -17.35% | 2,871.534 | 2,150.098 |
-| Cold 390 | 1,797.581 ms | 1,505.569 ms | -16.24% | 1,935.962 | 1,602.901 |
+独立复审发现固定 A→B 顺序可能影响 Warm 桌面结果，因此保留原 36 份报告，并新增
+9 对 Warm B→A 和 3 对 Cold B→A 交叉样本。新增报告使用独立进程、相同数据库快照、
+账号、公司、权限、`project.project/2` 和 bundle 身份；正式计时仍关闭 profiler。
+
+| Warm 点击到表单可交互 | A 中位数 | B 中位数 | 变化 | B 胜出 |
+| --- | ---: | ---: | ---: | ---: |
+| 1440，正式 A→B，9 对 | 1,825.133 ms | 1,568.570 ms | -14.06% | 9/9 |
+| 1440，反向 B→A，9 对 | 1,684.015 ms | 1,694.302 ms | +0.61% | 5/9 |
+| 1440，合并，18 对 | 1,742.952 ms | 1,586.611 ms | -8.97% | 14/18 |
+| 390，正式 A→B，9 对 | 1,731.114 ms | 1,389.985 ms | -19.71% | 9/9 |
+| 390，反向 B→A，9 对 | 1,787.315 ms | 1,365.674 ms | -23.59% | 9/9 |
+| 390，合并，18 对 | 1,747.128 ms | 1,387.877 ms | -20.56% | 18/18 |
+
+| Cold 点击到表单可交互 | A 中位数 | B 中位数 | 变化 | B 胜出 |
+| --- | ---: | ---: | ---: | ---: |
+| 1440，正式 A→B，9 对 | 2,439.529 ms | 2,016.283 ms | -17.35% | 9/9 |
+| 1440，反向 B→A，3 对 | 2,276.024 ms | 1,913.765 ms | -15.92% | 3/3 |
+| 1440，合并，12 对 | 2,416.185 ms | 1,969.407 ms | -18.49% | 12/12 |
+| 390，正式 A→B，9 对 | 1,797.581 ms | 1,505.569 ms | -16.24% | 9/9 |
+| 390，反向 B→A，3 对 | 1,789.774 ms | 1,311.509 ms | -26.72% | 3/3 |
+| 390，合并，12 对 | 1,793.677 ms | 1,494.721 ms | -16.67% | 12/12 |
+
+Warm 桌面合并改善为 `-8.97%`，但反向组中位数略慢 `0.61%`，说明结果对采样顺序敏感。
+不能把固定 A→B 的 `-14.06%` 单独宣传为稳定、无条件收益。Warm 手机在两种顺序中均为
+9/9 胜；Cold 的合并样本为 9 个 A→B 加 3 个 B→A，不平衡，只作为方向性证据，不作稳定保证。
 
 Warm 初始化服务端中位数为 `2,086 → 1,409 ms`（-32.45%），初始化浏览器中位数为
 `2,611.282 → 2,091.160 ms`（-19.92%）。Warm 主契约服务端中位数在桌面为
@@ -900,18 +919,45 @@ Warm 初始化服务端中位数为 `2,086 → 1,409 ms`（-32.45%），初始�
 B 在采样分辨率下没有再出现完整 Snapshot `persist` 帧，不能把“未出现”写成精确 0 ms，
 但可以确认该热点已从样本中消失。
 
-原始证据：
+性能结论按五项分别限定：
+
+- 后端初始化：Warm 服务端中位数 `2,086 → 1,409 ms`，浏览器中位数
+  `2,611.282 → 2,091.160 ms`；方向稳定。
+- 主契约服务端：Warm 桌面 `683 → 513 ms`，手机 `538 → 486 ms`；方向稳定。
+- 表单交互：Warm 手机稳定改善；Warm 桌面合并改善但顺序敏感；Cold 方向改善但反向样本有限。
+- Session 持久化：真实浏览器从列表打开表单的 durable 写入中位数为 `12 → 2`，
+  累计约 `4.9 MB → 2.9 KB`；该收益与 Warm 桌面统计口径无关。
+- 统计限制：固定顺序、反向顺序与合并结果必须同时保留，方向性结果不得写成产品 SLA。
+
+原始和补充证据：
 
 - `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/formal-comparison.json`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/order-stratified-comparison.json`
 - `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/warm-sequence.log`
 - `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/cold-sequence.log`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/reverse-order-crossover.log`
 - `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-a-instrumented.json`
 - `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-b-instrumented.json`
 
-当前成果证明本轮后端事实复用和前端 Session 生命周期治理同时改善了候选环境中的表单交付：
-warm/cold 和桌面/手机均显示中位数与 P90 改善，Session 完整快照序列化热点不再主导打开路径。
-它不等于生产部署验收，也不授权 Core Ready 提前实现。A/B twin 和快照继续保留；未推送当前
-本地提交、未修改 PR #887、未合并、未部署生产、未写入业务数据。
+### R10 输入版本迁移
 
-下一步是提交本次文档收口，针对新的 clean HEAD 再执行一次 Quick，并请求独立复审。该复审
-及当前 HEAD 的远端必需 CI 完成前保持 `verification_pending`。
+原始 `r10-manifest.json` 的 38 项输入和历史哈希保持不变。当前新增
+`r10-current-input-manifest.json`，记录其中 35 项仍一致、3 项因
+`b3a685bfa` 的 Candidate B redeploy 工具扩展而变化：
+
+- `scripts/ops/r10_performance_ab_lifecycle.py`
+- `scripts/ops/test_r10_performance_ab_lifecycle.py`
+- `make/r10_performance.mk`
+
+迁移记录包含三个文件的旧/新 SHA256、变更提交、diff 范围、原/current input-set digest，
+以及 `deploy`、`cold_reset` 两个既有函数的 AST 源码哈希。两函数在变更前后哈希一致，
+变更仅新增 B redeploy 路径，没有删除文件，也没有改写原始 A/B 报告。原 R10 manifest、
+R11 的 13 项 manifest 和 R12 原始 59 项 manifest 均不覆盖。
+
+当前成果证明后端事实复用和前端 Session 生命周期治理产生了真实、可量化的候选环境收益；
+同时保留 Warm 桌面的顺序敏感性及 Cold 样本限制。它不等于生产部署验收，也不授权 Core
+Ready 提前实现。A/B twin 和快照继续保留；当前候选中尚未推送的提交、PR 和部署边界
+保持分离。
+
+下一步是提交本次证据收口，针对新的 clean HEAD 再执行一次 Quick，并请求最终独立复审。
+该复审及当前 HEAD 的远端必需 CI 完成前保持 `verification_pending`。

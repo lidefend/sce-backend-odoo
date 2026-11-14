@@ -11,10 +11,12 @@ goal:
   why_not_elsewhere: 不通过客户配置、前端业务特判或放宽权限与性能预算掩盖开销。
   objective: 研究场景化后表单打开变慢，形成证据分级、按收益排序的优化专题及可执行验收方案。
   current_phase: >
-    R12-B 前端 Session 生命周期收敛已完成定向恢复测试、第二次独立复审、精确候选
-    浏览器恢复验证，以及每臂每视口 9 个 warm 和 9 个 cold 的隔离 A/B。候选在初始化、
-    主契约和点击到表单可交互指标上均取得改善；当前等待最终文档收口提交的独立复审、
-    当前 HEAD 远端必需 CI 以及合并授权。PR #887 产品代码、PR 合并和产品部署保持冻结。
+    R12-B 产品代码已冻结并通过复查；当前只收口性能统计和历史 manifest 版本关系。
+    原始 A/B 保留，新增 Warm B→A 9 对和 Cold B→A 3 对交叉样本。Warm 桌面合并 18 对
+    改善 8.97% 但顺序敏感，Warm 手机稳定改善，Cold 方向改善但反向样本有限。
+    R10 original manifest 不覆盖，另建 current-input manifest 绑定 b3a685bfa 的新增
+    redeploy 工具输入；Session 持久化收益单独保留。等待新 clean HEAD 的 Quick、
+    最终独立复审、远端必需 CI 和合并授权。
   acceptance:
     - 登记唯一专题与可续跑索引
     - 源码核对场景、契约、数据、关系字段和渲染调用链

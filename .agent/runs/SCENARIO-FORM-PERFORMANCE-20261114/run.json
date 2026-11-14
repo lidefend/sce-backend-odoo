@@ -214,12 +214,12 @@
     }
   },
   "blockers": [
-    "The final clean documentation-closeout HEAD still requires independent review and current-head remote required CI.",
+    "The closeout documentation and evidence commit still requires its own exact-head Quick and independent review.",
     "The candidate has not been pushed from the validated A/B deployment commit; remote branch state cannot be inherited as current-head evidence.",
     "Merge and product deployment remain paused pending review and authorization.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Request independent review of this clean HEAD; current-head remote required CI remains pending before publication or merge.",
+  "next_exact_step": "Commit the R12 evidence closeout, run Quick on the new clean HEAD, then request final independent review.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1316,7 +1316,7 @@
     "merge_deployment": "paused"
   },
   "r12b": {
-    "status": "evidence_complete_pending_final_independent_review",
+    "status": "evidence_closeout_validation_pending",
     "formal_product_layer": "P0 frontend session lifecycle",
     "layer_target": "apps/web Session Store persistence",
     "module": "frontend/apps/web",
@@ -1433,7 +1433,7 @@
       "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/browser-verification-b.json"
     },
     "formal_ab": {
-      "status": "passed",
+      "status": "passed_with_order_sensitivity_recorded",
       "candidate_a": {
         "head": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
         "bundle": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd"
@@ -1442,29 +1442,99 @@
         "head": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
         "bundle": "dc3552784b5fa2cd2b0a542d035f9c3f86bcbb861674b30d89d97b9cb34d1466"
       },
-      "sample_policy": "9 warm and 9 cold per arm/viewport; both 1440x900 and 390x844; record 2; formal profiler disabled",
+      "sample_policy": "Original 9 warm and 9 cold per arm/viewport in A-to-B order; added 9 Warm and 3 Cold B-to-A pairs; all use 1440x900, 390x844, record 2 and no formal profiler",
       "formal_reports": 36,
-      "viewport_interactions": 72,
+      "reverse_warm_reports": 18,
+      "reverse_cold_reports": 6,
+      "total_formal_and_reverse_reports": 60,
+      "formal_viewport_interactions": 72,
+      "reverse_viewport_interactions": 48,
       "identity_or_runtime_errors": 0,
-      "warm_form_interactive_1440_median_ms": {
-        "A": 1825.133,
-        "B": 1568.57,
-        "delta_percent": -14.06
+      "warm_form_interactive_order_stratified": {
+        "1440": {
+          "formal_A_to_B": {
+            "A_median": 1825.133,
+            "B_median": 1568.57,
+            "delta_percent": -14.06,
+            "B_wins": "9/9"
+          },
+          "reverse_B_to_A": {
+            "A_median": 1684.015,
+            "B_median": 1694.302,
+            "delta_percent": 0.61,
+            "B_wins": "5/9"
+          },
+          "combined": {
+            "A_median": 1742.952,
+            "B_median": 1586.611,
+            "delta_percent": -8.97,
+            "B_wins": "14/18"
+          }
+        },
+        "390": {
+          "formal_A_to_B": {
+            "A_median": 1731.114,
+            "B_median": 1389.985,
+            "delta_percent": -19.71,
+            "B_wins": "9/9"
+          },
+          "reverse_B_to_A": {
+            "A_median": 1787.315,
+            "B_median": 1365.674,
+            "delta_percent": -23.59,
+            "B_wins": "9/9"
+          },
+          "combined": {
+            "A_median": 1747.128,
+            "B_median": 1387.877,
+            "delta_percent": -20.56,
+            "B_wins": "18/18"
+          }
+        }
       },
-      "warm_form_interactive_390_median_ms": {
-        "A": 1731.114,
-        "B": 1389.985,
-        "delta_percent": -19.71
-      },
-      "cold_form_interactive_1440_median_ms": {
-        "A": 2439.529,
-        "B": 2016.283,
-        "delta_percent": -17.35
-      },
-      "cold_form_interactive_390_median_ms": {
-        "A": 1797.581,
-        "B": 1505.569,
-        "delta_percent": -16.24
+      "cold_form_interactive_order_stratified": {
+        "1440": {
+          "formal_A_to_B": {
+            "A_median": 2439.529,
+            "B_median": 2016.283,
+            "delta_percent": -17.35,
+            "B_wins": "9/9"
+          },
+          "reverse_B_to_A": {
+            "A_median": 2276.024,
+            "B_median": 1913.765,
+            "delta_percent": -15.92,
+            "B_wins": "3/3"
+          },
+          "combined": {
+            "A_median": 2416.185,
+            "B_median": 1969.407,
+            "delta_percent": -18.49,
+            "B_wins": "12/12",
+            "limit": "9 formal plus 3 reverse pairs; directional only"
+          }
+        },
+        "390": {
+          "formal_A_to_B": {
+            "A_median": 1797.581,
+            "B_median": 1505.569,
+            "delta_percent": -16.24,
+            "B_wins": "9/9"
+          },
+          "reverse_B_to_A": {
+            "A_median": 1789.774,
+            "B_median": 1311.509,
+            "delta_percent": -26.72,
+            "B_wins": "3/3"
+          },
+          "combined": {
+            "A_median": 1793.677,
+            "B_median": 1494.721,
+            "delta_percent": -16.67,
+            "B_wins": "12/12",
+            "limit": "9 formal plus 3 reverse pairs; directional only"
+          }
+        }
       },
       "warm_initialization_server_median_ms": {
         "A": 2086,
@@ -1472,8 +1542,11 @@
         "delta_percent": -32.45
       },
       "comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/formal-comparison.json",
+      "order_stratified_comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/order-stratified-comparison.json",
       "warm_sequence_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/warm-sequence.log",
-      "cold_sequence_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/cold-sequence.log"
+      "cold_sequence_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/cold-sequence.log",
+      "reverse_order_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/reverse-order-crossover.log",
+      "interpretation": "Warm 1440 is order-sensitive; the balanced 18-pair estimate is -8.97%. Warm 390 is stable across both orders. Cold remains positive with limited reverse samples."
     },
     "session_browser_ab": {
       "status": "passed",
@@ -1492,12 +1565,33 @@
     },
     "final_head_quick": {
       "status": "passed",
-      "head": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
+      "head": "e51a4a4d09dae5597baff491162c60781c544437",
+      "scope": "pre-closeout candidate",
       "shards_passed": 8,
-      "receipt": ".git/codex/evidence/ci.local.quick/b3a685bfab7934e5eec1f7c0f6cb36c79dce5096.json",
-      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/final-head-quick-b3a685bfa.log"
+      "receipt": ".git/codex/evidence/ci.local.quick/e51a4a4d09dae5597baff491162c60781c544437.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/final-head-quick-e51a4a4d0.log"
     },
-    "next_exact_step": "Request independent review of this clean HEAD; current-head remote required CI remains pending before publication or merge."
+    "r10_manifest_transition": {
+      "status": "passed",
+      "original_manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-manifest.json",
+      "current_input_manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/r10-current-input-manifest.json",
+      "original_entries": 38,
+      "matching_entries": 35,
+      "changed_entries": 3,
+      "change_commit": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
+      "cause": "Candidate B redeploy tooling was added without changing existing deploy or cold_reset functions.",
+      "original_evidence_overwritten": false
+    },
+    "final_review": {
+      "status": "request_changes",
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-independent-review.json",
+      "product_code_findings_S0_S1": 0,
+      "open_S2": [
+        "Warm desktop fixed-order performance claim required order-stratified correction",
+        "R10 manifest required an input-revision transition"
+      ]
+    },
+    "next_exact_step": "Commit this evidence-only closeout, run exact-head Quick, then request final independent review."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
