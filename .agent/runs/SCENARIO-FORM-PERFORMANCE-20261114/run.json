@@ -1179,6 +1179,13 @@
         "classification": "validation_tool_defect",
         "reason": "Existing scene tile test stub did not accept the new published_authority keyword.",
         "receipt": ".runtime/frontend-dev-validation/executions/20261114T093846Z-1856661-274860467/receipt.json"
+      },
+      "clean_head_disposition_reconciliation": {
+        "status": "passed",
+        "classification": "baseline_evidence_defect",
+        "reason": "Generated verification inventory referenced three R10 snapshot targets that were still registered as zero-reference dispositions.",
+        "resolution": "Removed only the three stale dispositions; lane coverage now passes without changing the baseline allowance.",
+        "command": "make audit.verification.lane_coverage.check"
       }
     },
     "external_mutations": {

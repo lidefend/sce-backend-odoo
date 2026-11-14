@@ -3349,24 +3349,6 @@
       "owner": "platform-team",
       "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
       "review_by": "2027-03-31"
-    },
-    "r10.performance_ab.snapshot": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "R10 当前 duty paired DB/filestore 快照人工入口；需要独立资源授权、clean immutable tool SHA 与显式确认，不能由 CI 自动重放。",
-      "review_by": "2027-03-31"
-    },
-    "r10.performance_ab.snapshot.validate": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "R10 快照离线验证人工入口；只消费已审查快照，不创建 twins。",
-      "review_by": "2027-03-31"
-    },
-    "r10.performance_ab.snapshot.restore_drill": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "R10 paired DB/filestore 隔离恢复演练人工入口；创建临时隔离资源并在成功后清理，不能由 CI 自动重放。",
-      "review_by": "2027-03-31"
     }
   },
   "scripts": {

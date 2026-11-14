@@ -627,3 +627,8 @@ P4 隔离准备：
 
 当前没有将 189.633 ms 的第二次 resolve、诊断 SQL 差值或测试模板收益换算为用户可见
 性能收益。R10 的正式 Cold/Warm A/B 仍需隔离 A/B 环境和单独部署授权。
+
+clean-head 复核还发现，提交钩子刷新测试清册后，R10 plan 中列出的三个 snapshot 运维入口
+已经被验证工具识别为执行引用，但 dispositions 仍把它们登记为零引用目标。该问题归因为
+`baseline_evidence_defect`，只移除了三个已经失效的登记，没有放宽任何检查或验证范围；
+`make audit.verification.lane_coverage.check` 通过。产品代码和业务输出没有变化。
