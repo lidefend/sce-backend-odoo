@@ -464,6 +464,33 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         self.assertTrue(rows)
         self.assertEqual(authority.call_count, 1)
 
+    def test_capability_list_reuses_same_scope_published_authority(self):
+        from unittest.mock import patch
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+
+        user = self._actor(
+            ['smart_construction_core.group_sc_cap_project_read'],
+            login='same-scope-route-authority-reuse',
+        )
+        env = user.with_user(user).env
+        authority = runtime_route_authority.published_route_authority(env)
+        with patch.object(
+            capability_registry,
+            '_published_query_pairs_by_action_id',
+            wraps=capability_registry._published_query_pairs_by_action_id,
+        ) as pair_builder:
+            rows = capability_registry.list_capabilities_for_user(
+                env,
+                user,
+                published_authority=authority,
+            )
+        self.assertTrue(rows)
+        pair_builder.assert_called_once()
+        self.assertIs(
+            pair_builder.call_args.kwargs.get('published_authority'),
+            authority,
+        )
+
     def test_cached_published_query_pairs_match_legacy_first_match(self):
         from odoo.addons.smart_core.delivery.runtime_route_authority import (
             iter_published_pairs,

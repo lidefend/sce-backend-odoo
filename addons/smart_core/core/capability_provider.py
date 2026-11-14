@@ -108,8 +108,28 @@ def build_capability_groups(capabilities: List[dict]) -> List[dict]:
     return result
 
 
-def load_capabilities_for_user(env, user) -> List[dict]:
-    extension_caps = call_extension_hook_first(env, "smart_core_list_capabilities_for_user", env, user)
+def load_capabilities_for_user(
+    env,
+    user,
+    *,
+    published_authority: dict | None = None,
+) -> List[dict]:
+    extension_caps = call_extension_hook_first(
+        env,
+        "smart_core_list_capabilities_for_user",
+        env,
+        user,
+        published_authority=published_authority,
+    )
+    if extension_caps is None and published_authority is not None:
+        # Older extension providers do not accept the same-scope authority
+        # keyword. Keep their compatibility path while new providers consume it.
+        extension_caps = call_extension_hook_first(
+            env,
+            "smart_core_list_capabilities_for_user",
+            env,
+            user,
+        )
     if isinstance(extension_caps, list):
         return _with_source_authority(extension_caps)
 
@@ -155,14 +175,27 @@ def _with_source_authority(capabilities: List[dict]) -> List[dict]:
     return out
 
 
-def load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dict[str, int]]:
+def load_capabilities_for_user_with_timings(
+    env,
+    user,
+    *,
+    published_authority: dict | None = None,
+) -> tuple[List[dict], dict[str, int]]:
     started_at = time.perf_counter()
     extension_result = call_extension_hook_first(
         env,
         "smart_core_list_capabilities_for_user_with_timings",
         env,
         user,
+        published_authority=published_authority,
     )
+    if extension_result is None and published_authority is not None:
+        extension_result = call_extension_hook_first(
+            env,
+            "smart_core_list_capabilities_for_user_with_timings",
+            env,
+            user,
+        )
     if (
         isinstance(extension_result, tuple)
         and len(extension_result) == 2
@@ -178,7 +211,11 @@ def load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dict
             (time.perf_counter() - started_at) * 1000
         )
         return _with_source_authority(extension_result[0]), timings
-    capabilities = load_capabilities_for_user(env, user)
+    capabilities = load_capabilities_for_user(
+        env,
+        user,
+        published_authority=published_authority,
+    )
     return capabilities, {
         "load_capabilities_for_user_total": int((time.perf_counter() - started_at) * 1000),
     }

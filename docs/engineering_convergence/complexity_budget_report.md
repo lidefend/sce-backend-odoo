@@ -53,11 +53,11 @@ Generated from repository source files. This report is informational during the 
 | 2000 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1959 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 1939 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1955 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1900 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1875 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -288,11 +288,11 @@ Generated from repository source files. This report is informational during the 
 | 2000 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1959 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 1939 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1955 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
+| 1900 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1875 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |

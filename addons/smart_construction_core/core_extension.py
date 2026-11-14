@@ -1169,7 +1169,7 @@ def smart_core_register(registry):
             registry[intent_name] = handler
 
 
-def get_capability_contributions(env, user):
+def get_capability_contributions(env, user, *, published_authority=None):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user as registry_list_capabilities_for_user,
@@ -1177,13 +1177,17 @@ def get_capability_contributions(env, user):
     except Exception:
         return []
     try:
-        capabilities = registry_list_capabilities_for_user(env, user)
+        capabilities = registry_list_capabilities_for_user(
+            env,
+            user,
+            published_authority=published_authority,
+        )
     except Exception:
         return []
     return _capability_rows.normalize_capability_rows(capabilities)
 
 
-def get_capability_contributions_with_timings(env, user):
+def get_capability_contributions_with_timings(env, user, *, published_authority=None):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user_with_timings as registry_list_capabilities_for_user_with_timings,
@@ -1191,7 +1195,11 @@ def get_capability_contributions_with_timings(env, user):
     except Exception:
         return [], {}
     try:
-        capabilities, timings_ms = registry_list_capabilities_for_user_with_timings(env, user)
+        capabilities, timings_ms = registry_list_capabilities_for_user_with_timings(
+            env,
+            user,
+            published_authority=published_authority,
+        )
     except Exception:
         return [], {}
     return (
@@ -1216,14 +1224,22 @@ def get_capability_group_contributions(env):
     return out
 
 
-def smart_core_list_capabilities_for_user(env, user):
+def smart_core_list_capabilities_for_user(env, user, *, published_authority=None):
     """Compatibility hook consumed by smart_core capability provider."""
-    return get_capability_contributions(env, user)
+    return get_capability_contributions(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
-def smart_core_list_capabilities_for_user_with_timings(env, user):
+def smart_core_list_capabilities_for_user_with_timings(env, user, *, published_authority=None):
     """Expose capability projection stages to the startup provider."""
-    return get_capability_contributions_with_timings(env, user)
+    return get_capability_contributions_with_timings(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
 def smart_core_capability_groups(env):
