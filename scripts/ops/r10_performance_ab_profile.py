@@ -148,9 +148,8 @@ def validate_profile(payload: dict[str, Any], *, profile_path: Path = DEFAULT_PR
     contract_path = contract_file(profile_path, str(snapshot.get("contract") or ""))
     _require(contract_path.is_file(), "snapshot continuity contract is missing")
     _require(
-        str(snapshot.get("root") or "").startswith("/data/backups/perf-r10/")
-        or snapshot.get("root") == "/data/backups/perf-r10",
-        "snapshot root must be the R10 backup namespace",
+        snapshot.get("root") == "/data/backups/daily-demo-dev",
+        "snapshot root must be the current demo duty backup namespace",
     )
     _require(snapshot.get("paired_restore_drill_required") is True, "paired restore drill is required")
     _require(snapshot.get("source_write_allowed") is False, "source writes must be disabled")

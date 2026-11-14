@@ -76,7 +76,7 @@
   },
   "snapshot": {
     "contract": "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
-    "root": "/data/backups/perf-r10",
+    "root": "/data/backups/daily-demo-dev",
     "required_artifacts": [
       "database.dump",
       "filestore.tar.gz",

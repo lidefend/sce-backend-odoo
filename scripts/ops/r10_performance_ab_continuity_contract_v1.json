@@ -5,7 +5,6 @@
   "environment_class": "R10_ISOLATED_PERFORMANCE_AB_SOURCE",
   "data_authority": "CANDIDATE",
   "source_repository": "/opt/projects/repos/sce-product-odoo",
-  "backup_root": "/data/backups/perf-r10",
   "required_artifacts": [
     "database.dump",
     "filestore.tar.gz",
