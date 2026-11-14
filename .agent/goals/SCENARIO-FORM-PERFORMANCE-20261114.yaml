@@ -15,8 +15,10 @@ goal:
     原始 A/B 保留，新增 Warm B→A 9 对和 Cold B→A 3 对交叉样本。Warm 桌面合并 18 对
     改善 8.97% 但顺序敏感，Warm 手机稳定改善，Cold 方向改善但反向样本有限。
     R10 original manifest 不覆盖，另建 current-input manifest 绑定 b3a685bfa 的新增
-    redeploy 工具输入；Session 持久化收益单独保留。等待新 clean HEAD 的 Quick、
-    最终独立复审、远端必需 CI 和合并授权。
+    redeploy 工具输入。原 R12 59 项 manifest 已无法恢复，所有者已明确授权将现存
+    93 项 manifest 作为替代证据清单；v93 冻结副本和 manifest lineage 正在完成。
+    Session 持久化收益单独保留。等待新 clean HEAD 的 Quick、最终独立复审、
+    远端必需 CI 和合并授权。
   acceptance:
     - 登记唯一专题与可续跑索引
     - 源码核对场景、契约、数据、关系字段和渲染调用链

@@ -951,8 +951,25 @@ B 在采样分辨率下没有再出现完整 Snapshot `persist` 帧，不能把�
 
 迁移记录包含三个文件的旧/新 SHA256、变更提交、diff 范围、原/current input-set digest，
 以及 `deploy`、`cold_reset` 两个既有函数的 AST 源码哈希。两函数在变更前后哈希一致，
-变更仅新增 B redeploy 路径，没有删除文件，也没有改写原始 A/B 报告。原 R10 manifest、
-R11 的 13 项 manifest 和 R12 原始 59 项 manifest 均不覆盖。
+变更仅新增 B redeploy 路径，没有删除文件，也没有改写原始 A/B 报告。原 R10 manifest 和
+R11 的 13 项 manifest 保持不变；R12 的 59 项 manifest 已被后续版本覆盖，按下一节如实记录。
+
+### R12 manifest 历史沿革
+
+独立复审确认：更早的 R12 59 项 manifest 已在其原路径被后续 93 项版本覆盖，当前无法从
+`.runtime`、`.git/codex` 或常见备份文件中恢复。不得重建 59 项文件冒充原始版本。
+
+经所有者明确授权，现存且已验证的 93 项 manifest 作为 R12 最终完整证据清单，并保留当前
+93 项文件的独立冻结副本：
+
+- `r12-final-manifest-v93.json`
+- SHA256 `ac578105c13b02b72da3376fc91cba0f44c40d69482503bddbfaddc303d2502f`
+- 文件模式 `0444`
+
+历史说明记录在 `r12-manifest-lineage.md`，其中包含所有者授权原文、原 59 项不可恢复事实、
+搜索范围、v93 manifest 身份和 v93 时点的最终结果快照
+`r12-final-result-at-v93.md`。v93 是有授权的替代证据清单，不是原 59 项文件的恢复件。
+其绑定的 tracked 文件可由提交 `d748195681bbdeaa0956ee8f1ab84acfe41cd597` 恢复。
 
 当前成果证明后端事实复用和前端 Session 生命周期治理产生了真实、可量化的候选环境收益；
 同时保留 Warm 桌面的顺序敏感性及 Cold 样本限制。它不等于生产部署验收，也不授权 Core

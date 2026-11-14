@@ -214,12 +214,12 @@
     }
   },
   "blockers": [
-    "The closeout documentation and evidence commit still requires its own exact-head Quick and independent review.",
+    "The manifest-lineage evidence commit still requires its own exact-head Quick and independent review.",
     "The candidate has not been pushed from the validated A/B deployment commit; remote branch state cannot be inherited as current-head evidence.",
     "Merge and product deployment remain paused pending review and authorization.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Commit the R12 evidence closeout, run Quick on the new clean HEAD, then request final independent review.",
+  "next_exact_step": "Commit the R12 manifest-lineage record, run Quick on the new clean HEAD, then request final independent review.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1582,8 +1582,21 @@
       "cause": "Candidate B redeploy tooling was added without changing existing deploy or cold_reset functions.",
       "original_evidence_overwritten": false
     },
+    "r12_manifest_lineage": {
+      "status": "owner_authorized_replacement_recorded",
+      "original_artifact_count": 59,
+      "original_file_recoverable": false,
+      "original_path": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-manifest.json",
+      "replacement_artifact_count": 93,
+      "frozen_manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-manifest-v93.json",
+      "frozen_manifest_sha256": "ac578105c13b02b72da3376fc91cba0f44c40d69482503bddbfaddc303d2502f",
+      "lineage_record": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-manifest-lineage.md",
+      "result_snapshot": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-result-at-v93.md",
+      "owner_authorization": "Confirmed historical overwrite and unrecoverability; authorized the verified 93-artifact set as the final replacement evidence list while preserving the fact that it is not the original file.",
+      "tracked_file_recovery_commit": "d748195681bbdeaa0956ee8f1ab84acfe41cd597"
+    },
     "final_review": {
-      "status": "request_changes",
+      "status": "changes_addressed_pending_final_review",
       "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-final-independent-review.json",
       "product_code_findings_S0_S1": 0,
       "open_S2": [
@@ -1591,7 +1604,7 @@
         "R10 manifest required an input-revision transition"
       ]
     },
-    "next_exact_step": "Commit this evidence-only closeout, run exact-head Quick, then request final independent review."
+    "next_exact_step": "Commit the manifest-lineage record, run exact-head Quick, then request final independent review."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
