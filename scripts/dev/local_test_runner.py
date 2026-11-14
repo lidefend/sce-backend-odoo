@@ -270,10 +270,15 @@ def main(argv=None):
             source_before = source_fingerprint(env)
             head_before = command(['git','rev-parse','HEAD'],env).stdout.strip()
             schema_sha = schema_fingerprint(env)
+            template_module = str(
+                os.environ.get("LOCAL_TEST_TEMPLATE_MODULE") or module
+            ).strip()
+            selection(template_module, "/" + template_module)
             template_key = hashlib.sha256(json.dumps({
                 'schema': schema_sha,
                 'profile': profile_sha,
                 'image': image_id,
+                'template_module': template_module,
             }, sort_keys=True).encode()).hexdigest()
             template_reused = False
             command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
@@ -285,6 +290,7 @@ def main(argv=None):
                     marker = {}
                 template_ready = (
                     marker.get('key') == template_key
+                    and marker.get('template_module') == template_module
                     and database_exists(dc, env, TEMPLATE_DATABASE)
                     and module_is_installed(dc, env, module)
                 )
@@ -300,7 +306,7 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                         'run', '--name', prepare_carrier, '--rm', '--no-deps', '-T',
                         '-v', str(ROOT / 'config') + ':/mnt/config:ro',
                         '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0',
-                        '-e', 'SC_TEST_MODULE=' + module,
+                        '-e', 'SC_TEST_MODULE=' + template_module,
                         '--entrypoint', 'bash', 'odoo', '-ec', prepare_script,
                     ]
                     try:
@@ -325,7 +331,7 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                         'schema_fingerprint': schema_sha,
                         'profile_sha256': profile_sha,
                         'image_id': image_id,
-                        'prepared_by_module': module,
+                        'template_module': template_module,
                     }, indent=2) + '\n')
                 command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', TEMPLATE_DATABASE, 'sc_test'], env)
                 template_reused = True

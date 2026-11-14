@@ -604,13 +604,14 @@
       "behavior": {
         "default": "direct local.test.test remains fresh-database behavior",
         "incremental_iteration": "ci.local.iteration enables schema-bound sc_test_template cloning",
+        "template_module": "smart_construction_bundle installs the planned ORM module superset once",
         "template_rebuild_inputs": ["schema/install inputs", "registered profile", "Odoo image"],
         "per_target_isolation": "each ORM target receives a newly cloned sc_test database",
         "module_guard": "template is rebuilt when the requested module is not installed"
       },
       "measured": {
         "schema_fingerprint": "7f337bc35f1a509420a69c7f0e2364a4c05ae152719fd8c322623eebc783e13f",
-        "template_key": "d7f1f54312eb680f743f63852e26e1e3dec3f4dbba0aea6c16efcd45b54b66eb",
+        "template_key_before_superset": "d7f1f54312eb680f743f63852e26e1e3dec3f4dbba0aea6c16efcd45b54b66eb",
         "first_run_seconds": 28.67,
         "second_run_seconds": 8.92,
         "same_tests": 3,

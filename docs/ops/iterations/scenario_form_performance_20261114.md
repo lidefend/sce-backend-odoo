@@ -476,6 +476,7 @@ native form 的 canonical 输入原先在 `deepcopy(marker)` 之外，又分别�
 - 默认直接执行 `local.test.test` 仍保持 fresh-database 语义。
 - 只有 `ci.local.iteration` 设置 `LOCAL_TEST_REUSE_DATABASE=1`。
 - 首次按 schema/install 输入、profile 和 Odoo 镜像准备一次 `sc_test_template`。
+- 增量模板一次性安装 `smart_construction_bundle` 模块超集，避免按目标顺序遇到缺失模块再重建。
 - 每个 ORM 目标从模板克隆新的 `sc_test`，测试之间仍相互隔离。
 - 目标模块未安装、schema/install 输入变化、profile 或镜像变化时重建模板。
 - schema 指纹只覆盖 manifest、models、data、security、views、migrations、hooks 和测试依赖，

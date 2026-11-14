@@ -51,6 +51,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
         self.assertEqual(result["status"], "passed")
         self.assertEqual(run.call_args.kwargs["env"]["LOCAL_TEST_REUSE_DATABASE"], "1")
+        self.assertEqual(
+            run.call_args.kwargs["env"]["LOCAL_TEST_TEMPLATE_MODULE"],
+            "smart_construction_bundle",
+        )
 
     def test_performance_consumption_regressions_have_executable_owners(self):
         for path, owner in [
