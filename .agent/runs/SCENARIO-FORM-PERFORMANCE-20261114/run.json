@@ -154,10 +154,10 @@
     }
   },
   "blockers": [
-    "R7 local product repair passed and A baseline is complete; clean candidate deployment and same-environment B measurement are now in progress under explicit user authorization.",
+    "R7 initialization latency improved directionally in B, but form-interaction improvement is not proven by the short B sample.",
     "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Commit the current candidate, deploy it through daily.runtime.candidate.release with expected old SHA 5d631f6, then run the same detail-only B smoke and compare it with the 12-run A summary.",
+  "next_exact_step": "Review the A/B result and decide whether the confirmed initialization improvement is sufficient to proceed; merge and broader product acceptance remain paused.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -346,10 +346,10 @@
     "scope": "R2 minimal removal of unused computation"
   },
   "completion": {
-    "batch": "R7_product_fix_and_local_correctness_passed_actual_performance_pending",
+    "batch": "R7_product_fix_local_correctness_and_directional_AB_complete",
     "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
-    "deployment": "R1_5d631f6_deployed_R2_R7_not_deployed",
-    "user_acceptance": "same_environment_AB_not_run"
+    "deployment": "B_measured_then_A_tree_restored",
+    "user_acceptance": "initialization_improved_form_interaction_not_proven"
   },
   "ci_crash_diagnosis": {
     "layer": "P4",
@@ -633,7 +633,7 @@
     "review": "Existing independent_perf_review covers the dirty R7 product diff and the original 30-target/four-ORM receipt set; no later product edit was found. The subsequently added P4 browser timing option is validated by its focused tool suite, not presented as part of that review.",
     "ab_plan": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/r7-ab-plan.md",
     "ab_measurement_tool_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/handover/ab-measurement-tool-result.json",
-    "performance_status": "pending"
+    "performance_status": "directional_result_complete"
   },
   "ab_baseline": {
     "status": "passed",
@@ -663,7 +663,7 @@
     "why_here": "The required click-to-interactive and trace-bound timing fields belong to the existing governed browser evidence collector.",
     "why_not_elsewhere": "No product semantics, contract rendering, permissions, runtime configuration, database, or deployment behavior needs to change.",
     "blast_radius": "Opt-in report fields only when LIST_SURFACE_AB_TIMING=1; default probe behavior is unchanged.",
-    "status": "offline_tool_validation_passed_live_sample_not_run",
+    "status": "live_measurement_passed",
     "files": [
       "scripts/verify/frontend_list_surface_structure_browser.mjs",
       "scripts/verify/test_frontend_list_surface_search_contract.py"
@@ -675,9 +675,48 @@
       "focused_tool_tests": 26
     },
     "not_run": {
-      "B_measurement": "pending clean candidate commit and governed deployment"
+      "SQL_count_after": "formal timing was collected without profiler; no post-B SQL-count claim is made"
     },
     "carried_forward": "R7 product hashes, focused product suites, and four ORM receipts remain unchanged; only the browser-tool input and its focused test were affected."
+  },
+  "ab_comparison": {
+    "status": "directional_result_complete",
+    "a": {
+      "sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+      "frontend_build_sha256": "53600d54014d38799c79241231a99389d4ee55b29ec622bfc0a866ddd2be98a2",
+      "valid_runs": 12
+    },
+    "b": {
+      "sha": "552f2083f54616fce2938d8dcca8ec152c7ae1c8",
+      "frontend_build_sha256": "92ccd01b9a4f2043316f05749f8daa5a6c5a2de1d445bfd145cac772de2dac3e",
+      "cold_smoke": 1,
+      "warm_runs": 2,
+      "deployment": "PASS"
+    },
+    "warm_medians": {
+      "initialization_browser_ms": {"A": 2158.543, "B": 1542.711, "delta_percent": -28.5},
+      "initialization_server_ms": {"A": 2027.5, "B": 1359.5, "delta_percent": -32.9},
+      "form_interactive_1440_ms": {"A": 1626.409, "B": 1667.087, "delta_percent": 2.5},
+      "form_interactive_390_ms": {"A": 1603.216, "B": 1978.051, "delta_percent": 23.4},
+      "main_contract_browser_1440_ms": {"A": 921.418, "B": 843.314, "delta_percent": -8.5},
+      "main_contract_browser_390_ms": {"A": 850.065, "B": 1115.52, "delta_percent": 31.2},
+      "main_contract_server_1440_ms": {"A": 683.5, "B": 628.0, "delta_percent": -8.1},
+      "main_contract_server_390_ms": {"A": 654.0, "B": 661.5, "delta_percent": 1.1}
+    },
+    "correctness": "B smoke and both warm runs passed 8/8 record checks with zero runtime errors; core business payload equal",
+    "interpretation": "Initialization is clearly faster; end-to-end form interaction improvement is not established",
+    "summary": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/comparison.json"
+  },
+  "daily_runtime_restore": {
+    "status": "PASS",
+    "requested_baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "restore_carrier_sha": "1baa749baa3af02416909d6182e074fbd26d3958",
+    "code_tree_equal_to_baseline": true,
+    "served_source_revision": "1baa749baa3af02416909d6182e074fbd26d3958",
+    "served_frontend_build_sha256": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd",
+    "entry_verify": "PASS",
+    "build_identity_verify": "PASS",
+    "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
