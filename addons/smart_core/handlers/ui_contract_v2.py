@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v49"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v50"
 
 
 def _node_validation_snapshot_ready(source):
@@ -4290,6 +4290,27 @@ class UiContractV2Handler(BaseIntentHandler):
         data["field_requirements"] = deepcopy(
             form_field_requirements if isinstance(form_field_requirements, dict) else {}
         )
+        model_fields = {}
+        try:
+            model_fields = getattr(env[model], "_fields", {})
+        except Exception:
+            model_fields = {}
+        if isinstance(model_fields, dict) and model_fields:
+            interaction_dependencies = [
+                name
+                for name, field in model_fields.items()
+                if str(getattr(field, "sc_ui_usage", "") or "").strip().lower()
+                == "interaction"
+            ]
+        else:
+            interaction_dependencies = [
+                name
+                for name, descriptor in fields.items()
+                if isinstance(descriptor, dict)
+                and str(descriptor.get("sc_ui_usage") or "").strip().lower()
+                == "interaction"
+            ]
+        data["record_snapshot_dependency_fields"] = sorted(interaction_dependencies)
         # Preserve the action's resolved form view identity through the native
         # source carrier.  Form orchestration contracts are scoped by
         # action/view; dropping this identity makes a correctly scoped task

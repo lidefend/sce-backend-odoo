@@ -544,5 +544,28 @@ runner 单测 15 项和 local development lifecycle 52 项通过。该 28.67→8
 - 增量复用 schema 提升为 v2，旧索引不会被继续解释。
 
 新增测试覆盖 dirty 验证后提交为 clean HEAD 时复用身份不变、运行时内容变化时不复用、
-工作树变化确实进入临时标识，以及日志被篡改时仍拒绝复用。`verify.frontend.dev.incremental.unit`
-141 项通过。该修正属于 P4 执行效率，不改变产品代码或性能结论。
+工作树变化确实进入临时标识，以及日志被篡改时仍拒绝复用。后续又扩展到 passed、interrupted
+和 failed 聚合回执的逐目标续用，只废弃由变更路径重新选中的目标和失败目标；
+`verify.frontend.dev.incremental.unit` 143 项通过。该修正属于 P4 执行效率，不改变产品代码
+或性能结论。
+
+### CI 首轮失败修正
+
+`6fe21559d` 的远端首轮执行中，shard 3、2、1、managed ORM、frontend gate、public guard 和
+professional quality checks 通过；shard 0 暴露两项问题：
+
+- capability 空结果测试仍绑定旧 dispatcher，未覆盖生产新增的兼容关键字入口；
+- `sc_ui_usage=interaction` 的模型字段没有进入稀疏记录快照依赖，导致付款申请只读契约缺少
+  `legal_next_action_display`。
+
+修正方式：
+
+- capability 测试改为绑定 `call_extension_hook_first_compatible`，空列表语义继续短路；
+- `_dispatch_native_form_source()` 从模型字段对象收集显式 `sc_ui_usage=interaction` 字段，
+  作为请求内早期记录依赖，不从完整 `fieldDescriptors` 猜测；
+- handler 输入变化后 assembled contract cache 提升到 v50，摘要重签为
+  `f273c060bf429179f427d6137ab6752a59b480407aa59578a4b59d2c63a9a382`。
+
+定向 ORM 三项通过；最近一次 `ci.local.iteration` 从上一份 41 目标回执复用 33 项，只重跑
+受影响的 8 项并全部通过。`verify_coverage` 的模块不一致是 shard 0 失败后的派生失败，
+需要新精确提交的远端执行确认。

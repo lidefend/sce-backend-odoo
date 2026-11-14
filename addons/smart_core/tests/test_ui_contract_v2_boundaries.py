@@ -575,6 +575,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                         "name": {"type": "char"},
                         "unrelated": {"type": "char"},
                         "z_form_value": {"type": "char"},
+                        "z_interaction": {"type": "char", "sc_ui_usage": "interaction"},
                     },
                     "views": {"form": {"layout": [
                         {"type": "field", "name": "name"},
@@ -595,6 +596,20 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(
             data["field_requirements"],
             {"x.document": ["name", "z_form_value"]},
+        )
+        self.assertEqual(
+            data["record_snapshot_dependency_fields"],
+            ["z_interaction"],
+        )
+        fields = {
+            "id": types.SimpleNamespace(type="integer"),
+            "name": types.SimpleNamespace(type="char"),
+            "z_form_value": types.SimpleNamespace(type="char"),
+            "z_interaction": types.SimpleNamespace(type="char"),
+        }
+        self.assertIn(
+            "z_interaction",
+            self.module.collect_initial_record_snapshot_fields(data, fields),
         )
 
     def test_interaction_field_cannot_override_native_usage_through_list_schema(self):

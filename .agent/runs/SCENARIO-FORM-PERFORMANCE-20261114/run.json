@@ -1045,15 +1045,17 @@
       "interaction_timing": "Contract replay validation now runs after the form-interaction timing sample."
     },
     "workflow_correction": {
-      "problem": "pr.push reran the complete affected target set after a clean commit even when the committed runtime bytes were identical to the already validated dirty worktree.",
-      "fix": "Runtime-tree reuse identity now hashes current tracked, dirty and untracked source bytes; HEAD and worktree cleanliness remain provenance rather than validity.",
-      "fail_closed": "Changed runtime bytes, changed target scope, changed validation authorities or missing/tampered target logs still block reuse.",
-      "tests": 141
+      "problem": "pr.push reran the complete affected target set after a clean commit even when the committed runtime bytes were identical to the already validated dirty worktree; later source changes also discarded all prior target results.",
+      "fix": "Runtime-tree reuse identity hashes current tracked, dirty and untracked source bytes; passed target logs are carried individually from prior passed, interrupted or failed receipts unless their selected inputs changed.",
+      "fail_closed": "Changed runtime bytes, changed target scope, changed validation authorities, failed target rows or missing/tampered target logs still block reuse.",
+      "tests": 143
     },
     "additional_fixes": [
       "Fallback parsing now consumes a supplied raw arch when _arch_root is absent.",
       "Platform tests no longer require project.project or smart_construction_core XMLIDs in the P0-only shard.",
-      "The assembled contract cache advances to v49 with a re-pinned input digest."
+      "Explicit sc_ui_usage=interaction fields are included in the sparse record snapshot dependency set.",
+      "Capability-empty tests bind the compatible dispatcher used by production.",
+      "The assembled contract cache advances to v50 with a re-pinned input digest."
     ],
     "validation": {
       "ci_local_iteration": {
@@ -1082,8 +1084,8 @@
         "receipt": ".runtime/test-baseline/1794639231458808147/receipt.json"
       }
     },
-    "assembled_contract_cache_version": "ui-contract-v2-demand-driven-snapshot-v49",
-    "assembled_cache_inputs_sha256": "d4b9230f4a6287cfcf469bd9761737104152bd45415f2c2b7ebc5850693d0162",
+    "assembled_contract_cache_version": "ui-contract-v2-demand-driven-snapshot-v50",
+    "assembled_cache_inputs_sha256": "f273c060bf429179f427d6137ab6752a59b480407aa59578a4b59d2c63a9a382",
     "not_run": [
       "current-head remote required CI",
       "same-environment A/B for this cumulative candidate"

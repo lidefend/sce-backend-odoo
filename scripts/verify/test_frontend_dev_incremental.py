@@ -2358,22 +2358,29 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
             "scripts/ops/safe_branch_sync_main.py",
         ]
 
-    def _execute(self, directory: str, *, interrupted: bool) -> dict:
+    def _execute(
+        self,
+        directory: str,
+        *,
+        interrupted: bool,
+        failed_target: str | None = None,
+    ) -> dict:
         calls = []
 
         def run_target(target: str, root: Path, log_path: Path) -> dict:
             calls.append(target)
-            status = (
-                "interrupted"
-                if interrupted and target == "verify.workspace.branch.sync-main"
-                else "passed"
-            )
+            if failed_target and target == failed_target:
+                status = "failed"
+            elif interrupted and target == "verify.workspace.branch.sync-main":
+                status = "interrupted"
+            else:
+                status = "passed"
             log_path.write_text(f"{target}:{status}\n", encoding="utf-8")
             return {
                 "target": target,
                 "command": ["make", "--no-print-directory", target],
                 "status": status,
-                "returncode": 0 if status == "passed" else 130,
+                "returncode": 0 if status == "passed" else (1 if status == "failed" else 130),
                 "durationSeconds": 0.1,
                 "log": str(log_path),
                 "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
@@ -2435,6 +2442,41 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
                 if row["target"] != "verify.workspace.branch.sync-main"
             )
         )
+
+    def test_passed_receipt_reuses_unaffected_targets_after_source_change(self) -> None:
+        first = self._execute("first", interrupted=False)
+        self.assertEqual(first["_code"], 0)
+        self.assertEqual(first["status"], "passed")
+
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "tool"], check=True)
+
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["status"], "passed")
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["executedTargetCount"], 1)
+        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(
+            second["sourceReceipt"],
+            ".runtime/frontend-dev-validation/executions/first/receipt.json",
+        )
+
+    def test_failed_receipt_reuses_only_verified_passed_targets(self) -> None:
+        first = self._execute(
+            "first",
+            interrupted=False,
+            failed_target="verify.workspace.branch.sync-main",
+        )
+        self.assertEqual(first["_code"], 1)
+        self.assertEqual(first["status"], "failed")
+
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["reusedTargetCount"], 2)
 
 
 class RunScopedPlannerTest(unittest.TestCase):

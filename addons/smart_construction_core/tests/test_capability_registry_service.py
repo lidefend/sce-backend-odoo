@@ -100,7 +100,11 @@ class TestCapabilityVerdictProjection(TransactionCase):
         from unittest.mock import patch, MagicMock
         from odoo.addons.smart_core.core import capability_provider
         env = MagicMock()
-        with patch.object(capability_provider, "call_extension_hook_first", return_value=[]) as hook:
+        with patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            return_value=[],
+        ) as hook:
             self.assertEqual(capability_provider.load_capabilities_for_user(env, self.env.user), [])
         hook.assert_called_once()
         env.__getitem__.assert_not_called()
@@ -113,7 +117,15 @@ class TestCapabilityVerdictProjection(TransactionCase):
         record._user_visible.return_value = True
         record.to_public_dict.return_value = {"key": "standalone", "capability_state": "deny"}
         env.__getitem__.return_value.sudo.return_value.search.return_value = [record]
-        with patch.object(capability_provider, "call_extension_hook_first", return_value=None):
+        with patch.object(
+            capability_provider,
+            "call_extension_hook_first_compatible",
+            return_value=None,
+        ), patch.object(
+            capability_provider,
+            "call_extension_hook_first",
+            return_value=None,
+        ):
             rows = capability_provider.load_capabilities_for_user(env, self.env.user)
         self.assertEqual(rows[0]["capability_state"], "deny")
         self.assertEqual(rows[0]["key"], "standalone")

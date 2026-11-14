@@ -1646,12 +1646,13 @@ def resumable_receipt_results(
     paths: list[str],
     targets: list[str],
 ) -> tuple[Path | None, str, dict[str, dict]]:
-    """Carry verified target prefixes from a clean interrupted execution.
+    """Carry verified targets from a prior clean execution.
 
-    An interrupted aggregate receipt can contain many completed targets before
-    the operator stops the current target. Those target logs remain useful when
-    the source head is still an ancestor and the target set is identical. The
-    caller removes targets affected by commits or dirty paths since that head.
+    A prior aggregate receipt can contain passed targets even when another
+    target was interrupted, or can be a complete passed execution whose source
+    later changed. Those target logs remain useful when the source head is still
+    an ancestor and the target set is identical. The caller removes targets
+    selected by commits or dirty paths since that head.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
     if not execution_root.is_dir():
@@ -1668,7 +1669,7 @@ def resumable_receipt_results(
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             head = str(receipt.get("identity", {}).get("head", ""))
             if (
-                receipt.get("status") != "interrupted"
+                receipt.get("status") not in ("interrupted", "passed", "failed")
                 or not receipt.get("identity", {}).get("worktreeClean")
                 or len(head) != 40
                 or sorted(receipt.get("changedPaths", [])) != expected_paths
@@ -2053,7 +2054,7 @@ def execute_targets(
     source_receipt = incremental_verified_receipt(root, paths, targets, identity)
     resume_receipt, resume_head, carried_results = (
         resumable_receipt_results(root, paths, targets)
-        if source_receipt is None and identity.get("worktreeClean")
+        if source_receipt is None
         else (None, "", {})
     )
     if resume_receipt is not None:
