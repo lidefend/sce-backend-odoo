@@ -3,7 +3,7 @@
   "id": "SCENARIO-FORM-PERFORMANCE-20261114",
   "branch": "fix/scenario-form-performance-r2-20261114",
   "baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
-  "status": "verification_pending",
+  "status": "active",
   "goal": ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
   "record": "docs/ops/iterations/scenario_form_performance_20261114.md",
   "scope": [
@@ -47,7 +47,19 @@
     "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "make/dev_test.mk",
-    "scripts/verify/test_local_dev_runtime_performance.py"
+    "scripts/verify/test_local_dev_runtime_performance.py",
+    "addons/smart_core/app_config_engine/models/app_view_config.py",
+    "addons/smart_core/core/native_view_parsed_cache.py",
+    "addons/smart_core/core/native_view_projection.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/core/node_component_validation.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_view_parsed_cache.py",
+    "addons/smart_core/tests/test_node_component_validation.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
   ],
   "environment": {
     "kind": "offline",
@@ -154,10 +166,10 @@
     }
   },
   "blockers": [
-    "R7 initialization latency improved directionally in B, but form-interaction improvement is not proven by the short B sample.",
+    "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Review the A/B result and decide whether the confirmed initialization improvement is sufficient to proceed; merge and broader product acceptance remain paused.",
+  "next_exact_step": "Complete batch 3 by keying declaration/source proofs to the final tree identity where mutation changes their premises; retain final runtime evaluation, then proceed to batch 4 copy/representation reduction.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -337,16 +349,121 @@
       "receipt": ".runtime/frontend-dev-validation/executions/20261114T014527Z-3430691-302821093/receipt.json",
       "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-iteration-fixed.log",
       "source_unchanged_during_runtime": true
+    },
+    "backend_native_view_reuse": {
+      "status": "passed",
+      "candidate_head": "90b9159e75daad57df44b24543f8cadab0308aba",
+      "dirty_scope": "native view carrier, projection and final validation only",
+      "unit_target": "verify.business_config.formal_list.unit",
+      "unit_tests": 287,
+      "assembler_guard": "verify.unified_page_contract.v2.assembler",
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v40",
+      "assembled_cache_inputs_sha256": "88faa40db054db7d18e2e9e4269e7c44f98e09d50e6714b36108a9ebc13499c3",
+      "orm_target": "local.test.test",
+      "orm_tests": 2,
+      "orm_receipt": ".runtime/test-baseline/1794630004874637351/receipt.json",
+      "orm_source_unchanged": true,
+      "coverage": [
+        "resolved view fields are reused instead of a second fields_get",
+        "default and resolved view ids share the same carrier payload",
+        "final cached and fresh validation consume the request-scoped parsed view",
+        "native locator index is built once per parsed view"
+      ]
+    },
+    "backend_record_fact_and_validation_split": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_head": "90b9159e75daad57df44b24543f8cadab0308aba",
+      "pre_ledger_source_fingerprint": "1d640dd163a9daefc8c0c9a0e5520fb7d20c215c237bb697e3dfc87b854e9b9b",
+      "dirty_scope": [
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py"
+      ],
+      "cache_version": "ui-contract-v2-demand-driven-snapshot-v45",
+      "assembled_cache_inputs_sha256": "9c564685159219081108b9bf08ae212e69ea4b6e55821a287e9da3ea2829e55c",
+      "record_dependency": {
+        "initial_snapshot": "bounded seed fields plus fields explicitly present in the native form; scalar and many2one view consumers retained, one2many/many2many/binary/html excluded unless seed",
+        "final_hydration": "same model, record, actor and context reuse the request recordset; missing final dependencies are read in one bulk call",
+        "failure_fallback": "bulk failure preserves per-field denial and readable-sibling behavior"
+      },
+      "validation_split": {
+        "assembler": "validates declarations, source/config and actor read access without loading current values or mutating final visibility",
+        "draft": "new forms use the existing draft proof and do not require a persisted record",
+        "final_handler": "still performs full current-record evaluation, error activation/content proof, final visibility and reference validation",
+        "compatibility": "validate_final_nodes defaults to full runtime evaluation"
+      },
+      "passed": {
+        "formal_list": {
+          "target": "verify.business_config.formal_list.unit",
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "node_and_feedback": {
+          "node_validation_tests": 32,
+          "native_advisory_tests": [17, 43]
+        },
+        "contract_guards": {
+          "targets": [
+            "verify.platform.duty.contract.unit",
+            "verify.product.menu.metadata_batch.unit",
+            "verify.scenario.center_projection.guard",
+            "verify.system_init.menu_boundary.guard",
+            "verify.unified_page_contract.v2.action",
+            "verify.unified_page_contract.v2.assembler",
+            "verify.unified_page_contract.v2.runtime",
+            "verify.unified_page_contract.v2.status"
+          ]
+        },
+        "isolated_orm": {
+          "target": "local.test.test",
+          "module": "smart_core",
+          "tests": 3,
+          "receipt": ".runtime/test-baseline/1794632565043660383/receipt.json",
+          "source_unchanged": true
+        },
+        "conditioned_feedback_orm": {
+          "target": "verify.local.dev.conditioned.feedback.orm",
+          "database": "sc_dev_demo",
+          "tests": 26,
+          "subtests": 34,
+          "result": "0 failed, 0 error",
+          "log": ".runtime/frontend-dev-validation/executions/20261114T044839Z-244811-364447798/verify.local.dev.conditioned.feedback.orm.log"
+        },
+        "page_finalize_orm": {
+          "target": "verify.page.finalize.authority.orm",
+          "tests": 1,
+          "receipt": ".runtime/test-baseline/1794632178043540846/receipt.json",
+          "source_unchanged": true
+        },
+        "incremental_iteration": {
+          "status": "interrupted_after_27_passed_targets",
+          "receipt": ".runtime/frontend-dev-validation/executions/20261114T044839Z-244811-364447798/receipt.json",
+          "reason": "operator stopped additional independent ORM targets that each rebuilt the disposable local.test database; no failure was reported in the 27 completed targets",
+          "recovery_history": [
+            "A first full mapped run exposed FEEDBACK_SOURCE_FORBIDDEN for draft forms; the draft branch was ordered before saved-record permission proof and a regression test was added",
+            "The same conditioned-feedback ORM then passed on sc_dev_demo"
+          ]
+        }
+      },
+      "not_run": {
+        "page_project_finalize_orm": "Not rerun after interrupt: the changed record-read and validation functions do not redefine project page structure; pure assembler/action/status/runtime guards passed and page finalize authority ran.",
+        "workspace_entry_authority_orm": "Not rerun: role/workspace route authority is unchanged; the interrupted operator request stopped redundant database isolation runs.",
+        "actual_form_performance": "Not measured for this candidate; no SQL-count or latency reduction is claimed."
+      }
     }
   },
   "stage_identity": {
-    "head": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
     "frozen": false,
-    "scope": "R2 minimal removal of unused computation"
+    "scope": "backend native-view reuse plus demand-driven record facts and validation-stage split; ledger/docs update follows validated product source"
   },
   "completion": {
-    "batch": "R7_product_fix_local_correctness_and_directional_AB_complete",
+    "batch": "backend_batch_2_validated_validation_split_partial",
     "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
     "deployment": "B_measured_then_A_tree_restored",
     "user_acceptance": "initialization_improved_form_interaction_not_proven"
@@ -717,6 +834,27 @@
     "entry_verify": "PASS",
     "build_identity_verify": "PASS",
     "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
+  },
+  "backend_execution_order": {
+    "status": "batch_2_record_dependency_reuse_validated; batch_3_validation_split_partial",
+    "source_review_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "batch_order": [
+      "native_view_and_field_requirement_reuse",
+      "record_dependency_and_business_fact_reuse",
+      "validation_responsibility_split",
+      "intermediate_object_and_copy_reduction",
+      "initialization_effective_delivery_order"
+    ],
+    "deferred_prototype": {
+      "path": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/backend-execution-order/deferred-init-order.patch",
+      "sha256": "18fc0862fef954822211a1567614c62504d307986c6342d559791e8f7fe4931e",
+      "reason": "Initialization order was implemented before the owner-approved batch order and is parked for batch 5."
+    },
+    "merge_deployment": "paused",
+    "evidence": {
+      "batch_1": "backend_native_view_reuse",
+      "record_dependency_and_validation_split": "backend_record_fact_and_validation_split"
+    }
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

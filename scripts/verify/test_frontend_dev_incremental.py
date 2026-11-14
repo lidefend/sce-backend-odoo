@@ -1015,7 +1015,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/ui_contract_v2.py",
             "addons/smart_core/handlers/ui_contract_v2_projection.py",
             "addons/smart_core/core/form_structure_authority.py",
+            "addons/smart_core/core/native_view_projection.py",
+            "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+            "addons/smart_core/app_config_engine/models/app_view_config.py",
             "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+            "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
         ):
             with self.subTest(path=path):
                 targets = select_targets([path])
@@ -1030,6 +1034,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/core/draft_feedback.py",
             "addons/smart_core/core/node_component_validation.py",
             "addons/smart_core/tests/test_native_advisory.py",
+            "addons/smart_core/tests/test_node_component_validation.py",
             "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
         ):
             with self.subTest(path=path):

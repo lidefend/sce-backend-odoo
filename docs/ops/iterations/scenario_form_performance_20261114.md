@@ -263,3 +263,86 @@ P4 最小诊断仅保留 scripts/test/test.sh 中容器 PYTHONFAULTHANDLER=1；�
 后续需在远端原有运行链采集诊断并完成全部冻结覆盖；主线未合并，日常未部署，A/B 验收未完成。
 
 恢复临时开关后的 ci.local.iteration 26 项映射定向检查全部通过；仅表明诊断候选本地验证通过。
+
+## 后端执行组织收敛
+
+R7 保留为已有优化基础。后续按端到端契约生成成本推进，不再按单点热点决定顺序。
+
+1. 原生视图、字段需求和定位索引贯穿契约链。
+2. 记录读取依据明确消费者和依赖组织，同作用域业务结果复用。
+3. 来源证明、当前记录求值与最终交付校验拆清。
+4. 在前三批稳定后减少中间表示和复制。
+5. 初始化有效交付先生产、后消费，并统一发布快照选择。
+
+第一批范围：`app_view_config.py`、`native_view_parsed_cache.py`、
+`native_view_projection.py`、`page_assembler.py`、最终节点校验及调用点。
+完成条件是同一有效视图只解析一次，字段描述和定位索引复用，权限与拒绝语义不变。
+
+初始化顺序原型不在这一批实施。其补丁保存在
+`.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/backend-execution-order/deferred-init-order.patch`
+（SHA-256 `18fc0862fef954822211a1567614c62504d307986c6342d559791e8f7fe4931e`），
+待第五批重新确认后接入。
+
+### 第一批结果：原生视图复用
+
+- `_safe_get_view_data()` 保留 Odoo `models` 字段需求，并按当前模型的所需字段取得描述；
+  only-needed 字段集合与解析结果存入 `RequestScopedCarrier`。
+- carrier 同时以请求 view_id（默认 `0`）和解析后的 source view_id 记录同一对象，避免默认视图
+  再次调用 `get_view()`。
+- `project_native_view()` 优先消费 resolved view 的字段描述；只有在没有该事实时才调用
+  `fields_get()`。
+- 最终节点校验在 fresh/cached 两条路径都传入 request-scoped parsed view；模型、视图类型、
+  locator 和字段索引由同一解析对象复用。
+- assembled contract cache 从 v39 提升至 v40，输入摘要重签为
+  `88faa40db054db7d18e2e9e4269e7c44f98e09d50e6714b36108a9ebc13499c3`。
+
+验证：`verify.business_config.formal_list.unit` 287 项通过，
+`verify.unified_page_contract.v2.assembler` 通过；隔离 ORM 的 carrier/最终校验 2 项通过，
+原始回执 `.runtime/test-baseline/1794630004874637351/receipt.json`，源在运行期间未变化。
+
+### 第二批结果：记录依赖与校验阶段
+
+首批原生视图复用之后，记录读取改为服务明确消费者：
+
+- 首次记录快照取既有种子字段和原生表单显式字段，不再按源字段顺序扩到预算上限。
+- 最终 modifier 只补真正缺失的依赖；同模型、同记录、同 actor、同 context 复用当前请求
+  recordset，并把缺失字段合并为一次批量 `read()`。
+- 合并读取失败时仍逐字段回退，单个字段被拒不会抹掉可读兄弟字段，也不绕过 ACL 或记录规则。
+- draft 表单继续使用现有 draft proof，不要求伪造已保存记录。
+
+校验职责开始拆分：
+
+- assembler 保留声明、来源、配置和 actor 字段/记录权限证明，不加载当前字段值，也不写回最终可见性。
+- 最终 handler 仍执行当前记录求值、error activation/content 同批证明、最终可见性和引用校验。
+- `validate_final_nodes(..., evaluate_runtime=True)` 默认兼容入口不变；显式
+  `evaluate_runtime=False` 只用于装配阶段。
+
+这一步起源于增量 ORM 暴露的真实回归：初版拆分把保存记录的权限证明放到了 draft 分支之前，
+导致新表单被要求已有 record。修复为先识别 draft，再对已保存记录做权限证明，并加入 draft
+回归测试。修复后 conditioned-feedback 的 26 个场景、34 项子测试为 0 failed / 0 error。
+
+定向结果：
+
+- 契约边界主套件 171 项通过；同目标的 53、62、5 项关联套件通过。
+- 节点校验 32 项通过；native advisory 的 17 和 43 项通过。
+- platform duty、产品菜单、场景中心、system.init 边界及 V2 action/assembler/runtime/status
+  定向目标通过。
+- 隔离 `sc_test` 的真实 ORM 3 项通过，回执
+  `.runtime/test-baseline/1794632565043660383/receipt.json`，运行期间源未变化。
+- `sc_dev_demo` 的 conditioned-feedback ORM 通过；页面 finalize authority ORM 1 项通过，
+  回执 `.runtime/test-baseline/1794632178043540846/receipt.json`。
+- assembled contract cache 提升到 v45，输入摘要重签为
+  `9c564685159219081108b9bf08ae212e69ea4b6e55821a287e9da3ea2829e55c`。
+
+`local.test` 按登记策略为每个 ORM 目标新建 `sc_test`，包括启动 Odoo、加载 77 个模块和生成
+资源，因此单目标约五分钟。此次在已确认无关的 project-finalize/workspace-route ORM 前停止，
+保留中断回执而不是把未执行目标记成通过：
+
+- `.runtime/frontend-dev-validation/executions/20261114T043908Z-191136-733149811/receipt.json`
+  为 draft 回归修复前的失败回执。
+- `.runtime/frontend-dev-validation/executions/20261114T044839Z-244811-364447798/receipt.json`
+  为修复后执行到 27 个目标后由操作者中断的回执；27 个已完成目标均通过。
+
+未重跑项及原因：project finalize 不重定义页面结构，本次记录读取与校验拆分没有改变该规则；
+workspace 路由权限不在改动面。实际表单 SQL 数、HTTP 耗时和点击到可用时间仍未测，
+不能宣称本批性能收益。合并、部署继续暂停。
