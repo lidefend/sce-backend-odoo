@@ -204,10 +204,10 @@
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope.",
-    "Front-end implementation is not authorized; R11 is read-only diagnosis.",
-    "Core-ready and auxiliary-ready boundaries are not yet separated."
+    "R12-B front-end implementation is not authorized.",
+    "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Review the R11 identity, nine-sample A/B and stage-diagnostic evidence; approve or reject a front-end implementation proposal before changing product code.",
+  "next_exact_step": "Independently review the R12-A Session ownership split and persistence scheduler design; authorize or reject R12-B before changing product code.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1271,6 +1271,35 @@
       "warm_comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/formal-warm-comparison.json",
       "stage_comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r11/stage-comparison.json"
     },
+    "product_code_modified": false,
+    "merge_deployment": "paused"
+  },
+  "r12a": {
+    "status": "read_only_analysis_complete",
+    "baseline": "a652f90bea265beac09cf805a792172f74b7b079",
+    "snapshot_bytes_measured": 421339,
+    "form_open_persist_writes": "11-12",
+    "persist_cpu_ms": "72-85",
+    "setitem_direct_ms": "22-26",
+    "derived_bytes_discarded_on_restore": {
+      "menuTree": 242266,
+      "scenes": 74293,
+      "workspaceHome": 30323,
+      "roleSurfaceMap": 27598,
+      "initMeta": 18914,
+      "capabilityCatalog": 12996
+    },
+    "confirmed_defects": [
+      "recordIntentTrace serializes the full session for transient diagnostics",
+      "product capability catalog calls persist although it is not in the snapshot",
+      "activity title, dirty, active timestamp and runtime query each cause full writes",
+      "settling is persisted transiently and dirty is not durably recoverable",
+      "no session-level pagehide/visibilitychange flush or cross-tab coordination"
+    ],
+    "recommendation": "Durable/Transient snapshot split plus coalesced durable writes and critical-boundary flushes; preserve last-write-wins for the first phase.",
+    "evidence_dir": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12",
+    "verdict": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-a-verdict.md",
+    "manifest": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-a-manifest.json",
     "product_code_modified": false,
     "merge_deployment": "paused"
   },

@@ -719,3 +719,45 @@ clean-head 复核还发现，提交钩子刷新测试清册后，R10 plan 中列
 `audit.verification.lane_coverage.check`。若生成清册使登记失效，commit 在写入 Git 对象前
 直接失败并指出需要清理的登记。该 P4 修正的 74 项 lane coverage 单测通过，未改变产品代码、
 验证范围或基线允许值。
+
+### R12-A Session 持久化生命周期审计
+
+本轮为只读审计。已完整追踪 Session Store、restore、activity page、router、intent
+trace、上下文切换和导航展开状态的写入者及恢复读取者。
+
+当前快照实测 `421,339` 字节，其中主要构成为：
+
+| 字段 | 字节 | 所有权 |
+| --- | ---: | --- |
+| `menuTree` | 242,266 | Derived/live，恢复时主动丢弃 |
+| `scenes` | 74,293 | Derived/live，恢复时主动丢弃 |
+| `workspaceHome` | 30,323 | Derived/live，恢复时主动丢弃 |
+| `roleSurfaceMap` | 27,598 | Derived/live，恢复时主动丢弃 |
+| `initMeta` | 18,914 | Derived/live |
+| `capabilityCatalog` | 12,996 | Derived/cache |
+
+这些字段已经超过 406 KB。真正的 Durable Session 数据只有身份、上下文、activity
+tab、展开偏好和 boot guard 等小体量状态。
+
+已确认的结构问题：
+
+- `recordIntentTrace()` 每收到一个 intent 响应就序列化完整 Session，实际只更新四个
+  transient diagnostic 字段。
+- `loadProductCapabilityCatalog()` 会调用 `persist()`，但 product catalog 根本不在
+  持久化快照中，属于无收益完整写入。
+- 标题、dirty、活动 tab 时间戳和 runtime query 都会各自触发完整写入。
+- `activityPages.settling` 是瞬态但被持久化；`dirty` 在恢复时固定清为 false，因此
+  它不提供跨刷新未保存值恢复。
+- 当前没有 Session 级 `pagehide`/`visibilitychange` flush，也没有跨标签页 storage
+  协调；现行为是即时写和 last-write-wins。
+
+R12-A 建议只做最小架构收敛：
+
+1. 在现有 Pinia Store 内显式生成 Durable Snapshot。
+2. transient intent trace 不再触发 durable persist。
+3. 连续、可合并的 durable UI 更新通过单次调度写入。
+4. 关键上下文和 `pagehide`/`visibilitychange=hidden` 同步 flush。
+5. 第一阶段保留多标签页 last-write-wins，不引入新的合并框架。
+
+未修改前端/后端产品源码，未改 R10/R11 原始数据，A/B twin 未变。R12-B 需等待独立审查。
+交付物位于 `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/`。
