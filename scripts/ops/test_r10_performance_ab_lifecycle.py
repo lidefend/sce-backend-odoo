@@ -65,6 +65,25 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
         self.assertIn("sc-perf-b-r10.env", command)
         self.assertNotIn("sc-demo-dev", command)
 
+    def test_candidate_build_passes_output_and_identity_as_make_overrides(self):
+        sha = "a" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+
+            def build(command, *, env=None):
+                output = Path(command[-3].split("=", 1)[1])
+                output.mkdir(parents=True, exist_ok=True)
+                (output / ".build-sha256").write_text("b" * 64 + "\n")
+                return b""
+
+            with mock.patch.object(module, "_run", side_effect=build) as run:
+                bundle, digest = module._build_candidate_bundle(sha, root)
+        command = run.call_args.args[0]
+        self.assertEqual(bundle.name, sha)
+        self.assertEqual(digest, "b" * 64)
+        self.assertIn(f"FRONTEND_DIST_DIR={bundle}", command)
+        self.assertIn(f"SC_SOURCE_REVISION={sha}", command)
+
     def test_readback_reports_arm_scoped_containers_and_http(self):
         arm = module._profile(module.DEFAULT_PROFILE)["arms"]["a"]
         output = (

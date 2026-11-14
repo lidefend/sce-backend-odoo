@@ -191,15 +191,18 @@ install -d -m 0750 {shlex.quote(root + "/artifacts")}
 def _build_candidate_bundle(sha: str, evidence_root: Path) -> tuple[Path, str]:
     output = evidence_root / "bundle" / sha
     output.parent.mkdir(parents=True, exist_ok=True)
-    env = {
-        **os.environ,
-        "ENV": "dev",
-        "ENV_FILE": str(ROOT / ".env.dev"),
-        "FRONTEND_DIST_DIR": str(output),
-        "SC_SOURCE_REVISION": sha,
-        "SC_DEPLOY_ENV": "perf-r10",
-    }
-    _run(["make", "--no-print-directory", "verify.frontend.build"], env=env)
+    _run(
+        [
+            "make",
+            "--no-print-directory",
+            "verify.frontend.build",
+            "ENV=dev",
+            f"ENV_FILE={ROOT / '.env.dev'}",
+            f"FRONTEND_DIST_DIR={output}",
+            f"SC_SOURCE_REVISION={sha}",
+            "SC_DEPLOY_ENV=perf-r10",
+        ]
+    )
     marker = output / ".build-sha256"
     _require(marker.is_file(), "candidate bundle identity is missing")
     digest = marker.read_text(encoding="utf-8").strip()
