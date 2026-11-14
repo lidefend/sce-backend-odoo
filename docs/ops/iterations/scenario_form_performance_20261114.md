@@ -852,3 +852,66 @@ P2 将存储异常隔离：
 
 本修复仍未证明浏览器真实写入次数和用户可见性能；第二次独立复审通过后再执行浏览器恢复验证和
 R12 A/B。未修改后端、PR #887、R10/R11/R12-A 原始证据、A/B twin 或业务数据。
+
+### R12-B-R1 复审、浏览器恢复与隔离 A/B 收口
+
+独立复审绑定产品提交 `91a55152c153541bc85b5739559f6cbe77b3499c` 和树
+`790f883f1cfcdb5b7415390e77d26c2b3925d666`，独立复现了 degraded retry、
+storage 异常清理和 generation 失效边界，结论为
+`approved_for_exact_head_acceptance`。产品提交后的四个提交只修改 P4 守卫、覆盖登记和
+隔离 A/B 工具，不改变 Session 产品运行时。
+
+最终候选 `b3a685bfab7934e5eec1f7c0f6cb36c79dce5096` 的完整 Quick 为 8/8
+shard PASS，回执位于 `.git/codex/evidence/ci.local.quick/`。隔离 B 已刷新为该提交并由
+运行端点回读确认，bundle 为
+`dc3552784b5fa2cd2b0a542d035f9c3f86bcbb861674b30d89d97b9cb34d1466`；A 保持基线
+`5d631f6dd304a003f09c72e7de22fde45b8c3dbc`，bundle 为
+`b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd`。
+
+真实浏览器恢复验证在 B 的 `/t/demo`、账号 `demo_full`、公司 1 和
+`project.project/2` 上通过。首次进入和刷新各产生 3 次 durable 写入，最终 Snapshot 为
+1,046 bytes；损坏 Snapshot 后 token 保留并重新打开同一表单，activity、tab 和公司恢复，
+`user` 仅有 `id`/`name`，`dirty`/`settling` 未进入持久化，页面错误为 0。
+原始结果：
+`.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/browser-verification-b.json`。
+
+正式 A/B 采用每臂、每视口 9 个 warm 和 9 个 cold 样本，共 36 份报告、72 次视口交互；
+所有样本均从同一 `record 2` 进入，正式耗时关闭 profiler。每份报告重新回读服务端 SHA、
+bundle、主契约状态和运行错误，汇总错误数为 0。cold 样本前通过受管入口清空两臂 Redis
+并重启 Odoo/Nginx。
+
+| 点击到表单可交互 | A 中位数 | B 中位数 | 变化 | A P90 | B P90 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Warm 1440 | 1,825.133 ms | 1,568.570 ms | -14.06% | 1,948.022 | 1,697.195 |
+| Warm 390 | 1,731.114 ms | 1,389.985 ms | -19.71% | 1,855.350 | 1,467.491 |
+| Cold 1440 | 2,439.529 ms | 2,016.283 ms | -17.35% | 2,871.534 | 2,150.098 |
+| Cold 390 | 1,797.581 ms | 1,505.569 ms | -16.24% | 1,935.962 | 1,602.901 |
+
+Warm 初始化服务端中位数为 `2,086 → 1,409 ms`（-32.45%），初始化浏览器中位数为
+`2,611.282 → 2,091.160 ms`（-19.92%）。Warm 主契约服务端中位数在桌面为
+`683 → 513 ms`，手机为 `538 → 486 ms`；主契约浏览器中位数在桌面为
+`1,105.715 → 972.462 ms`，手机为 `967.047 → 872.463 ms`。这些是隔离候选环境的观察，
+不是生产 SLA。
+
+独立的 profiler/storage 诊断使用每臂 2 个桌面和 2 个手机表单打开，不与正式耗时混合。
+从列表批准记录进入时，A 中位数为 12 次 durable 写入、`4,915,228.5 bytes`、
+`setItem` 24.0–24.1 ms，CPU 样本中的完整 `persist` 自身耗时中位数为
+`73.832–76.062 ms`；B 为 2 次写入、`2,894 bytes`、`setItem` 0.05–0.1 ms。
+B 在采样分辨率下没有再出现完整 Snapshot `persist` 帧，不能把“未出现”写成精确 0 ms，
+但可以确认该热点已从样本中消失。
+
+原始证据：
+
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/formal-comparison.json`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/warm-sequence.log`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/cold-sequence.log`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-a-instrumented.json`
+- `.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-b-instrumented.json`
+
+当前成果证明本轮后端事实复用和前端 Session 生命周期治理同时改善了候选环境中的表单交付：
+warm/cold 和桌面/手机均显示中位数与 P90 改善，Session 完整快照序列化热点不再主导打开路径。
+它不等于生产部署验收，也不授权 Core Ready 提前实现。A/B twin 和快照继续保留；未推送当前
+本地提交、未修改 PR #887、未合并、未部署生产、未写入业务数据。
+
+下一步是提交本次文档收口，针对新的 clean HEAD 再执行一次 Quick，并请求独立复审。该复审
+及当前 HEAD 的远端必需 CI 完成前保持 `verification_pending`。

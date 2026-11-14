@@ -3,7 +3,7 @@
   "id": "SCENARIO-FORM-PERFORMANCE-20261114",
   "branch": "fix/scenario-form-performance-r2-20261114",
   "baseline_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/SCENARIO-FORM-PERFORMANCE-20261114.yaml",
   "record": "docs/ops/iterations/scenario_form_performance_20261114.md",
   "scope": [
@@ -214,12 +214,12 @@
     }
   },
   "blockers": [
-    "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
-    "146ms profiler pause remains unattributed and out of this repair scope.",
-    "R12-B-R1 failure-path fixes are complete and await a second independent review; browser performance is not yet measured.",
+    "The final clean documentation-closeout HEAD still requires independent review and current-head remote required CI.",
+    "The candidate has not been pushed from the validated A/B deployment commit; remote branch state cannot be inherited as current-head evidence.",
+    "Merge and product deployment remain paused pending review and authorization.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Run the second independent R12-B review against the exact R12-B-R1 HEAD and retained failure-path evidence.",
+  "next_exact_step": "Request independent review of this clean HEAD; current-head remote required CI remains pending before publication or merge.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1316,7 +1316,7 @@
     "merge_deployment": "paused"
   },
   "r12b": {
-    "status": "fix_validation_pending_second_independent_review",
+    "status": "evidence_complete_pending_final_independent_review",
     "formal_product_layer": "P0 frontend session lifecycle",
     "layer_target": "apps/web Session Store persistence",
     "module": "frontend/apps/web",
@@ -1326,9 +1326,9 @@
     "starting_head": "e7e5fef89bb62548002f8627edadf315e138e3e4",
     "commits": {
       "b1": "f780bbe4554f78ee84e7cd5d648ab6138c2de3b9",
-      "b2": "e3440e2de",
+      "b2": "e3440e2deec6f026d90960eb8e48231941ddc16f",
       "b3": "884ec91adbef7efb99fbd616fb3ba75dd5129d3c",
-      "r1": "current R12-B-R1 record commit"
+      "r1": "91a55152c153541bc85b5739559f6cbe77b3499c"
     },
     "b1_snapshot": {
       "status": "passed",
@@ -1381,15 +1381,16 @@
       "caveat": "Production snapshot builder and restore path in Node.js; not browser click-to-interactive or deployed HTTP evidence."
     },
     "not_run": [
-      "browser click-to-interactive performance",
-      "deployment",
-      "second independent review"
+      "current documentation-closeout HEAD independent review",
+      "current documentation-closeout HEAD remote required CI",
+      "production deployment",
+      "merge"
     ],
     "external_mutations": {
       "backend_product_code": "none",
       "pr_887": "none",
-      "deployment": "none",
-      "ab_twins": "none",
+      "deployment": "isolated_candidate_b_only",
+      "ab_twins": "candidate_b_refreshed_and_formal_samples_executed",
       "business_data": "none",
       "push": "none",
       "merge": "none"
@@ -1407,7 +1408,96 @@
       "p1": "full/degraded/failed state machine; degraded/failed keeps retry-needed; full retry rebuilds latest state; no automatic loop",
       "p2": "storage access/removal failures no longer block memory cleanup, per-tab token removal or stale-generation invalidation"
     },
-    "next_exact_step": "Run the second independent R12-B review against the exact R12-B-R1 HEAD and retained failure-path evidence."
+    "r1_independent_review": {
+      "status": "passed",
+      "product_head": "91a55152c153541bc85b5739559f6cbe77b3499c",
+      "product_tree": "790f883f1cfcdb5b7415390e77d26c2b3925d666",
+      "verdict": "approved_for_exact_head_acceptance",
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/r12-b-r1-independent-review.json"
+    },
+    "browser_restore": {
+      "status": "passed",
+      "candidate_head": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
+      "base_url": "http://127.0.0.1:18282/t/demo",
+      "record": "project.project/2",
+      "initial_durable_writes": 3,
+      "reload_durable_writes": 3,
+      "final_snapshot_bytes": 1046,
+      "corrupt_snapshot_recovery": "passed",
+      "user_snapshot_keys": [
+        "id",
+        "name"
+      ],
+      "dirty_or_settling_persisted": false,
+      "page_errors": 0,
+      "artifact": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/browser-verification-b.json"
+    },
+    "formal_ab": {
+      "status": "passed",
+      "candidate_a": {
+        "head": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+        "bundle": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd"
+      },
+      "candidate_b": {
+        "head": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
+        "bundle": "dc3552784b5fa2cd2b0a542d035f9c3f86bcbb861674b30d89d97b9cb34d1466"
+      },
+      "sample_policy": "9 warm and 9 cold per arm/viewport; both 1440x900 and 390x844; record 2; formal profiler disabled",
+      "formal_reports": 36,
+      "viewport_interactions": 72,
+      "identity_or_runtime_errors": 0,
+      "warm_form_interactive_1440_median_ms": {
+        "A": 1825.133,
+        "B": 1568.57,
+        "delta_percent": -14.06
+      },
+      "warm_form_interactive_390_median_ms": {
+        "A": 1731.114,
+        "B": 1389.985,
+        "delta_percent": -19.71
+      },
+      "cold_form_interactive_1440_median_ms": {
+        "A": 2439.529,
+        "B": 2016.283,
+        "delta_percent": -17.35
+      },
+      "cold_form_interactive_390_median_ms": {
+        "A": 1797.581,
+        "B": 1505.569,
+        "delta_percent": -16.24
+      },
+      "warm_initialization_server_median_ms": {
+        "A": 2086,
+        "B": 1409,
+        "delta_percent": -32.45
+      },
+      "comparison": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/formal-comparison.json",
+      "warm_sequence_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/warm-sequence.log",
+      "cold_sequence_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/ab/cold-sequence.log"
+    },
+    "session_browser_ab": {
+      "status": "passed",
+      "instrumented_samples_per_arm": 4,
+      "boundary": "two desktop and two mobile form opens from the approved list; separate from formal timing",
+      "candidate_a_durable_writes_median": 12,
+      "candidate_b_durable_writes_median": 2,
+      "candidate_a_durable_bytes_median": 4915228.5,
+      "candidate_b_durable_bytes_median": 2894,
+      "candidate_a_persist_self_ms_median_range": "73.832-76.062",
+      "candidate_b_persist_named_frame": "not observed at sampling resolution",
+      "candidate_a_setitem_ms_median_range": "24.0-24.1",
+      "candidate_b_setitem_ms_median_range": "0.05-0.1",
+      "candidate_a_diagnostic": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-a-instrumented.json",
+      "candidate_b_diagnostic": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12/session-b-instrumented.json"
+    },
+    "final_head_quick": {
+      "status": "passed",
+      "head": "b3a685bfab7934e5eec1f7c0f6cb36c79dce5096",
+      "shards_passed": 8,
+      "receipt": ".git/codex/evidence/ci.local.quick/b3a685bfab7934e5eec1f7c0f6cb36c79dce5096.json",
+      "log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/final-head-quick-b3a685bfa.log"
+    },
+    "next_exact_step": "Request independent review of this clean HEAD; current-head remote required CI remains pending before publication or merge."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }
