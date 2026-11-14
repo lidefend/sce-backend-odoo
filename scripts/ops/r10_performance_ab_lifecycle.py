@@ -446,6 +446,12 @@ def deploy(
     }
     for name, arm in profile["arms"].items():
         env_file = f"/opt/projects/secure/r10-performance-ab/{arm['compose_project']}.env"
+        _ssh(
+            host,
+            f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
+            'docker run --rm -v "$ODOO_DATA":/target alpine:3.20 '
+            "chown -R 101:101 /target",
+        )
         if name == "b":
             upgrade = (
                 f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
