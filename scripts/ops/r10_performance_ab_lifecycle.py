@@ -541,20 +541,30 @@ def readback(profile_path: Path, *, evidence: Path) -> dict[str, Any]:
             'printf "CONTAINERS=%s\\n" "$(docker ps --filter label=com.docker.compose.project=$project --format "{{.Names}}" | paste -sd, -)"; '
             'printf "NETWORKS=%s\\n" "$(docker network ls --filter label=com.docker.compose.project=$project --format "{{.Name}}" | paste -sd, -)"; '
             'printf "VOLUMES=%s\\n" "$(docker volume ls --filter label=com.docker.compose.project=$project --format "{{.Name}}" | paste -sd, -)"; '
-            'printf "DATABASE=%s\\n" "$(docker compose --project-name "$project" --env-file "$env_file" -f "$stack" exec -T db psql -U "$DB_USER" -d "$DB_NAME" -Atc "select current_database(), (select name from project_project where id=2)")"; '
             f'printf "HTTP=%s\\n" "$(curl -fsS --max-time 20 http://127.0.0.1:{arm["public_port"]}/t/demo >/dev/null && echo PASS || echo FAIL)"'
         )
         lines = _ssh(host, script).decode().splitlines()
         facts = dict(line.split("=", 1) for line in lines if "=" in line)
         _require(
-            {"CONTAINERS", "NETWORKS", "VOLUMES", "DATABASE", "HTTP"} <= set(facts),
+            {"CONTAINERS", "NETWORKS", "VOLUMES", "HTTP"} <= set(facts),
             f"{name} readback is incomplete",
         )
+        database = _ssh(
+            host,
+            f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
+            f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
+            f"--env-file {shlex.quote(env_file)} -f {shlex.quote(stack)} "
+            'exec -T db psql -U "$DB_USER" -d "$DB_NAME" -Atc '
+            + shlex.quote(
+                "select current_database() || chr(124) || "
+                "(select count(*)::text from project_project where id=2)"
+            ),
+        ).decode().strip()
         arms[name] = {
             "containers": sorted(filter(None, facts["CONTAINERS"].split(","))),
             "networks": sorted(filter(None, facts["NETWORKS"].split(","))),
             "volumes": sorted(filter(None, facts["VOLUMES"].split(","))),
-            "database": facts["DATABASE"],
+            "database": database,
             "http_login": facts["HTTP"],
             "port": arm["public_port"],
         }

@@ -108,7 +108,7 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
             evidence = Path(temporary) / "readback.json"
             result = module.readback(module.DEFAULT_PROFILE, evidence=evidence)
         self.assertEqual(result["status"], "PASS")
-        self.assertEqual(ssh.call_count, 2)
+        self.assertEqual(ssh.call_count, 4)
         self.assertIn(arm["odoo_container"], result["arms"]["a"]["containers"])
         self.assertEqual(result["arms"]["a"]["http_login"], "PASS")
 
