@@ -541,8 +541,8 @@ def readback(profile_path: Path, *, evidence: Path) -> dict[str, Any]:
             'printf "CONTAINERS=%s\\n" "$(docker ps --filter label=com.docker.compose.project=$project --format "{{.Names}}" | paste -sd, -)"; '
             'printf "NETWORKS=%s\\n" "$(docker network ls --filter label=com.docker.compose.project=$project --format "{{.Name}}" | paste -sd, -)"; '
             'printf "VOLUMES=%s\\n" "$(docker volume ls --filter label=com.docker.compose.project=$project --format "{{.Name}}" | paste -sd, -)"; '
-            'printf "DATABASE=%s\\n" "$(docker compose --project-name "$project" --env-file "$env_file" -f "$stack" exec -T db psql -U "$DB_USER" -d "$DB_NAME" -Atc "select current_database(), (select value from ir_config_parameter where key=\'database.uuid\'), (select name from project_project where id=2)")"; '
-            f'printf "HTTP=%s\\n" "$(curl -fsS --max-time 20 http://127.0.0.1:{arm["public_port"]}/web/login >/dev/null && echo PASS || echo FAIL)"'
+            'printf "DATABASE=%s\\n" "$(docker compose --project-name "$project" --env-file "$env_file" -f "$stack" exec -T db psql -U "$DB_USER" -d "$DB_NAME" -Atc "select current_database(), (select name from project_project where id=2)")"; '
+            f'printf "HTTP=%s\\n" "$(curl -fsS --max-time 20 http://127.0.0.1:{arm["public_port"]}/t/demo >/dev/null && echo PASS || echo FAIL)"'
         )
         lines = _ssh(host, script).decode().splitlines()
         facts = dict(line.split("=", 1) for line in lines if "=" in line)
