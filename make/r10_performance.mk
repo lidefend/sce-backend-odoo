@@ -10,7 +10,7 @@ R10_PERF_EVIDENCE_ROOT ?= .runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114
 R10_PERF_INGRESS_NETWORK ?= sc-perf-r10-ingress
 R10_PERF_REMOTE_CONTRACT ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(R10_PERF_CONTINUITY_CONTRACT)
 
-.PHONY: verify.r10.performance_ab.profile r10.performance_ab.plan r10.performance_ab.preflight r10.performance_ab.snapshot r10.performance_ab.snapshot.validate r10.performance_ab.snapshot.restore_drill r10.performance_ab.twins.stack.sync r10.performance_ab.twins.prepare r10.performance_ab.twins.restore r10.performance_ab.twins.deploy r10.performance_ab.twins.cold_reset r10.performance_ab.twins.readback r10.performance_ab.twins.destroy
+.PHONY: verify.r10.performance_ab.profile r10.performance_ab.plan r10.performance_ab.preflight r10.performance_ab.snapshot r10.performance_ab.snapshot.validate r10.performance_ab.snapshot.restore_drill r10.performance_ab.twins.stack.sync r10.performance_ab.twins.prepare r10.performance_ab.twins.restore r10.performance_ab.twins.deploy r10.performance_ab.twins.redeploy r10.performance_ab.twins.cold_reset r10.performance_ab.twins.readback r10.performance_ab.twins.destroy
 
 verify.r10.performance_ab.profile: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/r10_performance_ab_profile.py scripts/ops/test_r10_performance_ab_profile.py scripts/ops/r10_performance_ab_lifecycle.py scripts/ops/test_r10_performance_ab_lifecycle.py
@@ -84,6 +84,13 @@ r10.performance_ab.twins.deploy: guard.prod.forbid verify.r10.performance_ab.pro
 		--candidate-sha "$(R10_PERF_CANDIDATE_SHA)" \
 		--a-sha "$(R10_PERF_A_SHA)" \
 		--evidence "$(R10_PERF_EVIDENCE_ROOT)/deploy.json"
+
+r10.performance_ab.twins.redeploy: guard.prod.forbid verify.r10.performance_ab.profile
+	@python3 scripts/ops/r10_performance_ab_lifecycle.py redeploy \
+		--profile "$(R10_PERF_PROFILE)" \
+		--candidate-sha "$(R10_PERF_CANDIDATE_SHA)" \
+		--a-sha "$(R10_PERF_A_SHA)" \
+		--evidence "$(R10_PERF_EVIDENCE_ROOT)/redeploy.json"
 
 r10.performance_ab.twins.cold_reset: guard.prod.forbid verify.r10.performance_ab.profile
 	@python3 scripts/ops/r10_performance_ab_lifecycle.py cold-reset \

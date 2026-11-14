@@ -11,6 +11,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -221,6 +222,119 @@ def _copy_bundle(host: str, source: Path, target: str, expected: str) -> None:
     _ssh(host, f"tar -xf - -C {shlex.quote(target)}", input_bytes=archive)
     actual = _ssh(host, f"cat {shlex.quote(target + '/.build-sha256')}").decode().strip()
     _require(actual == expected, "uploaded bundle identity mismatch")
+
+
+def _replace_existing_b_payload(
+    host: str,
+    *,
+    profile: dict[str, Any],
+    candidate_sha: str,
+    evidence_root: Path,
+) -> dict[str, Any]:
+    """Replace only B source/frontend bytes and retain an exact rollback bundle."""
+    arm = profile["arms"]["b"]
+    root = arm["source_root"]
+    dist = arm["frontend_dist"]
+    stack = "/opt/projects/perf-r10/runtime/stack.yml"
+    env_file = f"/opt/projects/secure/r10-performance-ab/{arm['compose_project']}.env"
+    old_sha = _ssh(host, f"cat {shlex.quote(root + '/SOURCE_SHA')}").decode().strip()
+    old_tree = _ssh(host, f"cat {shlex.quote(root + '/SOURCE_TREE')}").decode().strip()
+    old_build = _ssh(host, f"cat {shlex.quote(dist + '/.build-sha256')}").decode().strip()
+    _require(bool(SAFE_SHA.fullmatch(old_sha)), "existing B source SHA is invalid")
+    _require(bool(SAFE_SHA.fullmatch(old_tree)), "existing B source tree is invalid")
+    _require(bool(SAFE_DIGEST.fullmatch(old_build)), "existing B bundle identity is invalid")
+    if old_sha == candidate_sha:
+        return {
+            "status": "unchanged",
+            "source_revision": candidate_sha,
+            "source_tree": _tree_sha(candidate_sha),
+            "frontend_build_sha256": old_build,
+        }
+
+    bundle, bundle_sha = _build_candidate_bundle(candidate_sha, evidence_root)
+    candidate_tree = _tree_sha(candidate_sha)
+    rollback = f"/data/perf-r10/b/rollback/{old_sha[:12]}-{candidate_sha[:12]}-{int(time.time())}"
+    next_root = root + ".next"
+    next_dist = dist + ".next"
+    remote_prepare = f"""
+set -eu
+test -d {shlex.quote(root)}
+test -d {shlex.quote(dist)}
+install -d -m 0750 {shlex.quote(rollback)}
+tar -C {shlex.quote(root)} -czf {shlex.quote(rollback + '/source.tar.gz')} .
+tar -C {shlex.quote(dist)} -czf {shlex.quote(rollback + '/frontend.tar.gz')} .
+printf '%s\\n' {shlex.quote(old_sha)} > {shlex.quote(rollback + '/SOURCE_SHA')}
+printf '%s\\n' {shlex.quote(old_tree)} > {shlex.quote(rollback + '/SOURCE_TREE')}
+printf '%s\\n' {shlex.quote(old_build)} > {shlex.quote(rollback + '/FRONTEND_BUILD_SHA256')}
+rm -rf {shlex.quote(next_root)} {shlex.quote(next_dist)}
+install -d -m 0750 {shlex.quote(next_root)} {shlex.quote(next_dist)}
+"""
+    _ssh(host, remote_prepare)
+    _ssh(host, f"tar -xf - -C {shlex.quote(next_root)}", input_bytes=_git("archive", "--format=tar", candidate_sha))
+    _ssh(
+        host,
+        f"set -eu; printf '%s\\n' {shlex.quote(candidate_sha)} > {shlex.quote(next_root + '/SOURCE_SHA')}; "
+        f"printf '%s\\n' {shlex.quote(candidate_tree)} > {shlex.quote(next_root + '/SOURCE_TREE')}",
+    )
+    _copy_bundle(host, bundle, next_dist, bundle_sha)
+    stop = _compose(env_file, stack, arm["compose_project"], "stop odoo nginx")
+    _ssh(host, stop)
+    replace = f"""
+set -eu
+find {shlex.quote(root)} -mindepth 1 -maxdepth 1 -exec rm -rf -- {{}} +
+find {shlex.quote(dist)} -mindepth 1 -maxdepth 1 -exec rm -rf -- {{}} +
+tar -C {shlex.quote(next_root)} -cf - . | tar -C {shlex.quote(root)} -xf -
+tar -C {shlex.quote(next_dist)} -cf - . | tar -C {shlex.quote(dist)} -xf -
+rm -rf {shlex.quote(next_root)} {shlex.quote(next_dist)}
+"""
+    _ssh(host, replace)
+    return {
+        "status": "replaced",
+        "old_source_revision": old_sha,
+        "old_source_tree": old_tree,
+        "old_frontend_build_sha256": old_build,
+        "source_revision": candidate_sha,
+        "source_tree": candidate_tree,
+        "frontend_build_sha256": bundle_sha,
+        "rollback": {
+            "root": rollback,
+            "source": rollback + "/source.tar.gz",
+            "frontend": rollback + "/frontend.tar.gz",
+        },
+    }
+
+
+def redeploy(
+    profile_path: Path,
+    *,
+    candidate_sha: str,
+    evidence: Path,
+    a_sha: str,
+) -> dict[str, Any]:
+    _require(not _git("status", "--porcelain"), "candidate refresh requires a clean worktree")
+    _require(_git("rev-parse", "HEAD").decode().strip() == candidate_sha, "candidate SHA differs from local HEAD")
+    profile = _profile(profile_path)
+    host = profile["source"]["ssh_host"]
+    refresh = _replace_existing_b_payload(
+        host,
+        profile=profile,
+        candidate_sha=candidate_sha,
+        evidence_root=evidence.parent / "refresh-bundle",
+    )
+    deploy_result = deploy(
+        profile_path,
+        candidate_sha=candidate_sha,
+        evidence=evidence,
+        a_sha=a_sha,
+    )
+    result = {
+        "schema": "r10.performance_ab.redeploy.v1",
+        "status": "PASS",
+        "refresh": refresh,
+        "deploy": deploy_result,
+    }
+    _write_evidence(evidence.with_name(evidence.stem + "-refresh.json"), result)
+    return result
 
 
 def prepare(
@@ -668,7 +782,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "action",
-        choices=("prepare", "restore", "deploy", "cold-reset", "readback", "destroy"),
+        choices=("prepare", "restore", "deploy", "redeploy", "cold-reset", "readback", "destroy"),
     )
     parser.add_argument("--profile", type=Path, default=DEFAULT_PROFILE)
     parser.add_argument("--candidate-sha", default="")
@@ -677,7 +791,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        if args.action in {"prepare", "restore", "deploy", "cold-reset"}:
+        if args.action in {"prepare", "restore", "deploy", "redeploy", "cold-reset"}:
             _require(bool(SAFE_SHA.fullmatch(args.candidate_sha)), "candidate SHA is required")
         if args.action in {"prepare", "restore"}:
             _require(bool(args.snapshot), "snapshot directory is required")
@@ -699,6 +813,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.action == "deploy":
             result = deploy(
+                args.profile,
+                candidate_sha=args.candidate_sha,
+                evidence=args.evidence,
+                a_sha=args.a_sha,
+            )
+        elif args.action == "redeploy":
+            result = redeploy(
                 args.profile,
                 candidate_sha=args.candidate_sha,
                 evidence=args.evidence,

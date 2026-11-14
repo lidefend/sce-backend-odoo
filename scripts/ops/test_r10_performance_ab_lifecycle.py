@@ -119,6 +119,43 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
                     evidence=Path("/tmp/unused-destroy.json"),
                 )
 
+    def test_existing_b_refresh_preserves_rollback_and_never_targets_a(self):
+        old_sha = "a" * 40
+        new_sha = "b" * 40
+        old_tree = "c" * 40
+        new_tree = "d" * 40
+        old_build = "e" * 64
+        new_build = "f" * 64
+        responses = [
+            (old_sha + "\n").encode(),
+            (old_tree + "\n").encode(),
+            (old_build + "\n").encode(),
+            b"",
+            b"",
+            b"",
+            b"",
+            b"",
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary) / "redeploy.json"
+            with mock.patch.object(module, "_git", return_value=b""), \
+                 mock.patch.object(module, "_tree_sha", return_value=new_tree), \
+                 mock.patch.object(module, "_build_candidate_bundle", return_value=(Path(temporary), new_build)), \
+                 mock.patch.object(module, "_copy_bundle"), \
+                 mock.patch.object(module, "_ssh", side_effect=responses) as ssh:
+                result = module._replace_existing_b_payload(
+                    module._profile(module.DEFAULT_PROFILE)["source"]["ssh_host"],
+                    profile=module._profile(module.DEFAULT_PROFILE),
+                    candidate_sha=new_sha,
+                    evidence_root=Path(temporary),
+                )
+        self.assertEqual(result["status"], "replaced")
+        self.assertEqual(result["old_source_revision"], old_sha)
+        commands = "\n".join(call.args[1] for call in ssh.call_args_list)
+        self.assertIn("/opt/projects/perf-r10/b/sce-product-odoo", commands)
+        self.assertNotIn("/opt/projects/perf-r10/a/", commands)
+        self.assertIn("/data/perf-r10/b/rollback/", commands)
+
 
 if __name__ == "__main__":
     unittest.main()

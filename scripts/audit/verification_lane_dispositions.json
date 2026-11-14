@@ -1177,6 +1177,12 @@
       "reason": "Reads exact R10 container, network, volume, database, project record and HTTP identities before samples are accepted.",
       "review_by": "2027-03-31"
     },
+    "r10.performance_ab.twins.redeploy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Refreshes only the existing isolated Candidate B source and frontend bytes with rollback archives, then performs the reviewed B deployment and health readback.",
+      "review_by": "2027-03-31"
+    },
     "r10.performance_ab.twins.restore": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
