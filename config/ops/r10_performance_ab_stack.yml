@@ -17,7 +17,7 @@ services:
       retries: 30
 
   redis:
-    image: ${REDIS_IMAGE}
+    image: ${REDIS_IMAGE:-redis:7-alpine}
     restart: "no"
     command: redis-server --appendonly yes
     volumes:
@@ -96,7 +96,7 @@ services:
       start_period: 30s
 
   nginx:
-    image: ${NGINX_IMAGE}
+    image: ${NGINX_IMAGE:-nginx:latest}
     restart: "no"
     depends_on:
       odoo:
