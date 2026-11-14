@@ -60,7 +60,11 @@
     "addons/smart_core/tests/test_node_component_validation.py",
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
-    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
   ],
   "environment": {
     "kind": "offline",
@@ -170,7 +174,7 @@
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope."
   ],
-  "next_exact_step": "Proceed to batch 5 only after re-reading the deferred initialization-order prototype: produce effective delivery once per request scope, then let capability, navigation, scene and default-route consumers read that result without triggering a second build.",
+  "next_exact_step": "Prepare the same-environment A/B execution against the frozen candidate: bind A and B identities, preserve the R6 account/company/data/request/cache definitions, measure HTTP/SQL/click-to-interactive without profiler, and retain the A restore readback.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -538,16 +542,59 @@
       "not_run": {
         "actual_form_performance": "Copy volume is structurally reduced; no HTTP, SQL-count or click-to-interactive gain is claimed."
       }
+    },
+    "backend_initialization_delivery_order": {
+      "status": "passed_current_dirty_candidate",
+      "candidate_base_head": "09fb223ca22dca3c2ff78fbcbcc8a7eb83712fa2",
+      "prototype": {
+        "path": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/backend-execution-order/deferred-init-order.patch",
+        "sha256": "18fc0862fef954822211a1567614c62504d307986c6342d559791e8f7fe4931e",
+        "application": "product/test hunks only; obsolete branch/run registration excluded"
+      },
+      "execution_order": {
+        "delivery": "one EffectiveDeliveryService.resolve(params) before navigation and capability consumers",
+        "capability": "capability registry consumes effective_delivery.route_authority instead of resolving route authority independently",
+        "navigation": "NavDispatcher remains the versions/legacy-flag adapter; its independently built tree is replaced by effective delivery nav before cleaning, enrichment and fingerprints",
+        "landing": "the existing final role surface and default route now consume the same effective delivery result"
+      },
+      "compatibility": "provider hooks first receive published_authority; older hooks that reject the keyword fall back to their original signature",
+      "passed": {
+        "navigation_delivery": "verify.backend.navigation_delivery.unit",
+        "menu_metadata": 10,
+        "system_init_menu_boundary": 7,
+        "contract_entry_equivalence": 10,
+        "capability_identity_unit": 6,
+        "business_config_formal_list": {
+          "primary_tests": 171,
+          "included_suite_tests": [53, 62, 5]
+        },
+        "same_scope_capability_orm": {
+          "database": "sc_dev_demo",
+          "tests": 1,
+          "result": "passed",
+          "scope": "published query pair builder received the effective delivery authority and did not resolve a second authority"
+        }
+      },
+      "failed": {
+        "system_init_snapshot_equivalence": {
+          "classification": "environment_defect",
+          "reason": "E2E_BASE_URL was not set; the governed HTTP equivalence probe did not start"
+        }
+      },
+      "not_run": {
+        "daily_permission_truth_capability_group": "Only the directly affected same-scope capability test was run on the persistent sc_dev_demo database; the full fresh sc_test group was not rebuilt.",
+        "actual_performance": "Initialization correctness/order is validated; request latency and SQL reduction remain unmeasured for this candidate."
+      }
     }
   },
   "stage_identity": {
     "head": "90b9159e75daad57df44b24543f8cadab0308aba",
     "dirty": true,
     "frozen": false,
-    "scope": "backend native-view reuse, demand-driven record facts, declaration proof reuse and native-form representation copy reduction"
+    "scope": "backend native-view reuse, demand-driven record facts, declaration proof reuse, native-form copy reduction and initialization delivery order"
   },
   "completion": {
-    "batch": "backend_batch_4_representation_copy_reduction_validated",
+    "batch": "backend_execution_order_batches_1_to_5_locally_validated",
     "mainline": "R1_integrated_PR886_R2_R7_not_integrated",
     "deployment": "B_measured_then_A_tree_restored",
     "user_acceptance": "initialization_improved_form_interaction_not_proven"
@@ -920,7 +967,7 @@
     "result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/ab/restore-result.json"
   },
   "backend_execution_order": {
-    "status": "batch_4_intermediate_representation_and_copy_reduction_validated",
+    "status": "batch_5_initialization_effective_delivery_order_validated",
     "source_review_sha": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
     "batch_order": [
       "native_view_and_field_requirement_reuse",
@@ -939,7 +986,8 @@
       "batch_1": "backend_native_view_reuse",
       "record_dependency_and_validation_split": "backend_record_fact_and_validation_split",
       "declaration_proof_reuse": "backend_declaration_proof_reuse",
-      "representation_copy_reduction": "backend_representation_copy_reduction"
+      "representation_copy_reduction": "backend_representation_copy_reduction",
+      "initialization_delivery_order": "backend_initialization_delivery_order"
     }
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"

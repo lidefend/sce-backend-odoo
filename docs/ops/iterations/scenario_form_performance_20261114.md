@@ -429,3 +429,41 @@ native form 的 canonical 输入原先在 `deepcopy(marker)` 之外，又分别�
 
 本批只证明同一 native marker 不再被多次完整复制，没有把复制次数下降换算成 HTTP 耗时。
 下一步进入初始化有效交付的“先生产、后消费”顺序；合并、部署继续暂停。
+
+### 第五批结果：初始化有效交付顺序
+
+重新核对暂存原型后，只移植产品与测试 hunk，没有沿用原型中的旧分支/run 登记。
+
+初始化现在按以下顺序执行：
+
+1. 先解析身份和公司范围。
+2. 在导航和能力消费者之前执行一次
+   `EffectiveDeliveryService(env).resolve(params)`。
+3. 能力注册表消费同一 `effective_delivery.route_authority`，不再为取得路由资格自行触发
+   完整有效交付。
+4. `NavDispatcher` 仍负责版本、兼容元数据和 legacy feature flags，但其独立生成的树在清洗、
+   标签补全和指纹计算前被有效交付的 `nav` 替换。导航不再形成第二套上游事实。
+5. 原有末尾的 role surface、默认落点和 scene 处理读取同一个 effective delivery 结果。
+
+兼容边界：
+
+- P0 capability provider 先把 `published_authority` 传给扩展 hook；旧 hook 不接受该关键字时，
+  provider 回退到原签名调用。
+- 有效交付为空时仍保留其明确结果，不因空列表触发第二次构建。
+- 用户、公司、产品或发布 scope 不同时仍分别解析；本次共享仅限定在同一个 system.init 请求。
+
+验证：
+
+- `verify.backend.navigation_delivery.unit` 通过，覆盖菜单批次、菜单 ACL/权威、导航编译和
+  system.init 最终路由静态顺序。
+- 菜单元数据 10 项、system.init menu boundary 7 项和 contract entry equivalence 10 项通过。
+- capability identity boundary 6 项、契约边界主套件 171 项及 53、62、5 项关联套件通过。
+- `sc_dev_demo` 上新增的 same-scope capability ORM 用例通过：published pair 构建收到
+  effective delivery authority，没有另行解析路由权威。
+
+`verify.system_init.snapshot_equivalence` 因未提供 `E2E_BASE_URL` 没有启动，归类为
+`environment_defect`，不记为产品失败或通过。为遵守“只在需要时重建”的执行要求，没有重建
+完整 fresh `sc_test` capability 组，只运行了直接受影响的同作用域 ORM 用例。
+
+本批证明初始化事实顺序已经收敛，但没有测量本次候选相对 A 的实际初始化耗时、SQL 数或
+表单可用时间。下一步进入同环境 A/B 执行准备与测量；合并、部署继续暂停。
