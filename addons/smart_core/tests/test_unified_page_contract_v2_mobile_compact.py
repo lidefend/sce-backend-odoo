@@ -4815,6 +4815,25 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 source_type="native_form_projection",
             )
 
+    def test_native_form_projection_owns_canonical_graph_without_copying_aliases(self):
+        source = self._native_form_projection_source()
+        source_before = deepcopy(source)
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="native_form_projection",
+        )
+        self.assertEqual(source, source_before)
+
+        contract_before = deepcopy(contract)
+        source["nativeFormProjection"]["layout"][0]["string"] = "source-only change"
+        source["nativeFormProjection"]["fieldDescriptors"]["name"]["string"] = "source-only field"
+        source["views"]["form"]["layout"][0]["name"] = "source-only-name"
+        self.assertEqual(contract, contract_before)
+
+        contract["layoutContract"]["containerTree"][0]["name"] = "contract-only change"
+        self.assertEqual(source["nativeFormProjection"]["layout"][0]["name"], "name")
+        self.assertEqual(source["views"]["form"]["layout"][0]["name"], "source-only-name")
+
     @staticmethod
     def _native_form_projection_source():
         return {

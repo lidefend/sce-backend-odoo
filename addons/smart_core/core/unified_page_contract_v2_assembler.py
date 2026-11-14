@@ -1717,51 +1717,57 @@ def _assemble_native_form_projection(
                 validate_occurrences(children, parent_path=f"{node_path}.children")
 
     validate_occurrences(layout)
-    page = _dict(marker.get("page"))
-    actions = _dict(marker.get("actions"))
-    runtime = _dict(marker.get("runtime"))
+    # The marker is the single source definition for this assembly. Own one
+    # isolated graph and let the canonical input aliases read from it; the V2
+    # builders copy the nodes they mutate. Copying the same layout, descriptors,
+    # subviews and actions alongside the marker produced several full copies of
+    # the same form before assembly even started.
+    owned_marker = deepcopy(marker)
+    page = _dict(owned_marker.get("page"))
+    actions = _dict(owned_marker.get("actions"))
+    runtime = _dict(owned_marker.get("runtime"))
     canonical_source = {
-        "nativeFormProjection": deepcopy(marker),
+        "nativeFormProjection": owned_marker,
         "model": model,
         "view_type": "form",
-        "title": deepcopy(page.get("title")),
-        "head": deepcopy(_dict(page.get("head"))),
-        "view_ids_by_type": {"form": deepcopy(page.get("formViewId"))},
-        "record_id": deepcopy(page.get("recordId")),
-        "render_profile": deepcopy(page.get("renderProfile")),
-        "domain": deepcopy(_list(page.get("domain"))),
-        "domain_raw": deepcopy(page.get("domainRaw")),
-        "context": deepcopy(_dict(page.get("context"))),
-        "context_raw": deepcopy(page.get("contextRaw")),
-        "order": deepcopy(page.get("order")),
-        "limit": deepcopy(page.get("limit")),
-        "record": deepcopy(_dict(marker.get("record"))),
-        "search": deepcopy(_dict(marker.get("search"))),
-        "permissions": deepcopy(_dict(marker.get("permissions"))),
-        "fields": deepcopy(field_descriptors),
-        "buttons": deepcopy(_list(actions.get("buttons"))),
-        "business_actions": deepcopy(_list(actions.get("businessActions"))),
-        "toolbar": deepcopy(_dict(actions.get("toolbar"))),
-        "action_groups": deepcopy(_list(actions.get("actionGroups"))),
-        "action_policies": deepcopy(_dict(actions.get("actionPolicies"))),
-        "action_schema": deepcopy(_dict(actions.get("actionSchema"))),
-        "collaboration": deepcopy(_dict(runtime.get("collaboration"))),
-        "record_version": deepcopy(_dict(runtime.get("recordVersion"))),
-        "data_sources": deepcopy(_dict(runtime.get("dataSources"))),
-        "business_operation_profile": deepcopy(_dict(runtime.get("businessOperationProfile"))),
+        "title": page.get("title"),
+        "head": _dict(page.get("head")),
+        "view_ids_by_type": {"form": page.get("formViewId")},
+        "record_id": page.get("recordId"),
+        "render_profile": page.get("renderProfile"),
+        "domain": _list(page.get("domain")),
+        "domain_raw": page.get("domainRaw"),
+        "context": _dict(page.get("context")),
+        "context_raw": page.get("contextRaw"),
+        "order": page.get("order"),
+        "limit": page.get("limit"),
+        "record": _dict(owned_marker.get("record")),
+        "search": _dict(owned_marker.get("search")),
+        "permissions": _dict(owned_marker.get("permissions")),
+        "fields": _dict(owned_marker.get("fieldDescriptors")),
+        "buttons": _list(actions.get("buttons")),
+        "business_actions": _list(actions.get("businessActions")),
+        "toolbar": _dict(actions.get("toolbar")),
+        "action_groups": _list(actions.get("actionGroups")),
+        "action_policies": _dict(actions.get("actionPolicies")),
+        "action_schema": _dict(actions.get("actionSchema")),
+        "collaboration": _dict(runtime.get("collaboration")),
+        "record_version": _dict(runtime.get("recordVersion")),
+        "data_sources": _dict(runtime.get("dataSources")),
+        "business_operation_profile": _dict(runtime.get("businessOperationProfile")),
         "form_governance": deepcopy(_dict(source.get("form_governance"))),
-        "visible_fields": deepcopy(_list(runtime.get("visibleFields"))),
-        "field_groups": deepcopy(_list(runtime.get("fieldGroups"))),
-        "formStructureContract": deepcopy(_dict(runtime.get("formStructureContract"))),
+        "visible_fields": _list(runtime.get("visibleFields")),
+        "field_groups": _list(runtime.get("fieldGroups")),
+        "formStructureContract": _dict(runtime.get("formStructureContract")),
         "views": {
-        "form": {
-            "layout": deepcopy(layout),
-            "capabilities": deepcopy(capabilities),
-            "subviews": deepcopy(subviews),
-            "header_buttons": deepcopy(header_buttons),
-        }
+            "form": {
+                "layout": _list(owned_marker.get("layout")),
+                "capabilities": _dict(owned_marker.get("capabilities")),
+                "subviews": _dict(owned_marker.get("subviews")),
+                "header_buttons": _list(owned_marker.get("headerButtons")),
+            }
         },
-        "header_buttons": deepcopy(header_buttons),
+        "header_buttons": _list(owned_marker.get("headerButtons")),
     }
     contract = _assemble_ui_contract(
         canonical_source,
