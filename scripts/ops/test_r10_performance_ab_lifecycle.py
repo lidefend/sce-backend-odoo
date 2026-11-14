@@ -25,11 +25,10 @@ class R10PerformanceLifecycleTest(unittest.TestCase):
         nginx = stack.split("  nginx:", 1)[1].split("\nvolumes:\n", 1)[0]
         self.assertIn("- ingress", nginx)
         self.assertEqual(stack.count("- ingress"), 1)
-        self.assertNotEqual(
+        self.assertEqual(
             profile["arms"]["a"]["database"], profile["arms"]["b"]["database"]
         )
-        self.assertTrue(profile["arms"]["a"]["database"].startswith("sc_demo_"))
-        self.assertTrue(profile["arms"]["b"]["database"].startswith("sc_demo_"))
+        self.assertEqual(profile["arms"]["a"]["database"], "sc_demo")
         self.assertNotEqual(
             profile["arms"]["a"]["database_volume"],
             profile["arms"]["b"]["database_volume"],

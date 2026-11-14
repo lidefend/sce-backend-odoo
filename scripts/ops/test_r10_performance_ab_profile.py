@@ -71,11 +71,11 @@ class R10PerformanceProfileTest(unittest.TestCase):
         self.assertFalse(contract["upgrade_contract"]["fixture_write_allowed"])
         self.assertFalse(contract["upgrade_contract"]["demo_data_write_allowed"])
 
-    def test_profile_rejects_shared_database_or_source_resources(self):
+    def test_profile_requires_the_governed_database_name_in_each_cluster(self):
         payload = load_payload()
-        payload["arms"]["a"]["database"] = "sc_demo"
-        payload["arms"]["a"]["database_filter"] = "^sc_demo$"
-        with self.assertRaisesRegex(module.ProfileError, "current source database"):
+        payload["arms"]["a"]["database"] = "sc_demo_other"
+        payload["arms"]["a"]["database_filter"] = "^sc_demo_other$"
+        with self.assertRaisesRegex(module.ProfileError, "governed snapshot database"):
             module.validate_profile(payload)
 
     def test_profile_rejects_duplicate_arm_ports_volumes_and_networks(self):

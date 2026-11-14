@@ -77,7 +77,6 @@ def validate_profile(payload: dict[str, Any], *, profile_path: Path = DEFAULT_PR
     arms = payload.get("arms") or {}
     _require(set(arms) == {"a", "b"}, "profile must declare exactly arms a and b")
     unique: dict[str, set[str]] = {
-        "database": set(),
         "database_volume": set(),
         "redis_volume": set(),
         "odoo_volume": set(),
@@ -126,8 +125,8 @@ def validate_profile(payload: dict[str, Any], *, profile_path: Path = DEFAULT_PR
         "B source root namespace mismatch",
     )
     _require(
-        arms["a"]["database"] != source["database"] and arms["b"]["database"] != source["database"],
-        "A/B must not use the current source database",
+        arms["a"]["database"] == arms["b"]["database"] == source["database"],
+        "A/B database name must match the governed snapshot database",
     )
 
     ingress = payload.get("ingress") or {}
