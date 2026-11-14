@@ -2,6 +2,7 @@ R10_PERF_PROFILE ?= config/ops/r10_performance_ab_profile.v1.json
 R10_PERF_SSH_HOST ?= sc-root
 R10_PERF_REPORT_ROOT ?= .runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r10/runtime
 R10_PERF_CONTINUITY_CONTRACT ?= scripts/ops/r10_performance_ab_continuity_contract_v1.json
+R10_PERF_SNAPSHOT_ROOT ?= /data/backups/daily-demo-dev
 R10_PERF_SNAPSHOT_DIR ?=
 R10_PERF_REMOTE_CONTRACT ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(R10_PERF_CONTINUITY_CONTRACT)
 
@@ -30,14 +31,14 @@ r10.performance_ab.snapshot: guard.prod.forbid verify.r10.performance_ab.profile
 
 r10.performance_ab.snapshot.validate: guard.prod.forbid verify.r10.performance_ab.profile
 	@test -n "$(R10_PERF_SNAPSHOT_DIR)" || { echo "R10_PERF_SNAPSHOT_DIR is required" >&2; exit 2; }
-	@[[ "$(R10_PERF_SNAPSHOT_DIR)" =~ ^/data/backups/perf-r10/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid R10 performance snapshot directory" >&2; exit 2; }
+	@[[ "$(R10_PERF_SNAPSHOT_DIR)" =~ ^$(R10_PERF_SNAPSHOT_ROOT)/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid R10 performance snapshot directory" >&2; exit 2; }
 	@$(MAKE) --no-print-directory DAILY_CANDIDATE_SSH_HOST="$(R10_PERF_SSH_HOST)" daily.candidate.continuity.remote_install
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
 		'DAILY_CONTINUITY_EVIDENCE=/tmp/r10-performance-ab-snapshot-validate.json python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" validate --contract "$(R10_PERF_REMOTE_CONTRACT)" --backup-dir "$(R10_PERF_SNAPSHOT_DIR)"'
 
 r10.performance_ab.snapshot.restore_drill: guard.prod.forbid verify.r10.performance_ab.profile
 	@test -n "$(R10_PERF_SNAPSHOT_DIR)" || { echo "R10_PERF_SNAPSHOT_DIR is required" >&2; exit 2; }
-	@[[ "$(R10_PERF_SNAPSHOT_DIR)" =~ ^/data/backups/perf-r10/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid R10 performance snapshot directory" >&2; exit 2; }
+	@[[ "$(R10_PERF_SNAPSHOT_DIR)" =~ ^$(R10_PERF_SNAPSHOT_ROOT)/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid R10 performance snapshot directory" >&2; exit 2; }
 	@test "$${CONFIRM_R10_PERFORMANCE_RESTORE_DRILL:-}" = "RESTORE_R10_CURRENT_DUTY_SNAPSHOT_IN_ISOLATION" || { echo "exact R10 restore drill confirmation is required" >&2; exit 2; }
 	@$(MAKE) --no-print-directory DAILY_CANDIDATE_SSH_HOST="$(R10_PERF_SSH_HOST)" daily.candidate.continuity.remote_install
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 "$(R10_PERF_SSH_HOST)" \
