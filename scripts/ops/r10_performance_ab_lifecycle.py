@@ -321,7 +321,7 @@ overrides = {
     "FRONTEND_DIST_DIR": arm["frontend_dist"],
     "SC_SOURCE_REVISION": arm["source_revision"],
     "FRONTEND_BUILD_SHA256": arm["frontend_build_sha256"],
-    "SC_DEPLOY_ENV": "perf-r10",
+    "SC_DEPLOY_ENV": "demo",
     "NGINX_BIND_HOST": "0.0.0.0",
     "SC_PROXY_DEFAULT_UPSTREAM": "odoo:8069",
     "SC_PROXY_PLATFORM_UPSTREAM": "odoo:8069",
