@@ -5,6 +5,7 @@ The caller supplies the authoritative pre-extension tree, never a wire proof.
 """
 from copy import deepcopy
 
+from .contract_lifecycle import payload_sha256
 from .form_configuration_compiler import FormConfigurationError
 from .record_error_proof import validate_record_errors, _context
 
@@ -12,6 +13,32 @@ FEEDBACK = "sc.feedback.message"
 ANCHOR = "sc.navigation.anchor"
 KEYS = frozenset({FEEDBACK, ANCHOR})
 SCALARS = frozenset({"char", "text", "boolean", "integer", "float", "monetary", "selection", "date", "datetime"})
+NODE_VALIDATION_PROOF_SCHEMA = "node-component-validation-proof/v1"
+_NODE_PROOF_KEYS = (
+    "containerId",
+    "componentKey",
+    "componentConfig",
+    "modifiers",
+    "attributes",
+    "type",
+    "name",
+    "text",
+    "nativeLocator",
+    "occurrenceIndex",
+    "sourceAuthority",
+    "children",
+)
+_SOURCE_PROOF_KEYS = (
+    "containerId",
+    "type",
+    "name",
+    "text",
+    "nativeLocator",
+    "occurrenceIndex",
+    "sourceAuthority",
+    "attributes",
+    "children",
+)
 
 
 def fail(code, path):
@@ -242,6 +269,47 @@ def _native_view_index(root):
     return elements, fields
 
 
+def _proof_projection(value, keys):
+    value = value if isinstance(value, dict) else {}
+    return {key: deepcopy(value[key]) for key in keys if key in value}
+
+
+def _container_occurrences(rows, container_id):
+    return sum(1 for node, _path in rows if node.get("containerId") == container_id)
+
+
+def _declaration_proof_signature(rows, node, source):
+    source = source if isinstance(source, dict) else {}
+    return payload_sha256({
+        "node": _proof_projection(node, _NODE_PROOF_KEYS),
+        "source": _proof_projection(source, _SOURCE_PROOF_KEYS),
+        "nodeOccurrences": _container_occurrences(rows, node.get("containerId")),
+        "sourceOccurrences": _container_occurrences(rows, source.get("containerId")) if source else 0,
+    })
+
+
+def _validation_scope_signature(contract, native_tree, record, *, draft_only):
+    page = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
+    data_meta = (
+        ((contract.get("dataContract") or {}).get("dataMeta") or {})
+        if isinstance(contract.get("dataContract"), dict)
+        else {}
+    )
+    source_context = data_meta.get("sourceContext") if isinstance(data_meta.get("sourceContext"), dict) else {}
+    env = getattr(record, "env", None)
+    return payload_sha256({
+        "model": page.get("model"),
+        "viewType": page.get("viewType"),
+        "formViewId": source_context.get("formViewId"),
+        "recordId": getattr(record, "id", None),
+        "draft": bool(draft_only),
+        "uid": int(getattr(env, "uid", 0) or 0),
+        "su": bool(getattr(env, "su", False)),
+        "context": dict(getattr(env, "context", {}) or {}),
+        "nativeTree": native_tree,
+    })
+
+
 def native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=None):
     """Prove a legacy advisory against the actor's actual native form.
 
@@ -379,13 +447,15 @@ def validate_final_nodes(
     draft_feedback=None,
     parsed_view=None,
     evaluate_runtime=True,
+    validation_proof=None,
+    collect_proof=False,
 ):
     """Validate all declarations before modifying visibility. Re-run per request."""
     tree = (contract.get("layoutContract") or {}).get("containerTree", [])
     rows, originals = list(walk(tree)), list(walk(native_tree))
     declarations = [(node, path) for node, path in rows if node.get("componentKey") in KEYS]
     if not declarations:
-        return
+        return {"schema": NODE_VALIDATION_PROOF_SCHEMA, "scope": "", "declarations": {}} if collect_proof else None
     from .unified_page_contract_v2_assembler import _evaluate_action_modifier
     from .contract_runtime.semantic_resolver import component_registration
     page = contract.get("pageInfo") or {}
@@ -394,7 +464,29 @@ def validate_final_nodes(
     model, record_id = page.get("model"), ((contract.get("dataContract") or {}).get("mainData") or {}).get("id")
     record = env[model].browse(record_id) if env is not None and model and type(record_id) is int and record_id > 0 else None
     draft_only = record is None and draft_feedback is not None
+    scope_signature = _validation_scope_signature(
+        contract,
+        native_tree,
+        record,
+        draft_only=draft_only,
+    )
+    incoming_declarations = {}
+    if (
+        isinstance(validation_proof, dict)
+        and validation_proof.get("schema") == NODE_VALIDATION_PROOF_SCHEMA
+        and validation_proof.get("scope") == scope_signature
+        and isinstance(validation_proof.get("declarations"), dict)
+    ):
+        incoming_declarations = validation_proof["declarations"]
+    emitted_declarations = {}
     plans, needed, native_needed, native_plans = [], set(), set(), set()
+
+    def collected_proof():
+        return {
+            "schema": NODE_VALIDATION_PROOF_SCHEMA,
+            "scope": scope_signature,
+            "declarations": emitted_declarations,
+        }
 
     def register_declared_components():
         registry = contract["layoutContract"].setdefault("componentRegistry", {})
@@ -436,6 +528,37 @@ def validate_final_nodes(
                     fail(code, path)
             plans.append((node, key, None, None, None, path))
             continue
+        source = None
+        proof_signature = None
+        if type(config) is dict:
+            candidate_ref = config.get("contentRef")
+            if type(candidate_ref) is dict and isinstance(candidate_ref.get("containerId"), str):
+                source = unique(rows, candidate_ref["containerId"], path)
+                proof_signature = _declaration_proof_signature(rows, node, source)
+                proof_entry = incoming_declarations.get(node.get("containerId"))
+                if (
+                    isinstance(proof_entry, dict)
+                    and proof_entry.get("signature") == proof_signature
+                    and isinstance(proof_entry.get("plan"), dict)
+                ):
+                    plan = proof_entry["plan"]
+                    dependencies = set(plan.get("dependencies") or [])
+                    if plan.get("native"):
+                        native_needed.update(dependencies)
+                        native_plans.add(node["containerId"])
+                    else:
+                        needed.update(dependencies)
+                    plans.append((
+                        node,
+                        plan.get("purpose"),
+                        source,
+                        plan.get("name"),
+                        deepcopy(plan.get("invisible")),
+                        path,
+                    ))
+                    if collect_proof:
+                        emitted_declarations[node["containerId"]] = deepcopy(proof_entry)
+                    continue
         if type(config) is not dict or "purpose" not in config:
             fail("FEEDBACK_LEGACY_UNDECLARED", path + ".componentConfig")
         if (set(config) not in ({"purpose", "contentRef"}, {"purpose", "contentRef", "evaluation"})
@@ -454,7 +577,8 @@ def validate_final_nodes(
         ref = config["contentRef"]
         if type(ref) is not dict or set(ref) != {"containerId"}:
             fail("FEEDBACK_CONFIG_INVALID", path + ".componentConfig.contentRef")
-        source = unique(rows, ref["containerId"], path)
+        source = source or unique(rows, ref["containerId"], path)
+        proof_signature = proof_signature or _declaration_proof_signature(rows, node, source)
         original = native_source(source, originals, path)
         if config["purpose"] == "error" and source.get("type") != "field":
             fail("FEEDBACK_SOURCE_INVALID", path)
@@ -494,24 +618,41 @@ def validate_final_nodes(
             fail("FEEDBACK_CONDITION_INVALID", path)
         if config["purpose"] in {"advisory", "warning", "error"}:
             require_nonconstant(invisible, path)
+        direct = set()
+        native_plan = False
         if config["purpose"] != "error":
             direct = deps | ({name} if name else set())
-            if record is not None and native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=parsed_view):
+            native_plan = bool(
+                record is not None
+                and native_feedback_fields(record, contract, node, source, invisible, path, parsed_view=parsed_view)
+            )
+            if native_plan:
                 native_needed.update(direct)
                 native_plans.add(node["containerId"])
             else:
                 needed.update(direct)
         plans.append((node, config["purpose"], source, name, invisible, path))
+        if collect_proof:
+            emitted_declarations[node["containerId"]] = {
+                "signature": proof_signature,
+                "plan": {
+                    "purpose": config["purpose"],
+                    "name": name,
+                    "invisible": deepcopy(invisible),
+                    "dependencies": sorted(direct),
+                    "native": native_plan,
+                },
+            }
     if draft_only:
         register_declared_components()
-        return
+        return collected_proof() if collect_proof else None
     if not evaluate_runtime:
         if needed:
             check_fact_access(record, needed, "layoutContract.feedback")
         if native_needed:
             check_native_fact_access(record, native_needed, "layoutContract.feedback")
         register_declared_components()
-        return
+        return collected_proof() if collect_proof else None
     facts = read_facts(record, needed, "layoutContract.feedback") if needed else {}
     native_facts = read_native_facts(record, native_needed, "layoutContract.feedback") if native_needed else {}
     error_enabled = validate_record_errors(record, tree, native_tree,
@@ -544,3 +685,4 @@ def validate_final_nodes(
                 if status.get("containerId") == node["containerId"]:
                     status["visible"] = False
     register_declared_components()
+    return collected_proof() if collect_proof else None

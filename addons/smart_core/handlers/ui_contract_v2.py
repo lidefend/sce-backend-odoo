@@ -94,7 +94,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v45"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v47"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1218,11 +1218,13 @@ class UiContractV2Handler(BaseIntentHandler):
         if native_form_source:
             self._refresh_native_form_projection(source_contract)
         draft_feedback_proof = controlled_draft_proof(source_contract)
+        node_validation_proof = {}
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
             node_actor_env=self.env,
             draft_feedback=draft_feedback_proof,
             carrier=getattr(self, "_request_carrier", None),
+            node_validation_proof=node_validation_proof,
             source_type=runtime_source_type,
             client_type=client_type,
             request_id=str(request_id),
@@ -1339,6 +1341,7 @@ class UiContractV2Handler(BaseIntentHandler):
             node_validation_native_tree,
             draft_feedback=draft_feedback_proof,
             parsed_view=parsed_form_view,
+            validation_proof=locals().get("node_validation_proof") or {},
         )
         from ..core.node_component_capabilities import validate_component_capabilities
         validate_component_capabilities(contract_v2, params)

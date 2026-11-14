@@ -657,6 +657,9 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     from .native_advisory import project as project_native_advisory
     draft_feedback = kwargs.pop("draft_feedback", None)
     carrier = kwargs.pop("carrier", None)
+    proof_sink = kwargs.pop("node_validation_proof", None)
+    if isinstance(proof_sink, dict):
+        proof_sink.clear()
     source_contract = project_native_advisory(source_contract, node_actor_env)
     raw_nodes = []
     def collect(value):
@@ -730,7 +733,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             )
             if model and resolved_view_id:
                 parsed_view = carrier.fetch(node_actor_env, model, "form", resolved_view_id)
-        validate_final_nodes(
+        proof = validate_final_nodes(
             node_actor_env,
             contract,
             deepcopy(tree),
@@ -738,7 +741,10 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             draft_feedback=draft_feedback,
             parsed_view=parsed_view,
             evaluate_runtime=False,
+            collect_proof=True,
         )
+        if isinstance(proof_sink, dict):
+            proof_sink.update(proof or {})
         return contract
 
 
