@@ -74,8 +74,13 @@ def _ssh(host: str, script: str, *, input_bytes: bytes | None = None) -> bytes:
         check=False,
     )
     if result.returncode:
+        detail = (
+            result.stderr.decode(errors="replace")
+            + "\n"
+            + result.stdout.decode(errors="replace")
+        ).strip()
         raise LifecycleError(
-            f"remote command failed: {result.stderr.decode(errors='replace')[-1000:]}"
+            f"remote command failed: {detail[-1800:]}"
         )
     return result.stdout
 
@@ -453,9 +458,11 @@ def deploy(
             "chown -R 101:101 /target",
         )
         if name == "b":
+            upgrade_log = arm["log_root"] + "/b-module-upgrade.log"
             upgrade = (
                 f"set -eu; set -a; . {shlex.quote(env_file)}; set +a; "
-                f"docker compose --project-name {shlex.quote(arm['compose_project'])} "
+                f"log={shlex.quote(upgrade_log)}; "
+                f"if ! docker compose --project-name {shlex.quote(arm['compose_project'])} "
                 f"--env-file {shlex.quote(env_file)} -f {shlex.quote(stack)} "
                 "run --rm --no-deps --entrypoint /bin/sh odoo -ec "
                 + shlex.quote(
@@ -466,6 +473,7 @@ def deploy(
                     '--without-demo=all --no-http --workers=0 --max-cron-threads=0 '
                     '--stop-after-init'
                 )
+                + f" >\"$log\" 2>&1; then tail -n 180 \"$log\" >&2; exit 1; fi"
             )
             _ssh(host, upgrade)
         _ssh(host, _compose(env_file, stack, arm["compose_project"], "up -d odoo nginx"))
