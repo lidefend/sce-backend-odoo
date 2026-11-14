@@ -152,7 +152,7 @@ verify.frontend.intent_request_coalescing.unit: guard.prod.forbid verify.fronten
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
 	@node /tmp/intent-request-coalescing-test.mjs
 
-.PHONY: verify.frontend.session_persistence.snapshot.unit verify.frontend.session_persistence.scheduler.unit verify.frontend.session_persistence.recovery.unit verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
+.PHONY: verify.frontend.session_persistence.snapshot.unit verify.frontend.session_persistence.scheduler.unit verify.frontend.session_persistence.failure.unit verify.frontend.session_persistence.recovery.unit verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
 verify.frontend.session_persistence.snapshot.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_snapshot_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-snapshot-test.mjs >/dev/null
 	@node /tmp/session-persistence-snapshot-test.mjs
@@ -161,7 +161,11 @@ verify.frontend.session_persistence.scheduler.unit: guard.prod.forbid verify.fro
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_scheduler_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-scheduler-test.mjs >/dev/null
 	@node /tmp/session-persistence-scheduler-test.mjs
 
-verify.frontend.session_persistence.recovery.unit: guard.prod.forbid verify.frontend.session_persistence.scheduler.unit
+verify.frontend.session_persistence.failure.unit: guard.prod.forbid verify.frontend.session_persistence.scheduler.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_failure_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-failure-test.mjs >/dev/null
+	@node /tmp/session-persistence-failure-test.mjs
+
+verify.frontend.session_persistence.recovery.unit: guard.prod.forbid verify.frontend.session_persistence.failure.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-recovery-test.mjs >/dev/null
 	@node /tmp/session-persistence-recovery-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_performance_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-performance-test.mjs >/dev/null

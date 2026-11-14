@@ -28,6 +28,7 @@
     "frontend/apps/web/src/stores/sessionPersistence.ts",
     "frontend/apps/web/scripts/session_persistence_snapshot_test.ts",
     "frontend/apps/web/scripts/session_persistence_scheduler_test.ts",
+    "frontend/apps/web/scripts/session_persistence_failure_test.ts",
     "frontend/apps/web/scripts/session_persistence_recovery_test.ts",
     "frontend/apps/web/scripts/session_persistence_performance_test.ts",
     "frontend/apps/web/scripts/scene_entry_contract_test.ts",
@@ -215,10 +216,10 @@
   "blockers": [
     "Backend contract generation order is the active performance batch; R7 is retained as the established foundation.",
     "146ms profiler pause remains unattributed and out of this repair scope.",
-    "R12-B implementation is complete and awaits independent review; browser performance is not yet measured.",
+    "R12-B-R1 failure-path fixes are complete and await a second independent review; browser performance is not yet measured.",
     "Core-ready and auxiliary-ready boundaries remain a separate follow-up."
   ],
-  "next_exact_step": "Run the independent R12-B implementation review against the exact branch HEAD and retained recovery/performance evidence.",
+  "next_exact_step": "Run the second independent R12-B review against the exact R12-B-R1 HEAD and retained failure-path evidence.",
   "results": {
     "init_payload": {
       "status": "passed",
@@ -1315,7 +1316,7 @@
     "merge_deployment": "paused"
   },
   "r12b": {
-    "status": "verification_pending_independent_review",
+    "status": "fix_validation_pending_second_independent_review",
     "formal_product_layer": "P0 frontend session lifecycle",
     "layer_target": "apps/web Session Store persistence",
     "module": "frontend/apps/web",
@@ -1326,7 +1327,8 @@
     "commits": {
       "b1": "f780bbe4554f78ee84e7cd5d648ab6138c2de3b9",
       "b2": "e3440e2de",
-      "b3": "current record commit"
+      "b3": "884ec91adbef7efb99fbd616fb3ba75dd5129d3c",
+      "r1": "current R12-B-R1 record commit"
     },
     "b1_snapshot": {
       "status": "passed",
@@ -1381,7 +1383,7 @@
     "not_run": [
       "browser click-to-interactive performance",
       "deployment",
-      "independent review"
+      "second independent review"
     ],
     "external_mutations": {
       "backend_product_code": "none",
@@ -1392,7 +1394,20 @@
       "push": "none",
       "merge": "none"
     },
-    "next_exact_step": "Run the independent R12-B implementation review against the exact branch HEAD and the retained R12-B evidence."
+    "r1_failure_path_fix": {
+      "status": "passed",
+      "baseline_head": "884ec91adbef7efb99fbd616fb3ba75dd5129d3c",
+      "original_session_tests": 107,
+      "new_failure_tests": 28,
+      "incremental_mapping_tests": 144,
+      "recovery_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-r1-recovery.log",
+      "workspace_lifecycle_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-r1-workspace-lifecycle.log",
+      "incremental_mapping_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-r1-incremental-mapping.log",
+      "typecheck_log": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-r1-typecheck.log",
+      "p1": "full/degraded/failed state machine; degraded/failed keeps retry-needed; full retry rebuilds latest state; no automatic loop",
+      "p2": "storage access/removal failures no longer block memory cleanup, per-tab token removal or stale-generation invalidation"
+    },
+    "next_exact_step": "Run the second independent R12-B review against the exact R12-B-R1 HEAD and retained failure-path evidence."
   },
   "product_result": ".runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r7-result.json"
 }

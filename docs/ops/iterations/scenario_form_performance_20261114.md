@@ -819,3 +819,36 @@ Durable Snapshot 现在由显式字段构造，不再展开 live Session：
 
 本批未修改后端产品代码、PR #887、R10/R11 原始证据、A/B twin 或业务数据；未部署、
 未合并。下一步是基于当前精确 HEAD 和保留证据执行独立 R12-B 复审。
+
+### R12-B-R1 故障路径修复
+
+第二次复审前只修复独立审查确认的两个故障路径，不改变 Snapshot schema、迁移规则、
+正常路径合并或用户业务语义。
+
+P1 将持久化结果明确区分为 `full`、`degraded`、`failed`：
+
+- 只有 full 写入成功才清除完整恢复义务；
+- degraded/failed 保留独立 retry-needed；
+- 下一次 lifecycle flush 或新的 Durable 更新会从当前最新状态重新构造 full snapshot；
+- full retry 成功后才清除 retry-needed；
+- 失败不会自动创建紧循环重试；
+- `clearSession()` 同时清除 pending、retry-needed 和旧 generation。
+
+P2 将存储异常隔离：
+
+- Snapshot 读取、删除失败不再阻止 restore、logout 或 401；
+- 内存 Session 先完成清理；
+- localStorage Snapshot 删除失败不会阻止 per-tab token 删除；
+- 两个存储介质同时抛异常时，内存清理和 generation 失效仍完成。
+
+验证结果：
+
+- 原有 Session 定向测试：107 例通过（snapshot 48、scheduler 25、recovery 34）；
+- 新增 P1/P2 强制反例：28 例通过；
+- workspace lifecycle：通过；
+- 增量映射测试：144 例通过；
+- 严格类型检查：通过；
+- lint：无错误，仅有 4 个既有 warning。
+
+本修复仍未证明浏览器真实写入次数和用户可见性能；第二次独立复审通过后再执行浏览器恢复验证和
+R12 A/B。未修改后端、PR #887、R10/R11/R12-A 原始证据、A/B twin 或业务数据。

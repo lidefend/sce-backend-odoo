@@ -66,13 +66,36 @@ let appInitEpoch = -1;
 let appInitSequence = 0;
 let durablePersistenceGeneration = 0;
 let durablePersistencePending = false;
+let durablePersistenceRetryNeeded = false;
 let durablePersistenceTimer: ReturnType<typeof setTimeout> | null = null;
+type DurablePersistResult = 'full' | 'degraded' | 'failed';
+
+type StorageReadLike = Pick<Storage, 'getItem'>;
+type StorageRemoveLike = Pick<Storage, 'removeItem'>;
+
+function readStorageItem(storage: StorageReadLike, key: string): string | null {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function removeStorageItem(storage: StorageRemoveLike, key: string): boolean {
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function invalidateDurablePersistence(): void {
   durablePersistenceGeneration += 1;
   if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
   durablePersistenceTimer = null;
   durablePersistencePending = false;
+  durablePersistenceRetryNeeded = false;
 }
 
 function resolveAvailableSceneRoute(rawPath: string): string {
@@ -815,7 +838,7 @@ export const useSessionStore = defineStore('session', {
       this.token = token;
       sessionStorage.setItem(scopedTokenStorageKey(), token);
       // Do not keep cross-db legacy token once db-scoped token is set.
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     restore() {
       this.invalidateProductCapabilityCatalog();
@@ -825,7 +848,7 @@ export const useSessionStore = defineStore('session', {
       this.initError = null;
       this.initTraceId = null;
       this.featureFlags = {};
-      const cached = localStorage.getItem(sessionStorageKey());
+      const cached = readStorageItem(localStorage, sessionStorageKey());
       const decoded = decodeDurableSessionSnapshot(cached);
       if (decoded.snapshot && (decoded.status === 'legacy' || decoded.status === 'current')) {
         const snapshot = decoded.snapshot;
@@ -851,7 +874,7 @@ export const useSessionStore = defineStore('session', {
         );
         this.bootstrapNextIntent = snapshot.bootstrapNextIntent;
       } else if (decoded.status === 'corrupt' || decoded.status === 'unsupported') {
-        localStorage.removeItem(sessionStorageKey());
+        removeStorageItem(localStorage, sessionStorageKey());
       }
       // Every non-durable field starts empty and is rebuilt from authority.
       this.menuTree = [];
@@ -880,12 +903,12 @@ export const useSessionStore = defineStore('session', {
       this.lastWriteMode = '';
       this.initMeta = null;
       this.defaultRoute = null;
-      const token = sessionStorage.getItem(scopedTokenStorageKey());
+      const token = readStorageItem(sessionStorage, scopedTokenStorageKey());
       if (token) {
         this.token = token;
       }
       // Always purge legacy unscoped token to avoid cross-db pollution.
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     clearSession() {
       invalidateDurablePersistence();
@@ -938,15 +961,15 @@ export const useSessionStore = defineStore('session', {
       this.initStatus = 'idle';
       this.initError = null;
       this.initTraceId = null;
-      localStorage.removeItem(sessionStorageKey());
-      sessionStorage.removeItem(scopedTokenStorageKey());
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(localStorage, sessionStorageKey());
+      removeStorageItem(sessionStorage, scopedTokenStorageKey());
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     setActionMeta(meta: NavMeta) {
       this.currentAction = meta;
     },
     ...navigationExpansionActions,
-    persistDurableNow() {
+    persistDurableNow(): DurablePersistResult {
       if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
       durablePersistenceTimer = null;
       durablePersistencePending = false;
@@ -964,7 +987,8 @@ export const useSessionStore = defineStore('session', {
       });
       try {
         localStorage.setItem(sessionStorageKey(), JSON.stringify(snapshot));
-        return;
+        durablePersistenceRetryNeeded = false;
+        return 'full';
       } catch {
         // Persistence is only a reload optimization. A quota or serialization
         // failure must not block login or user initialization.
@@ -982,8 +1006,12 @@ export const useSessionStore = defineStore('session', {
           },
         };
         localStorage.setItem(sessionStorageKey(), JSON.stringify(minimalSnapshot));
+        durablePersistenceRetryNeeded = true;
+        return 'degraded';
       } catch {
-        localStorage.removeItem(sessionStorageKey());
+        durablePersistenceRetryNeeded = true;
+        removeStorageItem(localStorage, sessionStorageKey());
+        return 'failed';
       }
     },
     scheduleDurablePersist() {
@@ -998,7 +1026,7 @@ export const useSessionStore = defineStore('session', {
       }, 0);
     },
     flushDurablePersist() {
-      if (!durablePersistencePending) return false;
+      if (!durablePersistencePending && !durablePersistenceRetryNeeded) return false;
       if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
       durablePersistenceTimer = null;
       durablePersistencePending = false;
@@ -1006,7 +1034,7 @@ export const useSessionStore = defineStore('session', {
       return true;
     },
     persist() {
-      this.persistDurableNow();
+      return this.persistDurableNow();
     },
     currentActivityRecordContextSnapshot(): ActivityRecordContextSnapshot | null {
       const current = this.recordContext;
