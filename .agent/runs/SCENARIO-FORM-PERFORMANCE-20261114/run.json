@@ -1243,7 +1243,9 @@
     },
     "formal_warm_samples": {
       "desktop_per_arm": 9,
-      "mobile_per_arm": 3,
+      "mobile_per_arm": 9,
+      "instrumented_desktop_per_arm": 9,
+      "instrumented_mobile_per_arm": 3,
       "desktop_form_interactive_delta_percent": -3.6,
       "desktop_p90_delta_ms": -163.2,
       "mobile_form_interactive_delta_percent": -6.8,
