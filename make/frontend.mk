@@ -152,8 +152,12 @@ verify.frontend.intent_request_coalescing.unit: guard.prod.forbid verify.fronten
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
 	@node /tmp/intent-request-coalescing-test.mjs
 
-.PHONY: verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
-verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit
+.PHONY: verify.frontend.session_persistence.snapshot.unit verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
+verify.frontend.session_persistence.snapshot.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_snapshot_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-snapshot-test.mjs >/dev/null
+	@node /tmp/session-persistence-snapshot-test.mjs
+
+verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit verify.frontend.session_persistence.snapshot.unit
 	@mkdir -p .runtime/nav01
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=.runtime/nav01/workspace-scenario-lifecycle-test.mjs >/dev/null
 	@node .runtime/nav01/workspace-scenario-lifecycle-test.mjs

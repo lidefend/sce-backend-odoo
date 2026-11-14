@@ -264,9 +264,12 @@ RULES = (
         "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/scripts/session_persistence_snapshot_test.ts",
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
     ), (
         "verify.frontend.runtime_identity.unit",
+        "verify.frontend.session_persistence.snapshot.unit",
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.standard_preview.unit",
     )),
