@@ -1355,6 +1355,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.construction.policy_maps.unit"],
                 )
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+            ]),
+            ["verify.contract.architecture.suite"],
+        )
 
     def test_primitive_adapter_guard_changes_route_to_their_owned_contract(self) -> None:
         for path in (

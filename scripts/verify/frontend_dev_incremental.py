@@ -910,6 +910,11 @@ RULES = (
     ), (
         "verify.construction.policy_maps.unit",
     )),
+    Rule((
+        "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+    ), (
+        "verify.contract.architecture.suite",
+    )),
     # The baseline-backed iteration policy guard is the authority for the
     # governed make lanes: it asserts that each lane still declares the targets
     # the execution policy depends on. Editing one of those lanes without
