@@ -63,7 +63,7 @@ labels instead of exposing dotted technical identities.
 | `verify.frontend.workspace_scenario_lifecycle.unit` | passed |
 | strict frontend typecheck | passed |
 | frontend lint | passed with existing warnings, 0 errors |
-| `make local.dev.frontend` | passed; route shell 2.78 KB, form page 852.60 KB |
+| `make local.dev.frontend` | passed; route shell 2.54 KB, form page 852.60 KB |
 
 ### Runtime marker observation
 
