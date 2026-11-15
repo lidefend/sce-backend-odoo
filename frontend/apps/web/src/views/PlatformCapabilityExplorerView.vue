@@ -282,6 +282,7 @@ import {
   sceneUsagePresentation,
   technicalEligibilityPresentation,
 } from '../app/platformCapabilityExplorerPresentation';
+import { createCapabilityExplorerRequestGate } from '../app/platformCapabilityExplorerRequestGate';
 import { usePageContract } from '../app/pageContract';
 
 const pageContract = usePageContract('platform_capability_explorer');
@@ -308,6 +309,7 @@ const diagnosis = ref<CapabilityExplorerDiagnosisResponse | null>(null);
 const detailLoading = ref(false);
 const diagnoseLoading = ref(false);
 const detailError = ref('');
+const detailRequestGate = createCapabilityExplorerRequestGate();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const rows = computed(() => catalog.value?.rows || []);
@@ -547,12 +549,14 @@ function rowAttributes(context: unknown): Record<string, unknown> {
 }
 
 async function openEntry(row: CapabilityExplorerRow) {
+  const rowKey = entryKey(row);
   const token = catalog.value?.meta.catalog_token;
   if (!token) {
     await recoverFromStale();
     return;
   }
-  selectedKey.value = entryKey(row);
+  const requestSequence = detailRequestGate.begin();
+  selectedKey.value = rowKey;
   drawerOpen.value = true;
   detail.value = null;
   diagnosis.value = null;
@@ -564,18 +568,21 @@ async function openEntry(row: CapabilityExplorerRow) {
       fetchCapabilityExplorerDetail({ entry_ref: row.entry_ref, expected_catalog_token: token }),
       fetchCapabilityExplorerDiagnose({ entry_ref: row.entry_ref, expected_catalog_token: token }),
     ]);
-    if (selectedKey.value !== entryKey(row)) return;
+    if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     detail.value = detailResult.entry;
     diagnosis.value = diagnosisResult;
   } catch (err) {
+    if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     if (isCatalogStaleError(err)) {
       await recoverFromStale();
       return;
     }
     detailError.value = err instanceof Error ? err.message : '入口详情读取失败。';
   } finally {
-    detailLoading.value = false;
-    diagnoseLoading.value = false;
+    if (detailRequestGate.isCurrent(requestSequence) && selectedKey.value === rowKey) {
+      detailLoading.value = false;
+      diagnoseLoading.value = false;
+    }
   }
 }
 
@@ -585,29 +592,39 @@ async function reDiagnose() {
     await recoverFromStale();
     return;
   }
+  const rowKey = entryKey(detail.value);
+  const requestSequence = detailRequestGate.begin();
   diagnoseLoading.value = true;
   try {
-    diagnosis.value = await fetchCapabilityExplorerDiagnose({
+    const result = await fetchCapabilityExplorerDiagnose({
       entry_ref: detail.value.entry_ref,
       expected_catalog_token: token,
     });
+    if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
+    diagnosis.value = result;
   } catch (err) {
+    if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     if (isCatalogStaleError(err)) {
       await recoverFromStale();
       return;
     }
     detailError.value = err instanceof Error ? err.message : '诊断读取失败。';
   } finally {
-    diagnoseLoading.value = false;
+    if (detailRequestGate.isCurrent(requestSequence) && selectedKey.value === rowKey) {
+      diagnoseLoading.value = false;
+    }
   }
 }
 
 function closeDrawer() {
+  detailRequestGate.invalidate();
   drawerOpen.value = false;
   selectedKey.value = '';
   detail.value = null;
   diagnosis.value = null;
   detailError.value = '';
+  detailLoading.value = false;
+  diagnoseLoading.value = false;
 }
 
 function shortToken(token: string): string {

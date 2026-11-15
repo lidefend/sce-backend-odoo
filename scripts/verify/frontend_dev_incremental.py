@@ -487,11 +487,14 @@ RULES = (
     Rule((
         "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/app/adminRouteAccess.ts",
         "frontend/apps/web/scripts/admin_route_access_test.ts",
         "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
         "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
     ), (
         "verify.frontend.platform_capability_explorer.unit",
     )),

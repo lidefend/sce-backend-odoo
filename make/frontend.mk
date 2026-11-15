@@ -612,6 +612,7 @@ verify.frontend.product_configuration_capability.browser: guard.prod.forbid
 verify.frontend.platform_capability_explorer.unit: guard.prod.forbid verify.platform.duty.contract.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/admin_route_access_test.ts --bundle --platform=node --format=esm --outfile=/tmp/admin-route-access-test.mjs >/dev/null
 	@node /tmp/admin-route-access-test.mjs
+	@node --test frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/platform_capability_explorer_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/platform-capability-explorer-test.mjs >/dev/null
 	@node /tmp/platform-capability-explorer-test.mjs
 

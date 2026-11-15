@@ -16,6 +16,7 @@ import {
   sceneUsagePresentation,
   technicalEligibilityPresentation,
 } from '../src/app/platformCapabilityExplorerPresentation';
+import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
 
 let cases = 0;
@@ -85,6 +86,13 @@ const decodedList = decodeCapabilityExplorerListResponse(listResponse);
 check(decodedList.meta.total, 3, 'list total consumed');
 check(decodedList.rows[0]?.label, '项目台账', 'list row consumed');
 check(capabilityEntryKey(decodedList.rows[0]!), 'smart_construction_core.menu_project_ledger::smart_construction_core.action_project_ledger', 'stable entry key');
+const requestGate = createCapabilityExplorerRequestGate();
+const firstRequest = requestGate.begin();
+const secondRequest = requestGate.begin();
+check(requestGate.isCurrent(firstRequest), false, 'older detail response is stale after a newer request');
+check(requestGate.isCurrent(secondRequest), true, 'latest detail response remains current');
+requestGate.invalidate();
+check(requestGate.isCurrent(secondRequest), false, 'drawer close invalidates an in-flight detail response');
 assert.throws(
   () => decodeCapabilityExplorerListResponse({ ...listResponse, meta: { ...meta, catalog_token: '' } }),
   (error) => isContractGapError(error),

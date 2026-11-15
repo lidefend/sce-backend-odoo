@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5220`
+- Scanned files: `5221`
 - Files requiring split plan: `79`
 - Files above warning threshold: `148`
 
@@ -37,10 +37,10 @@ Generated from repository source files. This report is informational during the 
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2650 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2653 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2366 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2369 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2359 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
@@ -274,10 +274,10 @@ Generated from repository source files. This report is informational during the 
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2650 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2653 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2366 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2369 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2359 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |

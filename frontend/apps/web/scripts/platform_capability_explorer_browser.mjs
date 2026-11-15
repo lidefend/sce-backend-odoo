@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
+import { createExpectedHttpFailureBudget } from './platform_capability_explorer_browser_support.mjs';
 
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
 const DB_NAME = String(process.env.DB_NAME || 'sc_dev_demo').trim();
@@ -73,7 +74,7 @@ try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
   const page = await context.newPage();
-  let expectedStaleResponse = false;
+  const expectedHttpFailures = createExpectedHttpFailureBudget();
   let expectedConsoleFailures = 0;
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
@@ -87,7 +88,10 @@ try {
   page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', text: error.message, url: page.url() }));
   page.on('response', (response) => {
     if (response.status() < 400) return;
-    const expected = expectedStaleResponse && response.status() === 409;
+    const expected = expectedHttpFailures.consume({
+      status: response.status(),
+      intent: intentOf(response.request()),
+    });
     report.failed_requests.push({ status: response.status(), url: response.url(), expected });
   });
 
@@ -183,13 +187,76 @@ try {
   await screenshot(page, '02-desktop-detail');
   await page.getByRole('button', { name: '关闭' }).click();
 
+  const staleDetailRow = listPayload.rows[1];
+  if (staleDetailRow) {
+    let interceptLateDiagnose = true;
+    let markLateDiagnoseStarted;
+    let markLateDiagnoseFinished;
+    const lateDiagnoseStarted = new Promise((resolve) => { markLateDiagnoseStarted = resolve; });
+    const lateDiagnoseFinished = new Promise((resolve) => { markLateDiagnoseFinished = resolve; });
+    await page.route('**/api/v1/intent', async (route) => {
+      const request = route.request();
+      const params = intentParams(request);
+      if (
+        !interceptLateDiagnose
+        || intentOf(request) !== 'platform.capability.explorer.diagnose'
+        || String(params?.entry_ref?.menu_xmlid || '') !== String(firstRow.entry_ref.menu_xmlid)
+      ) {
+        await route.continue();
+        return;
+      }
+      interceptLateDiagnose = false;
+      markLateDiagnoseStarted();
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      const response = await route.fetch();
+      const body = await response.json();
+      const payload = body?.data?.meta ? body.data : body?.data?.data?.meta ? body.data.data : null;
+      if (payload) payload.blockers = ['LATE_ENTRY_A'];
+      await route.fulfill({ response, json: body });
+      markLateDiagnoseFinished();
+    });
+
+    await table.getByText(firstLabel, { exact: true }).first().click();
+    await page.getByRole('button', { name: '重新诊断' }).waitFor({ state: 'visible', timeout: 60000 });
+    await page.getByRole('button', { name: '重新诊断' }).click();
+    await lateDiagnoseStarted;
+    await page.getByRole('button', { name: '关闭' }).click();
+    await table.getByText(String(staleDetailRow.label), { exact: true }).first().click();
+    await page.waitForFunction(() => {
+      const node = document.querySelector('.sc-design-drawer [role="dialog"]');
+      const text = node?.textContent || '';
+      return !text.includes('正在读取入口详情并执行诊断');
+    }, null, { timeout: 60000 });
+    await lateDiagnoseFinished;
+    const currentDrawerText = await page.getByRole('dialog').innerText();
+    check(
+      currentDrawerText.includes(String(staleDetailRow.entry_ref.action_xmlid))
+        && !currentDrawerText.includes('LATE_ENTRY_A'),
+      'late detail diagnosis cannot overwrite the currently selected entry',
+      {
+        selectedAction: staleDetailRow.entry_ref.action_xmlid,
+        drawerText: currentDrawerText.slice(0, 1200),
+      },
+    );
+    report.race_guard = {
+      stale_entry: firstRow.entry_ref,
+      current_entry: staleDetailRow.entry_ref,
+      late_blocker: 'LATE_ENTRY_A',
+    };
+    await page.unroute('**/api/v1/intent');
+    await page.getByRole('button', { name: '关闭' }).click();
+  }
+
   let interceptedList = false;
   await page.route('**/api/v1/intent', async (route) => {
     const request = route.request();
     if (!interceptedList && intentOf(request) === 'platform.capability.explorer.list') {
       interceptedList = true;
       expectedConsoleFailures += 1;
-      expectedStaleResponse = true;
+      expectedHttpFailures.arm({
+        status: 409,
+        intent: 'platform.capability.explorer.list',
+      });
       await route.fulfill({
         status: 409,
         contentType: 'application/json',
@@ -382,6 +449,9 @@ try {
   }
 
   const unexpectedFailures = report.failed_requests.filter((row) => !row.expected);
+  check(expectedHttpFailures.pending() === 0, 'every expected HTTP failure was observed', {
+    pending: expectedHttpFailures.pending(),
+  });
   check(unexpectedFailures.length === 0, 'no unexpected HTTP failures', { unexpectedFailures });
   check(report.errors.length === 0, 'no console or page errors', { errors: report.errors });
   report.pass = true;

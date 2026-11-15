@@ -37,6 +37,19 @@
 - Reused `ScButton`, `ScMobileRecordCard`, `ScSection` and the existing design
   system. No raw behavior surface or frontend persistence was added.
 
+## Independent Review R1 Fixes
+
+- Added an entry-request identity gate so a late Detail/Diagnose success,
+  failure or `finally` from entry A cannot alter entry B or a closed Drawer.
+- Re-diagnose now captures the selected entry identity and request sequence;
+  close/invalidate prevents an old response from restoring a drawer state.
+- Replaced the browser's permanent expected-409 boolean with a one-shot HTTP
+  failure budget constrained by status and intent. A second or mismatched 409
+  is unexpected, and an armed-but-unobserved failure fails the browser gate.
+- Added negative tests for exact-once expected failure consumption, mismatched
+  intent/status, pending expectations, newer/older request sequences, and close
+  invalidation.
+
 ## Implementation Corrections Found During Acceptance
 
 - Detail and Diagnose use base metadata without List pagination fields; the
@@ -60,7 +73,7 @@
 | Gate | Result |
 | --- | --- |
 | `make verify.platform.capability_explorer.unit` | PASS: 19 + 6 + 2 tests |
-| `make verify.frontend.platform_capability_explorer.unit` | PASS: backend duty 27, duty action 4, route access 13 cases, strict decoder 18 cases |
+| `make verify.frontend.platform_capability_explorer.unit` | PASS: backend duty 27, duty action 4, route access 13 cases, browser budget 3 cases, strict decoder/request gate 21 cases |
 | `make verify.backend.navigation_delivery.unit` | PASS: all navigation and page-contract units |
 | `make verify.frontend.dev.incremental.unit` | PASS: 148 tests |
 | `make verify.frontend.lint.src` | PASS: 0 errors; existing warnings only |
@@ -84,16 +97,18 @@ Runtime: `local.dev` / `sc_dev_demo`, authenticated as `admin`.
 - Native centers: 5.
 - Exact `catalog_token`:
   `sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b`.
-- Browser assertions: 27/27 PASS.
+- Browser assertions: 29/29 PASS.
 - Screenshots: desktop list, desktop detail, 390px mobile list.
-- Performance in this run: desktop list ready 1179 ms; detail ready 664 ms;
-  stale refresh 1273 ms; mobile list ready 1457 ms.
+- Performance in this run: desktop list ready 1445 ms; detail ready 464 ms;
+  stale refresh 1261 ms; mobile list ready 1417 ms.
 - Search `项目` returned 1 filtered row from the live 17-row catalog.
 - The `unclassified` center facet returned its matching 2/2 server rows after
   clearing the prior search.
 - Pagination metadata: offset 0, limit 50, next offset null, has more false.
 - HTTP failures: one expected `CATALOG_STALE` 409; no unexpected failures.
 - Console/Page errors: 0.
+- Late-diagnosis race probe: A returned blocker `LATE_ENTRY_A` after B was
+  selected; B retained its own Action XMLID and displayed no A blocker.
 
 Permission negative:
 
@@ -103,8 +118,8 @@ Permission negative:
 
 Evidence hashes:
 
-- `report.json`: `cded75bb470657f054562dddb684c43e43b9fe54bddfa4d577e11c2998a7fb0d`
-- `01-desktop-list.png`: `1d3cf78c23d081cd212d77b9fd4f052f7ddd8852f27da6145bf0e32161cd2c14`
+- `report.json`: `6c3d2225d6a198c69e45fc4f156e6aee9c6ce20092551c6b381f624c4c95cd41`
+- `01-desktop-list.png`: `7b55019d5ba4e0db24f24d2ac2f0e1bf298d8c38de84c5997ed5980aeb7232a7`
 - `02-desktop-detail.png`: `fabc6c288071be14687ffd1ab7af0cb2eabd76e0fe5700ede2d6386f40027d3a`
 - `03-mobile-list.png`: `2d277c6afd1603dc4bbcce2ef3b0153b0830e901b4c97f7a8b63b0ad006655c2`
 
