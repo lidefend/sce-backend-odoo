@@ -74,7 +74,7 @@
       "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/clean-upgrade-smart-core.log"
     }
   ],
-  "next_exact_step": "Commit the audit-only reports and request independent review; do not expand into product remediation or publication.",
+  "next_exact_step": "Request independent review of the audit-only candidate; do not expand into product remediation or publication.",
   "id": "CAPABILITY-EXPLORER-05",
   "branch": "audit/capability-explorer-05-20261115",
   "status": "verification_pending",
