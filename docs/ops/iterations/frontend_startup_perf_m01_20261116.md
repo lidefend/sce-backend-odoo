@@ -104,7 +104,7 @@ Failure classification during remediation:
 The governed incremental execution completed 26 targets with no blocked or
 not-run targets:
 
-`.runtime/frontend-dev-validation/executions/20261115T231631Z-2292694-937946943/receipt.json`
+`.runtime/frontend-dev-validation/executions/20261115T232458Z-2384961-815324071/receipt.json`
 
 Not yet covered: a fresh independent review of the fixed candidate, exact-head
 remote CI, isolated daily-clone deployment, and desktop/mobile A/B. The prior
