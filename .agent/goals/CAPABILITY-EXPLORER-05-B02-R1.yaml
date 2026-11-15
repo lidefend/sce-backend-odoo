@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-05-B02-R1
+  title: Persistent development recovery-point reconciliation and owner-authorized rebuild
+  status: blocked
+  formal_product_layer: P4
+  layer_target: recovery-point reconciliation followed by governed demo rebuild
+  module:
+    - smart_core
+    - smart_construction_core
+    - ops_delivery_audit
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Establish the differences between the authorized 20261115T082948Z recovery
+    point and the persistent sc_dev_demo environment, document attribution and
+    recovery risk, then apply the owner's subsequent directive to rebuild the
+    demo-only database through the governed local.dev entry.
+  why_here: >-
+    The result is an evidence-only P4 reconciliation of an observed persistent
+    development environment deviation. It does not change Odoo product
+    semantics, capability identity, qualification, scene publication or release.
+  why_not_elsewhere:
+    - no_orm_acl_record_rule_scene_candidate_qualification_or_release_change
+    - no_business_model_migration_or_repair
+    - no_capability_registry_or_frontend_inference
+    - no_enterprise_enablement_or_automatic_capability_publication
+    - no_restore_of_the_old_recovery_point
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml
+      - .agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json
+      - docs/audit/capability-explorer-05-b02-r1
+    runtime:
+      - read-only access to the authorized recovery-point artifacts
+      - read-only reconciliation against persistent local.dev sc_dev_demo
+      - owner-authorized pristine pre-rebuild snapshot
+      - owner-authorized governed local.dev demo rebuild
+  acceptance:
+    - recovery_point_manifest_dump_and_filestore_hashes_match_declared_identity
+    - recovery_dump_is_inspectable_without_restore
+    - current_database_is_read_only_and_reliably_comparable
+    - schema_module_xmlid_menu_action_and_business_record_differences_are_classified
+    - filestore_additions_modifications_and_deletions_are_classified
+    - unattributed_differences_and_recovery_data_loss_risk_are_explicit
+    - owner_authorized_rebuild_passes_health_entry_identity_and_verify_demo
+    - post_rebuild_identity_entitlement_seed_boq_and_filestore_differences_are_owner_reviewable
+  exclusions:
+    - CAP05-B01 migration lifecycle research or repair
+    - CAP05-R2 capability lifecycle governance
+    - CAP05-R3 capability lifecycle productization design
+    - restoration of the old 20261115T082948Z recovery point
+    - manual database filestore table or version manipulation
+    - automated capability publication or enterprise enablement
+    - sensitive record values file contents cookies tokens and credentials
+  rollback: >-
+    Revert the P4 audit commit. The owner-authorized demo rebuild is not rolled
+    back by reverting source files. The paired pre-rebuild snapshot is
+    artifacts/local-dev/snapshots/20261115T163419Z; restoring it requires new
+    explicit owner authorization because it would overwrite the rebuilt demo.
+  completion:
+    batch: owner_review_ready
+    mainline_integration: pending
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json

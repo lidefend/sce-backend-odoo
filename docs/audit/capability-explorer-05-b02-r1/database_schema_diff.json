@@ -1,0 +1,326 @@
+{
+  "phase": "pre_rebuild",
+  "current": {
+    "database": "sc_dev_demo",
+    "database_size_bytes": 157818215,
+    "postgres_version": "15.19 (Debian 15.19-1.pgdg13+2)",
+    "read_only_transaction": true
+  },
+  "extensions": {
+    "current_meaningful_extensions": [],
+    "current_platform_default": [
+      "plpgsql=1.0"
+    ],
+    "snapshot_meaningful_extensions": []
+  },
+  "method": "Compare pg_restore schema output with pg_catalog in a read-only REPEATABLE READ transaction; normalize server formatting without changing object names, column types, definitions or values.",
+  "not_verified": [
+    "object definitions are compared from dump SQL plus current catalog; a restored execution plan/runtime test is not performed",
+    "database-level activity/audit log before the snapshot is unavailable"
+  ],
+  "object_counts": {
+    "column_defaults": {
+      "current": 612,
+      "normalized_differences": 0,
+      "snapshot": 612
+    },
+    "columns": {
+      "added_in_current": 0,
+      "current": 11285,
+      "missing_in_current": 0,
+      "snapshot": 11285,
+      "type_differences": 0
+    },
+    "constraints": {
+      "added_in_current": 0,
+      "current": 4625,
+      "missing_in_current": 0,
+      "normalized_definition_differences": 0,
+      "snapshot": 4625
+    },
+    "non_constraint_indexes": {
+      "added_in_current": 0,
+      "current": 2842,
+      "missing_in_current": 0,
+      "normalized_definition_differences": 0,
+      "snapshot": 2842
+    },
+    "sequences": {
+      "added_in_current": 0,
+      "current": 670,
+      "missing_in_current": 0,
+      "snapshot": 670
+    },
+    "table_inheritance_relations": {
+      "current": 5,
+      "differences": 0,
+      "snapshot": 5
+    },
+    "tables": {
+      "added_in_current": 0,
+      "current": 838,
+      "missing_in_current": 0,
+      "snapshot": 838
+    },
+    "views": {
+      "added_in_current": 0,
+      "current": 36,
+      "missing_in_current": 0,
+      "snapshot": 36
+    }
+  },
+  "report_id": "CAP05-B02-R1",
+  "schema_version": 1,
+  "sequence_state_changes": {
+    "classification": "SYSTEM_RUNTIME_CHANGE; monotonic advancement aligns with inserted technical/runtime records and does not change sequence definitions",
+    "count": 30,
+    "rows": [
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 1148,
+        "sequence": "bus_bus_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 1014
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 61,
+        "sequence": "construction_contract_expense_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 54
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 114,
+        "sequence": "construction_contract_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 100
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 53,
+        "sequence": "construction_contract_income_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 46
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 160,
+        "sequence": "construction_contract_line_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 146
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 577,
+        "sequence": "ir_act_window_view_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 277
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 5,
+        "sequence": "ir_cron_trigger_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 3
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 85062,
+        "sequence": "ir_model_data_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 46535
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 19197,
+        "sequence": "ir_model_fields_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 19102
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 3837,
+        "sequence": "ir_model_fields_selection_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 3825
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 1003,
+        "sequence": "ir_model_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 987
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 53,
+        "sequence": "ir_sequence_017",
+        "snapshot_is_called": true,
+        "snapshot_value": 46
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 61,
+        "sequence": "ir_sequence_018",
+        "snapshot_is_called": true,
+        "snapshot_value": 54
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 23,
+        "sequence": "ir_sequence_025",
+        "snapshot_is_called": true,
+        "snapshot_value": 16
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 142,
+        "sequence": "ir_sequence_040",
+        "snapshot_is_called": true,
+        "snapshot_value": 114
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 31,
+        "sequence": "mail_activity_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 23
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 4358,
+        "sequence": "mail_followers_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 4187
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 635,
+        "sequence": "mail_mail_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 553
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 2967,
+        "sequence": "mail_message_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 2715
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 374,
+        "sequence": "mail_notification_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 366
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 106,
+        "sequence": "mail_tracking_value_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 89
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 149,
+        "sequence": "payment_request_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 121
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 105,
+        "sequence": "project_cost_ledger_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 77
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 49,
+        "sequence": "project_cost_period_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 40
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 109,
+        "sequence": "res_users_log_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 28
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 315,
+        "sequence": "sc_audit_log_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 266
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 24,
+        "sequence": "sc_receipt_income_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 17
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 26,
+        "sequence": "sc_treasury_ledger_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 19
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 1101,
+        "sequence": "tier_review_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 975
+      },
+      {
+        "classification": "SYSTEM_RUNTIME_CHANGE",
+        "current_is_called": true,
+        "current_value": 507,
+        "sequence": "ui_business_config_mutation_audit_id_seq",
+        "snapshot_is_called": true,
+        "snapshot_value": 301
+      }
+    ]
+  },
+  "snapshot": {
+    "database_dump_sha256": "0f416a23009a1e0678fa5e0a71eb19972854112bd112f2525bf03e6a790544b4",
+    "manifest_sha256": "bf9db35d4715f656521f9e5964fcdfdb905b3b7820958f5648d561769d08d316",
+    "postgres_version": "15.19 (Debian 15.19-1.pgdg13+2)"
+  },
+  "structural_result": "NO_MATERIAL_SCHEMA_DEFINITION_DIFFERENCE"
+}

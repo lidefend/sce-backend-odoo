@@ -2,7 +2,9 @@ schema_version: 1
 decision:
   id: CAP05-D01
   title: Retain the current sc_dev_demo state pending difference reconciliation
-  status: active
+  status: superseded
+  superseded_by: CAP05-D02
+  superseded_on: 2026-11-16
   decision_date: 2026-11-15
   formal_product_layer: P4
   related_goal: CAPABILITY-EXPLORER-05

@@ -1,0 +1,43 @@
+schema_version: 1
+decision:
+  id: CAP05-D02
+  title: Rebuild the persistent development database instead of restoring the recovery point
+  status: active
+  decision_date: 2026-11-16
+  formal_product_layer: P4
+  related_goal: CAPABILITY-EXPLORER-05-B02-R1
+  supersedes: CAP05-D01
+  context: >-
+    The pre-rebuild comparison established that the current persistent
+    development database contained substantial demo, runtime, audit and
+    technical changes relative to the 20261115T082948Z recovery point.
+  owner_ruling: >-
+    The owner stated that the development database contains only demo data and
+    directed an immediate rebuild rather than continuing to preserve the
+    observed state or restoring the older recovery point.
+  authorized_actions:
+    - make local.dev.snapshot before the rebuild
+    - CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo
+  result: >-
+    The governed rebuild completed successfully. The persistent database was
+    recreated as the demo baseline, the entry identity was reconciled, and
+    verify.demo passed.
+  pre_rebuild_snapshot:
+    path: artifacts/local-dev/snapshots/20261115T163419Z
+    manifest_sha256: 01b836ccea85448cedd00005e2c28b2b30d3fdb6e2e147ea5bd4b4288c0592ca
+    database_dump_sha256: b361b210ba9c7437f46cf5954ccf7cecff680a6cab757f9423ba39ae355b86ff
+    filestore_sha256: 90ae7b1ce8bdb3829ca08e84ff0a370862eaf7662bed1221a2acc70f0e539686
+  interpretation:
+    - The historical strict-isolation deviation is not retroactively erased.
+    - The owner accepted the demo-only data loss by authorizing the rebuild.
+    - CAP05-B02 may close as remediated by rebuild, not as a successful isolated upgrade.
+    - >-
+      CAP05-B01 was later repaired in the separate PR #893 and does not
+      retroactively change the B02 environment finding.
+    - CAP05-R2 and CAP05-R3 remain on hold.
+    - >-
+      Post-rebuild UUID, secret, entitlement, BOQ wizard, seed-date and
+      filestore differences remain subject to the owner's final B02 review.
+  rollback: >-
+    Restoring the pre-rebuild snapshot would require a new explicit owner
+    authorization because it would overwrite the newly rebuilt demo baseline.

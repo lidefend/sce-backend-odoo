@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "report_id": "CAP05-B02-OWNER-REVIEW",
+  "captured_at_utc": "2026-11-15T23:06:55Z",
+  "status": "BLOCKED_PENDING_OWNER_REVIEW",
+  "method": "Selected tables were streamed from both immutable dumps with pg_restore --data-only. The current rebuilt database was read in a repeatable-read, read-only transaction. Values were reduced in memory to counts, min/max dates and SHA256/SHA1 digests; business values and secret values were not exported.",
+  "database": {
+    "name": "sc_dev_demo",
+    "role": "persistent_local_development_demo",
+    "read_only_capture": true,
+    "module": {
+      "name": "smart_construction_core",
+      "state": "installed",
+      "version": "17.0.0.182"
+    }
+  },
+  "source_identity": {
+    "original_recovery_point": {
+      "path": "artifacts/local-dev/snapshots/20261115T082948Z",
+      "source_sha": "d176e2fd67fec87257114b207cec655ec8fa6e9d",
+      "manifest_sha256": "bf9db35d4715f656521f9e5964fcdfdb905b3b7820958f5648d561769d08d316",
+      "database_dump_sha256": "0f416a23009a1e0678fa5e0a71eb19972854112bd112f2525bf03e6a790544b4",
+      "filestore_sha256": "90ae7b1ce8bdb3829ca08e84ff0a370862eaf7662bed1221a2acc70f0e539686"
+    },
+    "pre_rebuild_snapshot": {
+      "path": "artifacts/local-dev/snapshots/20261115T163419Z",
+      "manifest_sha256": "01b836ccea85448cedd00005e2c28b2b30d3fdb6e2e147ea5bd4b4288c0592ca",
+      "database_dump_sha256": "b361b210ba9c7437f46cf5954ccf7cecff680a6cab757f9423ba39ae355b86ff",
+      "filestore_sha256": "90ae7b1ce8bdb3829ca08e84ff0a370862eaf7662bed1221a2acc70f0e539686"
+    },
+    "current_rebuilt_database": {
+      "database": "sc_dev_demo",
+      "dbfilter": "^sc_dev_demo$",
+      "capture_mode": "read_only_repeatable_read"
+    }
+  },
+  "observations": {
+    "database_identity": {
+      "original_uuid_sha256": "955a24d6df942182f7b121d3bd624071ea2d776a58488af6096e59e3f0b0fe8e",
+      "pre_rebuild_uuid_sha256": "955a24d6df942182f7b121d3bd624071ea2d776a58488af6096e59e3f0b0fe8e",
+      "current_uuid_sha256": "ac229bea1e7e0886a519c3396b85e7b3a680425d8e8790612d8746a4d9648942",
+      "original_secret_sha256": "129ea5f612c0e1575ef255a0bf3871edc5b8deab3cabf9c9125dfdd999b363b5",
+      "pre_rebuild_secret_sha256": "129ea5f612c0e1575ef255a0bf3871edc5b8deab3cabf9c9125dfdd999b363b5",
+      "current_secret_sha256": "53082a813fa2ed756001b73ee1b8362151c8c52040dc283b8fd7813872b84e09",
+      "original_create_date_digest_sha256": "075884a27829f6c5b6fb9c20e20627694312ca731c4886789b715c5a05934946",
+      "pre_rebuild_create_date_digest_sha256": "075884a27829f6c5b6fb9c20e20627694312ca731c4886789b715c5a05934946",
+      "current_create_date_digest_sha256": "3b0a7b41b64f96ad165537078fce2ebdd4d14015769bae6d1d8645b9aaf8ea24",
+      "attribution": "POST_REBUILD_NEW_DATABASE_IDENTITY",
+      "interpretation": "The original recovery point and paired pre-rebuild snapshot retain the same database identity. New UUID, secret and create_date values belong to the current rebuilt demo baseline."
+    },
+    "sc_entitlement": {
+      "original_count": 1,
+      "pre_rebuild_count": 1,
+      "current_count": 0,
+      "original_rows_sha256": "df485f3c745143dd1fe0cf18c812375c802ab5a81e61ba456af4e347f61a59e4",
+      "pre_rebuild_rows_sha256": "df485f3c745143dd1fe0cf18c812375c802ab5a81e61ba456af4e347f61a59e4",
+      "current_rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "attribution": "POST_REBUILD_DEMO_BASELINE_OMISSION",
+      "interpretation": "The entitlement row was present and unchanged before the rebuild and is absent from the current rebuilt demo baseline."
+    },
+    "seed_date_refresh": {
+      "construction_contract_date_contract": {
+        "original": {
+          "non_null": 66,
+          "distinct": 11,
+          "max": "2026-11-14",
+          "digest_sha256": "1ad4844b46ac86a411236494f53bfa55378cbd3d587955b8d79ecfa862569797"
+        },
+        "pre_rebuild": {
+          "non_null": 66,
+          "distinct": 11,
+          "max": "2026-11-14",
+          "digest_sha256": "1ad4844b46ac86a411236494f53bfa55378cbd3d587955b8d79ecfa862569797"
+        },
+        "current": {
+          "non_null": 66,
+          "distinct": 11,
+          "max": "2026-11-16",
+          "digest_sha256": "17b619c15f34c372cde733afcb7ee80912ddbe14e4b6df47ca7e987da245d659"
+        }
+      },
+      "payment_request_date_request": {
+        "original": {
+          "non_null": 111,
+          "distinct": 12,
+          "max": "2026-11-14",
+          "digest_sha256": "44843302247c9f7def37bae9693d203ef4ce48440efd874cf86fc3f7a200c547"
+        },
+        "pre_rebuild": {
+          "non_null": 139,
+          "distinct": 13,
+          "max": "2026-11-15",
+          "digest_sha256": "c1848f5a2ae744bc81c9287456919112a94e3359fa7209eea3ec6d8cbabbdc5b"
+        },
+        "current": {
+          "non_null": 111,
+          "distinct": 12,
+          "max": "2026-11-16",
+          "digest_sha256": "f1d9880231bb84a8980d12ea1908e02679e917b07fa62d4cf93638fdb072ab57"
+        }
+      },
+      "project_project_initiation_date": {
+        "original": {
+          "non_null": 26,
+          "distinct": 1,
+          "max": "2026-11-14",
+          "digest_sha256": "3ccc4cd4dc06e23beac9efe8d35c6382765b778db5fe4e0b23e7aaaf30d7af07"
+        },
+        "pre_rebuild": {
+          "non_null": 26,
+          "distinct": 1,
+          "max": "2026-11-14",
+          "digest_sha256": "3ccc4cd4dc06e23beac9efe8d35c6382765b778db5fe4e0b23e7aaaf30d7af07"
+        },
+        "current": {
+          "non_null": 26,
+          "distinct": 1,
+          "max": "2026-11-16",
+          "digest_sha256": "b3d08cdc4ee3c8f1d70bc7f89f31c90ef35297945bdd0a84b8bcf5b76d33c7e8"
+        }
+      },
+      "tier_review_reviewed_date": {
+        "original": {
+          "non_null": 955,
+          "distinct": 46,
+          "max": "2026-11-13 16:06:03",
+          "digest_sha256": "4ca5a7008e0ece29d94727b9314f7a4271b8434f8f180c168d5d5f5c0bc448ec"
+        },
+        "pre_rebuild": {
+          "non_null": 1081,
+          "distinct": 52,
+          "max": "2026-11-15 08:34:57",
+          "digest_sha256": "9604c365e3f0cb3babf97269582ece2a60feef6c3c0a65d5ddae7da7d7f944b5"
+        },
+        "current": {
+          "non_null": 955,
+          "distinct": 47,
+          "max": "2026-11-15 17:49:16",
+          "digest_sha256": "413d70db8611767e396141741ce3b62ad1c023a52a34d0d37b86a4c899c620ce"
+        }
+      },
+      "attribution": "DEMO_SEED_RELATIVE_DATE_REPLAY",
+      "interpretation": "The current rebuilt demo baseline refreshes relative dates. Dates are not business-intent evidence and require owner acceptance as demo-only behavior."
+    },
+    "boq_import_wizard": {
+      "original_count": 0,
+      "pre_rebuild_count": 0,
+      "current_count": 1,
+      "current_state": "done",
+      "current_version_code": "DEMO-CONTRACT-V1",
+      "current_filename": "contract_boq.csv",
+      "attachment_count": 1,
+      "attachment_file_size": 251,
+      "attachment_sha1": "68364e2bb6de0a751686d721dda008356ca3efa3",
+      "attribution": "POST_REBUILD_DEMO_IMPORT_RESIDUE",
+      "interpretation": "The wizard and its attachment were absent from both older database states and exist only in the rebuilt demo baseline."
+    },
+    "filestore_and_attachments": {
+      "original": {
+        "physical_files": 1755,
+        "physical_bytes": 52733406,
+        "database_attachment_rows": 929
+      },
+      "pre_rebuild": {
+        "physical_files": 1755,
+        "physical_bytes": 52733406,
+        "database_attachment_rows": 929,
+        "path_content_changes": 0
+      },
+      "current": {
+        "physical_files": 1862,
+        "physical_bytes": 52767337,
+        "added_files": 107,
+        "added_bytes": 33931,
+        "modified_files": 0,
+        "deleted_files": 0,
+        "database_attachment_rows": 930,
+        "stored_file_attachment_rows": 929,
+        "matched_store_checksums": 929,
+        "missing_physical_files": 0,
+        "checksum_mismatches": 0
+      },
+      "attribution": "POST_REBUILD_DEMO_FIXTURE_FILES",
+      "interpretation": "No original physical file was modified or deleted. The rebuilt demo baseline added 107 files, and all 929 stored attachment records resolve to matching physical files."
+    },
+    "capability_and_scenario_catalog": {
+      "sc_product_scenario": {
+        "original_count": 17,
+        "pre_rebuild_count": 17,
+        "current_count": 17
+      },
+      "sc_product_scenario_entry": {
+        "original_count": 78,
+        "pre_rebuild_count": 78,
+        "current_count": 78
+      },
+      "current_row_fingerprints_changed": true,
+      "interpretation": "Counts are stable, but the owner review must not treat equal counts as byte-identical scenario configuration."
+    }
+  },
+  "owner_decisions_required": [
+    "Accept or reject the rebuilt demo baseline's new database UUID, secret and create_date.",
+    "Accept the absence of the previous sc_entitlement demo row or authorize a separately scoped reseed.",
+    "Accept the current BOQ import wizard and attachment as demo fixture residue or authorize separately scoped cleanup.",
+    "Accept refreshed relative seed dates as demo-only behavior or require a deterministic demo-date policy.",
+    "Decide whether CAP05-B02 closes as remediation by rebuild, without describing the prior upgrade as strict isolation acceptance."
+  ],
+  "not_verified": [
+    "Actor and originating operation for historical business-row changes.",
+    "Semantic need for the missing entitlement row.",
+    "Usability or business intent of the rebuilt BOQ wizard and attachment beyond checksum match.",
+    "External systems or credentials that may depend on the previous database UUID or secret.",
+    "Byte-identical business meaning behind equal capability and scenario row counts."
+  ],
+  "boundary": {
+    "database_restore_performed": false,
+    "database_cleanup_performed": false,
+    "business_state_changed": false,
+    "b01_status": "MERGED_PR_893",
+    "b02_status": "BLOCKED_PENDING_OWNER_REVIEW",
+    "r2_r3_status": "HOLD"
+  }
+}

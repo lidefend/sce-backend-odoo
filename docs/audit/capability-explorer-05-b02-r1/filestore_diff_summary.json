@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "report_id": "CAP05-B02-R1",
+  "phase": "pre_rebuild",
+  "snapshot_filestore": {
+    "sha256": "90ae7b1ce8bdb3829ca08e84ff0a370862eaf7662bed1221a2acc70f0e539686",
+    "root": "sc_dev_demo",
+    "file_count": 1755,
+    "directory_count": 514,
+    "total_file_bytes": 52733406
+  },
+  "current_pre_rebuild_filestore": {
+    "container": "sc-local-dev-odoo-1",
+    "container_id": "5ddf4d873a06ba000867fbf5e63b97cac6ad0c963c2dba59dcfb4b255b4a944d",
+    "file_count": 1755,
+    "total_file_bytes": 52733406
+  },
+  "path_and_content_diff": {
+    "added_count": 0,
+    "added_bytes": 0,
+    "modified_count": 0,
+    "deleted_count": 0,
+    "deleted_bytes": 0,
+    "unchanged_count": 1755,
+    "comparison": "relative path, byte size, and SHA256 per file"
+  },
+  "attachment_reconciliation": {
+    "attachment_rows_total": 929,
+    "attachment_rows_with_store_fname": 928,
+    "physical_file_count": 1755,
+    "attachment_checksum_algorithm": "sha1",
+    "matched_store_checksum_count": 928,
+    "missing_physical_file_count": 0,
+    "checksum_mismatch_count": 0,
+    "notes": [
+      "ir_attachment rows were unchanged between the recovery point and the pre-rebuild database",
+      "one attachment without store_fname is not a filestore-backed binary"
+    ]
+  },
+  "result": "PHYSICAL_FILESTORE_AND_STORED_ATTACHMENT_CHECKSUMS_MATCH",
+  "not_verified": [
+    "semantic opening or rendering of each attachment",
+    "attachment usability after the owner-authorized rebuild"
+  ]
+}

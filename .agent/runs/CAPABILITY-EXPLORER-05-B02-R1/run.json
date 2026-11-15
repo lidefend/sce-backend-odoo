@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "9c537187c05306663758c86f95e0e91d317381db",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-B02-REBUILD.yaml",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
+    ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
+    "docs/audit/capability-explorer-05-b02-r1/attribution_report.md",
+    "docs/audit/capability-explorer-05-b02-r1/business_record_diff_summary.json",
+    "docs/audit/capability-explorer-05-b02-r1/database_schema_diff.json",
+    "docs/audit/capability-explorer-05-b02-r1/execution_log.md",
+    "docs/audit/capability-explorer-05-b02-r1/filestore_diff_summary.json",
+    "docs/audit/capability-explorer-05-b02-r1/module_upgrade_diff.csv",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_point_difference_reconciliation_20261116.md",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_point_integrity.md",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_risk_assessment.md",
+    "docs/audit/capability-explorer-05-b02-r1/owner_review_packet.md",
+    "docs/audit/capability-explorer-05-b02-r1/post_rebuild_owner_review_summary.json",
+    "docs/audit/capability-explorer-05-b02-r1/SHA256SUMS"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "read-only repeatable-read capture of the owner-authorized persistent local.dev demo baseline"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "B02_OWNER_REVIEW_REQUIRED"
+  ],
+  "next_exact_step": "Owner reviews the three-state B02 packet and decides whether to accept the rebuilt demo baseline or authorize separately scoped remediation.",
+  "id": "CAPABILITY-EXPLORER-05-B02-R1",
+  "branch": "audit/capability-explorer-05-b02-r1-20261116",
+  "status": "blocked",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+  "record": "docs/audit/capability-explorer-05-b02-r1/recovery_point_difference_reconciliation_20261116.md"
+}
