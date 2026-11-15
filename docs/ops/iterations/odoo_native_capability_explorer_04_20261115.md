@@ -46,6 +46,15 @@
 - Replaced the browser's permanent expected-409 boolean with a one-shot HTTP
   failure budget constrained by status and intent. A second or mismatched 409
   is unexpected, and an armed-but-unobserved failure fails the browser gate.
+- Moved center-filter visual chrome from the `ScButton` primitive root to a
+  consumer wrapper after remote CI exposed
+  `verify.frontend.primitive_adapter.unit`; the primitive continues to use the
+  existing `tree-item` appearance.
+- The race browser probe now opens A completely, installs an interceptor only
+  for A's next re-diagnose, opens and fully settles B, then releases A through
+  an explicit deferred Promise. It no longer depends on a fixed sleep.
+- The ordinary-user negative now requires exactly HTTP 403 and
+  `PERMISSION_DENIED`; generic 4xx/5xx responses cannot pass.
 - Added negative tests for exact-once expected failure consumption, mismatched
   intent/status, pending expectations, newer/older request sequences, and close
   invalidation.
@@ -99,8 +108,8 @@ Runtime: `local.dev` / `sc_dev_demo`, authenticated as `admin`.
   `sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b`.
 - Browser assertions: 29/29 PASS.
 - Screenshots: desktop list, desktop detail, 390px mobile list.
-- Performance in this run: desktop list ready 1445 ms; detail ready 464 ms;
-  stale refresh 1261 ms; mobile list ready 1417 ms.
+- Performance in this run: desktop list ready 1203 ms; detail ready 441 ms;
+  stale refresh 1436 ms; mobile list ready 1497 ms.
 - Search `项目` returned 1 filtered row from the live 17-row catalog.
 - The `unclassified` center facet returned its matching 2/2 server rows after
   clearing the prior search.
@@ -118,10 +127,10 @@ Permission negative:
 
 Evidence hashes:
 
-- `report.json`: `6c3d2225d6a198c69e45fc4f156e6aee9c6ce20092551c6b381f624c4c95cd41`
-- `01-desktop-list.png`: `7b55019d5ba4e0db24f24d2ac2f0e1bf298d8c38de84c5997ed5980aeb7232a7`
+- `report.json`: `d0250e3ff6a469c1457ef6f90c7ce1d8d21f8cd9ff4e33e43a23103dd3173554`
+- `01-desktop-list.png`: `23a70aac6fe11f59435f2c422adfbe1feae7d4706281c8c2ae7a5380b76447ab`
 - `02-desktop-detail.png`: `fabc6c288071be14687ffd1ab7af0cb2eabd76e0fe5700ede2d6386f40027d3a`
-- `03-mobile-list.png`: `2d277c6afd1603dc4bbcce2ef3b0153b0830e901b4c97f7a8b63b0ad006655c2`
+- `03-mobile-list.png`: `c218cbd22a28f9ec1ef7957795f2e3ac183f2dea7ae457b1135bab1b139d6957`
 
 ## Explicit Exclusions
 

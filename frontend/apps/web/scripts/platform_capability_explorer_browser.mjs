@@ -187,66 +187,6 @@ try {
   await screenshot(page, '02-desktop-detail');
   await page.getByRole('button', { name: '关闭' }).click();
 
-  const staleDetailRow = listPayload.rows[1];
-  if (staleDetailRow) {
-    let interceptLateDiagnose = true;
-    let markLateDiagnoseStarted;
-    let markLateDiagnoseFinished;
-    const lateDiagnoseStarted = new Promise((resolve) => { markLateDiagnoseStarted = resolve; });
-    const lateDiagnoseFinished = new Promise((resolve) => { markLateDiagnoseFinished = resolve; });
-    await page.route('**/api/v1/intent', async (route) => {
-      const request = route.request();
-      const params = intentParams(request);
-      if (
-        !interceptLateDiagnose
-        || intentOf(request) !== 'platform.capability.explorer.diagnose'
-        || String(params?.entry_ref?.menu_xmlid || '') !== String(firstRow.entry_ref.menu_xmlid)
-      ) {
-        await route.continue();
-        return;
-      }
-      interceptLateDiagnose = false;
-      markLateDiagnoseStarted();
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      const response = await route.fetch();
-      const body = await response.json();
-      const payload = body?.data?.meta ? body.data : body?.data?.data?.meta ? body.data.data : null;
-      if (payload) payload.blockers = ['LATE_ENTRY_A'];
-      await route.fulfill({ response, json: body });
-      markLateDiagnoseFinished();
-    });
-
-    await table.getByText(firstLabel, { exact: true }).first().click();
-    await page.getByRole('button', { name: '重新诊断' }).waitFor({ state: 'visible', timeout: 60000 });
-    await page.getByRole('button', { name: '重新诊断' }).click();
-    await lateDiagnoseStarted;
-    await page.getByRole('button', { name: '关闭' }).click();
-    await table.getByText(String(staleDetailRow.label), { exact: true }).first().click();
-    await page.waitForFunction(() => {
-      const node = document.querySelector('.sc-design-drawer [role="dialog"]');
-      const text = node?.textContent || '';
-      return !text.includes('正在读取入口详情并执行诊断');
-    }, null, { timeout: 60000 });
-    await lateDiagnoseFinished;
-    const currentDrawerText = await page.getByRole('dialog').innerText();
-    check(
-      currentDrawerText.includes(String(staleDetailRow.entry_ref.action_xmlid))
-        && !currentDrawerText.includes('LATE_ENTRY_A'),
-      'late detail diagnosis cannot overwrite the currently selected entry',
-      {
-        selectedAction: staleDetailRow.entry_ref.action_xmlid,
-        drawerText: currentDrawerText.slice(0, 1200),
-      },
-    );
-    report.race_guard = {
-      stale_entry: firstRow.entry_ref,
-      current_entry: staleDetailRow.entry_ref,
-      late_blocker: 'LATE_ENTRY_A',
-    };
-    await page.unroute('**/api/v1/intent');
-    await page.getByRole('button', { name: '关闭' }).click();
-  }
-
   let interceptedList = false;
   await page.route('**/api/v1/intent', async (route) => {
     const request = route.request();
@@ -341,6 +281,78 @@ try {
     };
   }
 
+  const raceResetResponse = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'platform.capability.explorer.list'
+    && response.status() === 200
+  ));
+  await page.getByRole('button', { name: '清除筛选' }).click();
+  await raceResetResponse;
+
+  const staleDetailRow = listPayload.rows[1];
+  if (staleDetailRow) {
+    await table.getByText(firstLabel, { exact: true }).first().click();
+    await page.getByRole('button', { name: '重新诊断' }).waitFor({ state: 'visible', timeout: 60000 });
+
+    let interceptLateDiagnose = true;
+    let markLateDiagnoseStarted;
+    let markLateDiagnoseFinished;
+    let releaseLateDiagnose;
+    const lateDiagnoseStarted = new Promise((resolve) => { markLateDiagnoseStarted = resolve; });
+    const lateDiagnoseFinished = new Promise((resolve) => { markLateDiagnoseFinished = resolve; });
+    const lateDiagnoseRelease = new Promise((resolve) => { releaseLateDiagnose = resolve; });
+    await page.route('**/api/v1/intent', async (route) => {
+      const request = route.request();
+      const params = intentParams(request);
+      if (
+        !interceptLateDiagnose
+        || intentOf(request) !== 'platform.capability.explorer.diagnose'
+        || String(params?.entry_ref?.menu_xmlid || '') !== String(firstRow.entry_ref.menu_xmlid)
+      ) {
+        await route.continue();
+        return;
+      }
+      interceptLateDiagnose = false;
+      markLateDiagnoseStarted();
+      await lateDiagnoseRelease;
+      const response = await route.fetch();
+      const body = await response.json();
+      const payload = body?.data?.meta ? body.data : body?.data?.data?.meta ? body.data.data : null;
+      if (payload) payload.blockers = ['LATE_ENTRY_A'];
+      await route.fulfill({ response, json: body });
+      markLateDiagnoseFinished();
+    });
+
+    await page.getByRole('button', { name: '重新诊断' }).click();
+    await lateDiagnoseStarted;
+    await page.getByRole('button', { name: '关闭' }).click();
+    await table.getByText(String(staleDetailRow.label), { exact: true }).first().click();
+    await page.waitForFunction(() => {
+      const node = document.querySelector('.sc-design-drawer [role="dialog"]');
+      const text = node?.textContent || '';
+      return !text.includes('正在读取入口详情并执行诊断');
+    }, null, { timeout: 60000 });
+    releaseLateDiagnose();
+    await lateDiagnoseFinished;
+    const currentDrawerText = await page.getByRole('dialog').innerText();
+    check(
+      currentDrawerText.includes(String(staleDetailRow.entry_ref.action_xmlid))
+        && !currentDrawerText.includes('LATE_ENTRY_A'),
+      'late detail diagnosis cannot overwrite the currently selected entry',
+      {
+        selectedAction: staleDetailRow.entry_ref.action_xmlid,
+        drawerText: currentDrawerText.slice(0, 1200),
+      },
+    );
+    report.race_guard = {
+      stale_entry: firstRow.entry_ref,
+      current_entry: staleDetailRow.entry_ref,
+      late_blocker: 'LATE_ENTRY_A',
+    };
+    await page.unroute('**/api/v1/intent');
+    await page.getByRole('button', { name: '关闭' }).click();
+  }
+
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileStartedAt = Date.now();
   await page.goto(ROUTE, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -433,8 +445,8 @@ try {
       return { status: response.status, reasonCode };
     });
     check(
-      deniedHandler.status >= 400,
-      'backend denies explorer intent for a non-management user',
+      deniedHandler.status === 403 && deniedHandler.reasonCode === 'PERMISSION_DENIED',
+      'backend returns exact permission denial for a non-management user',
       deniedHandler,
     );
     report.permissions = {

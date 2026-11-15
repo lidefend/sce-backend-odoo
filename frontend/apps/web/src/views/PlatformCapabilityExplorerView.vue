@@ -76,30 +76,26 @@
           <h2 id="capability-centers-title">{{ pageText('centers_title', '') }}</h2>
           <span>原生中心</span>
         </div>
-        <ScButton
-          type="button"
-          variant="ghost"
-          appearance="tree-item"
+        <div
           class="capability-explorer__center"
           :class="{ 'is-active': !centerFilter }"
-          @click="selectCenter('')"
         >
-          <span>全部中心</span>
-          <strong>{{ catalog?.meta.total ?? 0 }}</strong>
-        </ScButton>
-        <ScButton
+          <ScButton type="button" variant="ghost" appearance="tree-item" @click="selectCenter('')">
+            <span>全部中心</span>
+            <strong>{{ catalog?.meta.total ?? 0 }}</strong>
+          </ScButton>
+        </div>
+        <div
           v-for="center in catalog?.facets.centers || []"
           :key="center.key"
-          type="button"
-          variant="ghost"
-          appearance="tree-item"
           class="capability-explorer__center"
           :class="{ 'is-active': centerFilter === center.key }"
-          @click="selectCenter(center.key)"
         >
-          <span>{{ center.label }}</span>
-          <strong>{{ center.count }}</strong>
-        </ScButton>
+          <ScButton type="button" variant="ghost" appearance="tree-item" @click="selectCenter(center.key)">
+            <span>{{ center.label }}</span>
+            <strong>{{ center.count }}</strong>
+          </ScButton>
+        </div>
       </aside>
 
       <main class="capability-explorer__catalog" aria-labelledby="capability-entry-list-title">
@@ -674,6 +670,7 @@ onBeforeUnmount(() => {
 .capability-explorer__center { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-space-sm); min-height: 44px; padding: var(--sc-space-xs) var(--sc-space-sm); border: 0; border-radius: var(--sc-radius-sm); color: var(--sc-app-text-primary); background: transparent; text-align: left; cursor: pointer; }
 .capability-explorer__center:hover, .capability-explorer__center.is-active { background: var(--sc-app-info-bg); color: var(--sc-app-info-text); }
 .capability-explorer__center strong { font-variant-numeric: tabular-nums; }
+.capability-explorer__center :deep(.sc-btn) { width: 100%; justify-content: space-between; }
 .capability-explorer__center :deep(.sc-btn__content) { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--sc-space-sm); }
 .capability-explorer__catalog { display: grid; gap: var(--sc-space-sm); }
 .capability-explorer__table { min-width: 0; }
