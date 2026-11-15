@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: ENTITLEMENT-01
+  title: Read-only investigation of rebuilt Demo entitlement absence
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: smart_core subscription and entitlement mechanism audit
+  module:
+    - smart_core
+    - smart_construction_core
+    - ops_delivery_audit
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Determine the identity, creation source, validity and runtime consumers of
+    the historical Demo sc.entitlement row, and decide whether the current
+    rebuilt Demo requires a materialized row for product authorization.
+  why_here: >-
+    The task is a read-only audit of an existing platform access mechanism and
+    its Demo data state.
+  why_not_elsewhere:
+    - no_database_reseed_or_insert
+    - no_subscription_or_entitlement_code_change
+    - no_capability_scene_release_or_enablement_change
+    - no_frontend_inference
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/ENTITLEMENT-01.yaml
+      - .agent/runs/ENTITLEMENT-01/run.json
+      - docs/audit/entitlement-01
+    runtime:
+      - read-only queries against sc_dev_demo
+      - read-only inspection of the original recovery dump
+      - no ORM method that materializes entitlement rows is executed
+  acceptance:
+    - model_fields_constraints_and_acl_are_identified
+    - original_row_identity_company_plan_and_creator_are_identified
+    - seed_vs_lazy_creation_source_is_established
+    - current_plan_subscription_and_capability_flag_state_is_verified
+    - authorization_consumers_and_missing_row_behavior_are_mapped
+    - no_database_or_product_state_is_changed
+  exclusions:
+    - entitlement reseed or insertion
+    - subscription or plan mutation
+    - product code or migration changes
+    - CP-00 lifecycle implementation
+    - deployment or user acceptance
+  rollback: >-
+    Revert the ENTITLEMENT-01 audit commits. No database rollback is required
+    because the investigation is read-only.
+  completion:
+    batch: pending
+    mainline_integration: pending
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/ENTITLEMENT-01/run.json

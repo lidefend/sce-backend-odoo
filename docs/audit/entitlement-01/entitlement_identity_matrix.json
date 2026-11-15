@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "report_id": "ENTITLEMENT-01",
+  "captured_at_utc": "2026-11-15T23:43:23Z",
+  "status": "INVESTIGATION_COMPLETE_NO_MUTATION",
+  "historical_recovery_point": {
+    "row_id": 1,
+    "company_id": 1,
+    "plan_id": 1,
+    "plan_code": "default",
+    "create_uid": 57,
+    "creator_xmlid": "smart_construction_demo.sc_demo_user_test_admin",
+    "entitlement_xmlid": null,
+    "effective_flags_json": null,
+    "effective_limits_json": null,
+    "updated_at": "2026-11-13 17:27:19",
+    "create_date": "2026-11-13 17:27:16.919185",
+    "write_date": "2026-11-13 17:27:16.919185"
+  },
+  "current_rebuilt_database": {
+    "entitlement_rows": 0,
+    "subscription_rows": 0,
+    "plans": [
+      {
+        "id": 1,
+        "code": "default",
+        "active": true,
+        "feature_flags_json": null,
+        "limits_json": null
+      },
+      {
+        "id": 2,
+        "code": "pro",
+        "active": true,
+        "feature_flags_json": {
+          "feature.test": true
+        },
+        "limits_json": {
+          "max_scenes": 999
+        }
+      }
+    ],
+    "default_plan_parameter": null,
+    "capability_count": 6,
+    "capabilities_with_required_flag": 0
+  },
+  "creation_source": {
+    "seed_creates_entitlement": false,
+    "plan_seed_method": "sc.subscription.plan.ensure_platform_default_plans",
+    "lazy_create_method": "sc.entitlement.get_effective",
+    "historical_caller": "UNATTRIBUTED",
+    "inference": "The row shape is consistent with lazy materialization by the Demo user, but the exact operation log is unavailable."
+  },
+  "consumers": [
+    "permission.check:get_effective",
+    "intent_permission:_effective_flags",
+    "system_init:readonly_plan_flags",
+    "system_init:get_payload",
+    "scene_orchestration:platform_feature_flags_for_user",
+    "platform_ops_tenants:get_effective",
+    "company_limit_helpers:get_effective"
+  ],
+  "impact": {
+    "current_capability_denial": "NONE_IDENTIFIED_IN_READ_ONLY_STARTUP_PATH",
+    "runtime_write_on_read": "RISK_DEFERRED_WRITE",
+    "permission_check_missing_row_non_admin": "NOT_VERIFIED_POTENTIAL_ACCESS_FAILURE",
+    "entitlement_is_authorization_source": false,
+    "native_odoo_acl_and_record_rules_remain_final_authority": true
+  },
+  "not_verified": [
+    "Actual permission.check behavior for a non-admin principal with zero entitlement rows.",
+    "Whether accepted platform behavior requires a materialized entitlement row after bootstrap.",
+    "Exact original caller that lazily created the historical row."
+  ],
+  "mutation_performed": false
+}
