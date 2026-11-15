@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "task": "CAP05-B01-R1",
+  "generated_at_utc": "2026-11-15T19:00:00Z",
+  "implementation_candidate": {
+    "branch": "fix/capability-explorer-05-b01-r1-20261116",
+    "implementation_base_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+    "publication_base_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+    "repair_head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
+    "repair_head_tree": "74bb881a4c91c68cdccf05536d14b55656280a92"
+  },
+  "tested_source_identity": {
+    "head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
+    "tree": "74bb881a4c91c68cdccf05536d14b55656280a92",
+    "purpose": "candidate used for the real isolated 172/174/179 to 182 upgrade matrix and real invalid-state negative upgrade",
+    "files": {
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py": "7a66e320b5726a3b933cee79301cf087cccd0131",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": "889674ff440dde4fcb73cd3b826c8b813a2363c5",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py": "294bedfaaa9c89d1194129da228b0847e24e879c",
+      "make/dev.mk": "6f064ff280e2e0d7673c81f5d133f958642f8f00",
+      "make/guards.mk": "dc0c23e5212622a2b989262491f8c465cb98239c",
+      "scripts/verify/frontend_dev_incremental.py": "e6b87e1ebe12413fa15e9e58939d69807343728b",
+      "scripts/verify/test_frontend_dev_incremental.py": "19af4998b7c941bcfce0f7a745b2520c91991882"
+    }
+  },
+  "final_candidate_identity": {
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "tree": "a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7",
+    "purpose": "PR #893 exact source and remote-CI candidate before this documentation-only merge-closeout update",
+    "files": {
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py": "7a66e320b5726a3b933cee79301cf087cccd0131",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": "889674ff440dde4fcb73cd3b826c8b813a2363c5",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py": "294bedfaaa9c89d1194129da228b0847e24e879c",
+      "make/dev.mk": "6f064ff280e2e0d7673c81f5d133f958642f8f00",
+      "make/guards.mk": "dc0c23e5212622a2b989262491f8c465cb98239c",
+      "scripts/verify/frontend_dev_incremental.py": "12cb873c5810f7e45ed51055504ebdc92cea6c51",
+      "scripts/verify/test_frontend_dev_incremental.py": "19af4998b7c941bcfce0f7a745b2520c91991882"
+    }
+  },
+  "evidence_reuse_assessment": {
+    "decision": "REUSE_TESTED_UPGRADE_EVIDENCE",
+    "exact_blob_matches": 6,
+    "compared_files": 7,
+    "differing_paths": [
+      {
+        "path": "scripts/verify/frontend_dev_incremental.py",
+        "tested_blob": "e6b87e1ebe12413fa15e9e58939d69807343728b",
+        "final_blob": "12cb873c5810f7e45ed51055504ebdc92cea6c51",
+        "difference": "Governed main sync added three unrelated frontend-performance source paths to an existing local_runtime_performance rule.",
+        "impact_on_b01": "NONE"
+      }
+    ],
+    "b01_target_mapping_equivalent": true,
+    "b01_paths_compared": [
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+      "make/dev.mk",
+      "make/guards.mk",
+      "scripts/verify/frontend_dev_incremental.py",
+      "scripts/verify/test_frontend_dev_incremental.py"
+    ],
+    "rationale": "The migration scripts, migration tests and runtime-upgrade tooling are byte-identical. Loading the tested and final verifier revisions and calling select_targets on every affected B01 path produced identical target sets. The only blob change adds unrelated files to an existing rule and does not change B01 execution or assertions."
+  },
+  "remote_evidence": {
+    "pr": 893,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/893",
+    "base": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "merge_state": "CLEAN",
+    "required_checks": {
+      "public_guard": "SUCCESS",
+      "merge_policy_gate": "SUCCESS",
+      "professional_quality_gate": "SUCCESS",
+      "frontend_release_gate": "SUCCESS"
+    },
+    "backend_impact_suite": "PASS",
+    "failures": 0
+  },
+  "independent_review": {
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "tree": "a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7",
+    "decision": "APPROVE",
+    "s0_findings": 0,
+    "s1_findings": 0,
+    "s2_findings": 0
+  },
+  "environment": {
+    "project": "sc-local-b01-migration",
+    "database": "sc_b01_migration",
+    "database_role": "dedicated_disposable_migration_verification",
+    "persistent_development_database_used": false,
+    "b02_recovery_point_used": false,
+    "upgrade_modules": [
+      "smart_core",
+      "smart_construction_core"
+    ],
+    "post_upgrade_versions": {
+      "smart_core": "17.0.1.1.19",
+      "smart_construction_core": "17.0.0.182"
+    }
+  },
+  "positive_paths": [
+    {
+      "id": "172_to_182",
+      "status": "PASS",
+      "source_commit": "149e94e538d1410c58b397708481e3140d822ab3",
+      "source_version": "17.0.0.172",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "ABSENT",
+        "validated_by": "Odoo migration log ran the applicable 173, 174, 180 and 181 pre-migrations before ORM schema creation"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1563,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 2
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 713,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 1
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/172-build.log.gz",
+        "evidence/172-upgrade-both-modules-pass.log.gz",
+        "evidence/raw/172-pre.json.gz",
+        "evidence/raw/172-post.json.gz"
+      ]
+    },
+    {
+      "id": "174_to_182",
+      "status": "PASS",
+      "source_commit": "fe719728b99cae761d50eb14eabcefc4df307adf",
+      "source_version": "17.0.0.174",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "PRESENT",
+        "legacy_single_menu_unique_constraint": "PRESENT"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1565,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 714,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/174-build.log.gz",
+        "evidence/174-upgrade-pass.log.gz",
+        "evidence/raw/174-pre.json.gz",
+        "evidence/raw/174-post.json.gz"
+      ]
+    },
+    {
+      "id": "179_to_182",
+      "status": "PASS",
+      "source_commit": "78c0ab3cfe0c5b36566f81d2552cfa32f66835eb",
+      "source_version": "17.0.0.179",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "PRESENT",
+        "legacy_single_menu_unique_constraint": "PRESENT"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1565,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 714,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/179-build.log.gz",
+        "evidence/179-upgrade-pass.log.gz",
+        "evidence/raw/179-pre.json.gz",
+        "evidence/raw/179-post.json.gz"
+      ]
+    }
+  ],
+  "negative_paths": [
+    {
+      "id": "modern_version_missing_table",
+      "status": "PASS_FAIL_CLOSED",
+      "source_version": "17.0.0.174",
+      "fixture": "Dedicated disposable database modified to remove sc_product_scenario_entry while retaining installed version 17.0.0.174",
+      "expected": "Explicit migration failure",
+      "observed": {
+        "command_exit_code": 2,
+        "runtime_error": "SCENARIO_ENTRY_TABLE_MISSING_INVALID_STATE",
+        "module_version_after_failure": "17.0.0.174",
+        "module_state_after_failure": "installed",
+        "transient_to_upgrade_rows": 0,
+        "sc_product_scenario_entry": "ABSENT"
+      },
+      "evidence": [
+        "evidence/negative-174-build.log.gz",
+        "evidence/negative-174-before-drop.log.gz",
+        "evidence/negative-174-invalid-fixture.log.gz",
+        "evidence/negative-modern-missing-table-upgrade-fail.log.gz",
+        "evidence/negative-174-after-failure.log.gz",
+        "evidence/raw/neg-174-pre.json.gz",
+        "evidence/raw/neg-174-post.json.gz"
+      ]
+    },
+    {
+      "id": "unknown_or_malformed_version_missing_table",
+      "status": "PASS_UNIT_ONLY",
+      "cases": [
+        "",
+        null,
+        "garbage",
+        "17.0"
+      ],
+      "expected": "SCENARIO_ENTRY_TABLE_MISSING_UNKNOWN_VERSION",
+      "integration_environment": "NOT_PERFORMED",
+      "reason": "The owner prohibited fabricating an installed module version; the fail-closed branch is covered by the focused ORM test without mutating ir_module_module."
+    }
+  ],
+  "focused_tests": {
+    "command": "make verify.smart_construction_core.migration_compatibility.orm",
+    "status": "PASS",
+    "tests": 13,
+    "identity": "smart_construction_core.tests"
+  },
+  "remaining_not_verified": [
+    "An actual database with an unparsable installed module version was not constructed, because that would require fabricating ir_module_module state.",
+    "Deployment and product acceptance are outside this migration-repair task."
+  ]
+}

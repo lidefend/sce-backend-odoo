@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-05-B01-R1
+  title: Odoo migration lifecycle repair for scenario-entry pre-migrations
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: smart_construction_core versioned upgrade migrations
+  module:
+    - smart_construction_core
+    - ops_delivery_audit
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Make the smart_construction_core 17.0.0.180 and 17.0.0.181 pre-migrations
+    compatible with a valid direct upgrade from 17.0.0.172 while failing closed
+    for invalid modern or unknown-version states, then prove the complete
+    172/174/179 to 182 paths in isolated databases.
+  why_here: >-
+    The defect is in Odoo migration lifecycle tooling, not in product runtime
+    semantics. The repair preserves existing migration timing and behavior.
+  why_not_elsewhere:
+    - no_orm_acl_record_rule_scene_or_release_change
+    - no_frontend_or_low_code_fallback
+    - no_unconditional_missing_table_skip
+    - no_manual_table_or_version_mutation
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/context.yaml
+      - .agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml
+      - .agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json
+      - addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py
+      - addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py
+      - addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py
+      - make/dev.mk
+      - make/guards.mk
+      - scripts/ops/agent_run_context.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_agent_run_context.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - docs/audit/capability-explorer-05-b01-r1
+    runtime:
+      - dedicated disposable isolated migration database
+      - no persistent development or acceptance database mutation
+  acceptance:
+    - old_versions_with_absent_table_skip_only_their_dependent_pre_migration_operation
+    - modern_or_unknown_versions_with_absent_table_fail_closed
+    - existing_table_paths_retain_original_migration_operations
+    - direct_172_174_and_179_upgrade_paths_reach_182
+    - runtime_user_management_has_no_scenario_binding_after_direct_172_upgrade
+    - normal_scenario_acl_record_rules_company_scope_and_menu_permissions_are_preserved
+    - failed_transactions_do_not_advance_module_version_or_leave_partial_schema
+  exclusions:
+    - CAP05-R2 and CAP05-R3 capability governance
+    - sc_dev_demo or existing unauthorized sc_clean destruction
+    - B02 snapshot restore
+    - migration framework refactor
+    - direct merge or deployment
+  rollback: >-
+    Revert this P4 migration repair commit. The dedicated disposable migration
+    database may then be discarded through its managed lifecycle entry.
+  completion:
+    batch: verified
+    mainline_integration: pending_merge_decision
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json

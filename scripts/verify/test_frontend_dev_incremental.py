@@ -1245,10 +1245,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.navigation.publication_consumers.unit",
                 "verify.scenario.center_projection.guard",
             ],
+            "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+                "verify.smart_construction_core.migration_compatibility.orm",
+            ],
             "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": [
                 "verify.daily.permission_truth.capability.orm",
                 "verify.navigation.publication_consumers.unit",
                 "verify.scenario.center_projection.guard",
+                "verify.smart_construction_core.migration_compatibility.orm",
+            ],
+            "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py": [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+                "verify.smart_construction_core.migration_compatibility.orm",
             ],
             "addons/smart_construction_core/security/sc_capability_groups.xml": [
                 "verify.frontend.navigation_policy.unit",

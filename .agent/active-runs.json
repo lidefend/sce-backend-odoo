@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/capability-explorer-05-b01-r1-20261116": ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
     "audit/capability-explorer-05-r1-20261115-v2": ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
     "audit/platform-capability-studio-01-20261115": ".agent/runs/CAPABILITY-EXPLORER-04-R3/run.json",
     "fix/workbench-role-home-nav-20261115": ".agent/runs/WORKBENCH-HOME-MERGE-20261115/run.json",

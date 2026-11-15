@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+  "scope": [
+    ".agent/context.yaml",
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
+    "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "make/dev.mk",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify/test_agent_run_context.py",
+    "docs/audit/capability-explorer-05-b01-r1/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "dedicated disposable sc-local-clean-compatible migration database"
+  },
+  "merge_closeout": {
+    "pr": 893,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/893",
+    "base_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+    "tested_source_head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
+    "tested_source_tree": "74bb881a4c91c68cdccf05536d14b55656280a92",
+    "code_and_ci_head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "code_and_ci_tree": "a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7",
+    "evidence_reuse": "PASS_SEMANTIC_EQUIVALENCE",
+    "required_checks": "PASS",
+    "independent_review": "APPROVE",
+    "malformed_version_state": "PASS_UNIT_ONLY",
+    "deployment": "not_performed",
+    "user_acceptance": "not_performed",
+    "merge": "not_performed"
+  },
+  "checks": {
+    "migration_compatibility": {
+      "target": "verify.smart_construction_core.migration_compatibility.orm",
+      "inputs": [
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/context.yaml",
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Wait for the owner's merge decision on PR #893; do not merge, deploy, or change B02.",
+  "id": "CAPABILITY-EXPLORER-05-B01-R1",
+  "branch": "fix/capability-explorer-05-b01-r1-20261116",
+  "status": "pending_merge_decision",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+  "record": "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
+}

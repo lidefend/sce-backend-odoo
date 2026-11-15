@@ -41,6 +41,15 @@ DELIVERY_STAGES = (
     'stage_9_deploy_r7',
 )
 DELIVERY_STAGE_STATES = frozenset({'not_started', 'in_progress', 'blocked', 'passed'})
+RUN_STATUSES = frozenset({
+    'planned',
+    'active',
+    'blocked',
+    'verification_pending',
+    'pending_merge_decision',
+    'completed',
+    'superseded',
+})
 DELIVERY_GATE_FIELDS = frozenset({
     'commit_approved',
     'candidate_commit',
@@ -165,7 +174,7 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
         if 'readback' in check:
             readback_path(root, check['readback'])
     check_order(run['checks'])
-    if run.get('status') not in ('planned', 'active', 'blocked', 'verification_pending', 'completed', 'superseded'):
+    if run.get('status') not in RUN_STATUSES:
         raise RunError('invalid run status')
     validate_delivery_lifecycle(root, run)
     return relative, run

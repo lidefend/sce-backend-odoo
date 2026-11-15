@@ -815,9 +815,13 @@ local.clean.install: guard.prod.forbid local.clean.up
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.clean.frontend
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
+LOCAL_CLEAN_BACKEND_ONLY ?= 0
 .PHONY: local.clean.upgrade
-local.clean.upgrade: guard.prod.forbid local.clean.up
+local.clean.upgrade: guard.prod.forbid local.clean.prepare $(if $(filter 1,$(LOCAL_CLEAN_BACKEND_ONLY)),,local.clean.up)
 	@test -n "$(strip $(MODULE))" || { echo "MODULE is required for local.clean.upgrade" >&2; exit 2; }
+	@if [ "$(LOCAL_CLEAN_BACKEND_ONLY)" = "1" ]; then \
+	  $(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up; \
+	fi
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
 	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
