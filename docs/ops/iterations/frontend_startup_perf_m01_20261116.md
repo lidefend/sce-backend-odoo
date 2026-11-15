@@ -65,7 +65,7 @@ labels instead of exposing dotted technical identities.
 | `verify.frontend.contract_basis.unit` | passed, 15 cases |
 | strict frontend typecheck | passed |
 | frontend lint | passed with existing warnings, 0 errors |
-| `make local.dev.frontend` | passed; route shell 2.88 KB, form page 852.72 KB |
+| `make local.dev.frontend` | passed; route shell 3.35 KB, form page 852.72 KB |
 
 ### Independent review remediation
 
