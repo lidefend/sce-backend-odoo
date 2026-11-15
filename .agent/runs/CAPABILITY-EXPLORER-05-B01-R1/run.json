@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+  "baseline_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",

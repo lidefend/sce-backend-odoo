@@ -4,7 +4,8 @@
   "generated_at_utc": "2026-11-15T19:00:00Z",
   "implementation_candidate": {
     "branch": "fix/capability-explorer-05-b01-r1-20261116",
-    "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+    "implementation_base_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+    "publication_base_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
     "repair_head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
     "repair_head_tree": "74bb881a4c91c68cdccf05536d14b55656280a92"
   },

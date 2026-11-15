@@ -21,6 +21,20 @@ state.
 - Research tree: `defa41be6082a572e0a7fef69f2aaa528e1783bd`
 - Product baseline: `main@96c42ab35550d4807d3bc070e75a06555c57de6f`
 
+## Publication Baseline Sync
+
+After implementation and isolated verification, `main` advanced through
+unrelated PR #892 to
+`70d01d8fa52c76dc3a296f0431e39be79b98dab5`. The unpublished repair branch was
+replayed with the governed `workspace.branch.sync-main` entry using generated
+evidence regeneration. The recovery bundle is:
+
+`/home/lidefend/workspace/sce-backend-odoo/.git/codex-recovery/branch-sync/fix-capability-explorer-05-b01-r1-20261116-314ca079cc79bb28d9830a80d3dcad0c03d3600a.bundle`
+
+The sync preserved the repair patch identities, regenerated the overlapping
+generated reports, and produced no semantic conflict or remaining merge-tree
+conflict against current `origin/main`.
+
 ## Implementation
 
 Both pre-migrations first test for
