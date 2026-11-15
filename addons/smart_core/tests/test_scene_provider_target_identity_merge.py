@@ -100,7 +100,7 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         published_authority = object()
         try:
             target.registry_load_scene_configs = (
-                lambda env, published_authority=None:
+                lambda env, *, published_authority=None:
                     authority_calls.append(published_authority) or []
             )
             target._resolve_scene_provider_payload = self._provider_payload
@@ -156,7 +156,7 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         ]
         try:
             target.registry_load_scene_configs = (
-                lambda env, published_authority=None:
+                lambda env, *, published_authority=None:
                     authority_calls.append(published_authority) or registry_scenes
             )
             target._resolve_scene_provider_payload = self._provider_payload
@@ -200,7 +200,7 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         published_authority = object()
         try:
             target.registry_load_scene_configs = (
-                lambda env, published_authority=None:
+                lambda env, *, published_authority=None:
                     authority_calls.append(published_authority) or []
             )
             target._resolve_scene_provider_payload = lambda scene_key, runtime_context=None: {}
