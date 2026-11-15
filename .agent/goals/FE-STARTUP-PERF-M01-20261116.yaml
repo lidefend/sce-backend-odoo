@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-STARTUP-PERF-M01-20261116
   title: 前端启动性能口径、记录路由分包与 M-01 标题收敛
-  status: active
+  status: verification_pending
   formal_product_layer: P0 generic frontend runtime and presentation; P4 bounded performance verification
   layer_target: canonical startup timing marks, record route loading boundary, and declared scene title consumption
   module:
@@ -40,6 +40,7 @@ goal:
     Revert this branch's frontend, test, and measurement changes. No schema,
     fixture, permission, or persisted business data migration is introduced.
   next_exact_step: >-
-    Register the run, add the canonical timing module and focused test, then
-    instrument document boot, session bootstrap, record skeleton, contract load,
-    and record readiness.
+    Deploy the candidate to the daily development server, run the affected
+    department/notification title entries, and repeat the payment record using
+    the canonical five marks. Then profile the 1.5 MB record contract payload as
+    the next API reduction target.

@@ -3,7 +3,7 @@
   "id": "FE-STARTUP-PERF-M01-20261116",
   "branch": "fix/frontend-performance-m01-20261116",
   "baseline_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
   "record": "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
   "scope": [
@@ -328,5 +328,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run strict types, build the split record route, and observe the canonical timing phases on a governed runtime."
+  "next_exact_step": "Deploy the candidate to the daily development server, rerun the affected M-01 entries and payment record with canonical marks, then trim the 1.5 MB record contract payload."
 }
