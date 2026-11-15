@@ -84,6 +84,7 @@ def build_platform_minimum_nav_contract() -> dict:
         "children": [],
         "scene_key": WORKSPACE_SCENE_KEY,
         "route": "/",
+        "sequence": 0,
         "entry_target": dict(workspace_entry_target),
         "meta": {
             "scene_key": WORKSPACE_SCENE_KEY,
@@ -95,13 +96,14 @@ def build_platform_minimum_nav_contract() -> dict:
         },
     }
     group_node = {
-        "key": "group:role_primary",
-        "label": "我的场景",
-        "title": "我的场景",
-        "menu_id": _synthetic_menu_id("group:role_primary", base=640_000_000, span=40_000_000),
+        "key": "group:workbench",
+        "label": "工作台",
+        "title": "工作台",
+        "menu_id": _synthetic_menu_id("group:workbench", base=640_000_000, span=40_000_000),
+        "sequence": 10,
         "children": [workspace_leaf],
         "meta": {
-            "group_key": "role_primary",
+            "group_key": "workbench",
             "scene_source": SOURCE,
         },
     }
@@ -188,7 +190,10 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
         for addition in additions:
             matches = [row for row in nodes if row.get("key") == addition["key"]]
             if not matches:
-                nodes.append(addition)
+                if is_home(addition):
+                    nodes.insert(0, addition)
+                else:
+                    nodes.append(addition)
                 continue
             current = matches[0]
             if len(matches) != 1 or current.get("menu_id") != addition["menu_id"]:
@@ -197,5 +202,18 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
                 merge(current.setdefault("children", []), addition["children"])
             elif not is_home(current):
                 raise ValueError("PLATFORM_HOME_TARGET_CONFLICT")
+    minimum_group = minimum[0]["children"][0]
+    for root in nav:
+        children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else []
+        for index, node in enumerate(children):
+            if (
+                isinstance(node, dict)
+                and str(node.get("label") or node.get("title") or "").strip() == minimum_group["label"]
+                and isinstance(node.get("children"), list)
+                and not node.get("action_id")
+            ):
+                merge(node["children"], minimum_group["children"])
+                children.insert(0, children.pop(index))
+                return nav, authority
     merge(nav, minimum)
     return nav, authority

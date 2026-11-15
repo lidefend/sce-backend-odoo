@@ -93,6 +93,32 @@ class TestSceneNavContractBuilder(TransactionCase):
         self.assertNotIn("projects.dashboard", scene_keys)
         self.assertNotIn("projects.dashboard_showcase", scene_keys)
 
+    def test_role_home_uses_first_workbench_group(self):
+        payload = build_scene_nav_contract(
+            {
+                "scenes": [
+                    {
+                        "code": "workspace.home",
+                        "name": "角色首页",
+                        "target": {"route": "/s/workspace.home"},
+                    },
+                    {
+                        "code": "projects.list",
+                        "name": "项目列表",
+                        "target": {"action_xmlid": "smart_construction_core.action_sc_project_list"},
+                    },
+                ],
+                "role_surface": {"scene_candidates": ["workspace.home"]},
+                "include_remaining_nav_scenes": True,
+            }
+        )
+        groups = payload["nav"][0]["children"]
+        self.assertEqual(groups[0]["key"], "group:workbench")
+        self.assertEqual(groups[0]["label"], "工作台")
+        self.assertEqual(groups[0]["meta"]["group_key"], "workbench")
+        self.assertEqual(groups[0]["children"][0]["scene_key"], "workspace.home")
+        self.assertNotIn("我的场景", [group["label"] for group in groups])
+
     def test_merges_project_group_alias(self):
         payload = build_scene_nav_contract(
             {

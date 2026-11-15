@@ -1151,6 +1151,12 @@ RULES = (
         "verify.scenario.center_projection.guard",
     )),
     Rule((
+        "addons/smart_core/core/scene_nav_contract_builder.py",
+        "addons/smart_core/tests/test_scene_nav_contract_builder.py",
+    ), (
+        "verify.nav01.native_authority.unit",
+    )),
+    Rule((
         "addons/smart_construction_scene/__init__.py",
         "addons/smart_construction_scene/core_extension.py",
         "addons/smart_construction_scene/data/project_management_scene.xml",

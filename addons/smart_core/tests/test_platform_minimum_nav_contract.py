@@ -170,12 +170,49 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         self.assertEqual(payload["default_route"]["scene_key"], "workspace.home")
         self.assertEqual(payload["default_route"]["reason"], "platform_minimum_surface")
         self.assertTrue(payload["meta"]["platform_minimum_surface"])
-        leaf = payload["nav"][0]["children"][0]["children"][0]
+        workbench = payload["nav"][0]["children"][0]
+        self.assertEqual(workbench["key"], "group:workbench")
+        self.assertEqual(workbench["label"], "工作台")
+        self.assertEqual(workbench["meta"]["group_key"], "workbench")
+        leaf = workbench["children"][0]
+        self.assertEqual(leaf["sequence"], 0)
         self.assertIsInstance(leaf["menu_id"], int)
         self.assertGreater(leaf["menu_id"], 0)
         self.assertEqual(leaf["entry_target"]["type"], "scene")
         self.assertEqual(leaf["entry_target"]["scene_key"], "workspace.home")
         self.assertEqual(payload["default_route"]["menu_id"], leaf["menu_id"])
+
+    def test_authenticated_home_merges_into_existing_workbench_and_moves_it_first(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
+                {
+                    "key": "catalog.workbench",
+                    "label": "工作台",
+                    "children": [{"key": "my_work", "label": "我的工作"}],
+                },
+            ],
+        }]
+        merged, _authority = contract.merge_authenticated_safe_landing(
+            nav,
+            authority,
+            authenticated=True,
+        )
+        groups = merged[0]["children"]
+        self.assertEqual([group["label"] for group in groups], ["工作台", "项目中心"])
+        self.assertEqual([child["key"] for child in groups[0]["children"]], ["scene:workspace.home", "my_work"])
 
     def test_declared_scene_leaf_survives_route_authority_projection(self):
         contract, _service, menu_service_module = self._load()
@@ -222,8 +259,9 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         flat = navigation["nav_fact"]["flat"]
         keys = [row["key"] for row in flat]
 
-        self.assertEqual(keys, ["root:scene_contract", "group:role_primary", "scene:workspace.home"])
+        self.assertEqual(keys, ["root:scene_contract", "group:workbench", "scene:workspace.home"])
         self.assertEqual(len(keys), len(set(keys)))
+        self.assertNotIn("group:role_primary", keys)
         self.assertEqual(flat[-1]["scene_key"], "workspace.home")
         self.assertEqual(flat[-1]["action_type"], "scene.contract")
         self.assertTrue(navigation["meta"]["platform_minimum_surface"])

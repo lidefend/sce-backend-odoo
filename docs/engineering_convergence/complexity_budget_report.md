@@ -42,7 +42,7 @@ Generated from repository source files. This report is informational during the 
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2332 | YAML workflow | `scripts/verify/registry.yaml` |
-| 2312 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2318 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
@@ -166,6 +166,7 @@ Generated from repository source files. This report is informational during the 
 | 1036 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
+| 1017 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1012 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1006 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
@@ -176,7 +177,6 @@ Generated from repository source files. This report is informational during the 
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
-| 971 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
@@ -278,7 +278,7 @@ Generated from repository source files. This report is informational during the 
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2332 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
-| 2312 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2318 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |

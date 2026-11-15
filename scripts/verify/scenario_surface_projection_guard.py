@@ -35,6 +35,32 @@ PROJ = _load_module("scenario_surface_projection", ROOT / "addons/smart_construc
 SURFACE_PATH = ROOT / "addons/smart_construction_core/data/scenario_product_surface.json"
 
 
+def load_scene_nav_builder():
+    source_authority = types.SimpleNamespace(
+        build_source_authority_contract=lambda **kwargs: kwargs,
+    )
+    nav_policy = types.SimpleNamespace(
+        resolve_nav_group_policy=lambda *args, **kwargs: {
+            "group_labels": {"projects": "项目管理", "workspace": "工作空间", "others": "其他场景"},
+            "group_order": {"projects": 20, "workspace": 190, "others": 999},
+            "group_aliases": {"project": "projects"},
+            "source": "guard",
+            "provider_key": "guard.scene_nav",
+            "policy_version": "v1",
+            "validation": {"ok": True, "issues": []},
+        },
+    )
+    modules = {
+        "odoo.addons.smart_core.core.source_authority": source_authority,
+        "odoo.addons.smart_scene.core.nav_policy_registry": nav_policy,
+    }
+    with patch.dict(sys.modules, modules):
+        return _load_module(
+            "scene_nav_contract_builder_guard",
+            ROOT / "addons/smart_core/core/scene_nav_contract_builder.py",
+        )
+
+
 class SceneDeclarationConsumptionTest(unittest.TestCase):
     def test_declarations_empty_compatibility_and_ambiguity(self):
         scene = {"code": "scene.a", "target": {"menu_id": 10, "action_id": 20}}
@@ -173,6 +199,30 @@ def synthetic_route_authority(menu_xmlids):
 
 
 class ScenarioSurfaceProjectionGuard(unittest.TestCase):
+    def test_role_home_uses_first_workbench_group(self):
+        builder = load_scene_nav_builder()
+        payload = builder.build_scene_nav_contract({
+            "scenes": [
+                {
+                    "code": "workspace.home",
+                    "name": "角色首页",
+                    "target": {"route": "/s/workspace.home"},
+                },
+                {
+                    "code": "projects.list",
+                    "name": "项目列表",
+                    "target": {"action_xmlid": "smart_construction_core.action_sc_project_list"},
+                },
+            ],
+            "role_surface": {"scene_candidates": ["workspace.home"]},
+            "include_remaining_nav_scenes": True,
+        })
+        groups = payload["nav"][0]["children"]
+        self.assertEqual(groups[0]["key"], "group:workbench")
+        self.assertEqual(groups[0]["label"], "工作台")
+        self.assertEqual(groups[0]["children"][0]["scene_key"], "workspace.home")
+        self.assertNotIn("我的场景", [group["label"] for group in groups])
+
     def test_native_config_surface_is_independent_of_released_business_catalog(self):
         leaf = {'menu_xmlid': 'test.native_workspace', 'menu_id': 901, 'action_id': 902,
                 'label': 'Native workspace', 'route': '/s/test.workspace',
@@ -349,6 +399,33 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(leaves[0]["menu_xmlid"], "smart_construction_core.menu_sc_workspace_home")
         self.assertEqual(leaves[0]["action_id"], 0)
         self.assertEqual(leaves[0]["route"], "/s/workspace.home")
+
+    def test_workspace_home_uses_declared_workbench_center(self):
+        root = types.SimpleNamespace(name="工作台", sequence=10)
+        env = types.SimpleNamespace(
+            ref=lambda xmlid, raise_if_not_found=False: root
+            if xmlid == HORIZONTAL_ROOT
+            else None,
+        )
+        center = PROJ.resolve_horizontal_work_center(env, self.surface)
+        self.assertEqual(center, {
+            "key": "catalog.工作台",
+            "name": "工作台",
+            "sequence": 10,
+        })
+        home = {
+            "menu_xmlid": "scene.contract.workspace_home",
+            "entry_target": {"type": "scene", "scene_key": "workspace.home"},
+        }
+        self.assertTrue(PROJ.is_workspace_home_leaf(home))
+        self.assertEqual(
+            PROJ.composition_center_for_leaf(home, None, workspace_center=center),
+            center,
+        )
+        self.assertFalse(PROJ.is_workspace_home_leaf({
+            "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+            "entry_target": {"type": "action"},
+        }))
 
 
 

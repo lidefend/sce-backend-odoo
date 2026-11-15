@@ -26,6 +26,11 @@ INTENT_LABELS = {
     "report": "报表",
     "master_data": "基础信息维护",
 }
+WORKSPACE_HOME_SCENE_KEY = "workspace.home"
+WORKSPACE_HOME_MENU_XMLIDS = {
+    "scene.contract.workspace_home",
+    "smart_construction_core.menu_sc_workspace_home",
+}
 
 
 def load_surface(path: Path | str = SURFACE_PATH) -> dict[str, Any]:
@@ -674,8 +679,42 @@ def _selected_scenario_binding(
     return next((binding for binding in bindings if binding.get("scenario_active")), None)
 
 
-def composition_center_for_leaf(leaf: dict[str, Any], binding: dict[str, Any] | None) -> dict[str, Any]:
+def is_workspace_home_leaf(leaf: dict[str, Any]) -> bool:
+    menu_xmlid = _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))
+    entry_target = leaf.get("entry_target") if isinstance(leaf.get("entry_target"), dict) else {}
+    scene_key = _text(leaf.get("scene_key") or entry_target.get("scene_key"))
+    return menu_xmlid in WORKSPACE_HOME_MENU_XMLIDS or scene_key == WORKSPACE_HOME_SCENE_KEY
+
+
+def resolve_horizontal_work_center(env, surface: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    """Resolve the declared workbench center identity from the product surface."""
+    if env is None:
+        return None
+    try:
+        source = surface if isinstance(surface, dict) else load_surface()
+        root_xmlid = _text((source.get("horizontal_work_center") or {}).get("root_menu_xmlid"))
+        menu = env.ref(root_xmlid, raise_if_not_found=False) if root_xmlid else None
+    except Exception:
+        return None
+    name = _text(getattr(menu, "name", ""))
+    if not menu or not name:
+        return None
+    return {
+        "key": f"catalog.{name}",
+        "name": name,
+        "sequence": _int_or(getattr(menu, "sequence", 0), 10),
+    }
+
+
+def composition_center_for_leaf(
+    leaf: dict[str, Any],
+    binding: dict[str, Any] | None,
+    *,
+    workspace_center: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Resolve center from scenario composition, then policy grouping fallback."""
+    if workspace_center and is_workspace_home_leaf(leaf):
+        return dict(workspace_center)
     binding = binding if isinstance(binding, dict) else {}
     center_key = _text(binding.get("center_key"))
     if center_key:
@@ -845,6 +884,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     policy grouping is the explicit fallback for unconfigured entries.
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
+    workspace_center = resolve_horizontal_work_center(env)
     direct_menu_ids = {
         int(leaf.get("menu_id") or 0)
         for leaf in leaves
@@ -903,7 +943,11 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         bindings = scenario_by_menu.get(menu_id) or []
         binding = _selected_scenario_binding(bindings, route_authority, menu_id)
         center_binding = binding or (bindings[0] if bindings else None)
-        center = composition_center_for_leaf(leaf, center_binding)
+        center = composition_center_for_leaf(
+            leaf,
+            center_binding,
+            workspace_center=workspace_center,
+        )
         node = centers.setdefault(center["key"], {
             "key": center["key"],
             "name": center["name"],
@@ -913,7 +957,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         })
         entry = dict(leaf)
         entry["sequence"] = (
-            binding["sequence"]
+            0
+            if is_workspace_home_leaf(leaf)
+            else binding["sequence"]
             if binding and binding.get("scenario_active")
             else native_menu_sequences.get(
                 menu_id,
