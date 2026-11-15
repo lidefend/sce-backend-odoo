@@ -150,8 +150,9 @@ ERROR: relation "sc_product_scenario_entry" does not exist
 
 ### 4.2 真实浏览器
 
-环境：`http://127.0.0.1:18081/t/demo`，`sc_dev_demo`，`admin`，
-`zh-CN`，桌面 1440px 与移动 390px。
+环境：candidate 静态载体 `http://127.0.0.1:5176/t/demo`，API 代理到
+`local.dev/sc_dev_demo`，`admin`，`zh-CN`，桌面 1440px 与移动 390px。
+该 candidate 从 R1 exact HEAD 构建，验证结束后已受管关闭。
 
 - 29/29 assertions PASS。
 - List：17 条，unbound 17。
@@ -166,14 +167,24 @@ ERROR: relation "sc_product_scenario_entry" does not exist
 - 普通用户 `wutao` 被路由拒绝，路由访问期间 Explorer List 请求数为 0；
   直接 Handler 请求返回精确 HTTP 403 `PERMISSION_DENIED`。
 
+浏览器复验记录：
+
+- 首次在共享 `18081` 和 candidate `5176` 上，均在 stale-token 恢复等待处超时；
+  此时已生成列表与详情截图，但完整 harness 未完成，不记 PASS。
+- 独立诊断在同一 candidate 上观察到 `409 CATALOG_STALE -> List 200` 的真实恢复链路。
+- 基于该恢复事实，在候选前端未变化的情况下重试一次并取得 29/29 PASS。
+- 原始失败、诊断和通过日志均保留在本目录的 `evidence/`。
+
 证据：
 
-- 单元日志与 `ci.local.iteration` 日志：
-  `.runtime/agent-runs/CAPABILITY-EXPLORER-05/`
-- `artifacts/playwright/platform-capability-explorer/report.json`
-  SHA256 `6f71488dd93d271b8ee3ce55361660011da3c08b4fcef95cae170cdc4ec081a6`
+- `docs/audit/capability-explorer-05/evidence/browser-report.json`
+  SHA256 `69e69d828cf0b6315d903ad370bc9a7581b770b78265868ed9b590219d74c0d1`
 - 浏览器日志 SHA256
-  `508d14f74a987d3bb5d1ea41b3b25b60708e224efdc16fe22af9d2636770a604`
+  `af3c5ae889d5f74d878a1413d00c8129b46c022a2d78cc896b76031bcceb4138`
+- 首次超时日志 SHA256
+  `02e46d849172da53363cece32930e4a1d319e04adc6fa40bc6f0aa34529440eb`
+- `409 -> 200` 恢复诊断日志 SHA256
+  `33624cdecb4d2076bca9fe88ffe074815a9a04b46217d0953be8acf0cb43f1d0`
 
 ### 4.3 真实 HTTP API
 
@@ -255,4 +266,6 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
   `verify.agent.ledger.unit` 18 tests，并完成相关 L1 守卫。
 - `git diff --check`：由增量门禁执行，PASS。
 - 当前 run 状态：`blocked`；本报告的候选可独立入主线，但不构成整体验收完成。
-- 原始日志：`.runtime/agent-runs/CAPABILITY-EXPLORER-05/ci-local-iteration.log`。
+- 原始日志：`docs/audit/capability-explorer-05/evidence/ci-local-iteration.log`。
+- exact-HEAD 定向日志：
+  `native-unit.log`、`explorer-unit.log`、`frontend-unit.log`、`agent-ledger.log`。

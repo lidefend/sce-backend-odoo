@@ -1,0 +1,196 @@
+{
+  "intercepted": true,
+  "url": "http://127.0.0.1:5176/t/demo/admin/capability-explorer",
+  "events": [
+    {
+      "event": "request",
+      "intent": "login",
+      "params": {
+        "login": "admin",
+        "password": "123456",
+        "contract_mode": "default"
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "login"
+    },
+    {
+      "event": "request",
+      "intent": "system.init",
+      "params": {
+        "scene": "web",
+        "with_preload": false,
+        "scene_ready_mode": "registry",
+        "with": [
+          "workspace_home"
+        ]
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "system.init"
+    },
+    {
+      "event": "request",
+      "intent": "global.message.conversations",
+      "params": {
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "request",
+      "intent": "product.configuration.capability.catalog"
+    },
+    {
+      "event": "request",
+      "intent": "workspace.scenario.projection.get",
+      "params": {
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "request",
+      "intent": "my.work.summary",
+      "params": {
+        "product_workspace": true,
+        "page": 1,
+        "sort_by": "priority",
+        "sort_dir": "desc",
+        "section": "all",
+        "source": "all",
+        "reason_code": "all",
+        "search": "",
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "request",
+      "intent": "app.catalog",
+      "params": {
+        "scene": "web",
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "global.message.conversations"
+    },
+    {
+      "event": "request",
+      "intent": "system.init",
+      "params": {
+        "scene": "web",
+        "with_preload": false,
+        "scene_ready_mode": "registry",
+        "with": [
+          "workspace_home"
+        ],
+        "company_id": 1,
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "system.init"
+    },
+    {
+      "event": "request",
+      "intent": "global.message.conversations",
+      "params": {
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "request",
+      "intent": "platform.capability.explorer.list",
+      "params": {
+        "filters": {},
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "request",
+      "intent": "app.catalog",
+      "params": {
+        "scene": "web",
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "global.message.conversations"
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "app.catalog"
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "platform.capability.explorer.list"
+    },
+    {
+      "event": "request",
+      "intent": "platform.capability.explorer.list",
+      "params": {
+        "query": "项目",
+        "filters": {},
+        "limit": 50,
+        "expected_catalog_token": "sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b",
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "response",
+      "status": 409,
+      "intent": "platform.capability.explorer.list"
+    },
+    {
+      "event": "console",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "event": "request",
+      "intent": "platform.capability.explorer.list",
+      "params": {
+        "query": "项目",
+        "filters": {},
+        "limit": 50,
+        "context": {
+          "company_id": 1
+        }
+      }
+    },
+    {
+      "event": "response",
+      "status": 200,
+      "intent": "platform.capability.explorer.list"
+    }
+  ]
+}

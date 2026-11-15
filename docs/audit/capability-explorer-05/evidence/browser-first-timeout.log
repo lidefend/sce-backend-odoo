@@ -1,0 +1,85 @@
+test_break_glass_cannot_manufacture_platform_duty (__main__.ContractDeclarationTests.test_break_glass_cannot_manufacture_platform_duty) ... ok
+test_capability_explorer_is_declared_for_platform_and_tenant_management (__main__.ContractDeclarationTests.test_capability_explorer_is_declared_for_platform_and_tenant_management) ... ok
+test_plain_user_surface_is_empty (__main__.ContractDeclarationTests.test_plain_user_surface_is_empty) ... ok
+test_platform_capability_rows_cover_every_declared_capability (__main__.ContractDeclarationTests.test_platform_capability_rows_cover_every_declared_capability) ... ok
+test_platform_control_surface_is_non_empty_and_declared (__main__.ContractDeclarationTests.test_platform_control_surface_is_non_empty_and_declared) ... ok
+test_platform_duty_keys_unique_and_sorted (__main__.ContractDeclarationTests.test_platform_duty_keys_unique_and_sorted) ... ok
+test_surface_never_projects_a_physical_database (__main__.ContractDeclarationTests.test_surface_never_projects_a_physical_database) ... ok
+test_tenant_admin_has_no_platform_duty (__main__.ContractDeclarationTests.test_tenant_admin_has_no_platform_duty) ... ok
+test_tenant_and_plain_surfaces_produce_no_platform_rows (__main__.ContractDeclarationTests.test_tenant_and_plain_surfaces_produce_no_platform_rows) ... ok
+test_undeclared_capability_is_rejected (__main__.ContractDeclarationTests.test_undeclared_capability_is_rejected) ... ok
+test_demo_admin_is_tenant_config_admin_only (__main__.PredicateBoundaryTests.test_demo_admin_is_tenant_config_admin_only) ... ok
+test_plain_user_holds_neither_duty (__main__.PredicateBoundaryTests.test_plain_user_holds_neither_duty) ... ok
+test_platform_admin_needs_group_instance_and_audience (__main__.PredicateBoundaryTests.test_platform_admin_needs_group_instance_and_audience) ... ok
+test_demo_tenant_name_is_declared_in_the_platform_registry (__main__.ProjectionAndRouteTests.test_demo_tenant_name_is_declared_in_the_platform_registry) ... ok
+test_every_platform_duty_opens_an_official_surface (__main__.ProjectionAndRouteTests.test_every_platform_duty_opens_an_official_surface)
+No platform duty may fall back to raw API JSON or a bare intent. ... ok
+test_identity_payload_projects_duty_surface (__main__.ProjectionAndRouteTests.test_identity_payload_projects_duty_surface) ... ok
+test_job_status_duty_is_readable_without_a_job_id (__main__.ProjectionAndRouteTests.test_job_status_duty_is_readable_without_a_job_id)
+The declared ``platform.job_status.read`` duty is a list entry. ... ok
+test_job_status_duty_uses_the_official_action_renderer (__main__.ProjectionAndRouteTests.test_job_status_duty_uses_the_official_action_renderer)
+The job list is rendered by ActionViewShell, not a hand-built table. ... ok
+test_platform_duty_controller_uses_shared_authorization_path (__main__.ProjectionAndRouteTests.test_platform_duty_controller_uses_shared_authorization_path) ... ok
+test_platform_duty_panel_never_routes_an_api_path (__main__.ProjectionAndRouteTests.test_platform_duty_panel_never_routes_an_api_path)
+A duty that is an API endpoint must be consumed, not navigated. ... ok
+test_system_init_projects_platform_duties_into_top_level_capabilities (__main__.ProjectionAndRouteTests.test_system_init_projects_platform_duties_into_top_level_capabilities) ... ok
+test_system_init_publishes_duty_actions_into_route_authority (__main__.ProjectionAndRouteTests.test_system_init_publishes_duty_actions_into_route_authority)
+A duty route without a menu must still be executable by the SPA. ... ok
+test_tenant_registry_uses_the_official_action_surface (__main__.ProjectionAndRouteTests.test_tenant_registry_uses_the_official_action_surface) ... ok
+test_tenant_surface_never_publishes_platform_duty_routes (__main__.ProjectionAndRouteTests.test_tenant_surface_never_publishes_platform_duty_routes) ... ok
+test_tenants_endpoint_is_registry_driven (__main__.ProjectionAndRouteTests.test_tenants_endpoint_is_registry_driven) ... ok
+test_tenants_payload_uses_the_registry_name_and_no_cross_db_company (__main__.ProjectionAndRouteTests.test_tenants_payload_uses_the_registry_name_and_no_cross_db_company) ... ok
+test_unresolvable_duty_action_fails_closed (__main__.ProjectionAndRouteTests.test_unresolvable_duty_action_fails_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.008s
+
+OK
+
+  node_modules/.cache/duty-action.test.mjs  2.5kb
+
+⚡ Done in 2ms
+✔ an API duty is consumed inline and never navigated (1.364315ms)
+✔ declared frontend routes may navigate (0.180753ms)
+✔ an undeclared route never navigates (0.108171ms)
+✔ an intent duty stays an intent and an empty duty has no action (0.155373ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7.932533
+
+  ../../../../tmp/admin-route-access-test.mjs  2.9kb
+
+⚡ Done in 4ms
+[admin_route_access_test] PASS cases=13
+✔ an expected HTTP failure can be consumed exactly once (0.740169ms)
+✔ a non-matching response cannot consume the expected budget (0.135371ms)
+✔ pending expected failures are visible when the injected response never arrives (0.110268ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59.395826
+
+  ../../../../tmp/platform-capability-explorer-test.mjs  999.7kb
+
+⚡ Done in 41ms
+[platform_capability_explorer_test] PASS cases=21
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.waitForResponse: Timeout 30000ms exceeded while waiting for event "response"
+    at /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109/frontend/apps/web/scripts/platform_capability_explorer_browser.mjs:220:29 {
+  name: 'TimeoutError'
+}
+
+Node.js v24.16.0
+make: *** [make/frontend.mk:621: verify.frontend.platform_capability_explorer.browser] Error 1

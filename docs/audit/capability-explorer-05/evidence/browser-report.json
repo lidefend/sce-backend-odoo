@@ -1,0 +1,299 @@
+{
+  "schema": "platform.capability.explorer.browser.v1",
+  "pass": true,
+  "generated_at": "2026-11-15T14:42:17.869Z",
+  "runtime": {
+    "base_url": "http://127.0.0.1:5176",
+    "database": "sc_dev_demo",
+    "login": "admin"
+  },
+  "assertions": [
+    {
+      "pass": true,
+      "message": "initial list returns catalog token",
+      "catalogToken": "sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b"
+    },
+    {
+      "pass": true,
+      "message": "list database matches runtime identity",
+      "responseDatabase": "sc_dev_demo",
+      "DB_NAME": "sc_dev_demo"
+    },
+    {
+      "pass": true,
+      "message": "summary renders backend total",
+      "metricsText": "当前原生入口\n\n17\n\n已有场景绑定\n\n0\n\n尚未场景化\n\n17\n\n原生业务中心\n\n5"
+    },
+    {
+      "pass": true,
+      "message": "summary renders backend scene-bound count"
+    },
+    {
+      "pass": true,
+      "message": "summary renders backend unbound count"
+    },
+    {
+      "pass": true,
+      "message": "summary renders backend center count"
+    },
+    {
+      "pass": true,
+      "message": "runtime contains visible capability entries"
+    },
+    {
+      "pass": true,
+      "message": "detail renders Menu XMLID",
+      "drawerText": "入口详情\n\n只读展示 Odoo 原生事实、场景引用和诊断结果。\n\nSMART_CONSTRUCTION_CORE\n\n成本驾驶舱\n\nsmart_construction_core.menu_sc_dashboard_cost_cockpit_fact\n\nsmart_construction_core.action_sc_dashboard_cost_cockpit_fact\n\n状态：\n原生身份有效\n技术来源\nMenu XMLID\tsmart_construction_core.menu_sc_dashboard_cost_cockpit_fact\nAction XMLID\tsmart_construction_core.action_sc_dashboard_cost_cockpit_fact\nAction 类型\tir.actions.act_window\n模块\tsmart_construction_core · installed · 17.0.0.182\n模型\tsc.dashboard.cockpit.fact\nView\t4 个关联视图\nACL 摘要\t1 条 · base.group_user\nRecord Rules\t1 条\n场景使用\n尚无权威场景绑定\n\n未绑定不代表该入口无效；它仍可能作为原生中心入口存在。\n\n发布与资格\n原生有效性\t有效\n场景可选性\t可选\n入口发布\t发布状态未知\nPreview 资格\tnot_verified\nStandard 资格\tnot_verified\n诊断\n状态：\n技术可进入场景草稿\n重新诊断\n当前诊断没有阻断原因。\n\n技术可选不等于 Preview 或 Standard 产品资格；资格状态以后端返回为准。"
+    },
+    {
+      "pass": true,
+      "message": "detail renders Action XMLID",
+      "drawerText": "入口详情\n\n只读展示 Odoo 原生事实、场景引用和诊断结果。\n\nSMART_CONSTRUCTION_CORE\n\n成本驾驶舱\n\nsmart_construction_core.menu_sc_dashboard_cost_cockpit_fact\n\nsmart_construction_core.action_sc_dashboard_cost_cockpit_fact\n\n状态：\n原生身份有效\n技术来源\nMenu XMLID\tsmart_construction_core.menu_sc_dashboard_cost_cockpit_fact\nAction XMLID\tsmart_construction_core.action_sc_dashboard_cost_cockpit_fact\nAction 类型\tir.actions.act_window\n模块\tsmart_construction_core · installed · 17.0.0.182\n模型\tsc.dashboard.cockpit.fact\nView\t4 个关联视图\nACL 摘要\t1 条 · base.group_user\nRecord Rules\t1 条\n场景使用\n尚无权威场景绑定\n\n未绑定不代表该入口无效；它仍可能作为原生中心入口存在。\n\n发布与资格\n原生有效性\t有效\n场景可选性\t可选\n入口发布\t发布状态未知\nPreview 资格\tnot_verified\nStandard 资格\tnot_verified\n诊断\n状态：\n技术可进入场景草稿\n重新诊断\n当前诊断没有阻断原因。\n\n技术可选不等于 Preview 或 Standard 产品资格；资格状态以后端返回为准。"
+    },
+    {
+      "pass": true,
+      "message": "detail technical section rendered",
+      "sectionTitles": [
+        "技术来源",
+        "场景使用",
+        "尚无权威场景绑定",
+        "发布与资格",
+        "诊断"
+      ],
+      "drawerHeadings": [
+        "入口详情",
+        "成本驾驶舱",
+        "技术来源",
+        "场景使用",
+        "尚无权威场景绑定",
+        "发布与资格",
+        "诊断"
+      ],
+      "sectionCount": 4
+    },
+    {
+      "pass": true,
+      "message": "detail renders module facts"
+    },
+    {
+      "pass": true,
+      "message": "detail renders model facts"
+    },
+    {
+      "pass": true,
+      "message": "detail renders view summary"
+    },
+    {
+      "pass": true,
+      "message": "detail renders ACL authorization summary"
+    },
+    {
+      "pass": true,
+      "message": "detail renders record rule count"
+    },
+    {
+      "pass": true,
+      "message": "detail separates Preview qualification"
+    },
+    {
+      "pass": true,
+      "message": "detail separates Standard qualification"
+    },
+    {
+      "pass": true,
+      "message": "stale token triggers a refreshed catalog"
+    },
+    {
+      "pass": true,
+      "message": "search applies a server-side filtered result",
+      "total": 17,
+      "filtered_total": 1,
+      "row_count": 1
+    },
+    {
+      "pass": true,
+      "message": "native center filter returns its server-projected row count",
+      "center": {
+        "key": "unclassified",
+        "label": "unclassified",
+        "count": 2
+      },
+      "row_count": 2,
+      "filtered_total": 2
+    },
+    {
+      "pass": true,
+      "message": "late detail diagnosis cannot overwrite the currently selected entry",
+      "selectedAction": "smart_construction_core.action_sc_my_work",
+      "drawerText": "入口详情\n\n只读展示 Odoo 原生事实、场景引用和诊断结果。\n\nSMART_CONSTRUCTION_CORE\n\n我的工作\n\nsmart_construction_core.menu_sc_my_work\n\nsmart_construction_core.action_sc_my_work\n\n状态：\n原生身份有效\n技术来源\nMenu XMLID\tsmart_construction_core.menu_sc_my_work\nAction XMLID\tsmart_construction_core.action_sc_my_work\nAction 类型\tir.actions.act_window\n模块\tsmart_construction_core · installed · 17.0.0.182\n模型\tproject.project\nView\t42 个关联视图\nACL 摘要\t8 条 · base.group_portal、base.group_user、project.group_project_manager、project.group_project_user、smart_construction_core.group_sc_cap_business_config_admin、smart_construction_core.group_sc_cap_project_manager、smart_construction_core.group_sc_cap_project_read、smart_construction_core.group_sc_cap_project_user\nRecord Rules\t10 条\n场景使用\n尚无权威场景绑定\n\n未绑定不代表该入口无效；它仍可能作为原生中心入口存在。\n\n发布与资格\n原生有效性\t有效\n场景可选性\t可选\n入口发布\t发布状态未知\nPreview 资格\tnot_verified\nStandard 资格\tnot_verified\n诊断\n状态：\n技术可进入场景草稿\n重新诊断\n当前诊断没有阻断原因。\n\n技术可选不等于 Preview 或 Standard 产品资格；资格状态以后端返回为准。"
+    },
+    {
+      "pass": true,
+      "message": "mobile list renders backend capability entries",
+      "firstMobileText": "成本驾驶舱\n未识别中心\nsc.dashboard.cockpit.fact\n状态：\n业务领域未分类\n状态：\n尚未场景化\n状态：\n技术可选"
+    },
+    {
+      "pass": true,
+      "message": "mobile layout has no horizontal page overflow",
+      "viewport": 390,
+      "body_scroll_width": 390,
+      "document_scroll_width": 390
+    },
+    {
+      "pass": true,
+      "message": "non-management user is redirected away from the explorer route",
+      "deniedUrl": "http://127.0.0.1:5176/t/demo/s/workspace.home"
+    },
+    {
+      "pass": true,
+      "message": "non-management route access never calls the explorer API",
+      "deniedRouteRequestCount": 0,
+      "deniedListRequests": [
+        "http://127.0.0.1:5176/t/demo/api/v1/intent"
+      ]
+    },
+    {
+      "pass": true,
+      "message": "backend returns exact permission denial for a non-management user",
+      "status": 403,
+      "reasonCode": "PERMISSION_DENIED"
+    },
+    {
+      "pass": true,
+      "message": "every expected HTTP failure was observed",
+      "pending": 0
+    },
+    {
+      "pass": true,
+      "message": "no unexpected HTTP failures",
+      "unexpectedFailures": []
+    },
+    {
+      "pass": true,
+      "message": "no console or page errors",
+      "errors": []
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "01-desktop-list",
+      "file": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109/artifacts/playwright/platform-capability-explorer/01-desktop-list.png",
+      "url": "http://127.0.0.1:5176/t/demo/admin/capability-explorer"
+    },
+    {
+      "name": "02-desktop-detail",
+      "file": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109/artifacts/playwright/platform-capability-explorer/02-desktop-detail.png",
+      "url": "http://127.0.0.1:5176/t/demo/admin/capability-explorer"
+    },
+    {
+      "name": "03-mobile-list",
+      "file": "/home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109/artifacts/playwright/platform-capability-explorer/03-mobile-list.png",
+      "url": "http://127.0.0.1:5176/t/demo/admin/capability-explorer"
+    }
+  ],
+  "api": {
+    "list": {
+      "total": 17,
+      "filtered_total": 17,
+      "row_count": 17,
+      "catalog_token": "sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b",
+      "centers": [
+        {
+          "key": "unclassified",
+          "label": "unclassified",
+          "count": 2
+        },
+        {
+          "key": "product_configuration",
+          "label": "产品配置",
+          "count": 2
+        },
+        {
+          "key": "smart_construction_core.menu_sc_workspace_center",
+          "label": "工作台",
+          "count": 1
+        },
+        {
+          "key": "smart_construction_core.menu_sc_config_center",
+          "label": "系统管理（内部）",
+          "count": 11
+        },
+        {
+          "key": "administration",
+          "label": "行政中心",
+          "count": 1
+        }
+      ],
+      "scene_status": {
+        "bound": 0,
+        "unbound": 17
+      }
+    },
+    "detail": {
+      "menu_xmlid": "smart_construction_core.menu_sc_dashboard_cost_cockpit_fact",
+      "action_xmlid": "smart_construction_core.action_sc_dashboard_cost_cockpit_fact",
+      "catalog_token": "sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b"
+    },
+    "stale_recovery": {
+      "intercepted_list": true,
+      "refreshed_token": "sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b",
+      "total": 17,
+      "filtered_total": 1,
+      "row_count": 1
+    },
+    "center_filter": {
+      "center": {
+        "key": "unclassified",
+        "label": "unclassified",
+        "count": 2
+      },
+      "row_count": 2,
+      "filtered_total": 2
+    },
+    "pagination": {
+      "total": 17,
+      "filtered_total": 17,
+      "row_count": 17,
+      "offset": 0,
+      "limit": 50,
+      "next_offset": null,
+      "has_more": false
+    }
+  },
+  "errors": [],
+  "failed_requests": [
+    {
+      "status": 409,
+      "url": "http://127.0.0.1:5176/t/demo/api/v1/intent",
+      "expected": true
+    }
+  ],
+  "race_guard": {
+    "stale_entry": {
+      "menu_xmlid": "smart_construction_core.menu_sc_dashboard_cost_cockpit_fact",
+      "action_xmlid": "smart_construction_core.action_sc_dashboard_cost_cockpit_fact"
+    },
+    "current_entry": {
+      "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+      "action_xmlid": "smart_construction_core.action_sc_my_work"
+    },
+    "late_blocker": "LATE_ENTRY_A"
+  },
+  "performance": {
+    "desktop_list_ready_ms": 1434,
+    "detail_ready_ms": 500,
+    "stale_recovery_ms": 1276,
+    "mobile_list_ready_ms": 1465
+  },
+  "permissions": {
+    "denied_login": "wutao",
+    "redirected": true,
+    "route_list_request_count": 0,
+    "direct_handler_list_request_count": 1,
+    "handler": {
+      "status": 403,
+      "reasonCode": "PERMISSION_DENIED"
+    }
+  },
+  "completed_at": "2026-11-15T14:42:31.585Z"
+}

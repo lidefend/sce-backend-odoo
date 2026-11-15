@@ -9,7 +9,8 @@
     "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
     "docs/audit/capability-explorer-05/historical_reconciliation_20261115.md",
     "docs/audit/capability-explorer-05/historical_reconciliation_20261115.json",
-    "docs/audit/capability-explorer-05/identity_mapping_20261115.csv"
+    "docs/audit/capability-explorer-05/identity_mapping_20261115.csv",
+    "docs/audit/capability-explorer-05/evidence/"
   ],
   "environment": {
     "kind": "offline",
@@ -72,14 +73,14 @@
       "classification": "environment_defect",
       "status": "blocked",
       "summary": "Disposable sc_clean carries smart_construction_core 17.0.0.172 installed without sc_product_scenario_entry; the 17.0.0.180 pre-migrate ALTER TABLE fails before registry load.",
-      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/clean-upgrade-smart-core.log"
+      "evidence": "docs/audit/capability-explorer-05/evidence/clean-upgrade-smart-core.log"
     },
     {
       "id": "CAP05-B02",
       "classification": "scope_deviation",
       "status": "blocked",
       "summary": "Persistent sc_dev_demo was upgraded and restarted outside strict isolation. Owner decision CAP05-D01 retains the current state without restore, keeps B02 open, and requires a read-only difference reconciliation before any separately authorized recovery decision.",
-      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/local-dev-upgrade.log",
+      "evidence": "docs/audit/capability-explorer-05/evidence/local-dev-upgrade.log",
       "decision": ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml"
     }
   ],

@@ -26,9 +26,9 @@ Menu 只取
 
 | 来源 | 身份 | 原始证据 | SHA256 |
 |---|---|---|---|
-| 历史发现 | `ODOO-NATIVE-CAPABILITY-EXPLORER-01`，候选 `6689f601b`，运行基线 `sc_demo@2571346af` | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-01/runtime-probe.log` | `65c2b6b19bea5dc1170e1b0213024c8839e079c71c9402dd9f8e2c68d5826a18` |
-| 历史分类 | `ODOO-NATIVE-CAPABILITY-EXPLORER-02`，候选 `3639f35b1`，运行基线 `sc_demo@2571346af` | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/runtime-classification.log` | `646a98626a2f8ba423396d591cf12d8d179ddafc740a65a20517078af715efcd` |
-| 当前原生事实 | `main@f35d981b2` | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.log` | `8115a40110cc43049522e47779ea81aec3104879054fc22d7e65b074362bed52` |
+| 历史发现 | `ODOO-NATIVE-CAPABILITY-EXPLORER-01`，候选 `6689f601b`，运行基线 `sc_demo@2571346af` | `docs/audit/capability-explorer-05/evidence/historical-runtime-probe.log` | `65c2b6b19bea5dc1170e1b0213024c8839e079c71c9402dd9f8e2c68d5826a18` |
+| 历史分类 | `ODOO-NATIVE-CAPABILITY-EXPLORER-02`，候选 `3639f35b1`，运行基线 `sc_demo@2571346af` | `docs/audit/capability-explorer-05/evidence/historical-classification.log` | `646a98626a2f8ba423396d591cf12d8d179ddafc740a65a20517078af715efcd` |
+| 当前原生事实 | `main@f35d981b2` | `docs/audit/capability-explorer-05/evidence/current-native.log` | `8115a40110cc43049522e47779ea81aec3104879054fc22d7e65b074362bed52` |
 
 原始日志中的历史与当前 JSON 均完整解析，均为 282 行；两代历史快照的复合身份集合完全相同。
 
@@ -130,12 +130,11 @@ Odoo 会计原生菜单，位于业务根之外：
 | 证据 | 位置 / 摘要 |
 |---|---|
 | 282 行完整身份映射 | `identity_mapping_20261115.csv`，SHA256 `05c4d1b016fc9a09cbaa5bc0ae39a31d3b739f886f8a986b9ad9e57f2385f255` |
-| 机器可读对账摘要 | `historical_reconciliation_20261115.json`，SHA256 `edc79fc1f9afec35f67ff8d6741489f39c2082ce1a96a5798f599a444b65dee5` |
-| 历史发现原始日志 | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-01/runtime-probe.log` |
-| 历史分类原始日志 | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/runtime-classification.log` |
-| 当前原生原始日志 | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.log` |
-| 当前原生解析 JSON | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.json` |
-| 同库 `sc_demo` 场景范围回读 | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/daily-scene-scope.log`，SHA256 `bc3ed7a1f1dd80846d03de616fd1ff9d298100e1aa1a56bd8d54cfd6c5d7bf8e` |
+| 机器可读对账摘要 | `historical_reconciliation_20261115.json`，SHA256 `0f8ec625825f8cd12fb09c1fb2e229619ccce6b064833d87ac5a6bd7459b1b09` |
+| 历史发现原始日志 | `docs/audit/capability-explorer-05/evidence/historical-runtime-probe.log` |
+| 历史分类原始日志 | `docs/audit/capability-explorer-05/evidence/historical-classification.log` |
+| 当前原生原始日志 | `docs/audit/capability-explorer-05/evidence/current-native.log` |
+| 同库 `sc_demo` 场景范围回读 | `docs/audit/capability-explorer-05/evidence/daily-scene-scope.log`，SHA256 `bc3ed7a1f1dd80846d03de616fd1ff9d298100e1aa1a56bd8d54cfd6c5d7bf8e` |
 
 映射 CSV 只记录对账事实，不是运行时注册表，不允许被运行时写入或作为发布资格来源。
 

@@ -219,7 +219,7 @@
   "scene_reference_scope": {
     "classification": "These active scenario references target native Odoo accounting menus outside smart_construction_core.menu_sc_root; they are not missing members of the 282-entry catalog and were not silently added to it.",
     "database": "sc_demo",
-    "evidence_path": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/daily-scene-scope.log",
+    "evidence_path": "docs/audit/capability-explorer-05/evidence/daily-scene-scope.log",
     "evidence_sha256": "bc3ed7a1f1dd80846d03de616fd1ff9d298100e1aa1a56bd8d54cfd6c5d7bf8e",
     "native_catalog_scene_entry_rows": 75,
     "scenario_entry_count": 78,
@@ -259,7 +259,7 @@
     "current_native": {
       "database": "sc_demo",
       "extracted_json_sha256": "9a5be0fa61b522cb74aba54dfd73b9f9beceb388aa63055ce86cb4701097e4af",
-      "path": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.log",
+      "path": "docs/audit/capability-explorer-05/evidence/current-native.log",
       "raw_log_sha256": "8115a40110cc43049522e47779ea81aec3104879054fc22d7e65b074362bed52",
       "source_revision": "f35d981b2a37d6268e31592edeef460c9580240c"
     },
@@ -268,7 +268,7 @@
       "database": "sc_demo",
       "documented_runtime_baseline": "2571346afc8c69cea20e32fcba36082c949cf825",
       "extracted_json_sha256": "ade506d602acb1bb605abc2e7502c429c253ef5ad5d53a6a4d19d290c284af46",
-      "path": ".runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/runtime-classification.log",
+      "path": "docs/audit/capability-explorer-05/evidence/historical-classification.log",
       "raw_log_sha256": "646a98626a2f8ba423396d591cf12d8d179ddafc740a65a20517078af715efcd",
       "run": "ODOO-NATIVE-CAPABILITY-EXPLORER-02"
     }
