@@ -8,6 +8,7 @@
     "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
     "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
     "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "make/dev.mk",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
