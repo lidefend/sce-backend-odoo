@@ -133,6 +133,10 @@ ERROR: relation "sc_product_scenario_entry" does not exist
 - 本批没有为 `local.dev` 建立受管 restore Make 入口，因此不能把该恢复点描述为已完成回退。
   恢复需所有者单独授权、验证 dump/filestore 配对摘要并制定受管恢复方案。
 
+所有者裁定 `CAP05-D01`：**暂不恢复，也不把当前持久状态认定为严格验收通过。**
+下一项独立只读工作应比较 2026-11-15T08:29:48Z 恢复点与当前数据库/filestore，识别模块升级、
+快照后业务新增和回滚数据损失。任何恢复仍需新的明确授权。
+
 ## 4. Explorer 验收
 
 ### 4.1 静态与契约测试
@@ -218,7 +222,7 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 - `CAP05-B01`：隔离 `sc_clean` 从已标记 `17.0.0.172` 但缺少
   `sc_product_scenario_entry` 的状态升级失败。未获授权重建该库。
 - `CAP05-B02`：持久 `sc_dev_demo` 被升级和重启，属于范围偏离；严格隔离验收不可关闭。
-  需所有者明确接受当前持久开发状态，或授权按已登记恢复点执行恢复。
+  所有者已裁定暂不恢复并保持 OPEN；需另行完成差异核对，任何恢复都需重新授权。
 
 ### NOT_VERIFIED
 
@@ -241,7 +245,7 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 | Explorer | 准入为只读管理与诊断面；不得增加发布、资格推断或企业启用写操作。 |
 
 部署状态：未部署。用户验收状态：未执行。PR 合并不等于部署或产品交付。
-批次状态：`BLOCKED`，等待上述所有者决定；不得继续产品化实施。
+批次状态：`BLOCKED`。持久库暂不恢复；严格隔离验收和整体能力治理仍未完成。
 
 ## 8. 候选验证与复审入口
 
@@ -249,5 +253,5 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 - `make ci.local.iteration`：PASS；增量选择执行
   `verify.agent.ledger.unit` 18 tests，并完成相关 L1 守卫。
 - `git diff --check`：由增量门禁执行，PASS。
-- 当前 run 状态：`blocked`，等待独立复审和所有者决定；不宣称候选已冻结或验收完成。
+- 当前 run 状态：`blocked`；本报告的候选可独立入主线，但不构成整体验收完成。
 - 原始日志：`.runtime/agent-runs/CAPABILITY-EXPLORER-05/ci-local-iteration.log`。

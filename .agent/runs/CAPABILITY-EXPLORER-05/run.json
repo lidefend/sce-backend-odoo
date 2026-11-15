@@ -3,6 +3,7 @@
   "baseline_sha": "f35d981b2a37d6268e31592edeef460c9580240c",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
     ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
     ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
     "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
@@ -77,11 +78,12 @@
       "id": "CAP05-B02",
       "classification": "scope_deviation",
       "status": "blocked",
-      "summary": "After the isolated upgrade failed, current main was loaded by upgrading and restarting persistent sc_dev_demo. This was not an isolated acceptance action; owner authority is required to accept the persistent state or authorize recovery.",
-      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/local-dev-upgrade.log"
+      "summary": "Persistent sc_dev_demo was upgraded and restarted outside strict isolation. Owner decision CAP05-D01 retains the current state without restore, keeps B02 open, and requires a read-only difference reconciliation before any separately authorized recovery decision.",
+      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/local-dev-upgrade.log",
+      "decision": ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml"
     }
   ],
-  "next_exact_step": "Request independent review of the corrected audit-only candidate; owner must explicitly accept the persistent sc_dev_demo state or authorize recovery before the strict-isolation objective can close.",
+  "next_exact_step": "Publish the exact-head audit-only candidate as CAP05-R1 after independent review; keep B01 and B02 blocked and defer the sc_dev_demo difference reconciliation to a separate read-only follow-up.",
   "id": "CAPABILITY-EXPLORER-05",
   "branch": "audit/capability-explorer-05-20261115",
   "status": "blocked",
