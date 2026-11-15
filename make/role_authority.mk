@@ -109,6 +109,13 @@ audit.system.permission_role.demo_observation: guard.prod.forbid
 	  'python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo' \
 	  < scripts/verify/system_permission_runtime_observation.py
 
+.PHONY: audit.odoo_native_capability_explorer.demo
+audit.odoo_native_capability_explorer.demo: guard.prod.forbid verify.odoo_native_capability_explorer.unit
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo' \
+	  < scripts/verify/odoo_native_capability_explorer_probe.py
+
 .PHONY: audit.system.permission_role.demo_navigation
 audit.system.permission_role.demo_navigation: guard.prod.forbid
 	@python3 -c 'import json; from scripts.verify.system_permission_runtime_observation import validate_witness_uids; r=json.load(open(".runtime/system-permission-roles/demo-observation.json")); print(json.dumps(validate_witness_uids([x["uid"] for x in r["acl_observations"]])))' > .runtime/system-permission-roles/navigation-uids.json

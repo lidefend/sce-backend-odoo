@@ -1,0 +1,42 @@
+schema_version: 1
+goal:
+  id: ODOO-NATIVE-CAPABILITY-EXPLORER-01
+  title: validate_odoo_native_capability_discovery
+  status: completed
+  formal_product_layer: P4 read-only source validation
+  layer_target: Odoo metadata discovery joined to existing scene composition facts
+  module:
+    - addons/smart_core/delivery/runtime_capability_catalog.py
+    - addons/smart_construction_core/services/scenario_surface_projection.py
+    - addons/smart_construction_core/models/support/product_scenario.py
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: 6689f601b3bcda349546b6e3814ca91fcaade346
+  objective: >-
+    Prove by a read-only probe that installed modules and native Odoo metadata,
+    joined with existing scene models, can discover and describe business entries
+    and classify their current scene usage without a parallel capability registry.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_validation_with_existing_construction_scenes
+    why_here: >-
+      The probe is delivery verification only. Capability facts remain owned by
+      Odoo and scene composition remains owned by the existing product scenario model.
+    why_not_elsewhere:
+      - no_new_product_model
+      - no_new_capability_registry
+      - no_frontend_page
+      - no_duplication_of_odoo_metadata
+  acceptance:
+    - installed modules and module dependencies are discoverable
+    - models, fields, views, actions, menus, ACL and record rules are discoverable
+    - native business entries are classified as scene-bound or unbound
+    - release state is joined from the existing product menu release source
+    - an entry is draft-selectable only when its native identity is complete
+    - no runtime write or product source mutation occurs
+  exclusions:
+    - capability explorer page
+    - scene editor page
+    - new database model or migration
+    - maturity qualification changes
+    - deployment or merge
+  rollback: remove the P4 probe, test, Make targets and validation report; no runtime data change is required.

@@ -1280,6 +1280,13 @@ entries:
   wire_or_retire: file-consumed
   reason: Maintained module consumed by scripts/verify/module_upgrade_observation.py.
     No claim of live ORM or release execution from this registration.
+- script: odoo_native_capability_explorer_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Read-only runtime probe executed by
+    audit.odoo_native_capability_explorer.demo. It joins native Odoo metadata
+    to existing product-scenario facts and never creates or writes capabilities.
 - script: operation_strategy_contract_surface_audit.py
   status: active
   owner: platform-team
@@ -2006,6 +2013,12 @@ entries:
   date: '2026-11-06'
   reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
     backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
+- script: test_odoo_native_capability_explorer_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Executed by verify.odoo_native_capability_explorer.unit. Tests native
+    entry selection boundaries without database, runtime or write access.
 - script: test_native_view_capability_taxonomy.py
   status: orphan
   owner: platform-team

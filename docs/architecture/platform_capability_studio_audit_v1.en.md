@@ -6,6 +6,13 @@ Baseline: `main@2571346afc8c69cea20e32fcba36082c949cf825`
 
 Runtime: `demo / sc_demo / daily-dev-demo`
 
+> Direction update 2026-11-15: the capability fact audit remains valid, but the
+> `PlatformCapabilityCatalogService` implementation proposal in the reuse section
+> is superseded by `ARCH-DECISION-014`. The next path is Odoo-Native Capability
+> Discovery: installed modules provide capabilities, scenarios define products,
+> and platform release plus enterprise enablement complete delivery without a
+> parallel capability registry.
+
 ## Result
 
 There is no single authoritative catalog that joins business capability identity,

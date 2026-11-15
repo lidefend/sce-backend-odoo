@@ -409,6 +409,12 @@ RULES = (
         "verify.local.dev.runtime.performance.unit",
     )),
     Rule((
+        "scripts/verify/odoo_native_capability_explorer_probe.py",
+        "scripts/verify/test_odoo_native_capability_explorer_probe.py",
+    ), (
+        "verify.odoo_native_capability_explorer.unit",
+    )),
+    Rule((
         "scripts/verify/test_menu_metadata_batch.py",
         "addons/smart_core/delivery/menu_service.py",
     ), (

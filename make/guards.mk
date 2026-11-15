@@ -432,6 +432,13 @@ verify.capability.module_tooling.unit: guard.prod.forbid
 verify.construction.diary.list_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_diary_list_contract
 
+.PHONY: verify.odoo_native_capability_explorer.unit
+verify.odoo_native_capability_explorer.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  scripts/verify/odoo_native_capability_explorer_probe.py \
+	  scripts/verify/test_odoo_native_capability_explorer_probe.py
+	@python3 -m unittest scripts.verify.test_odoo_native_capability_explorer_probe
+
 # Native workspace fact migration (PR #800): preserve source -> projections,
 # not the retired critical-route override map.
 .PHONY: verify.construction.policy_maps.unit

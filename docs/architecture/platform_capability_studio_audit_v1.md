@@ -6,6 +6,11 @@
 
 运行环境：`demo / sc_demo / daily-dev-demo`
 
+> 2026-11-15 方向更新：本文的能力事实审计继续有效，但第 10 节中的
+> `PlatformCapabilityCatalogService` 实施建议已被 `ARCH-DECISION-014` 取代。
+> 后续采用 Odoo-Native Capability Discovery：模块安装提供能力，场景组合定义
+> 产品，平台发布与企业启用完成交付，不新建平行能力 Registry。
+
 ## 1. 结论
 
 当前平台还没有一份可以同时回答“能力是什么、由谁执行、达到什么成熟度、哪些入口已发布、被哪些场景和产品版本使用”的权威能力目录。
