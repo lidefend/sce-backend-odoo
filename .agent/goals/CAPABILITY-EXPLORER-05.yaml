@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-05
+  title: Post-merge integration and historical capability asset reconciliation
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: read-only capability explorer acceptance and historical reconciliation evidence
+  module:
+    - smart_core
+    - smart_construction_core
+    - ops_delivery_audit
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Prove that PR #889 is present in current main, validate the Explorer read-only
+    API against a running management principal, and reconcile the authorized
+    282/75/207 historical asset snapshot with current Odoo-native Menu/Action
+    facts without promoting historical observations or modifying product state.
+  why_here: >-
+    The result is verification evidence and delivery documentation for an
+    already-merged P0 product capability. It does not define capability
+    semantics or create a new runtime registry.
+  why_not_elsewhere:
+    - no_backend_orm_or_handler_semantics_change
+    - no_frontend_product_inference_or_fallback
+    - no_scene_candidate_qualification_or_release_write
+    - no_enterprise_activation_change
+    - no_second_capability_registry
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CAPABILITY-EXPLORER-05.yaml
+      - .agent/runs/CAPABILITY-EXPLORER-05/run.json
+      - docs/audit/capability-explorer-05
+    runtime:
+      - governed local.clean health and module upgrade
+      - governed local.dev module upgrade, restart, browser and HTTP acceptance
+      - read-only daily sc_demo native-discovery probe
+  acceptance:
+    - pr_889_merge_commit_and_final_candidate_tree_match
+    - required_ci_and_quick_receipt_are_bound_to_pr_final_candidate
+    - explorer_http_list_search_pagination_detail_diagnose_and_denial_pass
+    - explorer_reads_do_not_change_business_or_release_tables
+    - historical_282_composite_identities_reconcile_with_current_native_facts
+    - all_identity_missing_duplicate_invalid_and_mapping_differences_are_classified
+    - blocked_and_not_verified_items_remain_explicit
+  exclusions:
+    - ORM ACL Record Rule Scene Candidate Qualification and Release changes
+    - enterprise enablement changes
+    - automatic historical capability publication
+    - capability Registry scanner or duplicate data model
+    - production deployment
+    - backend performance work
+  rollback: >-
+    Revert the P4 audit commit. No product, business-record or release-state
+    rollback is required.
+  completion:
+    batch: verification_pending
+    mainline_integration: pr_889_merged
+    deployment: not_performed
+    user_acceptance: not_performed
