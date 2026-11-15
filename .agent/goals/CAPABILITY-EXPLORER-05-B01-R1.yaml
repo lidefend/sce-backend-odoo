@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-05-B01-R1
   title: Odoo migration lifecycle repair for scenario-entry pre-migrations
-  status: verification_pending
+  status: completed
   formal_product_layer: P4
   layer_target: smart_construction_core versioned upgrade migrations
   module:
@@ -60,7 +60,12 @@ goal:
     database may then be discarded through its managed lifecycle entry.
   completion:
     batch: verified
-    mainline_integration: pending_merge_decision
+    mainline_integration: merged_pr_893
     deployment: not_performed
     user_acceptance: not_performed
+  closure:
+    status: merged
+    pr: 893
+    merge_commit: 9c537187c05306663758c86f95e0e91d317381db
+    merge_tree: 3bf548df2b4e5bddfa6419ad9233aeb94226692b
   run: .agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json

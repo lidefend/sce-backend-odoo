@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-05-B02-R1
   title: Persistent development recovery-point reconciliation and owner-authorized rebuild
-  status: blocked
+  status: completed
   formal_product_layer: P4
   layer_target: recovery-point reconciliation followed by governed demo rebuild
   module:
@@ -59,8 +59,15 @@ goal:
     artifacts/local-dev/snapshots/20261115T163419Z; restoring it requires new
     explicit owner authorization because it would overwrite the rebuilt demo.
   completion:
-    batch: owner_review_ready
-    mainline_integration: pending
+    batch: remediated_by_owner_authorized_rebuild
+    mainline_integration: merged_pr_894
     deployment: not_performed
     user_acceptance: not_performed
+  closure:
+    decision: CAP05-D03
+    status: REMEDIATED_BY_OWNER_AUTHORIZED_REBUILD
+    strict_isolation_pass: false
+    b01_repair:
+      pr: 893
+      merge_commit: 9c537187c05306663758c86f95e0e91d317381db
   run: .agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json
