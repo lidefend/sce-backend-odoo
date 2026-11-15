@@ -34,6 +34,7 @@
     "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
     "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
     "scripts/verify/local_dev_runtime_performance_browser.sh",
+    "scripts/ci/personal_data_false_positives.json",
     "frontend/apps/web/scripts/record_deep_link_evidence.mjs",
     "frontend/apps/web/scripts/record_deep_link_evidence.d.mts",
     "scripts/verify/frontend_page_contract_boundary_guard.py",
@@ -110,6 +111,28 @@
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
         "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "personal_data_scan": {
+      "target": "security.personal_data_scan",
+      "inputs": [
+        "scripts/ci/personal_data_scan.py",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/parallel_scan.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "clean_history": {
+      "target": "verify.repository.clean_history",
+      "inputs": [
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/ci/personal_data_false_positives.json",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/parallel_scan.py",
+        "make/ci.mk"
       ],
       "kind": "offline"
     },

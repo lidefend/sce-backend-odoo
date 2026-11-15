@@ -4,7 +4,7 @@
 
 - Baseline: `70d01d8fa52c76dc3a296f0431e39be79b98dab5`
 - Branch: `fix/frontend-performance-m01-20261116`
-- Status: review findings fixed; exact-candidate re-review pending
+- Status: independent review approved; extended-main sync unblocker applied
 
 ## Objective and layer
 
@@ -146,6 +146,26 @@ through the existing startup performance target, so the verification lane did
 not grow a new remote-only script.
 
 Another independent exact-head review and browser observation remain pending.
+
+### Extended-main sync P4 unblocker
+
+The reviewed candidate's first full Quick reached 7/8 passing shards, then
+failed only because current `origin/main` contains public GitLab pipeline run and
+job identifiers in an audit document that match the mobile-phone pattern. The
+identifiers are execution metadata, not personal data.
+
+Three exact immutable blobs are now registered in
+`scripts/ci/personal_data_false_positives.json`; no directory, path wildcard or
+scan-rule exemption was introduced:
+
+- `60f6a78813ff1d692afd5cf116eb372ae06a427a`
+- `6fc5fa3ff96f8037bedfac207cb5fd28be68a360`
+- `8fbde449f96c090b175b66a32681b3c8c883019d`
+
+The targeted personal-data scan passed with zero confirmed matches and 40 exact
+suppressions. The full clean-history scan passed all governed scan members over
+34,780 blobs. This is P4 publication unblocking only; it does not change the
+frontend product behavior reviewed above.
 
 ### Runtime marker observation
 

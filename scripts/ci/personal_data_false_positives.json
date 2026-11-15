@@ -72,6 +72,27 @@
       "reason": "verified_synthetic_tdesign_admin_fixture_history"
     },
     {
+      "rule_id": "PD002",
+      "path": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
+      "blob_id": "60f6a78813ff1d692afd5cf116eb372ae06a427a",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "reviewed_public_gitlab_ci_run_and_job_ids_not_personal_data_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
+      "blob_id": "6fc5fa3ff96f8037bedfac207cb5fd28be68a360",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "reviewed_public_gitlab_ci_run_and_job_ids_not_personal_data_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
+      "blob_id": "8fbde449f96c090b175b66a32681b3c8c883019d",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "reviewed_public_gitlab_ci_run_and_job_ids_not_personal_data_history"
+    },
+    {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
       "blob_id": "1cd140f6014033d7b122fb88bd6cc3324f455012",
