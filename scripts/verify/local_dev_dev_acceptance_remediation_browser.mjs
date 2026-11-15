@@ -8,6 +8,7 @@ const ROOT = process.cwd();
 const BASE = process.env.DEV_ACCEPTANCE_BASE_URL || 'http://127.0.0.1:18081';
 const ACTOR = process.env.DEV_ACCEPTANCE_ACTOR || 'demo_full';
 const PASSWORD = process.env.SC_DEMO_USER_PASSWORD || '';
+const RECORD_MODEL = process.env.DEV_ACCEPTANCE_RECORD_MODEL || 'payment.request';
 const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
   ? path.resolve(ROOT, process.env.DEV_ACCEPTANCE_OUTPUT)
   : path.join(
@@ -17,7 +18,7 @@ const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
 
 const technicalTitles = new Set(['enterprise.department', 'portal.notifications']);
 const affectedHeadings = ['消息通知', '材料出库', '施工日志', '项目台账', '安全检查', '部门管理'];
-const RECORD_READY_SELECTOR = '[data-product-page-mode="form"][data-form-model="payment.request"][data-state="ok"]';
+const RECORD_READY_SELECTOR = `[data-product-page-mode="form"][data-form-model="${RECORD_MODEL}"][data-state="ok"]`;
 const STARTUP_PHASES = ['boot_start', 'skeleton_shown', 'session_ready', 'contract_loaded', 'record_ready'];
 const runtimeState = {
   navigation: [],
@@ -46,6 +47,9 @@ function safeRequestShape(payload) {
     projection: /^[a-zA-Z0-9_.]{1,100}$/.test(String(params.projection || ''))
       ? String(params.projection)
       : null,
+    with_keys: Array.isArray(params.with)
+      ? params.with.map(item => String(item || '')).filter(item => /^[a-zA-Z0-9_.]{1,100}$/.test(item))
+      : [],
   };
 }
 
@@ -91,6 +95,7 @@ async function attachNetworkCapture(page, sink, startedAt = performance.now()) {
       ...safeRequestShape(payload),
       status: response.status(),
       url: response.url(),
+      content_length: Number(response.headers()['content-length'] || 0) || null,
       request_start_ms: started?.request_start_ms ?? null,
       response_end_ms: Math.round(performance.now() - startedAt),
       duration_ms: started
@@ -316,7 +321,7 @@ async function recordPageSnapshot(page) {
       return style.display !== 'none' && style.visibility !== 'hidden'
         && (node.offsetWidth > 0 || node.offsetHeight > 0);
     };
-    const form = document.querySelector('[data-product-page-mode="form"][data-form-model="payment.request"]');
+    const form = document.querySelector('[data-product-page-mode="form"]');
     const skeleton = document.querySelector('[data-loading-progress]');
     const shellLoading = document.querySelector('[data-shell-loading="true"], [aria-busy="true"]');
     const bodyText = cleanText(document.body?.innerText);
@@ -585,6 +590,8 @@ async function main() {
         source_revision: runtimeState.sourceRevision,
         diagnostics,
         startup_timing: startupTiming,
+        init_data_keys: [...runtimeState.dataKeys],
+        workspace_home_loaded_at_startup: runtimeState.dataKeys.includes('workspace_home'),
       };
       report.findings = [];
       if (report.record_deep_link.errors.length) report.findings.push('record_deep_link_http_error');
