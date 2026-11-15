@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "f35d981b2a37d6268e31592edeef460c9580240c",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
+    ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
+    "docs/audit/capability-explorer-05/integration_acceptance_20261115.md",
+    "docs/audit/capability-explorer-05/historical_reconciliation_20261115.md",
+    "docs/audit/capability-explorer-05/historical_reconciliation_20261115.json",
+    "docs/audit/capability-explorer-05/identity_mapping_20261115.csv",
+    "docs/audit/capability-explorer-05/evidence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository checks over authorized read-only runtime evidence"
+  },
+  "checks": {
+    "native_unit": {
+      "target": "verify.odoo_native_capability_explorer.unit",
+      "inputs": [
+        "scripts/verify/odoo_native_capability_explorer_probe.py",
+        "scripts/verify/test_odoo_native_capability_explorer_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "explorer_unit": {
+      "target": "verify.platform.capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_unit": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/admin_route_access_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "make/frontend.mk",
+        "make/ci.mk",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    {
+      "id": "CAP05-B01",
+      "classification": "environment_defect",
+      "status": "blocked",
+      "summary": "Disposable sc_clean carries smart_construction_core 17.0.0.172 installed without sc_product_scenario_entry; the 17.0.0.180 pre-migrate ALTER TABLE fails before registry load.",
+      "evidence": "docs/audit/capability-explorer-05/evidence/clean-upgrade-smart-core.log"
+    },
+    {
+      "id": "CAP05-B02",
+      "classification": "scope_deviation",
+      "status": "blocked",
+      "summary": "Persistent sc_dev_demo was upgraded and restarted outside strict isolation. Owner decision CAP05-D01 retains the current state without restore, keeps B02 open, and requires a read-only difference reconciliation before any separately authorized recovery decision.",
+      "evidence": "docs/audit/capability-explorer-05/evidence/local-dev-upgrade.log",
+      "decision": ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml"
+    }
+  ],
+  "next_exact_step": "Complete exact-head independent review, publish CAP05-R1 through the governed GitHub lane, wait for required checks, and stop before the merge decision.",
+  "id": "CAPABILITY-EXPLORER-05",
+  "branch": "audit/capability-explorer-05-r1-20261115-v2",
+  "status": "blocked",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
+  "record": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md"
+}

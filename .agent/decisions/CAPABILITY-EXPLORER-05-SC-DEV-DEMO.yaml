@@ -1,0 +1,36 @@
+schema_version: 1
+decision:
+  id: CAP05-D01
+  title: Retain the current sc_dev_demo state pending difference reconciliation
+  status: active
+  decision_date: 2026-11-15
+  formal_product_layer: P4
+  related_goal: CAPABILITY-EXPLORER-05
+  context: >-
+    Persistent sc_dev_demo was upgraded and restarted outside the strict
+    isolated acceptance boundary. A paired pre-upgrade recovery point exists,
+    but restoring it could discard valid development data written after that
+    snapshot.
+  decision: >-
+    Retain the current sc_dev_demo state. Do not restore the
+    2026-11-15T08:29:48Z recovery point in this step. B02 remains open and
+    strict read-only acceptance remains incomplete.
+  required_followup:
+    - compare the recovery point, current database, filestore and module state
+    - identify upgrades and business data written after the snapshot
+    - classify rollback data loss before proposing any restore
+    - require a new explicit owner authorization before restore
+  prohibited:
+    - direct database or filestore overwrite
+    - manual table creation or version forgery
+    - marking B02 or strict isolation as PASS
+    - using the retention decision as capability lifecycle acceptance
+  recovery_point:
+    path: artifacts/local-dev/snapshots/20261115T082948Z
+    source_sha: d176e2fd67fec87257114b207cec655ec8fa6e9d
+    manifest_sha256: bf9db35d4715f656521f9e5964fcdfdb905b3b7820958f5648d561769d08d316
+    database_dump_sha256: 0f416a23009a1e0678fa5e0a71eb19972854112bd112f2525bf03e6a790544b4
+    filestore_sha256: 90ae7b1ce8bdb3829ca08e84ff0a370862eaf7662bed1221a2acc70f0e539686
+  rollback: >-
+    Revert this decision record. That does not change the persistent database;
+    any data restore remains a separately authorized operation.
