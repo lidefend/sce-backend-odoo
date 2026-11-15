@@ -22,8 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { onActivated, onBeforeUnmount, onMounted, ref, shallowRef, type Component } from 'vue';
-import { onBeforeRouteLeave } from 'vue-router';
+import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, type Component } from 'vue';
 import ProductFormLoadingSkeleton from '../components/product-record/ProductFormLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { markStartupPhase } from '../app/performance/startupTiming';
@@ -66,7 +65,7 @@ onActivated(() => {
   if (hasMounted) resumeIfNeeded();
 });
 
-onBeforeRouteLeave(() => {
+onDeactivated(() => {
   pageLoader.invalidate();
 });
 

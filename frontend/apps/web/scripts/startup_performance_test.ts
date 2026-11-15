@@ -83,6 +83,18 @@ assert.deepEqual(await staleLoad, { cancelled: true });
 assert.equal(loadCalls, 2, 'cache reactivation must restart a cancelled load');
 cases += 5;
 
+let activeResolve!: (value: string) => void;
+const activeLoader = createContractFormRouteLoader(
+  () => new Promise<string>((resolve) => {
+    activeResolve = resolve;
+  }),
+  100,
+);
+const activeLoad = activeLoader.load();
+activeResolve('active-page');
+assert.deepEqual(await activeLoad, { module: 'active-page' });
+cases += 1;
+
 const timedOutLoad = await createContractFormRouteLoader(
   () => new Promise<string>(() => undefined),
   5,
@@ -175,10 +187,11 @@ assert.match(recordRoute, /ProductFormLoadingSkeleton/);
 cases += 3;
 assert.match(recordRoute, /createContractFormRouteLoader/);
 assert.match(recordRoute, /window\.location\.reload\(\)/);
-assert.match(recordRoute, /onBeforeRouteLeave/);
+assert.match(recordRoute, /onDeactivated/);
+assert.doesNotMatch(recordRoute, /onBeforeRouteLeave/);
 assert.match(recordRoute, /onActivated/);
 assert.match(recordRoute, /pageLoader\.invalidate\(\)/);
-cases += 5;
+cases += 6;
 
 const sessionRequest = readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8');
 assert.match(sessionRequest, /includeWorkspaceHome === false \? \[\] : \['workspace_home'\]/);

@@ -58,7 +58,7 @@ labels instead of exposing dotted technical identities.
 
 | Check | Result |
 | --- | --- |
-| `verify.frontend.startup_performance.unit` | passed, 53 cases |
+| `verify.frontend.startup_performance.unit` | passed, 55 cases |
 | `verify.frontend.dev_acceptance_remediation.unit` | passed, 20 cases |
 | `verify.frontend.workspace_scenario_lifecycle.unit` | passed, 11 affected scenarios |
 | `verify.frontend.component_driver_takeover.unit` | passed, 18 cases |
@@ -121,10 +121,13 @@ A fresh exact-head review found two remaining blockers:
   or bundle hashes were absent.
 
 The route shell now delegates to a P0 route loader that distinguishes current,
-cancelled and failed generations. `onActivated` restarts loading only when the
-retained instance has no page and no recoverable error. The regression covers a
-delayed import, route invalidation, a second import on reactivation, stale-result
-rejection, timeout failure and in-flight deduplication.
+cancelled and failed generations. `onDeactivated` invalidates only after an
+actual cached-page deactivation, so a failed or aborted navigation does not
+cancel the active load. `onActivated` restarts loading only when the retained
+instance has no page and no recoverable error. The regression covers a delayed
+import, deactivation/reactivation, a failed-navigation-style uninterrupted load,
+a second import on reactivation, stale-result rejection, timeout failure and
+in-flight deduplication.
 
 Record identity validation now fails closed unless all of the following exist:
 

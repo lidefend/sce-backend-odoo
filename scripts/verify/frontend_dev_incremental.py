@@ -748,6 +748,18 @@ RULES = (
     ), (
         "verify.frontend.style_system.guard",
     )),
+    Rule((
+        "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
+        "frontend/apps/web/src/app/performance/startupTiming.ts",
+        "frontend/apps/web/scripts/startup_performance_test.ts",
+        "frontend/apps/web/scripts/record_deep_link_evidence.mjs",
+        "frontend/apps/web/scripts/record_deep_link_evidence.d.mts",
+        "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
+        "scripts/verify/local_dev_runtime_performance_browser.sh",
+    ), (
+        "verify.frontend.startup_performance.unit",
+        "verify.frontend.dev_acceptance_remediation.unit",
+    )),
     # ActionView 的 surface 展示形态与列表分页声明都由契约投影消费；改动入口视图
     # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
     Rule((
