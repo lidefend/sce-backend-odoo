@@ -125,12 +125,32 @@ assert.match(
   'SceneView must render a stable semantic page heading hook',
 );
 cases += 1;
+assert.match(
+  sceneView,
+  /session\.updateActiveActivityTitle\(title, route\.fullPath\)/,
+  'SceneView must publish the resolved business scene label to the active tab',
+);
+cases += 1;
 
 const formLoading = readFileSync('frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue', 'utf8');
 assert.match(
   formLoading,
   /data-loading-progress/,
   'record form loading exposes a visible progress surface',
+);
+cases += 1;
+
+const indexHtml = readFileSync('frontend/apps/web/index.html', 'utf8');
+assert.match(
+  indexHtml,
+  /id="app-boot"[^>]+role="status"/,
+  'the document shell must stay visible before Vue mounts',
+);
+cases += 1;
+assert.match(
+  indexHtml,
+  /启动时间较长，请检查网络后刷新页面/,
+  'a long document bootstrap must publish an actionable delayed state',
 );
 cases += 1;
 

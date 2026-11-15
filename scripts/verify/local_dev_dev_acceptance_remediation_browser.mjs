@@ -8,18 +8,22 @@ const ROOT = process.cwd();
 const BASE = process.env.DEV_ACCEPTANCE_BASE_URL || 'http://127.0.0.1:18081';
 const ACTOR = process.env.DEV_ACCEPTANCE_ACTOR || 'demo_full';
 const PASSWORD = process.env.SC_DEMO_USER_PASSWORD || '';
-const OUTPUT = path.join(
-  ROOT,
-  '.runtime/dev-acceptance-20261115b-remediation/browser-report.json',
-);
+const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
+  ? path.resolve(ROOT, process.env.DEV_ACCEPTANCE_OUTPUT)
+  : path.join(
+    ROOT,
+    '.runtime/dev-acceptance-20261115b-remediation/browser-report.json',
+  );
 
 const technicalTitles = new Set(['enterprise.department', 'portal.notifications']);
 const affectedHeadings = ['消息通知', '材料出库', '施工日志', '项目台账', '安全检查', '部门管理'];
+const RECORD_READY_SELECTOR = '[data-product-page-mode="form"][data-form-model="payment.request"][data-state="ok"]';
 const runtimeState = {
   navigation: [],
   scenarioSurface: null,
   roleSurface: null,
   user: null,
+  sourceRevision: '',
   initIntent: '',
   dataKeys: [],
   navigationKeys: [],
@@ -44,12 +48,41 @@ function safeRequestShape(payload) {
   };
 }
 
-async function attachNetworkCapture(page, sink) {
+async function attachNetworkCapture(page, sink, startedAt = performance.now()) {
+  const startedRequests = new Map();
+  const requestHandler = request => {
+    let payload = null;
+    try {
+      payload = request.postDataJSON();
+    } catch {
+      // Non-JSON requests are still recorded when they are page resources.
+    }
+    startedRequests.set(request, {
+      ...safeRequestShape(payload),
+      request_start_ms: Math.round(performance.now() - startedAt),
+      method: request.method(),
+      resource_type: request.resourceType(),
+      resource_url: request.url(),
+    });
+  };
   const handler = async response => {
-    if (!response.url().includes('/api/v1/intent')) return;
+    const request = response.request();
+    const started = startedRequests.get(request);
+    if (!response.url().includes('/api/v1/intent')) {
+      if (!started || !['document', 'script', 'stylesheet'].includes(started.resource_type)) return;
+      sink.push({
+        intent: '',
+        status: response.status(),
+        resource_type: started.resource_type,
+        resource_url: started.resource_url,
+        request_start_ms: started.request_start_ms,
+        response_end_ms: Math.round(performance.now() - startedAt),
+      });
+      return;
+    }
     let payload;
     try {
-      payload = response.request().postDataJSON();
+      payload = request.postDataJSON();
     } catch {
       return;
     }
@@ -57,6 +90,11 @@ async function attachNetworkCapture(page, sink) {
       ...safeRequestShape(payload),
       status: response.status(),
       url: response.url(),
+      request_start_ms: started?.request_start_ms ?? null,
+      response_end_ms: Math.round(performance.now() - startedAt),
+      duration_ms: started
+        ? Math.round(performance.now() - startedAt) - started.request_start_ms
+        : null,
     };
     if (response.status() >= 400) {
       try {
@@ -77,14 +115,19 @@ async function attachNetworkCapture(page, sink) {
         }
         if (data?.role_surface && typeof data.role_surface === 'object') runtimeState.roleSurface = data.role_surface;
         if (data?.user && typeof data.user === 'object') runtimeState.user = data.user;
+        if (data?.source_revision) runtimeState.sourceRevision = String(data.source_revision);
       } catch {
         // The mandatory runtime state remains absent and the navigation check fails closed.
       }
     }
     sink.push(row);
   };
+  page.on('request', requestHandler);
   page.on('response', handler);
-  return () => page.off('response', handler);
+  return () => {
+    page.off('request', requestHandler);
+    page.off('response', handler);
+  };
 }
 
 function findNavigationTarget(nodes, label) {
@@ -263,6 +306,138 @@ async function tabTitles(page) {
     .then(rows => rows.map(clean).filter(Boolean));
 }
 
+async function recordPageSnapshot(page) {
+  return page.evaluate(selector => {
+    const cleanText = value => String(value || '').replace(/\s+/g, ' ').trim();
+    const visible = node => {
+      if (!node) return false;
+      const style = window.getComputedStyle(node);
+      return style.display !== 'none' && style.visibility !== 'hidden'
+        && (node.offsetWidth > 0 || node.offsetHeight > 0);
+    };
+    const form = document.querySelector('[data-product-page-mode="form"][data-form-model="payment.request"]');
+    const skeleton = document.querySelector('[data-loading-progress]');
+    const shellLoading = document.querySelector('[data-shell-loading="true"], [aria-busy="true"]');
+    const bodyText = cleanText(document.body?.innerText);
+    const main = document.querySelector('main');
+    const mainText = cleanText(main?.innerText);
+    const readyForm = document.querySelector(selector);
+    return {
+      url: window.location.href,
+      title: document.title,
+      body_text_length: bodyText.length,
+      main_text_length: mainText.length,
+      body_text: bodyText.slice(0, 600),
+      main_text: mainText.slice(0, 600),
+      form_present: visible(form),
+      form_state: form?.getAttribute('data-state') || null,
+      form_ready: visible(readyForm),
+      skeleton_present: visible(skeleton),
+      shell_loading: visible(shellLoading),
+      headings: Array.from(document.querySelectorAll('h1'))
+        .filter(visible)
+        .map(node => cleanText(node.textContent))
+        .filter(Boolean),
+    };
+  }, RECORD_READY_SELECTOR);
+}
+
+async function observeRecordPage(page, startedAt) {
+  const snapshots = [];
+  const screenshots = [];
+  const screenshotDir = path.join(
+    ROOT,
+    '.runtime/dev-acceptance-20261115b-remediation',
+  );
+  fs.mkdirSync(screenshotDir, { recursive: true });
+  let captured5s = false;
+  let captured17s = false;
+  while (performance.now() - startedAt < 45000) {
+    const elapsedMs = Math.round(performance.now() - startedAt);
+    const snapshot = await recordPageSnapshot(page);
+    snapshots.push({ elapsed_ms: elapsedMs, ...snapshot });
+    if (!captured5s && elapsedMs >= 5000) {
+      captured5s = true;
+      const screenshot = path.join(screenshotDir, 'record-deep-link-5s.png');
+      await page.screenshot({ path: screenshot, fullPage: true });
+      screenshots.push({ elapsed_ms: elapsedMs, screenshot });
+    }
+    if (!captured17s && elapsedMs >= 17000) {
+      captured17s = true;
+      const screenshot = path.join(screenshotDir, 'record-deep-link-17s.png');
+      await page.screenshot({ path: screenshot, fullPage: true });
+      screenshots.push({ elapsed_ms: elapsedMs, screenshot });
+    }
+    if (snapshot.form_ready) {
+      const screenshot = path.join(screenshotDir, 'record-deep-link-ready.png');
+      await page.screenshot({ path: screenshot, fullPage: true });
+      screenshots.push({ elapsed_ms: elapsedMs, screenshot });
+      return { elapsedMs, snapshots, screenshots, ready: true };
+    }
+    await page.waitForTimeout(1000);
+  }
+  const screenshot = path.join(screenshotDir, 'record-deep-link-timeout.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  screenshots.push({
+    elapsed_ms: Math.round(performance.now() - startedAt),
+    screenshot,
+  });
+  return {
+    elapsedMs: Math.round(performance.now() - startedAt),
+    snapshots,
+    screenshots,
+    ready: false,
+  };
+}
+
+async function installRecordDiagnostics(page) {
+  await page.addInitScript(() => {
+    const diagnostics = {
+      installed_at: performance.now(),
+      long_tasks: [],
+      paints: [],
+    };
+    window.__scRecordDiagnostics = diagnostics;
+    try {
+      new PerformanceObserver(list => {
+        diagnostics.long_tasks.push(...list.getEntries().map(entry => ({
+          start_ms: Math.round(entry.startTime),
+          duration_ms: Math.round(entry.duration),
+          name: entry.name,
+        })));
+      }).observe({ type: 'longtask', buffered: true });
+    } catch {
+      // Older Chromium builds may not expose long-task entries.
+    }
+    try {
+      new PerformanceObserver(list => {
+        diagnostics.paints.push(...list.getEntries().map(entry => ({
+          name: entry.name,
+          start_ms: Math.round(entry.startTime),
+        })));
+      }).observe({ type: 'paint', buffered: true });
+    } catch {
+      // Paint timing is optional diagnostic detail.
+    }
+  });
+}
+
+async function readRecordDiagnostics(page) {
+  return page.evaluate(() => {
+    const diagnostics = window.__scRecordDiagnostics || {};
+    const navigation = performance.getEntriesByType('navigation')[0];
+    return {
+      long_tasks: diagnostics.long_tasks || [],
+      paints: diagnostics.paints || [],
+      navigation: navigation ? {
+        dom_content_loaded_ms: Math.round(navigation.domContentLoadedEventEnd),
+        load_event_ms: Math.round(navigation.loadEventEnd),
+        response_start_ms: Math.round(navigation.responseStart),
+      } : null,
+    };
+  });
+}
+
 async function locatePaymentRecordHref(page) {
   await openMenu(page, '付款申请');
   const queryInput = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
@@ -350,30 +525,44 @@ async function main() {
       .slice(0, 300));
 
     if (process.env.DEV_ACCEPTANCE_ONLY === 'record') {
-      const href = await locatePaymentRecordHref(page);
+      const href = process.env.DEV_ACCEPTANCE_RECORD_URL
+        || await locatePaymentRecordHref(page);
       detachNetwork();
-      const recordPage = await context.newPage();
+      const recordPage = process.env.DEV_ACCEPTANCE_RECORD_URL
+        ? page
+        : await context.newPage();
       const recordNetwork = [];
-      const detachRecordNetwork = await attachNetworkCapture(recordPage, recordNetwork);
+      const pageErrors = [];
+      const consoleErrors = [];
+      recordPage.on('pageerror', error => pageErrors.push(clean(error?.message || error)));
+      recordPage.on('console', message => {
+        if (message.type() === 'error') consoleErrors.push(clean(message.text()));
+      });
       const started = performance.now();
+      const detachRecordNetwork = await attachNetworkCapture(recordPage, recordNetwork, started);
+      await installRecordDiagnostics(recordPage);
       await recordPage.goto(href, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await recordPage.locator(
-        '[data-product-page-mode="form"][data-form-model="payment.request"][data-state="ok"]:visible',
-      ).waitFor({ state: 'visible', timeout: 45000 });
-      const elapsedMs = Math.round(performance.now() - started);
-      const screenshot = path.join(ROOT, '.runtime/dev-acceptance-20261115b-remediation/record-deep-link.png');
-      fs.mkdirSync(path.dirname(screenshot), { recursive: true });
-      await recordPage.screenshot({ path: screenshot, fullPage: true });
+      const observation = await observeRecordPage(recordPage, started);
+      const diagnostics = await readRecordDiagnostics(recordPage);
       detachRecordNetwork();
       report.record_deep_link = {
         href,
-        elapsed_ms: elapsedMs,
+        elapsed_ms: observation.elapsedMs,
+        ready: observation.ready,
         headings: await activeHeadingTexts(recordPage),
         errors: recordNetwork.filter(row => row.status >= 400),
         requests: recordNetwork,
-        screenshot,
+        snapshots: observation.snapshots,
+        screenshots: observation.screenshots,
+        page_errors: pageErrors,
+        console_errors: consoleErrors,
+        source_revision: runtimeState.sourceRevision,
+        diagnostics,
       };
-      report.findings = report.record_deep_link.errors.length ? ['record_deep_link_http_error'] : [];
+      report.findings = [];
+      if (report.record_deep_link.errors.length) report.findings.push('record_deep_link_http_error');
+      if (!observation.ready) report.findings.push('record_deep_link_not_ready');
+      if (pageErrors.length) report.findings.push('record_deep_link_page_error');
       report.status = report.findings.length ? 'failed' : 'passed';
       if (report.findings.length) process.exitCode = 1;
       return;
@@ -422,6 +611,21 @@ async function main() {
     for (const label of affectedHeadings) {
       await openMenu(page, label);
       report.headings[label] = await activeHeadingTexts(page);
+    }
+    if (process.env.DEV_ACCEPTANCE_ONLY === 'ui-semantics') {
+      const screenshot = path.join(ROOT, '.runtime/dev-acceptance-20261115b-remediation/ui-semantics.png');
+      fs.mkdirSync(path.dirname(screenshot), { recursive: true });
+      await page.screenshot({ path: screenshot, fullPage: true });
+      const findings = [];
+      if (report.technical_tab_titles.leaked.length) findings.push('technical_tab_title');
+      for (const [label, headings] of Object.entries(report.headings)) {
+        if (!headings.includes(label)) findings.push(`heading_missing:${label}`);
+      }
+      report.ui_semantics_screenshot = screenshot;
+      report.findings = findings;
+      report.status = findings.length ? 'failed' : 'passed';
+      if (findings.length) process.exitCode = 1;
+      return;
     }
 
     detachNetwork();
@@ -479,6 +683,7 @@ async function main() {
       technical_titles: report.technical_tab_titles?.leaked ?? null,
       headings: Object.fromEntries(Object.entries(report.headings || {}).map(([key, value]) => [key, value.length])),
       record_deep_link_ms: report.record_deep_link?.elapsed_ms ?? null,
+      record_source_revision: report.record_deep_link?.source_revision || null,
       output: OUTPUT,
     }));
   }

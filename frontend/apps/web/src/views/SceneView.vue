@@ -376,6 +376,10 @@ const renderScenePageHeading = computed(() => shouldRenderScenePageHeading({
   hasSceneIdentity: currentSceneKey.value,
   hasExplicitHeading: handlingEntryGroups.value.length > 0,
 }));
+watch(scenePageHeading, (title) => {
+  if (status.value === 'error' || !currentSceneKey.value || !title) return;
+  session.updateActiveActivityTitle(title, route.fullPath);
+}, { immediate: true });
 
 function hasHandlingEntryCatalog(currentScene: Scene | null) {
   const catalog = currentScene?.scene_ready?.handling_entry_catalog;

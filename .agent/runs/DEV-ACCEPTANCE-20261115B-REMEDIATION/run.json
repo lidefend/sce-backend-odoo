@@ -19,6 +19,7 @@
     "frontend/apps/web/src/app/presentation/loadingProgress.ts",
     "frontend/apps/web/src/app/runtime/listPreferenceScope.ts",
     "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+    "frontend/apps/web/index.html",
     "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
     "frontend/apps/web/scripts/intent_request_coalescing_test.ts",
     "make/frontend.mk",
@@ -49,6 +50,7 @@
         "frontend/apps/web/src/app/presentation/loadingProgress.ts",
         "frontend/apps/web/src/api/client.ts",
         "frontend/apps/web/src/app/runtime/listPreferenceScope.ts",
+        "frontend/apps/web/index.html",
         "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
         "make/frontend.mk"
@@ -109,17 +111,17 @@
     {
       "id": "DEV-ACC-B-CANDIDATE-RUNTIME",
       "classification": "environment_defect",
-      "status": "blocked",
-      "summary": "The candidate is not deployed. The current sc_dev_demo demo identities publish only the workbench scenario subset and use action identities that differ from the deployed sc_demo runtime, so the affected browser journeys cannot be executed against the candidate without changing retained database state.",
-      "evidence": ".runtime/dev-acceptance-20261115b-remediation/browser-report.json"
+      "status": "resolved",
+      "summary": "The owner deployed the candidate to the daily development server. The served source revision was read back as 7291d8389a0e904ae07bd3746e02b9ff3dd122b2 and the direct payment record route rendered PRQ2600050.",
+      "evidence": ".runtime/dev-acceptance-20261115b-remediation/record-run-5.json"
     },
     {
       "id": "DEV-ACC-B-N01-PERF",
       "classification": "product_defect",
       "status": "open",
-      "summary": "The deployed record deep link was measured at 14.7 seconds by the owner report. The candidate adds honest loading progress but does not yet reduce that latency; a candidate profile must identify the remaining request bottleneck.",
-      "evidence": "acceptance/DEV-ACCEPTANCE-20261115B.md"
+      "summary": "Two independent five-run sets reproduced 5.2-10.9 second record readiness with no HTTP, console or page errors. The dominant cost is the pre-FCP startup and dynamic route/asset load; a static document-level boot shell now prevents the initial blank interval until the next candidate deployment is measured.",
+      "evidence": ".runtime/dev-acceptance-20261115b-remediation/record-run-5.json"
     }
   ],
-  "next_exact_step": "Commit the focused frontend remediation, deploy the exact candidate to a governed environment, rerun the rapid-switch journey plus M-01/N-03 checks, and profile the payment.request record deep link."
+  "next_exact_step": "Rebuild and redeploy the candidate containing the static document boot shell, then run five new independent direct-record sessions and compare first-contentful-paint and record-ready distributions against the 7291d8389 baseline."
 }

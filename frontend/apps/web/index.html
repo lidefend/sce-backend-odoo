@@ -5,10 +5,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%232563eb"/><path d="M18 42V24l14-8 14 8v18h-8V29l-6-4-6 4v13z" fill="white"/></svg>' />
     <title>企业应用平台</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #f5f7fb;
+      }
+
+      .app-boot {
+        box-sizing: border-box;
+        display: grid;
+        min-height: 100vh;
+        min-height: 100dvh;
+        place-items: center;
+        padding: 24px;
+        color: #1f2937;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .app-boot__panel {
+        box-sizing: border-box;
+        width: min(440px, 100%);
+        padding: 24px;
+        border: 1px solid #dfe5ef;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 10px 30px rgb(15 23 42 / 8%);
+      }
+
+      .app-boot__identity {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .app-boot__mark {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 10px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .app-boot__copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .app-boot__copy strong {
+        font-size: 16px;
+      }
+
+      .app-boot__copy span {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .app-boot__track {
+        position: relative;
+        height: 3px;
+        margin-top: 18px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e8edf5;
+      }
+
+      .app-boot__track i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 36%;
+        border-radius: inherit;
+        background: #2563eb;
+        animation: app-boot-progress 1.4s ease-in-out infinite;
+      }
+
+      .app-boot[data-delayed="true"] .app-boot__track i {
+        background: #d97706;
+      }
+
+      @keyframes app-boot-progress {
+        from {
+          transform: translateX(-110%);
+        }
+
+        to {
+          transform: translateX(310%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-boot__track i {
+          width: 100%;
+          animation: none;
+          opacity: .45;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <main id="app-boot" class="app-boot" role="status" aria-live="polite" aria-atomic="true">
+        <div class="app-boot__panel">
+          <div class="app-boot__identity">
+            <span class="app-boot__mark" aria-hidden="true">S</span>
+            <span class="app-boot__copy">
+              <strong>正在启动业务平台</strong>
+              <span id="app-boot-hint">正在加载界面与业务配置，请稍候。</span>
+            </span>
+          </div>
+          <span class="app-boot__track" aria-hidden="true"><i></i></span>
+        </div>
+      </main>
+    </div>
+    <noscript>请启用 JavaScript 后使用业务平台。</noscript>
     <script src="/runtime-config.js"></script>
     <script type="module" src="/src/main.ts"></script>
+    <script>
+      window.setTimeout(function () {
+        var boot = document.getElementById('app-boot');
+        var hint = document.getElementById('app-boot-hint');
+        if (!boot || !hint) return;
+        boot.setAttribute('data-delayed', 'true');
+        hint.textContent = '启动时间较长，请检查网络后刷新页面。';
+      }, 15000);
+    </script>
   </body>
 </html>

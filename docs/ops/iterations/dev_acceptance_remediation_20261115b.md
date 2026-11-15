@@ -106,35 +106,61 @@ an indeterminate progress track, with reduced-motion handling. This makes a
 long wait honest and observable; it does not claim that the 14.7-second
 deep-link latency has been reduced.
 
+### M-02/N-01 startup profile
+
+The owner deployed candidate `7291d8389a0e904ae07bd3746e02b9ff3dd122b2` to the
+daily development server. Five independent local sessions directly opened
+`/t/demo/r/payment.request/53?action_id=878&menu_id=559` and all rendered
+`PRQ2600050`.
+
+| Run | First visible | Record ready |
+| ---: | ---: | ---: |
+| 1 | 5.66s | 6.77s |
+| 2 | 5.79s | 6.89s |
+| 3 | 6.27s | 8.28s |
+| 4 | 5.69s | 6.80s |
+| 5 | 6.87s | 10.90s |
+
+The median was 5.79s to first visible content and 6.89s to record ready. HTTP,
+console and page error counts were zero. A further three instrumented sessions
+measured first contentful paint at 3.87s, 5.38s and 6.78s. The dominant path was
+the initial `system.init` request, dynamic route assets and the record contract,
+not record data: `system.init` took 1.49-1.57s, the action contract 0.64-0.69s,
+and `api.data` 0.16-0.18s in those runs.
+
+The document previously contained an empty `#app`, so no visible content could
+be painted until Vue, the route chunk and startup state were ready. `index.html`
+now carries a document-level boot surface and a delayed state after 15 seconds.
+The surface has no business semantics and is replaced when Vue mounts.
+
 ### Validation
 
 | Layer | Entry | Result |
 | --- | --- | --- |
-| L1/L2 | `verify.frontend.dev_acceptance_remediation.unit` | passed, 14 cases |
+| L1/L2 | `verify.frontend.dev_acceptance_remediation.unit` | passed, 17 cases |
 | L1/L2 | `verify.frontend.intent_request_coalescing.unit` | passed, including duplicate preference coalescing |
 | L1/L2 | `verify.frontend.dev.incremental.unit` | passed, 153 tests |
 | L1/L2 | `verify.local.dev.runtime.performance.unit` | passed, 34 tests |
 | L1/L2 | `verify.action_view_runtime_smoke.behavior` | passed, 3 checks |
-| L1/L2 | `make ci.local.iteration` | passed, 15 affected targets |
-| Build | `make local.dev.frontend` | passed |
+| L1/L2 | `make ci.local.iteration` | passed, 16 affected targets |
+| Build | `make local.dev.frontend` | passed after the document boot surface change |
 
 Original logs are under
 `.runtime/agent-runs/DEV-ACCEPTANCE-20261115B-REMEDIATION/`.
 
-### Runtime limitation
+### Runtime follow-up
 
-The candidate is not deployed. The current `sc_dev_demo` runtime publishes only
-the workbench scenario subset to its demo identities and its action ids differ
-from the deployed `sc_demo` runtime, so a candidate-browser rerun against those
-targets is not available without changing the retained database state. The
-remote `f35d981b2` trace is valid reproduction evidence for the old behavior,
-not evidence that this un-deployed candidate passes.
+The five-run profile was captured on `7291d8389`, before the document boot
+surface was added. The local build containing the boot surface passes, but it
+has not been deployed, so it is not yet evidence that the deployed first-content
+paint or 15-second delayed state has changed.
 
-Remaining work is therefore explicit:
+The remaining measured work is:
 
-- rerun the exact rapid-switch browser journey after deploying this candidate;
-- verify M-01 and the six affected headings in the same runtime identity;
-- profile the record deep link before claiming a latency improvement.
+- deploy the boot-surface candidate and rerun five direct-record sessions;
+- compare first-contentful-paint and record-ready tails against the baseline;
+- reduce the initial JavaScript and record-contract payload only after a changed
+  candidate can be measured against this distribution.
 
 ## Rollback
 
