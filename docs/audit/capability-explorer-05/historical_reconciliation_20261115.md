@@ -102,6 +102,9 @@ Menu 只取
 场景表共有 78 条入口引用，其中 75 条指向 282 原生目录内的 Menu。另外 3 条是当前激活的
 Odoo 会计原生菜单，位于业务根之外：
 
+这 3 条及总数 78 已在同一授权 `sc_demo@f35d981b2` 上重新只读核验；
+来源不是本地 `sc_dev_demo` 拼接。
+
 | Menu XMLID | 名称 | 场景 | 分类 |
 |---|---|---|---|
 | `account.menu_action_move_journal_line_form` | 日记账分录 | `accounting.management` | OUTSIDE_282_CATALOG |
@@ -127,12 +130,12 @@ Odoo 会计原生菜单，位于业务根之外：
 | 证据 | 位置 / 摘要 |
 |---|---|
 | 282 行完整身份映射 | `identity_mapping_20261115.csv`，SHA256 `05c4d1b016fc9a09cbaa5bc0ae39a31d3b739f886f8a986b9ad9e57f2385f255` |
-| 机器可读对账摘要 | `historical_reconciliation_20261115.json`，SHA256 `6262a863f9bc6d9e7d14d2207a40d1dd662f9cc0d01a2f280f7d00dd78a683b4` |
+| 机器可读对账摘要 | `historical_reconciliation_20261115.json`，SHA256 `edc79fc1f9afec35f67ff8d6741489f39c2082ce1a96a5798f599a444b65dee5` |
 | 历史发现原始日志 | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-01/runtime-probe.log` |
 | 历史分类原始日志 | `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/runtime-classification.log` |
 | 当前原生原始日志 | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.log` |
 | 当前原生解析 JSON | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/current-native.json` |
-| 场景 78 行只读回读 | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/scenario-entries.tsv` |
+| 同库 `sc_demo` 场景范围回读 | `.runtime/agent-runs/CAPABILITY-EXPLORER-05/daily-scene-scope.log`，SHA256 `bc3ed7a1f1dd80846d03de616fd1ff9d298100e1aa1a56bd8d54cfd6c5d7bf8e` |
 
 映射 CSV 只记录对账事实，不是运行时注册表，不允许被运行时写入或作为发布资格来源。
 

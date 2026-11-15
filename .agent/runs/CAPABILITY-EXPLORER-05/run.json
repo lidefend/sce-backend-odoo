@@ -72,12 +72,19 @@
       "status": "blocked",
       "summary": "Disposable sc_clean carries smart_construction_core 17.0.0.172 installed without sc_product_scenario_entry; the 17.0.0.180 pre-migrate ALTER TABLE fails before registry load.",
       "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/clean-upgrade-smart-core.log"
+    },
+    {
+      "id": "CAP05-B02",
+      "classification": "scope_deviation",
+      "status": "blocked",
+      "summary": "After the isolated upgrade failed, current main was loaded by upgrading and restarting persistent sc_dev_demo. This was not an isolated acceptance action; owner authority is required to accept the persistent state or authorize recovery.",
+      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/local-dev-upgrade.log"
     }
   ],
-  "next_exact_step": "Request independent review of the audit-only candidate; do not expand into product remediation or publication.",
+  "next_exact_step": "Request independent review of the corrected audit-only candidate; owner must explicitly accept the persistent sc_dev_demo state or authorize recovery before the strict-isolation objective can close.",
   "id": "CAPABILITY-EXPLORER-05",
   "branch": "audit/capability-explorer-05-20261115",
-  "status": "verification_pending",
+  "status": "blocked",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
   "record": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md"
 }

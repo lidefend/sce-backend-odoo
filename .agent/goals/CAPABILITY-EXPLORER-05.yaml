@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-05
   title: Post-merge integration and historical capability asset reconciliation
-  status: verification_pending
+  status: blocked
   formal_product_layer: P4
   layer_target: read-only capability explorer acceptance and historical reconciliation evidence
   module:
@@ -51,10 +51,15 @@ goal:
     - production deployment
     - backend performance work
   rollback: >-
-    Revert the P4 audit commit. No product, business-record or release-state
-    rollback is required.
+    Revert the P4 audit commit for report-only changes. The persistent
+    sc_dev_demo module/XML upgrade is a separately observed scope deviation,
+    not reverted by the audit commit. Its pre-upgrade paired recovery point is
+    artifacts/local-dev/snapshots/20261115T082948Z with manifest SHA256
+    bf9db35d4715f656521f9e5964fcdfdb905b3b7820958f5648d561769d08d316;
+    restoring it requires explicit owner authority and a governed recovery plan
+    because no local.dev restore Make entry was established in this batch.
   completion:
-    batch: verification_pending
+    batch: blocked
     mainline_integration: pr_889_merged
     deployment: not_performed
     user_acceptance: not_performed

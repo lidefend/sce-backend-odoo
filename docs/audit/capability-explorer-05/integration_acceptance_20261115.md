@@ -1,6 +1,6 @@
 # CAPABILITY-EXPLORER-05 主线集成验收报告
 
-状态：`PASS_WITH_BLOCKED_ISOLATED_UPGRADE`
+状态：`BLOCKED_PENDING_OWNER_DECISION`
 
 报告日期：2026-11-15
 
@@ -19,6 +19,11 @@ List、搜索、分页、Detail、Diagnose、`catalog_token` 过期拒绝和管�
 `smart_construction_core=17.0.0.172` 已标记 installed，但
 `sc_product_scenario_entry` 不存在，导致 `17.0.0.180` pre-migrate 的无条件
 `ALTER TABLE` 失败。该项保持 `BLOCKED`，不能用后续 `sc_dev_demo` 升级结果替代。
+
+本报告同时记录一次执行范围偏离：为消除合并前运行进程缓存，本轮升级并重启了持久
+`sc_dev_demo`。该动作不属于“只在隔离环境完成升级”的严格验收，也不能被描述为全只读。
+其 API 结果保留为主线上运行行为的观察证据，但本轮严格隔离验收状态仍为 `BLOCKED`，
+等待所有者明确接受当前持久开发状态或授权恢复。
 
 ## 2. 主线身份与远端证据
 
@@ -113,6 +118,21 @@ ERROR: relation "sc_product_scenario_entry" does not exist
 升级后、重启前的一次浏览器结果因运行进程仍可能持有旧 registry，已明确排除，不进入
 本报告的证据结论；下文只使用重启并完成入口身份校验后的结果。
 
+### 3.3 范围偏离与恢复风险
+
+`sc_dev_demo` 升级是持久环境写入，已明确登记为 `CAP05-B02 / scope_deviation`：
+
+- 它不是隔离验收环境，不计入隔离升级 PASS。
+- 它没有改变 ORM、ACL、Record Rule、Scene、Candidate、Qualification 或 Release 源码，
+  但模块升级会按设计刷新持久开发库的模块元数据和 XML 声明。
+- 受管入口没有在本轮执行数据库/filestore 恢复。
+- 可用升级前恢复点：
+  `artifacts/local-dev/snapshots/20261115T082948Z/`，来源
+  `source_sha=d176e2fd67fec87257114b207cec655ec8fa6e9d`，manifest SHA256
+  `bf9db35d4715f656521f9e5964fcdfdb905b3b7820958f5648d561769d08d316`。
+- 本批没有为 `local.dev` 建立受管 restore Make 入口，因此不能把该恢复点描述为已完成回退。
+  恢复需所有者单独授权、验证 dump/filestore 配对摘要并制定受管恢复方案。
+
 ## 4. Explorer 验收
 
 ### 4.1 静态与契约测试
@@ -187,7 +207,7 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 ### PASS
 
 - PR #889 合并身份、树一致性和四项必需 CI。
-- 当前 main 的 Explorer 单元、契约、真实 HTTP 与浏览器路径。
+- 当前 main 的 Explorer 单元、契约，以及持久开发环境上的真实 HTTP/浏览器观察。
 - 后端权限拒绝与前端路由拒绝。
 - API 分页、搜索、Detail、Diagnose、stale token。
 - Explorer 请求前后业务/发布表不变。
@@ -197,6 +217,8 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 
 - `CAP05-B01`：隔离 `sc_clean` 从已标记 `17.0.0.172` 但缺少
   `sc_product_scenario_entry` 的状态升级失败。未获授权重建该库。
+- `CAP05-B02`：持久 `sc_dev_demo` 被升级和重启，属于范围偏离；严格隔离验收不可关闭。
+  需所有者明确接受当前持久开发状态，或授权按已登记恢复点执行恢复。
 
 ### NOT_VERIFIED
 
@@ -219,6 +241,7 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 | Explorer | 准入为只读管理与诊断面；不得增加发布、资格推断或企业启用写操作。 |
 
 部署状态：未部署。用户验收状态：未执行。PR 合并不等于部署或产品交付。
+批次状态：`BLOCKED`，等待上述所有者决定；不得继续产品化实施。
 
 ## 8. 候选验证与复审入口
 
@@ -226,5 +249,5 @@ XML 声明，这与 Explorer 请求的零业务写入是两个不同事实。
 - `make ci.local.iteration`：PASS；增量选择执行
   `verify.agent.ledger.unit` 18 tests，并完成相关 L1 守卫。
 - `git diff --check`：由增量门禁执行，PASS。
-- 当前 run 状态：`verification_pending`，等待独立复审；不宣称候选已冻结。
+- 当前 run 状态：`blocked`，等待独立复审和所有者决定；不宣称候选已冻结或验收完成。
 - 原始日志：`.runtime/agent-runs/CAPABILITY-EXPLORER-05/ci-local-iteration.log`。
