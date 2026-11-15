@@ -990,6 +990,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.frontend.typecheck.strict",
                 ],
             )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+            ]),
+            [
+                "verify.frontend.navigation_shell.unit",
+                "verify.frontend.scene_entry_contract.unit",
+            ],
+        )
 
     def test_size_ratcheted_files_route_to_the_size_guard(self) -> None:
         # A file with a size ratchet can only be caught by style_system.guard.

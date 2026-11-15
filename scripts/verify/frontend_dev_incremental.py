@@ -630,7 +630,11 @@ RULES = (
         "verify.frontend.navigation_shell.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
-    Rule(("/views/SceneView.vue", "/app/sceneEntryContract.ts"), (
+    Rule((
+        "/views/SceneView.vue",
+        "/app/sceneEntryContract.ts",
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+    ), (
         "verify.frontend.scene_entry_contract.unit",
         "verify.frontend.navigation_shell.unit",
     )),

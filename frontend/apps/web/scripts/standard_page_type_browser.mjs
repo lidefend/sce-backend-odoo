@@ -11,6 +11,7 @@ import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
+const MY_WORK_FINAL_PATH = '/s/my_work.workspace';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `tpl07-${Date.now()}`);
 const report = { startup: [], status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [], introduceContract: null };
 // The introduce entry and dialog are contract driven: the probe reads the
@@ -1281,7 +1282,8 @@ try {
           && (!home || row.intent === 'my.work.summary')), ownedCalls());
         const after = ownedCalls().length;
         await page.getByRole('button', { name: '我的工作', exact: true }).click();
-        await page.waitForURL(url => url.pathname === '/my-work');
+        await page.waitForURL(url => url.pathname === MY_WORK_FINAL_PATH);
+        check(`${scene}: My Work reached its final route`, new URL(page.url()).pathname === MY_WORK_FINAL_PATH, page.url());
         await surface.waitFor({ state: 'hidden' });
         await page.waitForTimeout(700);
         check(`${scene}: cached scene stops after leaving route`, ownedCalls().length === after, { before: after, after: ownedCalls().length });
