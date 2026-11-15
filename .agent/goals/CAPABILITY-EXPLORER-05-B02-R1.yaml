@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-05-B02-R1
   title: Persistent development recovery-point reconciliation and owner-authorized rebuild
-  status: active
+  status: blocked
   formal_product_layer: P4
   layer_target: recovery-point reconciliation followed by governed demo rebuild
   module:
@@ -44,6 +44,7 @@ goal:
     - filestore_additions_modifications_and_deletions_are_classified
     - unattributed_differences_and_recovery_data_loss_risk_are_explicit
     - owner_authorized_rebuild_passes_health_entry_identity_and_verify_demo
+    - post_rebuild_identity_entitlement_seed_boq_and_filestore_differences_are_owner_reviewable
   exclusions:
     - CAP05-B01 migration lifecycle research or repair
     - CAP05-R2 capability lifecycle governance
@@ -58,7 +59,7 @@ goal:
     artifacts/local-dev/snapshots/20261115T163419Z; restoring it requires new
     explicit owner authorization because it would overwrite the rebuilt demo.
   completion:
-    batch: rebuilt_and_verified
+    batch: owner_review_ready
     mainline_integration: pending
     deployment: not_performed
     user_acceptance: not_performed

@@ -107,6 +107,14 @@ Post-rebuild read-only identity:
 - `ir_act_window=744`
 - `ir_actions=969`
 
+The post-rebuild owner-review capture at
+`2026-11-15T23:06:55Z` re-read the current database in a
+`REPEATABLE READ READ ONLY` transaction and compared it with both immutable
+snapshots. It recorded database identity hashes, entitlement state, relative
+seed dates, BOQ wizard/attachment evidence, filestore additions and stored
+attachment checksum reconciliation in
+`post_rebuild_owner_review_summary.json`. No write or restore was performed.
+
 ## Non-Result Notes
 
 - An initial `docker inspect --format` probe failed because one mount was a

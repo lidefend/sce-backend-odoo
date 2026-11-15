@@ -1,6 +1,6 @@
 # CAP05-B02-R1 Recovery-Point Difference Reconciliation
 
-Status: `COMPLETE_FOR_OWNER_REVIEW`
+Status: `BLOCKED_PENDING_OWNER_REVIEW`
 
 ## Scope
 
@@ -80,11 +80,19 @@ demo data. A paired pre-rebuild snapshot was created at
 The rebuild, persistent environment health check, entry identity reconciliation
 and `verify.demo` all passed. The database now represents a fresh demo baseline.
 
-This closes `CAP05-B02` as owner-authorized remediation by rebuild. It does not
-retroactively validate the earlier persistent upgrade as a strict isolated
-acceptance operation.
+This establishes the basis for closing `CAP05-B02` as owner-authorized
+remediation by rebuild, subject to the owner's review of the rebuilt-baseline
+findings below. It does not retroactively validate the earlier persistent
+upgrade as a strict isolated acceptance operation.
+
+The later three-state owner-review capture in
+`post_rebuild_owner_review_summary.json` confirms that the database identity,
+entitlement, BOQ wizard and added attachment findings belong to the rebuilt
+baseline rather than to the original-to-pre-rebuild comparison. B02 remains
+blocked until the owner rules on those current-baseline differences.
 
 ## Stop Boundary
 
-Stop after recording the completed rebuild. `CAP05-B01` remains blocked and
+Stop after recording the completed rebuild and owner-review facts. CAP05-B01 is
+merged through PR #893; the B02 owner review remains pending and
 `CAP05-R2`/`CAP05-R3` remain on hold.

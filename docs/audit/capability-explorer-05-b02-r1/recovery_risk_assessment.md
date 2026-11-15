@@ -75,7 +75,8 @@ completed with exit code 0.
 - Pre-rebuild business and runtime attribution remains unavailable because no
   complete operation log was retained.
 - The newly rebuilt demo baseline is not itself a capability acceptance run.
-- `CAP05-B01` remains blocked and is unaffected by this rebuild.
+- CAP05-B01 is merged through PR #893; that does not retroactively validate or
+  close this B02 environment deviation.
 - `CAP05-R2` and `CAP05-R3` remain on hold.
 - Restoring the pre-rebuild snapshot is destructive to current data and must
   not be performed without explicit owner authorization.
