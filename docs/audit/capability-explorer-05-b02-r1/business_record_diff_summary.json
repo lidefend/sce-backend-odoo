@@ -1,0 +1,1674 @@
+{
+  "phase": "pre_rebuild",
+  "changed_table_count": 89,
+  "database": "sc_dev_demo",
+  "groups": {
+    "BUSINESS_OR_IDENTITY_DATA_CHANGE": {
+      "deleted": 18,
+      "inserted": 783,
+      "table_count": 47,
+      "unchanged": 7761,
+      "updated": 302
+    },
+    "MODULE_UPGRADE": {
+      "deleted": 143,
+      "inserted": 1110,
+      "table_count": 30,
+      "unchanged": 60527,
+      "updated": 3594
+    },
+    "SYSTEM_RUNTIME_CHANGE": {
+      "deleted": 14,
+      "inserted": 1157,
+      "table_count": 12,
+      "unchanged": 16923,
+      "updated": 0
+    }
+  },
+  "method": {
+    "comparison_unit": "primary-key row with full-row SHA256",
+    "current_rows": "single read-only REPEATABLE READ transaction, COPY TO STDOUT",
+    "identity_policy": "primary keys retained only as SHA256; no business field values exported",
+    "scope": "all 838 tables and 11,285 current columns; all tables had primary keys and matching snapshot/current column lists",
+    "snapshot_rows": "authorized custom dump streamed through pg_restore --data-only COPY text"
+  },
+  "not_verified": [
+    "transaction actor and originating operation per business row",
+    "deleted-row timestamps",
+    "business intent or semantic correctness",
+    "attachment-row-to-physical-file usability beyond byte equality"
+  ],
+  "observation": {
+    "copy_start_marker": "2026-11-15 16:32:39.255418+00",
+    "current_transaction_read_only": true,
+    "end_marker": "captured",
+    "isolation": "REPEATABLE READ",
+    "started_at_utc": "2026-11-15 16:32:39.255418+00"
+  },
+  "report_id": "CAP05-B02-R1",
+  "schema_version": 1,
+  "snapshot": {
+    "dump_sha256": "0f416a23009a1e0678fa5e0a71eb19972854112bd112f2525bf03e6a790544b4",
+    "path": "/home/lidefend/workspace/sce-backend-odoo/artifacts/local-dev/snapshots/20261115T082948Z"
+  },
+  "tables": [
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_DELETE"
+      ],
+      "current_rows": 2,
+      "deleted": 2,
+      "diff_identity_sha256": "f731950fe6357edc47a28394cf71c6b3a7e203c52377f2700f0a29827117d41e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 4,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.account_move",
+      "unchanged": 2,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_DELETE"
+      ],
+      "current_rows": 4,
+      "deleted": 4,
+      "diff_identity_sha256": "7387340ee1cfbe913ba8261e0d4e19f1e268e6b29186c30bc13fd447f5d7e598",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 8,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.account_move_line",
+      "unchanged": 4,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 2,
+      "deleted": 0,
+      "diff_identity_sha256": "d14c5c90af5f76294316c8f8593ce832f7f2703b5822bbbdba123f217cdd9042",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 2,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.app_menu_config",
+      "unchanged": 0,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT",
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 112,
+      "deleted": 0,
+      "diff_identity_sha256": "683f6e6ef45450e7e0094a3f4b6a6b63ad85f1eae6d99c4d2c6e6d58fd157bb7",
+      "inserted": 14,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 98,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.construction_contract",
+      "unchanged": 96,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 59,
+      "deleted": 0,
+      "diff_identity_sha256": "1cab57881452e062c9c39c82863ee40d4ccea4f61871078b892bc36dc0ba1e78",
+      "inserted": 7,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 52,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.construction_contract_expense",
+      "unchanged": 52,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 53,
+      "deleted": 0,
+      "diff_identity_sha256": "864e85d8e90f38ee91fa3531c2e2bf483b7d3c040675965ebf471f4276a0f02b",
+      "inserted": 7,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 46,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.construction_contract_income",
+      "unchanged": 46,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 160,
+      "deleted": 0,
+      "diff_identity_sha256": "c9c204b2c718a94ef8b6df9e67495e064a076a707c62215b00c8c4cea25e3c77",
+      "inserted": 14,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 146,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.construction_contract_line",
+      "unchanged": 146,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 91,
+      "deleted": 0,
+      "diff_identity_sha256": "ff6da10852417eb58ef70e2763e65d48aa2d7ad19892737f7b67214cbb9f0f73",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 91,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.construction_work_breakdown",
+      "unchanged": 71,
+      "updated": 20
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 12,
+      "deleted": 0,
+      "diff_identity_sha256": "72a0ff012a613014c972b4b456701bdaafa1d76f8f323d762e7bd3b041293a85",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 12,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.hr_department",
+      "unchanged": 1,
+      "updated": 11
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 14,
+      "deleted": 0,
+      "diff_identity_sha256": "db5574d86bf1983d772b0041788a368c4d6b842718e80a48d62da349a1d14b6e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 14,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.hr_employee",
+      "unchanged": 1,
+      "updated": 13
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 14,
+      "deleted": 0,
+      "diff_identity_sha256": "48efb8d0262ec8c97604aaf7826237efbdfcf7fdbb06858a352b10c942fd075b",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 14,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.hr_job",
+      "unchanged": 1,
+      "updated": 13
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 9,
+      "deleted": 0,
+      "diff_identity_sha256": "dbd9a322571d86d873f10b286e4aa04e6d3a6ad9f71b439b96a359d7434741c7",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 9,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_act_client",
+      "unchanged": 7,
+      "updated": 2
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 173,
+      "deleted": 0,
+      "diff_identity_sha256": "688e377488ad9136978a12a95191624b38b561775828b8460427dd61bb935dfe",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 173,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_act_server",
+      "unchanged": 72,
+      "updated": 101
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 744,
+      "deleted": 0,
+      "diff_identity_sha256": "80c87e0e62a6773e1227fef957595a903a357e2696efad8664f67cb98482a02b",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 744,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_act_window",
+      "unchanged": 349,
+      "updated": 395
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 267,
+      "deleted": 141,
+      "diff_identity_sha256": "44f93fe8013bfc37bc1053c39ef485346f1868014d9007d471ee745e682a216a",
+      "inserted": 141,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 267,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_act_window_view",
+      "unchanged": 111,
+      "updated": 15
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 969,
+      "deleted": 0,
+      "diff_identity_sha256": "258d1e35eb2a48d4ffbd86273dccb9ff85646f68272ef4b117308807825d25ff",
+      "inserted": 969,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 0,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_actions",
+      "unchanged": 0,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 85,
+      "deleted": 0,
+      "diff_identity_sha256": "4da93c5d782f1bfb01a8d358ad672e5747e3f4367ae0f26d535e3340e56c7c2e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 85,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_config_parameter",
+      "unchanged": 83,
+      "updated": 2
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 26,
+      "deleted": 0,
+      "diff_identity_sha256": "e929771bd6ec3356600ddfc0f5d11b02e5598d76fc43abff86d2bb77d1aa382b",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 26,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_cron",
+      "unchanged": 6,
+      "updated": 20
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 758,
+      "deleted": 0,
+      "diff_identity_sha256": "657b474c221124717f5ee5baa577a05774a9393b77c41523199fbad5ea9dc825",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 758,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_model",
+      "unchanged": 757,
+      "updated": 1
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 1573,
+      "deleted": 0,
+      "diff_identity_sha256": "8c611a30f2d357d68cabe3513b81043da8bae02f968637ab915d1b8abdf784a6",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 1573,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_model_access",
+      "unchanged": 714,
+      "updated": 859
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 36492,
+      "deleted": 2,
+      "diff_identity_sha256": "1ee236ec779616e7163cbc37a2334fa3c563a9b3540534a993b94cada075496e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 36494,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_model_data",
+      "unchanged": 36492,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 19008,
+      "deleted": 0,
+      "diff_identity_sha256": "da9516014d03f3c6655e46e7d982116882f15ff6d2808b231ea1a6434eefd160",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 19008,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_model_fields",
+      "unchanged": 19005,
+      "updated": 3
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 677,
+      "deleted": 0,
+      "diff_identity_sha256": "a965e222fa787b9d5227a14141ccd9eb547abadbb657c9a8be4a027111d0eea2",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 677,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_module_module",
+      "unchanged": 278,
+      "updated": 399
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 677,
+      "deleted": 0,
+      "diff_identity_sha256": "a4e234f268f4dfd47da33a576a2c6fba6502904f40f5d5a5700462db4eba0583",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 677,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_rule",
+      "unchanged": 186,
+      "updated": 491
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 71,
+      "deleted": 0,
+      "diff_identity_sha256": "834b52df6c078b577305342d70535a7b2dc2d28e512259c6436a03210aa80298",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 71,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_sequence",
+      "unchanged": 18,
+      "updated": 53
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 720,
+      "deleted": 0,
+      "diff_identity_sha256": "f4930ed60d99f2571a84e492973188ba5b2cec9ad8c7d574cd3b3c884b439c65",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 720,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_ui_menu",
+      "unchanged": 679,
+      "updated": 41
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 2110,
+      "deleted": 0,
+      "diff_identity_sha256": "c336d27eaa0d78dba128047f7dc9171b7cf1a1d7dafd46a9aca3afe1f4b1ac3a",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 2110,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ir_ui_view",
+      "unchanged": 1342,
+      "updated": 768
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 31,
+      "deleted": 0,
+      "diff_identity_sha256": "b248d37a77cbf48df943f21e331c875a87ea4361330cdcb372168cb65a84dc99",
+      "inserted": 8,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 23,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_activity",
+      "unchanged": 23,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 4348,
+      "deleted": 0,
+      "diff_identity_sha256": "b8bf0026885add994dd22e6bc0b6dafec87e444749f8bb28d4681372cd5b1199",
+      "inserted": 171,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 4177,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_followers",
+      "unchanged": 4177,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 8665,
+      "deleted": 0,
+      "diff_identity_sha256": "9d453ac7a1df78001de35b0fd133cd71c65e0807665ce964d16955a1487e8cad",
+      "inserted": 342,
+      "primary_key": [
+        "mail_followers_id",
+        "mail_message_subtype_id"
+      ],
+      "snapshot_rows": 8323,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_followers_mail_message_subtype_rel",
+      "unchanged": 8323,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 635,
+      "deleted": 0,
+      "diff_identity_sha256": "3610eb2453b398463e52647c2093334f72e860b2218bab5c2d5599b67001d7fa",
+      "inserted": 82,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 553,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_mail",
+      "unchanged": 553,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 374,
+      "deleted": 0,
+      "diff_identity_sha256": "bb4657baa46313509ac7595ce3caa2f35c6e16fe38f76ac35da400b0d02637d4",
+      "inserted": 8,
+      "primary_key": [
+        "mail_mail_id",
+        "res_partner_id"
+      ],
+      "snapshot_rows": 366,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_mail_res_partner_rel",
+      "unchanged": 366,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 2493,
+      "deleted": 2,
+      "diff_identity_sha256": "20797615c0d825f64c10c17981b2ddc070af0a1bbfd36008810e00a9a5173a2a",
+      "inserted": 252,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 2243,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_message",
+      "unchanged": 2241,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 245,
+      "deleted": 0,
+      "diff_identity_sha256": "d004c8860bedf304a6011cd52baa3fa32bad6fea344e4a0dcb1e9ab30a6f659a",
+      "inserted": 8,
+      "primary_key": [
+        "mail_message_id",
+        "res_partner_id"
+      ],
+      "snapshot_rows": 237,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_message_res_partner_rel",
+      "unchanged": 237,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 374,
+      "deleted": 0,
+      "diff_identity_sha256": "41ada25e3327638e122ee69c408bba049ea301a9098cd2cae521eaf45afbde98",
+      "inserted": 8,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 366,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_notification",
+      "unchanged": 366,
+      "updated": 0
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 104,
+      "deleted": 0,
+      "diff_identity_sha256": "23bdd7f83d436c64f42af988e91ef78253169210f4cb915ddacfecdc63134bb8",
+      "inserted": 17,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 87,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.mail_tracking_value",
+      "unchanged": 87,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT",
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 139,
+      "deleted": 0,
+      "diff_identity_sha256": "9ea4d5363fb7bbd63bd6f46e0c47c7db205fc7ae6019dcd63b21f531c654bed8",
+      "inserted": 28,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 111,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.payment_request",
+      "unchanged": 82,
+      "updated": 29
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 4,
+      "deleted": 0,
+      "diff_identity_sha256": "5fc58786986e51069d4ec40f91937f9a12956d2923711cda2f5ce6915863b355",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 4,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.product_product",
+      "unchanged": 1,
+      "updated": 3
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 4,
+      "deleted": 0,
+      "diff_identity_sha256": "5fc58786986e51069d4ec40f91937f9a12956d2923711cda2f5ce6915863b355",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 4,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.product_template",
+      "unchanged": 1,
+      "updated": 3
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 28,
+      "deleted": 0,
+      "diff_identity_sha256": "a49bec9d091dddc9c5652d56d7686bc4e608db0a476cd4dc3db6dc985ae80364",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 28,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_boq_allocation",
+      "unchanged": 23,
+      "updated": 5
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 25,
+      "deleted": 0,
+      "diff_identity_sha256": "abb460e08b51cc06b8bd7b047811f59e765acb50e2f161bccf0ce60a620a9709",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 25,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_boq_analysis",
+      "unchanged": 23,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 42,
+      "deleted": 0,
+      "diff_identity_sha256": "3b4d6f5456ec3612976ca17cbaa94098ec9bf0cdf4591ba48020934becc8879e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 42,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_boq_line",
+      "unchanged": 35,
+      "updated": 7
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 10,
+      "deleted": 0,
+      "diff_identity_sha256": "6954443e464f578457689d6652aaf3cb5dcecc714d8df09fb1f009fad658abb2",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 10,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_budget",
+      "unchanged": 8,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 12,
+      "deleted": 0,
+      "diff_identity_sha256": "d14c5c90af5f76294316c8f8593ce832f7f2703b5822bbbdba123f217cdd9042",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 12,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_budget_boq_line",
+      "unchanged": 10,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 5,
+      "deleted": 0,
+      "diff_identity_sha256": "5fc58786986e51069d4ec40f91937f9a12956d2923711cda2f5ce6915863b355",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 5,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_budget_cost_alloc",
+      "unchanged": 2,
+      "updated": 3
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 8,
+      "deleted": 0,
+      "diff_identity_sha256": "5b42b314f914455ec8df0310b45822c0276226797d08a5e0aaf2451938e4f246",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 8,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_cost_code",
+      "unchanged": 1,
+      "updated": 7
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT",
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 105,
+      "deleted": 0,
+      "diff_identity_sha256": "b0a2297b0b5f900c5b22e60a5c1cb1e1840e18c87bb337373997b94cdc861972",
+      "inserted": 28,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 77,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_cost_ledger",
+      "unchanged": 64,
+      "updated": 13
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 49,
+      "deleted": 0,
+      "diff_identity_sha256": "ec0325981dc5a4dc0ef9ddee08ce15459a3f20c82b9b135cdc9f65e7eaf10efd",
+      "inserted": 9,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 40,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_cost_period",
+      "unchanged": 40,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 25,
+      "deleted": 0,
+      "diff_identity_sha256": "44925de51771e75aca3611be06a11b8f5d13f8a49e9cb01283f7ab3f88eaa990",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 25,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_cost_plan_line",
+      "unchanged": 23,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 75,
+      "deleted": 0,
+      "diff_identity_sha256": "1729dea32e9a24e1b68f26b0f66ceae8121171aeb7af7a31fedb1fa77a788f27",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 75,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_cost_plan_node",
+      "unchanged": 69,
+      "updated": 6
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 10,
+      "deleted": 0,
+      "diff_identity_sha256": "995a970b3fb37c2ea80dc414b54822d4411bae760c9854446b72f7bc99b704bb",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 10,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_progress_entry",
+      "unchanged": 9,
+      "updated": 1
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 26,
+      "deleted": 0,
+      "diff_identity_sha256": "50bb046f1943764e61b542d0b0963c87a393de91bb966f75387151a9e809ccb6",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 26,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_project",
+      "unchanged": 2,
+      "updated": 24
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 11,
+      "deleted": 0,
+      "diff_identity_sha256": "b015f96d7b99f2ace30ba5afa4f284f14c72316d43332ec39133b651473abac7",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 11,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_project_stage",
+      "unchanged": 4,
+      "updated": 7
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 155,
+      "deleted": 0,
+      "diff_identity_sha256": "5b42b314f914455ec8df0310b45822c0276226797d08a5e0aaf2451938e4f246",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 155,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.project_task",
+      "unchanged": 148,
+      "updated": 7
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_DELETE"
+      ],
+      "current_rows": 65,
+      "deleted": 5,
+      "diff_identity_sha256": "7a725bbb77ed53bd61f175a13d9b224032242f5219e34c1d23075b5766a1d183",
+      "inserted": 0,
+      "primary_key": [
+        "cid",
+        "user_id"
+      ],
+      "snapshot_rows": 70,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_company_users_rel",
+      "unchanged": 65,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 170,
+      "deleted": 0,
+      "diff_identity_sha256": "216af5debc1e828f582e432b2bd7914e7ddd0ce1b8e44e4207f77de370ca194a",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 170,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.res_currency",
+      "unchanged": 169,
+      "updated": 1
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 166,
+      "deleted": 0,
+      "diff_identity_sha256": "5a40b079d17c5c12e0cfc7aec76f5fa221e61a44943c3260cf7b3b0bb1725fdd",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 166,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.res_groups",
+      "unchanged": 63,
+      "updated": 103
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_DELETE"
+      ],
+      "current_rows": 1297,
+      "deleted": 7,
+      "diff_identity_sha256": "42b0e35bc9dd3dc0be32963b6c405c658272336c8e9329338469faff139a279d",
+      "inserted": 0,
+      "primary_key": [
+        "gid",
+        "uid"
+      ],
+      "snapshot_rows": 1304,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_groups_users_rel",
+      "unchanged": 1297,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 91,
+      "deleted": 0,
+      "diff_identity_sha256": "278298430549e8918bbbf35087ce49a30b7c1d0018d3d8aeb7898db4fb63bfa3",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 91,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.res_lang",
+      "unchanged": 90,
+      "updated": 1
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 74,
+      "deleted": 0,
+      "diff_identity_sha256": "5827f0fcbc564e5fb422b4bbbee2f2940d992c4f8b50a477154446031d2620d7",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 74,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_partner",
+      "unchanged": 27,
+      "updated": 47
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 10,
+      "deleted": 0,
+      "diff_identity_sha256": "41b5111b4446dab4c6f7313b0aee6936b1d34dfc095c4e50533513181c351a81",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 10,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_partner_bank",
+      "unchanged": 7,
+      "updated": 3
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 57,
+      "deleted": 0,
+      "diff_identity_sha256": "446f5d9d4a35bc7cabeed69dfb71e665d1acd8296942ef5e7799a9c1d8f98fe2",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 57,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_users",
+      "unchanged": 4,
+      "updated": 53
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 7,
+      "deleted": 12,
+      "diff_identity_sha256": "4bdad5b42a3580845812c1eba738641e81a8f20f4194644102760ce274e7f6eb",
+      "inserted": 6,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 13,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.res_users_log",
+      "unchanged": 1,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 4887,
+      "deleted": 0,
+      "diff_identity_sha256": "89ba29bc5d057ee2dd6f6080f0dd34b33f2d54bf7f55fab460f768e795b7e5cc",
+      "inserted": 532,
+      "primary_key": [
+        "tier_review_id",
+        "res_users_id"
+      ],
+      "snapshot_rows": 4355,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.res_users_tier_review_rel",
+      "unchanged": 4355,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 14,
+      "deleted": 0,
+      "diff_identity_sha256": "db5574d86bf1983d772b0041788a368c4d6b842718e80a48d62da349a1d14b6e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 14,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.resource_resource",
+      "unchanged": 1,
+      "updated": 13
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 15,
+      "deleted": 0,
+      "diff_identity_sha256": "a252a5c7120286fe2cb563ff7acfe4aa986e0e915f33736df2341657d2457484",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 15,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_approval_policy",
+      "unchanged": 14,
+      "updated": 1
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 297,
+      "deleted": 0,
+      "diff_identity_sha256": "5ca7d8adbe001393b82c014f8f037cfacc90a0dadb2681db727bf9dc5d5b1a75",
+      "inserted": 49,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 248,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.sc_audit_log",
+      "unchanged": 248,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 62,
+      "deleted": 0,
+      "diff_identity_sha256": "11ed0791374d1c18d3579917e876fe83f54a8d083190f5a6d4a93bbf71c112fc",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 62,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_business_category",
+      "unchanged": 1,
+      "updated": 61
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 6,
+      "deleted": 0,
+      "diff_identity_sha256": "a0ed8c3a9e4183e8d5012c28de73aac527994694e6d9007b6de6df3755c5c075",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 6,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_capability",
+      "unchanged": 1,
+      "updated": 5
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 9,
+      "deleted": 0,
+      "diff_identity_sha256": "f75a217dbb4307a40d9eebdf20cee7ee4e7277e5085415e3dd875dc47825d5d8",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 9,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_capability_group",
+      "unchanged": 1,
+      "updated": 8
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 66,
+      "deleted": 0,
+      "diff_identity_sha256": "10436c5610cc2b6830682cfd22dcb076b36b680315cf53788346e8d485b1c991",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 66,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_dictionary",
+      "unchanged": 45,
+      "updated": 21
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 1,
+      "deleted": 0,
+      "diff_identity_sha256": "995a970b3fb37c2ea80dc414b54822d4411bae760c9854446b72f7bc99b704bb",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 1,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_material_inbound_line",
+      "unchanged": 0,
+      "updated": 1
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 10,
+      "deleted": 0,
+      "diff_identity_sha256": "7407d143a04daa215110f4ef7a3b6b3d3424cccdf7ff4b6ffec7dd0381540e6e",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 10,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_project_next_action_rule",
+      "unchanged": 8,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 22,
+      "deleted": 0,
+      "diff_identity_sha256": "95d41f1114fb607434c814a0e8e7c7147baa0cd435fadfdf0c64f11927fc8926",
+      "inserted": 7,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 15,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_receipt_income",
+      "unchanged": 15,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 6,
+      "deleted": 0,
+      "diff_identity_sha256": "856516733c2d7e09a1fe7e58494586f8d9efed5e9d44559cc0b2101769cce965",
+      "inserted": 4,
+      "primary_key": [
+        "partner_id",
+        "supplier_type_id"
+      ],
+      "snapshot_rows": 2,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_res_partner_supplier_type_rel",
+      "unchanged": 2,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 60,
+      "deleted": 0,
+      "diff_identity_sha256": "b883a247b9a38951b6be9d6e6bfc2d7388b54dcf254f9c2f00717eb3c1499a43",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 60,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_scene",
+      "unchanged": 1,
+      "updated": 59
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 6,
+      "deleted": 0,
+      "diff_identity_sha256": "a0ed8c3a9e4183e8d5012c28de73aac527994694e6d9007b6de6df3755c5c075",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 6,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_scene_tile",
+      "unchanged": 1,
+      "updated": 5
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 28,
+      "deleted": 0,
+      "diff_identity_sha256": "b9f3ad890bfeb10d50970baaa3f0ccdcdac9bcd35220398c061b5eb3d15f5d7b",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 28,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.sc_scene_version",
+      "unchanged": 1,
+      "updated": 27
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 6,
+      "deleted": 0,
+      "diff_identity_sha256": "6c562feed9c69368248ce5b59720eb087a790ea86ad77bbc396b522252a9b7f9",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 6,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_supplier_type",
+      "unchanged": 0,
+      "updated": 6
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 24,
+      "deleted": 0,
+      "diff_identity_sha256": "cfec855564d5c0f76e925fb2a36805a71b7d535cb5cdfa0631b3c8793b0f4ea9",
+      "inserted": 7,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 17,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.sc_treasury_ledger",
+      "unchanged": 17,
+      "updated": 0
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 11,
+      "deleted": 0,
+      "diff_identity_sha256": "d14c5c90af5f76294316c8f8593ce832f7f2703b5822bbbdba123f217cdd9042",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 11,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tender_bid",
+      "unchanged": 9,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 20,
+      "deleted": 0,
+      "diff_identity_sha256": "d14c5c90af5f76294316c8f8593ce832f7f2703b5822bbbdba123f217cdd9042",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 20,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tender_bid_line",
+      "unchanged": 18,
+      "updated": 2
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 1,
+      "deleted": 0,
+      "diff_identity_sha256": "995a970b3fb37c2ea80dc414b54822d4411bae760c9854446b72f7bc99b704bb",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 1,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tender_doc_purchase",
+      "unchanged": 0,
+      "updated": 1
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 4,
+      "deleted": 0,
+      "diff_identity_sha256": "995a970b3fb37c2ea80dc414b54822d4411bae760c9854446b72f7bc99b704bb",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 4,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tender_opening",
+      "unchanged": 3,
+      "updated": 1
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_UPDATE"
+      ],
+      "current_rows": 1,
+      "deleted": 0,
+      "diff_identity_sha256": "995a970b3fb37c2ea80dc414b54822d4411bae760c9854446b72f7bc99b704bb",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 1,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tender_opening_competitor",
+      "unchanged": 0,
+      "updated": 1
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 42,
+      "deleted": 0,
+      "diff_identity_sha256": "58c07fdc5d25b49d373f9106b2b25d25ed5f361bf7199e34f7d7de251c73b237",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 42,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.tier_definition",
+      "unchanged": 7,
+      "updated": 35
+    },
+    {
+      "attribution_group": "BUSINESS_OR_IDENTITY_DATA_CHANGE",
+      "classifications": [
+        "BUSINESS_DATA_INSERT"
+      ],
+      "current_rows": 1081,
+      "deleted": 0,
+      "diff_identity_sha256": "a18558dd551a6938233d6b535b1d2cae9318ee445d5066ac09e53a6cf6c473eb",
+      "inserted": 126,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 955,
+      "source_attribution": "UNATTRIBUTED without operation log",
+      "table": "public.tier_review",
+      "unchanged": 955,
+      "updated": 0
+    },
+    {
+      "attribution_group": "MODULE_UPGRADE",
+      "classifications": [
+        "MODULE_UPGRADE"
+      ],
+      "current_rows": 150,
+      "deleted": 0,
+      "diff_identity_sha256": "8e1c4921a28f99cbaead1fe5cd289f383c0db1e34aa18b6db5b9d212f4c0d12b",
+      "inserted": 0,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 150,
+      "source_attribution": "direct technical-table evidence; module reload window",
+      "table": "public.ui_business_config_contract",
+      "unchanged": 47,
+      "updated": 103
+    },
+    {
+      "attribution_group": "SYSTEM_RUNTIME_CHANGE",
+      "classifications": [
+        "SYSTEM_RUNTIME_CHANGE"
+      ],
+      "current_rows": 507,
+      "deleted": 0,
+      "diff_identity_sha256": "8727b5e639923c0cc60b8ae316d3833935ce1ed2a8efd0c599313b3db9d37848",
+      "inserted": 206,
+      "primary_key": [
+        "id"
+      ],
+      "snapshot_rows": 301,
+      "source_attribution": "runtime/audit/message table evidence; operation source not proven",
+      "table": "public.ui_business_config_mutation_audit",
+      "unchanged": 301,
+      "updated": 0
+    }
+  ],
+  "totals": {
+    "deleted": 175,
+    "inserted": 3050,
+    "unchanged": 85211,
+    "updated": 3896
+  }
+}

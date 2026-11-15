@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-B02-REBUILD.yaml",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
+    ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
+    "docs/audit/capability-explorer-05-b02-r1/attribution_report.md",
+    "docs/audit/capability-explorer-05-b02-r1/business_record_diff_summary.json",
+    "docs/audit/capability-explorer-05-b02-r1/database_schema_diff.json",
+    "docs/audit/capability-explorer-05-b02-r1/execution_log.md",
+    "docs/audit/capability-explorer-05-b02-r1/filestore_diff_summary.json",
+    "docs/audit/capability-explorer-05-b02-r1/module_upgrade_diff.csv",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_point_difference_reconciliation_20261116.md",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_point_integrity.md",
+    "docs/audit/capability-explorer-05-b02-r1/recovery_risk_assessment.md",
+    "docs/audit/capability-explorer-05-b02-r1/SHA256SUMS"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "offline ledger guard over repository records; owner-authorized runtime rebuild evidence is recorded separately"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "readback": {
+        "artifact": "artifacts/backend/capability_explorer05_b02_post_rebuild_readback.json"
+      },
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the registered ledger guard, review the exact pre-rebuild evidence and rebuild result, then commit the P4 audit candidate.",
+  "id": "CAPABILITY-EXPLORER-05-B02-R1",
+  "branch": "audit/capability-explorer-05-b02-r1-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
+  "record": "docs/audit/capability-explorer-05-b02-r1/recovery_point_difference_reconciliation_20261116.md"
+}
