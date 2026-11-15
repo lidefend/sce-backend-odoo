@@ -112,13 +112,13 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
+| 1353 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1332 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1294 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1278 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |

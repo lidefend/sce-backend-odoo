@@ -63,6 +63,13 @@
 - After this change, the active candidate plan dropped from the cumulative
   37-path scope to 6 unverified paths, and `ci.local.iteration` executed only
   the corresponding six targets.
+- Quick input scope now treats `R10_PERF_CANDIDATE_SHA` and the remote contract
+  path built from it as candidate-head-bound instead of literal environment
+  drift. Previously these two Make defaults changed on every SHA and forced
+  `full_fallback_required=true`.
+- Existing Quick sidecars without the normalization use a one-time bounded
+  migration: only those two key digests may differ; unit fingerprints, Python,
+  executable, tools and every other environment digest must still match.
 - Added negative tests for exact-once expected failure consumption, mismatched
   intent/status, pending expectations, newer/older request sequences, and close
   invalidation.

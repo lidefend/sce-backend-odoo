@@ -63,6 +63,33 @@ class IncrementalEvidenceTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"SC_ACCEPTANCE_SOURCE_SHA": source}):
             self.assertIsNone(evidence._incremental_plan(self.root, head))
 
+    def test_legacy_r10_head_bound_environment_is_migrated_once(self):
+        source = evidence.git(self.root, 'rev-parse', 'HEAD')
+        source_env = {
+            "R10_PERF_CANDIDATE_SHA": source,
+            "R10_PERF_REMOTE_CONTRACT": f"/opt/sce/deployment-tools/{source}/scripts/ops/r10.json",
+        }
+        with mock.patch.dict(os.environ, source_env), \
+             mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            receipt = evidence.run_quick(self.root, runner=self.runner)
+        sidecar = receipt.with_suffix('.scope.json')
+        saved = json.loads(sidecar.read_text())
+        saved['document']['identity']['environment_sha256'] = 'legacy-environment-hash'
+        saved['environment_hashes']['R10_PERF_CANDIDATE_SHA'] = 'legacy-candidate-hash'
+        saved['environment_hashes']['R10_PERF_REMOTE_CONTRACT'] = 'legacy-contract-hash'
+        sidecar.write_text(json.dumps(saved), encoding='utf-8')
+
+        head = self.fixture.commit_change('frontend/existing.ts', 'next candidate\n')
+        head_env = {
+            "R10_PERF_CANDIDATE_SHA": head,
+            "R10_PERF_REMOTE_CONTRACT": f"/opt/sce/deployment-tools/{head}/scripts/ops/r10.json",
+        }
+        with mock.patch.dict(os.environ, head_env):
+            run, reuse, base = evidence._incremental_plan(self.root, head)
+        self.assertEqual(source, base)
+        self.assertEqual(MANIFEST[:-1], run)
+        self.assertEqual(MANIFEST[-1:], reuse)
+
     def test_plan_keeps_unscoped_targets_and_reuses_bounded_test(self):
         run, reuse, base = evidence._incremental_plan(self.root, self.head)
         self.assertEqual(MANIFEST[:-1], run)
