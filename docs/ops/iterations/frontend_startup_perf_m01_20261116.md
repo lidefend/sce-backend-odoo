@@ -101,10 +101,14 @@ Failure classification during remediation:
   (`product_defect`). The explicit browser `number | null` type fixed the
   owning source; typecheck and the complete affected iteration then passed.
 
-The governed incremental execution completed 26 targets with no blocked or
-not-run targets:
+The governed incremental execution executed 28 targets with no blocked or
+not-run targets on runtime tree `44b7cac40a1bcf9912b3143cc8083ab757b8b28fef924ef397cb5efb3fcc5c62`.
+The clean candidate then reused that content-identical execution:
 
-`.runtime/frontend-dev-validation/executions/20261115T232458Z-2384961-815324071/receipt.json`
+- executed source receipt:
+  `.runtime/frontend-dev-validation/executions/20261115T233225Z-2458902-922945683/receipt.json`
+- clean reused receipt:
+  `.runtime/frontend-dev-validation/executions/20261115T233710Z-2519118-210689907/receipt.json`
 
 Not yet covered: a fresh independent review of the fixed candidate, exact-head
 remote CI, isolated daily-clone deployment, and desktop/mobile A/B. The prior
