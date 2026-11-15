@@ -62,6 +62,27 @@ class TestProductPolicyFactAuthority(TransactionCase):
                     self.assertFalse(decision["allowed"])
                     self.assertEqual(decision["reason_code"], "NAVIGATION_AUTHORITY_DENIED")
 
+    def test_native_alias_reuses_supplied_authority_without_global_lookup(self):
+        from odoo.addons.smart_core.delivery import runtime_route_authority
+        menu = self.menu
+        action = menu.action
+        alias = self.env["sc.capability"].create({
+            "key": "test.native.supplied.authority",
+            "name": "Native supplied authority",
+            "default_payload": {"menu_id": menu.id, "action_id": action.id},
+        })
+        authority = {"primary_actions": [{"menu_id": menu.id, "action_id": action.id}]}
+        with patch.object(
+            runtime_route_authority,
+            "published_route_authority",
+            side_effect=AssertionError("global authority lookup must not run"),
+        ):
+            decision = alias._access_context(
+                self.env.user,
+                published_authority=authority,
+            )
+        self.assertTrue(decision["allowed"])
+
     def test_tile_qualifies_its_consumed_target_in_both_directions(self):
         from odoo.addons.smart_core.delivery import runtime_route_authority
         action_a = self.menu.action

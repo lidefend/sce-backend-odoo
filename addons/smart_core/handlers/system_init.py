@@ -142,12 +142,25 @@ _BUSINESS_MASTER_DATA_MENU_XMLIDS: set[str] = set()
 
 # ===================== 工具函数（权限 / 指纹 / 导航净化） =====================
 
-def _load_capabilities_for_user(env, user) -> List[dict]:
-    return provider_load_capabilities_for_user(env, user)
+def _load_capabilities_for_user(env, user, *, published_authority=None) -> List[dict]:
+    return provider_load_capabilities_for_user(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
-def _load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dict[str, int]]:
-    return provider_load_capabilities_for_user_with_timings(env, user)
+def _load_capabilities_for_user_with_timings(
+    env,
+    user,
+    *,
+    published_authority=None,
+) -> tuple[List[dict], dict[str, int]]:
+    return provider_load_capabilities_for_user_with_timings(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
 def _merge_platform_duty_capabilities(data: dict) -> dict:
@@ -1156,8 +1169,13 @@ def _load_scenes_from_db_or_fallback(env, drift=None, logger=None):
         logger=logger or _logger,
     )
 
-def _merge_missing_scenes_from_registry(env, scenes, warnings):
-    return provider_merge_missing_scenes_from_registry(env, scenes, warnings)
+def _merge_missing_scenes_from_registry(env, scenes, warnings, *, published_authority=None):
+    return provider_merge_missing_scenes_from_registry(
+        env,
+        scenes,
+        warnings,
+        published_authority=published_authority,
+    )
 
 # ===================== Handler =====================
 
@@ -1192,6 +1210,8 @@ class SystemInitHandler(BaseIntentHandler):
         if not isinstance(params, dict):
             params = payload if isinstance(payload, dict) else {}
         build_mode = SystemInitPayloadBuilder.resolve_build_mode(params)
+        with_tokens = _parse_with_tokens(params.get("with"))
+        include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens
         startup_timings_ms: dict[str, int] = {}
         startup_subtimings_ms: dict[str, dict[str, int]] = {}
 
@@ -1249,6 +1269,9 @@ class SystemInitHandler(BaseIntentHandler):
             company=env.company,
             allowed_company_ids=env.context.get("allowed_company_ids") or user.company_ids.ids,
         )
+        # Qualification is the common upstream fact for capabilities, navigation,
+        # scenes and the landing route. Produce it once before those consumers.
+        effective_delivery = EffectiveDeliveryService(env).resolve(params)
 
         # -------- 2) 导航（净化 + 指纹）--------
         p_nav = SystemInitNavRequestBuilder.build(params, scene)
@@ -1272,6 +1295,12 @@ class SystemInitHandler(BaseIntentHandler):
                 "fingerprint": "fallback-no-app-menu-config",
                 "nav_source": "fallback_minimal",
             }
+        # NavDispatcher remains the compatibility adapter for versions and legacy
+        # flags. Its independently built tree must not replace the qualified
+        # delivery navigation fact.
+        effective_nav = effective_delivery.payload.get("nav")
+        if isinstance(effective_nav, list):
+            nav_data["nav"] = effective_nav
         stage_ts = _mark("build_nav", stage_ts)
 
         nav_tree_raw = nav_data.get("nav") or []
@@ -1316,7 +1345,11 @@ class SystemInitHandler(BaseIntentHandler):
 
         prepare_runtime_context_ts = time.perf_counter()
 
-        capabilities_raw, capability_load_timings_ms = _load_capabilities_for_user_with_timings(env, user)
+        capabilities_raw, capability_load_timings_ms = _load_capabilities_for_user_with_timings(
+            env,
+            user,
+            published_authority=effective_delivery.route_authority,
+        )
         prepare_runtime_context_ts = _mark_substage(
             "prepare_runtime_context",
             "load_capabilities_for_user",
@@ -1408,7 +1441,12 @@ class SystemInitHandler(BaseIntentHandler):
         )
 
         # 扩展模块 facts contribution（平台 merge owner）
-        apply_extension_fact_contributions(data, env, user, context=params)
+        apply_extension_fact_contributions(
+            data, env, user,
+            context=SystemInitPayloadBuilder.extension_fact_context(
+                params, build_mode=build_mode, include_workspace_home=include_workspace_home,
+            ),
+        )
         prepare_runtime_context_ts = _mark_substage(
             "prepare_runtime_context",
             "apply_extension_fact_contributions",
@@ -1452,6 +1490,7 @@ class SystemInitHandler(BaseIntentHandler):
             nav_tree=nav_tree,
             scene_channel=scene_channel,
             rollback_active=rollback_active,
+            published_authority=effective_delivery.route_authority,
             trace_id=trace_id,
             diagnostics_collector=diagnostics_collector,
             scene_diagnostics=scene_diagnostics,
@@ -1492,8 +1531,6 @@ class SystemInitHandler(BaseIntentHandler):
         data, scene_diagnostics = SystemInitSurfaceBuilder.apply(surface_ctx=surface_ctx)
         data = _merge_platform_duty_capabilities(data)
         stage_ts = _mark("apply_surface", stage_ts)
-        with_tokens = _parse_with_tokens(params.get("with"))
-        include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens
         if include_workspace_home:
             data["workspace_home"] = build_workspace_home_contract(data)
         else:
@@ -1502,7 +1539,6 @@ class SystemInitHandler(BaseIntentHandler):
         mirror_workspace_home_role_context(data)
         stage_ts = _mark("build_workspace_home", stage_ts)
         role_surface = data.get("role_surface") if isinstance(data, dict) else {}
-        effective_delivery = EffectiveDeliveryService(env).resolve(params)
         role_surface = effective_delivery.role_surface
         data["nav"] = effective_delivery.payload["nav"]
         data["role_surface"] = role_surface

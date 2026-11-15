@@ -62,6 +62,7 @@ const PERF_BASELINE_CAPTURE = process.env.DELIVERY_HARDENING_BASELINE_CAPTURE ==
 const PERF_BUDGET_PATH = process.env.DELIVERY_HARDENING_BUDGET_JSON
   || 'config/frontend/release_performance_budgets_v1.json';
 const performanceBudgets = JSON.parse(fs.readFileSync(PERF_BUDGET_PATH, 'utf8'));
+const MY_WORK_FINAL_PATH = '/s/my_work.workspace';
 const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
   || performanceBudgets.relative_baseline_path
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
@@ -597,14 +598,16 @@ async function openMyWorkFromRoleHome(page) {
   const allItems = roleHome.getByRole('button', { name: '查看全部', exact: true });
   await allItems.waitFor({ state: 'visible', timeout: 45000 });
   await allItems.click();
-  await page.waitForURL((url) => url.pathname === '/my-work', { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname === MY_WORK_FINAL_PATH, { timeout: 45000 });
+  check(new URL(page.url()).pathname === MY_WORK_FINAL_PATH, `My Work left its final route: ${page.url()}`);
   await page.locator('.product-work').waitFor({ state: 'visible', timeout: 45000 });
 }
 async function returnToMyWorkInRetainedDocument(page) {
-  if (new URL(page.url()).pathname !== '/my-work') {
+  if (new URL(page.url()).pathname !== MY_WORK_FINAL_PATH) {
     await page.goBack({ waitUntil: 'domcontentloaded', timeout: 45000 });
   }
-  await page.waitForURL((url) => url.pathname === '/my-work', { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname === MY_WORK_FINAL_PATH, { timeout: 45000 });
+  check(new URL(page.url()).pathname === MY_WORK_FINAL_PATH, `retained document returned to the wrong My Work route: ${page.url()}`);
   await page.locator('.product-work').waitFor({ state: 'visible', timeout: 45000 });
 }
 async function assertNoOverflow(page, label) {

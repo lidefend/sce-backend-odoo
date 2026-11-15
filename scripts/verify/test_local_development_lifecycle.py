@@ -380,7 +380,12 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         root = Path(temporary.name)
         source = root / ".env.dev"
         target = root / ".env.local.clean"
-        source.write_text("ENV=dev\n", encoding="utf-8")
+        source.write_text(
+            "ENV=dev\n"
+            "SC_ENTRY_SHARED_SECRET=fixture-secret\n"
+            "SC_ENTRY_ROUTE_VERSION=v1\n",
+            encoding="utf-8",
+        )
         bin_dir = root / "bin"
         bin_dir.mkdir()
         docker = bin_dir / "docker"

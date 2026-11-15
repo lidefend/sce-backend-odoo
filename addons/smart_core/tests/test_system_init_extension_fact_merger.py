@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import ast
 import importlib.util
 import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 
 CORE_DIR = Path(__file__).resolve().parents[1] / "core"
@@ -34,6 +36,37 @@ def _load_module():
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+class TestConstructionFactConsumption(unittest.TestCase):
+    def test_collection_pruning_preserves_noncollection_facts_and_legacy_calls(self):
+        path = CORE_DIR.parents[1] / "smart_construction_core/core_extension.py"
+        tree = ast.parse(path.read_text())
+        function = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "get_system_init_fact_contributions")
+        collection_builders = ["_build_task_action_rows", "_build_payment_action_rows", "_build_risk_action_rows",
+                               "_build_project_action_rows", "_build_home_object_rows"]
+        retained_builders = ["_build_role_entry_contract_rows", "_build_home_block_contract_rows",
+                             "_build_enterprise_enablement_contract"]
+        for context, expected in [(None, 1), ({}, 1), ({"include_workspace_collections": True}, 1),
+                                  ({"include_workspace_collections": False}, 0),
+                                  ({"include_workspace_collections": 0}, 1), ({"include_workspace_collections": ""}, 1)]:
+            with self.subTest(context=context):
+                ns = {name: Mock(return_value=[{"id": 1}]) for name in collection_builders + retained_builders}
+                ns.update(_hook_facts=types.SimpleNamespace(role_surface_override_provider=lambda value: value),
+                          _contract_role_surface_overrides=lambda: {"role": "retained"}, _logger=Mock())
+                exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), "exec"), ns)
+                env, user = object(), object()
+                result = ns[function.name](env, user, context=context)
+                self.assertIsNotNone(result)
+                ns["_logger"].warning.assert_not_called()
+                for name in collection_builders:
+                    self.assertEqual(ns[name].call_count, expected, name)
+                for name in retained_builders:
+                    self.assertEqual(ns[name].call_count, 1, name)
+                self.assertEqual(set(result["facts"]) - {"workspace_collections", "workspace_collection_export_keys", "workspace_business_source"},
+                                 {"role_surface_override_provider", "role_entries", "home_blocks", "enterprise_enablement"})
+                self.assertEqual(len(result["collections"]), 5 if expected else 0)
+                self.assertEqual(ns["_build_enterprise_enablement_contract"].call_args.args, (env, user))
 
 
 class TestSystemInitExtensionFactMerger(unittest.TestCase):

@@ -186,6 +186,14 @@ class SystemInitPayloadBuilder:
         return cls.BUILD_MODE_BOOT
 
     @classmethod
+    def extension_fact_context(cls, params: dict, *, build_mode: str, include_workspace_home: bool) -> dict:
+        """Tell producers what this request consumes without changing request parameters."""
+        return {
+            **params,
+            "include_workspace_collections": build_mode != cls.BUILD_MODE_BOOT or include_workspace_home,
+        }
+
+    @classmethod
     def _build_minimal_nav_meta(cls, row: dict) -> dict:
         raw = row.get("nav_meta") if isinstance(row.get("nav_meta"), dict) else {}
         minimal: dict = {}

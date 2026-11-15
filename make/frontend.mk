@@ -152,8 +152,26 @@ verify.frontend.intent_request_coalescing.unit: guard.prod.forbid verify.fronten
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
 	@node /tmp/intent-request-coalescing-test.mjs
 
-.PHONY: verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
-verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit
+.PHONY: verify.frontend.session_persistence.snapshot.unit verify.frontend.session_persistence.scheduler.unit verify.frontend.session_persistence.failure.unit verify.frontend.session_persistence.recovery.unit verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
+verify.frontend.session_persistence.snapshot.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_snapshot_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-snapshot-test.mjs >/dev/null
+	@node /tmp/session-persistence-snapshot-test.mjs
+
+verify.frontend.session_persistence.scheduler.unit: guard.prod.forbid verify.frontend.session_persistence.snapshot.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_scheduler_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-scheduler-test.mjs >/dev/null
+	@node /tmp/session-persistence-scheduler-test.mjs
+
+verify.frontend.session_persistence.failure.unit: guard.prod.forbid verify.frontend.session_persistence.scheduler.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_failure_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-failure-test.mjs >/dev/null
+	@node /tmp/session-persistence-failure-test.mjs
+
+verify.frontend.session_persistence.recovery.unit: guard.prod.forbid verify.frontend.session_persistence.failure.unit
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-recovery-test.mjs >/dev/null
+	@node /tmp/session-persistence-recovery-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_performance_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-performance-test.mjs >/dev/null
+	@R12_B_PERFORMANCE_OUTPUT=$(ROOT_DIR)/.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance-latest.json node /tmp/session-persistence-performance-test.mjs
+
+verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit verify.frontend.session_persistence.recovery.unit
 	@mkdir -p .runtime/nav01
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=.runtime/nav01/workspace-scenario-lifecycle-test.mjs >/dev/null
 	@node .runtime/nav01/workspace-scenario-lifecycle-test.mjs
@@ -195,6 +213,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 verify.backend.navigation_delivery.unit: guard.prod.forbid verify.navigation_contract_compiler.unit verify.runtime_capability_catalog.unit verify.scene.shell_compiler.unit
 	@python3 addons/smart_core/tests/test_navigation_entry_target.py
 	@python3 addons/smart_core/tests/test_system_init_payload_builder_semantics.py
+	@python3 addons/smart_core/tests/test_system_init_extension_fact_merger.py
 	@python3 addons/smart_core/tests/test_platform_minimum_nav_contract.py
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py

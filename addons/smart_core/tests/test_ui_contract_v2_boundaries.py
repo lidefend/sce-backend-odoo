@@ -10,6 +10,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 
 class _BaseIntentHandler:
@@ -431,9 +432,185 @@ class FormStructureSurfaceBoundariesTest(unittest.TestCase):
         )
 
 
+class TestNodeValidationSnapshotConsumption(unittest.TestCase):
+    def test_actual_validation_segment_preserves_order_isolation_and_rejections(self):
+        path = Path(__file__).resolve().parents[1] / "handlers/ui_contract_v2.py"
+        tree = ast.parse(path.read_text())
+        handle = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)
+                      and any(isinstance(stmt, ast.Assign) and any(isinstance(t, ast.Name)
+                              and t.id == "node_validation_contract" for t in stmt.targets) for stmt in n.body))
+        start = next(i for i, n in enumerate(handle.body) if isinstance(n, ast.Assign)
+                     and any(isinstance(t, ast.Name) and t.id == "node_validation_contract" for t in n.targets))
+        end = next(i for i in range(start, len(handle.body)) if isinstance(handle.body[i], ast.If)
+                   and "CONTRACT_PROJECTION_HOT_CACHE.put_generated" in ast.unparse(handle.body[i]))
+        segment = [n for n in handle.body[start:end] if not isinstance(n, (ast.Import, ast.ImportFrom))]
+        program = compile(ast.Module(body=segment, type_ignores=[]), str(path), "exec")
+        for record, create, key, token, copies in [
+            (7, False, "key", "token", 0), (0, True, "key", "token", 0),
+            (0, False, None, "token", 0), (0, False, "key", None, 0),
+            (0, False, "key", "token", 1),
+        ]:
+            for rejected in (None, "nodes", "capabilities", "references"):
+                with self.subTest(record=record, create=create, key=key, token=token, rejected=rejected):
+                    events = []
+                    source = {"nested": {"value": "before"}}
+                    def copy(value):
+                        events.append("copy")
+                        return deepcopy(value)
+                    def validate(label, value):
+                        events.append(label)
+                        value["nested"]["value"] = label
+                        if rejected == label:
+                            raise ValueError(label)
+                    def trim(value, **kwargs):
+                        events.append("trim")
+                        return value
+                    ns = dict(runtime_record_id=record, is_create_request=create, cache_key=key, source_token=token,
+                              contract_v2=source, deepcopy=copy, self=types.SimpleNamespace(env=object()),
+                              node_validation_native_tree={}, draft_feedback_proof=None, params={},
+                              client_type="web", delivery_profile="full", limit_params={},
+                              time=types.SimpleNamespace(monotonic=lambda: 0), trim_unified_page_contract_v2=trim,
+                              validate_final_nodes=lambda env, value, tree, **kw: validate("nodes", value),
+                              validate_component_capabilities=lambda value, params: validate("capabilities", value),
+                              validate_delivered_references=lambda value: validate("references", value))
+                    if rejected:
+                        with self.assertRaisesRegex(ValueError, rejected):
+                            exec(program, ns)
+                    else:
+                        exec(program, ns)
+                    order = ["nodes", "capabilities", "trim", "references"]
+                    expected = order[:order.index(rejected)+1] if rejected else order
+                    self.assertEqual(events, (["copy"] if copies else []) + expected)
+                    self.assertEqual(ns["node_validation_contract"], {"nested": {"value": "before"}} if copies else None)
+
+
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
+
+    def test_initial_record_snapshot_prefers_seed_and_explicit_native_form_fields(self):
+        class Field:
+            def __init__(self, field_type):
+                self.type = field_type
+
+        fields = {
+            "id": Field("integer"),
+            "name": Field("char"),
+            "state": Field("selection"),
+            "manager_id": Field("many2one"),
+            "note": Field("text"),
+            "lines": Field("one2many"),
+            "unrelated": Field("char"),
+        }
+        source = {
+            "model": "x.document",
+            "nativeFormProjection": {
+                "model": "x.document",
+                "fieldDescriptors": {
+                    "name": {"type": "char"},
+                    "manager_id": {"type": "many2one"},
+                    "note": {"type": "text"},
+                    "unrelated": {"type": "char"},
+                },
+                "fieldRequirements": {"x.document": ["name", "manager_id", "note"]},
+                "layout": [
+                    {"type": "field", "name": "name"},
+                    {"type": "field", "name": "manager_id"},
+                    {"type": "field", "name": "note"},
+                ],
+            },
+            "views": {"form": {"fields": [{"name": "unrelated"}]}},
+        }
+        selected = self.module.collect_initial_record_snapshot_fields(source, fields)
+        self.assertEqual(selected, ["id", "name", "state", "manager_id", "note"])
+        self.assertNotIn("lines", selected)
+        self.assertNotIn("unrelated", selected)
+
+    def test_initial_snapshot_uses_sparse_view_requirements_not_full_descriptors(self):
+        class Field:
+            def __init__(self, field_type):
+                self.type = field_type
+
+        fields = {f"unrelated_{index}": Field("char") for index in range(93)}
+        fields.update({
+            "id": Field("integer"),
+            "name": Field("char"),
+            "state": Field("selection"),
+            "z_form_value": Field("char"),
+        })
+        source = {
+            "model": "x.document",
+            "nativeFormProjection": {
+                "model": "x.document",
+                "fieldDescriptors": {name: {"type": meta.type} for name, meta in fields.items()},
+                "fieldRequirements": {"x.document": ["name", "z_form_value"]},
+                "layout": [
+                    {"type": "field", "name": "name"},
+                    {
+                        "type": "group",
+                        "children": [{"type": "field", "name": "z_form_value"}],
+                    },
+                ],
+            },
+        }
+        selected = self.module.collect_initial_record_snapshot_fields(source, fields)
+        self.assertIn("z_form_value", selected)
+        self.assertEqual(set(selected), {"id", "name", "state", "z_form_value"})
+        self.assertLess(len(selected), 10)
+
+    def test_native_form_source_preserves_sparse_view_field_requirements(self):
+        class Dispatcher:
+            def __init__(self, env, su_env):
+                pass
+            def dispatch(self, payload):
+                del payload
+                return {
+                    "model": "x.document",
+                    "view_id": 731,
+                    "view_ids_by_type": {"form": 731},
+                    "view_field_requirements": {
+                        "form": {"x.document": ["name", "z_form_value"]},
+                    },
+                    "fields": {
+                        "name": {"type": "char"},
+                        "unrelated": {"type": "char"},
+                        "z_form_value": {"type": "char"},
+                        "z_interaction": {"type": "char", "sc_ui_usage": "interaction"},
+                    },
+                    "views": {"form": {"layout": [
+                        {"type": "field", "name": "name"},
+                        {"type": "field", "name": "z_form_value"},
+                    ]}},
+                }, {}
+
+        with patch.object(self.module, "ActionDispatcher", Dispatcher):
+            data, _meta = self.module.UiContractV2Handler._dispatch_native_form_source(
+                {},
+                {},
+                {"op": "model", "model": "x.document"},
+            )
+        self.assertEqual(
+            data["nativeFormProjection"]["fieldRequirements"],
+            {"x.document": ["name", "z_form_value"]},
+        )
+        self.assertEqual(
+            data["field_requirements"],
+            {"x.document": ["name", "z_form_value"]},
+        )
+        self.assertEqual(
+            data["record_snapshot_dependency_fields"],
+            ["z_interaction"],
+        )
+        fields = {
+            "id": types.SimpleNamespace(type="integer"),
+            "name": types.SimpleNamespace(type="char"),
+            "z_form_value": types.SimpleNamespace(type="char"),
+            "z_interaction": types.SimpleNamespace(type="char"),
+        }
+        self.assertIn(
+            "z_interaction",
+            self.module.collect_initial_record_snapshot_fields(data, fields),
+        )
 
     def test_interaction_field_cannot_override_native_usage_through_list_schema(self):
         assembler = sys.modules["odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"]
@@ -1013,6 +1190,171 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(model.record_id, 42)
         self.assertEqual(model.record.read_fields, [["type"]])
 
+    def test_final_modifier_dependencies_reuse_recordset_and_prefer_one_bulk_read(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def exists(self):
+                return self
+            def read(self, fields):
+                self.calls.append(list(fields))
+                return [{"left": "a", "right": 3}]
+
+        record = Record()
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "integer"})(),
+            }
+            def browse(self, _record_id):
+                raise AssertionError("the request recordset must be reused")
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=record,
+        )
+        self.assertEqual(record.calls, [["left", "right"]])
+        self.assertEqual(contract["dataContract"]["mainData"], {"left": "a", "right": 3})
+
+    def test_final_modifier_dependencies_do_not_reuse_a_different_request_scope(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            env = types.SimpleNamespace(
+                cr=object(),
+                uid=7,
+                su=False,
+                context={"allowed_company_ids": [2]},
+            )
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def exists(self):
+                return self
+            def read(self, fields):
+                self.calls.append(list(fields))
+                return [{"left": "wrong", "right": 0}]
+
+        stale_record = Record()
+        current_record = Record()
+        current_record.env = types.SimpleNamespace(
+            cr=stale_record.env.cr,
+            uid=7,
+            su=False,
+            context={"allowed_company_ids": [1]},
+        )
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "integer"})(),
+            }
+            env = current_record.env
+            def browse(self, _record_id):
+                return current_record
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=stale_record,
+        )
+        self.assertEqual(stale_record.calls, [])
+        self.assertEqual(current_record.calls, [["left", "right"]])
+        self.assertEqual(
+            contract["dataContract"]["mainData"],
+            {"left": "wrong", "right": 0},
+        )
+
+    def test_final_modifier_bulk_read_failure_keeps_readable_siblings(self):
+        class Record:
+            _name = "x.document"
+            id = 42
+            def __init__(self):
+                self.calls = []
+            def __len__(self):
+                return 1
+            def read(self, fields):
+                self.calls.append(list(fields))
+                if fields == ["left", "right"] or fields == ["right"]:
+                    raise PermissionError("restricted")
+                return [{"left": "a"}]
+
+        record = Record()
+        class Model:
+            _fields = {
+                "left": type("Field", (), {"type": "char"})(),
+                "right": type("Field", (), {"type": "char"})(),
+            }
+            def browse(self, _record_id):
+                return record
+
+        contract = {
+            "actionContract": {
+                "actionRuleList": [{
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "left",
+                            "operator": "!=",
+                            "value_field": "right",
+                        },
+                    },
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        self.module.hydrate_final_modifier_dependencies(
+            {"x.document": Model()},
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+            record=record,
+        )
+        self.assertEqual(record.calls, [["left", "right"], ["left"], ["right"]])
+        self.assertEqual(contract["dataContract"]["mainData"], {"left": "a"})
+
     def test_persisted_relation_modifier_dependencies_use_only_authorized_native_ids(self):
         for kind in ("one2many", "many2many"):
             for value in ([], [7, 9], False, None, [True], [0], [-1], [9007199254740992], [[6, 0, []]]):
@@ -1378,8 +1720,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertEqual(len(record.read_fields), 40)
-        self.assertTrue(all(len(call) == 1 for call in record.read_fields))
+        self.assertEqual(len(record.read_fields), 1)
+        self.assertEqual(len(record.read_fields[0]), 40)
         self.assertEqual(record.read_fields[0][0], "late_summary")
         self.assertIn("late_summary", contract["dataContract"]["mainData"])
 

@@ -526,8 +526,12 @@ def smart_core_nav_scene_maps(env):
     }
 
 
-def smart_core_load_scene_configs(env, drift=None):
-    return scene_registry.load_scene_configs(env, drift=drift)
+def smart_core_load_scene_configs(env, drift=None, published_authority=None):
+    return scene_registry.load_scene_configs(
+        env,
+        drift=drift,
+        published_authority=published_authority,
+    )
 
 
 def smart_core_has_db_scenes(env):

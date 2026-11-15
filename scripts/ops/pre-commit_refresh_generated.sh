@@ -16,4 +16,10 @@ git add -u \
   docs/audit/test_coverage_registry \
   docs/frontend_productization 2>/dev/null || true
 
+if ! make --no-print-directory audit.verification.lane_coverage.check; then
+  echo "❌ pre-commit: generated verification inventory has stale or unregistered dispositions" >&2
+  echo "   reconcile the named targets/scripts before committing" >&2
+  exit 1
+fi
+
 exit 0

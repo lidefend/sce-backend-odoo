@@ -23,6 +23,7 @@ import {
   type ScenarioNavigationModel,
 } from '../app/scenarioSurface';
 import {
+  activityPageCacheRouteKey,
   activityPageTitleTargetKeys,
   normalizeRetainedActivityPageIdentity,
   reconcileRestoredActivityPages,
@@ -41,6 +42,13 @@ import type {
 } from './sessionWorkspaceTypes';
 import { projectWorkspaceHomeObjectRows } from './sessionWorkspaceObjects';
 import { resolveAppInitFailureState } from './appInitFailure';
+import {
+  MAX_DURABLE_ACTIVITY_PAGES,
+  buildDurableSessionSnapshot,
+  decodeDurableSessionSnapshot,
+  durableSessionStorageKey,
+  normalizeDurableActivityRuntimeQuery,
+} from './sessionPersistence';
 
 export type {
   WorkspaceAdviceRow,
@@ -56,6 +64,39 @@ export type {
 let appInitInFlight: Promise<void> | null = null;
 let appInitEpoch = -1;
 let appInitSequence = 0;
+let durablePersistenceGeneration = 0;
+let durablePersistencePending = false;
+let durablePersistenceRetryNeeded = false;
+let durablePersistenceTimer: ReturnType<typeof setTimeout> | null = null;
+type DurablePersistResult = 'full' | 'degraded' | 'failed';
+
+type StorageReadLike = Pick<Storage, 'getItem'>;
+type StorageRemoveLike = Pick<Storage, 'removeItem'>;
+
+function readStorageItem(storage: StorageReadLike, key: string): string | null {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function removeStorageItem(storage: StorageRemoveLike, key: string): boolean {
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function invalidateDurablePersistence(): void {
+  durablePersistenceGeneration += 1;
+  if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+  durablePersistenceTimer = null;
+  durablePersistencePending = false;
+  durablePersistenceRetryNeeded = false;
+}
 
 function resolveAvailableSceneRoute(rawPath: string): string {
   const normalized = normalizeLegacyWorkbenchPath(String(rawPath || '').trim());
@@ -307,25 +348,7 @@ export interface SessionState extends NavigationProjectionState {
 }
 
 const TOKEN_STORAGE_KEY_LEGACY = 'sc_auth_token';
-const MAX_ACTIVITY_PAGES = 6;
 let activityPageNavigationAuthorized = false;
-const ACTIVITY_RUNTIME_QUERY_KEYS = new Set([
-  'search',
-  'q',
-  'active_filter',
-  'saved_filter',
-  'group_by',
-  'group_value',
-  'group_sample_limit',
-  'group_sort',
-  'group_collapsed',
-  'group_page',
-  'group_offset',
-  'group_fp',
-  'group_wid',
-  'group_wdg',
-  'group_wik',
-]);
 
 function currentDbScope(): string {
   // Batch C: session state is keyed by the entry namespace and audience, never
@@ -338,7 +361,7 @@ function currentDbScope(): string {
 }
 
 function sessionStorageKey(): string {
-  return `sc_frontend_session_v0_6:${currentDbScope()}`;
+  return durableSessionStorageKey(currentDbScope());
 }
 
 function scopedTokenStorageKey(): string {
@@ -481,36 +504,8 @@ function normalizeRecordContext(raw: unknown): RecordContextContract | null {
   };
 }
 
-function recordContextStorageSnapshot(raw: RecordContextContract | null): RecordContextContract | null {
-  if (!raw) return null;
-  return {
-    ...raw,
-    // Selector options are a live backend contract. Persisting them makes the
-    // sidebar dropdown look stale after contract/schema upgrades.
-    options: [],
-    total: raw.selected ? 1 : 0,
-    query: '',
-  };
-}
-
-function normalizeActivityRuntimeQuery(raw: unknown): ActivityRuntimeQuery | undefined {
-  const source = asRecord(raw);
-  const next: ActivityRuntimeQuery = {};
-  Object.entries(source).forEach(([key, value]) => {
-    if (!ACTIVITY_RUNTIME_QUERY_KEYS.has(key)) return;
-    if (Array.isArray(value)) {
-      const values = value.map((item) => asText(item)).filter(Boolean);
-      if (values.length) next[key] = values;
-      return;
-    }
-    const text = asText(value);
-    if (text) next[key] = text;
-  });
-  return Object.keys(next).length ? next : undefined;
-}
-
 function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPage[] {
-  return trimRetainedActivityPages(pages, activeKey, MAX_ACTIVITY_PAGES);
+  return trimRetainedActivityPages(pages, activeKey, MAX_DURABLE_ACTIVITY_PAGES);
 }
 
 function restoreActivityPages(raw: unknown, recordContext: RecordContextContract | null): ActivityPage[] {
@@ -539,7 +534,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
       last_active_at: Number(page.last_active_at || 0),
     }))
     .sort((left, right) => left.created_at - right.created_at);
-  return reconcileRestoredActivityPages(restored).slice(0, MAX_ACTIVITY_PAGES);
+  return reconcileRestoredActivityPages(restored).slice(0, MAX_DURABLE_ACTIVITY_PAGES);
 }
 
 function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage {
@@ -552,15 +547,6 @@ function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage
   if (sceneKey === 'workspace.home') return false;
   if (route === '/' || route === '/s/workspace.home') return false;
   return true;
-}
-
-function activityPageCacheRouteKey(key: string): string {
-  const normalized = asText(key);
-  if (!normalized) return '';
-  const parts = normalized.split(':');
-  if (parts[0] === 'action' && parts.length >= 4) return parts.slice(0, 4).join(':');
-  if (parts[0] === 'scene' && parts.length >= 2) return parts.slice(0, 2).join(':');
-  return normalized;
 }
 
 function isGenericActivityTitle(title: string): boolean {
@@ -852,7 +838,7 @@ export const useSessionStore = defineStore('session', {
       this.token = token;
       sessionStorage.setItem(scopedTokenStorageKey(), token);
       // Do not keep cross-db legacy token once db-scoped token is set.
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     restore() {
       this.invalidateProductCapabilityCatalog();
@@ -862,85 +848,70 @@ export const useSessionStore = defineStore('session', {
       this.initError = null;
       this.initTraceId = null;
       this.featureFlags = {};
-      const cached = localStorage.getItem(sessionStorageKey());
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached) as Partial<SessionState>;
-          this.user = parsed.user ?? null;
-          this.sessionDb = asText(parsed.sessionDb);
-          // Navigation is a live backend contract. Do not hydrate it from
-          // localStorage, otherwise menu/model changes can look stale until a
-          // manual cache clear.
-          this.menuTree = [];
-          this.navigationModel = null;
-          this.scenarioSurface = null;
-          this.menuExpandedKeys = parsed.menuExpandedKeys ?? [];
-          this.scenarioExpandedCenters = parsed.scenarioExpandedCenters ?? [];
-          this.scenarioExpandedScenarios = parsed.scenarioExpandedScenarios ?? [];
-          this.currentAction = null;
-          this.capabilities = parsed.capabilities ?? [];
-          this.scenes = [];
-          this.sceneVersion = null;
-          this.roleSurface = null;
-          this.roleSurfaceMap = {};
-          this.recordContext = recordContextStorageSnapshot(normalizeRecordContext(parsed.recordContext));
-          // Recent activity pages are user-owned history and survive reloads
-          // (unlike navigation contracts, which stay live). Restore them,
-          // keeping only pages whose company metadata matches the restored
-          // context (fail-closed: pages without authoritative company
-          // metadata, or a context without one, restore nothing).
-          const restoredActivityPages = restoreActivityPages(parsed.activityPages, this.recordContext);
-          this.activityPages = restoredActivityPages;
-          const restoredActiveKey = asText(parsed.activeActivityPageKey);
-          this.activeActivityPageKey = restoredActiveKey && this.activityPages.some((page) => page.key === restoredActiveKey)
-            ? restoredActiveKey
-            : '';
-          // Only keep cache epochs that belong to a restored page (including
-          // its normalized route key); epochs for unknown pages are dropped
-          // rather than carried across companies/contexts.
-          const restoredPageKeys = new Set(restoredActivityPages.map((page) => page.key));
-          const restoredEpochs: Record<string, number> = {};
-          if (parsed.activityPageCacheEpochs && typeof parsed.activityPageCacheEpochs === 'object') {
-            for (const [epochKey, epoch] of Object.entries(parsed.activityPageCacheEpochs as Record<string, number>)) {
-              const numericEpoch = Number(epoch) || 0;
-              if (restoredPageKeys.has(epochKey)) {
-                restoredEpochs[epochKey] = numericEpoch;
-              } else if ([...restoredPageKeys].some((pageKey) => activityPageCacheRouteKey(pageKey) === epochKey)) {
-                restoredEpochs[epochKey] = numericEpoch;
-              }
-            }
-          }
-          this.activityPageCacheEpochs = restoredEpochs;
-          this.capabilityCatalog = parsed.capabilityCatalog ?? {};
-          this.sceneActionHints = {};
-          this.capabilityGroups = parsed.capabilityGroups ?? [];
-          this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
-          this.workspaceHome = null;
-          this.workspaceHomeRef = null;
-          this.publicPageContractStatus = 'idle';
-          this.pageContracts = {};
-          this.sceneReadyContract = null;
-          this.sceneGovernance = null;
-          setSceneRegistry([]);
-          this.lastTraceId = parsed.lastTraceId ?? '';
-          this.lastIntent = parsed.lastIntent ?? '';
-          this.lastLatencyMs = parsed.lastLatencyMs ?? null;
-          this.lastWriteMode = parsed.lastWriteMode ?? '';
-          this.initMeta = parsed.initMeta ?? null;
-          this.defaultRoute = null;
-          this.bootstrapNextIntent = String(parsed.bootstrapNextIntent || 'system.init').trim() || 'system.init';
-        } catch {
-          // ignore corrupted cache
-        }
+      const cached = readStorageItem(localStorage, sessionStorageKey());
+      const decoded = decodeDurableSessionSnapshot(cached);
+      if (decoded.snapshot && (decoded.status === 'legacy' || decoded.status === 'current')) {
+        const snapshot = decoded.snapshot;
+        this.user = snapshot.user;
+        this.sessionDb = snapshot.sessionDb;
+        this.menuExpandedKeys = snapshot.menuExpansionPreferences.menuExpandedKeys;
+        this.scenarioExpandedCenters = snapshot.menuExpansionPreferences.scenarioExpandedCenters;
+        this.scenarioExpandedScenarios = snapshot.menuExpansionPreferences.scenarioExpandedScenarios;
+        this.recordContext = normalizeRecordContext(snapshot.recordContext);
+        const restoredActivityPages = restoreActivityPages(snapshot.activityPages, this.recordContext);
+        this.activityPages = restoredActivityPages;
+        const restoredActiveKey = asText(snapshot.activeTab);
+        this.activeActivityPageKey = restoredActiveKey
+          && this.activityPages.some((page) => page.key === restoredActiveKey)
+          ? restoredActiveKey
+          : '';
+        const restoredPageKeys = new Set(restoredActivityPages.map((page) => page.key));
+        this.activityPageCacheEpochs = Object.fromEntries(
+          Object.entries(snapshot.cacheEpochs).filter(([epochKey]) => (
+            restoredPageKeys.has(epochKey)
+            || [...restoredPageKeys].some((pageKey) => activityPageCacheRouteKey(pageKey) === epochKey)
+          )),
+        );
+        this.bootstrapNextIntent = snapshot.bootstrapNextIntent;
+      } else if (decoded.status === 'corrupt' || decoded.status === 'unsupported') {
+        removeStorageItem(localStorage, sessionStorageKey());
       }
-      const token = sessionStorage.getItem(scopedTokenStorageKey());
+      // Every non-durable field starts empty and is rebuilt from authority.
+      this.menuTree = [];
+      this.navigationModel = null;
+      this.scenarioSurface = null;
+      this.currentAction = null;
+      this.capabilities = [];
+      this.scenes = [];
+      this.sceneVersion = null;
+      this.roleSurface = null;
+      this.roleSurfaceMap = {};
+      this.capabilityCatalog = {};
+      this.sceneActionHints = {};
+      this.capabilityGroups = [];
+      this.productFacts = { license: null, bundle: null };
+      this.workspaceHome = null;
+      this.workspaceHomeRef = null;
+      this.publicPageContractStatus = 'idle';
+      this.pageContracts = {};
+      this.sceneReadyContract = null;
+      this.sceneGovernance = null;
+      setSceneRegistry([]);
+      this.lastTraceId = '';
+      this.lastIntent = '';
+      this.lastLatencyMs = null;
+      this.lastWriteMode = '';
+      this.initMeta = null;
+      this.defaultRoute = null;
+      const token = readStorageItem(sessionStorage, scopedTokenStorageKey());
       if (token) {
         this.token = token;
       }
       // Always purge legacy unscoped token to avoid cross-db pollution.
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     clearSession() {
+      invalidateDurablePersistence();
       invalidateContextRequests();
       this.invalidateWorkspaceScenarioProjection();
       appInitSequence += 1;
@@ -990,80 +961,80 @@ export const useSessionStore = defineStore('session', {
       this.initStatus = 'idle';
       this.initError = null;
       this.initTraceId = null;
-      localStorage.removeItem(sessionStorageKey());
-      sessionStorage.removeItem(scopedTokenStorageKey());
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY_LEGACY);
+      removeStorageItem(localStorage, sessionStorageKey());
+      removeStorageItem(sessionStorage, scopedTokenStorageKey());
+      removeStorageItem(sessionStorage, TOKEN_STORAGE_KEY_LEGACY);
     },
     setActionMeta(meta: NavMeta) {
       this.currentAction = meta;
-      this.persist();
     },
     ...navigationExpansionActions,
-    persist() {
-      const snapshot: Partial<SessionState> = {
+    persistDurableNow(): DurablePersistResult {
+      if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+      durablePersistenceTimer = null;
+      durablePersistencePending = false;
+      const snapshot = buildDurableSessionSnapshot({
         sessionDb: this.sessionDb,
         user: this.user,
-        menuTree: this.menuTree,
         menuExpandedKeys: this.menuExpandedKeys,
         scenarioExpandedCenters: this.scenarioExpandedCenters,
         scenarioExpandedScenarios: this.scenarioExpandedScenarios,
-        currentAction: this.currentAction,
-        capabilities: this.capabilities,
-        scenes: this.scenes,
-        sceneVersion: this.sceneVersion,
-        roleSurface: this.roleSurface,
-        roleSurfaceMap: this.roleSurfaceMap,
-        recordContext: recordContextStorageSnapshot(this.recordContext),
+        recordContext: this.recordContext,
         activityPages: this.activityPages,
         activeActivityPageKey: this.activeActivityPageKey,
         activityPageCacheEpochs: this.activityPageCacheEpochs,
-        capabilityCatalog: this.capabilityCatalog,
-        sceneActionHints: this.sceneActionHints,
-        capabilityGroups: this.capabilityGroups,
-        productFacts: this.productFacts,
-        workspaceHome: this.workspaceHome,
-        workspaceHomeRef: this.workspaceHomeRef,
-        lastTraceId: this.lastTraceId,
-        lastIntent: this.lastIntent,
-        lastLatencyMs: this.lastLatencyMs,
-        lastWriteMode: this.lastWriteMode,
-        initMeta: this.initMeta,
-        defaultRoute: this.defaultRoute,
         bootstrapNextIntent: this.bootstrapNextIntent,
-      };
+      });
       try {
         localStorage.setItem(sessionStorageKey(), JSON.stringify(snapshot));
-        return;
+        durablePersistenceRetryNeeded = false;
+        return 'full';
       } catch {
         // Persistence is only a reload optimization. A quota or serialization
         // failure must not block login or user initialization.
       }
       try {
-        const minimalSnapshot: Partial<SessionState> = {
-          sessionDb: this.sessionDb,
-          user: this.user,
-          menuExpandedKeys: this.menuExpandedKeys,
-          scenarioExpandedCenters: this.scenarioExpandedCenters,
-          scenarioExpandedScenarios: this.scenarioExpandedScenarios,
-          currentAction: this.currentAction,
-          roleSurface: this.roleSurface,
-          recordContext: this.recordContext,
-          activityPages: this.activityPages,
-          activeActivityPageKey: this.activeActivityPageKey,
-          activityPageCacheEpochs: this.activityPageCacheEpochs,
-          workspaceHomeRef: this.workspaceHomeRef,
-          lastTraceId: this.lastTraceId,
-          lastIntent: this.lastIntent,
-          lastLatencyMs: this.lastLatencyMs,
-          lastWriteMode: this.lastWriteMode,
-          initMeta: this.initMeta,
-          defaultRoute: this.defaultRoute,
-          bootstrapNextIntent: this.bootstrapNextIntent,
+        const minimalSnapshot = {
+          ...snapshot,
+          activityPages: [],
+          activeTab: '',
+          cacheEpochs: {},
+          menuExpansionPreferences: {
+            menuExpandedKeys: [],
+            scenarioExpandedCenters: [],
+            scenarioExpandedScenarios: [],
+          },
         };
         localStorage.setItem(sessionStorageKey(), JSON.stringify(minimalSnapshot));
+        durablePersistenceRetryNeeded = true;
+        return 'degraded';
       } catch {
-        localStorage.removeItem(sessionStorageKey());
+        durablePersistenceRetryNeeded = true;
+        removeStorageItem(localStorage, sessionStorageKey());
+        return 'failed';
       }
+    },
+    scheduleDurablePersist() {
+      const generation = durablePersistenceGeneration;
+      if (durablePersistencePending) return;
+      durablePersistencePending = true;
+      durablePersistenceTimer = setTimeout(() => {
+        durablePersistenceTimer = null;
+        if (generation !== durablePersistenceGeneration || !durablePersistencePending) return;
+        durablePersistencePending = false;
+        this.persistDurableNow();
+      }, 0);
+    },
+    flushDurablePersist() {
+      if (!durablePersistencePending && !durablePersistenceRetryNeeded) return false;
+      if (durablePersistenceTimer) clearTimeout(durablePersistenceTimer);
+      durablePersistenceTimer = null;
+      durablePersistencePending = false;
+      this.persistDurableNow();
+      return true;
+    },
+    persist() {
+      return this.persistDurableNow();
     },
     currentActivityRecordContextSnapshot(): ActivityRecordContextSnapshot | null {
       const current = this.recordContext;
@@ -1113,7 +1084,7 @@ export const useSessionStore = defineStore('session', {
       const registeredPages = [...others, nextPage];
       this.activityPages = (nextPage.settling ? registeredPages : trimActivityPages(registeredPages, key))
         .sort((a, b) => a.created_at - b.created_at);
-      this.persist();
+      this.scheduleDurablePersist();
     },
     settleActivityPage(key: string) {
       const normalizedKey = asText(key);
@@ -1127,7 +1098,6 @@ export const useSessionStore = defineStore('session', {
       if (changed) {
         this.activityPages = trimActivityPages(this.activityPages, normalizedKey)
           .sort((a, b) => a.created_at - b.created_at);
-        this.persist();
       }
     },
     settleActionActivityPage(actionId: number, menuId: number) {
@@ -1145,13 +1115,11 @@ export const useSessionStore = defineStore('session', {
     updateActiveActivityDirty(dirty: boolean) {
       const activeKey = asText(this.activeActivityPageKey);
       if (!activeKey) return;
-      let changed = false;
       this.activityPages = this.activityPages.map((page) => {
         if (page.key !== activeKey || Boolean(page.dirty) === Boolean(dirty)) return page;
-        changed = true;
         return { ...page, dirty: Boolean(dirty) };
       });
-      if (changed) this.persist();
+      // Dirty is an in-memory activity indicator; refresh recovery is false.
     },
     completeCreatedActivityPage(key: string) {
       const normalizedKey = asText(key);
@@ -1159,7 +1127,7 @@ export const useSessionStore = defineStore('session', {
       this.activityPages = this.activityPages.filter((page) => page.key !== normalizedKey);
       this.activityPageCacheEpochs = advanceActivityPageCacheEpoch(this.activityPageCacheEpochs, normalizedKey);
       if (this.activeActivityPageKey === normalizedKey) this.activeActivityPageKey = '';
-      this.persist();
+      this.persistDurableNow();
       return true;
     },
     authorizeActivityPageNavigation() {
@@ -1187,7 +1155,7 @@ export const useSessionStore = defineStore('session', {
         nextPage = [...this.activityPages].sort((a, b) => b.last_active_at - a.last_active_at)[0] || null;
         this.activeActivityPageKey = nextPage?.key || '';
       }
-      this.persist();
+      this.persistDurableNow();
       return nextPage;
     },
     markActivityPageActive(key: string) {
@@ -1198,12 +1166,12 @@ export const useSessionStore = defineStore('session', {
         page.key === normalizedKey ? { ...page, last_active_at: now } : page
       ));
       this.activeActivityPageKey = normalizedKey;
-      this.persist();
+      this.scheduleDurablePersist();
     },
     updateActiveActivityRuntimeQuery(rawQuery: unknown) {
       const activeKey = asText(this.activeActivityPageKey);
       if (!activeKey) return;
-      const runtimeQuery = normalizeActivityRuntimeQuery(rawQuery);
+      const runtimeQuery = normalizeDurableActivityRuntimeQuery(rawQuery);
       let changed = false;
       this.activityPages = this.activityPages.map((page) => {
         if (page.key !== activeKey) return page;
@@ -1216,7 +1184,7 @@ export const useSessionStore = defineStore('session', {
           runtime_query: runtimeQuery,
         };
       });
-      if (changed) this.persist();
+      if (changed) this.scheduleDurablePersist();
     },
     updateActiveActivityTitle(rawTitle: unknown, rawRoute?: unknown) {
       const route = asText(rawRoute);
@@ -1255,7 +1223,7 @@ export const useSessionStore = defineStore('session', {
         changed = true;
         return { ...page, title };
       });
-      if (changed) this.persist();
+      if (changed) this.scheduleDurablePersist();
     },
     async applyActivityRecordContext(snapshot: ActivityRecordContextSnapshot | null | undefined) {
       if (!snapshot || !this.recordContext) return;
@@ -1264,7 +1232,7 @@ export const useSessionStore = defineStore('session', {
       const requestEpoch = beginContextTransition();
       this.routeAuthority = null;
       this.recordContext = nextContext;
-      this.persist();
+      this.persistDurableNow();
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
     },
     recordIntentTrace(params: { traceId?: string; intent: string; latencyMs?: number | null; writeMode?: string }) {
@@ -1274,7 +1242,6 @@ export const useSessionStore = defineStore('session', {
       this.lastIntent = params.intent;
       this.lastLatencyMs = params.latencyMs ?? null;
       this.lastWriteMode = params.writeMode ?? '';
-      this.persist();
     },
     async login(username: string, password: string) {
       this.clearSession();
@@ -1301,9 +1268,11 @@ export const useSessionStore = defineStore('session', {
         setActiveDb(sessionDb);
       }
       this.setToken(token);
+      this.persistDurableNow();
     },
     async logout() {
       // Cancel page/data work before the server invalidates the token.
+      invalidateDurablePersistence();
       beginContextTransition();
       try {
         await intentRequest<{ message?: string }>({ intent: 'auth.logout' });
@@ -1739,7 +1708,7 @@ export const useSessionStore = defineStore('session', {
       if (!bootstrapIsCurrent()) return;
       this.isReady = true;
       this.initStatus = 'ready';
-      this.persist();
+      this.persistDurableNow();
       } catch (err) {
         if (!publishFailure(err)) return;
         throw err;
@@ -1818,7 +1787,6 @@ export const useSessionStore = defineStore('session', {
         this.publicPageContractStatus = 'idle';
         this.pageContracts = row.page_contracts.pages;
       }
-      this.persist();
       return this.workspaceHome;
     },
     async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
@@ -1846,7 +1814,7 @@ export const useSessionStore = defineStore('session', {
           ...normalized,
           selected: normalized.selected ?? this.recordContext?.selected ?? null,
         };
-        this.persist();
+        this.scheduleDurablePersist();
       }
       return this.recordContext;
     },
@@ -1862,7 +1830,7 @@ export const useSessionStore = defineStore('session', {
         operation_strategy: option?.operation_strategy || current.operation_strategy || '',
         operation_strategy_label: option?.operation_strategy_label || current.operation_strategy_label || '',
       };
-      this.persist();
+      this.persistDurableNow();
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
     },
     async selectBusinessScope(scope: { company_id?: number | null; operation_strategy?: string }) {
@@ -1903,7 +1871,7 @@ export const useSessionStore = defineStore('session', {
         this.activeActivityPageKey = '';
         this.activityPageCacheEpochs = nextEpochs;
       }
-      this.persist();
+      this.persistDurableNow();
       // system.init is authoritative and already returns record_context.
       await this.loadAppInit({ force: true, contextEpoch: requestEpoch });
       if (!isCurrentContextEpoch(requestEpoch)) return false;

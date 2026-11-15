@@ -85,6 +85,17 @@ audit.daily.demo.business_readiness: guard.prod.forbid verify.daily.demo.busines
 	  < scripts/verify/daily_demo_business_readiness.py
 
 DAILY_DEMO_OBSERVATION ?= inventory
+.PHONY: audit.daily.demo.runtime_performance
+DAILY_PERFORMANCE_PHASE ?= r4_profile
+audit.daily.demo.runtime_performance: guard.prod.forbid
+	@test "$(DAILY_RUNTIME_EXPECTED_SHA)" = "5d631f6dd304a003f09c72e7de22fde45b8c3dbc"
+	@[[ "$(DAILY_PERFORMANCE_PHASE)" = r3 || "$(DAILY_PERFORMANCE_PHASE)" = r4_profile || "$(DAILY_PERFORMANCE_PHASE)" = r4_children || "$(DAILY_PERFORMANCE_PHASE)" = r4_gc || "$(DAILY_PERFORMANCE_PHASE)" = r5_actions || "$(DAILY_PERFORMANCE_PHASE)" = r5_clone || "$(DAILY_PERFORMANCE_PHASE)" = r5_identity || "$(DAILY_PERFORMANCE_PHASE)" = http_window || "$(DAILY_PERFORMANCE_PHASE)" = http_export || "$(DAILY_PERFORMANCE_PHASE)" = http_status ]]
+	@[[ "$(DAILY_PERFORMANCE_PHASE)" != http_* || "$(DAILY_HTTP_PROFILE_NONCE)" =~ ^r6_[a-z0-9]{8,24}$$ ]]
+	@python3 -m py_compile scripts/verify/daily_demo_runtime_performance.py
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env DAILY_PERFORMANCE_PHASE=$(DAILY_PERFORMANCE_PHASE) --env DAILY_HTTP_PROFILE_NONCE=$(DAILY_HTTP_PROFILE_NONCE)' \
+	  < scripts/verify/daily_demo_runtime_performance.py
+
 .PHONY: audit.daily.demo.data_inventory
 audit.daily.demo.data_inventory: guard.prod.forbid verify.daily.demo.business_readiness.unit
 	@[[ "$(DAILY_DEMO_OBSERVATION)" = inventory || "$(DAILY_DEMO_OBSERVATION)" = scenario || "$(DAILY_DEMO_OBSERVATION)" = scenario_delivery ]] || { echo "Unsupported observation mode" >&2; exit 2; }

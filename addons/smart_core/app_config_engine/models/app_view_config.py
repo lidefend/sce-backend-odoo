@@ -654,7 +654,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         兼容不同 Odoo 版本：
         - 新：env[model].get_view(view_type=...)
         - 旧：env[model].fields_view_get(view_type=..., toolbar=True)
-        返回：{"arch": str, "fields": dict, "toolbar": dict}
+        返回 Odoo 原生 arch、fields、toolbar 及 models 字段需求集合。
         """
         # View composition is user-sensitive: Odoo prunes inherited view nodes
         # by groups during get_view. Keep the runtime user here; metadata writes
@@ -670,7 +670,27 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'arch': raw.get('arch'),
                 'fields': raw.get('fields', {}),
                 'toolbar': raw.get('toolbar', {}),
+                'model': raw.get('model') or model_name,
+                'view_type': raw.get('type') or view_type,
             }
+            raw_models = raw.get('models')
+            if isinstance(raw_models, dict):
+                payload['models'] = {
+                    str(name): sorted(str(field) for field in fields if str(field))
+                    for name, fields in raw_models.items()
+                    if str(name)
+                }
+                payload['field_requirements'] = payload['models']
+            elif isinstance(payload.get('fields'), dict):
+                payload['field_requirements'] = {
+                    model_name: sorted(str(field) for field in payload['fields'] if str(field)),
+                }
+            if not payload.get('fields'):
+                required = payload.get('field_requirements', {}).get(model_name) or []
+                try:
+                    payload['fields'] = Model.fields_get(required) if required else Model.fields_get()
+                except Exception:
+                    payload['fields'] = {}
             raw_view_id = raw.get('id') or raw.get('view_id')
             if raw_view_id not in (None, False, ''):
                 try:
@@ -685,11 +705,20 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             except Exception as exc:
                 _logger.warning("XML解析失败，仍然使用视图数据: %s", exc)
             if payload.get('_arch_root') is not None and carrier is not None:
+                resolved_view_id = int(payload.get('_source_view_id') or 0)
+                if resolved_view_id and resolved_view_id != int(view_id or 0):
+                    carrier.store(
+                        self.env,
+                        model_name,
+                        view_type,
+                        resolved_view_id,
+                        payload,
+                    )
                 carrier.store(
                     self.env,
                     model_name,
                     view_type,
-                    int(payload.get('_source_view_id') or 0),
+                    int(view_id or 0),
                     payload,
                 )
             return payload
@@ -699,6 +728,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             context = dict(self.env.context or {})
             identity = self._projection_identity(model_name, view_type)
             view_id = identity.get('source_view_id') or False
+            cached = carrier.fetch(self.env, model_name, view_type, int(view_id or 0)) if carrier is not None else None
+            if cached is not None and cached.get('_arch_root') is not None:
+                return cached
             if view_id:
                 _logger.debug("使用指定视图ID %s 加载 %s.%s 视图", view_id, model_name, view_type)
                 data = Model.with_context(load_all_views=True).get_view(view_id=view_id, view_type=view_type)
@@ -750,6 +782,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         """
         fields_get = (view_data or {}).get('fields') or self.env[model_name].sudo().fields_get()
         arch_root = (view_data or {}).get('_arch_root')
+        raw_arch = (view_data or {}).get('arch')
+        if arch_root is None and isinstance(raw_arch, str) and raw_arch.strip():
+            try:
+                arch_root = etree.fromstring(raw_arch.encode('utf-8'))
+            except Exception as exc:
+                _logger.warning("FALLBACK XML解析失败: %s", exc)
         base = {
             'modifiers': {},
             'toolbar': {'header': [], 'sidebar': [], 'footer': []},

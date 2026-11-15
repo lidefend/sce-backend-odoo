@@ -158,10 +158,17 @@ class ScCapability(models.Model):
         data["reason"] = reason
         return data
 
-    def _access_context(self, user, *, payload=None):
-        return self._normalize_access_result(self._access_context_inner(user, seen=set(), payload=payload))
+    def _access_context(self, user, *, payload=None, published_authority=None):
+        return self._normalize_access_result(
+            self._access_context_inner(
+                user,
+                seen=set(),
+                payload=payload,
+                published_authority=published_authority,
+            )
+        )
 
-    def _access_context_inner(self, user, seen, *, payload=None):
+    def _access_context_inner(self, user, seen, *, payload=None, published_authority=None):
         self.ensure_one()
         seen = set(seen or set())
         cap_key = str(self.key or f"id:{self.id}")
@@ -179,7 +186,13 @@ class ScCapability(models.Model):
         native_bound = any(payload.get(key) for key in ("action_id", "menu_id", "action_xmlid", "menu_xmlid"))
         if native_bound:
             from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
-            authority = published_route_authority(user.with_user(user).env) if user else {}
+            authority = (
+                published_authority
+                if isinstance(published_authority, dict)
+                else published_route_authority(user.with_user(user).env)
+                if user
+                else {}
+            )
             menu_id = 0 if payload.get("native_reference_error") else int(payload.get("menu_id") or 0)
             action_id = 0 if payload.get("native_reference_error") else int(payload.get("action_id") or 0)
             allowed_pairs = published_pairs(authority)
@@ -239,7 +252,11 @@ class ScCapability(models.Model):
                 if not dep:
                     missing.append(key)
                     continue
-                dep_access = dep._access_context_inner(user, seen=seen)
+                dep_access = dep._access_context_inner(
+                    user,
+                    seen=seen,
+                    published_authority=published_authority,
+                )
                 if not dep_access.get("allowed"):
                     missing.append(key)
             if missing:
@@ -562,7 +579,7 @@ class ScScene(models.Model):
             "source_authority": self.source_authority_contract(),
         }
 
-    def _filter_payload_tiles(self, payload_tiles, user):
+    def _filter_payload_tiles(self, payload_tiles, user, *, published_authority=None):
         Cap = self.env["sc.capability"].sudo()
         keys = [str(tile.get("key") or "") for tile in payload_tiles if isinstance(tile, dict)]
         caps = Cap.search([("key", "in", [k for k in keys if k]), ("active", "=", True)])
@@ -575,7 +592,11 @@ class ScScene(models.Model):
             cap = cap_map.get(key)
             if not cap:
                 continue
-            access = cap._access_context(user, payload=tile.get("payload") or {})
+            access = cap._access_context(
+                user,
+                payload=tile.get("payload") or {},
+                published_authority=published_authority,
+            )
             if not access.get("visible"):
                 continue
             item = dict(tile)

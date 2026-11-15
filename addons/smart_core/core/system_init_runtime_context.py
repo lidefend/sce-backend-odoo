@@ -44,3 +44,4 @@ class SystemInitRuntimeContext:
     load_scenes_fallback_fn: Callable
     merge_missing_scenes_fn: Callable
     append_resolve_error_fn: Callable
+    published_authority: dict | None = None

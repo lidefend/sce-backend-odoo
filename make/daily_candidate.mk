@@ -109,6 +109,7 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/tenant_payload/odoo_action.py \
 		scripts/tenant_payload/provision_operator.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
+		scripts/ops/r10_performance_ab_continuity_contract_v1.json \
 		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
 		config/ops/daily_runtime_database_duties.v1.json \
 		scripts/ops/daily_candidate_data_sentinel.py \

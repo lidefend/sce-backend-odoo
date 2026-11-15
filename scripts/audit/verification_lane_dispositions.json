@@ -1135,6 +1135,66 @@
       "owner": "platform-team",
       "reason": "项目遗留入口回填运行手册。"
     },
+    "r10.performance_ab.plan": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读计划入口；只输出资源与阶段计划，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.preflight": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R10 isolated Cold/Warm A/B 的只读 preflight；检查真实远端端口、资源、容量与当前 A 容器，不创建资源。",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.cold_reset": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "Clears only each isolated arm Redis and restarts its Odoo process to bind a process-first performance sample.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.deploy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Starts the isolated A twin and upgrades only the B database and source identity before A/B sampling.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.destroy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Destroys only the two exact R10 Compose projects after evidence capture; the paired snapshot and current A remain untouched.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.prepare": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "R10 isolated A/B source and bundle staging entry; manually invoked after exact twin creation authorization and clean candidate binding.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.readback": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "Reads exact R10 container, network, volume, database, project record and HTTP identities before samples are accepted.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.redeploy": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Refreshes only the existing isolated Candidate B source and frontend bytes with rollback archives, then performs the reviewed B deployment and health readback.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.restore": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Restores the reviewed paired snapshot into both isolated R10 arms; never runs from CI or against the serving A duty.",
+      "review_by": "2027-03-31"
+    },
+    "r10.performance_ab.twins.stack.sync": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "Synchronizes the reviewed isolated compose definition after source staging without recreating twin sources or data.",
+      "review_by": "2027-03-31"
+    },
     "refresh.frontend.rendering_detail.inventory": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -2602,11 +2662,6 @@
       "reason": "unit coverage for the shared local.dev write lease",
       "review_by": "2026-12-31"
     },
-    "verify.local.development_lifecycle.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/GITEE-FORMAL-PACKAGE-REFRESH/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.menu.navigation_snapshot": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -3874,7 +3929,8 @@
         "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
         "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
         "scripts/ops/production_acceptance_contract_v1.js",
-        "scripts/ops/production_acceptance_package_v1.sh"
+        "scripts/ops/production_acceptance_package_v1.sh",
+        "scripts/ops/r10_performance_ab_continuity_contract_v1.js"
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."

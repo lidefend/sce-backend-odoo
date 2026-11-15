@@ -3,7 +3,7 @@ interface NavigationExpansionStore {
   menuExpandedKeys: string[];
   scenarioExpandedCenters: string[];
   scenarioExpandedScenarios: string[];
-  persist(): void;
+  scheduleDurablePersist(): void;
 }
 
 export const navigationExpansionActions = {
@@ -15,7 +15,7 @@ export const navigationExpansionActions = {
         set.add(key);
       }
       this.menuExpandedKeys = [...set];
-      this.persist();
+      this.scheduleDurablePersist();
     },
     ensureMenuExpanded(this: NavigationExpansionStore, keys: string[]) {
       const set = new Set(this.menuExpandedKeys);
@@ -28,7 +28,7 @@ export const navigationExpansionActions = {
       });
       if (changed) {
         this.menuExpandedKeys = [...set];
-        this.persist();
+        this.scheduleDurablePersist();
       }
     },
     toggleScenarioCenter(this: NavigationExpansionStore, key: string) {
@@ -39,7 +39,7 @@ export const navigationExpansionActions = {
         set.add(key);
       }
       this.scenarioExpandedCenters = [...set];
-      this.persist();
+      this.scheduleDurablePersist();
     },
     toggleScenarioExpanded(this: NavigationExpansionStore, key: string) {
       const set = new Set(this.scenarioExpandedScenarios);
@@ -49,7 +49,7 @@ export const navigationExpansionActions = {
         set.add(key);
       }
       this.scenarioExpandedScenarios = [...set];
-      this.persist();
+      this.scheduleDurablePersist();
     },
     ensureScenarioExpanded(this: NavigationExpansionStore, centerKey: string, scenarioKey: string) {
       const centerSet = new Set(this.scenarioExpandedCenters);
@@ -66,7 +66,7 @@ export const navigationExpansionActions = {
       if (changed) {
         this.scenarioExpandedCenters = [...centerSet];
         this.scenarioExpandedScenarios = [...scenarioSet];
-        this.persist();
+        this.scheduleDurablePersist();
       }
     },
 };

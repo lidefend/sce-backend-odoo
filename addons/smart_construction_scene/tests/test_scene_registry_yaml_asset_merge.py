@@ -49,7 +49,7 @@ class TestSceneRegistryYamlAssetMerge(unittest.TestCase):
         definition = {"code": "effective.frozen", "name": "Frozen", "tiles": [{"key": "cap", "payload": {"action_id": 101}}]}
         record = SimpleNamespace(code=definition["code"], to_effective_definition_dict=lambda: deepcopy(definition))
         projections = []
-        def project(tiles, user):
+        def project(tiles, user, **kwargs):
             projections.append(user)
             return [{**row, "allowed": False} for row in tiles]
         record._filter_payload_tiles = project

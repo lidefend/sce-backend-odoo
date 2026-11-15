@@ -449,5 +449,92 @@ class IntentControllerTimingTests(unittest.TestCase):
         self.assertEqual(sum(durations.values()), 100)
 
 
+
+class DailyProfilerControlTests(unittest.TestCase):
+    def execute(self, old=None, fail=False, concurrent=False, phase='http_window'):
+        source = SCRIPT.with_name('daily_demo_runtime_performance.py')
+        node = next(n for n in ast.parse(source.read_text()).body
+                    if isinstance(n, ast.FunctionDef) and n.name == 'http_profile_control')
+        class Config:
+            value = old
+            def sudo(self): return self
+            def search(self, domain): return self
+            def browse(self, ident): return self
+            def __bool__(self): return self.value is not None
+            def set_param(self, key, value): self.value = value
+            def unlink(self): self.value = None
+            def write(self, values): self.value = values['value']
+        config = Config()
+        queries, commits = [], []
+        cursor = SimpleNamespace(dbname='sc_demo', rollback=lambda: None,
+            execute=lambda *args: queries.append(args[0]), commit=lambda: commits.append(config.value),
+            fetchone=lambda: (1, config.value) if config.value is not None else None)
+        class Env:
+            cr = cursor
+            def __getitem__(self, name): return config
+            def invalidate_all(self): pass
+        def sleep(seconds):
+            if concurrent: config.value = '2099-01-01 00:00:00'
+            if fail or concurrent: raise RuntimeError('observation failed')
+        import re
+        scope = {'os': SimpleNamespace(environ={'DAILY_HTTP_PROFILE_NONCE': 'r6_testcontrol01'}),
+                 'time': SimpleNamespace(sleep=sleep), 're': re, 'json': json}
+        tools = SimpleNamespace(config=type('ConfigDict', (dict,), {'filestore': lambda self, db: '/opt/sce-runtime/filestore/' + db})(
+            dbfilter='^sc_demo$', data_dir='/opt/sce-runtime'))
+        error = None
+        with patch.dict(sys.modules, {'odoo': SimpleNamespace(tools=tools)}), contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), 'exec'), scope)
+            try: scope['http_profile_control'](Env(), phase)
+            except (RuntimeError, AssertionError) as exc: error = exc
+        return config.value, queries, commits, error
+
+    def test_restores_present_or_absent_window_even_on_observation_error(self):
+        for old in [None, '2020-01-01 00:00:00']:
+            for fail in [False, True]:
+                with self.subTest(old=old, fail=fail):
+                    value, queries, commits, error = self.execute(old, fail)
+                    self.assertEqual(value, old)
+                    self.assertEqual(len(commits), 2)
+                    self.assertEqual(sum('FOR UPDATE' in q for q in queries), 2)
+                    self.assertIn('LOCK TABLE ir_config_parameter IN SHARE ROW EXCLUSIVE MODE', queries)
+                    self.assertEqual(isinstance(error, RuntimeError), fail)
+
+    def test_active_foreign_window_is_not_modified(self):
+        value, _, commits, error = self.execute('2099-01-01 00:00:00')
+        self.assertEqual(value, '2099-01-01 00:00:00')
+        self.assertEqual(commits, [])
+        self.assertIsInstance(error, AssertionError)
+
+    def test_concurrent_owner_is_not_overwritten(self):
+        value, _, commits, error = self.execute(concurrent=True)
+        self.assertEqual(value, '2099-01-01 00:00:00')
+        self.assertEqual(len(commits), 1)
+        self.assertIsInstance(error, AssertionError)
+
+    def test_local_replay_uses_governed_entry_and_rejects_unsafe_nonce(self):
+        source = SCRIPT.with_name('daily_demo_runtime_performance.py')
+        tree = ast.parse(source.read_text())
+        node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'local_main')
+        import re
+        scope = {'re': re, 'Path': Path, '__file__': str(source)}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(source), 'exec'), scope)
+        argv = ['--phase', 'http_status', '--expected-sha', '5d631f6dd304a003f09c72e7de22fde45b8c3dbc',
+                '--nonce', 'r6_testcontrol01']
+        with patch('subprocess.run', return_value=SimpleNamespace(returncode=7)) as execute:
+            self.assertEqual(scope['local_main'](argv), 7)
+            self.assertEqual(execute.call_args.args[0][:2], ['make', 'audit.daily.demo.runtime_performance'])
+            self.assertNotIn('shell', execute.call_args.kwargs)
+            execute.reset_mock()
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                scope['local_main'](argv[:-1] + ['bad;command'])
+            execute.assert_not_called()
+
+    def test_status_is_readonly_and_does_not_open_window(self):
+        value, queries, commits, error = self.execute(phase='http_status')
+        self.assertIsNone(value)
+        self.assertIsNone(error)
+        self.assertEqual(queries, ['SET TRANSACTION READ ONLY'])
+        self.assertEqual(commits, [])
+
 if __name__ == '__main__':
     unittest.main()

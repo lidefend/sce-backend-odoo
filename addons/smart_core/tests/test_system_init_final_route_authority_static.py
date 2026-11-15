@@ -46,6 +46,22 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         shared = (Path(__file__).resolve().parents[1] / "delivery" / "effective_delivery_service.py").read_text()
         self.assertIn("EffectiveDeliveryService(env).resolve(params)", system_init)
         self.assertIn("effective_authority=effective_delivery.route_authority", system_init)
+        self.assertEqual(system_init.count("EffectiveDeliveryService(env).resolve(params)"), 1)
+        delivery_position = system_init.index("effective_delivery = EffectiveDeliveryService(env).resolve(params)")
+        capability_position = system_init.index(
+            "capabilities_raw, capability_load_timings_ms = _load_capabilities_for_user_with_timings("
+        )
+        navigation_position = system_init.index(
+            "nav_data, nav_versions = NavDispatcher(env, su_env).build_nav(p_nav)"
+        )
+        self.assertLess(delivery_position, navigation_position)
+        self.assertLess(delivery_position, capability_position)
+        self.assertIn("published_authority=effective_delivery.route_authority", system_init)
+        self.assertIn('effective_nav = effective_delivery.payload.get("nav")', system_init)
+        self.assertLess(
+            system_init.index('effective_nav = effective_delivery.payload.get("nav")'),
+            system_init.index("nav_tree_raw = nav_data.get(\"nav\") or []"),
+        )
         self.assertIn("smart_core_navigation_authority_filter", shared)
         self.assertNotIn("handlers.system_init", shared)
         self.assertNotIn("build_route_authority(", compiler)
@@ -118,6 +134,25 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertIn("navigationReady", audit)
         self.assertNotIn("value?.release_navigation_v1", audit)
         self.assertNotIn("value?.delivery_engine", audit)
+
+    def test_runtime_scene_consumers_receive_the_same_route_authority(self):
+        core = Path(__file__).resolve().parents[1] / "core"
+        system_init = (core.parent / "handlers" / "system_init.py").read_text(encoding="utf-8")
+        runtime_context = (core / "system_init_runtime_context.py").read_text(encoding="utf-8")
+        orchestrator = (core / "scene_runtime_orchestrator.py").read_text(encoding="utf-8")
+        registry_provider = (core / "scene_registry_provider.py").read_text(encoding="utf-8")
+
+        self.assertIn("published_authority: dict | None = None", runtime_context)
+        self.assertIn(
+            "published_authority=effective_delivery.route_authority",
+            system_init,
+        )
+        self.assertEqual(
+            orchestrator.count("published_authority=runtime_ctx.published_authority"),
+            2,
+        )
+        self.assertIn("call_extension_hook_first_compatible(", registry_provider)
+        self.assertIn('"published_authority": published_authority', registry_provider)
 
 
 if __name__ == "__main__":

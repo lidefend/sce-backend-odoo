@@ -23,6 +23,96 @@ FORM_RECORD_SNAPSHOT_FIELD_BUDGET = 80
 FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET = 40
 FIRST_SCREEN_SEMANTIC_ROLES = {"summary", "task", "risk"}
 SUBORDINATE_SEMANTIC_ROLES = {"relation", "activity", "audit"}
+INITIAL_RECORD_SEED_FIELDS = (
+    "id",
+    "display_name",
+    "name",
+    "document_no",
+    "state",
+    "company_id",
+    "project_id",
+    "business_category_id",
+    "operation_strategy",
+)
+
+
+def collect_initial_record_snapshot_fields(
+    source_contract: dict[str, Any],
+    model_fields: Any,
+) -> list[str]:
+    """Select bounded early facts from requirements and native layout occurrences."""
+    fields_map = model_fields if isinstance(model_fields, dict) else {}
+    source = source_contract if isinstance(source_contract, dict) else {}
+    marker = source.get("nativeFormProjection")
+    marker = marker if isinstance(marker, dict) else {}
+    view_fields: list[str] = []
+
+    def add_layout_fields(nodes: Any) -> None:
+        if not isinstance(nodes, list):
+            return
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if str(node.get("type") or node.get("kind") or "").strip().lower() == "field":
+                name = str(node.get("name") or node.get("field") or "").strip()
+                if name:
+                    view_fields.append(name)
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                add_layout_fields(node.get(key))
+
+    add_layout_fields(marker.get("layout"))
+    marker_requirements = marker.get("fieldRequirements")
+    has_native_requirements = (
+        bool(view_fields)
+        or isinstance(marker_requirements, dict) and bool(marker_requirements)
+    )
+    form_view = (
+        (source.get("views") or {}).get("form")
+        if isinstance(source.get("views"), dict)
+        else None
+    )
+    if isinstance(form_view, dict):
+        if not view_fields:
+            add_layout_fields(form_view.get("layout"))
+        if not has_native_requirements and not view_fields:
+            for row in form_view.get("fields") or []:
+                name = str(
+                    row.get("name") or row.get("field") or row.get("field_name")
+                    if isinstance(row, dict)
+                    else row
+                ).strip()
+                if name:
+                    view_fields.append(name)
+    requirements = marker_requirements
+    if not isinstance(requirements, dict):
+        requirements = source.get("field_requirements")
+    if isinstance(requirements, dict):
+        model_name = str(source.get("model") or marker.get("model") or "").strip()
+        required = requirements.get(model_name) if model_name else None
+        if isinstance(required, list):
+            view_fields.extend(str(name).strip() for name in required if str(name).strip())
+    early_dependencies = source.get("record_snapshot_dependency_fields")
+    if isinstance(early_dependencies, list):
+        view_fields.extend(str(name).strip() for name in early_dependencies if str(name).strip())
+    view_fields = list(dict.fromkeys(view_fields))
+    selected: list[str] = []
+
+    def add(name: Any) -> None:
+        field_name = str(name or "").strip()
+        if not field_name or field_name in selected or field_name not in fields_map:
+            return
+        field_type = str(getattr(fields_map.get(field_name), "type", "") or "")
+        if field_name not in INITIAL_RECORD_SEED_FIELDS and field_type in {
+            "one2many", "many2many", "binary", "html",
+        }:
+            return
+        selected.append(field_name)
+
+    for name in INITIAL_RECORD_SEED_FIELDS:
+        add(name)
+    for name in view_fields:
+        add(name)
+    return selected[:FORM_RECORD_SNAPSHOT_FIELD_BUDGET]
 
 
 def collect_modifier_dependency_fields(*sources: Any, known_fields: Any = None) -> list[str]:
@@ -301,6 +391,7 @@ def hydrate_final_modifier_dependencies(
     record_id: Any,
     view_type: str,
     logger: Any = None,
+    record: Any = None,
 ) -> None:
     """Read missing scalar fields required by the final form presentation.
 
@@ -366,26 +457,73 @@ def hydrate_final_modifier_dependencies(
         missing.append(field_name)
     if not missing:
         return
+
+    def request_record_matches(candidate, request_model):
+        if (
+            candidate is None
+            or getattr(candidate, "_name", None) != model
+            or len(candidate) != 1
+            or int(candidate.id or 0) != record_id_int
+        ):
+            return False
+        candidate_env = getattr(candidate, "env", None)
+        request_env = getattr(request_model, "env", None)
+        if candidate_env is None or request_env is None:
+            return True
+        return (
+            getattr(candidate_env, "cr", None) is getattr(request_env, "cr", None)
+            and int(getattr(candidate_env, "uid", 0) or 0) == int(getattr(request_env, "uid", 0) or 0)
+            and bool(getattr(candidate_env, "su", False)) == bool(getattr(request_env, "su", False))
+            and dict(getattr(candidate_env, "context", {}) or {})
+            == dict(getattr(request_env, "context", {}) or {})
+        )
+
     try:
-        record = Model.browse(record_id_int).exists()
+        if not request_record_matches(record, Model):
+            record = Model.browse(record_id_int).exists()
         if not record:
             return
-        for field_name in missing:
+
+        def accept_value(field_name, value):
+            field = fields_map[field_name]
+            if field.type in {"one2many", "many2many"}:
+                # Only actual ORM identities establish relation truth.
+                # Denied or malformed values must remain missing.
+                if not isinstance(value, (list, tuple)) or not all(
+                    isinstance(item, int) and not isinstance(item, bool)
+                    and 0 < item <= 9007199254740991 for item in value
+                ):
+                    return
+                value = list(value)
+            main_data[field_name] = value
+
+        remaining = list(missing)
+        bulk_failed = False
+        try:
+            rows = record.read(remaining)
+            row = rows[0] if rows and isinstance(rows[0], dict) else {}
+            present = {name for name in remaining if name in row}
+            for field_name in present:
+                accept_value(field_name, row[field_name])
+            remaining = [name for name in remaining if name not in present]
+        except Exception:
+            bulk_failed = True
+            # A typed/access failure on the merged read remains local to the
+            # unread fields; the original per-field fallback below preserves
+            # readable sibling dependencies.
+            if logger is not None:
+                logger.debug("ui.contract.v2 final modifier dependency bulk read skipped", exc_info=True)
+
+        if bulk_failed and len(remaining) == 1:
+            # The merged read already used the same one-field permission and
+            # value path; retrying it adds no fallback opportunity.
+            return
+        for field_name in remaining:
             try:
                 rows = record.read([field_name])
                 if not rows or not isinstance(rows[0], dict) or field_name not in rows[0]:
                     continue
-                value = rows[0][field_name]
-                if fields_map[field_name].type in {"one2many", "many2many"}:
-                    # Only actual ORM identities establish relation truth.
-                    # Denied or malformed values must remain missing.
-                    if not isinstance(value, (list, tuple)) or not all(
-                        isinstance(item, int) and not isinstance(item, bool)
-                        and 0 < item <= 9007199254740991 for item in value
-                    ):
-                        continue
-                    value = list(value)
-                main_data[field_name] = value
+                accept_value(field_name, rows[0][field_name])
             except Exception:
                 # One denied field fails closed for itself only; readable
                 # sibling dependencies must still hydrate.

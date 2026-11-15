@@ -63,6 +63,7 @@ export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
 
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
+LOCAL_TEST_REUSE_DATABASE ?= 0
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
 	-u DB_DATA -u REDIS_DATA -u ODOO_DATA -u ODOO_DB -u ODOO_DBFILTER \
@@ -826,7 +827,7 @@ local.test.prepare local.test.up local.test.down: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py $(patsubst local.test.%,%,$@) --env-file "$(LOCAL_TEST_ENV_FILE)"
 
 local.test.test: guard.prod.forbid
-	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)"
+	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
 
 .PHONY: local.clean.contract_projection_cache.probe
 local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env

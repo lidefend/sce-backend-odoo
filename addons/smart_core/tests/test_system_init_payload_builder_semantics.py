@@ -49,6 +49,24 @@ identity_payload = _load_module(
 )
 
 
+class TestExtensionFactConsumption(unittest.TestCase):
+    def test_workspace_consumption_and_parameter_isolation(self):
+        builder = target.SystemInitPayloadBuilder
+        for mode, workspace, expected in [
+            ("boot", False, False), ("boot", True, True),
+            ("preload", False, True), ("debug", False, True),
+        ]:
+            with self.subTest(mode=mode, workspace=workspace):
+                params = {"company_id": 7, "with": "nav", "include_workspace_collections": not expected}
+                before = dict(params)
+                context = builder.extension_fact_context(params, build_mode=mode, include_workspace_home=workspace)
+                self.assertIsNot(context, params)
+                self.assertEqual(params, before)
+                self.assertEqual(context["company_id"], 7)
+                self.assertEqual(context["with"], "nav")
+                self.assertIs(context["include_workspace_collections"], expected)
+
+
 class TestSystemInitIdentityPayloadDeterminism(unittest.TestCase):
     def test_groups_xmlids_are_emitted_in_stable_order(self):
         user = types.SimpleNamespace(

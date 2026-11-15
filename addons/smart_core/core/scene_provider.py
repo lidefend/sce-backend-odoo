@@ -206,7 +206,7 @@ def _resolve_scene_provider_payload(scene_key: str, runtime_context: dict | None
     return payload if isinstance(payload, dict) else {}
 
 
-def merge_missing_scenes_from_registry(env, scenes, warnings):
+def merge_missing_scenes_from_registry(env, scenes, warnings, *, published_authority=None):
     critical_target_overrides = _critical_scene_target_overrides(env)
     critical_route_overrides = _critical_scene_target_route_overrides(env)
     def _capability_target_map() -> dict[str, dict]:
@@ -413,7 +413,10 @@ def merge_missing_scenes_from_registry(env, scenes, warnings):
         if isinstance(scene, dict)
     }
     existing = {code for code in existing if code}
-    registry_scenes = registry_load_scene_configs(env) or []
+    registry_scenes = registry_load_scene_configs(
+        env,
+        published_authority=published_authority,
+    ) or []
     registry_map = {}
     for scene in registry_scenes:
         if not isinstance(scene, dict):

@@ -47,6 +47,7 @@ scene_pkg.__path__ = [str(SCENE_DIR)]
 scene_registry_mod = types.ModuleType("odoo.addons.smart_construction_scene.scene_registry")
 scene_registry_mod.load_scene_configs = lambda env: []
 scene_registry_mod.load_effective_scene_declarations = lambda env: []
+scene_registry_mod.load_effective_scene_declarations_with_timings = lambda env: ([], {})
 scene_registry_mod.load_scene_configs_with_timings = lambda env: ([], {})
 sys.modules["odoo.addons.smart_construction_scene.scene_registry"] = scene_registry_mod
 scene_pkg.scene_registry = scene_registry_mod
@@ -861,6 +862,57 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         )
         self.assertNotIn(("menu_xmlid", "smart_construction_core.menu_sc_root"), lookup)
 
+    def test_target_scene_cache_uses_actor_independent_declarations(self):
+        rows = [
+            {
+                "code": "projects.list",
+                "identity_owner": True,
+                "target": {
+                    "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+                    "action_xmlid": "smart_construction_core.action_sc_project_list",
+                },
+                "tiles": [{"key": "actor-specific-tile"}],
+            }
+        ]
+        original_declarations = (
+            target_capability.scene_registry.load_effective_scene_declarations_with_timings
+        )
+        original_filtered_configs = (
+            target_capability.scene_registry.load_scene_configs_with_timings
+        )
+        target_capability.scene_registry.load_effective_scene_declarations_with_timings = (
+            lambda env: (list(rows), {})
+        )
+        target_capability.scene_registry.load_scene_configs_with_timings = (
+            lambda *args, **kwargs: self.fail(
+                "actor-filtered scene configs must not feed the global target cache"
+            )
+        )
+        try:
+            _reset_caches()
+            reader_lookup = target_capability._build_target_scene_lookup(_DummyEnv())
+            admin_lookup = target_capability._build_target_scene_lookup(_DummyEnv())
+            cached_scene = next(
+                iter(target_capability._SCENE_MAP_CACHE.values())
+            )["projects.list"]
+        finally:
+            target_capability.scene_registry.load_effective_scene_declarations_with_timings = (
+                original_declarations
+            )
+            target_capability.scene_registry.load_scene_configs_with_timings = (
+                original_filtered_configs
+            )
+            _reset_caches()
+
+        self.assertIs(reader_lookup, admin_lookup)
+        self.assertNotIn("tiles", cached_scene)
+        self.assertEqual(
+            reader_lookup[
+                ("action_xmlid", "smart_construction_core.action_sc_project_list")
+            ],
+            "projects.list",
+        )
+
     def test_wave1_finance_provider_supplies_delivery_handoff(self):
         payload = finance_center_provider.build(scene_key="finance.center", runtime={"company_id": 9})
         handoff = payload.get("delivery_handoff") or {}
@@ -1337,6 +1389,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         ]
         target_capability.scene_registry.load_scene_configs = lambda env: list(scene_rows)
         target_capability.scene_registry.load_scene_configs_with_timings = lambda env: (list(scene_rows), {})
+        target_capability.scene_registry.load_effective_scene_declarations_with_timings = (
+            lambda env: (list(scene_rows), {})
+        )
 
         env = _DummyEnv(
             refs={

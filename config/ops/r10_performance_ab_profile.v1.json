@@ -1,0 +1,127 @@
+{
+  "schema_version": "r10.performance_ab.profile.v1",
+  "environment_classification": "R10_ISOLATED_PERFORMANCE_AB",
+  "status": "design_only",
+  "source": {
+    "ssh_host": "sc-root",
+    "duty": "demo",
+    "compose_project": "sc-demo-dev",
+    "database": "sc_demo",
+    "database_uuid": "d7c7f68c-d280-11f1-a914-0a0d1da8b8b8",
+    "served_source_revision": "1baa749baa3af02416909d6182e074fbd26d3958",
+    "tree": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+    "frontend_build_sha256": "b05764fe83fac60b3bccc81187b53d4fcdc590ac844ea8dc214170edb2c551bd",
+    "account": "demo_full",
+    "uid": 42,
+    "company_id": 1,
+    "allowed_company_ids": [1, 2],
+    "project_model": "project.project",
+    "project_record_id": 2,
+    "project_record_xmlid": "smart_construction_demo.sc_demo_project_001",
+    "project_record_identity": "德阳智能制造产教融合项目"
+  },
+  "arms": {
+    "a": {
+      "compose_project": "sc-perf-a-r10",
+      "database": "sc_demo",
+      "database_filter": "^sc_demo$",
+      "database_volume": "sc_perf_a_r10_db_data",
+      "redis_volume": "sc_perf_a_r10_redis_data",
+      "odoo_volume": "sc_perf_a_r10_odoo_data",
+      "internal_network": "sc-perf-a-r10-internal",
+      "source_root": "/opt/projects/perf-r10/a/sce-product-odoo",
+      "frontend_dist": "/data/perf-r10/a/dist",
+      "log_root": "/data/perf-r10/a/logs",
+      "public_port": 18181,
+      "odoo_container": "sc-perf-a-r10-odoo-1",
+      "db_container": "sc-perf-a-r10-db-1",
+      "redis_container": "sc-perf-a-r10-redis-1",
+      "nginx_container": "sc-perf-a-r10-nginx-1"
+    },
+    "b": {
+      "compose_project": "sc-perf-b-r10",
+      "database": "sc_demo",
+      "database_filter": "^sc_demo$",
+      "database_volume": "sc_perf_b_r10_db_data",
+      "redis_volume": "sc_perf_b_r10_redis_data",
+      "odoo_volume": "sc_perf_b_r10_odoo_data",
+      "internal_network": "sc-perf-b-r10-internal",
+      "source_root": "/opt/projects/perf-r10/b/sce-product-odoo",
+      "frontend_dist": "/data/perf-r10/b/dist",
+      "log_root": "/data/perf-r10/b/logs",
+      "public_port": 18182,
+      "odoo_container": "sc-perf-b-r10-odoo-1",
+      "db_container": "sc-perf-b-r10-db-1",
+      "redis_container": "sc-perf-b-r10-redis-1",
+      "nginx_container": "sc-perf-b-r10-nginx-1"
+    }
+  },
+  "ingress": {
+    "network": "sc-perf-r10-ingress",
+    "ip_masquerade": false,
+    "only_nginx_joined": true
+  },
+  "runtime": {
+    "odoo_image_id": "sha256:c597eb77bb10a7e99a2acf25d1ef875ea8652a13a4a5509baf5e12a3c392ef08",
+    "workers": 0,
+    "max_cron_threads": 0,
+    "external_egress_allowed": false,
+    "operator_workflow_allowed": false,
+    "business_mutation_allowed": false,
+    "readonly_operation_only": true,
+    "independent_redis": true,
+    "independent_filestore": true,
+    "independent_frontend": true,
+    "independent_logs": true
+  },
+  "snapshot": {
+    "contract": "scripts/ops/r10_performance_ab_continuity_contract_v1.json",
+    "root": "/data/backups/daily-demo-dev",
+    "required_artifacts": [
+      "database.dump",
+      "filestore.tar.gz",
+      "manifest.json",
+      "SHA256SUMS"
+    ],
+    "paired_restore_drill_required": true,
+    "source_write_allowed": false
+  },
+  "measurement": {
+    "formal_viewports": ["1440x900", "390x844"],
+    "cold_samples_per_arm_viewport": 9,
+    "warm_smoke_per_arm": 1,
+    "warmups_per_arm": 2,
+    "warm_samples_per_arm": 9,
+    "formal_profiler": false
+  },
+  "forbidden_shared_resources": [
+    "sc-demo-dev",
+    "sc_demo_db_data",
+    "sc_demo_odoo_data",
+    "sc_demo_redis_data",
+    "sc-platform-control-dev",
+    "sc_platform_control",
+    "sc_platform_control_db_data",
+    "sc_platform_control_odoo_data",
+    "sc_platform_control_redis_data",
+    "sc-daily-entry",
+    "sc_demo-odoo-1",
+    "sc-demo-dev-odoo-1",
+    "sc-demo-dev-db-1",
+    "sc-demo-dev-redis-1",
+    "sc-demo-dev-nginx-1",
+    "18081",
+    "18082",
+    "18083",
+    "8070"
+  ],
+  "cleanup": {
+    "exact_labels": [
+      "com.docker.compose.project=sc-perf-a-r10",
+      "com.docker.compose.project=sc-perf-b-r10"
+    ],
+    "preserve_snapshot": true,
+    "preserve_evidence": true,
+    "current_a_untouched": true
+  }
+}

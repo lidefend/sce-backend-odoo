@@ -96,8 +96,13 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         original_registry_load = target.registry_load_scene_configs
         original_provider_payload = target._resolve_scene_provider_payload
         original_extension_hook = target.call_extension_hook_first
+        authority_calls = []
+        published_authority = object()
         try:
-            target.registry_load_scene_configs = lambda env: []
+            target.registry_load_scene_configs = (
+                lambda env, *, published_authority=None:
+                    authority_calls.append(published_authority) or []
+            )
             target._resolve_scene_provider_payload = self._provider_payload
             target.call_extension_hook_first = lambda env, hook_name, *args, **kwargs: {"projects.list"} if hook_name == "smart_core_critical_scene_target_overrides" else {}
 
@@ -115,12 +120,15 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
                     }
                 ],
                 [],
+                published_authority=published_authority,
             )
         finally:
             target.registry_load_scene_configs = original_registry_load
             target._resolve_scene_provider_payload = original_provider_payload
             target.call_extension_hook_first = original_extension_hook
 
+        self.assertEqual(len(authority_calls), 1)
+        self.assertIs(authority_calls[0], published_authority)
         projects_list = rows[0]
         scene_target = projects_list.get("target") or {}
         self.assertEqual(scene_target.get("route"), "/s/projects.list")
@@ -133,18 +141,24 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         original_registry_load = target.registry_load_scene_configs
         original_provider_payload = target._resolve_scene_provider_payload
         original_extension_hook = target.call_extension_hook_first
+        authority_calls = []
+        published_authority = object()
+        registry_scenes = [
+            {
+                "code": "projects.list",
+                "name": "项目列表",
+                "target": {
+                    "route": "/s/projects.list",
+                    "action_id": 519,
+                    "menu_id": 329,
+                },
+            }
+        ]
         try:
-            target.registry_load_scene_configs = lambda env: [
-                {
-                    "code": "projects.list",
-                    "name": "项目列表",
-                    "target": {
-                        "route": "/s/projects.list",
-                        "action_id": 519,
-                        "menu_id": 329,
-                    },
-                }
-            ]
+            target.registry_load_scene_configs = (
+                lambda env, *, published_authority=None:
+                    authority_calls.append(published_authority) or registry_scenes
+            )
             target._resolve_scene_provider_payload = self._provider_payload
             target.call_extension_hook_first = lambda env, hook_name, *args, **kwargs: {"projects.list"} if hook_name == "smart_core_critical_scene_target_overrides" else {}
 
@@ -162,12 +176,15 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
                     }
                 ],
                 [],
+                published_authority=published_authority,
             )
         finally:
             target.registry_load_scene_configs = original_registry_load
             target._resolve_scene_provider_payload = original_provider_payload
             target.call_extension_hook_first = original_extension_hook
 
+        self.assertEqual(len(authority_calls), 1)
+        self.assertIs(authority_calls[0], published_authority)
         scene_target = rows[0].get("target") or {}
         self.assertEqual(scene_target.get("route"), "/s/projects.list")
         self.assertEqual(scene_target.get("action_xmlid"), "smart_construction_core.action_sc_project_list")
@@ -179,8 +196,13 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
         original_registry_load = target.registry_load_scene_configs
         original_provider_payload = target._resolve_scene_provider_payload
         original_extension_hook = target.call_extension_hook_first
+        authority_calls = []
+        published_authority = object()
         try:
-            target.registry_load_scene_configs = lambda env: []
+            target.registry_load_scene_configs = (
+                lambda env, *, published_authority=None:
+                    authority_calls.append(published_authority) or []
+            )
             target._resolve_scene_provider_payload = lambda scene_key, runtime_context=None: {}
             target.call_extension_hook_first = lambda env, hook_name, *args, **kwargs: {"projects.list"} if hook_name == "smart_core_critical_scene_target_overrides" else {}
 
@@ -200,12 +222,15 @@ class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
                     }
                 ],
                 [],
+                published_authority=published_authority,
             )
         finally:
             target.registry_load_scene_configs = original_registry_load
             target._resolve_scene_provider_payload = original_provider_payload
             target.call_extension_hook_first = original_extension_hook
 
+        self.assertEqual(len(authority_calls), 1)
+        self.assertIs(authority_calls[0], published_authority)
         scene_target = rows[0].get("target") or {}
         self.assertEqual(scene_target.get("route"), "/s/projects.list")
         self.assertEqual(scene_target.get("action_xmlid"), "smart_construction_core.action_sc_project_list")

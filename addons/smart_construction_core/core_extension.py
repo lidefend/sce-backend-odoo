@@ -1169,7 +1169,7 @@ def smart_core_register(registry):
             registry[intent_name] = handler
 
 
-def get_capability_contributions(env, user):
+def get_capability_contributions(env, user, *, published_authority=None):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user as registry_list_capabilities_for_user,
@@ -1177,13 +1177,17 @@ def get_capability_contributions(env, user):
     except Exception:
         return []
     try:
-        capabilities = registry_list_capabilities_for_user(env, user)
+        capabilities = registry_list_capabilities_for_user(
+            env,
+            user,
+            published_authority=published_authority,
+        )
     except Exception:
         return []
     return _capability_rows.normalize_capability_rows(capabilities)
 
 
-def get_capability_contributions_with_timings(env, user):
+def get_capability_contributions_with_timings(env, user, *, published_authority=None):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user_with_timings as registry_list_capabilities_for_user_with_timings,
@@ -1191,7 +1195,11 @@ def get_capability_contributions_with_timings(env, user):
     except Exception:
         return [], {}
     try:
-        capabilities, timings_ms = registry_list_capabilities_for_user_with_timings(env, user)
+        capabilities, timings_ms = registry_list_capabilities_for_user_with_timings(
+            env,
+            user,
+            published_authority=published_authority,
+        )
     except Exception:
         return [], {}
     return (
@@ -1216,14 +1224,22 @@ def get_capability_group_contributions(env):
     return out
 
 
-def smart_core_list_capabilities_for_user(env, user):
+def smart_core_list_capabilities_for_user(env, user, *, published_authority=None):
     """Compatibility hook consumed by smart_core capability provider."""
-    return get_capability_contributions(env, user)
+    return get_capability_contributions(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
-def smart_core_list_capabilities_for_user_with_timings(env, user):
+def smart_core_list_capabilities_for_user_with_timings(env, user, *, published_authority=None):
     """Expose capability projection stages to the startup provider."""
-    return get_capability_contributions_with_timings(env, user)
+    return get_capability_contributions_with_timings(
+        env,
+        user,
+        published_authority=published_authority,
+    )
 
 
 def smart_core_capability_groups(env):
@@ -1320,7 +1336,7 @@ def smart_core_hierarchy_governance(env, model_name, context, contract):
 
 def get_system_init_fact_contributions(env, user, context=None):
     """Return construction system.init facts contribution payload."""
-    del context
+    context = context if isinstance(context, dict) else {}
     try:
         module_facts = {
             "role_surface_override_provider": _hook_facts.role_surface_override_provider(
@@ -1328,34 +1344,35 @@ def get_system_init_fact_contributions(env, user, context=None):
             ),
         }
 
-        task_rows = _build_task_action_rows(env, user)
-        payment_rows = _build_payment_action_rows(env)
-        risk_rows = _build_risk_action_rows(env)
-        project_rows = _build_project_action_rows(env, user)
-        home_object_rows = _build_home_object_rows(env)
+        if context.get("include_workspace_collections") is not False:
+            task_rows = _build_task_action_rows(env, user)
+            payment_rows = _build_payment_action_rows(env)
+            risk_rows = _build_risk_action_rows(env)
+            project_rows = _build_project_action_rows(env, user)
+            home_object_rows = _build_home_object_rows(env)
 
-        module_facts["workspace_collections"] = {
-            "task_items": task_rows,
-            "payment_requests": payment_rows,
-            "risk_actions": risk_rows,
-            "project_actions": project_rows,
-            "home_objects": home_object_rows,
-        }
-        module_facts["workspace_collection_export_keys"] = [
-            "task_items",
-            "payment_requests",
-            "risk_actions",
-            "project_actions",
-            "home_objects",
-        ]
+            module_facts["workspace_collections"] = {
+                "task_items": task_rows,
+                "payment_requests": payment_rows,
+                "risk_actions": risk_rows,
+                "project_actions": project_rows,
+                "home_objects": home_object_rows,
+            }
+            module_facts["workspace_collection_export_keys"] = [
+                "task_items",
+                "payment_requests",
+                "risk_actions",
+                "project_actions",
+                "home_objects",
+            ]
 
-        module_facts["workspace_business_source"] = {
-            "task_items": len(task_rows),
-            "payment_requests": len(payment_rows),
-            "risk_actions": len(risk_rows),
-            "project_actions": len(project_rows),
-            "home_objects": len(home_object_rows),
-        }
+            module_facts["workspace_business_source"] = {
+                "task_items": len(task_rows),
+                "payment_requests": len(payment_rows),
+                "risk_actions": len(risk_rows),
+                "project_actions": len(project_rows),
+                "home_objects": len(home_object_rows),
+            }
 
         role_entries = _build_role_entry_contract_rows(env)
         if role_entries:

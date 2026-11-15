@@ -491,6 +491,7 @@ class PageAssembler:
         model_fields_snapshot = su[model].fields_get()
         view_projection_sources = {}
         view_projection_contracts = {}
+        view_field_requirements = {}
 
         # 1) 字段：从模型配置生成；再归一化到 {name: {...}} 形式
         #    - 使用 su_env 读模型元数据，避免被权限限制
@@ -560,6 +561,11 @@ class PageAssembler:
                 if isinstance(view_data, dict):
                     view_data['_fields_snapshot'] = model_fields_snapshot
                     view_projection_sources[vt] = view_data
+                    view_field_requirements[canonical_vt] = deepcopy(
+                        view_data.get('field_requirements')
+                        if isinstance(view_data.get('field_requirements'), dict)
+                        else {}
+                    )
                     try:
                         resolved_view_id = int(view_data.get('_source_view_id') or 0)
                     except (TypeError, ValueError):
@@ -608,6 +614,7 @@ class PageAssembler:
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
 
             data["views"][vt] = v_contract
+        data["view_field_requirements"] = view_field_requirements
         if resolved_view_ids_by_type:
             data["view_ids_by_type"] = resolved_view_ids_by_type
             active_view_id = self._resolve_active_view_id(

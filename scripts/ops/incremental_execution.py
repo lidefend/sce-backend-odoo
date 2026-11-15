@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 
-SCHEMA_VERSION = 1
-NON_RUNTIME_PREFIXES = (".agent/", "docs/")
+SCHEMA_VERSION = 2
+NON_RUNTIME_PREFIXES = (".agent/", "docs/", ".runtime/")
 
 
 def sha256_file(path: Path) -> str:
@@ -17,22 +18,40 @@ def sha256_file(path: Path) -> str:
 
 
 def runtime_tree_sha256(root: Path) -> str:
-    """Hash tracked runtime inputs while excluding bookkeeping-only trees."""
+    """Hash current runtime input bytes, including dirty and untracked source."""
     try:
-        listing = subprocess.run(
-            ["git", "-C", str(root), "ls-tree", "-r", "--full-tree", "HEAD"],
+        paths = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "ls-files",
+                "-z",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+            ],
             check=True,
-            text=True,
             stdout=subprocess.PIPE,
-        ).stdout.splitlines()
+        ).stdout.split(b"\0")
     except subprocess.CalledProcessError:
         return ""
-    rows = [
-        row
-        for row in listing
-        if not (row.split("\t", 1)[1] if "\t" in row else "").startswith(NON_RUNTIME_PREFIXES)
-    ]
-    return hashlib.sha256(("\n".join(rows) + "\n").encode("utf-8")).hexdigest()
+    digest = hashlib.sha256()
+    for raw_path in sorted({path for path in paths if path}):
+        relative = raw_path.decode("utf-8")
+        if relative.startswith(NON_RUNTIME_PREFIXES):
+            continue
+        path = root / relative
+        digest.update(raw_path + b"\0")
+        if path.is_symlink():
+            digest.update(b"symlink\0" + os.readlink(path).encode("utf-8"))
+        elif path.is_file():
+            digest.update(b"file\0")
+            digest.update(str(path.stat().st_mode & 0o777).encode("ascii") + b"\0")
+            digest.update(path.read_bytes())
+        else:
+            digest.update(b"missing\0")
+    return digest.hexdigest()
 
 
 def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict:
@@ -73,9 +92,8 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
 
 
 def reuse_identity(identity: dict) -> dict:
-    """Fields that decide reuse; HEAD remains provenance, not validity."""
+    """Fields that decide reuse; HEAD and cleanliness remain provenance."""
     return {
-        "worktreeClean": identity.get("worktreeClean", False),
         "runtimeTreeSha256": identity.get("runtimeTreeSha256", ""),
         "authoritySha256": identity.get("authoritySha256", {}),
     }
@@ -103,7 +121,7 @@ def verified_receipt(
     identity: dict,
 ) -> Path | None:
     """Return a prior receipt only when identity, bytes and every target log match."""
-    if not identity.get("worktreeClean") or not identity.get("head"):
+    if not identity.get("head"):
         return None
     index = cache_path(root, paths, targets, identity)
     if not index.is_file():

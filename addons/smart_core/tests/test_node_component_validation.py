@@ -66,6 +66,111 @@ class NodeValidationTests(unittest.TestCase):
         self.record.amount = 1
         self.validate(); self.assertFalse(self.host['visible'])
 
+    def test_declaration_only_validation_defers_runtime_fact_reads(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        self.record.empty = True
+        validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+        )
+        self.assertNotIn('visible', self.host)
+        self.assertFalse(self.record.reads)
+        self.assertEqual(
+            self.contract['layoutContract']['componentRegistry']['sc.feedback.message'],
+            {'version': '1.0.0'},
+        )
+
+    def test_declaration_only_draft_validation_does_not_require_a_saved_record(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        self.contract['dataContract']['mainData'] = {}
+        self.env._fields = self.record._fields
+        validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            draft_feedback=object(),
+            evaluate_runtime=False,
+        )
+        self.assertNotIn('visible', self.host)
+        self.assertFalse(self.record.reads)
+
+    def test_declaration_proof_reuses_static_checks_and_keeps_final_fact_evaluation(self):
+        import core.node_component_validation as validator
+
+        self.host['componentConfig']['purpose'] = 'advisory'
+        proof = validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+            collect_proof=True,
+        )
+        self.assertEqual(proof['schema'], validator.NODE_VALIDATION_PROOF_SCHEMA)
+        self.assertIn(self.host['containerId'], proof['declarations'])
+        self.assertFalse(self.record.reads)
+
+        self.record.amount = 5
+        with patch.object(
+            validator,
+            'native_feedback_fields',
+            side_effect=AssertionError('unchanged declaration must reuse its source proof'),
+        ), patch.object(
+            validator,
+            'condition_dependencies',
+            side_effect=AssertionError('unchanged declaration must reuse its compiled plan'),
+        ):
+            validate_final_nodes(
+                self.env,
+                self.contract,
+                self.native,
+                validation_proof=proof,
+            )
+        self.assertTrue(self.record.reads)
+        self.assertFalse(self.host['visible'])
+
+    def test_declaration_proof_revalidates_a_changed_declaration(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        proof = validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+            collect_proof=True,
+        )
+        self.host['componentConfig']['extra'] = True
+        with self.assertRaisesRegex(FormConfigurationError, 'FEEDBACK_CONFIG_INVALID'):
+            validate_final_nodes(
+                self.env,
+                self.contract,
+                self.native,
+                validation_proof=proof,
+            )
+
+    def test_declaration_proof_revalidates_a_changed_source(self):
+        self.host['componentConfig']['purpose'] = 'advisory'
+        proof = validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+            collect_proof=True,
+        )
+        self.contract['layoutContract']['containerTree'][1]['name'] = 'amount'
+        with self.assertRaisesRegex(FormConfigurationError, 'FEEDBACK_SOURCE_INVALID'):
+            validate_final_nodes(
+                self.env,
+                self.contract,
+                self.native,
+                validation_proof=proof,
+            )
+
     def test_static_only_explanation(self):
         self.host['modifiers'] = {'invisible': False}
         self.host['componentConfig']['purpose'] = 'advisory'
@@ -147,8 +252,15 @@ class NodeValidationTests(unittest.TestCase):
         source = {'model': self.record._name, 'view_type': 'form', 'record': {'id': 7},
             'fields': {'message': {'type': 'char', 'name': 'message', 'sc_ui_usage': 'interaction'}},
             'views': {'form': {'layout': [host]}}}
-        contract = assemble_unified_page_contract_v2(source, source_type='ui.contract', node_actor_env=self.env)
+        proof = {}
+        contract = assemble_unified_page_contract_v2(
+            source,
+            source_type='ui.contract',
+            node_actor_env=self.env,
+            node_validation_proof=proof,
+        )
         self.assertTrue(contract['layoutContract']['componentRegistry'].get('sc.feedback.message'))
+        self.assertEqual(len(proof.get('declarations') or {}), 1)
         with self.assertRaisesRegex(FormConfigurationError, 'INTERACTION_FIELD_BODY_FORBIDDEN'):
             assert_field_body_usage({'name': 'message', 'sc_ui_usage': 'interaction',
                                     'native_locator': locator, 'occurrence_index': occurrence}, 'outside')
@@ -321,6 +433,39 @@ class NativeSavedFeedbackTests(unittest.TestCase):
         self.assertNotIn('visible', self.host)
         self.record.amount = 1
         self.validate()
+        self.assertFalse(self.host['visible'])
+
+    def test_native_declaration_proof_reuses_source_proof_for_final_facts(self):
+        import core.node_component_validation as validator
+
+        proof = validate_final_nodes(
+            self.env,
+            self.contract,
+            self.native,
+            apply_visibility=False,
+            evaluate_runtime=False,
+            collect_proof=True,
+        )
+        self.assertTrue(proof['declarations']['host']['plan']['native'])
+        self.assertFalse(self.record.reads)
+
+        self.record.amount = 1
+        with patch.object(
+            validator,
+            'native_feedback_fields',
+            side_effect=AssertionError('native source classification must be reused'),
+        ), patch.object(
+            validator,
+            'condition_dependencies',
+            side_effect=AssertionError('compiled native condition must be reused'),
+        ):
+            validate_final_nodes(
+                self.env,
+                self.contract,
+                self.native,
+                validation_proof=proof,
+            )
+        self.assertEqual(self.record.reads[-1][-1], ('active', 'message'))
         self.assertFalse(self.host['visible'])
 
     def test_native_source_and_condition_forgery(self):

@@ -1,0 +1,141 @@
+services:
+  db:
+    image: ${POSTGRES_IMAGE}
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME} || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: "no"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  odoo:
+    image: ${ODOO_IMAGE}
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      ODOO_DB: ${DB_NAME}
+      ODOO_DBFILTER: ${ODOO_DBFILTER}
+      LIST_DB: "false"
+      ENV: ${ENV}
+      SC_ENVIRONMENT: ${SC_ENVIRONMENT}
+      SC_ALLOW_DEMO_DATA: ${SC_ALLOW_DEMO_DATA}
+      SC_DEMO_USER_PASSWORD: ${SC_DEMO_USER_PASSWORD}
+      ADMIN_PASSWD: ${ADMIN_PASSWD}
+      JWT_SECRET: ${JWT_SECRET}
+      SC_BOOTSTRAP_SECRET: ${SC_BOOTSTRAP_SECRET}
+      SC_BOOTSTRAP_LOGIN: ${SC_BOOTSTRAP_LOGIN}
+      SCENE_CHANNEL: ${SCENE_CHANNEL}
+      SCENE_USE_PINNED: ${SCENE_USE_PINNED}
+      SCENE_ROLLBACK: ${SCENE_ROLLBACK}
+      SC_SOURCE_REVISION: ${SC_SOURCE_REVISION}
+      SC_DEPLOY_ENV: ${SC_DEPLOY_ENV}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
+      FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256}
+      REDIS_HOST: redis
+      ODOO_CONF_OUT: /var/lib/odoo/odoo.conf
+      TERM: xterm-256color
+      COLORTERM: truecolor
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - odoo_data:/opt/sce-runtime
+      - ${SC_PRODUCT_ROOT}/addons:/mnt/source-addons:ro
+      - ${DEMO_ADDONS_ROOT}:/mnt/demo-addons:ro
+      - ${CUSTOMER_ADDONS_ROOT}:/mnt/customer-addons:ro
+      - ${SC_PRODUCT_ROOT}/addons_external:/mnt/addons_external:ro
+      - ${SC_PRODUCT_ROOT}/artifacts:/mnt/artifacts
+      - ${SC_PRODUCT_ROOT}/scripts:/mnt/scripts:ro
+      - ${SC_PRODUCT_ROOT}/docs:/mnt/docs:ro
+      - ${SC_PRODUCT_ROOT}/VERSION:/opt/sce-product/VERSION:ro
+      - ${SC_PRODUCT_ROOT}/config/odoo.conf.template:/etc/odoo/odoo.conf.template:ro
+      - ${SC_PRODUCT_ROOT}/scripts/render_odoo_conf.py:/usr/local/bin/render_odoo_conf.py:ro
+      - ${SC_PRODUCT_ROOT}/scripts/odoo-entrypoint.sh:/usr/local/bin/odoo-entrypoint.sh:ro
+    networks:
+      - internal
+    entrypoint: ["/bin/sh", "/usr/local/bin/odoo-entrypoint.sh"]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python3 -c "import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=8)"
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:latest}
+    restart: "no"
+    depends_on:
+      odoo:
+        condition: service_healthy
+    environment:
+      SC_PROXY_DEFAULT_NAMESPACE: ${SC_PROXY_DEFAULT_NAMESPACE}
+      SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM}
+      SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM}
+      SC_DECLARED_NAMESPACE_ALIASES: ${SC_DECLARED_NAMESPACE_ALIASES}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
+      SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP}
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_NAMESPACE|DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(SHARED_SECRET|ROUTE_VERSION|PLATFORM_STRIP)|DECLARED_NAMESPACE_ALIASES)$'
+    volumes:
+      - ${SC_PRODUCT_ROOT}/config/nginx/templates:/etc/nginx/templates:ro
+      - ${FRONTEND_DIST_DIR}:/usr/share/nginx/html:ro
+    ports:
+      - "0.0.0.0:${NGINX_PORT}:80"
+    networks:
+      - internal
+      - ingress
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  db_data:
+    name: ${DB_DATA}
+  redis_data:
+    name: ${REDIS_DATA}
+  odoo_data:
+    name: ${ODOO_DATA}
+
+networks:
+  internal:
+    name: ${INTERNAL_NETWORK}
+    internal: true
+  ingress:
+    external: true
+    name: ${INGRESS_NETWORK}

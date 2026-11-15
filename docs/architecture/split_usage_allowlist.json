@@ -94,7 +94,7 @@
       "mechanism": "route_protocol"
     },
     "frontend/apps/web/src/app/activityPageRetention.ts": {
-      "count": 1,
+      "count": 2,
       "mechanism": "route_protocol"
     },
     "frontend/apps/web/src/app/businessValidationError.ts": {
@@ -210,7 +210,7 @@
       "mechanism": "route_protocol"
     },
     "frontend/apps/web/src/stores/session.ts": {
-      "count": 2,
+      "count": 1,
       "mechanism": "route_identifier"
     },
     "frontend/apps/web/src/utils/display.ts": {
