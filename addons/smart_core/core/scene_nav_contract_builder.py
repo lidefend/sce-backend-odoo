@@ -5,6 +5,10 @@ import zlib
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from odoo.addons.smart_core.core.navigation_identity import (
+    WORKBENCH_GROUP_KEY,
+    WORKSPACE_SCENE_KEY,
+)
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_scene.core.nav_policy_registry import resolve_nav_group_policy
 
@@ -273,10 +277,9 @@ def build_scene_nav_contract(data: dict) -> dict:
             scene_map[code] = item
 
     candidate_leaves = [_to_leaf(scene_map[key]) for key in role_candidates if key in scene_map]
-    candidate_leaves.sort(key=lambda leaf: (
-        0 if str(leaf.get("scene_key") or "").strip() == "workspace.home" else 1,
-        str(leaf.get("label") or ""),
-    ))
+    candidate_leaves.sort(
+        key=lambda leaf: 0 if str(leaf.get("scene_key") or "").strip() == WORKSPACE_SCENE_KEY else 1
+    )
     remaining = [v for k, v in scene_map.items() if k not in set(role_candidates)]
     remaining_leaves = [_to_leaf(v) for v in remaining]
     grouped = _build_group_nodes(
@@ -289,15 +292,16 @@ def build_scene_nav_contract(data: dict) -> dict:
     primary_children = []
     if candidate_leaves:
         primary_children.append({
-            "key": "group:workbench",
+            "key": f"group:{WORKBENCH_GROUP_KEY}",
             "label": "工作台",
             "title": "工作台",
-            "menu_id": _synthetic_menu_id("group:workbench", base=640_000_000, span=40_000_000),
+            "menu_id": _synthetic_menu_id(f"group:{WORKBENCH_GROUP_KEY}", base=640_000_000, span=40_000_000),
             "sequence": 10,
             "children": candidate_leaves,
             "meta": {
                 "scene_source": "scene_contract",
-                "group_key": "workbench",
+                "group_key": WORKBENCH_GROUP_KEY,
+                "canonical_group_key": WORKBENCH_GROUP_KEY,
             },
         })
     include_remaining = bool(data.get("include_remaining_nav_scenes"))

@@ -113,11 +113,56 @@ class TestSceneNavContractBuilder(TransactionCase):
             }
         )
         groups = payload["nav"][0]["children"]
-        self.assertEqual(groups[0]["key"], "group:workbench")
+        self.assertEqual(groups[0]["key"], "group:workspace.home.workbench")
         self.assertEqual(groups[0]["label"], "工作台")
-        self.assertEqual(groups[0]["meta"]["group_key"], "workbench")
+        self.assertEqual(groups[0]["meta"]["group_key"], "workspace.home.workbench")
+        self.assertEqual(groups[0]["meta"]["canonical_group_key"], "workspace.home.workbench")
         self.assertEqual(groups[0]["children"][0]["scene_key"], "workspace.home")
         self.assertNotIn("我的场景", [group["label"] for group in groups])
+
+    def test_role_home_precedes_candidates_without_reordering_the_rest(self):
+        payload = build_scene_nav_contract(
+            {
+                "scenes": [
+                    {
+                        "code": "projects.ledger",
+                        "name": "Zulu ledger",
+                        "target": {"route": "/s/projects.ledger"},
+                    },
+                    {
+                        "code": "workspace.home",
+                        "name": "Role home",
+                        "target": {"route": "/s/workspace.home"},
+                    },
+                    {
+                        "code": "project.management",
+                        "name": "Alpha management",
+                        "target": {"route": "/s/project.management"},
+                    },
+                    {
+                        "code": "projects.list",
+                        "name": "Mike list",
+                        "target": {"route": "/s/projects.list"},
+                    },
+                ],
+                "role_surface": {
+                    "scene_candidates": [
+                        "projects.ledger",
+                        "workspace.home",
+                        "project.management",
+                        "projects.list",
+                    ],
+                },
+            }
+        )
+        leaves = payload["nav"][0]["children"][0]["children"]
+        self.assertEqual([leaf["scene_key"] for leaf in leaves], [
+            "workspace.home",
+            "projects.ledger",
+            "project.management",
+            "projects.list",
+        ])
+        self.assertEqual(payload["default_route"]["scene_key"], "workspace.home")
 
     def test_merges_project_group_alias(self):
         payload = build_scene_nav_contract(

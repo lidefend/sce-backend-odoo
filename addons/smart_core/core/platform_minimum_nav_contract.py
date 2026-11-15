@@ -17,10 +17,10 @@ from __future__ import annotations
 import zlib
 from typing import List
 
+from .navigation_identity import WORKBENCH_GROUP_KEY, WORKSPACE_SCENE_KEY
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 SOURCE = "platform_minimum_surface"
-WORKSPACE_SCENE_KEY = "workspace.home"
 
 
 def _synthetic_menu_id(key: str, base: int = 700_000_000, span: int = 200_000_000) -> int:
@@ -96,14 +96,15 @@ def build_platform_minimum_nav_contract() -> dict:
         },
     }
     group_node = {
-        "key": "group:workbench",
+        "key": f"group:{WORKBENCH_GROUP_KEY}",
         "label": "工作台",
         "title": "工作台",
-        "menu_id": _synthetic_menu_id("group:workbench", base=640_000_000, span=40_000_000),
+        "menu_id": _synthetic_menu_id(f"group:{WORKBENCH_GROUP_KEY}", base=640_000_000, span=40_000_000),
         "sequence": 10,
         "children": [workspace_leaf],
         "meta": {
-            "group_key": "workbench",
+            "group_key": WORKBENCH_GROUP_KEY,
+            "canonical_group_key": WORKBENCH_GROUP_KEY,
             "scene_source": SOURCE,
         },
     }
@@ -195,21 +196,60 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
                 raise ValueError("PLATFORM_HOME_TARGET_CONFLICT")
     minimum_group = minimum[0]["children"][0]
 
-    def is_workbench(node):
-        return (
-            isinstance(node, dict)
-            and str(node.get("label") or node.get("title") or "").strip() == minimum_group["label"]
-            and isinstance(node.get("children"), list)
-            and not node.get("action_id")
-        )
+    def workbench_identity(node):
+        if not isinstance(node, dict) or not isinstance(node.get("children"), list) or node.get("action_id"):
+            return None
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        canonical = str(
+            node.get("canonical_group_key")
+            or meta.get("canonical_group_key")
+            or node.get("group_key")
+            or meta.get("group_key")
+            or ""
+        ).strip()
+        if canonical != WORKBENCH_GROUP_KEY:
+            return None
+        try:
+            config_menu_id = int(
+                node.get("config_menu_id")
+                or meta.get("config_menu_id")
+                or 0
+            )
+        except (TypeError, ValueError):
+            config_menu_id = 0
+        native_center_xmlid = str(
+            node.get("native_center_xmlid")
+            or meta.get("native_center_xmlid")
+            or ""
+        ).strip()
+        return {
+            "canonical_group_key": canonical,
+            "config_menu_id": config_menu_id,
+            "native_center_xmlid": native_center_xmlid,
+        }
+
+    def assert_same_workbench_identity(primary_identity, duplicate_identity):
+        primary_config = int(primary_identity["config_menu_id"] or 0)
+        duplicate_config = int(duplicate_identity["config_menu_id"] or 0)
+        if primary_config and duplicate_config and primary_config != duplicate_config:
+            raise ValueError("PLATFORM_WORKBENCH_IDENTITY_CONFLICT: config_menu_id")
+        primary_xmlid = str(primary_identity["native_center_xmlid"] or "")
+        duplicate_xmlid = str(duplicate_identity["native_center_xmlid"] or "")
+        if primary_xmlid and duplicate_xmlid and primary_xmlid != duplicate_xmlid:
+            raise ValueError("PLATFORM_WORKBENCH_IDENTITY_CONFLICT: native_center_xmlid")
 
     for root in nav:
         children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else []
-        matches = [(index, node) for index, node in enumerate(children) if is_workbench(node)]
+        matches = []
+        for index, node in enumerate(children):
+            identity = workbench_identity(node)
+            if identity:
+                matches.append((index, node, identity))
         if not matches:
             continue
-        primary_index, primary = matches[0]
-        for duplicate_index, duplicate in reversed(matches[1:]):
+        primary_index, primary, primary_identity = matches[0]
+        for duplicate_index, duplicate, duplicate_identity in reversed(matches[1:]):
+            assert_same_workbench_identity(primary_identity, duplicate_identity)
             merge(primary["children"], duplicate["children"])
             children.pop(duplicate_index)
         merge(primary["children"], minimum_group["children"])

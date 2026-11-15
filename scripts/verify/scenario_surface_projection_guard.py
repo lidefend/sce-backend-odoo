@@ -31,6 +31,11 @@ def _load_module(name: str, path: Path):
 
 
 PMS = _load_module("product_menu_source", ROOT / "addons/smart_construction_core/services/product_menu_source.py")
+NAV_IDENTITY = _load_module(
+    "odoo.addons.smart_core.core.navigation_identity",
+    ROOT / "addons/smart_core/core/navigation_identity.py",
+)
+sys.modules["odoo.addons.smart_core.core.navigation_identity"] = NAV_IDENTITY
 PROJ = _load_module("scenario_surface_projection", ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py")
 SURFACE_PATH = ROOT / "addons/smart_construction_core/data/scenario_product_surface.json"
 
@@ -51,6 +56,7 @@ def load_scene_nav_builder():
         },
     )
     modules = {
+        "odoo.addons.smart_core.core.navigation_identity": NAV_IDENTITY,
         "odoo.addons.smart_core.core.source_authority": source_authority,
         "odoo.addons.smart_scene.core.nav_policy_registry": nav_policy,
     }
@@ -218,8 +224,9 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
             "include_remaining_nav_scenes": True,
         })
         groups = payload["nav"][0]["children"]
-        self.assertEqual(groups[0]["key"], "group:workbench")
+        self.assertEqual(groups[0]["key"], "group:workspace.home.workbench")
         self.assertEqual(groups[0]["label"], "工作台")
+        self.assertEqual(groups[0]["meta"]["canonical_group_key"], "workspace.home.workbench")
         self.assertEqual(groups[0]["children"][0]["scene_key"], "workspace.home")
         self.assertNotIn("我的场景", [group["label"] for group in groups])
 
@@ -401,7 +408,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(leaves[0]["route"], "/s/workspace.home")
 
     def test_workspace_home_uses_declared_workbench_center(self):
-        root = types.SimpleNamespace(name="工作台", sequence=10)
+        root = types.SimpleNamespace(id=456, name="工作台", sequence=10)
         env = types.SimpleNamespace(
             ref=lambda xmlid, raise_if_not_found=False: root
             if xmlid == HORIZONTAL_ROOT
@@ -409,10 +416,26 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         )
         center = PROJ.resolve_horizontal_work_center(env, self.surface)
         self.assertEqual(center, {
-            "key": "construction.工作台",
+            "key": "workspace.home.workbench",
             "name": "工作台",
             "sequence": 10,
+            "canonical_group_key": "workspace.home.workbench",
+            "config_menu_id": 456,
+            "native_center_xmlid": HORIZONTAL_ROOT,
         })
+        self.assertEqual(center["key"], NAV_IDENTITY.WORKBENCH_GROUP_KEY)
+        translated = PROJ.resolve_horizontal_work_center(
+            types.SimpleNamespace(
+                ref=lambda xmlid, raise_if_not_found=False: types.SimpleNamespace(
+                    id=456,
+                    name="Workbench",
+                    sequence=10,
+                ),
+            ),
+            self.surface,
+        )
+        self.assertEqual(translated["key"], center["key"])
+        self.assertEqual(translated["native_center_xmlid"], center["native_center_xmlid"])
         home = {
             "menu_xmlid": "scene.contract.workspace_home",
             "entry_target": {"type": "scene", "scene_key": "workspace.home"},
@@ -432,8 +455,10 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
                     "menu_xmlid": "smart_construction_core.menu_sc_my_work",
                     "policy_group_key": "construction.工作台",
                     "policy_group_label": "工作台",
+                    "center_menu_id": 456,
                 },
                 None,
+                workspace_center=center,
             )["key"],
             center["key"],
         )

@@ -30,6 +30,10 @@ def _install_stubs():
     _install_module("odoo.addons.smart_core.delivery")
     _install_module("odoo.addons.smart_core.utils")
     _install_module("odoo.addons.smart_core.security")
+    _load_module(
+        "odoo.addons.smart_core.core.navigation_identity",
+        SMART_CORE_DIR / "core" / "navigation_identity.py",
+    )
     _install_module(
         "odoo.addons.smart_core.utils.extension_hooks",
         call_extension_hook_first=lambda *args, **kwargs: None,
@@ -171,9 +175,10 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         self.assertEqual(payload["default_route"]["reason"], "platform_minimum_surface")
         self.assertTrue(payload["meta"]["platform_minimum_surface"])
         workbench = payload["nav"][0]["children"][0]
-        self.assertEqual(workbench["key"], "group:workbench")
+        self.assertEqual(workbench["key"], "group:workspace.home.workbench")
         self.assertEqual(workbench["label"], "工作台")
-        self.assertEqual(workbench["meta"]["group_key"], "workbench")
+        self.assertEqual(workbench["meta"]["group_key"], "workspace.home.workbench")
+        self.assertEqual(workbench["meta"]["canonical_group_key"], "workspace.home.workbench")
         leaf = workbench["children"][0]
         self.assertEqual(leaf["sequence"], 0)
         self.assertIsInstance(leaf["menu_id"], int)
@@ -199,8 +204,14 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             "children": [
                 {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
                 {
-                    "key": "catalog.workbench",
+                    "key": "group:workspace.home.workbench",
                     "label": "工作台",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
                     "children": [{"key": "my_work", "label": "我的工作"}],
                 },
             ],
@@ -231,8 +242,14 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             "children": [
                 {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
                 {
-                    "key": "group:construction.工作台",
+                    "key": "group:workspace.home.workbench",
                     "label": "工作台",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
                     "children": [{
                         "key": "scene:workspace.home",
                         "menu_id": home["menu_id"],
@@ -268,8 +285,14 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             "key": "root:system_menu",
             "children": [
                 {
-                    "key": "group:catalog.工作台",
-                    "label": "工作台",
+                    "key": "group:workspace.home.workbench",
+                    "label": "角色工作台",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
                     "children": [{
                         "key": "scene:workspace.home",
                         "menu_id": home["menu_id"],
@@ -280,8 +303,14 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
                 },
                 {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
                 {
-                    "key": "group:construction.工作台",
+                    "key": "group:workspace.home.workbench",
                     "label": "工作台",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
                     "children": [{"key": "my_work", "label": "我的工作"}],
                 },
             ],
@@ -292,13 +321,150 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             authenticated=True,
         )
         groups = merged[0]["children"]
-        workbenches = [group for group in groups if group["label"] == "工作台"]
-        self.assertEqual([group["label"] for group in groups], ["工作台", "项目中心"])
+        workbenches = [
+            group for group in groups
+            if (group.get("meta") or {}).get("canonical_group_key") == "workspace.home.workbench"
+        ]
+        self.assertEqual([group["label"] for group in groups], ["角色工作台", "项目中心"])
         self.assertEqual(len(workbenches), 1)
         self.assertEqual(
             [child["key"] for child in workbenches[0]["children"]],
             ["scene:workspace.home", "my_work"],
         )
+
+    def test_workbench_identity_does_not_depend_on_label(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
+                {
+                    "key": "group:workspace.home.workbench",
+                    "label": "Workbench",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
+                    "children": [{
+                        "key": "scene:workspace.home",
+                        "menu_id": home["menu_id"],
+                        "action_id": 0,
+                        "scene_key": "workspace.home",
+                        "entry_target": home["entry_target"],
+                    }],
+                },
+            ],
+        }]
+        merged, _authority = contract.merge_authenticated_safe_landing(
+            nav,
+            authority,
+            authenticated=True,
+        )
+        self.assertEqual([group["label"] for group in merged[0]["children"]], ["Workbench", "项目中心"])
+
+    def test_same_label_with_different_identity_is_not_merged(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {
+                    "key": "group:other.workbench",
+                    "label": "工作台",
+                    "meta": {"group_key": "other.workbench", "canonical_group_key": "other.workbench"},
+                    "children": [{"key": "foreign_child"}],
+                },
+                {
+                    "key": "group:workspace.home.workbench",
+                    "label": "工作台",
+                    "meta": {
+                        "group_key": "workspace.home.workbench",
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
+                    "children": [{
+                        "key": "scene:workspace.home",
+                        "menu_id": home["menu_id"],
+                        "action_id": 0,
+                        "scene_key": "workspace.home",
+                        "entry_target": home["entry_target"],
+                    }],
+                },
+            ],
+        }]
+        merged, _authority = contract.merge_authenticated_safe_landing(
+            nav,
+            authority,
+            authenticated=True,
+        )
+        groups = merged[0]["children"]
+        self.assertEqual([group["key"] for group in groups], [
+            "group:workspace.home.workbench",
+            "group:other.workbench",
+        ])
+        self.assertEqual(groups[1]["children"], [{"key": "foreign_child"}])
+
+    def test_conflicting_native_workbench_identity_fails_closed(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {
+                    "key": "group:workspace.home.workbench",
+                    "label": "工作台",
+                    "meta": {
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 456,
+                        "native_center_xmlid": "smart_construction_core.menu_sc_workspace_center",
+                    },
+                    "children": [{"key": "home_a"}],
+                },
+                {
+                    "key": "group:workspace.home.workbench",
+                    "label": "工作台",
+                    "meta": {
+                        "canonical_group_key": "workspace.home.workbench",
+                        "config_menu_id": 999,
+                        "native_center_xmlid": "other_module.menu_other_workbench",
+                    },
+                    "children": [{"key": "home_b"}],
+                },
+            ],
+        }]
+        with self.assertRaisesRegex(ValueError, "PLATFORM_WORKBENCH_IDENTITY_CONFLICT"):
+            contract.merge_authenticated_safe_landing(nav, authority, authenticated=True)
 
     def test_declared_scene_leaf_survives_route_authority_projection(self):
         contract, _service, menu_service_module = self._load()
@@ -345,7 +511,11 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         flat = navigation["nav_fact"]["flat"]
         keys = [row["key"] for row in flat]
 
-        self.assertEqual(keys, ["root:scene_contract", "group:workbench", "scene:workspace.home"])
+        self.assertEqual(keys, [
+            "root:scene_contract",
+            "group:workspace.home.workbench",
+            "scene:workspace.home",
+        ])
         self.assertEqual(len(keys), len(set(keys)))
         self.assertNotIn("group:role_primary", keys)
         self.assertEqual(flat[-1]["scene_key"], "workspace.home")

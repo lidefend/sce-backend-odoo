@@ -6,6 +6,8 @@
     ".agent/goals/WORKBENCH-HOME-MERGE-20261115.yaml",
     ".agent/runs/WORKBENCH-HOME-MERGE-20261115/run.json",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/core/navigation_identity.py",
     "addons/smart_core/core/platform_minimum_nav_contract.py",
     "addons/smart_core/core/scene_nav_contract_builder.py",
     "addons/smart_core/tests/__init__.py",
@@ -13,6 +15,7 @@
     "addons/smart_core/tests/test_scene_nav_contract_builder.py",
     "docs/ops/iterations/WORKBENCH-HOME-MERGE-20261115.md",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/scenario_center_projection_guard.py",
     "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
@@ -24,6 +27,7 @@
       "target": "verify.nav01.native_authority.unit",
       "inputs": [
         "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/core/navigation_identity.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/core/scene_nav_contract_builder.py",
         "addons/smart_core/tests/__init__.py",

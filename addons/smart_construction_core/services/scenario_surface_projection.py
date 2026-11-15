@@ -15,6 +15,11 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from odoo.addons.smart_core.core.navigation_identity import (
+    WORKBENCH_GROUP_KEY,
+    WORKSPACE_SCENE_KEY as WORKSPACE_HOME_SCENE_KEY,
+)
+
 
 SURFACE_PATH = Path(__file__).resolve().parents[1] / "data" / "scenario_product_surface.json"
 SCHEMA = "construction.scenario_product_surface.v1"
@@ -26,7 +31,6 @@ INTENT_LABELS = {
     "report": "报表",
     "master_data": "基础信息维护",
 }
-WORKSPACE_HOME_SCENE_KEY = "workspace.home"
 WORKSPACE_HOME_MENU_XMLIDS = {
     "scene.contract.workspace_home",
     "smart_construction_core.menu_sc_workspace_home",
@@ -700,13 +704,24 @@ def resolve_horizontal_work_center(env, surface: dict[str, Any] | None = None) -
     if not menu or not name:
         return None
     return {
-        # Match the product-policy center key used by the other workspace
-        # leaves so the home entry joins the existing center instead of
-        # creating a second group with the same display label.
-        "key": f"construction.{name}",
+        "key": WORKBENCH_GROUP_KEY,
         "name": name,
         "sequence": _int_or(getattr(menu, "sequence", 0), 10),
+        "canonical_group_key": WORKBENCH_GROUP_KEY,
+        "config_menu_id": int(getattr(menu, "id", 0) or 0),
+        "native_center_xmlid": root_xmlid,
     }
+
+
+def is_horizontal_work_center_leaf(leaf: dict[str, Any], center: dict[str, Any] | None) -> bool:
+    if is_workspace_home_leaf(leaf):
+        return True
+    center = center if isinstance(center, dict) else {}
+    config_menu_id = int(center.get("config_menu_id") or 0)
+    if config_menu_id and int(leaf.get("center_menu_id") or 0) == config_menu_id:
+        return True
+    center_xmlid = _text(center.get("native_center_xmlid"))
+    return bool(center_xmlid and _text(leaf.get("parent_menu_xmlid")) == center_xmlid)
 
 
 def composition_center_for_leaf(
@@ -716,7 +731,7 @@ def composition_center_for_leaf(
     workspace_center: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Resolve center from scenario composition, then policy grouping fallback."""
-    if workspace_center and is_workspace_home_leaf(leaf):
+    if workspace_center and is_horizontal_work_center_leaf(leaf, workspace_center):
         return dict(workspace_center)
     binding = binding if isinstance(binding, dict) else {}
     center_key = _text(binding.get("center_key"))
@@ -860,13 +875,23 @@ def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, An
         )
         if not children:
             continue
-        center_menu = env.ref(center.get("key"), raise_if_not_found=False)
-        group_nodes.append(build_delivery_menu_group(
+        config_menu_id = int(center.get("config_menu_id") or 0)
+        center_menu = (
+            env.ref(center.get("key"), raise_if_not_found=False)
+            if not config_menu_id and "." in _text(center.get("key"))
+            else None
+        )
+        group_node = build_delivery_menu_group(
             _text(center.get("key")) or f"scenario.center.{center.get('sequence')}",
             _text(center.get("name") or center.get("key")),
             children,
-            config_menu_id=int(getattr(center_menu, "id", 0) or 0),
-        ))
+            config_menu_id=config_menu_id or int(getattr(center_menu, "id", 0) or 0),
+        )
+        if center.get("canonical_group_key"):
+            group_node["meta"]["canonical_group_key"] = _text(center.get("canonical_group_key"))
+        if center.get("native_center_xmlid"):
+            group_node["meta"]["native_center_xmlid"] = _text(center.get("native_center_xmlid"))
+        group_nodes.append(group_node)
     if not group_nodes:
         return []
     root = build_delivery_menu_root(group_nodes, "")
@@ -955,6 +980,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "key": center["key"],
             "name": center["name"],
             "sequence": center["sequence"],
+            "canonical_group_key": _text(center.get("canonical_group_key")),
+            "config_menu_id": int(center.get("config_menu_id") or 0),
+            "native_center_xmlid": _text(center.get("native_center_xmlid")),
             "scenarios": {},
             "entries": [],
         })
@@ -1000,6 +1028,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "key": center["key"],
             "name": center["name"],
             "sequence": center["sequence"],
+            "canonical_group_key": center.get("canonical_group_key"),
+            "config_menu_id": center.get("config_menu_id"),
+            "native_center_xmlid": center.get("native_center_xmlid"),
             "scenarios": scenarios,
             "entries": center["entries"],
         })

@@ -54,6 +54,10 @@ scene_registry_content = _load(
     SCENE_DIR / "profiles/scene_registry_content.py",
 )
 
+navigation_identity = _load(
+    "odoo.addons.smart_core.core.navigation_identity",
+    SCENE_DIR.parent / "smart_core/core/navigation_identity.py",
+)
 
 scenario_surface = _load(
     "odoo.addons.smart_construction_core.services.scenario_surface_projection",
