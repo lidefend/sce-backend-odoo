@@ -700,7 +700,10 @@ def resolve_horizontal_work_center(env, surface: dict[str, Any] | None = None) -
     if not menu or not name:
         return None
     return {
-        "key": f"catalog.{name}",
+        # Match the product-policy center key used by the other workspace
+        # leaves so the home entry joins the existing center instead of
+        # creating a second group with the same display label.
+        "key": f"construction.{name}",
         "name": name,
         "sequence": _int_or(getattr(menu, "sequence", 0), 10),
     }

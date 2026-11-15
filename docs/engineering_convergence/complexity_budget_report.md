@@ -165,8 +165,8 @@ Generated from repository source files. This report is informational during the 
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1036 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
+| 1020 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
-| 1017 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1012 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1006 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |

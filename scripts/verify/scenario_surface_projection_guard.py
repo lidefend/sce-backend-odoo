@@ -409,7 +409,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         )
         center = PROJ.resolve_horizontal_work_center(env, self.surface)
         self.assertEqual(center, {
-            "key": "catalog.工作台",
+            "key": "construction.工作台",
             "name": "工作台",
             "sequence": 10,
         })
@@ -426,6 +426,17 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
             "menu_xmlid": "smart_construction_core.menu_sc_project_project",
             "entry_target": {"type": "action"},
         }))
+        self.assertEqual(
+            PROJ.composition_center_for_leaf(
+                {
+                    "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+                    "policy_group_key": "construction.工作台",
+                    "policy_group_label": "工作台",
+                },
+                None,
+            )["key"],
+            center["key"],
+        )
 
 
 

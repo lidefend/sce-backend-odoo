@@ -214,6 +214,92 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         self.assertEqual([group["label"] for group in groups], ["工作台", "项目中心"])
         self.assertEqual([child["key"] for child in groups[0]["children"]], ["scene:workspace.home", "my_work"])
 
+    def test_existing_home_still_moves_single_workbench_first(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
+                {
+                    "key": "group:construction.工作台",
+                    "label": "工作台",
+                    "children": [{
+                        "key": "scene:workspace.home",
+                        "menu_id": home["menu_id"],
+                        "action_id": 0,
+                        "scene_key": "workspace.home",
+                        "entry_target": home["entry_target"],
+                    }],
+                },
+            ],
+        }]
+        merged, _authority = contract.merge_authenticated_safe_landing(
+            nav,
+            authority,
+            authenticated=True,
+        )
+        groups = merged[0]["children"]
+        self.assertEqual([group["label"] for group in groups], ["工作台", "项目中心"])
+        self.assertEqual(len([group for group in groups if group["label"] == "工作台"]), 1)
+
+    def test_duplicate_workbench_groups_are_merged_into_one(self):
+        contract, _service, _menu_service = self._load()
+        minimum = contract.build_platform_minimum_nav_contract()
+        home = minimum["nav"][0]["children"][0]["children"][0]
+        authority = {
+            "role_home_actions": [{
+                "menu_id": home["menu_id"],
+                "action_id": 0,
+                "scene_key": "workspace.home",
+                "entry_target": home["entry_target"],
+            }],
+        }
+        nav = [{
+            "key": "root:system_menu",
+            "children": [
+                {
+                    "key": "group:catalog.工作台",
+                    "label": "工作台",
+                    "children": [{
+                        "key": "scene:workspace.home",
+                        "menu_id": home["menu_id"],
+                        "action_id": 0,
+                        "scene_key": "workspace.home",
+                        "entry_target": home["entry_target"],
+                    }],
+                },
+                {"key": "group:projects", "label": "项目中心", "children": [{"key": "project"}]},
+                {
+                    "key": "group:construction.工作台",
+                    "label": "工作台",
+                    "children": [{"key": "my_work", "label": "我的工作"}],
+                },
+            ],
+        }]
+        merged, _authority = contract.merge_authenticated_safe_landing(
+            nav,
+            authority,
+            authenticated=True,
+        )
+        groups = merged[0]["children"]
+        workbenches = [group for group in groups if group["label"] == "工作台"]
+        self.assertEqual([group["label"] for group in groups], ["工作台", "项目中心"])
+        self.assertEqual(len(workbenches), 1)
+        self.assertEqual(
+            [child["key"] for child in workbenches[0]["children"]],
+            ["scene:workspace.home", "my_work"],
+        )
+
     def test_declared_scene_leaf_survives_route_authority_projection(self):
         contract, _service, menu_service_module = self._load()
         payload = contract.build_platform_minimum_nav_contract()

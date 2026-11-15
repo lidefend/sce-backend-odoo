@@ -38,13 +38,23 @@
   TEST_TAGS=/smart_core:TestSceneNavContractBuilder`: PASS, 7 tests.
 - Post-repair `make ci.local.iteration`: PASS, including nine affected targets
   and the 65-test ORM result guard.
-- Local runtime readback for `demo_full`: PASS.
-  - Top-level order starts with `工作台`, followed by the remaining business
-    centers.
-  - `我的场景` is absent.
-  - `角色首页` is a direct child of `工作台`.
-  - Existing entry identities and `workspace.home` route remain unchanged.
+- Independent review repair: the first candidate produced two top-level
+  `工作台` centers because the role-home leaf used `catalog.工作台` while the
+  existing workspace entries used `construction.工作台`.
+- `resolve_horizontal_work_center()` now emits the existing
+  `construction.<center-name>` identity, so the home leaf joins the native
+  workspace center instead of creating a parallel center.
+- `merge_authenticated_safe_landing()` now enforces the ordering invariant even
+  when the home leaf is already present, and defensively coalesces duplicate
+  workbench groups.
+- Added regressions for existing-home reordering and duplicate workbench
+  coalescing; `test_platform_minimum_nav_contract.py`: PASS, 8 tests.
+- Scenario projection guard and native authority checks: PASS.
+- Odoo ORM `TestSceneNavContractBuilder` in both the development database and
+  a fresh isolated test database: PASS, 7 tests each.
+- Exact `system.init` readback across `demo_full`, PM, finance, owner and
+  executive roles: each returns exactly one `工作台` at top-level index 0,
+  `角色首页` is a direct child, and `我的场景` is absent.
 
-Runtime evidence:
-`.runtime/agent-runs/WORKBENCH-HOME-MERGE-20261115/runtime-navigation.log`
-SHA256: `263257722b14f539ef090254f6d39c2d7711dccb28edcda24984f603c2c0c648`
+The earlier runtime summary from the pre-repair candidate is retained only as
+historical iteration evidence and is not evidence for the final candidate.

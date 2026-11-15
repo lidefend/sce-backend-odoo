@@ -161,15 +161,6 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
         return (not int(row.get("action_id") or (row.get("meta") or {}).get("action_id") or 0)
                 and target.get("type") == "scene" and target.get("scene_key") == WORKSPACE_SCENE_KEY)
 
-    allowed = {int(row.get("menu_id") or 0) for bucket in buckets
-               for row in authority.get(bucket, []) if is_home(row)}
-
-    def has_home(nodes):
-        return any((is_home(row) and int(row.get("menu_id") or 0) in allowed)
-                   or has_home(row.get("children") or []) for row in nodes)
-
-    if has_home(nav):
-        return nav, authority
     minimum = build_platform_minimum_nav_contract()["nav"]
     leaf = minimum[0]["children"][0]["children"][0]
     entry = {
@@ -203,17 +194,32 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
             elif not is_home(current):
                 raise ValueError("PLATFORM_HOME_TARGET_CONFLICT")
     minimum_group = minimum[0]["children"][0]
+
+    def is_workbench(node):
+        return (
+            isinstance(node, dict)
+            and str(node.get("label") or node.get("title") or "").strip() == minimum_group["label"]
+            and isinstance(node.get("children"), list)
+            and not node.get("action_id")
+        )
+
     for root in nav:
         children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else []
-        for index, node in enumerate(children):
-            if (
-                isinstance(node, dict)
-                and str(node.get("label") or node.get("title") or "").strip() == minimum_group["label"]
-                and isinstance(node.get("children"), list)
-                and not node.get("action_id")
-            ):
-                merge(node["children"], minimum_group["children"])
-                children.insert(0, children.pop(index))
+        matches = [(index, node) for index, node in enumerate(children) if is_workbench(node)]
+        if not matches:
+            continue
+        primary_index, primary = matches[0]
+        for duplicate_index, duplicate in reversed(matches[1:]):
+            merge(primary["children"], duplicate["children"])
+            children.pop(duplicate_index)
+        merge(primary["children"], minimum_group["children"])
+        children.insert(0, children.pop(primary_index))
+        return nav, authority
+    if nav:
+        for root in nav:
+            children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else None
+            if children is not None:
+                children.insert(0, minimum_group)
                 return nav, authority
-    merge(nav, minimum)
+    nav.extend(minimum)
     return nav, authority
