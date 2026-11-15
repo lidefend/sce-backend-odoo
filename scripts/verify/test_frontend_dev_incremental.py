@@ -18,6 +18,7 @@ from scripts.verify.frontend_dev_incremental import (
     FRONTEND_SOURCE_SUFFIXES,
     RULES,
     execute_targets,
+    iteration_scope,
     iteration_plan,
     print_plan,
     select_targets,
@@ -2604,6 +2605,60 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.assertNotIn('branch_fallback', output.getvalue())
         self.assertNotIn('source/a.py', output.getvalue())
         self.assertIn('source/new.py', output.getvalue())
+
+    def test_verified_ancestor_receipt_becomes_incremental_checkpoint(self):
+        fixture = self.fixture
+        fixture.write('source/checkpoint.py', 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        receipt_path = (
+            fixture.root
+            / '.runtime/frontend-dev-validation/executions/checkpoint/receipt.json'
+        )
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_text(json.dumps({
+            'status': 'passed',
+            'verificationPassed': True,
+            'identity': {'head': checkpoint, 'worktreeClean': True},
+            'changedPaths': ['source/checkpoint.py'],
+            'requiredTargets': ['verify.test'],
+            'targetResults': [],
+        }), encoding='utf-8')
+        fixture.write('source/latest.py', 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+
+        resolved_checkpoint, kind, paths = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved_checkpoint, checkpoint)
+        self.assertEqual(kind, 'verified_incremental_receipt')
+        self.assertEqual(paths, ['source/latest.py'])
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(iteration_plan(fixture.root), 0)
+        payload = json.loads(output.getvalue().split('] ', 1)[1])
+        self.assertEqual(payload['iterationBaselineSha'], checkpoint)
+        self.assertEqual(payload['iterationBaselineKind'], 'verified_incremental_receipt')
+        self.assertEqual(payload['changedPathCount'], 1)
+        self.assertIn('source/latest.py', output.getvalue())
+        self.assertNotIn('source/checkpoint.py', output.getvalue())
+
+    def test_unverified_receipt_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        receipt_path = (
+            fixture.root
+            / '.runtime/frontend-dev-validation/executions/unverified/receipt.json'
+        )
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_text(json.dumps({
+            'status': 'failed',
+            'verificationPassed': False,
+            'identity': {'head': fixture.git('rev-parse', 'HEAD'), 'worktreeClean': True},
+        }), encoding='utf-8')
+        checkpoint, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(checkpoint, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
 
     def test_receipt_advice_never_claims_tests_ran(self):
         self.fixture.receipt()

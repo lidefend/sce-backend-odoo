@@ -55,6 +55,14 @@
   an explicit deferred Promise. It no longer depends on a fixed sleep.
 - The ordinary-user negative now requires exactly HTTP 403 and
   `PERMISSION_DENIED`; generic 4xx/5xx responses cannot pass.
+- Incremental planning now uses the nearest clean, passed ancestor receipt as
+  its checkpoint when that head descends from the registered run baseline and
+  is still an ancestor of current HEAD. The plan records both
+  `iterationBaselineSha` and `iterationBaselineKind`; invalid, failed,
+  non-clean or unrelated receipts fall back to the run baseline.
+- After this change, the active candidate plan dropped from the cumulative
+  37-path scope to 6 unverified paths, and `ci.local.iteration` executed only
+  the corresponding six targets.
 - Added negative tests for exact-once expected failure consumption, mismatched
   intent/status, pending expectations, newer/older request sequences, and close
   invalidation.

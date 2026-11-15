@@ -1829,6 +1829,69 @@ def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> 
     return sorted(paths)
 
 
+def latest_verified_iteration_checkpoint(root: Path, baseline_sha: str) -> tuple[str, str]:
+    """Resolve the closest ancestor with a verified incremental receipt.
+
+    The run baseline remains the fallback and audit anchor. A newer checkpoint
+    may be used only when its receipt is a passed clean execution, and that head
+    is both a descendant of the run baseline and an ancestor of the current HEAD.
+    """
+    execution_root = root / ".runtime/frontend-dev-validation/executions"
+    if not execution_root.is_dir():
+        return baseline_sha, "run_baseline"
+    current_head = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.strip()
+    candidates: list[tuple[int, float, str]] = []
+    for receipt_path in execution_root.glob("*/receipt.json"):
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            identity = receipt.get("identity") if isinstance(receipt.get("identity"), dict) else {}
+            head = str(identity.get("head", ""))
+            if (
+                receipt.get("status") != "passed"
+                or receipt.get("verificationPassed") is not True
+                or identity.get("worktreeClean") is not True
+                or len(head) != 40
+            ):
+                continue
+            subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", baseline_sha, head],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", head, current_head],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            distance = int(
+                subprocess.run(
+                    ["git", "-C", str(root), "rev-list", "--count", f"{baseline_sha}..{head}"],
+                    check=True,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                ).stdout.strip()
+            )
+            candidates.append((distance, receipt_path.stat().st_mtime, head))
+        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+            continue
+    if not candidates:
+        return baseline_sha, "run_baseline"
+    _, _, checkpoint = max(candidates, key=lambda item: (item[0], item[1]))
+    return checkpoint, "verified_incremental_receipt"
+
+
+def iteration_scope(root: Path, run: dict) -> tuple[str, str, list[str]]:
+    checkpoint, kind = latest_verified_iteration_checkpoint(root, run["baseline_sha"])
+    return checkpoint, kind, _paths_since(root, checkpoint)
+
+
 def iteration_plan(root: Path = ROOT) -> int:
     selected = resolve_run(root)
     if selected is None:
@@ -1837,11 +1900,14 @@ def iteration_plan(root: Path = ROOT) -> int:
     if run["status"] in ("completed", "superseded"):
         raise RunError("selected run is closed; register/select the next task")
     checks = check_states(root, run)
+    checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     return print_plan(
-        delta_paths(root, run["baseline_sha"]),
+        paths,
         source=relative,
         checks=checks,
         registered_targets=declared_check_targets(run),
+        iteration_baseline_sha=checkpoint,
+        iteration_baseline_kind=checkpoint_kind,
     )
 
 
@@ -1851,6 +1917,8 @@ def print_plan(
     source: str = "explicit_paths",
     checks: dict | None = None,
     registered_targets: set[str] | None = None,
+    iteration_baseline_sha: str = "",
+    iteration_baseline_kind: str = "",
 ) -> int:
     required_targets = set(select_targets(paths))
     grouped: dict[str, list[str]] = {}
@@ -1875,6 +1943,8 @@ def print_plan(
     payload = {
         "schemaVersion": 1,
         "scopeSource": source,
+        "iterationBaselineSha": iteration_baseline_sha,
+        "iterationBaselineKind": iteration_baseline_kind,
         "recordedChecks": checks or {},
         "mode": "development_incremental_plan",
         "status": "recommendation_only",
@@ -2067,6 +2137,8 @@ def execute_targets(
     blocked_targets: set[str] | None = None,
     receipt_dir: Path | None = None,
     worktree_identity: dict | None = None,
+    iteration_checkpoint_sha: str = "",
+    iteration_checkpoint_kind: str = "",
 ) -> int:
     paths = sorted(set(paths))
     targets = select_targets(paths)
@@ -2088,6 +2160,8 @@ def execute_targets(
     payload = {
         "schemaVersion": 1,
         "mode": "development_incremental_execution",
+        "iterationBaselineSha": iteration_checkpoint_sha,
+        "iterationBaselineKind": iteration_checkpoint_kind,
         "status": "not_run",
         "registrationMode": "planner_managed",
         "identity": identity,
@@ -2271,7 +2345,7 @@ def execute_worktree(root: Path = ROOT) -> int:
     _, run = selected
     if run["status"] in ("completed", "superseded"):
         raise RunError("selected run is closed; register/select the next task")
-    paths = delta_paths(root, run["baseline_sha"])
+    checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     required = set(select_targets(paths))
     checks = check_states(root, run)
     blocked = {
@@ -2287,6 +2361,8 @@ def execute_worktree(root: Path = ROOT) -> int:
         root=root,
         registered_targets=declared_check_targets(run),
         blocked_targets=blocked,
+        iteration_checkpoint_sha=checkpoint,
+        iteration_checkpoint_kind=checkpoint_kind,
     )
 
 
