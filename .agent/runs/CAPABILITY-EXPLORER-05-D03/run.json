@@ -4,8 +4,11 @@
   "scope": [
     ".agent/active-runs.json",
     ".agent/decisions/CAPABILITY-EXPLORER-05-D03.yaml",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-B02-REBUILD.yaml",
     ".agent/goals/CAPABILITY-EXPLORER-05-D03.yaml",
     ".agent/runs/CAPABILITY-EXPLORER-05-D03/run.json",
+    ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
     ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
     ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
     "docs/audit/capability-explorer-05-d03/"
@@ -21,8 +24,11 @@
         ".agent/active-runs.json",
         ".agent/context.yaml",
         ".agent/decisions/CAPABILITY-EXPLORER-05-D03.yaml",
+        ".agent/decisions/CAPABILITY-EXPLORER-05-B02-REBUILD.yaml",
         ".agent/goals/CAPABILITY-EXPLORER-05-D03.yaml",
         ".agent/runs/CAPABILITY-EXPLORER-05-D03/run.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
         ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
         ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
         "scripts/verify/agent_ledger_consistency_guard.py",

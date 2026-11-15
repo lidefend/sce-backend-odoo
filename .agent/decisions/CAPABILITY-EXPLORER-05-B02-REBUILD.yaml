@@ -7,6 +7,7 @@ decision:
   formal_product_layer: P4
   related_goal: CAPABILITY-EXPLORER-05-B02-R1
   supersedes: CAP05-D01
+  subsequent_decision: CAP05-D03
   context: >-
     The pre-rebuild comparison established that the current persistent
     development database contained substantial demo, runtime, audit and
@@ -30,14 +31,15 @@ decision:
   interpretation:
     - The historical strict-isolation deviation is not retroactively erased.
     - The owner accepted the demo-only data loss by authorizing the rebuild.
-    - CAP05-B02 may close as remediated by rebuild, not as a successful isolated upgrade.
+    - B02 was subsequently closed by CAP05-D03 as remediation by rebuild,
+      not as a successful isolated upgrade.
     - >-
       CAP05-B01 was later repaired in the separate PR #893 and does not
       retroactively change the B02 environment finding.
     - CAP05-R2 and CAP05-R3 remain on hold.
     - >-
       Post-rebuild UUID, secret, entitlement, BOQ wizard, seed-date and
-      filestore differences remain subject to the owner's final B02 review.
+      filestore differences were subsequently ruled on by CAP05-D03.
   rollback: >-
     Restoring the pre-rebuild snapshot would require a new explicit owner
     authorization because it would overwrite the newly rebuilt demo baseline.

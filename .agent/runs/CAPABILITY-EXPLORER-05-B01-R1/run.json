@@ -35,7 +35,9 @@
     "malformed_version_state": "PASS_UNIT_ONLY",
     "deployment": "not_performed",
     "user_acceptance": "not_performed",
-    "merge": "not_performed"
+    "merge": "merged",
+    "merge_commit": "9c537187c05306663758c86f95e0e91d317381db",
+    "merge_tree": "3bf548df2b4e5bddfa6419ad9233aeb94226692b"
   },
   "checks": {
     "migration_compatibility": {
@@ -72,10 +74,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Wait for the owner's merge decision on PR #893; do not merge, deploy, or change B02.",
+  "next_exact_step": "Closed after owner-authorized merge of PR #893 at 9c537187c05306663758c86f95e0e91d317381db.",
   "id": "CAPABILITY-EXPLORER-05-B01-R1",
   "branch": "fix/capability-explorer-05-b01-r1-20261116",
-  "status": "pending_merge_decision",
+  "status": "completed",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
   "record": "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
 }

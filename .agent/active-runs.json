@@ -49,7 +49,6 @@
     "fix/backend-effective-delivery-closeout-20261112": ".agent/runs/BACKEND-EFFECTIVE-DELIVERY-CLOSEOUT-20261112/run.json",
     "fix/baseline-docs-links-20261020": ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
     "fix/candidate-acceptance-probe-identity": ".agent/runs/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY/run.json",
-    "fix/capability-explorer-05-b01-r1-20261116": ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
     "fix/capability-load-performance-20261110": ".agent/runs/CAPABILITY-LOAD-PERF-20261110/run.json",
     "fix/ci-backend-coverage-skip-detection": ".agent/runs/CI-HISTORY-EVIDENCE-01/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
