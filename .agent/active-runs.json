@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
-    "audit/platform-capability-studio-01-20261115": ".agent/runs/CAPABILITY-EXPLORER-04-R2/run.json",
+    "audit/platform-capability-studio-01-20261115": ".agent/runs/CAPABILITY-EXPLORER-04-R3/run.json",
     "fix/workbench-role-home-nav-20261115": ".agent/runs/WORKBENCH-HOME-MERGE-20261115/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",

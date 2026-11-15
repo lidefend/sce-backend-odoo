@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "CAPABILITY-EXPLORER-04-R3",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "verification_pending",
+  "baseline_sha": "304a754a39ff57f3df47ba9b600aa0164f330701",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-04-R3.yaml",
+  "record": "docs/ops/iterations/capability_explorer_04_r3_20261115.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-EXPLORER-04-R3.yaml",
+    ".agent/goals/CAPABILITY-EXPLORER-04-R2.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-04-R3/run.json",
+    ".agent/runs/CAPABILITY-EXPLORER-04-R2/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/capability_explorer_04_r3_20261115.md",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing Git history and frontend incremental planner; no database, service, product runtime or business-data access."
+  },
+  "checks": {
+    "incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/ops/agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-04-R3.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-04-R3/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the exact R3 P4 scope, run ci.local.quick.full on the clean commit, verify the new exact-head Quick receipt, push PR #889, and monitor required CI bound to the new SHA."
+}

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CAPABILITY-EXPLORER-04-R2",
   "branch": "audit/platform-capability-studio-01-20261115",
-  "status": "active",
+  "status": "superseded",
   "baseline_sha": "a6c3fc6711df993989a2ab94a27738d47fbfb35a",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-04-R2.yaml",
   "record": "docs/ops/iterations/capability_explorer_04_r2_20261115.md",

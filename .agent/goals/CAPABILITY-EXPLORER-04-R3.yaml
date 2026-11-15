@@ -1,0 +1,37 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-04-R3
+  title: verify_historical_checkpoint_identity
+  status: verification_pending
+  formal_product_layer: P4 ops delivery tool
+  layer_target: historical incremental receipt identity verification
+  module:
+    - verification_tooling
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: 304a754a39ff57f3df47ba9b600aa0164f330701
+  objective: >-
+    Close the remaining checkpoint identity gap by recomputing runtime and
+    authority digests from historical Git content and by evaluating historical
+    target mapping through the historical authority, never the current worktree.
+  product_boundary:
+    standard_vs_user_specific: repository-wide verification governance
+    why_here:
+      - frontend_dev_incremental owns checkpoint validation.
+      - Git already carries immutable runtime and authority bytes.
+    why_not_elsewhere:
+      - no product runtime, API, handler, frontend page or browser flow change
+      - no new registry, signature system or Quick scope
+    blast_radius: >-
+      checkpoint identity verification, its tests and the R3 evidence record only
+  acceptance:
+    - runtimeTreeSha256 is recomputed from the historical commit tree
+    - authoritySha256 is recomputed from historical authority blobs
+    - historical target mapping uses the historical authority content
+    - replaced runtime, authority or mapping evidence falls back to run baseline
+  exclusions:
+    - Explorer page, Handler, Intents, token, permissions and scenes
+    - Quick execution scope and deployment
+  rollback: >-
+    Revert the R3 identity-verification commit; R2 closure checks and original
+    run baseline fallback remain safe recovery behavior.

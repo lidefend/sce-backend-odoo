@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-04-R2
   title: harden_incremental_checkpoint_evidence
-  status: active
+  status: superseded
   formal_product_layer: P4 ops delivery tool
   layer_target: frontend incremental checkpoint evidence validation
   module:

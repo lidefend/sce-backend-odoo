@@ -25,6 +25,7 @@ from scripts.verify.frontend_dev_incremental import (
     worktree_changed_paths,
 )
 from scripts.ops.incremental_execution import current_identity, reuse_identity
+from scripts.ops.incremental_execution import committed_runtime_tree_sha256
 from scripts.verify import frontend_dev_incremental as incremental
 from scripts.verify.frontend_style_system_guard import (
     RECORD_RUNTIME_SIZE_LIMITS,
@@ -2593,6 +2594,10 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
 
+    def _install_checkpoint_authority(self) -> None:
+        for path in incremental.CHECKPOINT_AUTHORITY_PATHS:
+            self.fixture.write(path, (ROOT / path).read_text(encoding="utf-8"))
+
     def _write_checkpoint_receipt(
         self,
         head: str,
@@ -2627,8 +2632,11 @@ class RunScopedPlannerTest(unittest.TestCase):
                 "head": head,
                 "tree": fixture.git("rev-parse", f"{head}^{{tree}}"),
                 "worktreeClean": True,
-                "runtimeTreeSha256": "a" * 64,
-                "authoritySha256": {"frontend_dev_incremental.py": "b" * 64},
+                "runtimeTreeSha256": committed_runtime_tree_sha256(fixture.root, head),
+                "authoritySha256": {
+                    path: hashlib.sha256(incremental._historical_blob(fixture.root, head, path)).hexdigest()
+                    for path in incremental.CHECKPOINT_AUTHORITY_PATHS
+                },
             },
             "changedPaths": changed_paths,
             "requiredTargets": targets,
@@ -2659,6 +2667,7 @@ class RunScopedPlannerTest(unittest.TestCase):
 
     def test_verified_ancestor_receipt_becomes_incremental_checkpoint(self):
         fixture = self.fixture
+        self._install_checkpoint_authority()
         checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
         latest_path = 'frontend/apps/web/src/Latest.vue'
         fixture.write(checkpoint_path, 'checkpoint')
@@ -2692,6 +2701,7 @@ class RunScopedPlannerTest(unittest.TestCase):
 
     def test_incomplete_checkpoint_receipts_fall_back_to_run_baseline(self):
         fixture = self.fixture
+        self._install_checkpoint_authority()
         checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
         latest_path = 'frontend/apps/web/src/Latest.vue'
         fixture.write(checkpoint_path, 'checkpoint')
@@ -2730,9 +2740,18 @@ class RunScopedPlannerTest(unittest.TestCase):
         assert_fallback('open not-run closure', lambda receipt: receipt.update({
             'notRunTargets': list(receipt['requiredTargets']),
         }))
+        assert_fallback('replaced runtime digest', lambda receipt: receipt['identity'].update({
+            'runtimeTreeSha256': 'f' * 64,
+        }))
+        assert_fallback('replaced authority digest', lambda receipt: receipt['identity'][
+            'authoritySha256'
+        ].update({
+            'make/frontend.mk': 'f' * 64,
+        }))
 
     def test_broken_checkpoint_source_chain_falls_back_to_run_baseline(self):
         fixture = self.fixture
+        self._install_checkpoint_authority()
         checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
         latest_path = 'frontend/apps/web/src/Latest.vue'
         unreceipted_parent = fixture.git('rev-parse', 'HEAD')
@@ -2750,6 +2769,39 @@ class RunScopedPlannerTest(unittest.TestCase):
             baseline_kind='verified_incremental_receipt',
         )
         fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+        resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
+
+    def test_historical_target_mapping_mismatch_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        self._install_checkpoint_authority()
+        mapping_path = 'scripts/verify/frontend_dev_incremental.py'
+        fixture.write(
+            mapping_path,
+            fixture.root.joinpath(mapping_path).read_text(encoding='utf-8')
+            + (
+                '\n_original_select_targets = select_targets\n'
+                'def select_targets(paths):\n'
+                '    return [target for target in _original_select_targets(paths) '
+                'if target != "verify.frontend.typecheck.strict"]\n'
+            ),
+        )
+        fixture.write('frontend/apps/web/src/Checkpoint.vue', 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint with changed mapping')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=fixture.run['baseline_sha'],
+        )
+        fixture.write('frontend/apps/web/src/Latest.vue', 'latest')
         fixture.git('add', '.')
         fixture.git('commit', '-qm', 'latest')
         resolved, kind, _ = iteration_scope(fixture.root, fixture.run)

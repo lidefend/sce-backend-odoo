@@ -16,6 +16,7 @@ import os
 import subprocess
 import time
 import sys
+import types
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from scripts.ops.agent_run_context import (
     resolve_run,
 )
 from scripts.ops.incremental_execution import (
+    committed_runtime_tree_sha256,
     current_identity as incremental_current_identity,
     verified_receipt as incremental_verified_receipt,
     write_index as write_incremental_index,
@@ -47,6 +49,11 @@ WATCH_ROOTS = (
     "frontend/packages/design-tokens",
     "scripts/verify/frontend_",
     "scripts/ops/incremental_execution.py",
+)
+CHECKPOINT_AUTHORITY_PATHS = (
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/ops/incremental_execution.py",
+    "make/frontend.mk",
 )
 STATE_PATH = ROOT / ".runtime/frontend-dev-validation/status.json"
 FRONTEND_SOURCE_ROOTS = (
@@ -1863,6 +1870,41 @@ def _committed_paths_between(root: Path, source: str, head: str) -> list[str]:
     )
 
 
+def _historical_blob(root: Path, head: str, path: str) -> bytes:
+    if path.startswith("/") or ".." in Path(path).parts:
+        raise ValueError("historical authority path must stay inside the repository")
+    return subprocess.run(
+        ["git", "-C", str(root), "show", f"{head}:{path}"],
+        check=True,
+        stdout=subprocess.PIPE,
+    ).stdout
+
+
+def _historical_target_mapping(root: Path, head: str, paths: list[str]) -> list[str]:
+    """Evaluate target mapping with the historical verifier source from Git."""
+    source_path = "scripts/verify/frontend_dev_incremental.py"
+    source = _historical_blob(root, head, source_path)
+    module_name = f"_historical_frontend_dev_incremental_{head[:12]}"
+    module = types.ModuleType(module_name)
+    module.__file__ = str(root / source_path)
+    sys.modules[module_name] = module
+    try:
+        exec(compile(source, module.__file__, "exec"), module.__dict__)
+        selector = module.__dict__.get("select_targets")
+    finally:
+        sys.modules.pop(module_name, None)
+    if not callable(selector):
+        raise ValueError("historical verifier has no target selector")
+    selected = selector(paths)
+    if (
+        not isinstance(selected, list)
+        or any(not isinstance(target, str) or not target for target in selected)
+        or len(set(selected)) != len(selected)
+    ):
+        raise ValueError("historical target selector returned an invalid target set")
+    return selected
+
+
 def _checkpoint_receipt_closed(root: Path, receipt: dict) -> bool:
     """Prove one execution receipt is a complete, closed affected-target execution."""
     try:
@@ -1891,6 +1933,17 @@ def _checkpoint_receipt_closed(root: Path, receipt: dict) -> bool:
         ).stdout.strip()
         if tree != identity["tree"]:
             return False
+        if committed_runtime_tree_sha256(root, head) != identity["runtimeTreeSha256"]:
+            return False
+        authority = identity["authoritySha256"]
+        if set(authority) != set(CHECKPOINT_AUTHORITY_PATHS):
+            return False
+        for path in CHECKPOINT_AUTHORITY_PATHS:
+            digest = authority.get(path)
+            if not _full_digest(digest):
+                return False
+            if hashlib.sha256(_historical_blob(root, head, path)).hexdigest() != digest:
+                return False
         changed_paths = receipt.get("changedPaths")
         baseline = receipt.get("iterationBaselineSha")
         required = receipt.get("requiredTargets")
@@ -1914,7 +1967,7 @@ def _checkpoint_receipt_closed(root: Path, receipt: dict) -> bool:
             return False
         if sorted(changed_paths) != _committed_paths_between(root, baseline, head):
             return False
-        expected_targets = select_targets(changed_paths)
+        expected_targets = _historical_target_mapping(root, head, changed_paths)
         if expected_targets != required:
             return False
         result_targets: list[str] = []

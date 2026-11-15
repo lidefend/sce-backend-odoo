@@ -54,6 +54,59 @@ def runtime_tree_sha256(root: Path) -> str:
     return digest.hexdigest()
 
 
+def committed_runtime_tree_sha256(root: Path, head: str) -> str:
+    """Reproduce runtime_tree_sha256 from one immutable Git tree."""
+    try:
+        raw_tree = subprocess.run(
+            ["git", "-C", str(root), "ls-tree", "-r", "-z", "--full-tree", head],
+            check=True,
+            stdout=subprocess.PIPE,
+        ).stdout.split(b"\0")
+        entries = []
+        for raw in sorted(value for value in raw_tree if value):
+            metadata, raw_path = raw.split(b"\t", 1)
+            mode, object_type, object_id = metadata.decode("ascii").split()
+            relative = raw_path.decode("utf-8")
+            if relative.startswith(NON_RUNTIME_PREFIXES) or object_type != "blob":
+                continue
+            entries.append((raw_path, mode, object_id))
+        digest = hashlib.sha256()
+        process = subprocess.Popen(
+            ["git", "-C", str(root), "cat-file", "--batch"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        assert process.stdin is not None and process.stdout is not None
+        for raw_path, mode, object_id in entries:
+            process.stdin.write(object_id.encode("ascii") + b"\n")
+            process.stdin.flush()
+            header = process.stdout.readline().rstrip(b"\n").split()
+            if len(header) != 3 or header[1] != b"blob":
+                raise ValueError(f"historical blob missing: {object_id}")
+            size = int(header[2])
+            content = process.stdout.read(size)
+            process.stdout.read(1)
+            digest.update(raw_path + b"\0")
+            if mode == "120000":
+                digest.update(b"symlink\0" + content)
+            else:
+                digest.update(b"file\0")
+                digest.update(format(int(mode, 8) & 0o777, "o").encode("ascii") + b"\0")
+                digest.update(content)
+        process.stdin.close()
+        stderr = process.stderr.read() if process.stderr is not None else b""
+        returncode = process.wait()
+        process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
+        if returncode:
+            raise ValueError(stderr.decode("utf-8", errors="replace"))
+        return digest.hexdigest()
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"cannot compute historical runtime tree digest: {exc}") from exc
+
+
 def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict:
     """Bind reusable execution to VCS head, cleanliness and planner authorities."""
     try:
