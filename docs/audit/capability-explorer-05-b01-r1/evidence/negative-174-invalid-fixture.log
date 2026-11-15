@@ -1,0 +1,11 @@
+DROP TABLE
+ latest_version |   state   
+----------------+-----------
+ 17.0.0.174     | installed
+(1 row)
+
+ scenario_entry_table 
+----------------------
+ 
+(1 row)
+

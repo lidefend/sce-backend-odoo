@@ -1,0 +1,10 @@
+ latest_version |   state   
+----------------+-----------
+ 17.0.0.174     | installed
+(1 row)
+
+   scenario_entry_table    
+---------------------------
+ sc_product_scenario_entry
+(1 row)
+

@@ -1,0 +1,111 @@
+[local.clean.prepare] reuse /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109/.env.local.b01-migration
+[02:53:00] dev up
+ Container sc-local-b01-migration-redis-1  Running
+ Container sc-local-b01-migration-db-1  Running
+ Container sc-local-b01-migration-odoo-1  Running
+ Container sc-local-b01-migration-nginx-1  Running
+ Container sc-local-b01-migration-db-1  Waiting
+ Container sc-local-b01-migration-redis-1  Waiting
+ Container sc-local-b01-migration-redis-1  Healthy
+ Container sc-local-b01-migration-db-1  Healthy
+ Container sc-local-b01-migration-odoo-1  Waiting
+ Container sc-local-b01-migration-odoo-1  Healthy
+[mod.upgrade] module=smart_core,smart_construction_core db=sc_b01_migration
+ Container sc-local-b01-migration-db-1  Running
+ Container sc-local-b01-migration-redis-1  Running
+ERROR: couldn't create the logfile directory. Logging to the standard output.
+2026-11-15 18:53:08,919 1 INFO ? odoo: Odoo version 17.0-20260630 
+2026-11-15 18:53:08,920 1 INFO ? odoo: Using configuration file at /var/lib/odoo/odoo.conf 
+2026-11-15 18:53:08,920 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/opt/sce-runtime/addons/17.0', '/mnt/source-addons', '/mnt/demo-addons', '/mnt/addons_external/oca_server_ux'] 
+2026-11-15 18:53:08,920 1 INFO ? odoo: database: sc_b01_odoo@db:5432 
+2026-11-15 18:53:08,989 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-11-15 18:53:09,366 1 INFO ? odoo.addons.smart_core.app_config_engine.controllers: smart_core app_config_engine controllers loaded 
+2026-11-15 18:53:09,366 1 INFO ? odoo.addons.smart_core.app_config_engine: smart_core app_config_engine loaded 
+2026-11-15 18:53:09,731 1 INFO ? odoo.addons.smart_core: ✅ Smart Core Engine 模块已加载 
+2026-11-15 18:53:09,751 1 INFO sc_b01_migration odoo.modules.loading: loading 1 modules... 
+2026-11-15 18:53:09,755 1 INFO sc_b01_migration odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-11-15 18:53:09,768 1 INFO sc_b01_migration odoo.modules.loading: updating modules list 
+2026-11-15 18:53:09,772 1 INFO sc_b01_migration odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-15 18:53:10,453 1 INFO sc_b01_migration odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Smart Construction Core', 'Smart Core Engine'] to user __system__ #1 via n/a 
+2026-11-15 18:53:10,453 1 INFO sc_b01_migration odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Smart Construction Core', 'Smart Core Engine'] to user __system__ #1 via n/a 
+2026-11-15 18:53:10,898 1 INFO sc_b01_migration odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-15 18:53:10,969 1 INFO sc_b01_migration odoo.modules.loading: loading 69 modules... 
+2026-11-15 18:53:11,088 1 INFO sc_b01_migration odoo.modules.loading: Loading module smart_core (13/69) 
+2026-11-15 18:53:11,136 1 INFO sc_b01_migration odoo.modules.registry: module smart_core: creating or updating database tables 
+2026-11-15 18:53:11,878 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/security/smart_core_security.xml 
+2026-11-15 18:53:12,733 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/security/groups.xml 
+2026-11-15 18:53:12,806 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/security/ir.model.access.csv 
+2026-11-15 18:53:13,066 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/data/platform_bootstrap_company.xml 
+2026-11-15 18:53:13,069 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/data/sc_platform_namespace_seed.xml 
+2026-11-15 18:53:13,072 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/data/sc_subscription_default.xml 
+2026-11-15 18:53:13,079 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/data/ui_base_contract_asset_cron.xml 
+2026-11-15 18:53:13,081 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/data/contract_slo_retention_cron.xml 
+2026-11-15 18:53:13,087 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/views/platform_company_access_views.xml 
+2026-11-15 18:53:14,292 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/views/ui_menu_config_policy_views.xml 
+2026-11-15 18:53:14,405 1 INFO sc_b01_migration odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [15, 16] 
+2026-11-15 18:53:14,428 1 INFO sc_b01_migration odoo.modules.loading: loading smart_core/views/group_authority_reconciliation_views.xml 
+2026-11-15 18:53:14,434 1 WARNING sc_b01_migration odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': '/mnt/source-addons/smart_core/views/group_authority_reconciliation_views.xml',
+ 'line': 3,
+ 'name': 'sc.group.authority.reconcile.form',
+ 'view': ir.ui.view(289,),
+ 'view.model': 'sc.group.authority.reconcile',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_group_authority_reconcile_form'} 
+2026-11-15 18:53:14,604 1 INFO sc_b01_migration odoo.addons.base.models.ir_module: module smart_core: no translation for language zh_CN 
+2026-11-15 18:53:14,621 1 INFO sc_b01_migration odoo.modules.loading: Module smart_core loaded in 3.53s, 3009 queries (+3009 other) 
+2026-11-15 18:53:15,030 1 INFO sc_b01_migration odoo.modules.loading: Loading module smart_construction_core (68/69) 
+2026-11-15 18:53:15,137 1 INFO sc_b01_migration odoo.modules.migration: module smart_construction_core: Running upgrade [>17.0.0.180] pre-migrate 
+2026-11-15 18:53:15,140 1 WARNING sc_b01_migration odoo.modules.loading: Transient module states were reset 
+2026-11-15 18:53:15,144 1 ERROR sc_b01_migration odoo.modules.registry: Failed to load registry 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 96, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 481, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 366, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 183, in load_module_graph
+    migrations.migrate_module(package, 'pre')
+  File "/usr/lib/python3/dist-packages/odoo/modules/migration.py", line 216, in migrate_module
+    exec_script(self.cr, installed_version, pyfile, pkg.name, stage, version)
+  File "/usr/lib/python3/dist-packages/odoo/modules/migration.py", line 240, in exec_script
+    migrate(cr, installed_version)
+  File "/mnt/source-addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py", line 35, in migrate
+    if _allow_missing_scenario_entry_table(cr, version):
+  File "/mnt/source-addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py", line 27, in _allow_missing_scenario_entry_table
+    raise RuntimeError(
+RuntimeError: SCENARIO_ENTRY_TABLE_MISSING_INVALID_STATE: installed version 17.0.0.174 requires sc_product_scenario_entry
+2026-11-15 18:53:15,149 1 CRITICAL sc_b01_migration odoo.service.server: Failed to initialize database `sc_b01_migration`. 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1392, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+  File "<decorator-gen-16>", line 2, in new
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 87, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 96, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 481, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 366, in load_marked_modules
+    loaded, processed = load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 183, in load_module_graph
+    migrations.migrate_module(package, 'pre')
+  File "/usr/lib/python3/dist-packages/odoo/modules/migration.py", line 216, in migrate_module
+    exec_script(self.cr, installed_version, pyfile, pkg.name, stage, version)
+  File "/usr/lib/python3/dist-packages/odoo/modules/migration.py", line 240, in exec_script
+    migrate(cr, installed_version)
+  File "/mnt/source-addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py", line 35, in migrate
+    if _allow_missing_scenario_entry_table(cr, version):
+  File "/mnt/source-addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py", line 27, in _allow_missing_scenario_entry_table
+    raise RuntimeError(
+RuntimeError: SCENARIO_ENTRY_TABLE_MISSING_INVALID_STATE: installed version 17.0.0.174 requires sc_product_scenario_entry
+2026-11-15 18:53:15,151 1 INFO sc_b01_migration odoo.service.server: Initiating shutdown 
+2026-11-15 18:53:15,151 1 INFO sc_b01_migration odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-15 18:53:15,151 1 INFO sc_b01_migration odoo.sql_db: ConnectionPool(used=0/count=0/max=64): Closed 1 connections  
+
+make[1]: *** [make/runtime_ops.mk:1150: mod.upgrade] Error 255
+make: *** [make/dev.mk:823: local.clean.upgrade] Error 2
+
+NEGATIVE_UPGRADE_EXIT_CODE=2
