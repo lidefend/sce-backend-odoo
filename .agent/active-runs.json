@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "audit/entitlement-01-20261116": ".agent/runs/ENTITLEMENT-01/run.json",
     "audit/capability-explorer-05-b02-r1-20261116": ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
     "audit/capability-explorer-05-r1-20261115-v2": ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",

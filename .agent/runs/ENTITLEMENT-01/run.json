@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "1bfe1f500320a35d59bef156db3c5ba746735668",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ENTITLEMENT-01.yaml",
+    ".agent/runs/ENTITLEMENT-01/run.json",
+    "docs/audit/entitlement-01/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "read-only repeatable-read capture of sc_dev_demo plus immutable recovery dump inspection"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/context.yaml",
+        ".agent/goals/ENTITLEMENT-01.yaml",
+        ".agent/runs/ENTITLEMENT-01/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the read-only audit PR, wait for required CI, then stop for the owner's merge decision.",
+  "id": "ENTITLEMENT-01",
+  "branch": "audit/entitlement-01-20261116",
+  "status": "pending_merge_decision",
+  "goal": ".agent/goals/ENTITLEMENT-01.yaml",
+  "record": "docs/audit/entitlement-01/sc_entitlement_readonly_investigation_20261116.md"
+}
