@@ -1829,13 +1829,152 @@ def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> 
     return sorted(paths)
 
 
-def latest_verified_iteration_checkpoint(root: Path, baseline_sha: str) -> tuple[str, str]:
-    """Resolve the closest ancestor with a verified incremental receipt.
+def _full_sha(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 40 and all(
+        char in "0123456789abcdef" for char in value
+    )
 
-    The run baseline remains the fallback and audit anchor. A newer checkpoint
-    may be used only when its receipt is a passed clean execution, and that head
-    is both a descendant of the run baseline and an ancestor of the current HEAD.
-    """
+
+def _full_digest(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
+def _ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    return subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", ancestor, descendant],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode == 0
+
+
+def _committed_paths_between(root: Path, source: str, head: str) -> list[str]:
+    return sorted(
+        _git_paths(
+            root,
+            "diff",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            f"{source}..{head}",
+        )
+    )
+
+
+def _checkpoint_receipt_closed(root: Path, receipt: dict) -> bool:
+    """Prove one execution receipt is a complete, closed affected-target execution."""
+    try:
+        identity = receipt.get("identity")
+        if (
+            receipt.get("schemaVersion") != 1
+            or receipt.get("mode") != "development_incremental_execution"
+            or receipt.get("status") != "passed"
+            or receipt.get("verificationPassed") is not True
+            or receipt.get("testsRun") is not True
+            or not isinstance(identity, dict)
+            or identity.get("worktreeClean") is not True
+            or not _full_sha(identity.get("head"))
+            or not _full_sha(identity.get("tree"))
+            or not _full_digest(identity.get("runtimeTreeSha256"))
+            or not isinstance(identity.get("authoritySha256"), dict)
+            or not identity.get("authoritySha256")
+        ):
+            return False
+        head = str(identity["head"])
+        tree = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", f"{head}^{{tree}}"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        ).stdout.strip()
+        if tree != identity["tree"]:
+            return False
+        changed_paths = receipt.get("changedPaths")
+        baseline = receipt.get("iterationBaselineSha")
+        required = receipt.get("requiredTargets")
+        target_order = receipt.get("targetOrder")
+        results = receipt.get("targetResults")
+        not_run = receipt.get("notRunTargets")
+        if (
+            not isinstance(changed_paths, list)
+            or not changed_paths
+            or any(not isinstance(path, str) or not path for path in changed_paths)
+            or not isinstance(required, list)
+            or not required
+            or any(not isinstance(target, str) or not target for target in required)
+            or len(set(required)) != len(required)
+            or target_order != required
+            or not isinstance(results, list)
+            or not isinstance(not_run, list)
+            or not_run
+            or not _full_sha(baseline)
+        ):
+            return False
+        if sorted(changed_paths) != _committed_paths_between(root, baseline, head):
+            return False
+        expected_targets = select_targets(changed_paths)
+        if expected_targets != required:
+            return False
+        result_targets: list[str] = []
+        for row in results:
+            if not isinstance(row, dict):
+                return False
+            target = row.get("target")
+            if (
+                not isinstance(target, str)
+                or row.get("status") != "passed"
+                or row.get("returncode") != 0
+            ):
+                return False
+            result_targets.append(target)
+            log = Path(str(row.get("log", "")))
+            if not log.is_absolute():
+                log = root / log
+            if (
+                not log.is_file()
+                or not log.resolve().is_relative_to(root.resolve())
+                or hashlib.sha256(log.read_bytes()).hexdigest() != row.get("logSha256")
+            ):
+                return False
+        return result_targets == required
+    except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError):
+        return False
+
+
+def _checkpoint_chain_verified(
+    root: Path,
+    baseline_sha: str,
+    head: str,
+    receipts_by_head: dict[str, list[dict]],
+    visited: frozenset[str] = frozenset(),
+) -> bool:
+    if head == baseline_sha:
+        return True
+    if head in visited:
+        return False
+    visited = visited | {head}
+    for receipt in receipts_by_head.get(head, []):
+        if not _checkpoint_receipt_closed(root, receipt):
+            continue
+        parent = receipt.get("iterationBaselineSha")
+        kind = receipt.get("iterationBaselineKind")
+        if not _full_sha(parent) or not _ancestor(root, parent, head):
+            continue
+        if kind == "run_baseline":
+            if parent == baseline_sha:
+                return True
+            continue
+        if kind == "verified_incremental_receipt" and _checkpoint_chain_verified(
+            root, baseline_sha, parent, receipts_by_head, visited
+        ):
+            return True
+    return False
+
+
+def latest_verified_iteration_checkpoint(root: Path, baseline_sha: str) -> tuple[str, str]:
+    """Resolve the closest checkpoint with a closed, recursively verified receipt chain."""
     execution_root = root / ".runtime/frontend-dev-validation/executions"
     if not execution_root.is_dir():
         return baseline_sha, "run_baseline"
@@ -1845,31 +1984,24 @@ def latest_verified_iteration_checkpoint(root: Path, baseline_sha: str) -> tuple
         text=True,
         stdout=subprocess.PIPE,
     ).stdout.strip()
-    candidates: list[tuple[int, float, str]] = []
+    receipts_by_head: dict[str, list[dict]] = {}
+    receipt_candidates: list[tuple[float, str]] = []
     for receipt_path in execution_root.glob("*/receipt.json"):
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             identity = receipt.get("identity") if isinstance(receipt.get("identity"), dict) else {}
-            head = str(identity.get("head", ""))
-            if (
-                receipt.get("status") != "passed"
-                or receipt.get("verificationPassed") is not True
-                or identity.get("worktreeClean") is not True
-                or len(head) != 40
-            ):
+            head = identity.get("head")
+            if not _full_sha(head) or not _ancestor(root, baseline_sha, head) or not _ancestor(root, head, current_head):
                 continue
-            subprocess.run(
-                ["git", "-C", str(root), "merge-base", "--is-ancestor", baseline_sha, head],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            subprocess.run(
-                ["git", "-C", str(root), "merge-base", "--is-ancestor", head, current_head],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            receipts_by_head.setdefault(head, []).append(receipt)
+            receipt_candidates.append((receipt_path.stat().st_mtime, head))
+        except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError):
+            continue
+    candidates: list[tuple[int, float, str]] = []
+    for modified, head in receipt_candidates:
+        try:
+            if not _checkpoint_chain_verified(root, baseline_sha, head, receipts_by_head):
+                continue
             distance = int(
                 subprocess.run(
                     ["git", "-C", str(root), "rev-list", "--count", f"{baseline_sha}..{head}"],
@@ -1878,8 +2010,8 @@ def latest_verified_iteration_checkpoint(root: Path, baseline_sha: str) -> tuple
                     stdout=subprocess.PIPE,
                 ).stdout.strip()
             )
-            candidates.append((distance, receipt_path.stat().st_mtime, head))
-        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+            candidates.append((distance, modified, head))
+        except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError):
             continue
     if not candidates:
         return baseline_sha, "run_baseline"

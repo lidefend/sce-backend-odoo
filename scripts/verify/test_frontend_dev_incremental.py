@@ -2593,6 +2593,57 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
 
+    def _write_checkpoint_receipt(
+        self,
+        head: str,
+        changed_paths: list[str],
+        *,
+        baseline_sha: str,
+        baseline_kind: str = "run_baseline",
+        mutate=None,
+    ) -> Path:
+        fixture = self.fixture
+        targets = select_targets(changed_paths)
+        folder = fixture.root / ".runtime/frontend-dev-validation/executions" / f"checkpoint-{head[:8]}"
+        folder.mkdir(parents=True, exist_ok=True)
+        result_rows = []
+        for index, target in enumerate(targets):
+            log = folder / f"{index}-{target}.log"
+            log.write_text(f"{target}:passed\n", encoding="utf-8")
+            result_rows.append({
+                "target": target,
+                "status": "passed",
+                "returncode": 0,
+                "log": str(log),
+                "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            })
+        receipt = {
+            "schemaVersion": 1,
+            "mode": "development_incremental_execution",
+            "status": "passed",
+            "verificationPassed": True,
+            "testsRun": True,
+            "identity": {
+                "head": head,
+                "tree": fixture.git("rev-parse", f"{head}^{{tree}}"),
+                "worktreeClean": True,
+                "runtimeTreeSha256": "a" * 64,
+                "authoritySha256": {"frontend_dev_incremental.py": "b" * 64},
+            },
+            "changedPaths": changed_paths,
+            "requiredTargets": targets,
+            "targetOrder": targets,
+            "targetResults": result_rows,
+            "notRunTargets": [],
+            "iterationBaselineSha": baseline_sha,
+            "iterationBaselineKind": baseline_kind,
+        }
+        if mutate is not None:
+            mutate(receipt)
+        path = folder / "receipt.json"
+        path.write_text(json.dumps(receipt), encoding="utf-8")
+        return path
+
     def test_registered_run_does_not_need_origin_or_reinventory_branch_history(self):
         fixture = self.fixture
         fixture.run['baseline_sha'] = fixture.git('rev-parse', 'HEAD')
@@ -2608,31 +2659,28 @@ class RunScopedPlannerTest(unittest.TestCase):
 
     def test_verified_ancestor_receipt_becomes_incremental_checkpoint(self):
         fixture = self.fixture
-        fixture.write('source/checkpoint.py', 'checkpoint')
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        fixture.write(checkpoint_path, 'checkpoint')
         fixture.git('add', '.')
         fixture.git('commit', '-qm', 'checkpoint')
         checkpoint = fixture.git('rev-parse', 'HEAD')
-        receipt_path = (
-            fixture.root
-            / '.runtime/frontend-dev-validation/executions/checkpoint/receipt.json'
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=fixture.run['baseline_sha'],
         )
-        receipt_path.parent.mkdir(parents=True, exist_ok=True)
-        receipt_path.write_text(json.dumps({
-            'status': 'passed',
-            'verificationPassed': True,
-            'identity': {'head': checkpoint, 'worktreeClean': True},
-            'changedPaths': ['source/checkpoint.py'],
-            'requiredTargets': ['verify.test'],
-            'targetResults': [],
-        }), encoding='utf-8')
-        fixture.write('source/latest.py', 'latest')
+        fixture.write(latest_path, 'latest')
         fixture.git('add', '.')
         fixture.git('commit', '-qm', 'latest')
 
         resolved_checkpoint, kind, paths = iteration_scope(fixture.root, fixture.run)
         self.assertEqual(resolved_checkpoint, checkpoint)
         self.assertEqual(kind, 'verified_incremental_receipt')
-        self.assertEqual(paths, ['source/latest.py'])
+        self.assertEqual(paths, [latest_path])
 
         output = io.StringIO()
         with redirect_stdout(output):
@@ -2641,8 +2689,72 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.assertEqual(payload['iterationBaselineSha'], checkpoint)
         self.assertEqual(payload['iterationBaselineKind'], 'verified_incremental_receipt')
         self.assertEqual(payload['changedPathCount'], 1)
-        self.assertIn('source/latest.py', output.getvalue())
-        self.assertNotIn('source/checkpoint.py', output.getvalue())
+
+    def test_incomplete_checkpoint_receipts_fall_back_to_run_baseline(self):
+        fixture = self.fixture
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        fixture.write(checkpoint_path, 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+
+        def assert_fallback(label: str, mutate) -> None:
+            receipt_path = self._write_checkpoint_receipt(
+                checkpoint,
+                checkpoint_paths,
+                baseline_sha=fixture.run['baseline_sha'],
+                mutate=mutate,
+            )
+            resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+            self.assertEqual(resolved, fixture.run['baseline_sha'], label)
+            self.assertEqual(kind, 'run_baseline', label)
+            receipt_path.unlink()
+
+        assert_fallback('empty targetResults', lambda receipt: receipt.update({
+            'targetResults': [],
+        }))
+        assert_fallback('missing target result', lambda receipt: receipt.update({
+            'targetResults': receipt['targetResults'][1:],
+        }))
+        assert_fallback('forged pass result', lambda receipt: receipt['targetResults'][0].update({
+            'status': 'failed',
+            'returncode': 1,
+        }))
+        assert_fallback('open not-run closure', lambda receipt: receipt.update({
+            'notRunTargets': list(receipt['requiredTargets']),
+        }))
+
+    def test_broken_checkpoint_source_chain_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        unreceipted_parent = fixture.git('rev-parse', 'HEAD')
+        fixture.write(checkpoint_path, 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', unreceipted_parent, checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=unreceipted_parent,
+            baseline_kind='verified_incremental_receipt',
+        )
+        fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+        resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
 
     def test_unverified_receipt_falls_back_to_run_baseline(self):
         fixture = self.fixture

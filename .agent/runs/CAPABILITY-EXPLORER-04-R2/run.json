@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "CAPABILITY-EXPLORER-04-R2",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "active",
+  "baseline_sha": "a6c3fc6711df993989a2ab94a27738d47fbfb35a",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-04-R2.yaml",
+  "record": "docs/ops/iterations/capability_explorer_04_r2_20261115.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-EXPLORER-04-R2.yaml",
+    ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-04.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-04-R2/run.json",
+    ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-04/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/capability_explorer_04_r2_20261115.md",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing Git history and frontend incremental planner; no database, service, product runtime or business-data access."
+  },
+  "checks": {
+    "incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/ops/agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-04-R2.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-04-R2/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement strict receipt closure validation, add positive and negative checkpoint tests, then run ci.local.iteration."
+}

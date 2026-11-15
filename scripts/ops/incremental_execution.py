@@ -63,6 +63,12 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
             text=True,
             stdout=subprocess.PIPE,
         ).stdout.strip()
+        tree = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        ).stdout.strip()
         status = subprocess.run(
             ["git", "-C", str(root), "status", "--porcelain=v1", "--untracked-files=all"],
             check=True,
@@ -72,6 +78,7 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
     except subprocess.CalledProcessError:
         return {
             "head": "",
+            "tree": "",
             "worktreeClean": False,
             "runtimeTreeSha256": "",
             "authoritySha256": {},
@@ -85,6 +92,7 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
         authorities[name] = sha256_file(path)
     return {
         "head": head,
+        "tree": tree,
         "worktreeClean": not bool(status),
         "runtimeTreeSha256": runtime_tree_sha256(root),
         "authoritySha256": dict(sorted(authorities.items())),

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: ODOO-NATIVE-CAPABILITY-EXPLORER-04
   title: implement_frontend_readonly_capability_explorer_mvp
-  status: verification_pending
+  status: superseded
   formal_product_layer: P0 platform kernel product with P4 browser verification
   layer_target: frontend capability explorer consuming the approved read-only intents
   module:

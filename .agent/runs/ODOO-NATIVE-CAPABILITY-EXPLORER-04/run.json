@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ODOO-NATIVE-CAPABILITY-EXPLORER-04",
   "branch": "audit/platform-capability-studio-01-20261115",
-  "status": "verification_pending",
+  "status": "superseded",
   "baseline_sha": "3e02a475f0a58b63472455dc0c42822e9743a945",
   "goal": ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-04.yaml",
   "record": "docs/ops/iterations/odoo_native_capability_explorer_04_20261115.md",

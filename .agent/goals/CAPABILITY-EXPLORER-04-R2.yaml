@@ -1,0 +1,41 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-04-R2
+  title: harden_incremental_checkpoint_evidence
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend incremental checkpoint evidence validation
+  module:
+    - verification_tooling
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: a6c3fc6711df993989a2ab94a27738d47fbfb35a
+  objective: >-
+    Prevent a passed but incomplete incremental receipt from becoming a
+    checkpoint. Reuse the existing execution receipt contract and fail closed
+    to the registered run baseline when targets, results, not-run entries,
+    clean identity or ancestry cannot prove a closed execution.
+  product_boundary:
+    standard_vs_user_specific: repository-wide verification governance
+    why_here:
+      - frontend_dev_incremental owns checkpoint selection and delta planning.
+      - the existing execution receipt already carries identity and target results.
+    why_not_elsewhere:
+      - no product runtime, API, handler or frontend page change
+      - no second evidence authentication mechanism
+      - no Quick policy weakening
+    blast_radius: >-
+      incremental checkpoint selection, its tests and the R2 evidence record only
+  acceptance:
+    - only passed clean receipts with a valid commit/tree/ancestry can checkpoint
+    - requiredTargets and targetResults must close exactly
+    - no not-run targets may remain
+    - each target result must have passed and a verifiable log digest
+    - empty, forged, incomplete and discontinuous receipts fall back to run baseline
+  exclusions:
+    - Explorer page, Intents, Handler, token, permissions and scenes
+    - Quick target scopes and Quick execution policy
+    - merge, deployment or PR#888
+  rollback: >-
+    Revert the R2 checkpoint-validation commit. Existing run baselines and full
+    incremental execution remain valid recovery behavior.
