@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { launchChromium } from './playwright_runtime.mjs';
+import { validateRecordDeepLinkEvidence } from '../../frontend/apps/web/scripts/record_deep_link_evidence.mjs';
 
 const ROOT = process.cwd();
 const BASE = process.env.DEV_ACCEPTANCE_BASE_URL || 'http://127.0.0.1:18081';
@@ -602,6 +603,10 @@ async function main() {
       const servedBuildInfo = await readServedBuildInfo(recordPage);
       detachRecordNetwork();
       const canonicalElapsed = startupTiming.elapsed_from_boot_ms.record_ready;
+      const bundleAssets = recordNetwork.filter(row => (
+        row.resource_type === 'script'
+        && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(row.resource_url)
+      ));
       report.record_deep_link = {
         href,
         elapsed_ms: typeof canonicalElapsed === 'number' ? canonicalElapsed : observation.elapsedMs,
@@ -618,10 +623,7 @@ async function main() {
         diagnostics,
         startup_timing: startupTiming,
         served_build_info: servedBuildInfo,
-        bundle_assets: recordNetwork.filter(row => (
-          row.resource_type === 'script'
-          && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(row.resource_url)
-        )),
+        bundle_assets: bundleAssets,
         init_data_keys: [...runtimeState.dataKeys],
         workspace_home_loaded_at_startup: runtimeState.dataKeys.includes('workspace_home'),
       };
@@ -631,9 +633,11 @@ async function main() {
       if (pageErrors.length) report.findings.push('record_deep_link_page_error');
       for (const phase of startupTiming.missing) report.findings.push(`startup_mark_missing:${phase}`);
       const expectedBuildSha = String(process.env.DEV_ACCEPTANCE_EXPECTED_BUILD_SHA || '').trim();
-      if (expectedBuildSha && servedBuildInfo?.sha !== expectedBuildSha) {
-        report.findings.push('served_build_sha_mismatch');
-      }
+      report.findings.push(...validateRecordDeepLinkEvidence({
+        expectedBuildSha,
+        servedBuildInfo,
+        bundleAssets,
+      }));
       report.status = report.findings.length ? 'failed' : 'passed';
       if (report.findings.length) process.exitCode = 1;
       return;

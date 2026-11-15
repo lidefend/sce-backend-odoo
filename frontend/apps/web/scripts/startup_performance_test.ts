@@ -8,6 +8,11 @@ import {
   shouldPreloadWorkspaceHomeAtStartup,
   startupTimingOrderIssues,
 } from '../src/app/performance/startupTiming';
+import {
+  ASSET_LOAD_TIMEOUT_MS,
+  createContractFormRouteLoader,
+} from '../src/pages/contractFormRouteLoader';
+import { validateRecordDeepLinkEvidence } from './record_deep_link_evidence.mjs';
 
 let cases = 0;
 for (const phase of STARTUP_PHASES) performance.clearMarks(phase);
@@ -55,6 +60,85 @@ for (const input of [
 }
 cases += 5;
 
+assert.equal(ASSET_LOAD_TIMEOUT_MS, 15_000);
+cases += 1;
+let staleResolve!: (value: string) => void;
+let loadCalls = 0;
+const routeLoader = createContractFormRouteLoader(() => {
+  loadCalls += 1;
+  if (loadCalls === 1) {
+    return new Promise<string>((resolve) => {
+      staleResolve = resolve;
+    });
+  }
+  return Promise.resolve('current-page');
+}, 100);
+const staleLoad = routeLoader.load();
+assert.equal(routeLoader.load(), staleLoad, 'same activation must share one in-flight request');
+routeLoader.invalidate();
+const resumedLoad = routeLoader.load();
+assert.deepEqual(await resumedLoad, { module: 'current-page' });
+staleResolve('stale-page');
+assert.deepEqual(await staleLoad, { cancelled: true });
+assert.equal(loadCalls, 2, 'cache reactivation must restart a cancelled load');
+cases += 5;
+
+const timedOutLoad = await createContractFormRouteLoader(
+  () => new Promise<string>(() => undefined),
+  5,
+).load();
+assert.ok('error' in timedOutLoad);
+cases += 1;
+
+const expectedBuildSha = 'a'.repeat(40);
+const bundleSha256 = 'b'.repeat(64);
+const validBundleAssets = [
+  {
+    resource_url: 'http://127.0.0.1/assets/index-AbCdEf12.js',
+    decoded_body_size: 100,
+    resource_sha256: bundleSha256,
+  },
+  {
+    resource_url: 'http://127.0.0.1/assets/ContractFormRoute-XyZ12345.js',
+    decoded_body_size: 20,
+    resource_sha256: bundleSha256,
+  },
+  {
+    resource_url: 'http://127.0.0.1/assets/ContractFormPage-QwErTy78.js',
+    decoded_body_size: 200,
+    resource_sha256: bundleSha256,
+  },
+];
+const validEvidence = {
+  expectedBuildSha,
+  servedBuildInfo: { sha: expectedBuildSha },
+  bundleAssets: validBundleAssets,
+};
+assert.deepEqual(validateRecordDeepLinkEvidence(validEvidence), []);
+assert(validateRecordDeepLinkEvidence({
+  ...validEvidence,
+  expectedBuildSha: '',
+}).includes('served_build_sha_expected_missing'));
+assert(validateRecordDeepLinkEvidence({
+  ...validEvidence,
+  servedBuildInfo: null,
+}).includes('served_build_info_missing'));
+assert(validateRecordDeepLinkEvidence({
+  ...validEvidence,
+  servedBuildInfo: { sha: 'c'.repeat(40) },
+}).includes('served_build_sha_mismatch'));
+assert(validateRecordDeepLinkEvidence({
+  ...validEvidence,
+  bundleAssets: validBundleAssets.slice(0, 2),
+}).includes('bundle_asset_missing:form'));
+assert(validateRecordDeepLinkEvidence({
+  ...validEvidence,
+  bundleAssets: validBundleAssets.map((asset, index) => (
+    index === 0 ? { ...asset, resource_sha256: '' } : asset
+  )),
+}).includes('bundle_asset_hash_missing:entry'));
+cases += 6;
+
 const indexHtml = readFileSync('frontend/apps/web/index.html', 'utf8');
 assert.match(indexHtml, /performance\.mark\('boot_start'\)/);
 cases += 1;
@@ -89,11 +173,12 @@ assert.match(recordRoute, /import\('\.\/ContractFormPage\.vue'\)/);
 assert.doesNotMatch(recordRoute, /import ContractFormPage from '\.\/ContractFormPage\.vue'/);
 assert.match(recordRoute, /ProductFormLoadingSkeleton/);
 cases += 3;
-assert.match(recordRoute, /ASSET_LOAD_TIMEOUT_MS = 15000/);
-assert.match(recordRoute, /loadGeneration/);
+assert.match(recordRoute, /createContractFormRouteLoader/);
 assert.match(recordRoute, /window\.location\.reload\(\)/);
 assert.match(recordRoute, /onBeforeRouteLeave/);
-cases += 4;
+assert.match(recordRoute, /onActivated/);
+assert.match(recordRoute, /pageLoader\.invalidate\(\)/);
+cases += 5;
 
 const sessionRequest = readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8');
 assert.match(sessionRequest, /includeWorkspaceHome === false \? \[\] : \['workspace_home'\]/);

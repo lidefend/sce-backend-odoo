@@ -22,37 +22,31 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef, type Component } from 'vue';
+import { onActivated, onBeforeUnmount, onMounted, ref, shallowRef, type Component } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import ProductFormLoadingSkeleton from '../components/product-record/ProductFormLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { markStartupPhase } from '../app/performance/startupTiming';
+import { createContractFormRouteLoader } from './contractFormRouteLoader';
 
 const page = shallowRef<Component | null>(null);
 const loadError = ref('');
-const ASSET_LOAD_TIMEOUT_MS = 15000;
-let loadGeneration = 0;
+const pageLoader = createContractFormRouteLoader(() => import('./ContractFormPage.vue'));
+let hasMounted = false;
 
 async function loadPage() {
-  const generation = ++loadGeneration;
   loadError.value = '';
   markStartupPhase('skeleton_shown', 'ContractFormRoute');
-  let timeoutId: number | null = null;
-  try {
-    const timeout = new Promise<never>((_, reject) => {
-      timeoutId = window.setTimeout(() => {
-        reject(new Error('record_route_asset_load_timeout'));
-      }, ASSET_LOAD_TIMEOUT_MS);
-    });
-    const module = await Promise.race([import('./ContractFormPage.vue'), timeout]);
-    if (generation !== loadGeneration) return;
-    page.value = module.default;
-  } catch {
-    if (generation !== loadGeneration) return;
+  const result = await pageLoader.load();
+  if ('module' in result) {
+    page.value = result.module.default;
+  } else if ('error' in result) {
     loadError.value = 'record_route_asset_load_failed';
-  } finally {
-    if (timeoutId !== null) window.clearTimeout(timeoutId);
   }
+}
+
+function resumeIfNeeded() {
+  if (!page.value && !loadError.value) void loadPage();
 }
 
 function reloadRoute() {
@@ -64,15 +58,20 @@ function reloadRoute() {
 }
 
 onMounted(() => {
-  void loadPage();
+  hasMounted = true;
+  resumeIfNeeded();
+});
+
+onActivated(() => {
+  if (hasMounted) resumeIfNeeded();
 });
 
 onBeforeRouteLeave(() => {
-  loadGeneration += 1;
+  pageLoader.invalidate();
 });
 
 onBeforeUnmount(() => {
-  loadGeneration += 1;
+  pageLoader.invalidate();
 });
 </script>
 

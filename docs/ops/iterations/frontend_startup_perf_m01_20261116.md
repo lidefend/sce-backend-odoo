@@ -58,7 +58,7 @@ labels instead of exposing dotted technical identities.
 
 | Check | Result |
 | --- | --- |
-| `verify.frontend.startup_performance.unit` | passed, 39 cases |
+| `verify.frontend.startup_performance.unit` | passed, 53 cases |
 | `verify.frontend.dev_acceptance_remediation.unit` | passed, 20 cases |
 | `verify.frontend.workspace_scenario_lifecycle.unit` | passed, 11 affected scenarios |
 | `verify.frontend.component_driver_takeover.unit` | passed, 18 cases |
@@ -86,10 +86,11 @@ route leave/unmount, shows an explicit error instead of an indefinite skeleton,
 and offers a document-level reload after failure. Existing permission, save,
 validation, and return components are unchanged.
 
-The performance browser probe now records served build identity, original
-resource hash/size, and missing canonical marks. An expected build SHA may be
-supplied with `DEV_ACCEPTANCE_EXPECTED_BUILD_SHA`; mismatch fails the record
-deep-link observation.
+The performance browser probe now requires served build identity, original
+resource hash/size for the entry, record-route and heavy-form bundles, and all
+canonical marks. The local wrapper derives `DEV_ACCEPTANCE_EXPECTED_BUILD_SHA`
+from a clean exact HEAD and rejects a dirty tree before collecting record
+identity evidence.
 
 Failure classification during remediation:
 
@@ -103,12 +104,41 @@ Failure classification during remediation:
 The governed incremental execution completed 26 targets with no blocked or
 not-run targets:
 
-`.runtime/frontend-dev-validation/executions/20261115T224337Z-2065280-973698304/receipt.json`
+`.runtime/frontend-dev-validation/executions/20261115T231631Z-2292694-937946943/receipt.json`
 
 Not yet covered: a fresh independent review of the fixed candidate, exact-head
 remote CI, isolated daily-clone deployment, and desktop/mobile A/B. The prior
 static-proxy timing report remains diagnostic only and is not exact-candidate
 deployment evidence.
+
+### Second independent review remediation
+
+A fresh exact-head review found two remaining blockers:
+
+- Cancelling a pending chunk load on route leave could strand the cached record
+  page because `KeepAlive` reactivation did not restart the discarded load.
+- Browser identity evidence still allowed a pass when build-info, bundle lists
+  or bundle hashes were absent.
+
+The route shell now delegates to a P0 route loader that distinguishes current,
+cancelled and failed generations. `onActivated` restarts loading only when the
+retained instance has no page and no recoverable error. The regression covers a
+delayed import, route invalidation, a second import on reactivation, stale-result
+rejection, timeout failure and in-flight deduplication.
+
+Record identity validation now fails closed unless all of the following exist:
+
+- a 40-character expected build SHA;
+- served `build-info.json` with the same SHA;
+- entry, `ContractFormRoute` and `ContractFormPage` bundle resources;
+- a non-empty decoded size and SHA-256 for each required bundle.
+
+The acceptance wrapper also rejects dirty worktrees and derives the expected SHA
+from the clean candidate HEAD. These checks share one pure validator exercised
+through the existing startup performance target, so the verification lane did
+not grow a new remote-only script.
+
+Another independent exact-head review and browser observation remain pending.
 
 ### Runtime marker observation
 

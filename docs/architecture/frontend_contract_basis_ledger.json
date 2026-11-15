@@ -259,7 +259,7 @@
     },
     {
       "symbol": "ASSET_LOAD_TIMEOUT_MS",
-      "file": "frontend/apps/web/src/pages/ContractFormRoute.vue",
+      "file": "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
       "class": "transport_deadline",
       "layer": "P0",
       "carriesProductSemantics": false,
