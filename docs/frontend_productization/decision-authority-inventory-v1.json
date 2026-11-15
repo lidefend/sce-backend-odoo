@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1444
+        1441
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        574
+        592
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1433
+        1430
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1219,7 +1219,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3039
+        3036
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1459,7 +1459,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        967
+        985
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1475,7 +1475,7 @@
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
         2,
-        49
+        56
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -1489,7 +1489,7 @@
       "literal": "forbidden",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        65
+        72
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1503,17 +1503,17 @@
       "literal": "idle",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        74,
-        80,
-        85,
-        90,
-        96,
-        136,
-        160,
-        165,
-        166,
-        168,
-        172
+        81,
+        87,
+        92,
+        97,
+        103,
+        143,
+        167,
+        172,
+        173,
+        175,
+        179
       ],
       "occurrences": 11,
       "classification": "excluded-render-interaction",
@@ -1527,9 +1527,9 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        16,
-        34,
-        43
+        23,
+        41,
+        50
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",

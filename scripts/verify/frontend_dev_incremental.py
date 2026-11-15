@@ -410,6 +410,9 @@ RULES = (
     Rule((
         "scripts/verify/daily_demo_runtime_performance.py",
         "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_performance_browser.mjs",
+        "scripts/verify/local_dev_runtime_performance_browser.sh",
+        "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
         "scripts/verify/test_local_dev_runtime_performance.py",
         "make/role_authority.mk",
     ), (

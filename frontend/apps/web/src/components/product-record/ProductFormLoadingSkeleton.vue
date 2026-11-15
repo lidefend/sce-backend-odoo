@@ -8,6 +8,14 @@
     aria-busy="true"
     :aria-label="loadingLabel"
   >
+    <div class="loading-form-progress" data-loading-progress>
+      <div class="loading-form-progress__copy">
+        <strong>{{ loadingLabel }}</strong>
+        <span>{{ progressHint }}</span>
+      </div>
+      <span class="loading-form-progress__elapsed" aria-hidden="true">{{ elapsedLabel }}</span>
+      <span class="loading-form-progress__track" aria-hidden="true"><i /></span>
+    </div>
     <header class="loading-form-header" aria-hidden="true">
       <div class="loading-form-actions">
         <i />
@@ -42,10 +50,33 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { formatLoadingProgress } from '../../app/presentation/loadingProgress';
+
 withDefaults(defineProps<{
   loadingLabel?: string;
 }>(), {
   loadingLabel: '正在载入表单',
+});
+
+const startedAt = ref(Date.now());
+const now = ref(startedAt.value);
+let timer: number | null = null;
+
+const progress = computed(() => formatLoadingProgress(now.value - startedAt.value));
+const elapsedLabel = computed(() => progress.value.elapsedLabel);
+const progressHint = computed(() => progress.value.hint);
+
+onMounted(() => {
+  startedAt.value = Date.now();
+  now.value = startedAt.value;
+  timer = window.setInterval(() => {
+    now.value = Date.now();
+  }, 1000);
+});
+
+onBeforeUnmount(() => {
+  if (timer !== null) window.clearInterval(timer);
 });
 </script>
 
@@ -56,6 +87,52 @@ withDefaults(defineProps<{
   gap: 18px;
   width: 100%;
   min-width: 0;
+}
+
+.loading-form-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 12px 16px 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-panel);
+}
+
+.loading-form-progress__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.loading-form-progress__copy strong {
+  color: var(--sc-app-text-primary);
+  font-size: var(--sc-product-text-body);
+}
+
+.loading-form-progress__copy span,
+.loading-form-progress__elapsed {
+  color: var(--sc-semantic-text-muted);
+  font-size: var(--sc-product-text-sm);
+}
+
+.loading-form-progress__track {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--sc-app-muted-bg);
+}
+
+.loading-form-progress__track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 36%;
+  border-radius: inherit;
+  background: var(--sc-semantic-surface-interactive);
+  animation: product-form-progress 1.4s ease-in-out infinite;
 }
 
 .loading-form-header {
@@ -178,6 +255,16 @@ withDefaults(defineProps<{
   }
 }
 
+@keyframes product-form-progress {
+  from {
+    transform: translateX(-110%);
+  }
+
+  to {
+    transform: translateX(310%);
+  }
+}
+
 @media (max-width: 760px) {
   .loading-form-actions i:nth-child(2) {
     display: none;
@@ -194,6 +281,12 @@ withDefaults(defineProps<{
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .loading-form-progress__track i {
+    width: 100%;
+    animation: none;
+    opacity: .45;
+  }
+
   .loading-form-actions i,
   .loading-form-section-heading i,
   .loading-form-field i,
