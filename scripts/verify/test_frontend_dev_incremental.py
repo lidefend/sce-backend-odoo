@@ -18,12 +18,14 @@ from scripts.verify.frontend_dev_incremental import (
     FRONTEND_SOURCE_SUFFIXES,
     RULES,
     execute_targets,
+    iteration_scope,
     iteration_plan,
     print_plan,
     select_targets,
     worktree_changed_paths,
 )
 from scripts.ops.incremental_execution import current_identity, reuse_identity
+from scripts.ops.incremental_execution import committed_runtime_tree_sha256
 from scripts.verify import frontend_dev_incremental as incremental
 from scripts.verify.frontend_style_system_guard import (
     RECORD_RUNTIME_SIZE_LIMITS,
@@ -399,6 +401,83 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.runtime_capability_catalog.unit",
             ],
         )
+
+    def test_platform_capability_explorer_selects_its_readonly_unit(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/platform_capability_explorer.py",
+            "addons/smart_core/handlers/platform_capability_explorer.py",
+            "addons/smart_core/tests/test_platform_capability_explorer.py",
+            "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+            "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+            "scripts/verify/platform_capability_explorer_runtime_probe.py",
+            "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+            "scripts/ops/odoo_shell_exec.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.platform.capability_explorer.unit"],
+                )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/services/product_menu_source.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.platform.capability_explorer.unit",
+            ],
+        )
+
+    def test_platform_capability_explorer_frontend_selects_its_consumer_unit(self) -> None:
+        for path in (
+            "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+            "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+            "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
+            "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+            "frontend/apps/web/src/app/adminRouteAccess.ts",
+            "frontend/apps/web/scripts/admin_route_access_test.ts",
+            "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+            "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+            "frontend/apps/web/scripts/platform_capability_explorer_browser_support.mjs",
+            "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        ):
+            with self.subTest(path=path):
+                expected = (
+                    [
+                        "verify.frontend.lint.src",
+                        "verify.frontend.platform_capability_explorer.unit",
+                        "verify.frontend.typecheck.strict",
+                    ]
+                    if path.startswith("frontend/apps/web/src/")
+                    else ["verify.frontend.platform_capability_explorer.unit"]
+                )
+                self.assertEqual(
+                    select_targets([path]),
+                    expected,
+                )
+
+    def test_page_contract_builder_selects_contract_boundary_gates(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/core/page_contracts_builder.py"]),
+            [
+                "verify.frontend.page_contract_boundary.guard",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_page_contract_boundary_guard.py"]),
+            ["verify.frontend.page_contract_boundary.guard"],
+        )
+
+    def test_decision_authority_artifacts_select_their_unit(self) -> None:
+        for path in (
+            "scripts/verify/frontend_decision_authority.py",
+            "scripts/verify/frontend_decision_authority_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.decision_authority.unit"],
+                )
 
     def test_scene_shell_compiler_selects_its_navigation_unit(self) -> None:
         for path in (
@@ -792,7 +871,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_capability_identity_paths_select_their_owning_check(self) -> None:
         for path in (
             "scripts/verify/test_capability_identity_boundary.py",
-            "addons/smart_construction_core/services/product_menu_source.py",
             "addons/smart_core/delivery/capability_service.py",
         ):
             with self.subTest(path=path):
@@ -800,6 +878,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.capability.identity_boundary.unit"],
                 )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/services/product_menu_source.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.platform.capability_explorer.unit",
+            ],
+        )
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [
@@ -2507,6 +2594,64 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
 
+    def _install_checkpoint_authority(self) -> None:
+        for path in incremental.CHECKPOINT_AUTHORITY_PATHS:
+            self.fixture.write(path, (ROOT / path).read_text(encoding="utf-8"))
+
+    def _write_checkpoint_receipt(
+        self,
+        head: str,
+        changed_paths: list[str],
+        *,
+        baseline_sha: str,
+        baseline_kind: str = "run_baseline",
+        mutate=None,
+    ) -> Path:
+        fixture = self.fixture
+        targets = select_targets(changed_paths)
+        folder = fixture.root / ".runtime/frontend-dev-validation/executions" / f"checkpoint-{head[:8]}"
+        folder.mkdir(parents=True, exist_ok=True)
+        result_rows = []
+        for index, target in enumerate(targets):
+            log = folder / f"{index}-{target}.log"
+            log.write_text(f"{target}:passed\n", encoding="utf-8")
+            result_rows.append({
+                "target": target,
+                "status": "passed",
+                "returncode": 0,
+                "log": str(log),
+                "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            })
+        receipt = {
+            "schemaVersion": 1,
+            "mode": "development_incremental_execution",
+            "status": "passed",
+            "verificationPassed": True,
+            "testsRun": True,
+            "identity": {
+                "head": head,
+                "tree": fixture.git("rev-parse", f"{head}^{{tree}}"),
+                "worktreeClean": True,
+                "runtimeTreeSha256": committed_runtime_tree_sha256(fixture.root, head),
+                "authoritySha256": {
+                    path: hashlib.sha256(incremental._historical_blob(fixture.root, head, path)).hexdigest()
+                    for path in incremental.CHECKPOINT_AUTHORITY_PATHS
+                },
+            },
+            "changedPaths": changed_paths,
+            "requiredTargets": targets,
+            "targetOrder": targets,
+            "targetResults": result_rows,
+            "notRunTargets": [],
+            "iterationBaselineSha": baseline_sha,
+            "iterationBaselineKind": baseline_kind,
+        }
+        if mutate is not None:
+            mutate(receipt)
+        path = folder / "receipt.json"
+        path.write_text(json.dumps(receipt), encoding="utf-8")
+        return path
+
     def test_registered_run_does_not_need_origin_or_reinventory_branch_history(self):
         fixture = self.fixture
         fixture.run['baseline_sha'] = fixture.git('rev-parse', 'HEAD')
@@ -2519,6 +2664,165 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.assertNotIn('branch_fallback', output.getvalue())
         self.assertNotIn('source/a.py', output.getvalue())
         self.assertIn('source/new.py', output.getvalue())
+
+    def test_verified_ancestor_receipt_becomes_incremental_checkpoint(self):
+        fixture = self.fixture
+        self._install_checkpoint_authority()
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        fixture.write(checkpoint_path, 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=fixture.run['baseline_sha'],
+        )
+        fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+
+        resolved_checkpoint, kind, paths = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved_checkpoint, checkpoint)
+        self.assertEqual(kind, 'verified_incremental_receipt')
+        self.assertEqual(paths, [latest_path])
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(iteration_plan(fixture.root), 0)
+        payload = json.loads(output.getvalue().split('] ', 1)[1])
+        self.assertEqual(payload['iterationBaselineSha'], checkpoint)
+        self.assertEqual(payload['iterationBaselineKind'], 'verified_incremental_receipt')
+        self.assertEqual(payload['changedPathCount'], 1)
+
+    def test_incomplete_checkpoint_receipts_fall_back_to_run_baseline(self):
+        fixture = self.fixture
+        self._install_checkpoint_authority()
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        fixture.write(checkpoint_path, 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+
+        def assert_fallback(label: str, mutate) -> None:
+            receipt_path = self._write_checkpoint_receipt(
+                checkpoint,
+                checkpoint_paths,
+                baseline_sha=fixture.run['baseline_sha'],
+                mutate=mutate,
+            )
+            resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+            self.assertEqual(resolved, fixture.run['baseline_sha'], label)
+            self.assertEqual(kind, 'run_baseline', label)
+            receipt_path.unlink()
+
+        assert_fallback('empty targetResults', lambda receipt: receipt.update({
+            'targetResults': [],
+        }))
+        assert_fallback('missing target result', lambda receipt: receipt.update({
+            'targetResults': receipt['targetResults'][1:],
+        }))
+        assert_fallback('forged pass result', lambda receipt: receipt['targetResults'][0].update({
+            'status': 'failed',
+            'returncode': 1,
+        }))
+        assert_fallback('open not-run closure', lambda receipt: receipt.update({
+            'notRunTargets': list(receipt['requiredTargets']),
+        }))
+        assert_fallback('replaced runtime digest', lambda receipt: receipt['identity'].update({
+            'runtimeTreeSha256': 'f' * 64,
+        }))
+        assert_fallback('replaced authority digest', lambda receipt: receipt['identity'][
+            'authoritySha256'
+        ].update({
+            'make/frontend.mk': 'f' * 64,
+        }))
+
+    def test_broken_checkpoint_source_chain_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        self._install_checkpoint_authority()
+        checkpoint_path = 'frontend/apps/web/src/Checkpoint.vue'
+        latest_path = 'frontend/apps/web/src/Latest.vue'
+        unreceipted_parent = fixture.git('rev-parse', 'HEAD')
+        fixture.write(checkpoint_path, 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', unreceipted_parent, checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=unreceipted_parent,
+            baseline_kind='verified_incremental_receipt',
+        )
+        fixture.write(latest_path, 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+        resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
+
+    def test_historical_target_mapping_mismatch_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        self._install_checkpoint_authority()
+        mapping_path = 'scripts/verify/frontend_dev_incremental.py'
+        fixture.write(
+            mapping_path,
+            fixture.root.joinpath(mapping_path).read_text(encoding='utf-8')
+            + (
+                '\n_original_select_targets = select_targets\n'
+                'def select_targets(paths):\n'
+                '    return [target for target in _original_select_targets(paths) '
+                'if target != "verify.frontend.typecheck.strict"]\n'
+            ),
+        )
+        fixture.write('frontend/apps/web/src/Checkpoint.vue', 'checkpoint')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'checkpoint with changed mapping')
+        checkpoint = fixture.git('rev-parse', 'HEAD')
+        checkpoint_paths = fixture.git(
+            'diff', '--name-only', fixture.run['baseline_sha'], checkpoint
+        ).splitlines()
+        self._write_checkpoint_receipt(
+            checkpoint,
+            checkpoint_paths,
+            baseline_sha=fixture.run['baseline_sha'],
+        )
+        fixture.write('frontend/apps/web/src/Latest.vue', 'latest')
+        fixture.git('add', '.')
+        fixture.git('commit', '-qm', 'latest')
+        resolved, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(resolved, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
+
+    def test_unverified_receipt_falls_back_to_run_baseline(self):
+        fixture = self.fixture
+        receipt_path = (
+            fixture.root
+            / '.runtime/frontend-dev-validation/executions/unverified/receipt.json'
+        )
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_text(json.dumps({
+            'status': 'failed',
+            'verificationPassed': False,
+            'identity': {'head': fixture.git('rev-parse', 'HEAD'), 'worktreeClean': True},
+        }), encoding='utf-8')
+        checkpoint, kind, _ = iteration_scope(fixture.root, fixture.run)
+        self.assertEqual(checkpoint, fixture.run['baseline_sha'])
+        self.assertEqual(kind, 'run_baseline')
 
     def test_receipt_advice_never_claims_tests_ran(self):
         self.fixture.receipt()

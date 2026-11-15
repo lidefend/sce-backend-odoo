@@ -121,12 +121,18 @@ class _Env:
         root = _Menu(1, None, "智慧施工管理平台", "smart_construction_core.menu_sc_root")
         finance = _Menu(10, root, "财务账款", "smart_construction_core.menu_sc_finance_center", 50)
         project = _Menu(20, root, "项目中心", "smart_construction_core.menu_sc_project_center", 20)
+        administration = _Menu(30, root, "行政中心", "smart_construction_core.menu_sc_hr_admin_center", 90)
+        product_configuration = _Menu(40, root, "产品配置", "smart_construction_core.menu_sc_business_config_center", 100)
         self.menus = {
             1: root,
             10: finance,
             20: project,
+            30: administration,
+            40: product_configuration,
             101: _Menu(101, finance, "付款申请", "smart_construction_core.menu_sc_user_payment_apply"),
             201: _Menu(201, project, "未配置入口", "smart_construction_core.menu_sc_unconfigured"),
+            301: _Menu(301, administration, "人员档案", "smart_construction_core.menu_sc_runtime_user_management"),
+            401: _Menu(401, product_configuration, "表单配置", "smart_construction_core.menu_sc_business_config_workbench"),
         }
         payment = _Scenario("payment.capital", "付款与资金办理")
         self.entries = _Entries([
@@ -374,6 +380,32 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         ]
         entries = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"][0]["entries"]
         self.assertEqual([e["menu_id"] for e in entries], [201, 101])
+
+    def test_policy_centers_use_native_primary_center_sequence(self):
+        env = _Env()
+        nav = [
+            _leaf(
+                401,
+                4011,
+                "表单配置",
+                env.menus[401].xmlid,
+                policy_group_key="catalog.产品配置",
+                policy_group_label="产品配置",
+            ),
+            _leaf(
+                301,
+                3011,
+                "人员档案",
+                env.menus[301].xmlid,
+                policy_group_key="catalog.行政中心",
+                policy_group_label="行政中心",
+            ),
+        ]
+        centers = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"]
+        self.assertEqual(
+            [(center["name"], center["sequence"]) for center in centers],
+            [("行政中心", 90), ("产品配置", 100)],
+        )
 
 
 if __name__ == "__main__":

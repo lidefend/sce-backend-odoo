@@ -9,6 +9,8 @@ from . import core_extension
 # expose extension hooks for smart_core extension loader
 from .core_extension import (  # noqa: F401
     get_intent_handler_contributions,
+    get_platform_capability_explorer_scope,
+    get_platform_capability_explorer_contributions,
     get_system_init_fact_contributions,
     get_capability_contributions,
     get_capability_group_contributions,

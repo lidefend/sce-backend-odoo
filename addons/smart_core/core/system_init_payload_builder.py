@@ -52,7 +52,12 @@ class SystemInitPayloadBuilder:
         "enterprise_enablement",
         "product",
     }
-    DEFAULT_STARTUP_PAGE_KEYS = ("home", "my_work", "workbench")
+    DEFAULT_STARTUP_PAGE_KEYS = (
+        "home",
+        "my_work",
+        "workbench",
+        "platform_capability_explorer",
+    )
 
     @classmethod
     def source_authority_contract(cls) -> dict:

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "6689f601b3bcda349546b6e3814ca91fcaade346",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/decisions/ARCH-DECISION-014.yaml",
+    ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-01.yaml",
+    ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-01/run.json",
+    "docs/architecture/odoo_native_capability_explorer_validation_v1.md",
+    "docs/architecture/platform_capability_studio_audit_v1.en.md",
+    "docs/architecture/platform_capability_studio_audit_v1.md",
+    "docs/ops/iterations/odoo_native_capability_explorer_01_20261115.md",
+    "make/guards.mk",
+    "make/role_authority.mk",
+    "scripts/verify/odoo_native_capability_explorer_probe.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_odoo_native_capability_explorer_probe.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository unit test and read-only daily sc_demo observation"
+  },
+  "checks": {
+    "native_discovery": {
+      "target": "verify.odoo_native_capability_explorer.unit",
+      "inputs": [
+        "scripts/verify/odoo_native_capability_explorer_probe.py",
+        "scripts/verify/test_odoo_native_capability_explorer_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/decisions/ARCH-DECISION-014.yaml",
+        ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-01.yaml",
+        ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-01/run.json"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_performance_unit": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "inputs": [
+        "make/role_authority.mk",
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/guards.mk",
+        "make/role_authority.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Owner review of the proven Odoo-native discovery boundary before designing the minimal read-only API.",
+  "id": "ODOO-NATIVE-CAPABILITY-EXPLORER-01",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "completed",
+  "goal": ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-01.yaml",
+  "record": "docs/ops/iterations/odoo_native_capability_explorer_01_20261115.md"
+}

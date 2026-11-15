@@ -341,6 +341,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                         "my_work": {"schema_version": "v1", "texts": {"title": "我的工作"}},
                         "workbench": {"schema_version": "v1", "texts": {"title": "工作台诊断"}},
                         "action": {"schema_version": "v1", "texts": {"title": "动作页"}},
+                        "platform_capability_explorer": {"schema_version": "v1", "texts": {"title": "平台能力浏览器"}},
                     },
                 },
             }
@@ -350,7 +351,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         pages = page_contracts.get("pages") or {}
         self.assertEqual(page_contracts.get("schema_version"), "v1")
         self.assertEqual(page_contracts.get("contract_version"), "page_contracts_v1")
-        self.assertEqual(set(pages.keys()), {"home", "my_work", "workbench"})
+        self.assertEqual(set(pages.keys()), {"home", "my_work", "workbench", "platform_capability_explorer"})
         self.assertNotIn("action", pages)
         default_route = payload.get("default_route") or {}
         self.assertEqual(default_route.get("scene_key"), "workspace.home")

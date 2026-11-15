@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "id": "ODOO-NATIVE-CAPABILITY-EXPLORER-03",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "verification_pending",
+  "baseline_sha": "d176e2fd67fec87257114b207cec655ec8fa6e9d",
+  "goal": ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-03.yaml",
+  "record": "docs/ops/iterations/odoo_native_capability_explorer_03_20261115.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-03.yaml",
+    ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-03/run.json",
+    "addons/smart_core/delivery/platform_capability_explorer.py",
+    "addons/smart_core/delivery/runtime_capability_catalog.py",
+    "addons/smart_core/handlers/platform_capability_explorer.py",
+    "addons/smart_core/tests/test_platform_capability_explorer.py",
+    "addons/smart_core/tests/test_runtime_capability_catalog.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.md",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.en.md",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/odoo_native_capability_explorer_03_20261115.md",
+    "make/guards.mk",
+    "make/role_authority.mk",
+    "scripts/verify/platform_capability_explorer_runtime_probe.py",
+    "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/verify/registry.yaml",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make tools for deterministic unit tests; runtime readback separately uses the registered local.dev sc_dev_demo profile without writes."
+  },
+  "checks": {
+    "platform_capability_explorer": {
+      "target": "verify.platform.capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_capability_catalog": {
+      "target": "verify.runtime_capability_catalog.unit",
+      "inputs": [
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "capability_identity_boundary": {
+      "target": "verify.capability.identity_boundary.unit",
+      "inputs": [
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "scripts/verify/test_capability_identity_boundary.py"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/README.md",
+        ".agent/context.yaml",
+        ".agent/runs/template/",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "permission_truth": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "inputs": [
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/core_extension.py"
+      ],
+      "kind": "offline"
+    },
+    "local_runtime_performance": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "inputs": [
+        "scripts/ops/odoo_shell_exec.sh",
+        "scripts/verify/test_local_development_lifecycle.py"
+      ],
+      "kind": "offline"
+    },
+    "page_finalize_authority": {
+      "target": "verify.page.finalize.authority.orm",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py"
+      ],
+      "kind": "offline"
+    },
+    "project_page_finalize_authority": {
+      "target": "verify.page.project_finalize.authority.orm",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_coverage.py",
+        "make/role_authority.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "The registered persistent sc_dev_demo carrier exposes 3 leaf entries after a full 10-module upgrade, not the historical 282-entry business snapshot. Strict 282/75/207 remains a separate acceptance condition and is not claimed on this carrier."
+  ],
+  "next_exact_step": "Commit the frozen R03-R1 repair, run one exact-head full Quick, report the new HEAD/tree and receipts, then stop for the second independent review."
+}

@@ -762,6 +762,37 @@ def composition_center_for_leaf(
     }
 
 
+def _native_primary_center_sequences(env) -> dict[str, int]:
+    """Read the declared order of the product's native primary centers.
+
+    Policy-group fallback leaves do not carry a center record. Without this
+    native projection every unconfigured center receives the same placeholder
+    sequence, making the final order depend on delivery insertion order.
+    """
+    if env is None:
+        return {}
+    try:
+        root = env.ref(BUSINESS_ROOT_XMLID, raise_if_not_found=False)
+    except Exception:
+        return {}
+    if not root:
+        return {}
+    try:
+        menus = env["ir.ui.menu"].sudo().search([("parent_id", "=", root.id)])
+    except Exception:
+        return {}
+    sequences: dict[str, int] = {}
+    for menu in menus or []:
+        name = _text(getattr(menu, "name", ""))
+        if not name:
+            continue
+        sequence = _int_or(getattr(menu, "sequence", None), 0)
+        if sequence <= 0:
+            continue
+        sequences[name] = min(sequence, sequences.get(name, sequence))
+    return sequences
+
+
 def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     """Compose scene identities over existing native menu/action facts.
 
@@ -913,6 +944,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     workspace_center = resolve_horizontal_work_center(env)
+    native_primary_center_sequences = _native_primary_center_sequences(env)
     direct_menu_ids = {
         int(leaf.get("menu_id") or 0)
         for leaf in leaves
@@ -976,6 +1008,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             center_binding,
             workspace_center=workspace_center,
         )
+        native_center_sequence = native_primary_center_sequences.get(_text(center.get("name")))
+        if native_center_sequence is not None:
+            center = dict(center, sequence=native_center_sequence)
         node = centers.setdefault(center["key"], {
             "key": center["key"],
             "name": center["name"],

@@ -1,0 +1,42 @@
+schema_version: 1
+goal:
+  id: PLATFORM-CAPABILITY-STUDIO-01-20261115
+  title: platform_capability_catalog_and_scene_governance_audit
+  status: completed
+  formal_product_layer: P0 platform governance with P1 construction product semantics
+  layer_target: capability identity, maturity, entry publication and scene composition read model
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+  baseline:
+    branch: main
+    full_sha: 2571346afc8c69cea20e32fcba36082c949cf825
+  objective: >-
+    Audit the complete platform capability landscape and define the minimum
+    reusable read model and authority boundaries required for capability
+    catalog and scene operations, without implementing product code.
+  product_boundary:
+    standard_vs_user_specific: platform_governance_with_construction_standard_inputs
+    why_here: >-
+      Capability identity and qualification are platform mechanisms; construction
+      capability definitions, scene composition and enterprise enablement remain P1/P3.
+    why_not_elsewhere:
+      - no_frontend_inference_of_capability_identity
+      - no_counting_menus_models_or_modules_as_capabilities
+      - no_conflation_of_maturity_entry_release_scene_release_or_tenant_enablement
+      - no_new_parallel_registry_before_source_reconciliation
+  acceptance:
+    - current capability source sets and conflicts are identified
+    - CAP-01 historical records are reconciled against current main and runtime
+    - maturity, entry publication, scene usage and product usage are reported separately
+    - unsceneized and needs-governance discovery pools are explicit
+    - existing backend services and contracts are reused
+    - current and target authorization boundaries are documented
+  exclusions:
+    - product runtime code changes
+    - frontend capability center implementation
+    - scene editor implementation
+    - new capability evidence grants
+    - deployment, merge or tenant data mutation
+  rollback: remove this audit-only commit; no runtime or database change is required.

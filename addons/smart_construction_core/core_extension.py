@@ -1148,6 +1148,22 @@ def get_intent_handler_contributions():
     return _intent_handlers.get_intent_handler_contributions()
 
 
+def get_platform_capability_explorer_scope(env):
+    from odoo.addons.smart_construction_core.services.platform_capability_explorer_contributions import (
+        get_platform_capability_explorer_scope as get_scope,
+    )
+
+    return get_scope(env)
+
+
+def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
+    from odoo.addons.smart_construction_core.services.platform_capability_explorer_contributions import (
+        get_platform_capability_explorer_contributions as get_contributions,
+    )
+
+    return get_contributions(env, menu_ids, menu_xmlids)
+
+
 def smart_core_register(registry):
     """Compatibility loader for smart_core.core.extension_loader."""
     if not isinstance(registry, dict):

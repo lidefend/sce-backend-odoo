@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "2571346afc8c69cea20e32fcba36082c949cf825",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PLATFORM-CAPABILITY-STUDIO-01-20261115.yaml",
+    ".agent/runs/PLATFORM-CAPABILITY-STUDIO-01-20261115/run.json",
+    "docs/architecture/platform_capability_studio_audit_v1.en.md",
+    "docs/architecture/platform_capability_studio_audit_v1.md",
+    "docs/architecture/platform_capability_studio_inventory_v1.json",
+    "docs/ops/iterations/platform_capability_studio_01_20261115.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source audit plus read-only daily sc_demo observation"
+  },
+  "checks": {
+    "catalog": {
+      "target": "verify.capability.provider.guard",
+      "inputs": [
+        "addons/smart_construction_core/services/capability_registry.py",
+        "scripts/verify/capability_provider_guard.py",
+        "scripts/verify/baselines/capability_provider_guard.json"
+      ],
+      "kind": "offline"
+    },
+    "maturity": {
+      "target": "verify.capability.maturity.unit",
+      "inputs": [
+        "addons/smart_core/core/capability_maturity.py",
+        "addons/smart_core/tests/test_capability_maturity.py",
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+        "scripts/verify/capability_maturity_evidence.py",
+        "scripts/verify/test_capability_maturity_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Owner decision on the canonical capability identity set and the Preview/Standard scene qualification model before Phase B implementation.",
+  "id": "PLATFORM-CAPABILITY-STUDIO-01-20261115",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "completed",
+  "goal": ".agent/goals/PLATFORM-CAPABILITY-STUDIO-01-20261115.yaml",
+  "record": "docs/ops/iterations/platform_capability_studio_01_20261115.md"
+}

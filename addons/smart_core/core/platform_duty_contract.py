@@ -71,6 +71,15 @@ PLATFORM_DUTIES = (
         "sequence": 50,
     },
     {
+        "key": "platform.capability_explorer",
+        "label": "平台能力浏览器",
+        "description": "浏览当前 Odoo 安装模块提供的原生业务入口、场景引用与诊断结果。",
+        "capabilities": ("platform.capability_explorer.read",),
+        "route": "/admin/capability-explorer",
+        "state": "available",
+        "sequence": 45,
+    },
+    {
         "key": "platform.subscription",
         "label": "订阅实例",
         "description": "查看租户订阅套餐与授权实例。",
@@ -82,6 +91,14 @@ PLATFORM_DUTIES = (
 )
 
 TENANT_DUTIES = (
+    {
+        "key": "tenant.config.capability_explorer",
+        "label": "平台能力浏览器",
+        "capabilities": ("tenant.config.capability_explorer.read",),
+        "route": "/admin/capability-explorer",
+        "state": "available",
+        "sequence": 5,
+    },
     {
         "key": "tenant.config.usage",
         "label": "用量分析",

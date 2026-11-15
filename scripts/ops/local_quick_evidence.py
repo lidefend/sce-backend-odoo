@@ -74,6 +74,10 @@ RECEIPT_RETENTION = 50
 # Recipe lines of ci.local.quick.run that the sharded lane reproduces. Anything
 # else fails closed so a new monolithic-only check cannot be silently dropped.
 REPRODUCED_RECIPE_PREFIXES = ("git diff --check", "echo ")
+LEGACY_HEAD_BOUND_ENVIRONMENT_KEYS = frozenset({
+    "R10_PERF_CANDIDATE_SHA",
+    "R10_PERF_REMOTE_CONTRACT",
+})
 
 
 class EvidenceError(RuntimeError):
@@ -427,6 +431,14 @@ def _incremental_plan(root: Path, head: str, rejected: list | None = None) -> tu
             # environment must equal the environment actually recorded at execution.
             source_units = scope.execution_units(root, source, manifest)
             if saved.get("document") != source_units:
+                if _legacy_head_bound_environment_compatible(
+                    saved, source_units, candidate_head=head
+                ):
+                    plan = scope.plan_execution(current, source_units)
+                    if plan["reusable"]:
+                        run = [target for target in manifest if target in plan["affected"]]
+                        reuse = [target for target in manifest if target in plan["reusable"]]
+                        return run, reuse, source
                 if rejected is not None:
                     old = saved.get("environment_hashes")
                     new = scope.environment_hashes(candidate_head=head)
@@ -450,6 +462,53 @@ def _incremental_plan(root: Path, head: str, rejected: list | None = None) -> tu
                 subprocess.CalledProcessError):
             continue
     return None
+
+
+def _legacy_head_bound_environment_compatible(
+    saved: dict,
+    source_units: dict,
+    *,
+    candidate_head: str,
+) -> bool:
+    """Accept one-time sidecars predating R10 candidate-head normalization.
+
+    Only the declared key-level digests may differ, and only for the two known
+    Make defaults derived from HEAD. Unit fingerprints, tools, Python runtime,
+    executable and every other environment key must still match exactly.
+    """
+    try:
+        saved_document = saved.get("document")
+        old_hashes = saved.get("environment_hashes")
+        if not isinstance(saved_document, dict) or not isinstance(old_hashes, dict):
+            return False
+        old_units = saved_document.get("units")
+        new_units = source_units.get("units")
+        old_identity = saved_document.get("identity")
+        new_identity = source_units.get("identity")
+        if not isinstance(old_identity, dict) or not isinstance(new_identity, dict):
+            return False
+        if saved_document.get("schema") != source_units.get("schema"):
+            return False
+        if saved_document.get("check") != source_units.get("check"):
+            return False
+        if old_units != new_units:
+            return False
+        old_identity_comparable = dict(old_identity)
+        new_identity_comparable = dict(new_identity)
+        old_identity_comparable.pop("environment_sha256", None)
+        new_identity_comparable.pop("environment_sha256", None)
+        if old_identity_comparable != new_identity_comparable:
+            return False
+        current_hashes = _scope_module().environment_hashes(candidate_head=candidate_head)
+        if set(old_hashes) != set(current_hashes):
+            return False
+        changed = {
+            key for key in current_hashes
+            if old_hashes.get(key) != current_hashes.get(key)
+        }
+        return bool(changed) and changed <= LEGACY_HEAD_BOUND_ENVIRONMENT_KEYS
+    except (AttributeError, TypeError, ValueError, RuntimeError):
+        return False
 
 
 def incremental_report(root: Path) -> dict:

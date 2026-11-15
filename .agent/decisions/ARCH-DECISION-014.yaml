@@ -1,0 +1,43 @@
+decision:
+  id: ARCH-DECISION-014
+  topic: odoo_native_capability_discovery
+  owner_approval:
+    status: confirmed
+    date: "2026-11-15"
+  decision:
+    principle: >-
+      Installed modules provide capabilities. Scenarios define products. Platform
+      delivery activates products.
+    technical_authority:
+      modules: ir.module.module
+      models: ir.model
+      fields: ir.model.fields
+      actions: ir.actions.*
+      menus: ir.ui.menu
+      views: ir.ui.view
+      access: ir.model.access
+      record_rules: ir.rule
+      groups: res.groups
+      dependencies: module manifests and ir.module.module.dependency_ids
+    scene_authority:
+      - sc.product.scenario
+      - sc.product.scenario.entry
+      - smart_construction_core.services.scenario_surface_projection
+    publication_authority:
+      - sc.product.policy
+      - sc.edition.release.snapshot
+    enterprise_authority:
+      - sc.scene.company.enablement
+    first_validation: >-
+      A read-only probe must prove that native Odoo metadata plus existing scene
+      services can discover, describe and assess native business entries without
+      creating a parallel capability registry.
+    prohibited:
+      - new_editable_capability_registry
+      - manual_redeclaration_of_installed_modules_models_fields_actions_menus_views_acl_or_rules
+      - counting_modules_models_menus_or_actions_as_products
+      - frontend_inference_of_scene_eligibility
+    supersedes:
+      implementation_direction: platform_capability_studio_catalog_service
+      retained_evidence: docs/architecture/platform_capability_studio_audit_v1.md
+  status: active

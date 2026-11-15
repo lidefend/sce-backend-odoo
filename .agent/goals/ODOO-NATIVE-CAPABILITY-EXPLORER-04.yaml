@@ -1,0 +1,47 @@
+schema_version: 1
+goal:
+  id: ODOO-NATIVE-CAPABILITY-EXPLORER-04
+  title: implement_frontend_readonly_capability_explorer_mvp
+  status: superseded
+  formal_product_layer: P0 platform kernel product with P4 browser verification
+  layer_target: frontend capability explorer consuming the approved read-only intents
+  module:
+    - smart_core
+    - frontend
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: 3e02a475f0a58b63472455dc0c42822e9743a945
+  objective: >-
+    Build a read-only platform management UI that consumes the approved list,
+    detail and diagnose intents, renders live Odoo-native capability facts and
+    never creates a parallel frontend capability store or qualification logic.
+  product_boundary:
+    standard_vs_user_specific: generic platform administration surface
+    why_here:
+      - smart_core owns the platform management duty declaration.
+      - the existing Vue/Vite runtime owns rendering and interaction.
+    why_not_elsewhere:
+      - no backend capability abstraction
+      - no frontend capability registry
+      - no frontend qualification inference
+      - no scene or release write
+    blast_radius: >-
+      One admin route, one read-only page, strict intent decoders, one platform
+      duty entry, focused frontend tests and browser evidence.
+  acceptance:
+    - live list summary, centers, search, filters and pagination use the backend list Intent.
+    - detail and diagnose use the same catalog token and reject CATALOG_STALE.
+    - authoritative, center-only and unclassified entries are visually distinct without inference.
+    - technical eligibility remains separate from Preview and Standard qualification.
+    - ordinary users are denied by route and backend authorization.
+    - desktop and mobile layouts have no horizontal page overflow.
+    - no frontend persistence, write endpoint or scene mutation is introduced.
+  exclusions:
+    - add-to-scene-draft write flow
+    - scene or release editing
+    - backend capability abstraction changes
+    - history 282 acceptance substitution
+    - deployment or merge
+  rollback: >-
+    Remove the capability explorer route, page, API consumer, duty entries and
+    tests. No database or business-data rollback is required.

@@ -201,6 +201,8 @@ class QuickInputScopeTest(unittest.TestCase):
             "ACCEPTANCE_ARTIFACT_SHA": first,
             "DAILY_DUTY_EDITION_TOOL": f"/opt/sce/deployment-tools/{first}/scripts/ops/tool.py",
             "DAILY_RUNTIME_RELEASE_ARGS": f'--expected-sha "{first}" --source-branch main',
+            "R10_PERF_CANDIDATE_SHA": first,
+            "R10_PERF_REMOTE_CONTRACT": f"/opt/sce/deployment-tools/{first}/scripts/ops/r10.json",
             "MAKE_TERMERR": "/dev/pts/1",
             "MAKE_TERMOUT": "/dev/pts/1",
         }):
@@ -211,6 +213,8 @@ class QuickInputScopeTest(unittest.TestCase):
             "ACCEPTANCE_ARTIFACT_SHA": second,
             "DAILY_DUTY_EDITION_TOOL": f"/opt/sce/deployment-tools/{second}/scripts/ops/tool.py",
             "DAILY_RUNTIME_RELEASE_ARGS": f'--expected-sha "{second}" --source-branch main',
+            "R10_PERF_CANDIDATE_SHA": second,
+            "R10_PERF_REMOTE_CONTRACT": f"/opt/sce/deployment-tools/{second}/scripts/ops/r10.json",
             "MAKE_TERMERR": "/dev/pts/2",
             "MAKE_TERMOUT": "/dev/pts/2",
         }):

@@ -44,23 +44,28 @@ def _action_view_modes(action: Any) -> list[str]:
     return [_text(item) for item in value.split(",") if _text(item)]
 
 
-def _record_xmlid(record: Any) -> str:
+def _record_xmlid(record: Any, xmlid_map: dict[int, str] | None = None) -> str:
     if not record:
         return ""
+    if xmlid_map is not None:
+        return _text(xmlid_map.get(int(record.id or 0)))
     try:
         return _text(record.get_external_id().get(record.id, ""))
     except Exception:
         return ""
 
 
-def _record_group_xmlids(record: Any) -> list[str]:
+def _record_group_xmlids(
+    record: Any,
+    xmlid_map: dict[int, str] | None = None,
+) -> list[str]:
     values = []
     try:
         groups = getattr(record, "groups_id", None) or []
     except Exception:
         groups = []
     for group in groups:
-        xmlid = _record_xmlid(group)
+        xmlid = _record_xmlid(group, xmlid_map)
         if xmlid:
             values.append(xmlid)
     return sorted(set(values))
@@ -162,7 +167,13 @@ class RuntimeCapabilityCatalogService:
         root_label: str = "",
         leaf_actions_only: bool = True,
         candidate_menus=None,
+        xmlid_maps: dict[str, dict[int, str]] | None = None,
+        action_facts: dict[int, dict] | None = None,
     ) -> CapabilityCatalogProjection:
+        xmlid_maps = xmlid_maps if isinstance(xmlid_maps, dict) else {}
+        action_facts = action_facts if isinstance(action_facts, dict) else {}
+        menu_xmlids = xmlid_maps.get("ir.ui.menu")
+        group_xmlids = xmlid_maps.get("res.groups")
         menus = (
             list(candidate_menus or [])
             if candidate_menus is not None
@@ -186,12 +197,13 @@ class RuntimeCapabilityCatalogService:
             "skipped_no_action_count": 0,
             "skipped_container_count": 0,
             "duplicate_capability_count": 0,
+            "batch_xmlid_prefetch": bool(xmlid_maps),
         }
         for menu in menus:
             if hasattr(menu, "active") and not bool(getattr(menu, "active")):
                 diagnostics["skipped_inactive_count"] += 1
                 continue
-            menu_xmlid = _record_xmlid(menu)
+            menu_xmlid = _record_xmlid(menu, menu_xmlids)
             prefix = _text(xmlid_prefix)
             if prefix and not menu_xmlid.startswith(prefix):
                 diagnostics["skipped_prefix_count"] += 1
@@ -209,7 +221,11 @@ class RuntimeCapabilityCatalogService:
             if action_id <= 0:
                 diagnostics["skipped_no_action_count"] += 1
                 continue
-            if _text(getattr(action, "_name", "")) not in self.source_authority_contract()["supported_action_types"]:
+            action_fact = action_facts.get(action_id) or {}
+            action_model = _text(action_fact.get("type")) or _text(
+                getattr(action, "_name", "")
+            )
+            if action_model not in self.source_authority_contract()["supported_action_types"]:
                 diagnostics["skipped_action_type_count"] += 1
                 continue
             children = getattr(menu, "child_id", None) or []
@@ -218,7 +234,8 @@ class RuntimeCapabilityCatalogService:
             ):
                 diagnostics["skipped_container_count"] += 1
                 continue
-            action_xmlid = _record_xmlid(action)
+            action_xmlids = xmlid_maps.get(action_model)
+            action_xmlid = _record_xmlid(action, action_xmlids)
             capability_key, stable = capability_identity(
                 menu_id=int(menu.id or 0),
                 menu_xmlid=menu_xmlid,
@@ -245,11 +262,17 @@ class RuntimeCapabilityCatalogService:
                     "menu_sequence": int(getattr(menu, "sequence", 0) or 0),
                     "action_id": action_id,
                     "action_xmlid": action_xmlid,
-                    "action_model": _text(getattr(action, "_name", "")),
-                    "res_model": _action_model(action),
-                    "view_modes": _action_view_modes(action),
-                    "menu_group_xmlids": _record_group_xmlids(menu),
-                    "action_group_xmlids": _record_group_xmlids(action),
+                    "action_model": action_model,
+                    "res_model": _text(action_fact.get("res_model"))
+                    or _action_model(action),
+                    "view_modes": list(action_fact.get("view_modes") or [])
+                    or _action_view_modes(action),
+                    "menu_group_xmlids": _record_group_xmlids(menu, group_xmlids),
+                    "action_group_xmlids": (
+                        sorted(set(action_fact.get("group_xmlids") or []))
+                        if "group_xmlids" in action_fact
+                        else _record_group_xmlids(action, group_xmlids)
+                    ),
                     "source_kind": "ir.ui.menu",
                     "source_authority": self.source_authority_contract(),
                 }
