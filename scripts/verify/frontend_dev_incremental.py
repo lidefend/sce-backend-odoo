@@ -1143,12 +1143,20 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/core/navigation_identity.py",
         "scripts/verify/scenario_center_projection_guard.py",
         "scripts/verify/scenario_surface_projection_guard.py",
         "scripts/verify/scene_fact_data_boundary_guard.py",
     ), (
         "verify.navigation.publication_consumers.unit",
         "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_core/core/navigation_identity.py",
+        "addons/smart_core/core/scene_nav_contract_builder.py",
+        "addons/smart_core/tests/test_scene_nav_contract_builder.py",
+    ), (
+        "verify.nav01.native_authority.unit",
     )),
     Rule((
         "addons/smart_construction_scene/__init__.py",

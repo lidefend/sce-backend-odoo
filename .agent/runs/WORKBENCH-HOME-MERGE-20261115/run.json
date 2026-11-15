@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "d019b7e9cab961259e42cdc3196cf58f052133c2",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/WORKBENCH-HOME-MERGE-20261115.yaml",
+    ".agent/runs/WORKBENCH-HOME-MERGE-20261115/run.json",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/core/navigation_identity.py",
+    "addons/smart_core/core/platform_minimum_nav_contract.py",
+    "addons/smart_core/core/scene_nav_contract_builder.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+    "addons/smart_core/tests/test_scene_nav_contract_builder.py",
+    "docs/ops/iterations/WORKBENCH-HOME-MERGE-20261115.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "scripts/verify/scenario_surface_projection_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository pure tests and static guards; no database or service writes"
+  },
+  "checks": {
+    "projection": {
+      "target": "verify.nav01.native_authority.unit",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_core/core/navigation_identity.py",
+        "addons/smart_core/core/platform_minimum_nav_contract.py",
+        "addons/smart_core/core/scene_nav_contract_builder.py",
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+        "addons/smart_core/tests/test_scene_nav_contract_builder.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/fact_layer_authority_guard.py",
+        "make/codex.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Independent exact-head review of the clean navigation candidate; do not publish or merge before review.",
+  "id": "WORKBENCH-HOME-MERGE-20261115",
+  "branch": "fix/workbench-role-home-nav-20261115",
+  "status": "verification_pending",
+  "goal": ".agent/goals/WORKBENCH-HOME-MERGE-20261115.yaml",
+  "record": "docs/ops/iterations/WORKBENCH-HOME-MERGE-20261115.md"
+}

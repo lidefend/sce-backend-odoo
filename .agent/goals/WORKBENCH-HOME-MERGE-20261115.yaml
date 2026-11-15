@@ -1,0 +1,39 @@
+schema_version: 1
+goal:
+  id: WORKBENCH-HOME-MERGE-20261115
+  title: place_role_home_in_first_workbench_center
+  status: verification_pending
+  formal_product_layer: P1 construction product standard with P0 platform-minimum parity
+  layer_target: scenario navigation composition and platform minimum navigation
+  module:
+    - addons/smart_construction_core/services/scenario_surface_projection.py
+    - addons/smart_core/core/platform_minimum_nav_contract.py
+    - addons/smart_core/core/scene_nav_contract_builder.py
+  baseline:
+    branch: main
+    full_sha: d019b7e9cab961259e42cdc3196cf58f052133c2
+  objective: >-
+    Move the 角色首页 leaf directly under the 工作台 navigation center, remove the
+    redundant 我的场景 container, and place 工作台 first in the final navigation
+    order without changing entry identities, route authority, actions or scenes.
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_navigation
+    why_here: >-
+      The construction product owns the 工作台 center sequence and its displayed
+      entries; the P0 minimum surface must project the same home label for
+      platform-only installs.
+    why_not_elsewhere:
+      - no_frontend_business_menu_inference
+      - no_route_authority_or_permission_change
+      - no_scene_or_action_identity_change
+      - no_lowcode_or_customer_specific_override
+  acceptance:
+    - 角色首页 is a direct child of 工作台
+    - no navigation node is labeled 我的场景
+    - 工作台 is the first top-level navigation center
+    - route authority, menu/action identities and workspace.home landing remain unchanged
+  exclusions:
+    - frontend hardcoding or menu relabeling
+    - permission, action, route or scene content changes
+    - deployment, merge or A/B twin mutation
+  rollback: revert this navigation projection candidate; no database or contract migration is required.

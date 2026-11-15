@@ -17,10 +17,10 @@ from __future__ import annotations
 import zlib
 from typing import List
 
+from .navigation_identity import WORKBENCH_GROUP_KEY, WORKSPACE_SCENE_KEY
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 SOURCE = "platform_minimum_surface"
-WORKSPACE_SCENE_KEY = "workspace.home"
 
 
 def _synthetic_menu_id(key: str, base: int = 700_000_000, span: int = 200_000_000) -> int:
@@ -84,6 +84,7 @@ def build_platform_minimum_nav_contract() -> dict:
         "children": [],
         "scene_key": WORKSPACE_SCENE_KEY,
         "route": "/",
+        "sequence": 0,
         "entry_target": dict(workspace_entry_target),
         "meta": {
             "scene_key": WORKSPACE_SCENE_KEY,
@@ -95,13 +96,15 @@ def build_platform_minimum_nav_contract() -> dict:
         },
     }
     group_node = {
-        "key": "group:role_primary",
-        "label": "我的场景",
-        "title": "我的场景",
-        "menu_id": _synthetic_menu_id("group:role_primary", base=640_000_000, span=40_000_000),
+        "key": f"group:{WORKBENCH_GROUP_KEY}",
+        "label": "工作台",
+        "title": "工作台",
+        "menu_id": _synthetic_menu_id(f"group:{WORKBENCH_GROUP_KEY}", base=640_000_000, span=40_000_000),
+        "sequence": 10,
         "children": [workspace_leaf],
         "meta": {
-            "group_key": "role_primary",
+            "group_key": WORKBENCH_GROUP_KEY,
+            "canonical_group_key": WORKBENCH_GROUP_KEY,
             "scene_source": SOURCE,
         },
     }
@@ -159,15 +162,6 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
         return (not int(row.get("action_id") or (row.get("meta") or {}).get("action_id") or 0)
                 and target.get("type") == "scene" and target.get("scene_key") == WORKSPACE_SCENE_KEY)
 
-    allowed = {int(row.get("menu_id") or 0) for bucket in buckets
-               for row in authority.get(bucket, []) if is_home(row)}
-
-    def has_home(nodes):
-        return any((is_home(row) and int(row.get("menu_id") or 0) in allowed)
-                   or has_home(row.get("children") or []) for row in nodes)
-
-    if has_home(nav):
-        return nav, authority
     minimum = build_platform_minimum_nav_contract()["nav"]
     leaf = minimum[0]["children"][0]["children"][0]
     entry = {
@@ -188,7 +182,10 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
         for addition in additions:
             matches = [row for row in nodes if row.get("key") == addition["key"]]
             if not matches:
-                nodes.append(addition)
+                if is_home(addition):
+                    nodes.insert(0, addition)
+                else:
+                    nodes.append(addition)
                 continue
             current = matches[0]
             if len(matches) != 1 or current.get("menu_id") != addition["menu_id"]:
@@ -197,5 +194,72 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
                 merge(current.setdefault("children", []), addition["children"])
             elif not is_home(current):
                 raise ValueError("PLATFORM_HOME_TARGET_CONFLICT")
-    merge(nav, minimum)
+    minimum_group = minimum[0]["children"][0]
+
+    def workbench_identity(node):
+        if not isinstance(node, dict) or not isinstance(node.get("children"), list) or node.get("action_id"):
+            return None
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        canonical = str(
+            node.get("canonical_group_key")
+            or meta.get("canonical_group_key")
+            or node.get("group_key")
+            or meta.get("group_key")
+            or ""
+        ).strip()
+        if canonical != WORKBENCH_GROUP_KEY:
+            return None
+        try:
+            config_menu_id = int(
+                node.get("config_menu_id")
+                or meta.get("config_menu_id")
+                or 0
+            )
+        except (TypeError, ValueError):
+            config_menu_id = 0
+        native_center_xmlid = str(
+            node.get("native_center_xmlid")
+            or meta.get("native_center_xmlid")
+            or ""
+        ).strip()
+        return {
+            "canonical_group_key": canonical,
+            "config_menu_id": config_menu_id,
+            "native_center_xmlid": native_center_xmlid,
+        }
+
+    def assert_same_workbench_identity(primary_identity, duplicate_identity):
+        primary_config = int(primary_identity["config_menu_id"] or 0)
+        duplicate_config = int(duplicate_identity["config_menu_id"] or 0)
+        if primary_config and duplicate_config and primary_config != duplicate_config:
+            raise ValueError("PLATFORM_WORKBENCH_IDENTITY_CONFLICT: config_menu_id")
+        primary_xmlid = str(primary_identity["native_center_xmlid"] or "")
+        duplicate_xmlid = str(duplicate_identity["native_center_xmlid"] or "")
+        if primary_xmlid and duplicate_xmlid and primary_xmlid != duplicate_xmlid:
+            raise ValueError("PLATFORM_WORKBENCH_IDENTITY_CONFLICT: native_center_xmlid")
+
+    for root in nav:
+        children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else []
+        matches = []
+        for index, node in enumerate(children):
+            identity = workbench_identity(node)
+            if identity:
+                matches.append((index, node, identity))
+        if not matches:
+            continue
+        primary_index, primary, primary_identity = matches[0]
+        for duplicate_index, duplicate, duplicate_identity in reversed(matches[1:]):
+            assert_same_workbench_identity(primary_identity, duplicate_identity)
+            merge(primary["children"], duplicate["children"])
+            children.pop(duplicate_index)
+        merge(primary["children"], minimum_group["children"])
+        children.insert(0, children.pop(primary_index))
+        return nav, authority
+    if nav:
+        for root in nav:
+            children = root.get("children") if isinstance(root, dict) and isinstance(root.get("children"), list) else None
+            if children is not None:
+                children.insert(0, minimum_group)
+                return nav, authority
+    nav.extend(minimum)
     return nav, authority

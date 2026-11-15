@@ -9,11 +9,19 @@ grouping as the fallback for unconfigured entries.
 from __future__ import annotations
 
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+NAV_IDENTITY_SPEC = importlib.util.spec_from_file_location(
+    "odoo.addons.smart_core.core.navigation_identity",
+    ROOT / "addons/smart_core/core/navigation_identity.py",
+)
+NAV_IDENTITY = importlib.util.module_from_spec(NAV_IDENTITY_SPEC)
+NAV_IDENTITY_SPEC.loader.exec_module(NAV_IDENTITY)
+sys.modules["odoo.addons.smart_core.core.navigation_identity"] = NAV_IDENTITY
 SPEC = importlib.util.spec_from_file_location(
     "scenario_surface_projection",
     ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py",

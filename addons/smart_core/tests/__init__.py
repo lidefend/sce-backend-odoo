@@ -46,6 +46,7 @@ from . import test_authentication_compatibility
 from . import test_auth_credential_framework
 from . import test_intent_smoke
 from . import test_scene_runtime_contract_chain
+from . import test_scene_nav_contract_builder
 from . import test_form_structure_surface_capability_orm
 from . import test_canonical_navigation_projection
 from . import test_user_view_preference_runtime_orm
