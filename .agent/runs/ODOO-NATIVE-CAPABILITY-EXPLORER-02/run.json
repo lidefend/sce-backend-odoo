@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "3639f35b1cf80b11c2c62766ba53839be3440952",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-02.yaml",
+    ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/run.json",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.en.md",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.md",
+    "docs/architecture/odoo_native_capability_explorer_api_contract_v1.json",
+    "docs/ops/iterations/odoo_native_capability_explorer_02_20261115.md",
+    "scripts/verify/odoo_native_capability_explorer_probe.py",
+    "scripts/verify/test_odoo_native_capability_explorer_probe.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository unit test and read-only daily sc_demo observation"
+  },
+  "checks": {
+    "classification": {
+      "target": "verify.odoo_native_capability_explorer.unit",
+      "inputs": [
+        "scripts/verify/odoo_native_capability_explorer_probe.py",
+        "scripts/verify/test_odoo_native_capability_explorer_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-02.yaml",
+        ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-02/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Owner review of the B-stage read-only API contract before deciding whether to implement the backend handlers or frontend Explorer.",
+  "id": "ODOO-NATIVE-CAPABILITY-EXPLORER-02",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "completed",
+  "goal": ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-02.yaml",
+  "record": "docs/ops/iterations/odoo_native_capability_explorer_02_20261115.md"
+}

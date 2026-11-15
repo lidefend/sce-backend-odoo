@@ -1,7 +1,10 @@
 import unittest
 from pathlib import Path
 
-from scripts.verify.odoo_native_capability_explorer_probe import entry_selection_assessment
+from scripts.verify.odoo_native_capability_explorer_probe import (
+    classify_business_domain,
+    entry_selection_assessment,
+)
 
 
 class NativeCapabilitySelectionTest(unittest.TestCase):
@@ -62,6 +65,46 @@ class NativeCapabilitySelectionTest(unittest.TestCase):
     def test_probe_has_no_parallel_capability_registry_reference(self):
         source = Path(__file__).with_name("odoo_native_capability_explorer_probe.py").read_text()
         self.assertNotIn("sc.capability", source)
+
+    def test_single_scene_binding_is_authoritative_domain(self):
+        result = classify_business_domain(
+            scene_bindings=[{
+                "scenario_key": "material.management",
+                "scenario_name": "项目材料管理",
+            }],
+            center_key="construction.项目中心",
+            center_name="项目中心",
+        )
+        self.assertEqual(result["business_domain_key"], "material.management")
+        self.assertEqual(result["classification_confidence"], "authoritative_scene_binding")
+
+    def test_multiple_scene_bindings_are_unclassified(self):
+        result = classify_business_domain(
+            scene_bindings=[
+                {"scenario_key": "material.management", "scenario_name": "项目材料管理"},
+                {"scenario_key": "cost.budget", "scenario_name": "成本与预算管理"},
+            ],
+            center_key="construction.项目中心",
+            center_name="项目中心",
+        )
+        self.assertEqual(result["business_domain_key"], "")
+        self.assertEqual(result["classification_reason"], "AMBIGUOUS_SCENE_BINDING")
+
+    def test_center_does_not_guess_business_domain(self):
+        result = classify_business_domain(
+            scene_bindings=[],
+            center_key="construction.项目中心",
+            center_name="项目中心",
+        )
+        self.assertEqual(result["business_domain_key"], "")
+        self.assertEqual(result["classification_confidence"], "center_only")
+        self.assertEqual(result["classification_reason"], "NO_SCENE_BINDING")
+
+    def test_missing_binding_and_center_is_unclassified(self):
+        result = classify_business_domain(scene_bindings=[])
+        self.assertEqual(result["business_domain_key"], "")
+        self.assertEqual(result["classification_confidence"], "unclassified")
+        self.assertEqual(result["classification_reason"], "NO_CLASSIFICATION_EVIDENCE")
 
 
 if __name__ == "__main__":

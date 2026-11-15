@@ -1,0 +1,145 @@
+{
+  "schema": "platform.capability.explorer.contract.v1",
+  "status": "proposed_read_only_contract",
+  "source_revision": "2571346afc8c69cea20e32fcba36082c949cf825",
+  "observed_native_entry_count": 282,
+  "classification": {
+    "authoritative_business_domain_count": 75,
+    "unclassified_count": 207,
+    "ambiguous_scene_binding_count": 0,
+    "center_classified_count": 282,
+    "policy": [
+      "sc.product.scenario.entry decides business_domain",
+      "release policy group decides release_center only",
+      "native primary menu XMLID decides center_key",
+      "no name or model-prefix guessing"
+    ]
+  },
+  "intents": [
+    "platform.capability.explorer.list",
+    "platform.capability.explorer.detail",
+    "platform.capability.explorer.diagnose"
+  ],
+  "list": {
+    "request": {
+      "query": "string",
+      "filters": {
+        "center_keys": "array[string]",
+        "business_domain_keys": "array[string]",
+        "scene_status": "bound|unbound",
+        "release_states": "array[string]",
+        "draft_selectable": "boolean",
+        "classification_confidence": "array[string]"
+      },
+      "limit": "integer 1..100",
+      "offset": "integer >= 0",
+      "sort": "allowlisted stable sort"
+    },
+    "response": {
+      "meta": [
+        "generated_at",
+        "runtime_database",
+        "source_revision",
+        "catalog_token",
+        "total",
+        "filtered_total",
+        "offset",
+        "limit",
+        "next_offset",
+        "has_more",
+        "freshness"
+      ],
+      "facets": [
+        "centers",
+        "business_domains",
+        "scene_status",
+        "release_states",
+        "classification_confidence"
+      ],
+      "row": [
+        "entry_ref",
+        "label",
+        "origin",
+        "center",
+        "business_domain",
+        "scene_usage",
+        "release_state",
+        "draft_eligibility",
+        "product_qualification"
+      ]
+    }
+  },
+  "detail": {
+    "identity": [
+      "menu_xmlid",
+      "action_xmlid"
+    ],
+    "sections": [
+      "native_facts",
+      "classification",
+      "scenario_usage",
+      "release",
+      "draft_eligibility",
+      "product_qualification"
+    ],
+    "stale_token_reason": "CATALOG_STALE"
+  },
+  "diagnose": {
+    "flags": [
+      "native_valid",
+      "draft_selectable",
+      "scene_assignable",
+      "entry_published",
+      "preview_qualified",
+      "standard_qualified"
+    ],
+    "reason_codes": [
+      "NATIVE_IDENTITY_INCOMPLETE",
+      "MODULE_NOT_INSTALLED",
+      "ACTION_NOT_FOUND",
+      "ACTION_TYPE_UNSUPPORTED",
+      "MENU_ACTION_MISMATCH",
+      "MODEL_NOT_FOUND",
+      "NO_SCENE_BINDING",
+      "AMBIGUOUS_SCENE_BINDING",
+      "ENTRY_NOT_RELEASED",
+      "MATURITY_EVIDENCE_MISSING"
+    ]
+  },
+  "authorization": {
+    "current_instance": [
+      "user_is_tenant_config_admin",
+      "user_is_platform_control_admin"
+    ],
+    "cross_instance": [
+      "user_is_platform_control_admin",
+      "platform_admin_group",
+      "platform-admin audience",
+      "explicit tenant registration"
+    ],
+    "rules": [
+      "authorize before sudo metadata reads",
+      "no arbitrary domain",
+      "no business record rows",
+      "security metadata only for authorized administrators",
+      "catalog permission is not data permission"
+    ]
+  },
+  "freshness": {
+    "mode": "request_time_projection",
+    "persistence": "none",
+    "token_inputs": [
+      "module versions",
+      "menu and action identity set",
+      "scenario bindings",
+      "active release snapshot identity"
+    ]
+  },
+  "excluded_from_b_stage": [
+    "ORM capability table",
+    "write endpoint",
+    "scene draft mutation",
+    "capability browser UI",
+    "product qualification approval"
+  ]
+}

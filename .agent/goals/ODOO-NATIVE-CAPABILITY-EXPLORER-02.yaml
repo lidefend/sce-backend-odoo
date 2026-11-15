@@ -1,0 +1,42 @@
+schema_version: 1
+goal:
+  id: ODOO-NATIVE-CAPABILITY-EXPLORER-02
+  title: classify_native_entries_and_design_readonly_api
+  status: completed
+  formal_product_layer: P4 read-only contract validation
+  layer_target: business-domain classification and capability explorer query contract
+  module:
+    - addons/smart_core/delivery/runtime_capability_catalog.py
+    - addons/smart_construction_core/models/support/product_scenario.py
+    - addons/smart_construction_core/services/product_menu_source.py
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: 3639f35b1cf80b11c2c62766ba53839be3440952
+  objective: >-
+    Validate evidence-backed domain classification for native business entries
+    and define a minimal read-only capability explorer API without adding a
+    persistent registry or write operation.
+  product_boundary:
+    standard_vs_user_specific: platform_read_contract_with_construction_scene_facts
+    why_here: >-
+      Classification consumes existing scenario bindings, release policy and
+      native menu facts; the API contract remains read-only.
+    why_not_elsewhere:
+      - no_name_based_business_classification
+      - no_parallel_capability_registry
+      - no_frontend_inference_of_access
+      - no_product_write_path
+  acceptance:
+    - exact business domain comes only from existing scene bindings
+    - native or release-policy centers are exposed separately from business domains
+    - ambiguous or missing classification remains unclassified
+    - list/detail/diagnose read contracts include pagination search freshness and authority boundaries
+    - platform-global access is explicitly authorized by a backend platform predicate
+    - no product runtime code or persistent capability state is added
+  exclusions:
+    - capability browser UI
+    - scene editor
+    - capability write endpoint
+    - database migration
+    - deployment or merge
+  rollback: remove the P4 classification probe, tests and API design documents; no runtime state changes.
