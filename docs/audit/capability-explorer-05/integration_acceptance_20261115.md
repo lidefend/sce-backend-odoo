@@ -1,6 +1,6 @@
 # CAPABILITY-EXPLORER-05 主线集成验收报告
 
-状态：`BLOCKED_PENDING_OWNER_DECISION`
+状态：`BLOCKED_PENDING_DIFFERENCE_RECONCILIATION`
 
 报告日期：2026-11-15
 
@@ -12,8 +12,8 @@
 
 PR #889 已合入当前 main，合并树与 PR 最终候选树一致。Explorer 的
 List、搜索、分页、Detail、Diagnose、`catalog_token` 过期拒绝和管理员权限拒绝均在
-当前 main 的真实 HTTP/浏览器路径通过。Explorer 读取前后，目标业务、场景、发布与旧能力表
-的逐表内容摘要不变。
+当前 main 的真实 HTTP/浏览器观察通过。Explorer 读取前后，目标业务、场景、发布与旧能力表
+的逐表内容摘要不变。该观察不改变严格隔离验收状态。
 
 隔离 `sc_clean` 的模块升级没有通过，原因是该演练库处于不一致状态：
 `smart_construction_core=17.0.0.172` 已标记 installed，但
@@ -22,8 +22,9 @@ List、搜索、分页、Detail、Diagnose、`catalog_token` 过期拒绝和管�
 
 本报告同时记录一次执行范围偏离：为消除合并前运行进程缓存，本轮升级并重启了持久
 `sc_dev_demo`。该动作不属于“只在隔离环境完成升级”的严格验收，也不能被描述为全只读。
-其 API 结果保留为主线上运行行为的观察证据，但本轮严格隔离验收状态仍为 `BLOCKED`，
-等待所有者明确接受当前持久开发状态或授权恢复。
+其 API 结果保留为主线上运行行为的观察证据，但本轮严格隔离验收状态仍为 `BLOCKED`。
+所有者已通过 `CAP05-D01` 裁定保留当前持久开发状态、暂不恢复；`CAP05-B02` 继续保持
+BLOCKED，等待恢复点差异核对，任何恢复仍需重新取得明确授权。
 
 ## 2. 主线身份与远端证据
 

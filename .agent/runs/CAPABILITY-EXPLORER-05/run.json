@@ -83,9 +83,9 @@
       "decision": ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml"
     }
   ],
-  "next_exact_step": "Publish the exact-head audit-only candidate as CAP05-R1 after independent review; keep B01 and B02 blocked and defer the sc_dev_demo difference reconciliation to a separate read-only follow-up.",
+  "next_exact_step": "Complete exact-head independent review, publish CAP05-R1 through the governed GitHub lane, wait for required checks, and stop before the merge decision.",
   "id": "CAPABILITY-EXPLORER-05",
-  "branch": "audit/capability-explorer-05-20261115",
+  "branch": "audit/capability-explorer-05-r1-20261115",
   "status": "blocked",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
   "record": "docs/audit/capability-explorer-05/integration_acceptance_20261115.md"
