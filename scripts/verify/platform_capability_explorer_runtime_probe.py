@@ -107,6 +107,9 @@ def probe(env):
     )
     from odoo.addons.smart_core.handlers import platform_capability_explorer as handlers
     from odoo.addons.smart_core.security.intent_authorization import registered_handlers
+    from odoo.addons.smart_construction_core.services.platform_capability_explorer_contributions import (
+        load_capability_explorer_release_projection,
+    )
 
     service = PlatformCapabilityExplorerService(env)
     projection = service.project(include_details=True)
@@ -195,6 +198,70 @@ def probe(env):
     detail_json = json.dumps(detail["entry"], ensure_ascii=False)
     for secret_field in ("domain_force", "user_ids", "business_record"):
         _expect(secret_field not in detail_json, "detail exposed protected rule data")
+
+    invalid_menu = env["ir.ui.menu"].sudo().search(
+        [("id", "child_of", int(projection.diagnostics["native"]["root_menu_ids"][0])), ("action", "=", False)],
+        limit=1,
+    )
+    _expect(bool(invalid_menu), "runtime carrier has no actionless menu for diagnosis")
+    invalid_menu_xmlid = invalid_menu.get_external_id().get(invalid_menu.id, "")
+    _expect(bool(invalid_menu_xmlid), "actionless menu has no stable XMLID")
+    invalid_diagnosis = service.diagnose({"menu_xmlid": invalid_menu_xmlid})
+    _expect(
+        "ACTION_NOT_FOUND" in invalid_diagnosis["blockers"],
+        "actionless menu diagnosis did not return ACTION_NOT_FOUND",
+    )
+    _expect(
+        invalid_diagnosis["draft_selectable"] is False,
+        "actionless menu was incorrectly marked draft-selectable",
+    )
+    mismatch_diagnosis = service.diagnose(
+        {
+            "menu_xmlid": first_row["entry_ref"]["menu_xmlid"],
+            "action_xmlid": "smart_construction_core.action_mismatch_for_review",
+        }
+    )
+    _expect(
+        "MENU_ACTION_MISMATCH" in mismatch_diagnosis["blockers"],
+        "menu/action mismatch was not diagnosed",
+    )
+    valid_menu_diagnosis = service.diagnose(
+        {
+            "menu_xmlid": first_row["entry_ref"]["menu_xmlid"],
+            "action_xmlid": first_row["entry_ref"]["action_xmlid"],
+        }
+    )
+    _expect(
+        valid_menu_diagnosis["native_valid"] is True,
+        "valid Menu XMLID diagnosis was rejected",
+    )
+    _expect(
+        valid_menu_diagnosis["scene_assignable"]
+        is projection.diagnostics["scene_authority_available"],
+        "valid Menu XMLID diagnosis disagrees with scene authority",
+    )
+    missing_diagnosis = service.diagnose(
+        {"menu_xmlid": "smart_construction_core.menu_missing_for_explorer_review"}
+    )
+    _expect(
+        "XMLID_NOT_FOUND" in missing_diagnosis["blockers"],
+        "missing menu XMLID diagnosis did not fail closed",
+    )
+    isolated_release = load_capability_explorer_release_projection(
+        env,
+        platform_database_resolver=lambda current_env: "sc_platform_control_for_review",
+        projection_loader=lambda current_env: (_ for _ in ()).throw(
+            AssertionError("cross-database release loader was called")
+        ),
+    )
+    _expect(
+        isolated_release["authority_available"] is False,
+        "isolated release authority was incorrectly available",
+    )
+    _expect(
+        isolated_release["authority_reason"] == "PLATFORM_RELEASE_DB_ISOLATED",
+        "isolated release authority did not fail closed",
+    )
 
     permission_cases = _permission_cases(handlers)
     registry = registered_handlers(env)
@@ -302,6 +369,11 @@ def probe(env):
             ],
         },
         "concurrent_identity_isolation": concurrent,
+        "release_database_isolation": {
+            "authority_available": isolated_release["authority_available"],
+            "authority_reason": isolated_release["authority_reason"],
+            "release_states": isolated_release["menu_release_states"],
+        },
         "write_operations": 0,
     }
 

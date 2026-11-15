@@ -54,6 +54,7 @@ Generated from repository source files. This report is informational during the 
 | 1971 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1968 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1959 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 1941 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1906 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
@@ -86,7 +87,6 @@ Generated from repository source files. This report is informational during the 
 | 1524 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1504 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 1064 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 685 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -291,6 +291,7 @@ Generated from repository source files. This report is informational during the 
 | 1971 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1968 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1959 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
+| 1941 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1906 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
@@ -325,7 +326,6 @@ Generated from repository source files. This report is informational during the 
 | 1524 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1504 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

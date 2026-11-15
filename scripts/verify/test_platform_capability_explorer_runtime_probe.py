@@ -31,6 +31,8 @@ class RuntimeProbeContractTests(unittest.TestCase):
             "ThreadPoolExecutor",
             "public_user",
             "domain_force",
+            "ACTION_NOT_FOUND",
+            "XMLID_NOT_FOUND",
             "query_count",
             "serialization_ms",
         ):

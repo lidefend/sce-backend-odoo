@@ -124,10 +124,55 @@ Runtime logs:
   `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-03/platform-capability-explorer-all-menu-stress.log`,
   SHA256 `85290803325476003ccfd31efc93208aae067732a620bf36a5ec77f912bade01`.
 
+## R03-R1 Independent Review Repair
+
+The independent review returned `REQUEST_CHANGES` with two S1 and three S2
+findings. The repair is intentionally scoped to the Explorer:
+
+- Tenant Explorer requests now use an Explorer-specific release projection.
+  When the declared release database differs from the current registry, no
+  second `Registry` is opened and no cross-database superuser environment is
+  created. Authority is explicitly unavailable with
+  `PLATFORM_RELEASE_DB_ISOLATED`, and release states remain unknown.
+- `catalog_token` now includes scene/release authority availability, provider
+  success/failure, root/fallback diagnostics, provider conflicts, XMLID
+  ambiguities and candidate-menu diagnostic facts. Runtime request time and
+  metrics remain outside the token.
+- Release Center source is carried from the P1
+  `construction.product_menu_source.v1` declaration and consumed verbatim by P0.
+- P1 and cross-provider Release Center conflicts are merged, never resolved by
+  first-wins; the ambiguous center is omitted and
+  `RELEASE_CENTER_AMBIGUOUS` becomes an explicit diagnostic blocker.
+- Diagnose now accepts `menu_xmlid` and can report `ACTION_NOT_FOUND`,
+  `ACTION_TYPE_UNSUPPORTED`, `MENU_ACTION_MISMATCH`, `MODEL_NOT_FOUND`,
+  `MODULE_NOT_INSTALLED`, `XMLID_INVALID`, `XMLID_NOT_FOUND` and
+  `XMLID_AMBIGUOUS`. The main draftable catalog remains stable-identity only.
+- XMLID aliases are dereferenced only when unique. Multiple aliases are
+  fail-closed and included in the token.
+
+R1 verification:
+
+- `verify.platform.capability_explorer.unit`: PASS, 27 tests.
+- `verify.runtime_capability_catalog.unit`: PASS, 19 tests.
+- `make ci.local.iteration`: PASS with 12 affected targets.
+- Reduced `sc_dev_demo` runtime probe: PASS, including actionless Menu,
+  Menu/Action mismatch, missing Menu XMLID and isolated-release authority.
+- Full projection: 63 SQL / 260 ms; List: 29 SQL / 119 ms.
+- 498-entry all-menu stress remains non-authoritative business classification:
+  93 SQL / 526 ms, no entry-linear N+1.
+- Strict 282/75/207 remains a separate acceptance condition on a compatible
+  business snapshot.
+- R1 runtime log:
+  `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-03/platform-capability-explorer-r03-r1-runtime.log`,
+  SHA256 `5647268b8aaa7a0a59dd524b63370122d34d41b0b4ea6b20b47ffbff8417ff7e`.
+- R1 all-menu stress log:
+  `.runtime/agent-runs/ODOO-NATIVE-CAPABILITY-EXPLORER-03/platform-capability-explorer-r03-r1-all-menu-stress.log`,
+  SHA256 `030457b7a7b0a0393c71f827f5c0f66923c76ca3f0e2f7e468b5c5c6110ae4af`.
+
 ## Result
 
-The read-only backend implementation is complete and locally verified. It has
-no persistent discovery model, no write endpoint and no frontend. Strict
-282/75/207 and active-release validation must run on a compatible business data
-carrier; the registered persistent development carrier truthfully reports three
-entries after full upgrade.
+The read-only backend implementation and R03-R1 review repairs are complete and
+locally verified. It has no persistent discovery model, no write endpoint and no
+frontend. Strict 282/75/207 and active-release validation must run on a
+compatible business data carrier; the registered persistent development carrier
+truthfully reports three entries after full upgrade.

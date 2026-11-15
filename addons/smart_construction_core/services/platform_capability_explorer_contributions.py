@@ -12,7 +12,9 @@ SOURCE_AUTHORITIES = (
     "sc.product.scenario",
     "sc.edition.release.snapshot",
     "data/product_menu_source.json",
+    "ir.config_parameter",
 )
+RELEASE_CENTER_SOURCE = "construction.product_menu_source.v1"
 
 
 def _text(value: Any) -> str:
@@ -40,6 +42,7 @@ def source_authority_contract() -> dict[str, Any]:
 def _release_center_map(source: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     centers: dict[str, dict[str, Any]] = {}
     conflicts = []
+    conflicted_menu_xmlids = set()
     for center in ((source.get("product_contract") or {}).get("centers") or []):
         if not isinstance(center, dict):
             continue
@@ -47,6 +50,7 @@ def _release_center_map(source: dict[str, Any]) -> tuple[dict[str, dict[str, Any
             "key": _text(center.get("key")),
             "label": _text(center.get("name")),
             "sequence": _int(center.get("sequence"), 10),
+            "source": RELEASE_CENTER_SOURCE,
         }
         for level_two in center.get("level_two") or []:
             if not isinstance(level_two, dict):
@@ -70,9 +74,82 @@ def _release_center_map(source: dict[str, Any]) -> tuple[dict[str, dict[str, Any
                             ),
                         }
                     )
+                    centers.pop(menu_xmlid, None)
+                    conflicted_menu_xmlids.add(menu_xmlid)
+                    continue
+                if menu_xmlid in conflicted_menu_xmlids:
                     continue
                 centers[menu_xmlid] = dict(center_fact)
     return centers, conflicts
+
+
+def _unavailable_release_projection(reason_code: str) -> dict[str, Any]:
+    return {
+        "menu_release_states": {},
+        "snapshots": [
+            {
+                "product_key": product_key,
+                "applied": False,
+                "fail_closed": False,
+                "snapshot_id": 0,
+                "version": "",
+                "fingerprint": "",
+                "platform_db": "",
+                "reason": reason_code,
+            }
+            for product_key in ("construction.standard", "construction.preview")
+        ],
+        "standard_applied": False,
+        "preview_applied": False,
+        "authority_available": False,
+        "authority_reason": reason_code,
+    }
+
+
+def load_capability_explorer_release_projection(
+    env,
+    *,
+    platform_database_resolver=None,
+    projection_loader=None,
+):
+    """Read release facts only from the current registry.
+
+    The Explorer is never allowed to open a second database or use a
+    superuser environment belonging to another database. When the declared
+    platform release database differs from the current tenant registry, the
+    authority is explicitly unavailable.
+    """
+    if platform_database_resolver is None:
+        from odoo.addons.smart_core.core.platform_database_contract import (
+            resolve_platform_database,
+        )
+
+        platform_database_resolver = resolve_platform_database
+    if projection_loader is None:
+        from .product_menu_source import load_published_menu_release_projection
+
+        projection_loader = load_published_menu_release_projection
+    current_database = _text(getattr(getattr(env, "cr", None), "dbname", ""))
+    if not current_database:
+        return _unavailable_release_projection("CURRENT_DATABASE_UNAVAILABLE")
+    try:
+        platform_database = _text(platform_database_resolver(env))
+    except Exception:
+        return _unavailable_release_projection("PLATFORM_RELEASE_DATABASE_UNRESOLVED")
+    if not platform_database or platform_database != current_database:
+        return _unavailable_release_projection("PLATFORM_RELEASE_DB_ISOLATED")
+    try:
+        projection = projection_loader(env)
+    except Exception:
+        return _unavailable_release_projection("RELEASE_SNAPSHOT_READ_FAILED")
+    projection = dict(projection) if isinstance(projection, dict) else {}
+    projection["authority_available"] = bool(
+        projection.get("standard_applied") or projection.get("preview_applied")
+    )
+    projection["authority_reason"] = (
+        "OK" if projection["authority_available"] else "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND"
+    )
+    return projection
 
 
 def get_platform_capability_explorer_scope(env):
@@ -136,7 +213,6 @@ def _scene_bindings(env, menu_ids: list[int]) -> dict[str, list[dict[str, Any]]]
 def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
     """Contribute existing scene and publication facts without persisting discovery."""
     from .product_menu_source import (
-        load_published_menu_release_projection,
         load_source,
     )
 
@@ -148,7 +224,7 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
         }
     )
     scene_bindings = _scene_bindings(env, normalized_menu_ids)
-    release_projection = load_published_menu_release_projection(env)
+    release_projection = load_capability_explorer_release_projection(env)
     source = load_source()
     release_centers, center_conflicts = _release_center_map(source)
     relevant_release_states = {
@@ -165,8 +241,10 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
         "source_authority": source_authority_contract(),
         "scene_authority_available": "sc.product.scenario.entry" in env,
         "release_authority_available": bool(
-            release_projection.get("standard_applied")
-            or release_projection.get("preview_applied")
+            release_projection.get("authority_available")
+        ),
+        "release_authority_reason": _text(
+            release_projection.get("authority_reason")
         ),
         "scene_bindings": scene_bindings,
         "release_states": relevant_release_states,

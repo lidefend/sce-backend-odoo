@@ -88,6 +88,10 @@
     "stale_token_reason": "CATALOG_STALE"
   },
   "diagnose": {
+    "identity_inputs": [
+      "menu_xmlid",
+      "entry_ref.menu_xmlid + entry_ref.action_xmlid"
+    ],
     "flags": [
       "native_valid",
       "draft_selectable",
@@ -106,7 +110,11 @@
       "NO_SCENE_BINDING",
       "AMBIGUOUS_SCENE_BINDING",
       "ENTRY_NOT_RELEASED",
-      "MATURITY_EVIDENCE_MISSING"
+      "MATURITY_EVIDENCE_MISSING",
+      "XMLID_INVALID",
+      "XMLID_NOT_FOUND",
+      "XMLID_AMBIGUOUS",
+      "RELEASE_CENTER_AMBIGUOUS"
     ],
     "separation": {
       "draft_selectable": "native technical eligibility only",
@@ -127,6 +135,12 @@
       "platform-admin audience",
       "explicit tenant registration"
     ],
+    "explorer_database_isolation": {
+      "cross_database_registry": false,
+      "cross_database_superuser_environment": false,
+      "isolated_release_reason": "PLATFORM_RELEASE_DB_ISOLATED",
+      "isolated_release_state": "unknown"
+    },
     "rules": [
       "authorize before sudo metadata reads",
       "no arbitrary domain",
@@ -151,7 +165,14 @@
       "scenario bindings",
       "release state and release centers",
       "product qualification facts",
-      "active release snapshot identity"
+      "active release snapshot identity",
+      "scene authority availability",
+      "release authority availability",
+      "provider success/import failure/execution failure",
+      "root and fallback diagnostics",
+      "XMLID ambiguity",
+      "release center conflicts",
+      "candidate menu diagnostic facts"
     ],
     "stale_scope": "list and detail",
     "cross_request_cache": false

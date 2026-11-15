@@ -239,6 +239,10 @@ ACL 组和 Rule 只返回已授权摘要，不返回 Rule domain、用户列表�
 
 ## 6. Diagnose 契约
 
+主目录只返回具有稳定 Menu + Action XMLID 的入口。诊断还支持按
+`menu_xmlid` 读取当前 Registry 中的入口，即使该入口没有 Action、Action
+类型不支持或身份不完整，也不会因此进入可场景化主目录。
+
 诊断返回可机器消费的原因码：
 
 - `NATIVE_IDENTITY_INCOMPLETE`
@@ -251,6 +255,10 @@ ACL 组和 Rule 只返回已授权摘要，不返回 Rule domain、用户列表�
 - `AMBIGUOUS_SCENE_BINDING`
 - `ENTRY_NOT_RELEASED`
 - `MATURITY_EVIDENCE_MISSING`
+- `XMLID_INVALID`
+- `XMLID_NOT_FOUND`
+- `XMLID_AMBIGUOUS`
+- `RELEASE_CENTER_AMBIGUOUS`
 
 诊断结果必须分栏。顶层兼容字段可保留，但不得把不同栏位互相推导：
 
@@ -284,6 +292,11 @@ ACL 组和 Rule 只返回已授权摘要，不返回 Rule domain、用户列表�
 - ACL 组、Rule 数量和模块依赖属于安全元数据，只向通过上述谓词的管理员返回；
   普通业务用户不调用该 Intent。
 - 目录查询不等于业务记录读取权限，不返回模型业务行。
+- Explorer 的租户查询不得打开其他数据库 Registry，也不得在其他数据库创建
+  `SUPERUSER_ID` 环境。平台发布库与当前库不一致时，Release authority 必须返回
+  `PLATFORM_RELEASE_DB_ISOLATED`，入口状态保持 `unknown`。
+- 只有当前运行库就是平台发布库时，平台控制实例才通过现有平台发布服务读取
+  Release Snapshot。
 
 未来若需要“平台能力运营员”与“平台系统管理员”分离，应新增独立 P0 权限；本轮不实现。
 
@@ -295,10 +308,13 @@ MVP 不持久化发现结果：
 - `generated_at` 表示本次投影时间。
 - `catalog_token` 覆盖当前数据库、语言环境、安装模块及依赖、Menu/Action 身份和
   Action 目标、Menu 层级与顺序、模型和字段、View 关联、ACL、Record Rule、
-  场景绑定、发布状态、发布中心、资格事实和活动发布快照身份。
+  场景绑定、发布状态、发布中心、资格事实、活动发布快照身份、
+  `scene_authority_available`、`release_authority_available`、Provider 状态、
+  root/fallback 诊断、XMLID 歧义、Release Center conflicts 和候选 Menu 诊断事实。
 - List、Detail 与 Diagnose 必须在同一请求内绑定同一 token；不能只让 Detail 校验 token。
 - 不建立跨请求能力缓存；如需请求内 memo，只能按当前 cursor/instance 隔离。
 - 模块升级、菜单/动作修改、场景绑定和发布快照变化必须自然反映到下一次查询。
+- XMLID 多重映射不得任意选择；无法形成唯一 Menu/Action 身份时 fail-closed。
 
 ## 9. 性能边界
 

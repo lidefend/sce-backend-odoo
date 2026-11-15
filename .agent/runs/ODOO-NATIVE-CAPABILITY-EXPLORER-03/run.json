@@ -157,8 +157,7 @@
     }
   },
   "blockers": [
-    "The registered persistent sc_dev_demo carrier exposes 3 leaf entries after a full 10-module upgrade, not the historical 282-entry business snapshot. Strict 282/75/207 is therefore not claimed on this carrier and the strict runtime probe correctly rejects it.",
-    "sc_dev_demo has no active construction.standard or construction.preview release snapshot; release publication is reported unknown/fail-closed rather than inferred."
+    "The registered persistent sc_dev_demo carrier exposes 3 leaf entries after a full 10-module upgrade, not the historical 282-entry business snapshot. Strict 282/75/207 remains a separate acceptance condition and is not claimed on this carrier."
   ],
-  "next_exact_step": "Run an independent read-only review of the completed API change and evidence. Run the default strict runtime probe only on an authorized carrier that actually contains the 282-entry business snapshot; do not fabricate or copy scene/menu data into sc_dev_demo."
+  "next_exact_step": "Commit the frozen R03-R1 repair, run one exact-head full Quick, report the new HEAD/tree and receipts, then stop for the second independent review."
 }

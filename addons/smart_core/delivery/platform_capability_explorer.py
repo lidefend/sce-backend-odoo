@@ -166,7 +166,7 @@ def native_selection_assessment(
         blockers.append("MODULE_NOT_INSTALLED")
     if not action_exists:
         blockers.append("ACTION_NOT_FOUND")
-    if _text(action_type) not in SUPPORTED_ACTION_TYPES:
+    elif _text(action_type) not in SUPPORTED_ACTION_TYPES:
         blockers.append("ACTION_TYPE_UNSUPPORTED")
     if not menu_action_matches:
         blockers.append("MENU_ACTION_MISMATCH")
@@ -210,18 +210,36 @@ class CatalogProjection:
         return _text(self.meta.get("catalog_token"))
 
 
-def _external_id_map(env, model_name: str, record_ids: list[int]) -> dict[int, str]:
+def _external_id_map(
+    env,
+    model_name: str,
+    record_ids: list[int],
+    ambiguities: dict[str, dict[str, Any]] | None = None,
+) -> dict[int, str]:
     ids = sorted({_int(value) for value in record_ids if _int(value) > 0})
     if not ids:
         return {}
     rows = env["ir.model.data"].sudo().search(
-        [("model", "=", model_name), ("res_id", "in", ids)]
+        [("model", "=", model_name), ("res_id", "in", ids)],
+        order="res_id, module, name, id",
     )
-    return {
-        int(row.res_id): f"{row.module}.{row.name}"
-        for row in rows
-        if row.module and row.name
-    }
+    values_by_id = defaultdict(set)
+    for row in rows:
+        if row.module and row.name:
+            values_by_id[int(row.res_id)].add(f"{row.module}.{row.name}")
+    result = {}
+    for res_id, xmlids in values_by_id.items():
+        ordered = sorted(xmlids)
+        if len(ordered) == 1:
+            result[res_id] = ordered[0]
+            continue
+        if ambiguities is not None:
+            ambiguities[f"{model_name}:{res_id}"] = {
+                "model": model_name,
+                "res_id": res_id,
+                "xmlids": ordered,
+            }
+    return result
 
 
 def _group_xmlids(groups, group_xmlids: dict[int, str]) -> list[str]:
@@ -230,6 +248,20 @@ def _group_xmlids(groups, group_xmlids: dict[int, str]) -> list[str]:
             _text(group_xmlids.get(_int(getattr(group, "id", 0))))
             for group in groups or []
             if _text(group_xmlids.get(_int(getattr(group, "id", 0))))
+        }
+    )
+
+
+def _xmlid_aliases(env, model_name: str, res_id: int) -> list[str]:
+    rows = env["ir.model.data"].sudo().search(
+        [("model", "=", model_name), ("res_id", "=", int(res_id))],
+        order="module, name, id",
+    )
+    return sorted(
+        {
+            f"{row.module}.{row.name}"
+            for row in rows
+            if row.module and row.name
         }
     )
 
@@ -329,6 +361,7 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
         "conflicts": [],
         "token_facts": [],
     }
+    conflicted_release_centers = set()
     for module_name in _extension_modules(env):
         try:
             module = importlib.import_module(f"odoo.addons.{module_name}")
@@ -391,7 +424,27 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
         for menu_xmlid, center in _dict(payload.get("release_centers")).items():
             menu_xmlid = _text(menu_xmlid)
             if menu_xmlid and isinstance(center, dict):
-                merged["release_centers"].setdefault(menu_xmlid, dict(center))
+                if menu_xmlid in conflicted_release_centers:
+                    continue
+                previous = merged["release_centers"].get(menu_xmlid)
+                normalized_center = dict(center)
+                if previous and previous != normalized_center:
+                    merged["conflicts"].append(
+                        {
+                            "kind": "release_center",
+                            "menu_xmlid": menu_xmlid,
+                            "center_keys": sorted(
+                                {
+                                    _text(previous.get("key")),
+                                    _text(normalized_center.get("key")),
+                                }
+                            ),
+                        }
+                    )
+                    merged["release_centers"].pop(menu_xmlid, None)
+                    conflicted_release_centers.add(menu_xmlid)
+                else:
+                    merged["release_centers"][menu_xmlid] = normalized_center
         for menu_xmlid, qualification in _dict(payload.get("product_qualifications")).items():
             menu_xmlid = _text(menu_xmlid)
             if menu_xmlid and isinstance(qualification, dict):
@@ -400,6 +453,9 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
             row for row in _list(payload.get("release_snapshots")) if isinstance(row, dict)
         )
         merged["token_facts"].append(payload.get("token_facts") or {})
+        for conflict in _list(payload.get("conflicts")):
+            if isinstance(conflict, dict):
+                merged["conflicts"].append(dict(conflict))
     for bindings in merged["scene_bindings"].values():
         bindings.sort(
             key=lambda item: (
@@ -413,6 +469,14 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
         key=lambda item: (_text(item.get("product_key")), _int(item.get("snapshot_id")))
     )
     merged["token_facts"].sort(key=_canonical_json)
+    merged["conflicts"] = sorted(
+        {
+            _canonical_json(conflict): conflict
+            for conflict in merged["conflicts"]
+            if isinstance(conflict, dict)
+        }.values(),
+        key=_canonical_json,
+    )
     return merged
 
 
@@ -500,6 +564,7 @@ class PlatformCapabilityExplorerService:
                 menus_by_id[int(menu.id)] = menu
         candidate_menus = [menus_by_id[key] for key in sorted(menus_by_id)]
         xmlid_maps: dict[str, dict[int, str]] = {}
+        xmlid_ambiguities: dict[str, dict[str, Any]] = {}
         if candidate_menus:
             menu_records = self.env["ir.ui.menu"].sudo().browse(
                 [int(menu.id) for menu in candidate_menus]
@@ -535,6 +600,7 @@ class PlatformCapabilityExplorerService:
                 self.env,
                 "ir.ui.menu",
                 menu_records.ids,
+                xmlid_ambiguities,
             )
             action_ids_by_model = defaultdict(list)
             for action in actions:
@@ -546,6 +612,7 @@ class PlatformCapabilityExplorerService:
                         self.env,
                         model_name,
                         action_ids,
+                        xmlid_ambiguities,
                     )
                     action_rows = self.env[model_name].sudo().browse(
                         sorted(set(action_ids))
@@ -568,6 +635,7 @@ class PlatformCapabilityExplorerService:
                         self.env,
                         "res.groups",
                         sorted(action_group_ids),
+                        xmlid_ambiguities,
                     )
                     for action_id in action_ids:
                         values = action_values.get(action_id, {})
@@ -606,9 +674,86 @@ class PlatformCapabilityExplorerService:
                 self.env,
                 "res.groups",
                 sorted(group_ids),
+                xmlid_ambiguities,
+            )
+            owner_modules = {
+                _text(xmlid).split(".", 1)[0]
+                for xmlid in xmlid_maps.get("ir.ui.menu", {}).values()
+                if "." in _text(xmlid)
+            }
+            owner_modules.update(
+                _text(xmlid).split(".", 1)[0]
+                for model_name, xmlid_map in xmlid_maps.items()
+                if model_name.startswith("ir.actions.")
+                for xmlid in xmlid_map.values()
+                if "." in _text(xmlid)
+            )
+            modules = self.env["ir.module.module"].sudo().search(
+                [("name", "in", sorted(owner_modules))]
+            )
+            module_states = {_text(module.name): _text(module.state) for module in modules}
+            model_names = sorted(
+                {
+                    _text(action_fact.get("res_model"))
+                    for action_fact in action_facts.values()
+                    if _text(action_fact.get("res_model"))
+                }
+            )
+            existing_models = set(
+                self.env["ir.model"].sudo().search(
+                    [("model", "in", model_names)]
+                ).mapped("model")
+            )
+            menu_xmlids = xmlid_maps.get("ir.ui.menu", {})
+            candidate_menu_facts = []
+            for menu in menu_records:
+                action = menu.action
+                action_id = _int(getattr(action, "id", 0))
+                action_fact = action_facts.get(action_id) or {}
+                menu_xmlid = _text(menu_xmlids.get(int(menu.id)))
+                action_xmlid = _text(
+                    xmlid_maps.get(_text(action_fact.get("type")), {}).get(action_id)
+                )
+                owner_module = (
+                    menu_xmlid.split(".", 1)[0]
+                    if "." in menu_xmlid
+                    else action_xmlid.split(".", 1)[0]
+                    if "." in action_xmlid
+                    else ""
+                )
+                action_type = _text(action_fact.get("type"))
+                res_model = _text(action_fact.get("res_model"))
+                candidate_menu_facts.append(
+                    {
+                        "menu_id": int(menu.id),
+                        "menu_xmlid": menu_xmlid,
+                        "menu_label": _text(menu.name),
+                        "menu_sequence": int(menu.sequence or 0),
+                        "action_id": action_id,
+                        "action_xmlid": action_xmlid,
+                        "action_exists": bool(action),
+                        "action_type": action_type,
+                        "res_model": res_model,
+                        "model_exists": bool(
+                            _text(action_type) != "ir.actions.act_window"
+                            or not res_model
+                            or res_model in existing_models
+                        ),
+                        "module": owner_module,
+                        "module_state": module_states.get(owner_module, ""),
+                        "active": bool(menu.active),
+                        "has_active_children": any(
+                            bool(getattr(child, "active", True))
+                            for child in (getattr(menu, "child_id", None) or [])
+                        ),
+                    }
+                )
+            candidate_menu_facts.sort(
+                key=lambda item: (item["menu_id"], item["action_id"])
             )
         else:
             action_facts = {}
+            candidate_menu_facts = []
         projection = RuntimeCapabilityCatalogService(self.env).collect(
             leaf_actions_only=True,
             candidate_menus=candidate_menus if roots else None,
@@ -629,6 +774,10 @@ class PlatformCapabilityExplorerService:
                 and self.env.ref(xmlid, raise_if_not_found=False)._name == "ir.ui.menu"
             ]
         )
+        projection.diagnostics["xmlid_ambiguities"] = [
+            xmlid_ambiguities[key] for key in sorted(xmlid_ambiguities)
+        ]
+        projection.diagnostics["candidate_menu_facts"] = candidate_menu_facts
         return projection
 
     def _load_native_facts(
@@ -663,11 +812,19 @@ class PlatformCapabilityExplorerService:
                 action_ids_by_model[action_model].append(action_id)
         action_records = []
         action_xmlids: dict[int, str] = {}
+        xmlid_ambiguities: dict[str, dict[str, Any]] = {}
         for action_model, typed_action_ids in action_ids_by_model.items():
             typed_ids = sorted(set(typed_action_ids))
             records = env[action_model].sudo().browse(typed_ids).exists()
             action_records.extend(records)
-            action_xmlids.update(_external_id_map(env, action_model, typed_ids))
+            action_xmlids.update(
+                _external_id_map(
+                    env,
+                    action_model,
+                    typed_ids,
+                    xmlid_ambiguities,
+                )
+            )
 
         module_dependencies = defaultdict(list)
         if modules.ids:
@@ -739,7 +896,12 @@ class PlatformCapabilityExplorerService:
             for group in getattr(action, "groups_id", []) or []:
                 action_group_ids.add(int(group.id))
         group_ids = sorted(acl_group_ids | rule_group_ids | menu_group_ids | action_group_ids)
-        group_xmlids = _external_id_map(env, "res.groups", group_ids)
+        group_xmlids = _external_id_map(
+            env,
+            "res.groups",
+            group_ids,
+            xmlid_ambiguities,
+        )
 
         grouped_access = defaultdict(list)
         for access in access_rows:
@@ -798,7 +960,12 @@ class PlatformCapabilityExplorerService:
                 "sha256": canonical_sha256(values),
             }
 
-        menu_xmlids = _external_id_map(env, "ir.ui.menu", menu_ids)
+        menu_xmlids = _external_id_map(
+            env,
+            "ir.ui.menu",
+            menu_ids,
+            xmlid_ambiguities,
+        )
         menu_facts = {}
         for menu in menus:
             menu_facts[int(menu.id)] = {
@@ -856,6 +1023,9 @@ class PlatformCapabilityExplorerService:
                 for module in installed_modules
             ],
             "root_menu_ids": root_ids,
+            "xmlid_ambiguities": [
+                xmlid_ambiguities[key] for key in sorted(xmlid_ambiguities)
+            ],
         }
 
     def _center_for_menu(
@@ -896,7 +1066,7 @@ class PlatformCapabilityExplorerService:
             "key": _text(center.get("key")),
             "label": _text(center.get("label")),
             "sequence": _int(center.get("sequence"), 10),
-            "source": "sc.edition.release.snapshot.policy",
+            "source": _text(center.get("source")) or "unknown",
         }
 
     def _build_row(
@@ -967,6 +1137,17 @@ class PlatformCapabilityExplorerService:
         release_state = _text(
             _dict(contributions.get("release_states")).get(menu_xmlid)
         ) or "unknown"
+        release_center_conflicts = [
+            conflict
+            for conflict in (contributions.get("conflicts") or [])
+            if _text(conflict.get("kind")) == "release_center"
+            and _text(conflict.get("menu_xmlid")) == menu_xmlid
+        ]
+        release_blockers = (
+            ["RELEASE_CENTER_AMBIGUOUS"]
+            if release_center_conflicts
+            else []
+        )
         qualification = _dict(
             _dict(contributions.get("product_qualifications")).get(menu_xmlid)
         )
@@ -1075,6 +1256,8 @@ class PlatformCapabilityExplorerService:
                 "entry_published": release_state in {"released", "preview"},
                 "center": release_center or None,
                 "snapshots": list(contributions.get("release_snapshots") or []),
+                "blockers": release_blockers,
+                "ambiguous_center": bool(release_center_conflicts),
             },
             "scene_assignment": {
                 "assignable": scene_assignable,
@@ -1087,6 +1270,8 @@ class PlatformCapabilityExplorerService:
             "diagnostics": {
                 "native_valid": native_valid,
                 "native_blockers": native_blockers,
+                "release_blockers": release_blockers,
+                "blockers": native_blockers + release_blockers,
                 "draft_selectable": native_valid,
                 "scene_assignable": scene_assignable,
                 "entry_published": release_state in {"released", "preview"},
@@ -1125,6 +1310,203 @@ class PlatformCapabilityExplorerService:
         }
         return row, detail
 
+    def _diagnose_menu_xmlid(
+        self,
+        menu_xmlid: str,
+        expected_action_xmlid: str = "",
+        scene_authority_available: bool = False,
+    ) -> dict[str, Any]:
+        requested_xmlid = _text(menu_xmlid)
+        module_name, separator, record_name = requested_xmlid.partition(".")
+        if not separator or not module_name or not record_name:
+            return {
+                "entry_ref": {
+                    "menu_xmlid": requested_xmlid,
+                    "action_xmlid": expected_action_xmlid or None,
+                },
+                "native_valid": False,
+                "draft_selectable": False,
+                "scene_assignable": False,
+                "entry_published": False,
+                "preview_qualified": "not_verified",
+                "standard_qualified": "not_verified",
+                "blockers": ["XMLID_INVALID"],
+                "classification_reason": "NO_CLASSIFICATION_EVIDENCE",
+                "native_facts": {},
+                "sections": {
+                    "native": {
+                        "valid": False,
+                        "blockers": ["XMLID_INVALID"],
+                    },
+                    "release": {
+                        "state": "unknown",
+                        "entry_published": False,
+                        "blockers": ["XMLID_INVALID"],
+                    },
+                },
+            }
+        data_rows = self.env["ir.model.data"].sudo().search(
+            [
+                ("module", "=", module_name),
+                ("name", "=", record_name),
+                ("model", "=", "ir.ui.menu"),
+            ],
+            order="id",
+        )
+        if not data_rows:
+            blockers = ["XMLID_NOT_FOUND"]
+            return {
+                "entry_ref": {
+                    "menu_xmlid": requested_xmlid,
+                    "action_xmlid": expected_action_xmlid or None,
+                },
+                "native_valid": False,
+                "draft_selectable": False,
+                "scene_assignable": False,
+                "entry_published": False,
+                "preview_qualified": "not_verified",
+                "standard_qualified": "not_verified",
+                "blockers": blockers,
+                "classification_reason": "NO_CLASSIFICATION_EVIDENCE",
+                "native_facts": {},
+                "sections": {
+                    "native": {"valid": False, "blockers": blockers},
+                    "release": {
+                        "state": "unknown",
+                        "entry_published": False,
+                        "blockers": blockers,
+                    },
+                },
+            }
+        menu = self.env["ir.ui.menu"].sudo().browse(
+            sorted({int(row.res_id) for row in data_rows})
+        ).exists()
+        if len(menu) != 1:
+            blockers = ["XMLID_AMBIGUOUS"]
+            return {
+                "entry_ref": {
+                    "menu_xmlid": requested_xmlid,
+                    "action_xmlid": expected_action_xmlid or None,
+                },
+                "native_valid": False,
+                "draft_selectable": False,
+                "scene_assignable": False,
+                "entry_published": False,
+                "preview_qualified": "not_verified",
+                "standard_qualified": "not_verified",
+                "blockers": blockers,
+                "classification_reason": "NO_CLASSIFICATION_EVIDENCE",
+                "native_facts": {
+                    "candidate_res_ids": sorted(
+                        {int(row.res_id) for row in data_rows}
+                    )
+                },
+                "sections": {
+                    "native": {"valid": False, "blockers": blockers},
+                    "release": {
+                        "state": "unknown",
+                        "entry_published": False,
+                        "blockers": blockers,
+                    },
+                },
+            }
+        aliases = _xmlid_aliases(self.env, "ir.ui.menu", int(menu.id))
+        action = menu.action
+        action_aliases = (
+            _xmlid_aliases(self.env, _text(action._name), int(action.id))
+            if action
+            else []
+        )
+        action_xmlid = action_aliases[0] if len(action_aliases) == 1 else ""
+        action_type = _text(getattr(action, "_name", ""))
+        res_model = _text(getattr(action, "res_model", ""))
+        model_exists = True
+        if action_type == "ir.actions.act_window" and res_model:
+            model_exists = bool(
+                self.env["ir.model"].sudo().search_count(
+                    [("model", "=", res_model)],
+                    limit=1,
+                )
+            )
+        module = self.env["ir.module.module"].sudo().search(
+            [("name", "=", module_name)],
+            limit=1,
+        )
+        expected_action_xmlid = _text(expected_action_xmlid)
+        menu_action_matches = not expected_action_xmlid or (
+            action_xmlid and expected_action_xmlid == action_xmlid
+        )
+        native_valid, blockers = native_selection_assessment(
+            menu_xmlid=requested_xmlid,
+            action_xmlid=action_xmlid,
+            action_type=action_type,
+            res_model=res_model,
+            module_state=module.state if module else "",
+            action_exists=bool(action),
+            menu_action_matches=menu_action_matches,
+            model_exists=model_exists,
+        )
+        if len(aliases) > 1 or len(action_aliases) > 1:
+            blockers = ["XMLID_AMBIGUOUS"] + blockers
+            native_valid = False
+        return {
+            "entry_ref": {
+                "menu_xmlid": requested_xmlid,
+                "action_xmlid": action_xmlid or expected_action_xmlid or None,
+            },
+            "native_valid": native_valid,
+            "draft_selectable": native_valid,
+            "scene_assignable": bool(native_valid and scene_authority_available),
+            "entry_published": False,
+            "preview_qualified": "not_verified",
+            "standard_qualified": "not_verified",
+            "blockers": blockers,
+            "classification_reason": "NO_CLASSIFICATION_EVIDENCE",
+            "native_facts": {
+                "menu": {
+                    "id": int(menu.id),
+                    "xmlid": requested_xmlid,
+                    "xmlid_aliases": aliases,
+                    "label": _text(menu.name),
+                    "active": bool(menu.active),
+                    "has_active_children": any(
+                        bool(getattr(child, "active", True))
+                        for child in (menu.child_id or [])
+                    ),
+                },
+                "action": {
+                    "id": int(action.id) if action else 0,
+                    "xmlid": action_xmlid,
+                    "xmlid_aliases": action_aliases,
+                    "exists": bool(action),
+                    "type": action_type,
+                    "res_model": res_model,
+                },
+                "module": {
+                    "name": module_name,
+                    "state": module.state if module else "",
+                    "installed": bool(
+                        module and module.state in INSTALLED_MODULE_STATES
+                    ),
+                },
+                "model": {
+                    "name": res_model,
+                    "exists": model_exists,
+                },
+            },
+            "sections": {
+                "native": {
+                    "valid": native_valid,
+                    "blockers": blockers,
+                },
+                "release": {
+                    "state": "unknown",
+                    "entry_published": False,
+                    "blockers": blockers,
+                },
+            },
+        }
+
     def project(self, *, include_details: bool = False) -> CatalogProjection:
         started = time.perf_counter()
         query_start = self._query_count()
@@ -1132,8 +1514,16 @@ class PlatformCapabilityExplorerService:
         native = self._collect_native()
         native_ms = int((time.perf_counter() - native_started) * 1000)
         query_after_native = self._query_count()
-        rows = [dict(row) for row in _list(getattr(native, "rows", []))]
+        all_native_rows = [
+            dict(row) for row in _list(getattr(native, "rows", []))
+        ]
+        rows = [
+            row for row in all_native_rows if row.get("identity_stable", True)
+        ]
         native_diagnostics = _dict(getattr(native, "diagnostics", {}))
+        native_diagnostics["excluded_unstable_entry_count"] = (
+            len(all_native_rows) - len(rows)
+        )
         root_menu_ids = [
             _int(value)
             for value in (
@@ -1222,7 +1612,25 @@ class PlatformCapabilityExplorerService:
                 "release_snapshots": contributions.get("release_snapshots") or [],
                 "provider_token_facts": contributions.get("token_facts") or [],
             },
-            "contribution_conflicts": contributions.get("conflicts") or [],
+            "authority": {
+                "scene_authority_available": bool(
+                    contributions.get("scene_authority_available")
+                ),
+                "release_authority_available": bool(
+                    contributions.get("release_authority_available")
+                ),
+                "providers": sorted(
+                    contributions.get("providers") or [],
+                    key=_canonical_json,
+                ),
+                "conflicts": sorted(
+                    contributions.get("conflicts") or [],
+                    key=_canonical_json,
+                ),
+                "root_scope": native_diagnostics.get("capability_explorer_scope") or {},
+                "xmlid_ambiguities": native_diagnostics.get("xmlid_ambiguities") or [],
+                "candidate_menu_facts": native_diagnostics.get("candidate_menu_facts") or [],
+            },
         }
         catalog_token = f"sha256:{canonical_sha256(token_facts)}"
         query_count = max(0, self._query_count() - query_start)
@@ -1475,12 +1883,41 @@ class PlatformCapabilityExplorerService:
         }
 
     def diagnose(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        detail = self.detail(params)
-        entry = detail["entry"]
+        params = _dict(params)
+        projection = self.project(include_details=True)
+        self._ensure_token(projection, params.get("expected_catalog_token"))
+        menu_xmlid = _text(params.get("menu_xmlid"))
+        if menu_xmlid:
+            result = self._diagnose_menu_xmlid(
+                menu_xmlid,
+                _text(params.get("action_xmlid")),
+                bool(projection.diagnostics.get("scene_authority_available")),
+            )
+            return {
+                "meta": {
+                    **projection.meta,
+                    "schema": DIAGNOSE_SCHEMA,
+                },
+                **result,
+            }
+        entry_ref = _dict(params.get("entry_ref"))
+        key = (
+            _text(entry_ref.get("menu_xmlid")),
+            _text(entry_ref.get("action_xmlid")),
+        )
+        if not all(key):
+            raise InvalidExplorerRequest(
+                "diagnose requires menu_xmlid or entry_ref.menu_xmlid/action_xmlid"
+            )
+        entry = projection.details.get(key)
+        if not entry:
+            raise CapabilityEntryNotFound(
+                f"entry not found: {key[0]} / {key[1]}"
+            )
         diagnostics = entry["diagnostics"]
         return {
             "meta": {
-                **detail["meta"],
+                **projection.meta,
                 "schema": DIAGNOSE_SCHEMA,
             },
             "entry_ref": entry["entry_ref"],
@@ -1490,7 +1927,7 @@ class PlatformCapabilityExplorerService:
             "entry_published": diagnostics["entry_published"],
             "preview_qualified": diagnostics["preview_qualified"],
             "standard_qualified": diagnostics["standard_qualified"],
-            "blockers": diagnostics["native_blockers"],
+            "blockers": diagnostics["blockers"],
             "classification_reason": diagnostics["classification_reason"],
             "sections": {
                 "native": {
