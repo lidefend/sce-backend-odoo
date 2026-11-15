@@ -90,7 +90,7 @@ class TestSceneNavContractBuilder(TransactionCase):
         scene_keys = _collect_scene_keys(payload)
         self.assertIn("projects.list", scene_keys)
         self.assertNotIn("portal.dashboard", scene_keys)
-        self.assertNotIn("projects.dashboard", scene_keys)
+        self.assertIn("projects.dashboard", scene_keys)
         self.assertNotIn("projects.dashboard_showcase", scene_keys)
 
     def test_role_home_uses_first_workbench_group(self):

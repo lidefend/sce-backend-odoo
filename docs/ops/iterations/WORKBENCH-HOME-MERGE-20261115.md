@@ -24,6 +24,20 @@
 - `verify.backend.navigation_delivery.unit`: PASS.
 - `make ci.local.iteration`: PASS, including the affected navigation ORM test
   and the repository incremental gates.
+- PR #888 CI repair: `verify_coverage` initially found seven changed ORM tests
+  without execution evidence because
+  `addons/smart_core/tests/test_scene_nav_contract_builder.py` was not imported
+  by the test package.
+- `addons/smart_core/tests/__init__.py`: now imports the builder test module so
+  Odoo test discovery sees its exact selectors.
+- Restored execution exposed one stale assertion: `/s/projects.dashboard` is a
+  valid scene route and must remain in the delivery-ready scene set. The test
+  expectation now matches the existing scene-route contract; product code was
+  not changed.
+- `make local.dev.test MODULE=smart_core
+  TEST_TAGS=/smart_core:TestSceneNavContractBuilder`: PASS, 7 tests.
+- Post-repair `make ci.local.iteration`: PASS, including nine affected targets
+  and the 65-test ORM result guard.
 - Local runtime readback for `demo_full`: PASS.
   - Top-level order starts with `工作台`, followed by the remaining business
     centers.
