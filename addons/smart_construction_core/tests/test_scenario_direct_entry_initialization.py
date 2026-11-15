@@ -1,3 +1,6 @@
+import runpy
+from pathlib import Path
+
 from odoo.tests.common import TransactionCase, tagged
 
 from ..models.support.product_scenario import (
@@ -167,3 +170,103 @@ class TestScenarioDirectInitialization(TransactionCase):
         archived = next(row for row in after['scenarios'] if row['key'] == scenario.code)
         self.assertFalse(archived['active'])
         self.assertEqual(archived['bindings'][0]['menu_key'], menu.get_external_id()[menu.id])
+
+    def _migration(self, version_dir):
+        path = Path(__file__).resolve().parents[1] / (
+            "migrations/%s/pre-migrate.py" % version_dir
+        )
+        return runpy.run_path(str(path))["migrate"]
+
+    @staticmethod
+    def _cursor(table_exists, xmlid_row=None):
+        class Cursor:
+            def __init__(self):
+                self.queries = []
+                self.row = None
+
+            def execute(self, query, params=None):
+                normalized = " ".join(str(query).split())
+                self.queries.append((normalized, params))
+                if normalized.startswith("SELECT to_regclass"):
+                    self.row = (
+                        ("public.sc_product_scenario_entry",)
+                        if table_exists else (None,)
+                    )
+                elif normalized.startswith("SELECT res_id"):
+                    self.row = xmlid_row
+                else:
+                    self.row = None
+
+            def fetchone(self):
+                return self.row
+
+        return Cursor()
+
+    def test_old_version_without_scenario_table_is_a_compatible_noop(self):
+        for version_dir in ("17.0.0.180", "17.0.0.181"):
+            for installed_version in ("17.0.0.172", "17.0.0.173"):
+                with self.subTest(version_dir=version_dir, version=installed_version):
+                    cursor = self._cursor(False)
+                    self._migration(version_dir)(cursor, installed_version)
+                    self.assertEqual(1, len(cursor.queries))
+                    self.assertIn("to_regclass", cursor.queries[0][0])
+
+    def test_modern_version_without_scenario_table_must_fail(self):
+        for version_dir in ("17.0.0.180", "17.0.0.181"):
+            for installed_version in (
+                "17.0.0.174",
+                "17.0.0.179",
+                "17.0.0.180",
+                "17.0.0.182",
+            ):
+                with self.subTest(version_dir=version_dir, version=installed_version):
+                    cursor = self._cursor(False)
+                    with self.assertRaisesRegex(
+                        RuntimeError, "SCENARIO_ENTRY_TABLE_MISSING_INVALID_STATE"
+                    ):
+                        self._migration(version_dir)(cursor, installed_version)
+                    self.assertEqual(1, len(cursor.queries))
+
+    def test_unknown_version_without_scenario_table_must_fail(self):
+        for version_dir in ("17.0.0.180", "17.0.0.181"):
+            for installed_version in ("", None, "garbage", "17.0"):
+                with self.subTest(version_dir=version_dir, version=installed_version):
+                    cursor = self._cursor(False)
+                    with self.assertRaisesRegex(
+                        RuntimeError, "SCENARIO_ENTRY_TABLE_MISSING_UNKNOWN_VERSION"
+                    ):
+                        self._migration(version_dir)(cursor, installed_version)
+                    self.assertEqual(1, len(cursor.queries))
+
+    def test_existing_table_runs_original_migration_operations(self):
+        cursor = self._cursor(True)
+        self._migration("17.0.0.180")(cursor, "17.0.0.174")
+        self.assertEqual(2, len(cursor.queries))
+        self.assertIn("ALTER TABLE sc_product_scenario_entry", cursor.queries[-1][0])
+        self.assertIn(
+            "DROP CONSTRAINT IF EXISTS sc_product_scenario_entry_menu_uniq",
+            cursor.queries[-1][0],
+        )
+
+        cursor = self._cursor(True, xmlid_row=(321,))
+        self._migration("17.0.0.181")(cursor, "17.0.0.174")
+        self.assertEqual(3, len(cursor.queries))
+        self.assertIn("SELECT res_id", cursor.queries[1][0])
+        self.assertIn("DELETE FROM sc_product_scenario_entry", cursor.queries[2][0])
+        self.assertEqual((321,), cursor.queries[2][1])
+
+    def test_existing_table_without_runtime_user_xmlid_keeps_entries(self):
+        cursor = self._cursor(True, xmlid_row=None)
+        self._migration("17.0.0.181")(cursor, "17.0.0.174")
+        self.assertEqual(2, len(cursor.queries))
+        self.assertFalse(any("DELETE FROM" in query for query, _params in cursor.queries))
+
+    def test_runtime_user_management_is_not_scenario_bound(self):
+        menu = self.env.ref(
+            "smart_construction_core.menu_sc_runtime_user_management",
+            raise_if_not_found=False,
+        )
+        self.assertTrue(menu)
+        self.assertFalse(self.env["sc.product.scenario.entry"].sudo().search_count([
+            ("menu_id", "=", menu.id),
+        ]))

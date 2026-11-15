@@ -1201,6 +1201,13 @@ RULES = (
         "verify.scenario.center_projection.guard",
     )),
     Rule((
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    ), (
+        "verify.smart_construction_core.migration_compatibility.orm",
+    )),
+    Rule((
         "addons/smart_construction_core/services/scenario_surface_projection.py",
         "addons/smart_core/core/navigation_identity.py",
         "scripts/verify/scenario_center_projection_guard.py",

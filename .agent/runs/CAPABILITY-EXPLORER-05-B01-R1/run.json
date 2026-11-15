@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
+    "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "dedicated disposable sc-local-clean-compatible migration database"
+  },
+  "checks": {
+    "migration_compatibility": {
+      "target": "verify.smart_construction_core.migration_compatibility.orm",
+      "inputs": [
+        "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+        ".agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the focused migration compatibility tests, then execute the 172, 174 and 179 to 182 isolated upgrade matrix.",
+  "id": "CAPABILITY-EXPLORER-05-B01-R1",
+  "branch": "fix/capability-explorer-05-b01-r1-20261116",
+  "status": "active",
+  "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
+  "record": "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
+}

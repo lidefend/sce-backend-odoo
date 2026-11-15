@@ -2321,7 +2321,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.daily.permission_truth.capability.orm :: /TestScenarioDirectInitialization (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestScenarioDirectInitialization (class selection)",
+        "make:verify.smart_construction_core.migration_compatibility.orm :: /TestScenarioDirectInitialization (class selection)"
       ],
       "disposition": "class-selected"
     },
