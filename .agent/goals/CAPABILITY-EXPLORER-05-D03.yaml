@@ -49,8 +49,8 @@ goal:
     Revert the CAP05-D03 audit commits. The owner-authorized rebuilt Demo
     database and the merged B01/B02 evidence remain unchanged.
   completion:
-    batch: pending
-    mainline_integration: pending
+    batch: owner_decision_recorded
+    mainline_integration: pending_merge_decision
     deployment: not_performed
     user_acceptance: not_performed
   run: .agent/runs/CAPABILITY-EXPLORER-05-D03/run.json

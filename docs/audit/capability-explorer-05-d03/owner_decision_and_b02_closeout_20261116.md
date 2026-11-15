@@ -1,6 +1,6 @@
 # CAP05-D03 Owner Decision and B02 Closeout
 
-Status: `OWNER_APPROVED_PENDING_AUDIT_PR`
+Status: `OWNER_APPROVED_PENDING_MERGE_DECISION`
 
 ## Decision
 

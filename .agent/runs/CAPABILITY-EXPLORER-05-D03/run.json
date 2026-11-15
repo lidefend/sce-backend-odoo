@@ -33,10 +33,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run ledger and local iteration at the exact candidate, independently review it, then publish a separate audit PR and stop before merge.",
+  "next_exact_step": "Publish the independently reviewed CAP05-D03 audit candidate, wait for required remote CI, then stop for the owner's merge decision.",
   "id": "CAPABILITY-EXPLORER-05-D03",
   "branch": "audit/capability-explorer-05-d03-20261116",
-  "status": "verification_pending",
+  "status": "pending_merge_decision",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05-D03.yaml",
   "record": "docs/audit/capability-explorer-05-d03/owner_decision_and_b02_closeout_20261116.md"
 }
