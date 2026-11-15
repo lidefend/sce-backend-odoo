@@ -77,8 +77,9 @@ The complete command logs are gzip-compressed under `evidence/`; use
 `gzip -dc <file>.log.gz` to read the original bytes. Raw database fingerprint
 snapshots are gzip-compressed under `evidence/raw/`; they contain only technical
 ACL, rule, menu, company, user-company and group-membership fingerprints and
-identities. `SHA256SUMS` records tracked compressed bytes and the SHA256 of each
-original uncompressed log and fingerprint.
+identities. `SHA256SUMS` verifies the tracked byte streams directly;
+`evidence/original_sha256.json` records the original member hashes reproduced
+with `gzip -dc`.
 
 ## Not Verified
 
