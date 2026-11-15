@@ -2208,6 +2208,12 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/frontend_productization/frontend_workspace_layout_contract_compatibility_v1.md。登记待接线或退役，B3 按族处理。"
     },
+    "verify.frontend.platform_capability_explorer.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "Read-only capability explorer browser acceptance is selected by the governed incremental planner and run for the exact candidate; the static lane auditor cannot resolve that dynamic registered check target.",
+      "review_by": "2026-12-31"
+    },
     "verify.frontend.product_configuration_capability.browser": {
       "disposition": "browser_acceptance_probe",
       "owner": "construction-product",
@@ -2377,7 +2383,8 @@
     "verify.frontend.public_auth_bootstrap.unit": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md。登记待接线或退役，B3 按族处理。"
+      "reason": "Existing public-auth bootstrap probe remains outside this capability explorer batch; its current sandbox failure is recorded separately and is not a dependency of the page-contract declaration.",
+      "review_by": "2026-12-31"
     },
     "verify.frontend.record_form_return.unit": {
       "disposition": "history_probe_runbook",

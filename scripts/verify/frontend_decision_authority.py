@@ -333,6 +333,9 @@ AUTHORITY: dict[str, dict] = {
         "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
         "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
     },
+    "R4_business_state_literal|unknown": _derived(
+        "addons/smart_core/delivery/platform_capability_explorer.py:1342"
+    ),
     "R4_business_state_literal|deny_ungranted": {
         "classification": "contract-derived",
         "evidence": "addons/smart_core/core/system_init_payload_builder.py:204",

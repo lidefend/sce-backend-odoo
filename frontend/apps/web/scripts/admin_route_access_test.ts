@@ -26,6 +26,7 @@ const plainUser: AdminRouteUser = { is_platform_admin: false, is_tenant_config_a
 
 const tenantRoute = { adminOnly: true };
 const platformRoute = { adminOnly: true, platformAdminOnly: true };
+const managementRoute = { managementAdminOnly: true };
 const openRoute = { layout: 'shell' };
 
 // 1. Demo admin: tenant configuration routes stay open.
@@ -43,6 +44,9 @@ check(resolveAdminRouteAccess(tenantRoute, platformAdmin), 'allow', 'platform ad
 // 4. Plain tenant user: no admin surface.
 check(resolveAdminRouteAccess(tenantRoute, plainUser), 'tenant_required', 'plain user denied tenant admin routes');
 check(resolveAdminRouteAccess(platformRoute, plainUser), 'platform_required', 'plain user denied platform control route');
+check(resolveAdminRouteAccess(managementRoute, demoAdmin), 'allow', 'tenant admin passes shared management route');
+check(resolveAdminRouteAccess(managementRoute, platformAdmin), 'allow', 'platform admin passes shared management route');
+check(resolveAdminRouteAccess(managementRoute, plainUser), 'management_required', 'plain user denied shared management route');
 
 // 5. Non-admin routes ignore the identity flags.
 check(resolveAdminRouteAccess(openRoute, plainUser), 'allow', 'open routes ignore admin flags');

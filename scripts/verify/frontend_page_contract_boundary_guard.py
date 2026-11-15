@@ -59,6 +59,7 @@ def main() -> int:
         "NotFoundView.vue",
         "PlaceholderView.vue",
         "PasswordRecoveryView.vue",
+        "PlatformCapabilityExplorerView.vue",
         "PlatformDutyView.vue",
         "ReleaseOperatorView.vue",
         "SceneContractBlockGridView.vue",
@@ -181,6 +182,15 @@ def main() -> int:
             "import PlatformDutyPanel from '../components/platform-duty/PlatformDutyPanel.vue';",
             "<PlatformDutyPanel />",
             'data-semantic-component="PlatformDutyView"',
+        ],
+        "PlatformCapabilityExplorerView.vue": [
+            "const pageContract = usePageContract('platform_capability_explorer');",
+            "pageText('title', '')",
+            "pageSectionEnabled('header', true)",
+            "pageSectionEnabled('metrics', true)",
+            "pageSectionEnabled('filters', true)",
+            "pageSectionEnabled('catalog', true)",
+            "pageSectionEnabled('detail', true)",
         ],
         "ApiKeyManagementView.vue": [
             "data-evidence-sensitive=\"api_key\"",

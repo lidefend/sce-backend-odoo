@@ -823,6 +823,46 @@
       "ownerLayer": "P0_frontend_renderer"
     },
     {
+      "decisionKey": "R4_business_state_literal|preview|frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "preview",
+      "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "lines": [
+        43
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|released|frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "released",
+      "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "lines": [
+        42
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/release_audit_trail_service.py:167",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|unknown|frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "unknown",
+      "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+      "lines": [
+        44
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/platform_capability_explorer.py:1342",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|ready|frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
       "rule": "R4_business_state_literal",
       "literal": "ready",
@@ -1690,21 +1730,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 159,
-    "distinctDecisions": 113,
+    "totalFindings": 162,
+    "distinctDecisions": 116,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 123
+      "R4_business_state_literal": 126
     },
     "byClassification": {
-      "contract-derived": 62,
-      "excluded-render-interaction": 97
+      "contract-derived": 64,
+      "excluded-render-interaction": 98
     },
     "unclassified": 0,
-    "contractDerived": 62,
+    "contractDerived": 64,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 97
+    "excludedRenderInteraction": 98
   }
 }

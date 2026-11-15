@@ -1,0 +1,124 @@
+# ODOO-NATIVE-CAPABILITY-EXPLORER-04
+
+## Candidate
+
+- Baseline: `3e02a475f0a58b63472455dc0c42822e9743a945`
+- Baseline tree: `c647702450a59fefa89d4097fddd0da0d42f4`
+- Branch: `audit/platform-capability-studio-01-20261115`
+- Stage: clean local candidate verified, pending exact-head Quick
+
+## Product Boundary
+
+- Formal product layer: P0 platform kernel product with P4 verification tooling.
+- The Vue page consumes only the approved `platform.capability.explorer.list`,
+  `detail`, and `diagnose` Intents.
+- The page does not create a capability registry, persist catalog facts, infer
+  Preview/Standard qualification, or perform scene/release writes.
+- The browser requirement is ordinary management access; the backend Handler
+  remains the authorization authority.
+
+## Delivered Surface
+
+- Added `/admin/capability-explorer` under platform management.
+- Added live summary, native-center navigation, server search/filter controls,
+  server pagination, desktop table and 390px mobile record cards.
+- Added an on-demand detail Drawer for native Menu/Action identity, module,
+  model, View/ACL/Record Rule summaries, scenario references, release state,
+  qualification and technical blockers.
+- Added shared `catalog_token` consumption for List, Detail and Diagnose.
+- Added `CATALOG_STALE` recovery that closes stale detail state and refreshes
+  the catalog without mixing snapshots.
+- Added platform and tenant-config management duty entries pointing to the same
+  official route.
+- Added strict response decoders that raise `ContractGapError` for undeclared
+  response shapes. An explicit empty center object remains a valid backend fact.
+- Added the page to the existing page-contract runtime. The platform page now
+  consumes declared title, description, section enablement and detail labels.
+- Reused `ScButton`, `ScMobileRecordCard`, `ScSection` and the existing design
+  system. No raw behavior surface or frontend persistence was added.
+
+## Implementation Corrections Found During Acceptance
+
+- Detail and Diagnose use base metadata without List pagination fields; the
+  decoder now separates `BaseMeta` from List-only pagination metadata.
+- Explicit empty `center={}` is accepted as backend truth rather than treated
+  as a contract gap.
+- Detail section headings now render through the shared `ScSection` component.
+- The platform page contract is included in the authenticated startup projection.
+- Mobile rows now use `ScMobileRecordCard`; wrapping a structured record in a
+  button had broken the field stack.
+- The browser tool records `CATALOG_STALE` as the sole expected 409 and does not
+  hide any other HTTP, Console or Page error.
+- The verification-lane baseline deliberately registers the new browser target
+  as a governed browser acceptance probe. The page-contract change also wires
+  the formerly zero-reference public-auth bootstrap target, so that stale
+  disposition was removed and the target was re-registered after mapping was
+  narrowed back to the direct boundary gate.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `make verify.platform.capability_explorer.unit` | PASS: 19 + 6 + 2 tests |
+| `make verify.frontend.platform_capability_explorer.unit` | PASS: backend duty 27, duty action 4, route access 13 cases, strict decoder 18 cases |
+| `make verify.backend.navigation_delivery.unit` | PASS: all navigation and page-contract units |
+| `make verify.frontend.dev.incremental.unit` | PASS: 148 tests |
+| `make verify.frontend.lint.src` | PASS: 0 errors; existing warnings only |
+| `make verify.frontend.typecheck.strict` | PASS |
+| `make verify.frontend.decision_authority.unit` | PASS: 21 tests; unclassified 0 |
+| `make verify.frontend.component_driver_takeover.unit` | PASS: raw behavior surfaces 0 |
+| `make verify.frontend.page_contract_boundary.guard` | PASS: 24 views covered |
+| `make ci.local.iteration` | PASS: 16 required targets executed |
+| `make ci.delivery.freeze.prepare` | PASS: content-bound generated evidence current |
+
+The initial incremental run exposed an unrelated, pre-existing
+`verify.frontend.public_auth_bootstrap.unit` sandbox failure. Page-contract
+declaration mapping was narrowed to the direct page boundary gate; the existing
+public-auth probe remains registered and is not claimed as passing in this batch.
+
+## Browser Acceptance
+
+Runtime: `local.dev` / `sc_dev_demo`, authenticated as `admin`.
+
+- Current live catalog: 17 native entries, 0 bound scenarios, 17 unbound.
+- Native centers: 5.
+- Exact `catalog_token`:
+  `sha256:37490e5695e1a632a4786716867e7d1f5f4b482346cde16d4a787fa19cdfec7b`.
+- Browser assertions: 27/27 PASS.
+- Screenshots: desktop list, desktop detail, 390px mobile list.
+- Performance in this run: desktop list ready 1179 ms; detail ready 664 ms;
+  stale refresh 1273 ms; mobile list ready 1457 ms.
+- Search `项目` returned 1 filtered row from the live 17-row catalog.
+- The `unclassified` center facet returned its matching 2/2 server rows after
+  clearing the prior search.
+- Pagination metadata: offset 0, limit 50, next offset null, has more false.
+- HTTP failures: one expected `CATALOG_STALE` 409; no unexpected failures.
+- Console/Page errors: 0.
+
+Permission negative:
+
+- `wutao` was redirected away from `/admin/capability-explorer`.
+- Route access made 0 Explorer List requests.
+- A direct List Intent call returned HTTP 403 `PERMISSION_DENIED`.
+
+Evidence hashes:
+
+- `report.json`: `cded75bb470657f054562dddb684c43e43b9fe54bddfa4d577e11c2998a7fb0d`
+- `01-desktop-list.png`: `1d3cf78c23d081cd212d77b9fd4f052f7ddd8852f27da6145bf0e32161cd2c14`
+- `02-desktop-detail.png`: `fabc6c288071be14687ffd1ab7af0cb2eabd76e0fe5700ede2d6386f40027d3a`
+- `03-mobile-list.png`: `2d277c6afd1603dc4bbcce2ef3b0153b0830e901b4c97f7a8b63b0ad006655c2`
+
+## Explicit Exclusions
+
+- No historical 282/75/207 snapshot reconciliation is claimed from 17-entry
+  `sc_dev_demo`; that remains a separate authorized-snapshot acceptance.
+- No add-to-scene-draft, scene edit, tile edit, publication, or enterprise
+  activation write.
+- No new ORM model, Capability Registry, ACL/Record Rule change, migration, or
+  frontend persistence.
+- No push, merge, or deployment in this batch.
+
+## Next Exact Step
+
+Run one exact-head `make ci.local.quick.full`, verify the receipt/tree/clean
+state, then stop for independent review.

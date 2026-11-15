@@ -1056,6 +1056,26 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                     "description": "维护正式业务菜单的显示、排序、移动和角色可见范围。",
                 },
             },
+            "platform_capability_explorer": {
+                "schema_version": "2.0.0",
+                "sections": [
+                    {"key": "root", "enabled": True, "order": 1, "tag": "section"},
+                    {"key": "header", "enabled": True, "order": 2, "tag": "header"},
+                    {"key": "metrics", "enabled": True, "order": 3, "tag": "section"},
+                    {"key": "filters", "enabled": True, "order": 4, "tag": "section"},
+                    {"key": "catalog", "enabled": True, "order": 5, "tag": "section"},
+                    {"key": "detail", "enabled": True, "order": 6, "tag": "section"},
+                ],
+                "texts": {
+                    "eyebrow": "平台管理中心",
+                    "title": "平台能力浏览器",
+                    "description": "基于 Odoo 当前安装模块和运行时 Registry 实时发现。页面只呈现后端目录，不维护第二份能力数据。",
+                    "centers_title": "业务中心",
+                    "entries_title": "业务入口",
+                    "detail_title": "入口详情",
+                    "detail_description": "只读展示 Odoo 原生事实、场景引用和诊断结果。",
+                },
+            },
             "scene_contract_block_grid": {
                 "schema_version": "2.0.0",
                 "sections": [

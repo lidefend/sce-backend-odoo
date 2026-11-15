@@ -485,6 +485,33 @@ RULES = (
         "verify.platform.capability_explorer.unit",
     )),
     Rule((
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/app/adminRouteAccess.ts",
+        "frontend/apps/web/scripts/admin_route_access_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+    ), (
+        "verify.frontend.platform_capability_explorer.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/page_contracts_builder.py",
+    ), (
+        "verify.frontend.page_contract_boundary.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_page_contract_boundary_guard.py",
+    ), (
+        "verify.frontend.page_contract_boundary.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+    ), (
+        "verify.frontend.decision_authority.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/scene_shell_compiler.py",
         "addons/smart_core/tests/test_scene_shell_compiler.py",
     ), (

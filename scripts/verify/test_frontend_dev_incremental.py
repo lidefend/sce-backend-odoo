@@ -426,6 +426,54 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_platform_capability_explorer_frontend_selects_its_consumer_unit(self) -> None:
+        for path in (
+            "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+            "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+            "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+            "frontend/apps/web/src/app/adminRouteAccess.ts",
+            "frontend/apps/web/scripts/admin_route_access_test.ts",
+            "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+            "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        ):
+            with self.subTest(path=path):
+                expected = (
+                    [
+                        "verify.frontend.lint.src",
+                        "verify.frontend.platform_capability_explorer.unit",
+                        "verify.frontend.typecheck.strict",
+                    ]
+                    if path.startswith("frontend/apps/web/src/")
+                    else ["verify.frontend.platform_capability_explorer.unit"]
+                )
+                self.assertEqual(
+                    select_targets([path]),
+                    expected,
+                )
+
+    def test_page_contract_builder_selects_contract_boundary_gates(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/core/page_contracts_builder.py"]),
+            [
+                "verify.frontend.page_contract_boundary.guard",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_page_contract_boundary_guard.py"]),
+            ["verify.frontend.page_contract_boundary.guard"],
+        )
+
+    def test_decision_authority_artifacts_select_their_unit(self) -> None:
+        for path in (
+            "scripts/verify/frontend_decision_authority.py",
+            "scripts/verify/frontend_decision_authority_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.decision_authority.unit"],
+                )
+
     def test_scene_shell_compiler_selects_its_navigation_unit(self) -> None:
         for path in (
             "addons/smart_core/delivery/scene_shell_compiler.py",

@@ -13,6 +13,7 @@
 export interface AdminRouteMeta {
   adminOnly?: unknown;
   platformAdminOnly?: unknown;
+  managementAdminOnly?: unknown;
 }
 
 export interface AdminRouteUser {
@@ -20,7 +21,7 @@ export interface AdminRouteUser {
   is_tenant_config_admin?: boolean | null;
 }
 
-export type AdminRouteAccess = 'allow' | 'platform_required' | 'tenant_required';
+export type AdminRouteAccess = 'allow' | 'platform_required' | 'tenant_required' | 'management_required';
 
 export function resolveAdminRouteAccess(
   meta: AdminRouteMeta | null | undefined,
@@ -28,6 +29,11 @@ export function resolveAdminRouteAccess(
 ): AdminRouteAccess {
   if (meta?.platformAdminOnly === true) {
     return user?.is_platform_admin === true ? 'allow' : 'platform_required';
+  }
+  if (meta?.managementAdminOnly === true) {
+    return user?.is_platform_admin === true || user?.is_tenant_config_admin === true
+      ? 'allow'
+      : 'management_required';
   }
   if (meta?.adminOnly === true) {
     return user?.is_tenant_config_admin === true ? 'allow' : 'tenant_required';

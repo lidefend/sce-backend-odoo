@@ -623,6 +623,15 @@ class ProjectionContractTests(unittest.TestCase):
             }
         )
         self.assertEqual(result["meta"]["filtered_total"], 1)
+        self.assertEqual(result["facets"]["scene_status"], {"bound": 0, "unbound": 1})
+        self.assertEqual(
+            result["facets"]["classification_confidence"],
+            {
+                "authoritative_scene_binding": 0,
+                "center_only": 1,
+                "unclassified": 0,
+            },
+        )
         self.assertEqual(
             result["meta"]["diagnostics"]["performance"]["query_count"],
             0,

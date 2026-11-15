@@ -136,7 +136,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 80,
+      "productionConsumerCount": 88,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -263,7 +263,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 465,
+      "productionConsumerCount": 472,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -303,7 +303,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 87,
+      "productionConsumerCount": 91,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -452,7 +452,7 @@
         "TDesignDescriptionsItem"
       ],
       "officialComponent": "descriptions",
-      "productionConsumerCount": 5,
+      "productionConsumerCount": 7,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -507,7 +507,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 3,
+      "productionConsumerCount": 4,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -551,7 +551,7 @@
         "TDesignEmpty"
       ],
       "officialComponent": "empty",
-      "productionConsumerCount": 34,
+      "productionConsumerCount": 36,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -667,7 +667,7 @@
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 62,
+      "productionConsumerCount": 63,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -830,7 +830,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 77,
+      "productionConsumerCount": 85,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -911,7 +911,7 @@
         "TDesignPagination"
       ],
       "officialComponent": "pagination",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 2,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1075,7 +1075,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 46,
+      "productionConsumerCount": 50,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1248,7 +1248,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 24,
+      "productionConsumerCount": 25,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1299,7 +1299,7 @@
         "TDesignTag"
       ],
       "officialComponent": "tag",
-      "productionConsumerCount": 16,
+      "productionConsumerCount": 21,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "684275407a4b601db69884f2f4935893924b93de8b9353391cf1eebea7dd5db3",
+  "inputDigest": "67f8454988e5b023ab34353e5d9eea472bd17fefe0ed338ed34631c7b4a9a803",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",

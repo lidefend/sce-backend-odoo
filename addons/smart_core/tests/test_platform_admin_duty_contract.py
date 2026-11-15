@@ -181,6 +181,28 @@ class ContractDeclarationTests(unittest.TestCase):
             payload = row["default_payload"]
             self.assertTrue(payload.get("route") or payload.get("intent") or payload.get("action_xmlid"))
 
+    def test_capability_explorer_is_declared_for_platform_and_tenant_management(self):
+        platform = self.contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+        )
+        tenant = self.contract.build_platform_duty_surface(
+            is_platform_control_admin=False,
+            is_tenant_config_admin=True,
+        )
+        platform_duty = next(
+            row for row in platform["duties"]
+            if row["key"] == "platform.capability_explorer"
+        )
+        tenant_duty = next(
+            row for row in tenant["duties"]
+            if row["key"] == "tenant.config.capability_explorer"
+        )
+        self.assertEqual(platform_duty["route"], "/admin/capability-explorer")
+        self.assertEqual(tenant_duty["route"], "/admin/capability-explorer")
+        self.assertIn("platform.capability_explorer.read", platform["capabilities"])
+        self.assertIn("tenant.config.capability_explorer.read", tenant["capabilities"])
+
     def test_tenant_and_plain_surfaces_produce_no_platform_rows(self):
         tenant = self.contract.build_platform_duty_surface(
             is_platform_control_admin=False, is_tenant_config_admin=True

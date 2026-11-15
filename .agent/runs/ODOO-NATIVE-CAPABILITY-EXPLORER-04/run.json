@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "ODOO-NATIVE-CAPABILITY-EXPLORER-04",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "verification_pending",
+  "baseline_sha": "3e02a475f0a58b63472455dc0c42822e9743a945",
+  "goal": ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-04.yaml",
+  "record": "docs/ops/iterations/odoo_native_capability_explorer_04_20261115.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ODOO-NATIVE-CAPABILITY-EXPLORER-04.yaml",
+    ".agent/runs/ODOO-NATIVE-CAPABILITY-EXPLORER-04/run.json",
+    "addons/smart_core/core/page_contracts_builder.py",
+    "addons/smart_core/core/platform_duty_contract.py",
+    "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/delivery/platform_capability_explorer.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/tests/test_platform_capability_explorer.py",
+    "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+    "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+    "frontend/apps/web/src/app/adminRouteAccess.ts",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+    "frontend/apps/web/scripts/admin_route_access_test.ts",
+    "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+    "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+    "make/frontend.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_decision_authority.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/audit/frontend_page_contract_boundary_report.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/odoo_native_capability_explorer_04_20261115.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing local.dev sc_dev_demo plus the repository Vue/Vite build and governed Make targets; read-only capability Intents, no business writes."
+  },
+  "checks": {
+    "frontend_unit": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/app/adminRouteAccess.ts",
+        "frontend/apps/web/scripts/admin_route_access_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_browser": {
+      "target": "verify.frontend.platform_capability_explorer.browser",
+      "inputs": [
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/playwright/platform-capability-explorer/report.json"
+      }
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run one exact-head ci.local.quick.full, verify the receipt and tree, then stop for independent review."
+}

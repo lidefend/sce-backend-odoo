@@ -1755,9 +1755,9 @@ class PlatformCapabilityExplorerService:
     def _facets(rows: list[dict[str, Any]]) -> dict[str, Any]:
         centers: dict[str, dict[str, Any]] = {}
         domains: dict[str, dict[str, Any]] = {}
-        scene_status = Counter()
+        scene_status = Counter({"bound": 0, "unbound": 0})
         release_states = Counter()
-        confidence = Counter()
+        confidence = Counter({value: 0 for value in CLASSIFICATION_CONFIDENCES})
         for row in rows:
             center = _dict(row.get("center"))
             center_key = _text(center.get("key")) or "unclassified"
