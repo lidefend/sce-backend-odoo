@@ -73,11 +73,12 @@ not advance the module version or leave a transient upgrade state.
 
 ## Evidence Accounting
 
-The complete command logs are under `evidence/`. Raw database fingerprint
+The complete command logs are gzip-compressed under `evidence/`; use
+`gzip -dc <file>.log.gz` to read the original bytes. Raw database fingerprint
 snapshots are gzip-compressed under `evidence/raw/`; they contain only technical
 ACL, rule, menu, company, user-company and group-membership fingerprints and
-identities. `SHA256SUMS` records both tracked evidence bytes and the SHA256 of
-each uncompressed fingerprint.
+identities. `SHA256SUMS` records tracked compressed bytes and the SHA256 of each
+original uncompressed log and fingerprint.
 
 ## Not Verified
 

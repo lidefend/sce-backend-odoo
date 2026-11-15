@@ -86,8 +86,8 @@
         }
       },
       "evidence": [
-        "evidence/172-build.log",
-        "evidence/172-upgrade-both-modules-pass.log",
+        "evidence/172-build.log.gz",
+        "evidence/172-upgrade-both-modules-pass.log.gz",
         "evidence/raw/172-pre.json.gz",
         "evidence/raw/172-post.json.gz"
       ]
@@ -154,8 +154,8 @@
         }
       },
       "evidence": [
-        "evidence/174-build.log",
-        "evidence/174-upgrade-pass.log",
+        "evidence/174-build.log.gz",
+        "evidence/174-upgrade-pass.log.gz",
         "evidence/raw/174-pre.json.gz",
         "evidence/raw/174-post.json.gz"
       ]
@@ -222,8 +222,8 @@
         }
       },
       "evidence": [
-        "evidence/179-build.log",
-        "evidence/179-upgrade-pass.log",
+        "evidence/179-build.log.gz",
+        "evidence/179-upgrade-pass.log.gz",
         "evidence/raw/179-pre.json.gz",
         "evidence/raw/179-post.json.gz"
       ]
@@ -245,11 +245,11 @@
         "sc_product_scenario_entry": "ABSENT"
       },
       "evidence": [
-        "evidence/negative-174-build.log",
-        "evidence/negative-174-before-drop.log",
-        "evidence/negative-174-invalid-fixture.log",
-        "evidence/negative-modern-missing-table-upgrade-fail.log",
-        "evidence/negative-174-after-failure.log",
+        "evidence/negative-174-build.log.gz",
+        "evidence/negative-174-before-drop.log.gz",
+        "evidence/negative-174-invalid-fixture.log.gz",
+        "evidence/negative-modern-missing-table-upgrade-fail.log.gz",
+        "evidence/negative-174-after-failure.log.gz",
         "evidence/raw/neg-174-pre.json.gz",
         "evidence/raw/neg-174-post.json.gz"
       ]

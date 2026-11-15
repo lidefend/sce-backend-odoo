@@ -42,10 +42,10 @@ Completed against repair HEAD
 | --- | --- | --- |
 | Focused migration/ORM suite | PASS, 13 tests | `make verify.smart_construction_core.migration_compatibility.orm` |
 | Agent ledger | PASS, 18 tests | `make verify.agent.ledger.unit` |
-| Direct `172 -> 182` | PASS | `evidence/172-upgrade-both-modules-pass.log` |
-| Direct `174 -> 182` | PASS | `evidence/174-upgrade-pass.log` |
-| Direct `179 -> 182` | PASS | `evidence/179-upgrade-pass.log` |
-| Modern version with absent table | PASS fail-closed | `evidence/negative-modern-missing-table-upgrade-fail.log` |
+| Direct `172 -> 182` | PASS | `evidence/172-upgrade-both-modules-pass.log.gz` |
+| Direct `174 -> 182` | PASS | `evidence/174-upgrade-pass.log.gz` |
+| Direct `179 -> 182` | PASS | `evidence/179-upgrade-pass.log.gz` |
+| Modern version with absent table | PASS fail-closed | `evidence/negative-modern-missing-table-upgrade-fail.log.gz` |
 | Malformed-version branch | PASS unit-only | focused migration/ORM suite |
 
 The complete matrix and database fingerprint deltas are recorded in
