@@ -1,38 +1,38 @@
 ...................
 ----------------------------------------------------------------------
-Ran 19 tests in 0.162s
+Ran 19 tests in 0.173s
 
 OK
 [baseline_iteration_execution_policy_guard] PASS policy=BASELINE_ITERATION_EXECUTION_POLICY=v1 documents=3 make_authorities=9
 ...............................
 ----------------------------------------------------------------------
-Ran 31 tests in 0.006s
+Ran 31 tests in 0.005s
 
 OK
 .....
 ----------------------------------------------------------------------
-Ran 5 tests in 0.011s
+Ran 5 tests in 0.012s
 
 OK
 [frontend_text_containment_guard] PASS
 nowrap_files=40 overlap_files=13 information_files=10 important=8
 ........
 ----------------------------------------------------------------------
-Ran 8 tests in 0.010s
+Ran 8 tests in 0.011s
 
 OK
 [frontend_inline_style_guard] PASS
 registered_files=30 mechanisms=9
 .......
 ----------------------------------------------------------------------
-Ran 7 tests in 0.010s
+Ran 7 tests in 0.011s
 
 OK
 [frontend_split_usage_guard] PASS
 files=40 occurrences=62 mechanisms=19
 .....
 ----------------------------------------------------------------------
-Ran 5 tests in 0.011s
+Ran 5 tests in 0.015s
 
 OK
 [frontend_rich_text_guard] PASS
@@ -45,13 +45,13 @@ OK
 
   ../../../../tmp/logger-runtime-test.mjs  3.6kb
 
-⚡ Done in 2ms
+⚡ Done in 4ms
 [logger-runtime] PASS quiet, verbose, production and runtime opt-in policies
 [frontend_console_guard] PASS
 console_sites=0 console_calls=0
 ...
 ----------------------------------------------------------------------
-Ran 3 tests in 0.003s
+Ran 3 tests in 0.005s
 
 OK
 [frontend_systemic_convergence_gate_guard] PASS
@@ -63,7 +63,7 @@ gates=5
     "reusable": 4
   },
   "branch": "audit/capability-explorer-05-r1-20261115",
-  "head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+  "head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
   "dirty": "",
   "baseline_sha": "f35d981b2a37d6268e31592edeef460c9580240c",
   "run_status": "blocked",
@@ -73,6 +73,27 @@ gates=5
     ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
     ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
     ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
+    "docs/audit/capability-explorer-05/evidence/.gitattributes",
+    "docs/audit/capability-explorer-05/evidence/01-desktop-list.png",
+    "docs/audit/capability-explorer-05/evidence/02-desktop-detail.png",
+    "docs/audit/capability-explorer-05/evidence/03-mobile-list.png",
+    "docs/audit/capability-explorer-05/evidence/agent-ledger.log",
+    "docs/audit/capability-explorer-05/evidence/browser-first-timeout.log",
+    "docs/audit/capability-explorer-05/evidence/browser-recovery-diagnosis.log",
+    "docs/audit/capability-explorer-05/evidence/browser-report.json",
+    "docs/audit/capability-explorer-05/evidence/browser-retry.log",
+    "docs/audit/capability-explorer-05/evidence/business-state-after.tsv",
+    "docs/audit/capability-explorer-05/evidence/business-state-before.tsv",
+    "docs/audit/capability-explorer-05/evidence/ci-local-iteration.log",
+    "docs/audit/capability-explorer-05/evidence/clean-upgrade-smart-core.log",
+    "docs/audit/capability-explorer-05/evidence/current-native.log",
+    "docs/audit/capability-explorer-05/evidence/daily-scene-scope.log",
+    "docs/audit/capability-explorer-05/evidence/explorer-unit.log",
+    "docs/audit/capability-explorer-05/evidence/frontend-unit.log",
+    "docs/audit/capability-explorer-05/evidence/historical-classification.log",
+    "docs/audit/capability-explorer-05/evidence/historical-runtime-probe.log",
+    "docs/audit/capability-explorer-05/evidence/local-dev-upgrade.log",
+    "docs/audit/capability-explorer-05/evidence/native-unit.log",
     "docs/audit/capability-explorer-05/historical_reconciliation_20261115.json",
     "docs/audit/capability-explorer-05/historical_reconciliation_20261115.md",
     "docs/audit/capability-explorer-05/identity_mapping_20261115.csv",
@@ -85,28 +106,28 @@ gates=5
       "target": "verify.odoo_native_capability_explorer.unit",
       "status": "reusable",
       "reason": "declared inputs and original log unchanged",
-      "source_head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+      "source_head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
       "test_count": 10
     },
     "explorer_unit": {
       "target": "verify.platform.capability_explorer.unit",
       "status": "reusable",
       "reason": "declared inputs and original log unchanged",
-      "source_head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+      "source_head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
       "test_count": 27
     },
     "frontend_unit": {
       "target": "verify.frontend.platform_capability_explorer.unit",
       "status": "reusable",
       "reason": "declared inputs and original log unchanged",
-      "source_head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+      "source_head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
       "test_count": 68
     },
     "agent_ledger": {
       "target": "verify.agent.ledger.unit",
       "status": "reusable",
       "reason": "declared inputs and original log unchanged",
-      "source_head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+      "source_head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
       "test_count": 18
     }
   },
@@ -122,14 +143,14 @@ gates=5
       "classification": "environment_defect",
       "status": "blocked",
       "summary": "Disposable sc_clean carries smart_construction_core 17.0.0.172 installed without sc_product_scenario_entry; the 17.0.0.180 pre-migrate ALTER TABLE fails before registry load.",
-      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/clean-upgrade-smart-core.log"
+      "evidence": "docs/audit/capability-explorer-05/evidence/clean-upgrade-smart-core.log"
     },
     {
       "id": "CAP05-B02",
       "classification": "scope_deviation",
       "status": "blocked",
       "summary": "Persistent sc_dev_demo was upgraded and restarted outside strict isolation. Owner decision CAP05-D01 retains the current state without restore, keeps B02 open, and requires a read-only difference reconciliation before any separately authorized recovery decision.",
-      "evidence": ".runtime/agent-runs/CAPABILITY-EXPLORER-05/local-dev-upgrade.log",
+      "evidence": "docs/audit/capability-explorer-05/evidence/local-dev-upgrade.log",
       "decision": ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml"
     }
   ],
@@ -139,7 +160,7 @@ gates=5
 }
 {
   "status": "ready_for_existing_gates",
-  "head": "4cfc1333c168535f4359271f8b3c5c3b7764dbfe",
+  "head": "9ddc7483d36ed903dc211ece8410462505b9cea0",
   "base": "f35d981b2a37d6268e31592edeef460c9580240c",
   "blockers": [],
   "candidate_evidence": false,
@@ -154,7 +175,7 @@ gates=5
 [size-advisory] core_extension.py is 1971 lines, 81 over the 1890-line guidance budget (baseline 1830); consider splitting before the next structural change
 [construction_core_extension_intent_handlers_split_guard] PASS
 [frontend_page_contract_boundary_guard] PASS
-[frontend.dev.incremental] PASS reused=.runtime/frontend-dev-validation/executions/20261115T144303Z-3677633-924572218/receipt.json receipt=.runtime/frontend-dev-validation/executions/20261115T144708Z-3699384-780154561/receipt.json
+[frontend.dev.incremental] PASS reused=.runtime/frontend-dev-validation/executions/20261115T151746Z-3845942-54521806/receipt.json receipt=.runtime/frontend-dev-validation/executions/20261115T152020Z-3864992-453824798/receipt.json
 [trusted_scan_scope] kind=secrets mode=full base=none reason=scan_authority_changed evidence=none
 [trusted_scan_scope] kind=personal mode=full base=none reason=scan_authority_changed evidence=none
 [trusted_scan_scope] kind=history mode=full base=none reason=scan_authority_changed evidence=none

@@ -1,7 +1,7 @@
 {
   "schema": "platform.capability.explorer.browser.v1",
   "pass": true,
-  "generated_at": "2026-11-15T14:42:17.869Z",
+  "generated_at": "2026-11-15T15:21:25.724Z",
   "runtime": {
     "base_url": "http://127.0.0.1:5176",
     "database": "sc_dev_demo",
@@ -280,10 +280,10 @@
     "late_blocker": "LATE_ENTRY_A"
   },
   "performance": {
-    "desktop_list_ready_ms": 1434,
-    "detail_ready_ms": 500,
-    "stale_recovery_ms": 1276,
-    "mobile_list_ready_ms": 1465
+    "desktop_list_ready_ms": 1578,
+    "detail_ready_ms": 805,
+    "stale_recovery_ms": 1283,
+    "mobile_list_ready_ms": 1429
   },
   "permissions": {
     "denied_login": "wutao",
@@ -295,5 +295,5 @@
       "reasonCode": "PERMISSION_DENIED"
     }
   },
-  "completed_at": "2026-11-15T14:42:31.585Z"
+  "completed_at": "2026-11-15T15:21:39.888Z"
 }

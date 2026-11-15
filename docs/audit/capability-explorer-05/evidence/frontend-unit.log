@@ -32,17 +32,17 @@ test_tenants_payload_uses_the_registry_name_and_no_cross_db_company (__main__.Pr
 test_unresolvable_duty_action_fails_closed (__main__.ProjectionAndRouteTests.test_unresolvable_duty_action_fails_closed) ... ok
 
 ----------------------------------------------------------------------
-Ran 27 tests in 0.010s
+Ran 27 tests in 0.008s
 
 OK
 
   node_modules/.cache/duty-action.test.mjs  2.5kb
 
 ⚡ Done in 3ms
-✔ an API duty is consumed inline and never navigated (1.222852ms)
-✔ declared frontend routes may navigate (0.181959ms)
-✔ an undeclared route never navigates (0.13007ms)
-✔ an intent duty stays an intent and an empty duty has no action (0.1649ms)
+✔ an API duty is consumed inline and never navigated (2.68656ms)
+✔ declared frontend routes may navigate (0.212289ms)
+✔ an undeclared route never navigates (0.114232ms)
+✔ an intent duty stays an intent and an empty duty has no action (0.157722ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -50,15 +50,15 @@ OK
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 7.442806
+ℹ duration_ms 11.265837
 
   ../../../../tmp/admin-route-access-test.mjs  2.9kb
 
-⚡ Done in 2ms
+⚡ Done in 3ms
 [admin_route_access_test] PASS cases=13
-✔ an expected HTTP failure can be consumed exactly once (0.752269ms)
-✔ a non-matching response cannot consume the expected budget (0.149949ms)
-✔ pending expected failures are visible when the injected response never arrives (0.111491ms)
+✔ an expected HTTP failure can be consumed exactly once (0.779444ms)
+✔ a non-matching response cannot consume the expected budget (0.136059ms)
+✔ pending expected failures are visible when the injected response never arrives (0.160706ms)
 ℹ tests 3
 ℹ suites 0
 ℹ pass 3
@@ -66,9 +66,9 @@ OK
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 61.49767
+ℹ duration_ms 63.277601
 
   ../../../../tmp/platform-capability-explorer-test.mjs  999.7kb
 
-⚡ Done in 42ms
+⚡ Done in 67ms
 [platform_capability_explorer_test] PASS cases=21

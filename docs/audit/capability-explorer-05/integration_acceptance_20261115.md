@@ -178,9 +178,9 @@ ERROR: relation "sc_product_scenario_entry" does not exist
 证据：
 
 - `docs/audit/capability-explorer-05/evidence/browser-report.json`
-  SHA256 `69e69d828cf0b6315d903ad370bc9a7581b770b78265868ed9b590219d74c0d1`
-- 浏览器日志 SHA256
-  `af3c5ae889d5f74d878a1413d00c8129b46c022a2d78cc896b76031bcceb4138`
+  SHA256 `7de13fb3349e9314f31995371f4606bd8a2bb4531e699c52c8aa0c39ffc72af0`
+- `docs/audit/capability-explorer-05/evidence/browser-pass.log`
+  SHA256 `03315aa66fcbbde8b9705090d3e1cea4343fd63d2dc98a16e018920a5ca1ec7e`
 - 首次超时日志 SHA256
   `02e46d849172da53363cece32930e4a1d319e04adc6fa40bc6f0aa34529440eb`
 - `409 -> 200` 恢复诊断日志 SHA256
