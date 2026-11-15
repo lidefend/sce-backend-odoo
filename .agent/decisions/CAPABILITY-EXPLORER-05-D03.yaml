@@ -1,0 +1,90 @@
+schema_version: 1
+decision:
+  id: CAP05-D03
+  title: B02 owner decision and remediation closeout
+  status: active
+  decision_date: 2026-11-16
+  formal_product_layer: P4
+  related_work:
+    - CAPABILITY-EXPLORER-05
+    - CAPABILITY-EXPLORER-05-B02-R1
+    - CAPABILITY-EXPLORER-05-B01-R1
+  evidence:
+    b02_pr:
+      number: 894
+      head: e873a9abfdce65fc284ea0bdb0a91d8d7fcbcab4
+      tree: d77beb3eade78a3a0784dd7271604ce4e14001bb
+      merge_commit: 1bfe1f500320a35d59bef156db3c5ba746735668
+      merge_tree: d77beb3eade78a3a0784dd7271604ce4e14001bb
+    b01_pr:
+      number: 893
+      head: 6d5e1bee3b55bea549cda723958a54a0ef90674a
+      merge_commit: 9c537187c05306663758c86f95e0e91d317381db
+  owner_decisions:
+    D02-01:
+      subject: database_identity
+      ruling: ACCEPTED
+      effect: >-
+        Accept the rebuilt Demo database UUID, secret and create_date. Do not
+        restore the old identity. Any external integration dependency is a
+        separate connection-configuration concern.
+    D02-02:
+      subject: sc_entitlement_absence
+      ruling: NOT_ACCEPTED_PENDING_INVESTIGATION
+      effect: >-
+        The missing entitlement row is not accepted as a correct business
+        state. ENTITLEMENT-01 must investigate model meaning, original
+        identity, company, seed source, validity and authorization consumers.
+        Do not reseed, insert or modify database state.
+    D02-03:
+      subject: boq_import_residue
+      ruling: RETAIN_AS_DEMO_RESIDUE
+      effect: >-
+        Retain the DEMO-CONTRACT-V1 / done / contract_boq.csv wizard and its
+        251-byte attachment as Demo residue. Do not describe it as formal
+        business delivery and do not clean it up in this task.
+    D02-04:
+      subject: relative_demo_dates
+      ruling: ACCEPTED_AS_DEMO_BEHAVIOR
+      effect: >-
+        Accept relative Demo seed dates refreshed by the rebuild. They do not
+        represent real business event dates; a future Demo data standard must
+        state this semantic explicitly.
+    D02-05:
+      subject: b02_closure
+      ruling: REMEDIATED_BY_OWNER_AUTHORIZED_REBUILD
+      effect: >-
+        Close B02 as remediation by the owner-authorized rebuild. This is not
+        and must never be reported as STRICT_ISOLATION_PASS.
+  b02_closure:
+    status: REMEDIATED_BY_OWNER_AUTHORIZED_REBUILD
+    strict_isolation_pass: false
+    historical_facts:
+      - The original persistent database upgrade deviation occurred.
+      - The original recovery point was not restored.
+      - The owner subsequently authorized a Demo-only rebuild.
+      - The rebuilt Demo baseline passed health, entry identity and verify.demo.
+      - The rebuild does not retroactively validate the prior upgrade as a strict isolated acceptance run.
+  followups:
+    - id: ENTITLEMENT-01
+      status: AUTHORIZED_READ_ONLY_INVESTIGATION
+      scope: >-
+        Determine the sc_entitlement model meaning, original row identity,
+        company, seed origin, validity and current authorization consumers.
+        No database mutation is authorized.
+    - id: CP-00
+      status: AUTHORIZED_READ_ONLY_SOURCE_AUDIT
+      scope: >-
+        Audit the real capability, scene, product scenario, qualification,
+        release, tenant enablement and frontend/API lifecycle. Do not implement
+        CP-01 through CP-08.
+  prohibited:
+    - database restore
+    - entitlement reseed or manual insertion
+    - BOQ residue cleanup
+    - demo date modification
+    - capability scene qualification release or enterprise-enablement changes
+    - product-code changes
+  rollback: >-
+    Revert the CAP05-D03 audit commits. This does not change the rebuilt Demo
+    database and does not alter the historical B01 or B02 evidence.

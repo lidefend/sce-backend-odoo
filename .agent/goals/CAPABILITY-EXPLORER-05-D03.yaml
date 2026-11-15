@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: CAPABILITY-EXPLORER-05-D03
+  title: B02 owner decision and remediation closeout
+  status: active
+  formal_product_layer: P4
+  layer_target: owner decision record and B02 lifecycle closeout
+  module:
+    - ops_delivery_audit
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Record the owner's five-part B02 ruling, close B02 as remediation by
+    owner-authorized Demo rebuild, and preserve the original audit history and
+    the separate entitlement investigation.
+  why_here: >-
+    The change is governance and audit bookkeeping over an already executed
+    environment rebuild.
+  why_not_elsewhere:
+    - no_database_restore_or_write
+    - no_entitlement_seed_or_business_state_change
+    - no_boq_cleanup
+    - no_capability_scene_qualification_release_or_enablement_change
+    - no_product_code_change
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/decisions/CAPABILITY-EXPLORER-05-D03.yaml
+      - .agent/goals/CAPABILITY-EXPLORER-05-D03.yaml
+      - .agent/runs/CAPABILITY-EXPLORER-05-D03/run.json
+      - .agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml
+      - .agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json
+      - docs/audit/capability-explorer-05-d03
+    runtime:
+      - no runtime mutation
+  acceptance:
+    - all_five_owner_decisions_recorded_verbatim_in_effect
+    - b02_closed_as_owner_authorized_rebuild_remediation
+    - strict_isolation_pass_remains_false
+    - d01_supersession_and_d02_rebuild_authority_are_preserved
+    - pr_894_original_evidence_and_pr_893_b01_repair_are_linked
+    - entitlement_investigation_remains_open_and_read_only
+  exclusions:
+    - ENTITLEMENT-01 investigation execution
+    - CP-00 source audit execution
+    - CAP05-R2 and CAP05-R3 implementation
+    - database or filestore writes
+    - merge deployment or user acceptance
+  rollback: >-
+    Revert the CAP05-D03 audit commits. The owner-authorized rebuilt Demo
+    database and the merged B01/B02 evidence remain unchanged.
+  completion:
+    batch: pending
+    mainline_integration: pending
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/CAPABILITY-EXPLORER-05-D03/run.json

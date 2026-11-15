@@ -38,13 +38,19 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "B02_OWNER_REVIEW_REQUIRED"
-  ],
-  "next_exact_step": "Owner reviews the three-state B02 packet and decides whether to accept the rebuilt demo baseline or authorize separately scoped remediation.",
+  "blockers": [],
+  "closure": {
+    "decision": "CAP05-D03",
+    "status": "REMEDIATED_BY_OWNER_AUTHORIZED_REBUILD",
+    "strict_isolation_pass": false,
+    "entitlement_investigation": "ENTITLEMENT-01",
+    "deployment": "not_performed",
+    "user_acceptance": "not_performed"
+  },
+  "next_exact_step": "Closed by CAP05-D03. Continue only with the authorized ENTITLEMENT-01 read-only investigation and CP-00 source audit.",
   "id": "CAPABILITY-EXPLORER-05-B02-R1",
   "branch": "audit/capability-explorer-05-b02-r1-20261116",
-  "status": "blocked",
+  "status": "completed",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B02-R1.yaml",
   "record": "docs/audit/capability-explorer-05-b02-r1/recovery_point_difference_reconciliation_20261116.md"
 }
