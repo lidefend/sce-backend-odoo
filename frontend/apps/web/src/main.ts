@@ -53,6 +53,6 @@ if (import.meta.hot) {
 }
 
 const initialRoute = router.resolve(window.location.href);
-bootstrapApp({ initialRouteName: initialRoute.name });
+bootstrapApp({ initialRouteName: initialRoute.name, initialPath: window.location.pathname });
 
 app.mount('#app');

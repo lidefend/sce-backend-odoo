@@ -45,7 +45,7 @@ function installExtensionNoiseGuard() {
   });
 }
 
-export async function bootstrapApp(options: { initialRouteName?: unknown } = {}) {
+export async function bootstrapApp(options: { initialRouteName?: unknown; initialPath?: unknown } = {}) {
   installExtensionNoiseGuard();
   const session = useSessionStore();
   // main.ts already calls session.restore() before mount to avoid
@@ -61,7 +61,10 @@ export async function bootstrapApp(options: { initialRouteName?: unknown } = {})
   }
   try {
     await session.loadAppInit({
-      includeWorkspaceHome: shouldPreloadWorkspaceHomeAtStartup(options.initialRouteName),
+      includeWorkspaceHome: shouldPreloadWorkspaceHomeAtStartup(
+        options.initialRouteName,
+        options.initialPath,
+      ),
     });
   } catch {
     // initStatus handled in store; avoid unhandled promise

@@ -33,7 +33,10 @@ cases += 1;
 assert.equal(shouldPreloadWorkspaceHomeAtStartup('record'), false);
 assert.equal(shouldPreloadWorkspaceHomeAtStartup('model-form'), false);
 assert.equal(shouldPreloadWorkspaceHomeAtStartup('home'), true);
-cases += 3;
+assert.equal(shouldPreloadWorkspaceHomeAtStartup('not-found', '/t/demo/r/project.project/26'), false);
+assert.equal(shouldPreloadWorkspaceHomeAtStartup('not-found', '/t/demo/f/project.project/new'), false);
+assert.equal(shouldPreloadWorkspaceHomeAtStartup('scene', '/t/demo/s/workspace.home'), true);
+cases += 6;
 
 const indexHtml = readFileSync('frontend/apps/web/index.html', 'utf8');
 assert.match(indexHtml, /performance\.mark\('boot_start'\)/);
@@ -68,7 +71,7 @@ const sessionRequest = readFileSync('frontend/apps/web/src/stores/session.ts', '
 assert.match(sessionRequest, /includeWorkspaceHome === false \? \[\] : \['workspace_home'\]/);
 assert.match(
   readFileSync('frontend/apps/web/src/main.ts', 'utf8'),
-  /bootstrapApp\(\{ initialRouteName: initialRoute\.name \}\)/,
+  /bootstrapApp\(\{ initialRouteName: initialRoute\.name, initialPath: window\.location\.pathname \}\)/,
 );
 cases += 2;
 

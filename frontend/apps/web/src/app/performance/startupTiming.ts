@@ -63,7 +63,8 @@ export function startupTimingOrderIssues(marks: StartupTimingMarks): string[] {
   return issues;
 }
 
-export function shouldPreloadWorkspaceHomeAtStartup(routeName: unknown): boolean {
+export function shouldPreloadWorkspaceHomeAtStartup(routeName: unknown, pathname: unknown = ''): boolean {
   const name = String(routeName || '').trim();
-  return name !== 'record' && name !== 'model-form';
+  if (name === 'record' || name === 'model-form') return false;
+  return !/\/(?:r|f)\/[^/?#]+\/[^/?#]+(?:\/|$)/.test(String(pathname || ''));
 }
