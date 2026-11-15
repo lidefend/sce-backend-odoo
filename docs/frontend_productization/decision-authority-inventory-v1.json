@@ -823,6 +823,20 @@
       "ownerLayer": "P0_frontend_renderer"
     },
     {
+      "decisionKey": "R4_business_state_literal|ok|frontend/apps/web/src/app/performance/startupTiming.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "ok",
+      "path": "frontend/apps/web/src/app/performance/startupTiming.ts",
+      "lines": [
+        81
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|preview|frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "rule": "R4_business_state_literal",
       "literal": "preview",
@@ -1730,21 +1744,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 162,
-    "distinctDecisions": 116,
+    "totalFindings": 163,
+    "distinctDecisions": 117,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 126
+      "R4_business_state_literal": 127
     },
     "byClassification": {
       "contract-derived": 64,
-      "excluded-render-interaction": 98
+      "excluded-render-interaction": 99
     },
     "unclassified": 0,
     "contractDerived": 64,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 98
+    "excludedRenderInteraction": 99
   }
 }

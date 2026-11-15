@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   STARTUP_PHASES,
+  canPublishRecordReady,
   markStartupPhase,
   readStartupTimingMarks,
   shouldPreloadWorkspaceHomeAtStartup,
@@ -38,6 +39,22 @@ assert.equal(shouldPreloadWorkspaceHomeAtStartup('not-found', '/t/demo/f/project
 assert.equal(shouldPreloadWorkspaceHomeAtStartup('scene', '/t/demo/s/workspace.home'), true);
 cases += 6;
 
+assert.equal(canPublishRecordReady({
+  routeCurrent: true,
+  recordMissing: false,
+  hasContract: true,
+  status: 'ok',
+}), true);
+for (const input of [
+  { routeCurrent: false, recordMissing: false, hasContract: true, status: 'ok' },
+  { routeCurrent: true, recordMissing: true, hasContract: true, status: 'ok' },
+  { routeCurrent: true, recordMissing: false, hasContract: false, status: 'ok' },
+  { routeCurrent: true, recordMissing: false, hasContract: true, status: 'error' },
+]) {
+  assert.equal(canPublishRecordReady(input), false);
+}
+cases += 5;
+
 const indexHtml = readFileSync('frontend/apps/web/index.html', 'utf8');
 assert.match(indexHtml, /performance\.mark\('boot_start'\)/);
 cases += 1;
@@ -53,6 +70,12 @@ const recordLifecycle = readFileSync(
 assert.match(recordLifecycle, /markStartupPhase\('contract_loaded'/);
 assert.match(recordLifecycle, /markStartupPhase\('record_ready'/);
 cases += 2;
+assert(
+  recordLifecycle.indexOf('await nextTick()') < recordLifecycle.indexOf("markStartupPhase('record_ready'"),
+  'record_ready must follow the Vue DOM patch',
+);
+assert.match(recordLifecycle, /if \(recordMissing\.value\) return;/);
+cases += 2;
 
 const skeleton = readFileSync(
   'frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue',
@@ -66,6 +89,11 @@ assert.match(recordRoute, /import\('\.\/ContractFormPage\.vue'\)/);
 assert.doesNotMatch(recordRoute, /import ContractFormPage from '\.\/ContractFormPage\.vue'/);
 assert.match(recordRoute, /ProductFormLoadingSkeleton/);
 cases += 3;
+assert.match(recordRoute, /ASSET_LOAD_TIMEOUT_MS = 15000/);
+assert.match(recordRoute, /loadGeneration/);
+assert.match(recordRoute, /window\.location\.reload\(\)/);
+assert.match(recordRoute, /onBeforeRouteLeave/);
+cases += 4;
 
 const sessionRequest = readFileSync('frontend/apps/web/src/stores/session.ts', 'utf8');
 assert.match(sessionRequest, /includeWorkspaceHome === false \? \[\] : \['workspace_home'\]/);
@@ -74,5 +102,14 @@ assert.match(
   /bootstrapApp\(\{ initialRouteName: initialRoute\.name, initialPath: window\.location\.pathname \}\)/,
 );
 cases += 2;
+
+const browserProbe = readFileSync(
+  'scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs',
+  'utf8',
+);
+assert.match(browserProbe, /served_build_info/);
+assert.match(browserProbe, /resource_sha256/);
+assert.match(browserProbe, /startup_mark_missing/);
+cases += 3;
 
 console.log(`[startup_performance_test] PASS cases=${cases}`);

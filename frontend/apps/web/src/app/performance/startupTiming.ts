@@ -68,3 +68,15 @@ export function shouldPreloadWorkspaceHomeAtStartup(routeName: unknown, pathname
   if (name === 'record' || name === 'model-form') return false;
   return !/\/(?:r|f)\/[^/?#]+\/[^/?#]+(?:\/|$)/.test(String(pathname || ''));
 }
+
+export function canPublishRecordReady(input: {
+  routeCurrent: boolean;
+  recordMissing: boolean;
+  hasContract: boolean;
+  status: string;
+}): boolean {
+  return input.routeCurrent
+    && !input.recordMissing
+    && input.hasContract
+    && input.status === 'ok';
+}

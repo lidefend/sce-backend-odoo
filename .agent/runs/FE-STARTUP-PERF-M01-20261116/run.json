@@ -10,6 +10,8 @@
     ".agent/active-runs.json",
     ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
     ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
     "frontend/apps/web/index.html",
     "frontend/apps/web/src/app/performance/startupTiming.ts",
@@ -27,6 +29,8 @@
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/startup_performance_test.ts",
     "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
     "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
     "scripts/verify/frontend_page_contract_boundary_guard.py",
     "scripts/verify/frontend_contract_route_guard.py",
@@ -70,6 +74,30 @@
         "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
         "frontend/apps/web/scripts/startup_performance_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "workspace_lifecycle": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -328,5 +356,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Deploy the candidate to the daily development server, rerun the affected M-01 entries and payment record with canonical marks, then trim the 1.5 MB record contract payload."
+  "next_exact_step": "Run ci.delivery.freeze.prepare, review and commit the exact remediation scope, then obtain a fresh independent review before any push or isolated deployment."
 }

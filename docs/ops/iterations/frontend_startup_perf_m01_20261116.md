@@ -4,7 +4,7 @@
 
 - Baseline: `70d01d8fa52c76dc3a296f0431e39be79b98dab5`
 - Branch: `fix/frontend-performance-m01-20261116`
-- Status: active
+- Status: review findings fixed; exact-candidate re-review pending
 
 ## Objective and layer
 
@@ -58,12 +58,57 @@ labels instead of exposing dotted technical identities.
 
 | Check | Result |
 | --- | --- |
-| `verify.frontend.startup_performance.unit` | passed, 25 cases |
+| `verify.frontend.startup_performance.unit` | passed, 39 cases |
 | `verify.frontend.dev_acceptance_remediation.unit` | passed, 20 cases |
-| `verify.frontend.workspace_scenario_lifecycle.unit` | passed |
+| `verify.frontend.workspace_scenario_lifecycle.unit` | passed, 11 affected scenarios |
+| `verify.frontend.component_driver_takeover.unit` | passed, 18 cases |
+| `verify.frontend.contract_basis.unit` | passed, 15 cases |
 | strict frontend typecheck | passed |
 | frontend lint | passed with existing warnings, 0 errors |
 | `make local.dev.frontend` | passed; route shell 2.54 KB, form page 852.60 KB |
+
+### Independent review remediation
+
+The first independent review requested changes on two S1 findings:
+
+- Record deep links skipped `workspace_home`; returning to the home route in the
+  same SPA did not backfill the section. Home loading now awaits
+  `loadWorkspaceHomeOnDemand()`, and the actual store/consumer lifecycle test
+  proves one backfill request is issued.
+- `record_ready` was emitted before the Vue DOM patch and could also be emitted
+  for a missing record. It now requires current route identity, a loaded
+  contract, successful page status, a non-missing record, and completion of
+  `nextTick()`.
+
+The related S2 asset-loading recovery is now bounded: the record route shell
+uses a registered 15-second transport deadline, ignores obsolete loads after
+route leave/unmount, shows an explicit error instead of an indefinite skeleton,
+and offers a document-level reload after failure. Existing permission, save,
+validation, and return components are unchanged.
+
+The performance browser probe now records served build identity, original
+resource hash/size, and missing canonical marks. An expected build SHA may be
+supplied with `DEV_ACCEPTANCE_EXPECTED_BUILD_SHA`; mismatch fails the record
+deep-link observation.
+
+Failure classification during remediation:
+
+- `component_driver_takeover` initially failed because the committed generated
+  inventory digest was stale after source edits (`baseline_evidence_defect`).
+  The registered generator refreshed only `inputDigest`; the target then passed.
+- strict TypeScript initially rejected the browser timer return type
+  (`product_defect`). The explicit browser `number | null` type fixed the
+  owning source; typecheck and the complete affected iteration then passed.
+
+The governed incremental execution completed 26 targets with no blocked or
+not-run targets:
+
+`.runtime/frontend-dev-validation/executions/20261115T224337Z-2065280-973698304/receipt.json`
+
+Not yet covered: a fresh independent review of the fixed candidate, exact-head
+remote CI, isolated daily-clone deployment, and desktop/mobile A/B. The prior
+static-proxy timing report remains diagnostic only and is not exact-candidate
+deployment evidence.
 
 ### Runtime marker observation
 

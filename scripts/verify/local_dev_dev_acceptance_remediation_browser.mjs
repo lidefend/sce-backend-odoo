@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -75,14 +76,24 @@ async function attachNetworkCapture(page, sink, startedAt = performance.now()) {
     const started = startedRequests.get(request);
     if (!response.url().includes('/api/v1/intent')) {
       if (!started || !['document', 'script', 'stylesheet'].includes(started.resource_type)) return;
-      sink.push({
+      const resource = {
         intent: '',
         status: response.status(),
         resource_type: started.resource_type,
         resource_url: started.resource_url,
         request_start_ms: started.request_start_ms,
         response_end_ms: Math.round(performance.now() - startedAt),
-      });
+      };
+      if (started.resource_type === 'script' && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(started.resource_url)) {
+        try {
+          const body = await response.body();
+          resource.decoded_body_size = body.length;
+          resource.resource_sha256 = createHash('sha256').update(body).digest('hex');
+        } catch {
+          resource.resource_sha256 = '';
+        }
+      }
+      sink.push(resource);
       return;
     }
     let payload;
@@ -466,6 +477,21 @@ async function readStartupTiming(page) {
   }, STARTUP_PHASES);
 }
 
+async function readServedBuildInfo(page) {
+  return page.evaluate(async () => {
+    try {
+      const response = await fetch(new URL('/build-info.json', window.location.origin).href, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  });
+}
+
 async function locatePaymentRecordHref(page) {
   await openMenu(page, '付款申请');
   const queryInput = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
@@ -573,6 +599,7 @@ async function main() {
       const observation = await observeRecordPage(recordPage, started);
       const diagnostics = await readRecordDiagnostics(recordPage);
       const startupTiming = await readStartupTiming(recordPage);
+      const servedBuildInfo = await readServedBuildInfo(recordPage);
       detachRecordNetwork();
       const canonicalElapsed = startupTiming.elapsed_from_boot_ms.record_ready;
       report.record_deep_link = {
@@ -590,6 +617,11 @@ async function main() {
         source_revision: runtimeState.sourceRevision,
         diagnostics,
         startup_timing: startupTiming,
+        served_build_info: servedBuildInfo,
+        bundle_assets: recordNetwork.filter(row => (
+          row.resource_type === 'script'
+          && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(row.resource_url)
+        )),
         init_data_keys: [...runtimeState.dataKeys],
         workspace_home_loaded_at_startup: runtimeState.dataKeys.includes('workspace_home'),
       };
@@ -598,6 +630,10 @@ async function main() {
       if (!observation.ready) report.findings.push('record_deep_link_not_ready');
       if (pageErrors.length) report.findings.push('record_deep_link_page_error');
       for (const phase of startupTiming.missing) report.findings.push(`startup_mark_missing:${phase}`);
+      const expectedBuildSha = String(process.env.DEV_ACCEPTANCE_EXPECTED_BUILD_SHA || '').trim();
+      if (expectedBuildSha && servedBuildInfo?.sha !== expectedBuildSha) {
+        report.findings.push('served_build_sha_mismatch');
+      }
       report.status = report.findings.length ? 'failed' : 'passed';
       if (report.findings.length) process.exitCode = 1;
       return;

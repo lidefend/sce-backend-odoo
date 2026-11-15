@@ -229,7 +229,10 @@ export function useWorkspaceHome() {
       // Fail-closed: a failed projection must not expand home entries.
     });
     try {
-      const result = await fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' });
+      const [result] = await Promise.all([
+        fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' }),
+        session.loadWorkspaceHomeOnDemand(),
+      ]);
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
     } catch (err) {
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) {
