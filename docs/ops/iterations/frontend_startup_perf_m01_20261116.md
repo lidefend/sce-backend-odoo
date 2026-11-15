@@ -58,14 +58,48 @@ labels instead of exposing dotted technical identities.
 
 | Check | Result |
 | --- | --- |
-| `verify.frontend.startup_performance.unit` | passed, 22 cases |
-| `verify.frontend.dev_acceptance_remediation.unit` | passed, 19 cases |
+| `verify.frontend.startup_performance.unit` | passed, 25 cases |
+| `verify.frontend.dev_acceptance_remediation.unit` | passed, 20 cases |
 | `verify.frontend.workspace_scenario_lifecycle.unit` | passed |
 | strict frontend typecheck | passed |
 | frontend lint | passed with existing warnings, 0 errors |
 | `make local.dev.frontend` | passed; route shell 2.78 KB, form page 852.60 KB |
 
-Runtime marker observation and the M-01 browser rerun remain pending.
+### Runtime marker observation
+
+The clean candidate frontend was served through the governed 5176 static proxy
+against the existing `local.dev` API. A project record was used because that
+surface is available in the local data and exercises the same generic record
+runtime; the daily payment record remains the final deployment check.
+
+| Canonical mark | Since boot |
+| --- | ---: |
+| `boot_start` | 0 ms |
+| `session_ready` | 1347 ms |
+| `skeleton_shown` | 1420 ms |
+| `contract_loaded` | 2512 ms |
+| `record_ready` | 3559 ms |
+
+First contentful paint was 1004 ms; record readiness is now measured from
+`record_ready`, not from a DOM selector. `session_ready` legitimately precedes
+the record skeleton because the router guard waits for session bootstrap before
+the record route boundary mounts.
+
+The route shell and skeleton were requested at 1368-1392 ms. The heavy
+`ContractFormPage` chunk request began at 1467 ms, after the skeleton was
+available, proving that the route shell is no longer blocked by the 852.60 KB
+form chunk.
+
+On the record route, `system.init` requested no optional sections and excluded
+`workspace_home`. Its response fell from 460681 bytes before the request cleanup
+to 427806 bytes, a reduction of 32875 bytes (7.1%). The record contract remains
+the dominant payload at 1548788 bytes and 905 ms; API payload reduction there is
+the next measured target.
+
+M-01 is closed at the shared title-consumption layer by unit coverage, including
+a technical action/scene identity falling through to “部门管理”. A target-daily
+browser rerun remains required after deployment because the local development
+data exposes only one scenario center and does not contain the affected entries.
 
 ## Rollback
 
