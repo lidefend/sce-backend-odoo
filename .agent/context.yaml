@@ -152,6 +152,7 @@ run_statuses:
   - active
   - blocked
   - verification_pending
+  - pending_merge_decision
   - completed
   - superseded
 

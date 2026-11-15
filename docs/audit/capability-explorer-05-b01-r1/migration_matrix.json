@@ -9,6 +9,82 @@
     "repair_head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
     "repair_head_tree": "74bb881a4c91c68cdccf05536d14b55656280a92"
   },
+  "tested_source_identity": {
+    "head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
+    "tree": "74bb881a4c91c68cdccf05536d14b55656280a92",
+    "purpose": "candidate used for the real isolated 172/174/179 to 182 upgrade matrix and real invalid-state negative upgrade",
+    "files": {
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py": "7a66e320b5726a3b933cee79301cf087cccd0131",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": "889674ff440dde4fcb73cd3b826c8b813a2363c5",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py": "294bedfaaa9c89d1194129da228b0847e24e879c",
+      "make/dev.mk": "6f064ff280e2e0d7673c81f5d133f958642f8f00",
+      "make/guards.mk": "dc0c23e5212622a2b989262491f8c465cb98239c",
+      "scripts/verify/frontend_dev_incremental.py": "e6b87e1ebe12413fa15e9e58939d69807343728b",
+      "scripts/verify/test_frontend_dev_incremental.py": "19af4998b7c941bcfce0f7a745b2520c91991882"
+    }
+  },
+  "final_candidate_identity": {
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "tree": "a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7",
+    "purpose": "PR #893 exact source and remote-CI candidate before this documentation-only merge-closeout update",
+    "files": {
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py": "7a66e320b5726a3b933cee79301cf087cccd0131",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py": "889674ff440dde4fcb73cd3b826c8b813a2363c5",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py": "294bedfaaa9c89d1194129da228b0847e24e879c",
+      "make/dev.mk": "6f064ff280e2e0d7673c81f5d133f958642f8f00",
+      "make/guards.mk": "dc0c23e5212622a2b989262491f8c465cb98239c",
+      "scripts/verify/frontend_dev_incremental.py": "12cb873c5810f7e45ed51055504ebdc92cea6c51",
+      "scripts/verify/test_frontend_dev_incremental.py": "19af4998b7c941bcfce0f7a745b2520c91991882"
+    }
+  },
+  "evidence_reuse_assessment": {
+    "decision": "REUSE_TESTED_UPGRADE_EVIDENCE",
+    "exact_blob_matches": 6,
+    "compared_files": 7,
+    "differing_paths": [
+      {
+        "path": "scripts/verify/frontend_dev_incremental.py",
+        "tested_blob": "e6b87e1ebe12413fa15e9e58939d69807343728b",
+        "final_blob": "12cb873c5810f7e45ed51055504ebdc92cea6c51",
+        "difference": "Governed main sync added three unrelated frontend-performance source paths to an existing local_runtime_performance rule.",
+        "impact_on_b01": "NONE"
+      }
+    ],
+    "b01_target_mapping_equivalent": true,
+    "b01_paths_compared": [
+      "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
+      "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+      "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+      "make/dev.mk",
+      "make/guards.mk",
+      "scripts/verify/frontend_dev_incremental.py",
+      "scripts/verify/test_frontend_dev_incremental.py"
+    ],
+    "rationale": "The migration scripts, migration tests and runtime-upgrade tooling are byte-identical. Loading the tested and final verifier revisions and calling select_targets on every affected B01 path produced identical target sets. The only blob change adds unrelated files to an existing rule and does not change B01 execution or assertions."
+  },
+  "remote_evidence": {
+    "pr": 893,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/893",
+    "base": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "merge_state": "CLEAN",
+    "required_checks": {
+      "public_guard": "SUCCESS",
+      "merge_policy_gate": "SUCCESS",
+      "professional_quality_gate": "SUCCESS",
+      "frontend_release_gate": "SUCCESS"
+    },
+    "backend_impact_suite": "PASS",
+    "failures": 0
+  },
+  "independent_review": {
+    "head": "fe23a66e0dca1aa21066ec834d40da94d6f9f7fc",
+    "tree": "a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7",
+    "decision": "APPROVE",
+    "s0_findings": 0,
+    "s1_findings": 0,
+    "s2_findings": 0
+  },
   "environment": {
     "project": "sc-local-b01-migration",
     "database": "sc_b01_migration",

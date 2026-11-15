@@ -91,6 +91,11 @@ class RunContextTest(unittest.TestCase):
         self.assertEqual(resolve_run(self.root)[1]['id'], 'TEST')
         self.assertEqual(summary(self.root)['status'], 'resolved')
 
+    def test_pending_merge_decision_is_resolvable(self):
+        self.run['status'] = 'pending_merge_decision'
+        self.save()
+        self.assertEqual(resolve_run(self.root)[1]['status'], 'pending_merge_decision')
+
     def test_missing_registration_is_not_pass(self):
         (self.root / '.agent/active-runs.json').unlink()
         self.assertEqual(summary(self.root)['status'], 'unregistered')

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CAPABILITY-EXPLORER-05-B01-R1
   title: Odoo migration lifecycle repair for scenario-entry pre-migrations
-  status: active
+  status: verification_pending
   formal_product_layer: P4
   layer_target: smart_construction_core versioned upgrade migrations
   module:
@@ -25,13 +25,17 @@ goal:
   blast_radius:
     paths:
       - .agent/active-runs.json
+      - .agent/context.yaml
       - .agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml
       - .agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json
       - addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py
       - addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py
       - addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py
+      - make/dev.mk
       - make/guards.mk
+      - scripts/ops/agent_run_context.py
       - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_agent_run_context.py
       - scripts/verify/test_frontend_dev_incremental.py
       - docs/audit/capability-explorer-05-b01-r1
     runtime:
@@ -55,8 +59,8 @@ goal:
     Revert this P4 migration repair commit. The dedicated disposable migration
     database may then be discarded through its managed lifecycle entry.
   completion:
-    batch: pending
-    mainline_integration: pending
+    batch: verified
+    mainline_integration: pending_merge_decision
     deployment: not_performed
     user_acceptance: not_performed
   run: .agent/runs/CAPABILITY-EXPLORER-05-B01-R1/run.json

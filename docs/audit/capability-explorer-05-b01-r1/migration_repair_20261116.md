@@ -1,6 +1,6 @@
 # CAP05-B01-R1 Migration Lifecycle Repair
 
-Status: `CANDIDATE_VERIFIED_REMOTE_CI_PENDING`
+Status: `PENDING_MERGE_DECISION`
 
 ## Scope
 
@@ -34,6 +34,34 @@ evidence regeneration. The recovery bundle is:
 The sync preserved the repair patch identities, regenerated the overlapping
 generated reports, and produced no semantic conflict or remaining merge-tree
 conflict against current `origin/main`.
+
+## Tested Source and Final Candidate Identity
+
+- Real isolated upgrade candidate:
+  `60906afbfe2763598c70d7115f6753b5112e8a8f`
+- Real upgrade candidate tree:
+  `74bb881a4c91c68cdccf05536d14b55656280a92`
+- Final code/CI candidate before this documentation-only closeout:
+  `fe23a66e0dca1aa21066ec834d40da94d6f9f7fc`
+- Final code/CI candidate tree:
+  `a5acf4b5e7cd25b2868e6afb6d666d6d920ab8d7`
+- PR: `#893`
+
+Six of the seven listed source and validation dependencies have identical Git
+blob IDs between the tested and final candidates. The only differing blob is
+`scripts/verify/frontend_dev_incremental.py`: the governed main sync added
+three unrelated frontend-performance paths to an existing rule.
+
+Both historical and final revisions of that verifier were loaded and
+`select_targets()` was called for every affected B01 path. The resulting target
+sets were identical for all seven paths, including
+`verify.smart_construction_core.migration_compatibility.orm`,
+`verify.agent.resume.unit`, and `verify.frontend.dev.incremental.unit`.
+
+Therefore the real upgrade evidence remains valid. It is reused on the basis of
+byte-identical migration logic, migration tests and upgrade tooling, plus
+proven semantic equivalence of the one changed validation-dependency blob.
+The complete blob map and comparison are recorded in `migration_matrix.json`.
 
 ## Implementation
 
@@ -100,6 +128,23 @@ Creating an actual database with a malformed version was intentionally not
 performed because that would require fabricating `ir_module_module.version`.
 That case is `PASS_UNIT_ONLY`, not claimed as a real integration pass.
 
+## Remote CI and Independent Review
+
+PR #893 was based on
+`70d01d8fa52c76dc3a296f0431e39be79b98dab5` and passed all four required
+workflows at code/CI head
+`fe23a66e0dca1aa21066ec834d40da94d6f9f7fc`:
+
+- `public_guard`: SUCCESS
+- `merge_policy_gate`: SUCCESS
+- `professional_quality_gate`: SUCCESS
+- `frontend_release_gate`: SUCCESS
+
+The backend impact suite, including all four backend shards and coverage
+verification, also passed. Independent exact-head review concluded `APPROVE`
+with no S0-S2 findings.
+
 ## Stop Boundary
 
-Stop before merge or deployment after exact-head CI and independent review.
+Current status is `PENDING_MERGE_DECISION`. Deployment and user acceptance were
+not performed. This closeout does not authorize or perform merge.
