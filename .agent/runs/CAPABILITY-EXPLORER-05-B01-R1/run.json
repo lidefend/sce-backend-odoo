@@ -12,7 +12,7 @@
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
+    "docs/audit/capability-explorer-05-b01-r1/"
   ],
   "environment": {
     "kind": "runtime",
@@ -43,10 +43,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the focused migration compatibility tests, then execute the 172, 174 and 179 to 182 isolated upgrade matrix.",
+  "next_exact_step": "Run make ci.local.iteration for the exact clean candidate, then submit that exact HEAD for independent review.",
   "id": "CAPABILITY-EXPLORER-05-B01-R1",
   "branch": "fix/capability-explorer-05-b01-r1-20261116",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/CAPABILITY-EXPLORER-05-B01-R1.yaml",
   "record": "docs/audit/capability-explorer-05-b01-r1/migration_repair_20261116.md"
 }

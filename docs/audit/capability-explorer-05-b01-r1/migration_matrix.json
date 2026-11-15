@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "task": "CAP05-B01-R1",
+  "generated_at_utc": "2026-11-15T19:00:00Z",
+  "implementation_candidate": {
+    "branch": "fix/capability-explorer-05-b01-r1-20261116",
+    "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+    "repair_head": "60906afbfe2763598c70d7115f6753b5112e8a8f",
+    "repair_head_tree": "74bb881a4c91c68cdccf05536d14b55656280a92"
+  },
+  "environment": {
+    "project": "sc-local-b01-migration",
+    "database": "sc_b01_migration",
+    "database_role": "dedicated_disposable_migration_verification",
+    "persistent_development_database_used": false,
+    "b02_recovery_point_used": false,
+    "upgrade_modules": [
+      "smart_core",
+      "smart_construction_core"
+    ],
+    "post_upgrade_versions": {
+      "smart_core": "17.0.1.1.19",
+      "smart_construction_core": "17.0.0.182"
+    }
+  },
+  "positive_paths": [
+    {
+      "id": "172_to_182",
+      "status": "PASS",
+      "source_commit": "149e94e538d1410c58b397708481e3140d822ab3",
+      "source_version": "17.0.0.172",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "ABSENT",
+        "validated_by": "Odoo migration log ran the applicable 173, 174, 180 and 181 pre-migrations before ORM schema creation"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1563,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 2
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 713,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 1
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/172-build.log",
+        "evidence/172-upgrade-both-modules-pass.log",
+        "evidence/raw/172-pre.json.gz",
+        "evidence/raw/172-post.json.gz"
+      ]
+    },
+    {
+      "id": "174_to_182",
+      "status": "PASS",
+      "source_commit": "fe719728b99cae761d50eb14eabcefc4df307adf",
+      "source_version": "17.0.0.174",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "PRESENT",
+        "legacy_single_menu_unique_constraint": "PRESENT"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1565,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 714,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/174-build.log",
+        "evidence/174-upgrade-pass.log",
+        "evidence/raw/174-pre.json.gz",
+        "evidence/raw/174-post.json.gz"
+      ]
+    },
+    {
+      "id": "179_to_182",
+      "status": "PASS",
+      "source_commit": "78c0ab3cfe0c5b36566f81d2552cfa32f66835eb",
+      "source_version": "17.0.0.179",
+      "target_version": "17.0.0.182",
+      "preconditions": {
+        "sc_product_scenario_entry": "PRESENT",
+        "legacy_single_menu_unique_constraint": "PRESENT"
+      },
+      "result": {
+        "module_version": "17.0.0.182",
+        "module_state": "installed",
+        "sc_product_scenario": 17,
+        "sc_product_scenario_entry": 78,
+        "runtime_user_management_scenario_binding": 0,
+        "legacy_single_menu_unique_constraint": "ABSENT",
+        "current_composite_unique_constraint": "UNIQUE (scenario_id, menu_id)"
+      },
+      "fingerprint_diff": {
+        "acl": {
+          "before": 1565,
+          "after": 1565,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "record_rules": {
+          "before": 676,
+          "after": 676,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "menus": {
+          "before": 714,
+          "after": 714,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0,
+          "added": 0
+        },
+        "user_company_relations": {
+          "before": 5,
+          "after": 5,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "group_memberships": {
+          "before": 70,
+          "after": 70,
+          "deleted_or_missing": 0,
+          "changed_existing_rows": 0
+        },
+        "company_runtime_fields": {
+          "currency_id_changed": false,
+          "res_currency_sequence": {
+            "before": 1,
+            "after": 6
+          }
+        }
+      },
+      "evidence": [
+        "evidence/179-build.log",
+        "evidence/179-upgrade-pass.log",
+        "evidence/raw/179-pre.json.gz",
+        "evidence/raw/179-post.json.gz"
+      ]
+    }
+  ],
+  "negative_paths": [
+    {
+      "id": "modern_version_missing_table",
+      "status": "PASS_FAIL_CLOSED",
+      "source_version": "17.0.0.174",
+      "fixture": "Dedicated disposable database modified to remove sc_product_scenario_entry while retaining installed version 17.0.0.174",
+      "expected": "Explicit migration failure",
+      "observed": {
+        "command_exit_code": 2,
+        "runtime_error": "SCENARIO_ENTRY_TABLE_MISSING_INVALID_STATE",
+        "module_version_after_failure": "17.0.0.174",
+        "module_state_after_failure": "installed",
+        "transient_to_upgrade_rows": 0,
+        "sc_product_scenario_entry": "ABSENT"
+      },
+      "evidence": [
+        "evidence/negative-174-build.log",
+        "evidence/negative-174-before-drop.log",
+        "evidence/negative-174-invalid-fixture.log",
+        "evidence/negative-modern-missing-table-upgrade-fail.log",
+        "evidence/negative-174-after-failure.log",
+        "evidence/raw/neg-174-pre.json.gz",
+        "evidence/raw/neg-174-post.json.gz"
+      ]
+    },
+    {
+      "id": "unknown_or_malformed_version_missing_table",
+      "status": "PASS_UNIT_ONLY",
+      "cases": [
+        "",
+        null,
+        "garbage",
+        "17.0"
+      ],
+      "expected": "SCENARIO_ENTRY_TABLE_MISSING_UNKNOWN_VERSION",
+      "integration_environment": "NOT_PERFORMED",
+      "reason": "The owner prohibited fabricating an installed module version; the fail-closed branch is covered by the focused ORM test without mutating ir_module_module."
+    }
+  ],
+  "focused_tests": {
+    "command": "make verify.smart_construction_core.migration_compatibility.orm",
+    "status": "PASS",
+    "tests": 13,
+    "identity": "smart_construction_core.tests"
+  },
+  "remaining_not_verified": [
+    "An actual database with an unparsable installed module version was not constructed, because that would require fabricating ir_module_module state.",
+    "Deployment and product acceptance are outside this migration-repair task."
+  ]
+}
